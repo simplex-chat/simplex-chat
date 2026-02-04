@@ -103,7 +103,6 @@ module Simplex.Chat.Store.Messages
     getGroupChatItem,
     getGroupCIWithReactions,
     getGroupChatItemBySharedMsgId,
-    getGroupCIBySharedMsgId',
     getGroupMemberCIBySharedMsgId,
     getGroupChatItemsByAgentMsgId,
     getGroupMemberChatItemLast,
@@ -2931,8 +2930,8 @@ markReceivedGroupReportsDeleted db User {userId} GroupInfo {groupId, membership}
       |]
       (DBCIDeleted, deletedTs, groupMemberId' membership, currentTs, userId, groupId, MCReport_, DBCINotDeleted)
 
-getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupInfo -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupMemberId sharedMsgId = do
+getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupInfo -> Maybe GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupMemberId_ sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -2940,27 +2939,11 @@ getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupM
         [sql|
           SELECT chat_item_id
           FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
+          WHERE user_id = ? AND group_id = ? AND group_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ?
           ORDER BY chat_item_id DESC
           LIMIT 1
         |]
-        (userId, groupId, groupMemberId, sharedMsgId)
-  getGroupCIWithReactions db user g itemId
-
-getGroupCIBySharedMsgId' :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupCIBySharedMsgId' db user@User {userId} g@GroupInfo {groupId} sharedMsgId = do
-  itemId <-
-    ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
-      DB.query
-        db
-        [sql|
-          SELECT chat_item_id
-          FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND shared_msg_id = ?
-          ORDER BY chat_item_id DESC
-          LIMIT 1
-        |]
-        (userId, groupId, sharedMsgId)
+        (userId, groupId, groupMemberId_, sharedMsgId)
   getGroupCIWithReactions db user g itemId
 
 getGroupMemberCIBySharedMsgId :: DB.Connection -> User -> GroupInfo -> MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)

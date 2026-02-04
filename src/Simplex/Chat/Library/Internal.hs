@@ -2297,20 +2297,8 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
   vr <- chatVersionRange
   withStore' $ \db -> do
     (mentions' :: Map MemberName CIMention, userMention) <- case cd of
-      CDGroupRcv g@GroupInfo {membership} _scope _m -> do
-        mentions' <- getRcvCIMentions db user g ft_ mentions
-        let userReply = case cmToQuotedMsg chatMsgEvent of
-              Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
-              _ -> False
-            userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
-         in pure (mentions', userMention')
-      CDChannelRcv g@GroupInfo {membership} _scope -> do
-        mentions' <- getRcvCIMentions db user g ft_ mentions
-        let userReply = case cmToQuotedMsg chatMsgEvent of
-              Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
-              _ -> False
-            userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
-         in pure (mentions', userMention')
+      CDGroupRcv g@GroupInfo {membership} _scope _m -> groupMentions db g membership
+      CDChannelRcv g@GroupInfo {membership} _scope -> groupMentions db g membership
       CDDirectRcv _ -> pure (M.empty, False)
     cInfo' <-
       if (ciRequiresAttention content || contactChatDeleted cd)
@@ -2323,16 +2311,23 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
     let ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember createdAt
     ci' <- case cd of
       CDGroupRcv g _scope _m | not (null mentions') -> createGroupCIMentions db g ci mentions'
-      CDChannelRcv g _scope | not (null mentions') -> createGroupCIMentions db g ci mentions'
+      CDChannelRcv g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
     pure (ci', cInfo')
   where
+    groupMentions db g membership = do
+      mentions' <- getRcvCIMentions db user g ft_ mentions
+      let userReply = case cmToQuotedMsg chatMsgEvent of
+            Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
+            _ -> False
+          userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
+       in pure (mentions', userMention')
     memberChatStats :: Bool -> Maybe (Int, MemberAttention, Int)
     memberChatStats userMention = case cd of
-      CDGroupRcv _g (Just scope) m -> do
+      CDGroupRcv _g (Just scope) m ->
         let unread = fromEnum $ ciCreateStatus content == CISRcvNew
          in Just (unread, memberAttentionChange unread (Just brokerTs) (Just m) scope, fromEnum userMention)
-      CDChannelRcv _g (Just scope) -> do
+      CDChannelRcv _g (Just scope) ->
         let unread = fromEnum $ ciCreateStatus content == CISRcvNew
          in Just (unread, memberAttentionChange unread (Just brokerTs) Nothing scope, fromEnum userMention)
       _ -> Nothing
