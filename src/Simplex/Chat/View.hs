@@ -674,24 +674,18 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           _ -> showSndItem to
           where
             to = ttyToGroup g scopeInfo
-        CIGroupRcv m -> case content of
-          CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
-          CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-          CIRcvGroupInvitation {} -> showRcvItemProhibited from
-          CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo (Just m)) context meta [plainContent content] False
-          CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo (Just m)) context meta [plainContent content] False
-          _ -> showRcvItem from
-          where
-            from = ttyFromGroupAttention g scopeInfo (Just m) userMention
-        CIChannelRcv -> case content of
-          CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
-          CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-          CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo Nothing) context meta [plainContent content] False
-          CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo Nothing) context meta [plainContent content] False
-          _ -> showRcvItem from
-          where
-            from = ttyFromGroupAttention g scopeInfo Nothing userMention
+        CIGroupRcv m -> rcvGroupItem (Just m)
+        CIChannelRcv -> rcvGroupItem Nothing
         where
+          rcvGroupItem m_ = case content of
+            CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
+            CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+            CIRcvGroupInvitation {} | isJust m_ -> showRcvItemProhibited from
+            CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
+            CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
+            _ -> showRcvItem from
+            where
+              from = ttyFromGroupAttention g scopeInfo m_ userMention
           context =
             maybe
               (maybe [] forwardedFrom itemForwarded)
@@ -822,26 +816,22 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
           (directQuote chatDir)
           quotedItem
   GroupChat g scopeInfo -> case chatDir of
-    CIGroupRcv m -> case content of
-      CIRcvMsgContent mc
-        | itemLive == Just True && not liveItems -> []
-        | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
-      _ -> []
-      where
-        from = if itemEdited then ttyFromGroupEdited g scopeInfo (Just m) else ttyFromGroup g scopeInfo (Just m)
-    CIChannelRcv -> case content of
-      CIRcvMsgContent mc
-        | itemLive == Just True && not liveItems -> []
-        | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
-      _ -> []
-      where
-        from = if itemEdited then ttyFromGroupEdited g scopeInfo Nothing else ttyFromGroup g scopeInfo Nothing
+    CIGroupRcv m -> updGroupItem (Just m)
+    CIChannelRcv -> updGroupItem Nothing
     CIGroupSnd -> case content of
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to context mc ts tz meta
       _ -> []
       where
         to = if itemEdited then ttyToGroupEdited g scopeInfo else ttyToGroup g scopeInfo
     where
+      updGroupItem :: Maybe GroupMember -> [StyledString]
+      updGroupItem m_ = case content of
+        CIRcvMsgContent mc
+          | itemLive == Just True && not liveItems -> []
+          | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
+        _ -> []
+        where
+          from = if itemEdited then ttyFromGroupEdited g scopeInfo m_ else ttyFromGroup g scopeInfo m_
       context =
         maybe
           (maybe [] forwardedFrom itemForwarded)
@@ -905,20 +895,8 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g scopeInfo, CIGroupRcv m) -> case ciMsgContent content of
-      Just mc -> view from $ reactionMsg mc
-      _ -> []
-      where
-        from = ttyFromGroup g scopeInfo (Just m)
-        reactionMsg mc = quoteText mc . ttyQuotedMember $
-          if showGroupAsSender then Nothing else sentByMember' g itemDir
-    (GroupChat g scopeInfo, CIChannelRcv) -> case ciMsgContent content of
-      Just mc -> view from $ reactionMsg mc
-      _ -> []
-      where
-        from = ttyFromGroup g scopeInfo Nothing
-        reactionMsg mc = quoteText mc . ttyQuotedMember $
-          if showGroupAsSender then Nothing else sentByMember' g itemDir
+    (GroupChat g scopeInfo, CIGroupRcv m) -> groupReaction g scopeInfo (Just m) (sentByMember' g itemDir)
+    (GroupChat g scopeInfo, CIChannelRcv) -> groupReaction g scopeInfo Nothing (sentByMember' g itemDir)
     (LocalChat _, CILocalRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
@@ -930,6 +908,13 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
     (_, CILocalSnd) -> [sentText]
     (CInfoInvalidJSON {}, _) -> []
   where
+    groupReaction g scopeInfo m_ sentBy = case ciMsgContent content of
+      Just mc -> view from $ reactionMsg mc
+      _ -> []
+      where
+        from = ttyFromGroup g scopeInfo m_
+        reactionMsg mc = quoteText mc . ttyQuotedMember $
+          if showGroupAsSender then Nothing else sentBy
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
       | otherwise = []

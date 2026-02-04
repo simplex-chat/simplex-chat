@@ -2295,10 +2295,9 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
   createdAt <- liftIO getCurrentTime
   vr <- chatVersionRange
   withStore' $ \db -> do
-    (mentions' :: Map MemberName CIMention, userMention) <- case cd of
-      CDGroupRcv g@GroupInfo {membership} _scope _m -> groupMentions db g membership
-      CDChannelRcv g@GroupInfo {membership} _scope -> groupMentions db g membership
-      CDDirectRcv _ -> pure (M.empty, False)
+    (mentions' :: Map MemberName CIMention, userMention) <- case toChatInfo cd of
+      GroupChat g@GroupInfo {membership} _ -> groupMentions db g membership
+      _ -> pure (M.empty, False)
     cInfo' <-
       if (ciRequiresAttention content || contactChatDeleted cd)
         then updateChatTsStats db vr user cd createdAt (memberChatStats userMention)
@@ -2308,9 +2307,8 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention hasLink_ brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember createdAt
-    ci' <- case cd of
-      CDGroupRcv g _scope _m | not (null mentions') -> createGroupCIMentions db g ci mentions'
-      CDChannelRcv g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
+    ci' <- case toChatInfo cd of
+      GroupChat g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
     pure (ci', cInfo')
   where
