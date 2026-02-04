@@ -1193,13 +1193,12 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
       | otherwise = Nothing
     itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
     itemForwardEvents cci = case cci of
-      (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file})
-        | not (blockedByAdmin sender) -> do
+      (CChatItem SMDRcv ci@ChatItem {content = CIRcvMsgContent mc, file})
+        | not (maybe False blockedByAdmin sender_) -> do
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
-            processContentItem (Just sender) ci mc fInvDescr_
-      (CChatItem SMDRcv ci@ChatItem {chatDir = CIChannelRcv, content = CIRcvMsgContent mc, file}) -> do
-        fInvDescr_ <- join <$> forM file getRcvFileInvDescr
-        processContentItem Nothing ci mc fInvDescr_
+            processContentItem sender_ ci mc fInvDescr_
+        | otherwise -> pure []
+        where sender_ = chatItemRcvFromMember ci
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
         fInvDescr_ <- join <$> forM file getSndFileInvDescr
         processContentItem (Just membership) ci mc fInvDescr_
