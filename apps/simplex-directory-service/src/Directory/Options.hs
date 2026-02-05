@@ -34,6 +34,7 @@ data DirectoryOpts = DirectoryOpts
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
     captchaGenerator :: Maybe FilePath,
+    voiceCaptchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
     migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
@@ -119,6 +120,13 @@ directoryOpts appDir defaultDbName = do
             <> metavar "CAPTCHA_GENERATOR"
             <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
         )
+  voiceCaptchaGenerator <-
+    optional $
+      strOption
+        ( long "voice-captcha-generator"
+            <> metavar "VOICE_CAPTCHA_GENERATOR"
+            <> help "Executable to generate voice captcha, accepts text as parameter, writes audio file, outputs file_path and duration_seconds to stdout"
+        )
   directoryLog <-
     optional $
       strOption
@@ -166,6 +174,7 @@ directoryOpts appDir defaultDbName = do
         nameSpellingFile,
         profileNameLimit,
         captchaGenerator,
+        voiceCaptchaGenerator,
         directoryLog,
         migrateDirectoryLog,
         serviceName = T.pack serviceName,
