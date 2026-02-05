@@ -1237,6 +1237,72 @@
   <string name="error_initializing_web_view">Error initializing WebView. Update your system to the new version. Please contact developers.\nError: %s</string>
   <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
+  <!-- Intro carousel and onboarding restructure -->
+
+  <!-- Intro carousel (3 pages) -->
+  <string name="intro_headline_1">World\'s Most Secure Messaging</string>
+  <string name="intro_subtitle_1">SimpleX messaging has cutting-edge end-to-end encryption.</string>
+  <string name="intro_headline_2">Freedom of Your Communications</string>
+  <string name="intro_subtitle_2">You will support your favorite groups with future Community Vouchers.</string>
+  <string name="intro_headline_3">You Own The Next Web</string>
+  <string name="intro_subtitle_3">SimpleX is founded on the belief that you must own your identity, contacts and communities.</string>
+
+  <!-- Now you can hub -->
+  <string name="now_you_can_title">Now you can</string>
+  <string name="invite_someone_card">Invite someone to chat</string>
+  <string name="connect_via_link_card">Connect via link or QR code</string>
+  <string name="create_link_or_qr">Create link or QR</string>
+  <string name="paste_link_scan">Paste link / Scan</string>
+
+  <!-- Invite someone screen -->
+  <string name="invite_someone_title">Invite someone</string>
+  <string name="create_1time_link">Create private 1-time link</string>
+  <string name="create_1time_link_desc">Your contact can use link or scan QR code</string>
+  <string name="create_1time_link_button">Create 1-time link</string>
+  <string name="create_1time_link_bullet_1">Only one person can connect</string>
+  <string name="create_1time_link_bullet_2">Once connected, the link is removed</string>
+  <string name="create_1time_link_bullet_3">It is secure to pass via less secure channel</string>
+  <string name="create_simplex_address">Create public SimpleX address</string>
+  <string name="create_simplex_address_desc">Public link for social media, email or website</string>
+  <string name="create_simplex_address_button">Create SimpleX address</string>
+  <string name="create_simplex_address_bullet_1">Many people can connect</string>
+  <string name="create_simplex_address_bullet_2">Can be removed without losing contacts</string>
+  <string name="create_simplex_address_bullet_3">Servers can\'t see profile in the address without having link</string>
+
+  <!-- Connect via link screen (paste / scan) -->
+  <string name="paste_link_label">Paste the link you received</string>
+  <string name="paste_link_placeholder">Tap to paste link</string>
+  <string name="scan_qr_label">Or scan QR code</string>
+
+  <!-- 1-time link share screen -->
+  <string name="send_1time_link_desc">Send 1-time link to your contact via any messenger, it is secure. Ask to use it in the app.</string>
+  <string name="or_show_this_qr_code_desc">Or show this QR code in person or in a video call.</string>
+  <string name="send_this_1time_invite_link_label">Send this 1-time invite link</string>
+  <string name="or_show_this_qr_code_label">Or show this QR code</string>
+  <string name="share_profile_label">Share profile</string>
+
+  <!-- Create profile -->
+  <string name="create_profile_subtitle">Your profile is stored on your device and only shared with your contacts.</string>
+  <string name="enter_your_name_placeholder">Enter your name…</string>
+
+  <!-- Conditions of use -->
+  <string name="conditions_of_use_title">Conditions of use</string>
+  <string name="configure_notifications">Configure notifications</string>
+
+  <!-- Push notifications -->
+  <string name="push_notifications_title">Push notifications</string>
+  <string name="how_it_affects_privacy">How it affects privacy</string>
+  <string name="notifications_instant_desc">E2E encrypted notifications.</string>
+  <string name="notifications_periodic_desc_20min">Check messages every 20 min.</string>
+  <string name="notifications_no_push_server">No push server</string>
+  <string name="notifications_no_push_server_desc">Check messages when allowed.</string>
+
+  <!-- Create group -->
+  <string name="create_group_title">Create group</string>
+  <string name="enter_group_name_placeholder">Enter group name…</string>
+  <string name="incognito_profile_will_be_shared">Your profile %1$s will be shared.</string>
+  <string name="fully_decentralized_visible_to_members">Fully decentralized – visible only to members.</string>
+
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The future of messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
