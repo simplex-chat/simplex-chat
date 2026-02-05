@@ -12,9 +12,11 @@ module Directory.Events
     DirectoryCmd (..),
     ADirectoryCmd (..),
     DirectoryHelpSection (..),
+    CaptchaMode (..),
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
+    directoryCmdP,
     directoryCmdTag,
   )
 where
@@ -125,6 +127,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCMemberRole_ :: DirectoryCmdTag 'DRUser
   DCGroupFilter_ :: DirectoryCmdTag 'DRUser
   DCShowUpgradeGroupLink_ :: DirectoryCmdTag 'DRUser
+  DCCaptchaMode_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRAdmin
   DCRejectGroup_ :: DirectoryCmdTag 'DRAdmin
   DCSuspendGroup_ :: DirectoryCmdTag 'DRAdmin
@@ -145,6 +148,9 @@ data ADirectoryCmdTag = forall r. ADCT (SDirectoryRole r) (DirectoryCmdTag r)
 data DirectoryHelpSection = DHSRegistration | DHSCommands
   deriving (Show)
 
+data CaptchaMode = CMText | CMAudio
+  deriving (Show)
+
 data DirectoryCmd (r :: DirectoryRole) where
   DCHelp :: DirectoryHelpSection -> DirectoryCmd 'DRUser
   DCSearchGroup :: Text -> DirectoryCmd 'DRUser
@@ -158,6 +164,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
   DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCShowUpgradeGroupLink :: GroupId -> Maybe GroupName -> DirectoryCmd 'DRUser
+  DCCaptchaMode :: CaptchaMode -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId, promote :: Maybe Bool} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -203,6 +210,7 @@ directoryCmdP =
         "role" -> u DCMemberRole_
         "filter" -> u DCGroupFilter_
         "link" -> u DCShowUpgradeGroupLink_
+        "audio" -> u DCCaptchaMode_
         "approve" -> au DCApproveGroup_
         "reject" -> au DCRejectGroup_
         "suspend" -> au DCSuspendGroup_
@@ -270,6 +278,7 @@ directoryCmdP =
               <|> ("=noimage" <|> "=no_image" <|> "=no-image") $> PCNoImage
               <|> pure PCAll
       DCShowUpgradeGroupLink_ -> gc_ DCShowUpgradeGroupLink
+      DCCaptchaMode_ -> pure $ DCCaptchaMode CMAudio
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
@@ -314,6 +323,7 @@ directoryCmdTag = \case
   DCMemberRole {} -> "role"
   DCGroupFilter {} -> "filter"
   DCShowUpgradeGroupLink {} -> "link"
+  DCCaptchaMode _ -> "audio"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"
