@@ -102,6 +102,8 @@ data ServiceState = ServiceState
     updateListingsJob :: TMVar ChatController
   }
 
+data CaptchaMode = CMText | CMAudio
+
 data PendingCaptcha = PendingCaptcha
   { captchaText :: Text,
     sentAt :: UTCTime,
@@ -628,25 +630,29 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       | memberRequiresCaptcha a m = do
           let gmId = groupMemberId' m
               sendRef = SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)
+              -- /audio is matched as text, not as DirectoryCmd, because it is only valid
+              -- in group context at captcha stage, while DirectoryCmd is for DM commands.
+              isAudioCmd = T.strip msgText == "/audio"
               cmd = fromRight (ADC SDRUser DCUnknownCommand) $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.strip msgText
           atomically (TM.lookup gmId $ pendingCaptchas env) >>= \case
             Nothing ->
-              let mode = case cmd of ADC SDRUser (DCCaptchaMode CMAudio) -> CMAudio; _ -> CMText
+              let mode = if isAudioCmd then CMAudio else CMText
               in sendMemberCaptcha g m (Just ciId) noCaptcha 0 mode
-            Just pc@PendingCaptcha {captchaText, sentAt, attempts, captchaMode} -> case cmd of
-              ADC SDRUser (DCCaptchaMode CMAudio) -> do
-                atomically $ TM.insert gmId pc {captchaMode = CMAudio} $ pendingCaptchas env
-                sendVoiceCaptcha sendRef (T.unpack captchaText)
-              ADC SDRUser (DCSearchGroup _) -> do
-                ts <- getCurrentTime
-                if
-                  | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired (attempts - 1) captchaMode
-                  | matchCaptchaStr captchaText msgText -> do
-                      sendComposedMessages_ cc sendRef [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
-                      approvePendingMember a g m
-                  | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
-                  | otherwise -> sendMemberCaptcha g m (Just ciId) (wrongCaptcha attempts) attempts captchaMode
-              _ -> sendComposedMessages_ cc sendRef [(Just ciId, MCText unknownCommand)]
+            Just pc@PendingCaptcha {captchaText, sentAt, attempts, captchaMode}
+              | isAudioCmd -> do
+                  atomically $ TM.insert gmId pc {captchaMode = CMAudio} $ pendingCaptchas env
+                  sendVoiceCaptcha sendRef (T.unpack captchaText)
+              | otherwise -> case cmd of
+                  ADC SDRUser (DCSearchGroup _) -> do
+                    ts <- getCurrentTime
+                    if
+                      | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired (attempts - 1) captchaMode
+                      | matchCaptchaStr captchaText msgText -> do
+                          sendComposedMessages_ cc sendRef [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
+                          approvePendingMember a g m
+                      | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
+                      | otherwise -> sendMemberCaptcha g m (Just ciId) (wrongCaptcha attempts) attempts captchaMode
+                  _ -> sendComposedMessages_ cc sendRef [(Just ciId, MCText unknownCommand)]
       | otherwise = approvePendingMember a g m
       where
         a = groupMemberAcceptance g
@@ -935,7 +941,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               Left e -> do
                 let resp = T.pack $ serializeChatError True (config cc) e
                 sendReply $ "Unexpected error:\n" <> resp
-      DCCaptchaMode _ -> sendReply "Unknown command"
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       where

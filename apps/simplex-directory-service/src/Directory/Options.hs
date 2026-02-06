@@ -9,6 +9,7 @@ module Directory.Options
   ( DirectoryOpts (..),
     MigrateLog (..),
     getDirectoryOpts,
+    directoryOpts,
     mkChatOpts,
   )
 where
