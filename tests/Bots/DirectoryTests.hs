@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -13,11 +14,14 @@ import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_, when)
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime (..), NominalDiffTime, addUTCTime)
+import Data.Time.Clock (UTCTime (..), NominalDiffTime, addUTCTime, nominalDay)
 import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock.System (systemEpochDay)
+import qualified Options.Applicative as OA
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
 import Directory.BlockedWords
@@ -25,19 +29,23 @@ import Directory.Captcha
 import Directory.Events
 import Directory.Listing
 import Directory.Options
+import Directory.Search
 import Directory.Service
 import Directory.Store
-import GHC.IO.Handle (hClose)
 import Simplex.Messaging.Encoding.String (strEncode, strDecode)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatEvent (..), ChatError (..), ChatErrorType (..))
+import Simplex.Chat.Store (StoreError (..))
 import qualified Simplex.Chat.Markdown as MD
-import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts (..), CreateBotOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
+import Simplex.Chat.Types (AgentConnId (..), ChatPeerType (..), CustomData (..), GroupSummary (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), BrokerErrorType (..))
+import Simplex.Messaging.Protocol (NetworkError (..))
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import System.FilePath ((</>))
+import System.IO (hClose)
 import Test.Hspec hiding (it)
 
 directoryServiceTests :: SpecWith TestParams
@@ -88,14 +96,19 @@ directoryServiceTests = do
     it "should restore directory service state" testRestoreDirectory
   describe "captcha" $ do
     it "should accept some incorrect spellings" testCaptcha
+    it "should generate captcha of correct length" testGetCaptchaStr
   describe "blocked words" $ do
     it "should detect blocked words with spelling variations" testBlockedWords
     it "should detect blocked fragments" testBlockedFragments
     it "should remove triple characters" testRemoveTriples
     it "should generate word variants with extension rules" testWordVariants
     it "should detect blocked words with double-space splitting" testBlockedWordsDoubleSpacer
+    it "should normalize text with spelling and special chars" testNormalizeText
+    it "should generate all substitutions" testAllSubstitutions
   describe "help commands" $ do
     it "should show commands help" testHelpCommands
+    it "should not list audio command" testHelpNoAudio
+    it "should reject audio command in DM" testAudioCommandInDM
   describe "admin commands" $ do
     it "should suspend and resume group" testAdminSuspendResume
     -- Note: /reject not implemented in service (DCRejectGroup -> pure ())
@@ -103,11 +116,41 @@ directoryServiceTests = do
     it "should send message to group owner" testAdminSendToOwner
   describe "events parsing" $ do
     it "should parse directory commands" testCommandParsing
+    it "should handle command errors and edge cases" testCommandParsingEdgeCases
+    it "should map chat events to directory events" testCrDirectoryEvent
+    it "should show event types" testEventsShowInstances
   describe "listing" $ do
     it "should compute recent rounded time" testRecentRoundedTime
-  describe "store encoding" $ do
+    it "should format text to markdown" testToFormattedText
+    it "should define correct path constants" testListingPaths
+    it "should define newOrActive constant" testNewOrActive
+    it "should JSON round-trip DirectoryListing" testDirectoryListingJSON
+    it "should JSON round-trip DirectoryEntryType" testDirectoryEntryTypeJSON
+  describe "store" $ do
     it "should encode and decode GroupRegStatus" testGroupRegStatusEncoding
     it "should encode and decode DirectoryLogRecord" testDirectoryLogRecordEncoding
+    it "should encode and decode GroupReg" testGroupRegEncoding
+    it "should return correct status text" testGroupRegStatusText
+    it "should map status to directory status" testGrDirectoryStatus
+    it "should detect pending approval" testPendingApproval
+    it "should detect removed groups" testGroupRemoved
+    it "should define filter presets" testFilterPresets
+    it "should round-trip custom data" testCustomData
+    it "should read directory log data" testReadDirectoryLogData
+    it "should open directory log with Nothing" testOpenDirectoryLogNothing
+    it "should convert store errors" testGroupDBError
+    it "should handle log warnings for missing groups" testReadDirectoryLogWarnings
+    it "should JSON round-trip ProfileCondition" testProfileConditionJSON
+    it "should JSON round-trip DirectoryMemberAcceptance" testDirectoryMemberAcceptanceJSON
+    it "should JSON round-trip DirectoryGroupData" testDirectoryGroupDataJSON
+    it "should open directory log with Just path" testOpenDirectoryLogJust
+    it "should show store types" testStoreShowInstances
+  describe "options" $ do
+    it "should create chat opts from directory opts" testMkChatOpts
+    it "should cover MigrateLog constructors" testMigrateLogConstructors
+    it "should parse directory options" testDirectoryOptsParser
+  describe "search" $ do
+    it "should construct search types" testSearchTypes
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
@@ -439,9 +482,11 @@ testJoinGroup ps =
           cath <## "connection request sent!"
           cath <## "#privacy: joining the group..."
           cath <## "#privacy: you joined the group"
-          cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
-          cath <## "use @'SimpleX Directory' <message> to send messages"
-          cath <# ("#privacy 'SimpleX Directory'> " <> welcomeMsg)
+          cath
+            <### [ "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'",
+                   "use @'SimpleX Directory' <message> to send messages",
+                   Predicate (\l -> l == welcomeMsg || dropTime_ l == Just ("#privacy 'SimpleX Directory'> " <> welcomeMsg) || dropTime_ l == Just ("#privacy 'SimpleX Directory_1'> " <> welcomeMsg))
+                 ]
           cath <## "#privacy: member bob (Bob) is connected"
           bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
           bob <## "#privacy: new member cath is connected"
@@ -1815,6 +1860,11 @@ testBlockedWords _ps = do
   hasBlockedWords cfg "$c4m" `shouldBe` True
   hasBlockedWords cfg "spamm" `shouldBe` False
   hasBlockedWords cfg "scammer" `shouldBe` False
+  -- field selectors for BlockedWordsConfig
+  S.member "spam" (blockedWords cfg) `shouldBe` True
+  blockedFragments cfg `shouldBe` S.empty
+  extensionRules cfg `shouldBe` []
+  spelling cfg `shouldSatisfy` (not . M.null)
 
 testBlockedFragments :: HasCallStack => TestParams -> IO ()
 testBlockedFragments _ps = do
@@ -1847,6 +1897,32 @@ testHelpCommands ps =
       bob <## ""
       bob <## "To search for groups, send the search text."
 
+testHelpNoAudio :: HasCallStack => TestParams -> IO ()
+testHelpNoAudio ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      -- commands help should not mention /audio
+      bob #> "@'SimpleX Directory' /help commands"
+      bob <# "'SimpleX Directory'> /'help commands' - receive this help message."
+      bob <## "/help - how to register your group to be added to directory."
+      bob <## "/list - list the groups you registered."
+      bob <## "`/role <ID>` - view and set default member role for your group."
+      bob <## "`/filter <ID>` - view and set spam filter settings for group."
+      bob <## "`/link <ID>` - view and upgrade group link."
+      bob <## "`/delete <ID>:<NAME>` - remove the group you submitted from directory, with ID and name as shown by /list command."
+      bob <## ""
+      bob <## "To search for groups, send the search text."
+
+testAudioCommandInDM :: HasCallStack => TestParams -> IO ()
+testAudioCommandInDM ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      bob #> "@'SimpleX Directory' /audio"
+      bob <# "'SimpleX Directory'> > /audio"
+      bob <## "      Unknown command"
+
 testRemoveTriples :: HasCallStack => TestParams -> IO ()
 testRemoveTriples _ps = do
   removeTriples "hello" `shouldBe` "hello"
@@ -1858,6 +1934,10 @@ testRemoveTriples _ps = do
   removeTriples "" `shouldBe` ""
   removeTriples "a" `shouldBe` "a"
   removeTriples "aa" `shouldBe` "aa"
+  -- Exercise initial False argument (prev='\0' matches first char '\0',
+  -- so samePrev=False is forced in the first iteration)
+  removeTriples "\0\0\0" `shouldBe` "\0"
+  removeTriples "\0" `shouldBe` "\0"
 
 testWordVariants :: HasCallStack => TestParams -> IO ()
 testWordVariants _ps = do
@@ -1971,7 +2051,7 @@ testCommandParsing _ps = do
   parseCmd "/filter 1" `shouldBe` "filter"
   parseCmd "/filter 1 off" `shouldBe` "filter"
   parseCmd "/filter 1 basic" `shouldBe` "filter"
-  parseCmd "/audio" `shouldBe` "audio"
+  parseCmd "/audio" `shouldBe` "unknown"
   parseCmd "/confirm 1:test" `shouldBe` "confirm"
   parseCmd "/link 1" `shouldBe` "link"
   parseCmd "/promote 1:test on" `shouldBe` "promote"
@@ -2033,3 +2113,532 @@ testDirectoryLogRecordEncoding _ps = do
     roundTrip r = case strDecode (strEncode r) :: Either String DirectoryLogRecord of
       Right _ -> pure ()
       Left e -> expectationFailure $ "Failed to decode: " <> e
+
+testNormalizeText :: HasCallStack => TestParams -> IO ()
+testNormalizeText _ps = do
+  let sp = M.fromList [('a', ['a', '@']), ('e', ['e', '3']), ('o', ['o', '0'])]
+  normalizeText sp "Hello" `shouldSatisfy` any (== "hello")
+  normalizeText sp "H.e" `shouldSatisfy` any (== "he")
+  normalizeText sp "H e" `shouldSatisfy` any (== "he")
+  normalizeText sp "café" `shouldSatisfy` any (== "cafe")
+  normalizeText M.empty "" `shouldBe` [""]
+
+testAllSubstitutions :: HasCallStack => TestParams -> IO ()
+testAllSubstitutions _ps = do
+  let sp = M.fromList [('a', ['a', '@'])]
+  allSubstitutions sp "ab" `shouldBe` ["ab", "@b"]
+  allSubstitutions sp "aa" `shouldBe` ["aa", "a@", "@a", "@@"]
+  allSubstitutions M.empty "xy" `shouldBe` ["xy"]
+  allSubstitutions sp "" `shouldBe` [""]
+
+testCommandParsingEdgeCases :: HasCallStack => TestParams -> IO ()
+testCommandParsingEdgeCases _ps = do
+  parseCmd "/help" `shouldShowAs` "ADC SDRUser (DCHelp DHSRegistration)"
+  parseCmd "/help commands" `shouldShowAs` "ADC SDRUser (DCHelp DHSCommands)"
+  parseCmd "/help c" `shouldShowAs` "ADC SDRUser (DCHelp DHSCommands)"
+  parseCmd "/help r" `shouldShowAs` "ADC SDRUser (DCHelp DHSRegistration)"
+  parseCmd "/next" `shouldShowAs` "ADC SDRUser DCSearchNext"
+  parseCmd "." `shouldShowAs` "ADC SDRUser DCSearchNext"
+  parseCmd "/all" `shouldShowAs` "ADC SDRUser DCAllGroups"
+  parseCmd "/new" `shouldShowAs` "ADC SDRUser DCRecentGroups"
+  parseCmd "/list" `shouldShowAs` "ADC SDRUser DCListUserGroups"
+  parseCmd "/ls" `shouldShowAs` "ADC SDRUser DCListUserGroups"
+  parseCmd "/last" `shouldShowAs` "ADC SDRAdmin (DCListLastGroups 10)"
+  parseCmd "/last 5" `shouldShowAs` "ADC SDRAdmin (DCListLastGroups 5)"
+  parseCmd "/pending" `shouldShowAs` "ADC SDRAdmin (DCListPendingGroups 10)"
+  parseCmd "/pending 3" `shouldShowAs` "ADC SDRAdmin (DCListPendingGroups 3)"
+  parseCmd "/badcommand" `shouldShowAs` "ADC SDRUser DCUnknownCommand"
+  parseCmd "search term" `shouldShowAs` "ADC SDRUser (DCSearchGroup \"search term\")"
+  parseCmd "/exec ls" `shouldShowAs` "ADC SDRSuperUser (DCExecuteCommand \"ls\")"
+  parseCmd "/x ls" `shouldShowAs` "ADC SDRSuperUser (DCExecuteCommand \"ls\")"
+  parseCmd "/audio" `shouldShowAs` "ADC SDRUser DCUnknownCommand"
+  parseCmd "/suspend 1:test" `shouldShowAs` "ADC SDRAdmin (DCSuspendGroup 1 \"test\")"
+  parseCmd "/resume 1:test" `shouldShowAs` "ADC SDRAdmin (DCResumeGroup 1 \"test\")"
+  parseCmd "/reject 1:test" `shouldShowAs` "ADC SDRAdmin (DCRejectGroup 1 \"test\")"
+  parseCmd "/delete 1:test" `shouldShowAs` "ADC SDRUser (DCDeleteGroup 1 \"test\")"
+  parseCmd "/confirm 1:test" `shouldShowAs` "ADC SDRUser (DCConfirmDuplicateGroup 1 \"test\")"
+  parseCmd "/role 1" `shouldShowAs` "ADC SDRUser (DCMemberRole 1 Nothing Nothing)"
+  parseCmd "/role 1:test member" `shouldShowAs` "ADC SDRUser (DCMemberRole 1 (Just \"test\") (Just GRMember))"
+  parseCmd "/role 1:test observer" `shouldShowAs` "ADC SDRUser (DCMemberRole 1 (Just \"test\") (Just GRObserver))"
+  parseCmd "/filter 1:test off" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 (Just \"test\") (Just (DirectoryMemberAcceptance {rejectNames = Nothing, passCaptcha = Nothing, makeObserver = Nothing})))"
+  parseCmd "/filter 1:test basic" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 (Just \"test\") (Just (DirectoryMemberAcceptance {rejectNames = Just PCNoImage, passCaptcha = Nothing, makeObserver = Nothing})))"
+  parseCmd "/link 1:test" `shouldShowAs` "ADC SDRUser (DCShowUpgradeGroupLink 1 (Just \"test\"))"
+  parseCmd "/link 1" `shouldShowAs` "ADC SDRUser (DCShowUpgradeGroupLink 1 Nothing)"
+  parseCmd "/invite 1:test" `shouldShowAs` "ADC SDRAdmin (DCInviteOwnerToGroup 1 \"test\")"
+  parseCmd "/promote 1:test on" `shouldShowAs` "ADC SDRSuperUser (DCPromoteGroup 1 \"test\" True)"
+  parseCmd "/promote 1:test off" `shouldShowAs` "ADC SDRSuperUser (DCPromoteGroup 1 \"test\" False)"
+  parseCmd "/owner 1:test hello" `shouldShowAs` "ADC SDRAdmin (DCSendToGroupOwner 1 \"test\" \"hello\")"
+  parseCmd "/filter 1:test moderate" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 (Just \"test\") (Just (DirectoryMemberAcceptance {rejectNames = Just PCAll, passCaptcha = Just PCNoImage, makeObserver = Nothing})))"
+  parseCmd "/filter 1:test mod" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 (Just \"test\") (Just (DirectoryMemberAcceptance {rejectNames = Just PCAll, passCaptcha = Just PCNoImage, makeObserver = Nothing})))"
+  parseCmd "/filter 1:test strong" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 (Just \"test\") (Just (DirectoryMemberAcceptance {rejectNames = Just PCAll, passCaptcha = Just PCAll, makeObserver = Nothing})))"
+  -- "/" alone: tagP reads "" -> fails, fallback to DCUnknownCommand (line 191)
+  parseCmd "/" `shouldShowAs` "ADC SDRUser DCUnknownCommand"
+  -- filter with name=all exercises "=all" $> PCAll branch (line 270)
+  parseCmd "/filter 1 name=all" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 Nothing (Just (DirectoryMemberAcceptance {rejectNames = Just PCAll, passCaptcha = Nothing, makeObserver = Nothing})))"
+  -- /submit without args (covers DCSubmitGroup_ tag)
+  getCmdTag "/submit" `shouldBe` "error"
+  -- /submit with invalid link: DCCommandError fallback doesn't consume remaining input,
+  -- so `endOfInput` fails and the whole parse returns Left -> "unknown".
+  -- This matches production behavior (Service.hs:636, Events.hs:97 use the same pattern).
+  getCmdTag "/submit invalidlink" `shouldBe` "unknown"
+  -- missing args falls back to DCCommandError, exercises directoryCmdTag "error" branch
+  getCmdTag "/approve" `shouldBe` "error"
+  getCmdTag "/delete" `shouldBe` "error"
+  getCmdTag "/suspend" `shouldBe` "error"
+  -- filter with name=noimage
+  parseCmd "/filter 1 name=noimage" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 Nothing (Just (DirectoryMemberAcceptance {rejectNames = Just PCNoImage, passCaptcha = Nothing, makeObserver = Nothing})))"
+  -- filter with both name=noimage and captcha=noimage
+  parseCmd "/filter 1 name=noimage captcha=noimage" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 Nothing (Just (DirectoryMemberAcceptance {rejectNames = Just PCNoImage, passCaptcha = Just PCNoImage, makeObserver = Nothing})))"
+  -- filter with all three custom conditions
+  parseCmd "/filter 1 name captcha observer" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 Nothing (Just (DirectoryMemberAcceptance {rejectNames = Just PCAll, passCaptcha = Just PCAll, makeObserver = Just PCAll})))"
+  -- filter with name=no_image alternate spelling
+  parseCmd "/filter 1 name=no_image" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 Nothing (Just (DirectoryMemberAcceptance {rejectNames = Just PCNoImage, passCaptcha = Nothing, makeObserver = Nothing})))"
+  -- filter with name=no-image alternate spelling
+  parseCmd "/filter 1 name=no-image" `shouldShowAs` "ADC SDRUser (DCGroupFilter 1 Nothing (Just (DirectoryMemberAcceptance {rejectNames = Just PCNoImage, passCaptcha = Nothing, makeObserver = Nothing})))"
+  -- approve with promote=on
+  parseCmd "/approve 1:test 1 promote=on" `shouldShowAs` "ADC SDRAdmin (DCApproveGroup {groupId = 1, displayName = \"test\", groupApprovalId = 1, promote = Just True})"
+  -- approve with promote=off
+  parseCmd "/approve 1:test 1 promote=off" `shouldShowAs` "ADC SDRAdmin (DCApproveGroup {groupId = 1, displayName = \"test\", groupApprovalId = 1, promote = Just False})"
+  -- approve without promote
+  parseCmd "/approve 1:test 1" `shouldShowAs` "ADC SDRAdmin (DCApproveGroup {groupId = 1, displayName = \"test\", groupApprovalId = 1, promote = Nothing})"
+  where
+    parseCmd :: T.Text -> ADirectoryCmd
+    parseCmd t = case A.parseOnly (directoryCmdP <* A.endOfInput) t of
+      Right cmd -> cmd
+      Left _ -> ADC SDRUser DCUnknownCommand
+    shouldShowAs :: ADirectoryCmd -> String -> IO ()
+    shouldShowAs cmd expected = show cmd `shouldBe` expected
+    getCmdTag :: T.Text -> T.Text
+    getCmdTag t = case A.parseOnly (directoryCmdP <* A.endOfInput) t of
+      Right (ADC _ cmd) -> directoryCmdTag cmd
+      Left _ -> "unknown"
+
+testCrDirectoryEvent :: HasCallStack => TestParams -> IO ()
+testCrDirectoryEvent _ps = do
+  crDirectoryEvent (Left $ ChatErrorAgent (BROKER "addr" (NETWORK (NEConnectError "err"))) (AgentConnId "") Nothing) `shouldSatisfy` isNothing
+  crDirectoryEvent (Left $ ChatErrorAgent (BROKER "addr" TIMEOUT) (AgentConnId "") Nothing) `shouldSatisfy` isNothing
+  crDirectoryEvent (Left $ ChatError CENoActiveUser) `shouldSatisfy` isJust
+  crDirectoryEvent (Right CEvtChatSuspended) `shouldSatisfy` isNothing
+  -- CEvtChatErrors path
+  crDirectoryEvent (Right $ CEvtChatErrors {chatErrors = [ChatError CENoActiveUser]}) `shouldSatisfy` isJust
+  where
+    isJust (Just _) = True
+    isJust Nothing = False
+    isNothing Nothing = True
+    isNothing _ = False
+
+testToFormattedText :: HasCallStack => TestParams -> IO ()
+testToFormattedText _ps = do
+  toFormattedText "hello" `shouldBe` [MD.FormattedText Nothing "hello"]
+  toFormattedText "*bold*" `shouldBe` [MD.FormattedText (Just MD.Bold) "bold"]
+  toFormattedText "" `shouldBe` [MD.FormattedText Nothing ""]
+
+testListingPaths :: HasCallStack => TestParams -> IO ()
+testListingPaths _ps = do
+  directoryDataPath `shouldBe` "data"
+  listingFileName `shouldBe` "listing.json"
+  promotedFileName `shouldBe` "promoted.json"
+  listingImageFolder `shouldBe` "images"
+
+testGroupRegEncoding :: HasCallStack => TestParams -> IO ()
+testGroupRegEncoding _ps = do
+  roundTrip grBase
+  roundTrip grBase {promoted = True}
+  roundTrip grBase {groupRegStatus = GRSPendingApproval 7}
+  roundTrip grBase {dbOwnerMemberId = Nothing}
+  where
+    grBase = GroupReg
+      { dbGroupId = 10,
+        userGroupRegId = 2,
+        dbContactId = 5,
+        dbOwnerMemberId = Just 8,
+        groupRegStatus = GRSActive,
+        promoted = False,
+        createdAt = UTCTime (fromGregorian 2024 6 1) 0
+      }
+    roundTrip :: GroupReg -> IO ()
+    roundTrip gr = case strDecode (strEncode gr) of
+      Right gr' -> do
+        dbGroupId gr' `shouldBe` dbGroupId gr
+        userGroupRegId gr' `shouldBe` userGroupRegId (gr :: GroupReg)
+        dbContactId gr' `shouldBe` dbContactId (gr :: GroupReg)
+        dbOwnerMemberId gr' `shouldBe` dbOwnerMemberId (gr :: GroupReg)
+        groupRegStatus gr' `shouldBe` groupRegStatus (gr :: GroupReg)
+        promoted gr' `shouldBe` promoted (gr :: GroupReg)
+      Left e -> expectationFailure $ "Failed to decode GroupReg: " <> e
+
+testGroupRegStatusText :: HasCallStack => TestParams -> IO ()
+testGroupRegStatusText _ps = do
+  groupRegStatusText GRSPendingConfirmation `shouldBe` "pending confirmation (duplicate names)"
+  groupRegStatusText GRSProposed `shouldBe` "proposed"
+  groupRegStatusText GRSPendingUpdate `shouldBe` "pending profile update"
+  groupRegStatusText (GRSPendingApproval 1) `shouldBe` "pending admin approval"
+  groupRegStatusText GRSActive `shouldBe` "active"
+  groupRegStatusText GRSSuspended `shouldBe` "suspended by admin"
+  groupRegStatusText GRSSuspendedBadRoles `shouldBe` "suspended because roles changed"
+  groupRegStatusText GRSRemoved `shouldBe` "removed"
+
+testGrDirectoryStatus :: HasCallStack => TestParams -> IO ()
+testGrDirectoryStatus _ps = do
+  (grDirectoryStatus GRSActive == DSListed) `shouldBe` True
+  (grDirectoryStatus GRSSuspended == DSReserved) `shouldBe` True
+  (grDirectoryStatus GRSSuspendedBadRoles == DSReserved) `shouldBe` True
+  (grDirectoryStatus GRSRemoved == DSRemoved) `shouldBe` True
+  (grDirectoryStatus GRSProposed == DSRegistered) `shouldBe` True
+  (grDirectoryStatus GRSPendingUpdate == DSRegistered) `shouldBe` True
+  (grDirectoryStatus GRSPendingConfirmation == DSRegistered) `shouldBe` True
+  (grDirectoryStatus (GRSPendingApproval 1) == DSRegistered) `shouldBe` True
+
+testPendingApproval :: HasCallStack => TestParams -> IO ()
+testPendingApproval _ps = do
+  pendingApproval (GRSPendingApproval 1) `shouldBe` True
+  pendingApproval GRSActive `shouldBe` False
+  pendingApproval GRSSuspended `shouldBe` False
+  pendingApproval GRSRemoved `shouldBe` False
+  pendingApproval GRSProposed `shouldBe` False
+
+testGroupRemoved :: HasCallStack => TestParams -> IO ()
+testGroupRemoved _ps = do
+  groupRemoved GRSRemoved `shouldBe` True
+  groupRemoved GRSActive `shouldBe` False
+  groupRemoved GRSSuspended `shouldBe` False
+  groupRemoved (GRSPendingApproval 1) `shouldBe` False
+
+testFilterPresets :: HasCallStack => TestParams -> IO ()
+testFilterPresets _ps = do
+  noJoinFilter `shouldBe` DirectoryMemberAcceptance Nothing Nothing Nothing
+  basicJoinFilter `shouldBe` DirectoryMemberAcceptance (Just PCNoImage) Nothing Nothing
+  moderateJoinFilter `shouldBe` DirectoryMemberAcceptance (Just PCAll) (Just PCNoImage) Nothing
+  strongJoinFilter `shouldBe` DirectoryMemberAcceptance (Just PCAll) (Just PCAll) Nothing
+
+testCustomData :: HasCallStack => TestParams -> IO ()
+testCustomData _ps = do
+  let dgd = DirectoryGroupData {memberAcceptance = basicJoinFilter}
+      cd = toCustomData dgd
+      dgd' = fromCustomData (Just cd)
+  memberAcceptance dgd' `shouldBe` basicJoinFilter
+  let dgdNone = fromCustomData Nothing
+  memberAcceptance dgdNone `shouldBe` noJoinFilter
+  let dgdEmpty = fromCustomData (Just $ CustomData mempty)
+  memberAcceptance dgdEmpty `shouldBe` noJoinFilter
+
+testReadDirectoryLogData :: HasCallStack => TestParams -> IO ()
+testReadDirectoryLogData ps = do
+  let logFile = tmpPath ps </> "test_read_dir_log.log"
+      gr = GroupReg
+        { dbGroupId = 1,
+          userGroupRegId = 1,
+          dbContactId = 2,
+          dbOwnerMemberId = Just 3,
+          groupRegStatus = GRSActive,
+          promoted = False,
+          createdAt = UTCTime systemEpochDay 0
+        }
+  B.writeFile logFile $
+    B.unlines
+      [ strEncode (GRCreate gr),
+        strEncode (GRUpdateStatus 1 GRSSuspended),
+        strEncode (GRCreate gr {dbGroupId = 2, userGroupRegId = 2}),
+        strEncode (GRDelete 2),
+        strEncode (GRUpdatePromotion 1 True),
+        strEncode (GRUpdateOwner 1 99)
+      ]
+  regs <- readDirectoryLogData logFile
+  length regs `shouldBe` 1
+  let r = head regs
+  dbGroupId r `shouldBe` 1
+  groupRegStatus r `shouldBe` GRSSuspended
+  promoted r `shouldBe` True
+  dbOwnerMemberId r `shouldBe` Just 99
+  let GroupReg {createdAt} = r
+  createdAt `shouldBe` UTCTime systemEpochDay 0
+
+testOpenDirectoryLogNothing :: HasCallStack => TestParams -> IO ()
+testOpenDirectoryLogNothing _ps = do
+  dl <- openDirectoryLog Nothing
+  directoryLogFile dl `shouldBe` Nothing
+
+testMkChatOpts :: HasCallStack => TestParams -> IO ()
+testMkChatOpts ps = do
+  let dirOpts = mkDirectoryOpts ps [KnownContact 1 "admin"] Nothing Nothing
+      co = mkChatOpts dirOpts
+      ChatOpts {chatCmd, chatCmdDelay, chatCmdLog, chatServerPort, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize, muteNotifications, markRead, createBot} = co
+  chatCmd `shouldBe` ""
+  chatCmdDelay `shouldBe` 3
+  (chatCmdLog == CCLNone) `shouldBe` True
+  chatServerPort `shouldBe` Nothing
+  optFilesFolder `shouldBe` Nothing
+  optTempDirectory `shouldBe` Nothing
+  showReactions `shouldBe` False
+  allowInstantFiles `shouldBe` True
+  autoAcceptFileSize `shouldBe` 0
+  muteNotifications `shouldBe` True
+  markRead `shouldBe` False
+  case createBot of
+    Just CreateBotOpts {botDisplayName} -> botDisplayName `shouldBe` "SimpleX Directory"
+    Nothing -> expectationFailure "createBot should be Just"
+
+testSearchTypes :: HasCallStack => TestParams -> IO ()
+testSearchTypes _ps = do
+  let st1 = STAll
+      st2 = STRecent
+      st3 = STSearch "test"
+  case st1 of STAll -> pure (); _ -> expectationFailure "expected STAll"
+  case st2 of STRecent -> pure (); _ -> expectationFailure "expected STRecent"
+  case st3 of STSearch t -> t `shouldBe` "test"; _ -> expectationFailure "expected STSearch"
+  -- field selectors for SearchRequest
+  let sr = SearchRequest STAll (UTCTime systemEpochDay 0) 0
+  case searchType sr of STAll -> pure (); _ -> expectationFailure "expected STAll"
+  searchTime sr `shouldBe` UTCTime systemEpochDay 0
+  lastGroup sr `shouldBe` 0
+
+testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
+testGetCaptchaStr _ps = do
+  s0 <- getCaptchaStr 0 ""
+  s0 `shouldBe` ""
+  s7 <- getCaptchaStr 7 ""
+  length s7 `shouldBe` 7
+  all (`elem` ("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" :: String)) s7 `shouldBe` True
+
+testNewOrActive :: HasCallStack => TestParams -> IO ()
+testNewOrActive _ps =
+  newOrActive `shouldBe` (30 * nominalDay)
+
+testDirectoryListingJSON :: HasCallStack => TestParams -> IO ()
+testDirectoryListingJSON _ps = do
+  let listing = DirectoryListing {entries = []}
+      encoded = J.encode listing
+  case J.eitherDecode encoded of
+    Right listing' -> null (entries (listing' :: DirectoryListing)) `shouldBe` True
+    Left e -> expectationFailure $ "Failed to decode DirectoryListing: " <> e
+
+testGroupDBError :: HasCallStack => TestParams -> IO ()
+testGroupDBError _ps = do
+  groupDBError (SEGroupNotFound 1) `shouldBe` "group not found"
+  groupDBError (SEInternalError "test") `shouldBe` show (SEInternalError "test")
+
+testReadDirectoryLogWarnings :: HasCallStack => TestParams -> IO ()
+testReadDirectoryLogWarnings ps = do
+  let logFile = tmpPath ps </> "test_log_warnings.log"
+      gr = GroupReg
+        { dbGroupId = 1,
+          userGroupRegId = 1,
+          dbContactId = 2,
+          dbOwnerMemberId = Just 3,
+          groupRegStatus = GRSActive,
+          promoted = False,
+          createdAt = UTCTime systemEpochDay 0
+        }
+  B.writeFile logFile $
+    B.unlines
+      [ strEncode (GRCreate gr),
+        strEncode (GRDelete 99),
+        strEncode (GRUpdateStatus 99 GRSActive),
+        strEncode (GRUpdatePromotion 99 True),
+        strEncode (GRUpdateOwner 99 42),
+        strEncode (GRCreate gr),
+        "invalid log line"
+      ]
+  regs <- readDirectoryLogData logFile
+  length regs `shouldBe` 1
+  dbGroupId (head regs) `shouldBe` 1
+  groupRegStatus (head regs) `shouldBe` GRSActive
+
+testProfileConditionJSON :: HasCallStack => TestParams -> IO ()
+testProfileConditionJSON _ps = do
+  jsonRoundTrip PCAll
+  jsonRoundTrip PCNoImage
+  where
+    jsonRoundTrip :: ProfileCondition -> IO ()
+    jsonRoundTrip pc = case J.eitherDecode (J.encode pc) of
+      Right pc' -> pc' `shouldBe` pc
+      Left e -> expectationFailure $ "Failed to decode ProfileCondition: " <> e
+
+testDirectoryMemberAcceptanceJSON :: HasCallStack => TestParams -> IO ()
+testDirectoryMemberAcceptanceJSON _ps = do
+  jsonRoundTrip noJoinFilter
+  jsonRoundTrip basicJoinFilter
+  jsonRoundTrip moderateJoinFilter
+  jsonRoundTrip strongJoinFilter
+  where
+    jsonRoundTrip :: DirectoryMemberAcceptance -> IO ()
+    jsonRoundTrip dma = case J.eitherDecode (J.encode dma) of
+      Right dma' -> dma' `shouldBe` dma
+      Left e -> expectationFailure $ "Failed to decode DirectoryMemberAcceptance: " <> e
+
+testDirectoryGroupDataJSON :: HasCallStack => TestParams -> IO ()
+testDirectoryGroupDataJSON _ps = do
+  jsonRoundTrip (DirectoryGroupData noJoinFilter)
+  jsonRoundTrip (DirectoryGroupData basicJoinFilter)
+  jsonRoundTrip (DirectoryGroupData moderateJoinFilter)
+  jsonRoundTrip (DirectoryGroupData strongJoinFilter)
+  where
+    jsonRoundTrip :: DirectoryGroupData -> IO ()
+    jsonRoundTrip dgd = case J.eitherDecode (J.encode dgd) of
+      Right dgd' -> memberAcceptance (dgd' :: DirectoryGroupData) `shouldBe` memberAcceptance (dgd :: DirectoryGroupData)
+      Left e -> expectationFailure $ "Failed to decode DirectoryGroupData: " <> e
+
+testOpenDirectoryLogJust :: HasCallStack => TestParams -> IO ()
+testOpenDirectoryLogJust ps = do
+  let logFile = tmpPath ps </> "test_open_dir_log.log"
+  dl <- openDirectoryLog (Just logFile)
+  case directoryLogFile dl of
+    Just h -> hClose h
+    Nothing -> expectationFailure "directoryLogFile should be Just"
+
+testMigrateLogConstructors :: HasCallStack => TestParams -> IO ()
+testMigrateLogConstructors _ps = do
+  check MLCheck
+  check MLImport
+  check MLExport
+  check MLListing
+  where
+    check :: MigrateLog -> IO ()
+    check ml = case ml of
+      MLCheck -> pure ()
+      MLImport -> pure ()
+      MLExport -> pure ()
+      MLListing -> pure ()
+
+testDirectoryOptsParser :: HasCallStack => TestParams -> IO ()
+testDirectoryOptsParser ps = do
+  let parser = OA.info (directoryOpts (tmpPath ps) "test_db") mempty
+  -- 3a. Minimal args (covers parser skeleton + all defaults)
+  case OA.execParserPure OA.defaultPrefs parser ["--super-users", "1:admin"] of
+    OA.Success opts -> do
+      length (superUsers opts) `shouldBe` 1
+      length (adminUsers opts) `shouldBe` 0
+      case ownersGroup (opts :: DirectoryOpts) of Nothing -> pure (); Just _ -> expectationFailure "expected Nothing"
+      noAddress opts `shouldBe` False
+      blockedWordsFile opts `shouldBe` Nothing
+      blockedFragmentsFile opts `shouldBe` Nothing
+      blockedExtensionRules opts `shouldBe` Nothing
+      nameSpellingFile opts `shouldBe` Nothing
+      profileNameLimit opts `shouldBe` maxBound
+      captchaGenerator opts `shouldBe` Nothing
+      voiceCaptchaGenerator opts `shouldBe` Nothing
+      directoryLog (opts :: DirectoryOpts) `shouldBe` Nothing
+      case migrateDirectoryLog opts of Nothing -> pure (); Just _ -> expectationFailure "expected Nothing"
+      serviceName opts `shouldBe` "SimpleX Directory"
+      runCLI opts `shouldBe` False
+      searchResults opts `shouldBe` 10
+      webFolder (opts :: DirectoryOpts) `shouldBe` Nothing
+      testing opts `shouldBe` False
+    OA.Failure e -> expectationFailure $ "Parser failed (minimal): " <> show e
+    OA.CompletionInvoked _ -> expectationFailure "Unexpected completion"
+  -- 3b. Non-default args (covers switch/option branches)
+  case OA.execParserPure OA.defaultPrefs parser
+        [ "--super-users", "1:super",
+          "--admin-users", "2:admin",
+          "--no-address",
+          "--run-cli",
+          "--service-name", "Test",
+          "--profile-name-limit", "50",
+          "--directory-file", "/tmp/test.log",
+          "--blocked-words-file", "/tmp/w.txt",
+          "--blocked-fragments-file", "/tmp/f.txt",
+          "--blocked-extenstion-rules", "/tmp/r.txt",
+          "--name-spelling-file", "/tmp/s.txt",
+          "--captcha-generator", "/tmp/cg",
+          "--voice-captcha-generator", "/tmp/vcg",
+          "--web-folder", "/tmp/web"
+        ] of
+    OA.Success opts -> do
+      length (superUsers opts) `shouldBe` 1
+      length (adminUsers opts) `shouldBe` 1
+      noAddress opts `shouldBe` True
+      runCLI opts `shouldBe` True
+      serviceName opts `shouldBe` "Test"
+      profileNameLimit opts `shouldBe` 50
+      directoryLog (opts :: DirectoryOpts) `shouldBe` Just "/tmp/test.log"
+      blockedWordsFile opts `shouldBe` Just "/tmp/w.txt"
+      blockedFragmentsFile opts `shouldBe` Just "/tmp/f.txt"
+      blockedExtensionRules opts `shouldBe` Just "/tmp/r.txt"
+      nameSpellingFile opts `shouldBe` Just "/tmp/s.txt"
+      captchaGenerator opts `shouldBe` Just "/tmp/cg"
+      voiceCaptchaGenerator opts `shouldBe` Just "/tmp/vcg"
+      webFolder (opts :: DirectoryOpts) `shouldBe` Just "/tmp/web"
+    OA.Failure e -> expectationFailure $ "Parser failed (non-default): " <> show e
+    OA.CompletionInvoked _ -> expectationFailure "Unexpected completion"
+  -- 3c. MigrateLog (covers parseMigrateLog parser)
+  forM_ [("check", MLCheck), ("import", MLImport), ("export", MLExport), ("listing", MLListing)] $
+    \(s, expected) ->
+      case OA.execParserPure OA.defaultPrefs parser ["--super-users", "1:admin", "--migrate-directory-file", s] of
+        OA.Success opts -> case migrateDirectoryLog opts of
+          Just ml -> case (ml, expected) of
+            (MLCheck, MLCheck) -> pure ()
+            (MLImport, MLImport) -> pure ()
+            (MLExport, MLExport) -> pure ()
+            (MLListing, MLListing) -> pure ()
+            _ -> expectationFailure $ "MigrateLog mismatch for: " <> s
+          Nothing -> expectationFailure $ "Expected Just MigrateLog for: " <> s
+        OA.Failure e -> expectationFailure $ "Parser failed for migrate-directory-file " <> s <> ": " <> show e
+        OA.CompletionInvoked _ -> expectationFailure "Unexpected completion"
+
+testEventsShowInstances :: HasCallStack => TestParams -> IO ()
+testEventsShowInstances _ps = do
+  -- SDirectoryRole Show
+  show SDRUser `shouldSatisfy` (not . null)
+  show SDRAdmin `shouldSatisfy` (not . null)
+  show SDRSuperUser `shouldSatisfy` (not . null)
+  -- SDirectoryRole showList
+  show [SDRUser] `shouldSatisfy` (not . null)
+  -- DirectoryHelpSection Show
+  show DHSRegistration `shouldSatisfy` (not . null)
+  show DHSCommands `shouldSatisfy` (not . null)
+  -- DirectoryHelpSection showList
+  show [DHSRegistration, DHSCommands] `shouldSatisfy` (not . null)
+  -- DirectoryEvent Show (covers deriving instance)
+  show (DELogChatResponse "test") `shouldSatisfy` (not . null)
+  -- DirectoryEvent showList
+  show [DELogChatResponse "test"] `shouldSatisfy` (not . null)
+  -- DirectoryCmdTag Show (direct calls bypass existential wrapper)
+  show DCHelp_ `shouldSatisfy` (not . null)
+  show DCApproveGroup_ `shouldSatisfy` (not . null)
+  show DCExecuteCommand_ `shouldSatisfy` (not . null)
+  -- DirectoryCmdTag showList
+  show [DCHelp_] `shouldSatisfy` (not . null)
+  -- DirectoryCmd Show (direct call, not through ADirectoryCmd)
+  show (DCHelp DHSRegistration) `shouldSatisfy` (not . null)
+  -- DirectoryCmd showList
+  show [DCHelp DHSRegistration] `shouldSatisfy` (not . null)
+  -- ADirectoryCmd showList
+  show [ADC SDRUser DCUnknownCommand, ADC SDRUser DCSearchNext] `shouldSatisfy` (not . null)
+  -- DCApproveGroup field selectors (line 162)
+  let cmd = DCApproveGroup {groupId = 1, displayName = "test", groupApprovalId = 2, promote = Just True}
+  cmd.groupId `shouldBe` 1
+  cmd.displayName `shouldBe` "test"
+  cmd.groupApprovalId `shouldBe` 2
+  cmd.promote `shouldBe` Just True
+
+testStoreShowInstances :: HasCallStack => TestParams -> IO ()
+testStoreShowInstances _ps = do
+  show noJoinFilter `shouldSatisfy` (not . null)
+  show PCAll `shouldSatisfy` (not . null)
+  show PCNoImage `shouldSatisfy` (not . null)
+  show GRSActive `shouldSatisfy` (not . null)
+  show (GRSPendingApproval 1) `shouldSatisfy` (not . null)
+  show GRSSuspended `shouldSatisfy` (not . null)
+  show GRSSuspendedBadRoles `shouldSatisfy` (not . null)
+  show GRSRemoved `shouldSatisfy` (not . null)
+  show GRSProposed `shouldSatisfy` (not . null)
+  show GRSPendingUpdate `shouldSatisfy` (not . null)
+  show GRSPendingConfirmation `shouldSatisfy` (not . null)
+
+testDirectoryEntryTypeJSON :: HasCallStack => TestParams -> IO ()
+testDirectoryEntryTypeJSON _ps = do
+  let det = DETGroup Nothing (GroupSummary 0)
+      encoded = J.encode det
+  case J.eitherDecode encoded of
+    Right det' -> do
+      admission (det' :: DirectoryEntryType) `shouldBe` Nothing
+      let GroupSummary {currentMembers} = summary det'
+      currentMembers `shouldBe` 0
+    Left e -> expectationFailure $ "Failed to decode DirectoryEntryType: " <> e
+  -- with non-zero members
+  let det2 = DETGroup Nothing (GroupSummary 42)
+  case J.eitherDecode (J.encode det2) of
+    Right det2' -> do
+      let GroupSummary {currentMembers = cm2} = summary det2'
+      cm2 `shouldBe` 42
+    Left e -> expectationFailure $ "Failed to decode DirectoryEntryType: " <> e
