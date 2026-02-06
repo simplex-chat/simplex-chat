@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MDM app_restrictions strings -->
+    <string name="mdm_restriction_smp_servers_title">SMP Message Servers</string>
+    <string name="mdm_restriction_smp_servers_desc">Private SMP servers for messaging (comma-separated, e.g., smp://key@host:port)</string>
+    <string name="mdm_restriction_xftp_servers_title">XFTP File Servers</string>
+    <string name="mdm_restriction_xftp_servers_desc">Private XFTP servers for file transfers (comma-separated)</string>
+    <string name="mdm_restriction_lock_config_title">Lock Server Configuration</string>
+    <string name="mdm_restriction_lock_config_desc">Prevent users from modifying server settings</string>
+</resources>

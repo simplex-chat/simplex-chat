@@ -139,6 +139,13 @@
   <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
   <string name="for_chat_profile">For chat profile %s:</string>
   <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
+  <string name="mdm_server_config_locked">Server configuration is managed by your organization.</string>
+  <string name="mdm_restriction_smp_servers_title">SMP Message Servers</string>
+  <string name="mdm_restriction_smp_servers_desc">Private SMP servers for messaging (comma-separated, e.g., smp://key@host:port)</string>
+  <string name="mdm_restriction_xftp_servers_title">XFTP File Servers</string>
+  <string name="mdm_restriction_xftp_servers_desc">Private XFTP servers for file transfers (comma-separated)</string>
+  <string name="mdm_restriction_lock_config_title">Lock Server Configuration</string>
+  <string name="mdm_restriction_lock_config_desc">Prevent users from modifying server settings</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
   <string name="blocking_reason_spam">Spam</string>
   <string name="blocking_reason_content">Content violates conditions of use</string>
@@ -647,6 +654,7 @@
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
+  <string name="icon_descr_lock">Locked</string>
   <string name="icon_descr_server_status_pending">Pending</string>
   <string name="switch_receiving_address_question">Change receiving address?</string>
   <string name="switch_receiving_address_desc">Receiving address will be changed to a different server. Address change will complete after sender comes online.</string>

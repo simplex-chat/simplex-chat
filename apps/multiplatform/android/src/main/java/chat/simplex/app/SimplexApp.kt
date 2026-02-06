@@ -70,6 +70,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initHaskell(packageName)
     initMultiplatform()
+    registerMdmConfigListener()
     reconfigureBroadcastReceivers()
     runMigrations()
     tmpDir.deleteRecursively()
@@ -178,6 +179,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
       return@launch
     }
     MessagesFetcherWorker.scheduleWork()
+  }
+
+  private fun registerMdmConfigListener() {
+    MdmConfigManager.registerConfigChangeListener(this) {
+      Log.d(TAG, "MDM configuration changed, applying immediately")
+      applyMdmServers()
+    }
   }
 
   companion object {
@@ -370,6 +378,19 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
 
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
+
+      override fun androidMdmGetServers(): Pair<List<String>, List<String>>? {
+        val config = MdmConfigManager.getMdmConfig(context) ?: return null
+        if (config.smpServers.isEmpty() && config.xftpServers.isEmpty()) return null
+        return Pair(
+          config.smpServers.map { it.server },
+          config.xftpServers.map { it.server }
+        )
+      }
+
+      override fun androidMdmIsConfigLocked(): Boolean {
+        return MdmConfigManager.isConfigLocked(context)
+      }
     }
   }
 

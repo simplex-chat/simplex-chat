@@ -385,6 +385,7 @@ fun startChat(
         return@withLongRunningApi
       } else {
         m.controller.startChat(user)
+        chat.simplex.common.platform.applyMdmServers()
       }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)

@@ -55,6 +55,75 @@ fun initChatControllerOnStart() {
   }
 }
 
+suspend fun applyMdmServers() {
+  val mdmServers = platform.androidMdmGetServers() ?: return
+  val (smpAddresses, xftpAddresses) = mdmServers
+  if (smpAddresses.isEmpty() && xftpAddresses.isEmpty()) return
+
+  Log.d(TAG, "Applying MDM servers: ${smpAddresses.size} SMP, ${xftpAddresses.size} XFTP")
+
+  // Get current user servers from the backend
+  val currentServers = chatController.getUserServers(null) ?: run {
+    Log.e(TAG, "applyMdmServers: failed to get current user servers")
+    return
+  }
+
+  // Build MDM UserServer objects
+  val mdmSmpServers = smpAddresses.map { address ->
+    UserServer(
+      remoteHostId = null,
+      serverId = null,
+      server = address,
+      preset = false,
+      tested = null,
+      enabled = true,
+      deleted = false
+    )
+  }
+  val mdmXftpServers = xftpAddresses.map { address ->
+    UserServer(
+      remoteHostId = null,
+      serverId = null,
+      server = address,
+      preset = false,
+      tested = null,
+      enabled = true,
+      deleted = false
+    )
+  }
+
+  // Create updated server list:
+  // - For operator=null entry: replace servers with MDM servers
+  // - For operator entries: if lock=true, disable them; if lock=false, keep them
+  val locked = platform.androidMdmIsConfigLocked()
+
+  val updatedServers = currentServers.map { ops ->
+    if (ops.operator == null) {
+      // Replace the null-operator entry with MDM servers
+      ops.copy(
+        smpServers = mdmSmpServers,
+        xftpServers = mdmXftpServers
+      )
+    } else if (locked) {
+      // When locked, disable operator servers (MDM takes full control)
+      ops.copy(
+        smpServers = ops.smpServers.map { it.copy(enabled = false) },
+        xftpServers = ops.xftpServers.map { it.copy(enabled = false) }
+      )
+    } else {
+      // When not locked, keep operator servers as-is (user can use both)
+      ops
+    }
+  }
+
+  val success = chatController.setUserServersDirect(null, updatedServers)
+  if (success) {
+    Log.d(TAG, "MDM servers applied successfully")
+  } else {
+    Log.e(TAG, "Failed to apply MDM servers")
+  }
+}
+
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
   Log.d(TAG, "initChatController")
   try {
@@ -170,6 +239,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
         appPreferences.onboardingStage.set(newStage)
       }
       chatController.startChat(user)
+      applyMdmServers()
       platform.androidChatInitializedAndStarted()
     } else {
       chatController.getUserChatData(null)

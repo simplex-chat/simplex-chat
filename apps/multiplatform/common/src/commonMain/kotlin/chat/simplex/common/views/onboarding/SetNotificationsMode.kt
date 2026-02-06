@@ -126,5 +126,6 @@ fun prepareChatBeforeFinishingOnboarding() {
     val user = chatModel.controller.apiGetActiveUser(null) ?: return@withBGApi
     chatModel.currentUser.value = user
     chatModel.controller.startChat(user)
+    chat.simplex.common.platform.applyMdmServers()
   }
 }

@@ -85,6 +85,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
           val user = chatController.apiGetActiveUser(null)
           if (user != null) {
             m.controller.startChat(user)
+            chat.simplex.common.platform.applyMdmServers()
           }
         }
       }

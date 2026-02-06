@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- SMP (Messaging) Servers -->
+    <restriction
+        android:key="mdm_smp_servers"
+        android:title="@string/mdm_restriction_smp_servers_title"
+        android:description="@string/mdm_restriction_smp_servers_desc"
+        android:restrictionType="string" />
+
+    <!-- XFTP (File Transfer) Servers -->
+    <restriction
+        android:key="mdm_xftp_servers"
+        android:title="@string/mdm_restriction_xftp_servers_title"
+        android:description="@string/mdm_restriction_xftp_servers_desc"
+        android:restrictionType="string" />
+
+    <!-- Lock server configuration (prevent user changes) -->
+    <restriction
+        android:key="mdm_lock_server_config"
+        android:title="@string/mdm_restriction_lock_config_title"
+        android:description="@string/mdm_restriction_lock_config_desc"
+        android:restrictionType="bool"
+        android:defaultValue="false" />
+</restrictions>

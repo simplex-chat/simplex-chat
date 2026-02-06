@@ -89,6 +89,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
       if (createdUser != null) {
         m.controller.startChat(createdUser)
+        chat.simplex.common.platform.applyMdmServers()
       }
       ModalManager.closeAllModalsEverywhere()
       AlertManager.shared.hideAllAlerts()

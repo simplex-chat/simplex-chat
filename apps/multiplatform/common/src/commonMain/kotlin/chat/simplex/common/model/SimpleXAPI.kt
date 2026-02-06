@@ -1218,6 +1218,15 @@ object ChatController {
   }
 
   suspend fun setUserServers(rh: Long?, userServers: List<UserOperatorServers>): Boolean {
+    // Enforce MDM lock: prevent user from modifying servers when config is locked
+    if (platform.androidMdmIsConfigLocked()) {
+      Log.w(TAG, "setUserServers blocked: MDM configuration is locked")
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.failed_to_save_servers),
+        generalGetString(MR.strings.mdm_server_config_locked)
+      )
+      return false
+    }
     val userId = currentUserId("setUserServers")
     val r = sendCmd(rh, CC.ApiSetUserServers(userId, userServers))
     if (r.result is CR.CmdOk) return true
@@ -1226,6 +1235,14 @@ object ChatController {
       "${r.responseType}: ${r.details}"
     )
     Log.e(TAG, "setUserServers bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun setUserServersDirect(rh: Long?, userServers: List<UserOperatorServers>): Boolean {
+    val userId = currentUserId("setUserServersDirect")
+    val r = sendCmd(rh, CC.ApiSetUserServers(userId, userServers))
+    if (r.result is CR.CmdOk) return true
+    Log.e(TAG, "setUserServersDirect bad response: ${r.responseType} ${r.details}")
     return false
   }
 

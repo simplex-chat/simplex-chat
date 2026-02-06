@@ -33,6 +33,9 @@ interface PlatformInterface {
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
   @Composable fun desktopShowAppUpdateNotice() {}
+  // MDM (Mobile Device Management) support
+  fun androidMdmGetServers(): Pair<List<String>, List<String>>? = null  // Returns (smpServers, xftpServers) or null if no MDM config
+  fun androidMdmIsConfigLocked(): Boolean = false
 }
 /**
  * Multiplatform project has separate directories per platform + common directory that contains directories per platform + common for all of them.

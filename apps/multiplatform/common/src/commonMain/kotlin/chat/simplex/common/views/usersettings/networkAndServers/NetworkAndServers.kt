@@ -165,6 +165,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   val conditionsAction = remember { m.conditions.value.conditionsAction }
   val anyOperatorEnabled = remember { derivedStateOf { userServers.value.any { it.operator?.enabled == true } } }
   val scope = rememberCoroutineScope()
+  val mdmServerConfigLocked = remember { platform.androidMdmIsConfigLocked() }
 
   LaunchedEffect(Unit) {
     if (currUserServers.value.isNotEmpty() || userServers.value.isNotEmpty()) {
@@ -229,25 +230,38 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       val nullOperatorIndex = userServers.value.indexOfFirst { it.operator == null }
 
       if (nullOperatorIndex != -1) {
-        SectionItemView({
-          ModalManager.start.showModal {
-            YourServersView(
-              userServers = userServers,
-              serverErrors = serverErrors,
-              operatorIndex = nullOperatorIndex,
-              rhId = currentRemoteHost?.remoteHostId
-            )
-          }
-        }) {
+        SectionItemView(
+          click = if (mdmServerConfigLocked) null else ({
+            ModalManager.start.showModal {
+              YourServersView(
+                userServers = userServers,
+                serverErrors = serverErrors,
+                operatorIndex = nullOperatorIndex,
+                rhId = currentRemoteHost?.remoteHostId
+              )
+            }
+          })
+        ) {
           Icon(
             painterResource(MR.images.ic_dns),
             stringResource(MR.strings.your_servers),
             tint = MaterialTheme.colors.secondary
           )
           TextIconSpaced()
-          Text(stringResource(MR.strings.your_servers), color = MaterialTheme.colors.onBackground)
+          Text(
+            stringResource(MR.strings.your_servers),
+            color = if (mdmServerConfigLocked) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground
+          )
 
-          if (currUserServers.value.getOrNull(nullOperatorIndex) != userServers.value.getOrNull(nullOperatorIndex)) {
+          if (mdmServerConfigLocked) {
+            Spacer(Modifier.weight(1f))
+            Icon(
+              painterResource(MR.images.ic_lock),
+              stringResource(MR.strings.icon_descr_lock),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(16.dp)
+            )
+          } else if (currUserServers.value.getOrNull(nullOperatorIndex) != userServers.value.getOrNull(nullOperatorIndex)) {
             Spacer(Modifier.weight(1f))
             UnsavedChangesIndicator()
           }
@@ -266,7 +280,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         }
       }
     }
-    val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
+    val saveDisabled = mdmServerConfigLocked || !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
 
     SectionItemView(
       { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
@@ -275,7 +289,9 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
       Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
     }
     val serversErr = globalServersError(serverErrors.value)
-    if (serversErr != null) {
+    if (mdmServerConfigLocked) {
+      SectionTextFooter(stringResource(MR.strings.mdm_server_config_locked))
+    } else if (serversErr != null) {
       SectionCustomFooter {
         ServersErrorFooter(serversErr)
       }

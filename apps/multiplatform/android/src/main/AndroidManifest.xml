@@ -47,6 +47,11 @@
       android:theme="@style/Theme.SimpleX">
     <!--      android:localeConfig="@xml/locales_config"-->
 
+    <!-- MDM (Mobile Device Management) app restrictions -->
+    <meta-data
+        android:name="android.content.APP_RESTRICTIONS"
+        android:resource="@xml/app_restrictions" />
+
     <!-- Main activity -->
     <activity
         android:name=".MainActivity"

@@ -193,6 +193,7 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
     }
     controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
     controller.startChat(user)
+    chat.simplex.common.platform.applyMdmServers()
     controller.switchUIRemoteHost(null)
     close()
   }
@@ -207,6 +208,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDesc
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
+      chat.simplex.common.platform.applyMdmServers()
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
     } else {
       val users = chatModel.controller.listUsers(rhId)
