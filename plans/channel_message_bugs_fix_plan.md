@@ -19,14 +19,10 @@
 | # | Location | Bug | Severity |
 |---|----------|-----|----------|
 | 1 | Subscriber.hs:935-945 | Events use `isChannelOwner` instead of item's `showGroupAsSender` | Critical |
-| 2 | Subscriber.hs:1818-1842 | Reactions attributed to membership instead of channel | High |
+| 2 | Subscriber.hs:1818-1842 | Reactions allow `m_=Nothing` and fall back to membership | High |
 | 3 | Subscriber.hs:1950-1969 | Update fallback creates item without correct sendAsGroup flag | Medium |
 | 4 | Commands.hs:930,944 | Forward API ignores `_sendAsGroup` parameter | High |
 | 5 | Commands.hs:2191,2196,2201,4633 | CLI forward hardcodes False | Medium |
-
-**Decision points requiring user input:**
-- Bug 2: How to represent "channel" as reactor (4 options)
-- Bug 3: Where to source sendAsGroup flag for fallback (2 options)
 
 ---
 
@@ -62,7 +58,7 @@ showGroupAsSender' = case event of
   _ -> False
 ```
 
-**Note:** The item is already looked up for these events. Need to thread the `showGroupAsSender` field from CIMeta through to this point.
+**Note:** Use `chatDir` from ChatItem and pattern match on `CIChannelRcv` to determine sendAsGroup flag.
 
 ### Files Modified
 - `src/Simplex/Chat/Library/Subscriber.hs`: Lines 935-945
@@ -83,32 +79,13 @@ groupMsgReaction g m_ sharedMsgId itemMemberId scope_ reaction add RcvMessage {m
 ```
 
 ### Problem
-When `m_` is `Nothing` (channel message), reactor becomes `membership` (user's own member record). Channel reactions should be attributed **to the channel**, not to the user.
+When `m_` is `Nothing`, reactor incorrectly falls back to `membership` (user's own member record). However, reactions should always come from an identifiable member - the `m_` parameter should never be `Nothing` for reactions.
 
-### Options (REQUIRES USER DECISION)
+### Fix
+Reactions can only come from members (including owners), never from channels. XMsgReact handler must be reworked to require `GroupMember` instead of `Maybe GroupMember`. The `m_` parameter should not be optional for reactions.
 
-#### Option A: Use `Nothing` for reactor
-- Change type to `Maybe GroupMember` where `Nothing` = channel
-- Requires signature changes to `getGroupReactions`, `updateGroupReaction`, etc.
-- **Pros:** Clean representation, no fake data
-- **Cons:** Many function signature changes, database schema may need update
-
-#### Option B: Use group owner's member record
-- For channel reactions, use the group owner's member record as reactor
-- **Pros:** Minimal code changes, no schema changes
-- **Cons:** Semantically incorrect (owner didn't react, channel did)
-
-#### Option C: Store `sendAsGroup` flag on reaction record
-- Add `sendAsGroup :: Bool` field to reaction storage
-- **Pros:** Explicit flag, mirrors message approach
-- **Cons:** Database migration required
-
-#### Option D: Use a special synthetic member record
-- Create a marker member record representing "channel"
-- **Pros:** Works with existing types
-- **Cons:** Pollutes member space with fake data
-
-**Recommendation:** Option A (cleanest) or Option C (mirrors message pattern)
+### Files Modified
+- `src/Simplex/Chat/Library/Subscriber.hs`: Lines 1818-1842
 
 ---
 
@@ -126,19 +103,14 @@ updateRcvChatItem `catchCINotFound` \_ -> do
 ### Problem
 When `x.msg.update` arrives for a locally-deleted item in a channel (`m_` is `Nothing`), the fallback creates a new item with `CDChannelRcv gInfo Nothing` but doesn't know the original item's `sendAsGroup` flag.
 
-### Options (REQUIRES USER DECISION)
+### Fix (Option B: Require sender to include flag in the event)
+Add `asGroup` field to `XMsgUpdate` message format.
 
-#### Option A: Default to "sent as group" when from owner in channel
-- Logic: `if isChannelOwner then sendAsGroup=True else sendAsGroup=False`
-- **Pros:** No protocol change, reasonable heuristic
-- **Cons:** Can be wrong if owner originally sent as member
+**Rationale:** We don't know what owner wants otherwise - it may send as channel or it may send as owner, and different members must have the same view (e.g. when multiple relays are used, it would be random).
 
-#### Option B: Require sender to include flag in the event
-- Add `asGroup` field to `XMsgUpdate` message format
-- **Pros:** Explicit, always correct
-- **Cons:** Protocol change, backward compatibility
-
-**Recommendation:** Option A for simplicity (update events from owner in channel are almost always for channel messages)
+### Files Modified
+- `src/Simplex/Chat/Library/Subscriber.hs`: Lines 1950-1969
+- Protocol message format (XMsgUpdate)
 
 ---
 
@@ -196,7 +168,7 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 -- Lines 2191, 2196, 2201: Need to determine sendAsGroup based on toChatRef
 -- If toChatRef is a channel and user is owner, sendAsGroup should default to True
 
--- Line 4633: Parser should accept optional flag or default based on context
+-- Line 4633: Parser should accept optional flag (parser cannot know context)
 ```
 
 ### Files Modified
@@ -209,41 +181,50 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 ### New Tests (6 total)
 
 #### Test 1: `testChannelEventDeliveryContext`
-**Objective:** Verify x.msg.update, x.msg.delete use item's sendAsGroup, not current role.
+**Objective:** Verify x.msg.update, x.msg.delete, x.msg.file.descr, and x.file.cancel use item's sendAsGroup, not current role.
 
 **Scenario:**
-1. Owner sends message "as channel" (sendAsGroup=True)
+1. Owner sends message "as channel" (sendAsGroup=True) with file attachment
 2. Owner updates message
 3. Verify update delivery uses sendAsGroup=True (from item), not recomputed
-4. Repeat with message sent "as member" (sendAsGroup=False)
-5. Verify update delivery uses sendAsGroup=False
+4. Owner sends file description update
+5. Verify x.msg.file.descr uses sendAsGroup=True (from item)
+6. Owner cancels file
+7. Verify x.file.cancel uses sendAsGroup=True (from item)
+8. Repeat steps 1-7 with message sent "as member" (sendAsGroup=False)
+9. Verify all events use sendAsGroup=False
 
 **Coverage:** Bug 1
 
 ---
 
 #### Test 2: `testChannelReactionAttribution`
-**Objective:** Verify channel reactions are attributed correctly (not to membership).
+**Objective:** Verify reactions require a member sender (not optional).
 
 **Scenario:**
 1. Owner sends channel message
-2. Owner adds reaction
-3. Verify reaction is attributed to channel, not membership member record
+2. Owner adds reaction (as member, not as channel)
+3. Verify reaction is attributed to owner's member record
 4. Member adds reaction to channel message
 5. Verify member reaction is attributed correctly
+6. Verify channel cannot send reactions (m_ must be Just)
 
 **Coverage:** Bug 2
 
 ---
 
 #### Test 3: `testChannelUpdateFallbackSendAsGroup`
-**Objective:** Verify update on deleted item creates correct sendAsGroup.
+**Objective:** Verify update on deleted item creates correct sendAsGroup from protocol field.
 
 **Scenario:**
-1. Owner sends channel message
+1. Owner sends channel message (sendAsGroup=True)
 2. Member receives and locally deletes
-3. Owner updates message
-4. Verify member's recreated item has correct sendAsGroup flag
+3. Owner updates message (XMsgUpdate includes asGroup=True)
+4. Verify member's recreated item has sendAsGroup=True
+5. Owner sends message as member (sendAsGroup=False)
+6. Member receives and locally deletes
+7. Owner updates message (XMsgUpdate includes asGroup=False)
+8. Verify member's recreated item has sendAsGroup=False
 
 **Coverage:** Bug 3
 
@@ -302,9 +283,8 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 3. Add Tests 4 and 5
 
 ### Phase 3: Behavior Fixes (Bugs 2, 3)
-**Requires user decisions first**
-1. Implement chosen option for reaction attribution
-2. Implement chosen option for update fallback
+1. Rework XMsgReact handler to require GroupMember (not Maybe GroupMember)
+2. Add asGroup field to XMsgUpdate protocol message
 3. Add Tests 2 and 3
 
 ---
@@ -315,20 +295,5 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 |------|---------|
 | `src/Simplex/Chat/Library/Subscriber.hs` | Lines 935-945 (Bug 1), 1818-1842 (Bug 2), 1950-1969 (Bug 3) |
 | `src/Simplex/Chat/Library/Commands.hs` | Lines 930,944 (Bug 4), 2191,2196,2201,4633 (Bug 5) |
+| Protocol message types | Add asGroup field to XMsgUpdate (Bug 3) |
 | `tests/ChatTests/Groups.hs` | Add 6 new tests |
-
----
-
-## Decision Points
-
-Please confirm your choice for:
-
-1. **Bug 2 (Reaction Attribution):**
-   - [ ] Option A: Use `Nothing` for reactor (cleanest, requires more changes)
-   - [ ] Option B: Use group owner's member record
-   - [ ] Option C: Store `sendAsGroup` flag on reaction (mirrors message pattern)
-   - [ ] Option D: Use synthetic member record
-
-2. **Bug 3 (Update Fallback):**
-   - [ ] Option A: Default to sendAsGroup=True when from owner in channel
-   - [ ] Option B: Add `asGroup` field to XMsgUpdate protocol
