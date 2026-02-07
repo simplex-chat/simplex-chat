@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -2606,10 +2605,13 @@ testEventsShowInstances _ps = do
   show [ADC SDRUser DCUnknownCommand, ADC SDRUser DCSearchNext] `shouldSatisfy` (not . null)
   -- DCApproveGroup field selectors (line 162)
   let cmd = DCApproveGroup {groupId = 1, displayName = "test", groupApprovalId = 2, promote = Just True}
-  cmd.groupId `shouldBe` 1
-  cmd.displayName `shouldBe` "test"
-  cmd.groupApprovalId `shouldBe` 2
-  cmd.promote `shouldBe` Just True
+  case cmd of
+    DCApproveGroup {groupId = gId, displayName = dn, groupApprovalId = gaId, promote = pr} -> do
+      gId `shouldBe` 1
+      dn `shouldBe` "test"
+      gaId `shouldBe` 2
+      pr `shouldBe` Just True
+    _ -> expectationFailure "expected DCApproveGroup"
 
 testStoreShowInstances :: HasCallStack => TestParams -> IO ()
 testStoreShowInstances _ps = do
