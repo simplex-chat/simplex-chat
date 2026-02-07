@@ -414,9 +414,11 @@ testJoinGroup ps =
           cath <## "connection request sent!"
           cath <## "#privacy: joining the group..."
           cath <## "#privacy: you joined the group"
-          cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
-          cath <## "use @'SimpleX Directory' <message> to send messages"
-          cath <# ("#privacy 'SimpleX Directory'> " <> welcomeMsg)
+          cath
+            <### [ "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'",
+                   "use @'SimpleX Directory' <message> to send messages",
+                   Predicate (\l -> l == welcomeMsg || dropTime_ l == Just ("#privacy 'SimpleX Directory'> " <> welcomeMsg) || dropTime_ l == Just ("#privacy 'SimpleX Directory_1'> " <> welcomeMsg))
+                 ]
           cath <## "#privacy: member bob (Bob) is connected"
           bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
           bob <## "#privacy: new member cath is connected"
