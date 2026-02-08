@@ -14,7 +14,7 @@
     "simplex-explained-tab-1-p-1": "Kişiler ve gruplar oluşturabilir ve tıpkı diğer mesajlaşma programlarında olduğu gibi iki yönlü iletişim kurabilirsiniz.",
     "simplex-explained-tab-1-p-2": "Tek yönlü kuyruklarla ve kullanıcı profil tanımlayıcıları olmadan nasıl çalışabilir?",
     "simplex-explained-tab-2-p-1": "Her bağlantı için, farklı sunucular üzerinden mesaj göndermek ve almak üzere iki ayrı mesaj kuyruğu kullanırsınız.",
-    "simplex-explained-tab-2-p-2": "Sunucular, kullanıcı konuşmalarının veya bağlantılarının tüm geçmişini bilmeden mesajları yalnızca tek bir yönde iletir.",
+    "simplex-explained-tab-2-p-2": "Sunucular, kullanıcıların konuşmalarının veya bağlantılarının tam resmini görmeden mesajları tek yönlü olarak iletir.",
     "simplex-explained-tab-3-p-1": "Sunucular her kuyruk için ayrı, anonim oturum açma bilgileri kullanır ve hangi kullanıcıya ait olduğunu bilmez.",
     "simplex-explained-tab-3-p-2": "Tor erişim sunucuları kullanarak kullanıcılar, meta veri gizliliğini artırabilir ve IP adresi korelasyonunu önleyebilir.",
     "chat-bot-example": "Sohbet Botu Örneği",
@@ -96,7 +96,7 @@
     "hero-overlay-card-1-p-3": "Hangi sunucuları mesaj almak için kullanacağınızı siz belirlersiniz. Kişileriniz &mdash; bu sunucuları size mesaj göndermek için kullanır. Her konuşma genellikle iki farklı sunucu kullanır.",
     "hero-overlay-card-1-p-4": "Bu tasarım, uygulama düzeyinde kullanıcı meta verilerinin sızmasını önler. Mesaj sunucularına Tor üzerinden bağlanarak gizliliğinizi ve IP adresinizi koruyabilirsiniz.",
     "hero-overlay-card-1-p-5": "Kullanıcı profilleri, kişiler ve gruplar yalnızca kullanıcının cihazında saklanır. Mesajlar, iki katmanlı uçtan uca şifreleme ile gönderilir.",
-    "hero-overlay-card-1-p-6": "Daha fazla bilgi için <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>SimpleX teknik dokümanını</a> okuyun.",
+    "hero-overlay-card-1-p-6": "Daha fazla bilgi için <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\">SimpleX teknik dokümanını</a> okuyun.",
     "hero-overlay-card-2-p-1": "Kullanıcıların kalıcı kimlikleri olduğunda, bu bir oturum kimliği gibi rastgele bir sayı olsa bile, sağlayıcıların veya saldırganların kullanıcıların birbirleriyle nasıl bağlantılı olduğunu ve kaç mesaj gönderdiklerini tespit etme riski vardır.",
     "hero-overlay-card-2-p-2": "Bu bilgiler, mevcut halka açık sosyal ağlarla ilişkilendirilebilir ve gerçek kimlikler ortaya çıkarılabilir.",
     "hero-overlay-card-2-p-3": "Aynı profil üzerinden iki farklı kişiyle sohbet ederseniz, en gizlilik odaklı uygulamalarda bile (ör. Tor v3 hizmetleri kullananlar) bu kişiler, aynı kişiyle bağlantılı olduklarını anlayabilir.",
@@ -104,7 +104,7 @@
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a>, büyük teknoloji şirketleri, devlet kurumları ve büyük blokzincir projeleriyle çalışan lider bir güvenlik ve teknoloji danışmanlık şirketidir.",
     "hero-overlay-card-3-p-2": "Trail of Bits, Kasım 2022'de SimpleX platformunun kriptografik ve ağ bileşenlerini inceledi. Detaylar için <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">duyuruya göz atın</a>.",
     "hero-overlay-card-3-p-3": "Trail of Bits, Temmuz 2024'te SimpleX'in ağ protokolünün kriptografik tasarımını inceledi. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Daha fazla bilgi için buraya bakın</a>.",
-    "simplex-network-overlay-card-1-p-1": "<a href='https://en.wikipedia.org/wiki/Peer-to-peer'>Eşler arası</a> mesajlaşma protokolleri ve uygulamaları, SimpleX'e kıyasla daha az güvenilir, analiz edilmesi daha karmaşık ve çeşitli saldırı türlerine karşı daha savunmasız olmalarına neden olan çeşitli sorunlara sahiptir.",
+    "simplex-network-overlay-card-1-p-1": "<a href=\"https://en.wikipedia.org/wiki/Peer-to-peer\">Eşler arası</a> mesajlaşma protokolleri ve uygulamaları, SimpleX'e kıyasla daha az güvenilir, analiz edilmesi daha karmaşık ve çeşitli saldırı türlerine karşı daha savunmasız olmalarına neden olan çeşitli sorunlara sahiptir.",
     "simplex-network-overlay-card-1-li-1": "P2P ağları, mesajları yönlendirmek için <a href='https://en.wikipedia.org/wiki/Distributed_hash_table'>DHT</a> türlerine güvenir. DHT tasarımları, teslimat garantisi ile gecikme arasında denge kurmak zorundadır. P2P'ye kıyasla SimpleX, daha iyi teslimat garantisi ve daha düşük gecikme sunar çünkü bir mesaj birden fazla sunucu üzerinden yedekli ve paralel olarak gönderilebilir ve alıcı tarafından seçilen sunucular kullanılır. P2P ağlarında mesajlar <em>O(log N)</em> düğüm üzerinden sıralı olarak gönderilir ve düğümler bir algoritma ile seçilir.",
     "simplex-network-overlay-card-1-li-2": "SimpleX tasarımı, çoğu P2P ağının aksine, hiçbir küresel kullanıcı kimliği içermez, geçici olanlar bile yoktur. Sadece geçici, ikili kimlikler kullanır ve bu da daha iyi anonimlik ve meta veri koruması sağlar.",
     "simplex-network-overlay-card-1-li-3": "P2P, <a href='https://en.wikipedia.org/wiki/Man-in-the-middle_attack'>MITM saldırısı</a> sorununu çözmez ve mevcut uygulamaların çoğu ilk anahtar değişimi için ağ dışı mesajlar kullanmaz. SimpleX ise ilk anahtar değişimi için ağ dışı mesajlar veya mevcut güvenli ve güvenilir bağlantılar kullanır.",
@@ -255,5 +255,8 @@
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat ve F-Droid.org depoları farklı anahtarlarla imzalanır. Geçiş yapmak için <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>sohbet veritabanınızı dışa aktarın</a> ve uygulamayı yeniden yükleyin.",
     "jobs": "Ekibe katılın",
     "please-enable-javascript": "QR kodunu görebilmek için lütfen JavaScript'i etkinleştirin.",
-    "please-use-link-in-mobile-app": "Lütfen bağlantıyı mobil uygulamada kullanın"
+    "please-use-link-in-mobile-app": "Lütfen bağlantıyı mobil uygulamada kullanın",
+    "directory": "Dizin",
+    "navbar-token": "Token",
+    "about-and-contact-us": "Hakkımızda & İletişim"
 }
