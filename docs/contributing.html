@@ -900,6 +900,20 @@ window.addEventListener('click',(e)=>{
                     </div> -->
                     <div><p>| Updated 25.07.2025 | Languages: EN, <a href="/docs/lang/fr/contributing.html">FR</a>, <a href="/docs/lang/cs/contributing.html">CZ</a>, <a href="/docs/lang/pl/contributing.html">PL</a> |</p>
 <h1 id="contributing-guide" tabindex="-1">Contributing guide</h1>
+<h2 id="focus-on-user-problems" tabindex="-1">Focus on user problems</h2>
+<p>We do not make code changes to improve code - any change must address a specific user problem or request.</p>
+<h2 id="discuss-the-plans-as-early-as-possible" tabindex="-1">Discuss the plans as early as possible</h2>
+<p>Please discuss the problem you want to solve and your detailed implementation plan with the project team prior to contributing, to avoid wasted time and additional changes. Acceptance of your contribution depends on your willingness and ability to iterate the proposed contribution to achieve the required quality level, coding style, test coverage, and alignment with user requirements as they are understood by the project team.</p>
+<h2 id="follow-project-structure-coding-style-and-approaches" tabindex="-1">Follow project structure, coding style and approaches</h2>
+<p>./contributing/PROJECT.md has information about the structure of this <code>simplex-chat</code> repository.</p>
+<p>./contributing/CODE.md has details about general requirements common for <code>simplexmq</code> and <code>simplex-chat</code> repositories.</p>
+<p>This files can be used with LLM prompts, e.g. if you use Claude Code you can create <a href="http://CLAUDE.md">CLAUDE.md</a> file in project root importing content from these files:</p>
+<pre><code class="language-markdown">@README.md
+@docs/CONTRIBUTING.md
+@docs/contributing/PROJECT.md
+@docs/contributing/CODE.md
+</code></pre>
+<p>For Android/Desktop and iOS apps you can additionally import <code>apps/multiplatform/README.md</code> and <code>apps/ios/README.md</code>.</p>
 <h2 id="compiling-with-sqlcipher-encryption-enabled" tabindex="-1">Compiling with SQLCipher encryption enabled</h2>
 <p>Add <code>cabal.project.local</code> to project root with the location of OpenSSL headers and libraries and flag setting encryption mode:</p>
 <pre><code>cp scripts/cabal.project.local.mac cabal.project.local
