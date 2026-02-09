@@ -178,27 +178,64 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 
 ## Test Plan
 
-### New Tests (6 total)
+### New Tests (8 total)
 
-#### Test 1: `testChannelEventDeliveryContext`
-**Objective:** Verify x.msg.update, x.msg.delete, x.msg.file.descr, and x.file.cancel use item's sendAsGroup, not current role.
+Tests 1-4 cover Bug 1 (delivery context flag). Each tests a specific event type where the owner sends as member (sendAsGroup=False). Existing tests already cover the "sends as channel" (sendAsGroup=True) case; these tests verify that the delivery context correctly uses the item's stored sendAsGroup=False flag rather than recomputing from the owner's current role.
+
+#### Test 1: `testChannelOwnerUpdateAsMember`
+**Objective:** Verify x.msg.update uses item's sendAsGroup=False, not current role.
 
 **Scenario:**
-1. Owner sends message "as channel" (sendAsGroup=True) with file attachment
-2. Owner updates message
-3. Verify update delivery uses sendAsGroup=True (from item), not recomputed
-4. Owner sends file description update
-5. Verify x.msg.file.descr uses sendAsGroup=True (from item)
-6. Owner cancels file
-7. Verify x.file.cancel uses sendAsGroup=True (from item)
-8. Repeat steps 1-7 with message sent "as member" (sendAsGroup=False)
-9. Verify all events use sendAsGroup=False
+1. Owner sends message as member (sendAsGroup=False)
+2. Member receives message, verify it shows as from member (not channel)
+3. Owner updates message
+4. Verify update delivery context uses sendAsGroup=False from the item, not recomputed from owner role
 
 **Coverage:** Bug 1
 
 ---
 
-#### Test 2: `testChannelReactionAttribution`
+#### Test 2: `testChannelOwnerDeleteAsMember`
+**Objective:** Verify x.msg.del uses item's sendAsGroup=False, not current role.
+
+**Scenario:**
+1. Owner sends message as member (sendAsGroup=False)
+2. Member receives message, verify it shows as from member (not channel)
+3. Owner deletes message
+4. Verify delete delivery context uses sendAsGroup=False from the item, not recomputed from owner role
+
+**Coverage:** Bug 1
+
+---
+
+#### Test 3: `testChannelOwnerFileTransferAsMember`
+**Objective:** Verify file delivery (including x.msg.file.descr) uses item's sendAsGroup=False, not current role.
+
+**Scenario:**
+1. Owner sends file as member (sendAsGroup=False)
+2. Member receives file, verify it shows as from member (not channel)
+3. Verify file delivery uses sendAsGroup=False from the item, not recomputed from owner role
+
+**Note:** x.msg.file.descr is part of file delivery, not a separate event to test independently.
+
+**Coverage:** Bug 1
+
+---
+
+#### Test 4: `testChannelOwnerFileCancelAsMember`
+**Objective:** Verify x.file.cancel uses item's sendAsGroup=False, not current role.
+
+**Scenario:**
+1. Owner sends file as member (sendAsGroup=False)
+2. Member receives file, verify it shows as from member (not channel)
+3. Owner cancels file
+4. Verify cancel delivery context uses sendAsGroup=False from the item, not recomputed from owner role
+
+**Coverage:** Bug 1
+
+---
+
+#### Test 5: `testChannelReactionAttribution`
 **Objective:** Verify reactions require a member sender (not optional).
 
 **Scenario:**
@@ -213,7 +250,7 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 
 ---
 
-#### Test 3: `testChannelUpdateFallbackSendAsGroup`
+#### Test 6: `testChannelUpdateFallbackSendAsGroup`
 **Objective:** Verify update on deleted item creates correct sendAsGroup from protocol field.
 
 **Scenario:**
@@ -230,7 +267,7 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 
 ---
 
-#### Test 4: `testForwardAPIUsesParameter`
+#### Test 7: `testForwardAPIUsesParameter`
 **Objective:** Verify Forward API respects sendAsGroup parameter.
 
 **Scenario:**
@@ -244,7 +281,7 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 
 ---
 
-#### Test 5: `testForwardCLISendAsGroup`
+#### Test 8: `testForwardCLISendAsGroup`
 **Objective:** Verify CLI forward commands compute sendAsGroup correctly.
 
 **Scenario:**
@@ -256,36 +293,21 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 
 ---
 
-#### Test 6: `testChannelDeleteDeliveryContext`
-**Objective:** Verify x.msg.del uses item's sendAsGroup flag.
-
-**Scenario:**
-1. Owner sends message as channel
-2. Owner deletes message
-3. Verify delete event uses item's sendAsGroup=True
-4. Owner sends message as member
-5. Owner deletes message
-6. Verify delete event uses item's sendAsGroup=False
-
-**Coverage:** Bug 1 (additional coverage)
-
----
-
 ## Implementation Order
 
 ### Phase 1: Critical Fix (Bug 1)
 1. Fix delivery context in Subscriber.hs
-2. Add Test 1 and Test 6
+2. Add Tests 1-4 (`testChannelOwnerUpdateAsMember`, `testChannelOwnerDeleteAsMember`, `testChannelOwnerFileTransferAsMember`, `testChannelOwnerFileCancelAsMember`)
 
 ### Phase 2: API Fixes (Bugs 4, 5)
 1. Fix Forward API parameter usage
 2. Fix CLI forward hardcodes
-3. Add Tests 4 and 5
+3. Add Tests 7 and 8 (`testForwardAPIUsesParameter`, `testForwardCLISendAsGroup`)
 
 ### Phase 3: Behavior Fixes (Bugs 2, 3)
 1. Rework XMsgReact handler to require GroupMember (not Maybe GroupMember)
 2. Add asGroup field to XMsgUpdate protocol message
-3. Add Tests 2 and 3
+3. Add Tests 5 and 6 (`testChannelReactionAttribution`, `testChannelUpdateFallbackSendAsGroup`)
 
 ---
 
@@ -296,4 +318,4 @@ Compute `sendAsGroup` before calling API based on destination group's channel st
 | `src/Simplex/Chat/Library/Subscriber.hs` | Lines 935-945 (Bug 1), 1818-1842 (Bug 2), 1950-1969 (Bug 3) |
 | `src/Simplex/Chat/Library/Commands.hs` | Lines 930,944 (Bug 4), 2191,2196,2201,4633 (Bug 5) |
 | Protocol message types | Add asGroup field to XMsgUpdate (Bug 3) |
-| `tests/ChatTests/Groups.hs` | Add 6 new tests |
+| `tests/ChatTests/Groups.hs` | Add 8 new tests |
