@@ -2045,4 +2045,14 @@
     <string name="for_social_media">ソーシャルメディア向け</string>
     <string name="operator_use_operator_toggle_description">サーバを利用する</string>
     <string name="your_servers">あなたのサーバ</string>
+    <string name="content_filter_videos">ビデオ</string>
+    <string name="content_filter_files">ファイル</string>
+    <string name="content_filter_images">画像</string>
+    <string name="content_filter_links">リンク</string>
+    <string name="content_filter_all_messages">すべて</string>
+    <string name="content_filter_voice_messages">音声メッセージ</string>
+    <string name="content_filter_menu_item">フィルター</string>
+    <string name="accept_pending_member_alert_confirmation_as_member">メンバーとして承認する</string>
+    <string name="accept_pending_member_alert_confirmation_as_observer">オブザーバーとして承認する</string>
+    <string name="blocking_reason_spam">スパム</string>
 </resources>
