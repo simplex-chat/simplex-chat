@@ -17,10 +17,12 @@ import androidx.compose.ui.graphics.SolidColor
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
@@ -30,6 +32,12 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -143,26 +151,82 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
         val displayName = rememberSaveable { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
         Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(start = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, end = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, bottom = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          Box(Modifier.align(Alignment.CenterHorizontally)) {
-            AppBarTitle(stringResource(MR.strings.create_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
+          // Isometric illustration (conditional on USE_BRANDED_IMAGES)
+          if (BuildConfigCommon.USE_BRANDED_IMAGES) {
+            Spacer(Modifier.height(DEFAULT_PADDING * 2))
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = DEFAULT_PADDING),
+              contentAlignment = Alignment.Center
+            ) {
+              Image(
+                painter = painterResource(MR.images.intro_2),
+                contentDescription = null,
+                modifier = Modifier.size(200.dp),
+                contentScale = ContentScale.Fit
+              )
+            }
+            Spacer(Modifier.height(DEFAULT_PADDING))
           }
-          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          
+          // Title: "Create profile"
+          Text(
+            text = stringResource(MR.strings.create_profile),
+            style = MaterialTheme.typography.h1,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.onBackground,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+          )
+          
           Spacer(Modifier.height(DEFAULT_PADDING))
-          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
+          
+          // Subtitle: "Your profile is stored on your device and only shared with your contacts."
+          Text(
+            text = stringResource(MR.strings.create_profile_subtitle),
+            style = MaterialTheme.typography.body1,
+            color = MaterialTheme.colors.secondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+          )
+          
+          Spacer(Modifier.height(DEFAULT_PADDING * 2))
+          
+          // Name input field with placeholder: "Enter your name..."
+          ProfileNameField(displayName, stringResource(MR.strings.enter_your_name_placeholder), { it.trim() == mkValidName(it) }, focusRequester)
         }
+        
         Spacer(Modifier.fillMaxHeight().weight(1f))
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+        
+        // Calculate bottom padding - ColumnWithScrollBar already applies imePadding automatically
+        val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+        val isKeyboardOpen = appPlatform.isAndroid && keyboardState == KeyboardState.Opened && imePadding > 0.dp
+        
+        Column(
+          Modifier
+            .widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp)
+            .align(Alignment.CenterHorizontally)
+            .padding(bottom = DEFAULT_PADDING * 2),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
           OnboardingActionButton(
             if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-            labelId = MR.strings.create_profile_button,
+            labelId = MR.strings.create_profile,
             onboarding = null,
             enabled = canCreateProfile(displayName.value),
             onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
           )
           // Reserve space
           TextButtonBelowOnboardingButton("", null)
+        }
+        
+        // Add spacer at bottom when keyboard is open to ensure button can be scrolled above keyboard
+        // This provides extra scrollable space so the button remains visible
+        if (isKeyboardOpen) {
+          Spacer(Modifier.height(imePadding + DEFAULT_PADDING))
+        } else {
+          Spacer(Modifier.height(DEFAULT_PADDING))
         }
 
         LaunchedEffect(Unit) {
@@ -173,13 +237,15 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       LaunchedEffect(Unit) {
         setLastVersionDefault(chatModel)
       }
-      if (savedKeyboardState != keyboardState) {
-        LaunchedEffect(keyboardState) {
+      // Auto-scroll when keyboard opens to ensure button is visible
+      LaunchedEffect(keyboardState) {
+        if (appPlatform.isAndroid && keyboardState == KeyboardState.Opened) {
           scope.launch {
-            savedKeyboardState = keyboardState
+            delay(100) // Small delay to ensure layout is updated
             scrollState.animateScrollTo(scrollState.maxValue)
           }
         }
+        savedKeyboardState = keyboardState
       }
     }
   }

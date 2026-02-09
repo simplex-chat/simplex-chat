@@ -139,7 +139,7 @@ fun MainScreen() {
     when {
       onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
         // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
-        SimpleXInfo(chatModel, onboarding = true)
+        IntroCarouselView(chatModel)
         if (appPlatform.isDesktop) {
           ModalManager.fullscreen.showInView()
         }
@@ -184,7 +184,7 @@ fun MainScreen() {
         when (state) {
           OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
           OnboardingStage.Step1_SimpleXInfo -> {
-            SimpleXInfo(chatModel, onboarding = true)
+            IntroCarouselView(chatModel)
             if (appPlatform.isDesktop) {
               ModalManager.fullscreen.showInView()
             }

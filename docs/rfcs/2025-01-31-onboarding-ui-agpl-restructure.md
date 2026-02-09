@@ -624,10 +624,24 @@ If critical issues arise post-release:
 ## Open Questions
 
 1. **Asset repository structure** — Final decision on sibling folder vs separate repo?
+
+Let's do folder with readme that it's proprietory and not licensed.
+
 2. **Intro content** — Final copy for headlines and subtitles?
+
+Yes, it's on me, start from invitations flow - it's more interesting and ready.
+
 3. **Animated fallback design** — Specific animation/text layout for AGPL build?
+
+Just show opened card I think in the first iteration, we'll see how it looks
+
 4. **Migration flow entry** — Should "Migrate from another device" also appear elsewhere?
+
+Don't understand the question.
+
 5. **Analytics** — Any onboarding completion tracking requirements?
+
+We don't do it yet
 
 ---
 

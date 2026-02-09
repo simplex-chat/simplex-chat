@@ -95,12 +95,12 @@ fun SimpleXInfoLayout(
 }
 
 @Composable
-fun SimpleXLogo() {
+fun SimpleXLogo(modifier: Modifier = Modifier) {
   Image(
     painter = painterResource(if (isInDarkTheme()) MR.images.logo_light else MR.images.logo),
     contentDescription = stringResource(MR.strings.image_descr_simplex_logo),
     contentScale = ContentScale.FillWidth,
-    modifier = Modifier
+    modifier = modifier
       .padding(vertical = DEFAULT_PADDING)
       .fillMaxWidth()
   )

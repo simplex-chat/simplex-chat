@@ -18,6 +18,7 @@ import androidx.compose.ui.text.TextStyle
  import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -27,6 +28,13 @@ import chat.simplex.common.views.usersettings.networkAndServers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.material.Icon
+import chat.simplex.common.views.helpers.BoltFilled
+import chat.simplex.common.views.onboarding.SetNotificationsMode
 
 @Composable
 fun ModalData.OnboardingConditionsView() {
@@ -43,30 +51,83 @@ fun ModalData.OnboardingConditionsView() {
           .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
         maxIntrinsicSize = true
       ) {
-        Box(Modifier.align(Alignment.CenterHorizontally)) {
-          AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), bottomPadding = DEFAULT_PADDING)
+        Column(
+          (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
+          .fillMaxWidth()
+          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          // Isometric illustration (conditional on USE_BRANDED_IMAGES)
+          if (BuildConfigCommon.USE_BRANDED_IMAGES) {
+            Spacer(Modifier.height(DEFAULT_PADDING * 2))
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = DEFAULT_PADDING),
+              contentAlignment = Alignment.Center
+            ) {
+              Image(
+                painter = painterResource(MR.images.intro_2),
+                contentDescription = null,
+                modifier = Modifier.size(200.dp),
+                contentScale = ContentScale.Fit
+              )
+            }
+            Spacer(Modifier.height(DEFAULT_PADDING))
+          }
+          
+          // Title: "Conditions of use" (centered, bold)
+          Text(
+            text = stringResource(MR.strings.conditions_of_use_title),
+            style = MaterialTheme.typography.h1,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.onBackground,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+          )
+          
+          Spacer(Modifier.height(DEFAULT_PADDING * 2))
         }
 
         Spacer(Modifier.weight(1f))
+        
         Column(
           (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
           .fillMaxWidth()
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
+          // Body text (left-aligned)
           Text(
             stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
-            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp),
+            color = MaterialTheme.colors.onBackground
           )
           Spacer(Modifier.height(DEFAULT_PADDING))
           Text(
-            stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
-            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+            "By using SimpleX Chat you agree to:",
+            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp),
+            color = MaterialTheme.colors.onBackground
+          )
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          Text(
+            "• send only legal content in public groups.",
+            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp),
+            color = MaterialTheme.colors.onBackground,
+            modifier = Modifier.padding(start = DEFAULT_PADDING)
+          )
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          Text(
+            "• respect other users – no spam.",
+            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp),
+            color = MaterialTheme.colors.onBackground,
+            modifier = Modifier.padding(start = DEFAULT_PADDING)
           )
           Spacer(Modifier.height(DEFAULT_PADDING))
+          // Privacy policy link (blue, underlined)
           Text(
             stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-            style = TextStyle(fontSize = 17.sp),
+            style = TextStyle(fontSize = 17.sp, textDecoration = TextDecoration.Underline),
             color = MaterialTheme.colors.primary,
             modifier = Modifier
               .clickable(
@@ -83,10 +144,65 @@ fun ModalData.OnboardingConditionsView() {
 
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.onboarding_conditions_configure_server_operators)) {
-            ModalManager.fullscreen.showModalCloseable { close ->
-              ChooseServerOperators(serverOperators, selectedOperatorIds, close)
-            }
+          
+          // Configure server operators link with icon
+          Row(
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                ModalManager.fullscreen.showModalCloseable { close ->
+                  ChooseServerOperators(serverOperators, selectedOperatorIds, close)
+                }
+              }
+              .padding(vertical = DEFAULT_PADDING_HALF),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            Text(
+              text = stringResource(MR.strings.onboarding_conditions_configure_server_operators),
+              color = MaterialTheme.colors.primary,
+              fontSize = 16.sp
+            )
+            Spacer(Modifier.width(8.dp))
+            // Server operator icon - using network icon if available, otherwise a simple circle
+            Icon(
+              painterResource(MR.images.ic_info),
+              contentDescription = null,
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(16.dp)
+            )
+          }
+          
+          // Configure notifications link with icon
+          Row(
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                ModalManager.fullscreen.showModalCloseable { close ->
+                  SetNotificationsMode(chatModel)
+                }
+              }
+              .padding(vertical = DEFAULT_PADDING_HALF),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            Text(
+              text = stringResource(MR.strings.configure_notifications),
+              color = MaterialTheme.colors.primary,
+              fontSize = 16.sp
+            )
+            Spacer(Modifier.width(8.dp))
+            // Notification icon - using bolt/lightning icon
+            Icon(
+              BoltFilled,
+              contentDescription = null,
+              tint = MaterialTheme.colors.primary,
+              modifier = Modifier.size(16.dp)
+            )
           }
         }
       }
