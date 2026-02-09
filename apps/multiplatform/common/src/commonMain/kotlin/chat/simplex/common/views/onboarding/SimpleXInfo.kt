@@ -190,7 +190,8 @@ fun OnboardingInformationButton(
       Icon(
         painterResource(MR.images.ic_info),
         null,
-        tint = MaterialTheme.colors.primary
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.size(22.dp)
       )
       // https://issuetracker.google.com/issues/206039942#comment32
       var textLayoutResult: TextLayoutResult? by remember { mutableStateOf(null) }
@@ -219,6 +220,7 @@ fun OnboardingInformationButton(
           textLayoutResult = it
         },
         style = MaterialTheme.typography.button,
+        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colors.primary
       )
     }

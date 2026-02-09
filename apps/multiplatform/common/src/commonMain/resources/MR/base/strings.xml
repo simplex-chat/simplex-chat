@@ -1324,18 +1324,18 @@
   <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
   <!-- SetNotificationsMode.kt -->
-  <string name="use_chat">Use chat</string>
-  <string name="onboarding_notifications_mode_title">Private notifications</string>
-  <string name="onboarding_notifications_mode_subtitle">How it affects battery</string>
-  <string name="onboarding_notifications_mode_off">When app is running</string>
+  <string name="use_chat">OK</string>
+  <string name="onboarding_notifications_mode_title">Push notifications</string>
+  <string name="onboarding_notifications_mode_subtitle">How it affects privacy</string>
+  <string name="onboarding_notifications_mode_off">No push server</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
-  <string name="onboarding_notifications_mode_off_desc_short">No background service</string>
+  <string name="onboarding_notifications_mode_off_desc_short">Check messages when allowed.</string>
   <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
-  <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
+  <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 20 min.</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
-  <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
+  <string name="onboarding_notifications_mode_service_desc_short">E2E encrypted notifications.</string>
   <string name="onboarding_notifications_mode_battery">Notifications and battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
