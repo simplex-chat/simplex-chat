@@ -9,7 +9,7 @@
 
 ## 1. Executive summary
 
-Allow voice messages from host/admin in member support scope (approval phase) regardless of group voice settings, gated behind chat protocol version 17. This enables the directory bot to send voice captchas in groups that prohibit voice messages. Old clients that don't support this exemption will receive text/image captchas instead.
+Allow voice messages from host/admin during the approval phase (member pending) regardless of group voice settings, gated behind chat protocol version 17. This enables the directory bot to send voice captchas in groups that prohibit voice messages. Old clients that don't support this exemption will receive text/image captchas instead.
 
 ## 2. Problem
 
@@ -25,9 +25,9 @@ This means voice captchas fail in the majority of real groups that prohibit voic
 
 ## 3. High-level design
 
-1. **Protocol version 17** (`memberSupportVoiceVersion`): gates the `prohibitedGroupContent` exemption for voice in member support scope.
+1. **Protocol version 17** (`memberSupportVoiceVersion`): gates the `prohibitedGroupContent` exemption for host voice during the approval phase.
 
-2. **Core library change** (Internal.hs): exempt voice in `prohibitedGroupContent` when in member support scope AND sender is admin+ (host/moderator). Only the host can send voice during approval — pending members cannot.
+2. **Core library change** (Internal.hs): exempt voice in `prohibitedGroupContent` when sender is admin+ (host) AND the member is in the approval phase (pending status). Voice is NOT generally allowed in member support scope — only during approval, only from host.
 
 3. **Directory bot change** (Service.hs): check member's protocol version and group voice settings before offering or sending voice captcha. Fall back to text/image captcha for old clients in voice-disabled groups.
 
@@ -40,7 +40,7 @@ This means voice captchas fail in the majority of real groups that prohibit voic
 Add to version history comment (after line 79):
 
 ```
--- 17 - allow voice messages in member support scope (2026-02-10)
+-- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
 ```
 
 Update `currentChatVersion` (line 85):
@@ -52,19 +52,19 @@ currentChatVersion = VersionChat 17
 Add version constant (after `shortLinkDataVersion`, line 146):
 
 ```haskell
--- support voice messages in member support scope regardless of group voice setting
+-- support host voice messages during member approval regardless of group voice setting
 memberSupportVoiceVersion :: VersionChat
 memberSupportVoiceVersion = VersionChat 17
 ```
 
-### 4.2. Internal.hs — exempt voice in member support scope
+### 4.2. Internal.hs — exempt host voice during approval phase
 
 **File:** `src/Simplex/Chat/Library/Internal.hs`
 
-Change function header (line 337) to destructure sender's role:
+Change function header (line 337) to bind sender's role and full membership:
 
 ```haskell
-prohibitedGroupContent gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}} m@GroupMember {memberRole = senderRole} scopeInfo mc ft file_ sent
+prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole = userRole}} m@GroupMember {memberRole = senderRole} scopeInfo mc ft file_ sent
 ```
 
 Change line 338 from:
@@ -76,10 +76,35 @@ Change line 338 from:
 to:
 
 ```haskell
-  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not (isJust scopeInfo && senderRole >= GRAdmin) = Just GFVoice
+  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
 ```
 
-Voice is allowed in member support scope ONLY when the sender is admin+ (host/moderator). Pending members cannot send voice in support scope even with this exemption.
+Add to the `where` clause:
+
+```haskell
+    hostApprovalVoice = senderRole >= GRAdmin && inApprovalPhase
+    inApprovalPhase = case scopeInfo of
+      Just (GCSIMemberSupport (Just scopeMem)) -> memberPending scopeMem
+      Just (GCSIMemberSupport Nothing) -> memberPending mem
+      Nothing -> False
+```
+
+Note: `memberPending` returns True for both `GSMemPendingApproval` and `GSMemPendingReview`. The exemption applies to both phases — the member hasn't been fully admitted in either state.
+
+**Why two cases for `inApprovalPhase`:**
+
+- **Sender side** (bot sending via Commands.hs:3856): `scopeInfo = GCSIMemberSupport (Just pendingMember)` — the scope contains the pending member being supported. `memberPending pendingMember` checks their status.
+- **Receiver side** (member receiving via Subscriber.hs:1738): `scopeInfo = GCSIMemberSupport Nothing` — `Nothing` means the member's own support conversation (constructed by `mkGroupSupportChatInfo` in Internal.hs:1535). `memberPending mem` checks the local user's (receiving member's) status.
+
+**Behavior matrix:**
+
+| Scenario | `hostApprovalVoice` | Voice allowed? |
+|----------|---------------------|----------------|
+| Host → pending member, voice disabled | True | Yes (new) |
+| Host → approved member in support, voice disabled | False (`memberPending` = False) | No |
+| Pending member → host, voice disabled | False (`senderRole` < GRAdmin) | No |
+| Anyone outside support scope, voice disabled | False (`inApprovalPhase` = False) | No |
+| Any sender, voice enabled | N/A (`groupFeatureMemberAllowed` = True) | Yes (existing) |
 
 **Version gating:** Old clients (< v17) don't have this exemption. On the sender side this is handled by the bot (4.3). On the recipient side:
 
@@ -100,7 +125,7 @@ import Simplex.Chat.Protocol (MsgContent (..), memberSupportVoiceVersion)
 
 #### 4.3.2. Add helper predicate
 
-Add a helper that checks if voice captcha can be delivered to a member:
+Add a helper in the `directoryService` `where` block (same scope as `sendMemberCaptcha`, `sendVoiceCaptcha`, etc., where `opts` is in scope):
 
 ```haskell
 canSendVoiceCaptcha :: GroupInfo -> GroupMember -> Bool
@@ -182,6 +207,6 @@ Update existing audio captcha tests to cover:
 | File | Change | Lines affected |
 |------|--------|----------------|
 | `Protocol.hs` | Add v17 constant, bump `currentChatVersion` | ~4 lines added |
-| `Internal.hs` | Exempt admin+ voice in member support scope | 2 lines modified |
+| `Internal.hs` | Exempt host voice during approval phase | ~6 lines modified/added |
 | `Service.hs` | Version-aware voice captcha logic | ~15 lines modified/added |
 | `DirectoryTests.hs` | Test coverage for version gating | TBD |
