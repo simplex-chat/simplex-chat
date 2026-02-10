@@ -100,6 +100,26 @@ runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withX
   bob <## "Chat content types: file, text"
   bob #$> ("/_get chat @2 content=file count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
+  -- Test file with link in text - should appear in both file and link filters
+  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"check https://example.com for docs\"}}]"
+  alice <# "@bob check https://example.com for docs"
+  alice <# "/f @bob ./tests/fixtures/test.pdf"
+  alice <## "use /fc 2 to cancel sending"
+  bob <# "alice> check https://example.com for docs"
+  bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+  bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+  alice <## "completed uploading file 2 (test.pdf) for bob"
+
+  alice ##> "/_get content types @2"
+  alice <## "Chat content types: file, text"
+  alice #$> ("/_get chat @2 content=file count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg"), ((1, "check https://example.com for docs"), Just "./tests/fixtures/test.pdf")])
+  alice #$> ("/_get chat @2 content=link count=100", chatF, [((1, "check https://example.com for docs"), Just "./tests/fixtures/test.pdf")])
+
+  bob ##> "/_get content types @2"
+  bob <## "Chat content types: file, text"
+  bob #$> ("/_get chat @2 content=file count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg"), ((0, "check https://example.com for docs"), Nothing)])
+  bob #$> ("/_get chat @2 content=link count=100", chatF, [((0, "check https://example.com for docs"), Nothing)])
+
 testSendImage :: HasCallStack => TestParams -> IO ()
 testSendImage =
   testChat2 aliceProfile bobProfile $
@@ -375,7 +395,7 @@ testGroupSendImage =
       bob ##> "/_get content types #1"
       bob <## "Chat content types: image, text"
       bob #$> ("/_get chat #1 content=image count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
-      
+
       cath #$> ("/_get chat #1 count=3", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg"), ((0, "received"), Nothing), ((1, "received too"), Nothing)])
       cath ##> "/_get content types #1"
       cath <## "Chat content types: image, text"

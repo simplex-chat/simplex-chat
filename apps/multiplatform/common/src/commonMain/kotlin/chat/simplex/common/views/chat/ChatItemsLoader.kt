@@ -27,11 +27,12 @@ suspend fun apiLoadMessages(
   chatType: ChatType,
   apiId: Long,
   pagination: ChatPagination,
+  contentTag: MsgContentTag? = null,
   search: String = "",
   openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), contentTag ?: chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   /** When [openAroundItemId] is provided, chatId can be different too */
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last && openAroundItemId == null)

@@ -166,17 +166,17 @@ active_home: true
                         <h2>{{ "index-roadmap-h2" | i18n({}, lang) }}</h2>
                         <div class="roadmap">
                             <p>{{ "index-roadmap-2025" | i18n({}, lang) }} </p>
-                            <p class="title"><span>: </span>{{ "index-roadmap-2025-title" | i18n({}, lang) }}</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>{{ "index-roadmap-2025-title" | i18n({}, lang) }}</p>
                             <p>{{ "index-roadmap-2025-desc" | i18n({}, lang) }}</p>
                         </div>
                         <div class="roadmap">
                             <p>{{ "index-roadmap-2026" | i18n({}, lang) }} </p>
-                            <p class="title"><span>: </span>{{ "index-roadmap-2026-title" | i18n({}, lang) }}</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>{{ "index-roadmap-2026-title" | i18n({}, lang) }}</p>
                             <p>{{ "index-roadmap-2026-desc" | i18n({}, lang) }}</p>
                         </div>
                         <div class="roadmap">
                             <p>{{ "index-roadmap-2027" | i18n({}, lang) }} </p>
-                            <p class="title"><span>: </span>{{ "index-roadmap-2027-title" | i18n({}, lang) }}</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>{{ "index-roadmap-2027-title" | i18n({}, lang) }}</p>
                             <p>{{ "index-roadmap-2027-desc" | i18n({}, lang) }}</p>
                         </div>
                     </div>
@@ -235,19 +235,19 @@ active_home: true
     (function navColorOnScroll(){
         const header = document.querySelector('header#navbar');
         const cover = document.querySelector('.page-1.cover');
-        if (!header || !cover || !('IntersectionObserver' in window)) {
+        const footer = document.querySelector('.footer.page');
+        if (!header || !cover || !footer || !('IntersectionObserver' in window)) {
             window.addEventListener('load', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             window.addEventListener('scroll', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             return;
         }
         const io = new IntersectionObserver((entries) => {
-            for (const e of entries) {
-            // if cover is mostly visible, keep white nav; else switch to #001796
-            const onCover = e.isIntersecting && e.intersectionRatio >= 0.02;
-            document.body.classList.toggle('change-nav-color', !onCover);
-            }
+            // if cover or footer is mostly visible, keep white nav; else switch to #001796
+            const onObserved = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.02);
+            document.body.classList.toggle('change-nav-color', !onObserved);
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
+        io.observe(footer);
     })();
     </script>
     <script>

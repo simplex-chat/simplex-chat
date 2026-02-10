@@ -9,6 +9,7 @@ module Directory.Options
   ( DirectoryOpts (..),
     MigrateLog (..),
     getDirectoryOpts,
+    directoryOpts,
     mkChatOpts,
   )
 where
@@ -27,12 +28,14 @@ data DirectoryOpts = DirectoryOpts
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    noAddress :: Bool, -- skip creating address
     blockedWordsFile :: Maybe FilePath,
     blockedFragmentsFile :: Maybe FilePath,
     blockedExtensionRules :: Maybe FilePath,
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
     captchaGenerator :: Maybe FilePath,
+    voiceCaptchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
     migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
@@ -70,6 +73,11 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  noAddress <-
+    switch
+      ( long "no-address"
+          <> help "skip checking and creating service address"
+      )
   blockedWordsFile <-
     optional $
       strOption
@@ -113,6 +121,13 @@ directoryOpts appDir defaultDbName = do
             <> metavar "CAPTCHA_GENERATOR"
             <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
         )
+  voiceCaptchaGenerator <-
+    optional $
+      strOption
+        ( long "voice-captcha-generator"
+            <> metavar "VOICE_CAPTCHA_GENERATOR"
+            <> help "Executable to generate voice captcha, accepts text as parameter, writes audio file, outputs file_path and duration_seconds to stdout"
+        )
   directoryLog <-
     optional $
       strOption
@@ -153,12 +168,14 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
+        noAddress,
         blockedWordsFile,
         blockedFragmentsFile,
         blockedExtensionRules,
         nameSpellingFile,
         profileNameLimit,
         captchaGenerator,
+        voiceCaptchaGenerator,
         directoryLog,
         migrateDirectoryLog,
         serviceName = T.pack serviceName,
@@ -194,8 +211,7 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False},
-      maintenance = False
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False}
     }
 
 parseMigrateLog :: ReadM MigrateLog

@@ -440,7 +440,8 @@ CREATE TABLE chat_items(
   user_mention INTEGER NOT NULL DEFAULT 0,
   group_scope_tag TEXT,
   group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  show_group_as_sender INTEGER NOT NULL DEFAULT 0
+  show_group_as_sender INTEGER NOT NULL DEFAULT 0,
+  has_link INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -1197,6 +1198,24 @@ CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON chat_items
   user_id,
   note_folder_id,
   msg_content_tag,
+  created_at
+);
+CREATE INDEX idx_chat_items_groups_has_link_item_ts ON chat_items(
+  user_id,
+  group_id,
+  has_link,
+  item_ts
+);
+CREATE INDEX idx_chat_items_contacts_has_link_created_at ON chat_items(
+  user_id,
+  contact_id,
+  has_link,
+  created_at
+);
+CREATE INDEX idx_chat_items_note_folder_has_link_created_at ON chat_items(
+  user_id,
+  note_folder_id,
+  has_link,
   created_at
 );
 CREATE TRIGGER on_group_members_insert_update_summary

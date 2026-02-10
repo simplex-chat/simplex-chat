@@ -53,7 +53,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion, sndAuthKeySMPClientVersion)
+import Simplex.Messaging.Protocol (sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
@@ -117,8 +117,7 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
-      createBot = Nothing,
-      maintenance = False
+      createBot = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
@@ -152,12 +151,13 @@ testCoreOpts =
       deviceName = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
-      migrationBackupPath = Nothing
+      migrationBackupPath = Nothing,
+      maintenance = False      
     }
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
-getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbOptions = (dbOptions testCoreOpts) {dbKey}}}
+getTestOpts maintenance dbKey = testOpts {coreOptions = testCoreOpts {maintenance, dbOptions = (dbOptions testCoreOpts) {dbKey}}}
 #endif
 
 termSettings :: VirtualTerminalSettings
@@ -303,7 +303,7 @@ insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) V
 #endif
 
 startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user = do
+startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
