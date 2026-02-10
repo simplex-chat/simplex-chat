@@ -81,10 +81,10 @@ createMsgDeliveryTask db gInfo sender newTask = do
         created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI showGroupAsSender, DTSNew, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI sentAsGroup, DTSNew, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    NewMessageDeliveryTask {messageId, jobScope, showGroupAsSender} = newTask
+    NewMessageDeliveryTask {messageId, taskContext = DeliveryTaskContext {jobScope, sentAsGroup}} = newTask
 
 deleteGroupDeliveryTasks :: DB.Connection -> GroupInfo -> IO ()
 deleteGroupDeliveryTasks db GroupInfo {groupId} =

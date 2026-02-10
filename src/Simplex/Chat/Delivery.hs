@@ -93,19 +93,27 @@ jobSpecImpliedPending = \case
   DJDeliveryJob {includePending} -> includePending
   DJRelayRemoved -> True
 
-infoToDeliveryScope :: GroupInfo -> Maybe GroupChatScopeInfo -> DeliveryJobScope
-infoToDeliveryScope GroupInfo {membership} = \case
-  Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
-  Just GCSIMemberSupport {groupMember_} ->
-    let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
-     in DJSMemberSupport {supportGMId}
+data DeliveryTaskContext = DeliveryTaskContext
+  { jobScope :: DeliveryJobScope,
+    sentAsGroup :: ShowGroupAsSender
+  }
+  deriving (Show)
 
-memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
-memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
+infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
+infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
+  where
+    jobScope = case scopeInfo of
+      Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+      Just GCSIMemberSupport {groupMember_} ->
+        let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
+         in DJSMemberSupport {supportGMId}
+
+memberEventDeliveryContext :: GroupMember -> Maybe DeliveryTaskContext
+memberEventDeliveryContext m@GroupMember {memberRole, memberStatus}
   | memberStatus == GSMemPendingApproval = Nothing
-  | memberStatus == GSMemPendingReview = Just $ DJSMemberSupport {supportGMId = groupMemberId' m}
-  | memberRole >= GRModerator = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
-  | otherwise = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+  | memberStatus == GSMemPendingReview = Just $ DeliveryTaskContext {jobScope = DJSMemberSupport {supportGMId = groupMemberId' m}, sentAsGroup = False}
+  | memberRole >= GRModerator = Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}, sentAsGroup = False}
+  | otherwise = Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False}
 
 data FwdSender
   = FwdMember MemberId ContactName
@@ -114,8 +122,7 @@ data FwdSender
 
 data NewMessageDeliveryTask = NewMessageDeliveryTask
   { messageId :: MessageId,
-    jobScope :: DeliveryJobScope,
-    showGroupAsSender :: ShowGroupAsSender
+    taskContext :: DeliveryTaskContext
   }
   deriving (Show)
 

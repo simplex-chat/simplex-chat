@@ -927,7 +927,7 @@ processChatCommand vr nm = \case
                 MCChat {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
-  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL sendAsGroup -> withUser $ \user -> case toCType of
+  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) sendAsGroup fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
@@ -2189,19 +2189,19 @@ processChatCommand vr nm = \case
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
     asGroup <- getSendAsGroup user toChatRef
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing asGroup
+    processChatCommand vr nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
     asGroup <- getSendAsGroup user toChatRef
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing asGroup
+    processChatCommand vr nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
     asGroup <- getSendAsGroup user toChatRef
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing asGroup
+    processChatCommand vr nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
   SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
     case sendName of
@@ -2297,7 +2297,7 @@ processChatCommand vr nm = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> Bool -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user hasLink createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink False createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2558,7 +2558,7 @@ processChatCommand vr nm = \case
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing recipients events
           let itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
           (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
@@ -2605,7 +2605,7 @@ processChatCommand vr nm = \case
               recipients = filter memberCurrent remainingMems
           (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipients events
           let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           unless (null acis) $ toView $ CEvtNewChatItems user acis
@@ -2689,7 +2689,7 @@ processChatCommand vr nm = \case
                 Right (Just a) -> Just $ Right a
                 Left e -> Just $ Left e
               itemsData = mapMaybe skipUnwantedItem itemsData_
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData Nothing False False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) False itemsData Nothing False
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
@@ -3991,7 +3991,7 @@ processChatCommand vr nm = \case
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) msgs_
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
-          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live False
+          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) False itemsData timed_ live
           processSendErrs r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
@@ -4068,7 +4068,7 @@ processChatCommand vr nm = \case
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user gInfo Nothing recipients chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData timed_ live showGroupAsSender
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let r@(_, cis) = partitionEithers cis_
@@ -4091,7 +4091,7 @@ processChatCommand vr nm = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, ciMentions), fInv_) ->
                 let msgScope = toMsgScope gInfo <$> chatScopeInfo
                     mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo msgScope mc mentions quotedItemId itemForwarded fInv_ timed_ live showGroupAsSender
+                 in prepareGroupMsg db user gInfo msgScope showGroupAsSender mc mentions quotedItemId itemForwarded fInv_ timed_ live
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->
@@ -4636,7 +4636,7 @@ chatCommandP =
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> (knownReaction <$?> jsonP)),
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
-      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP <*> (" sendAsGroup=" *> onOffP <|> pure False)),
+      "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" sendAsGroup=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),

@@ -338,7 +338,7 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIGetReactionMembers {userId :: UserId, groupId :: GroupId, chatItemId :: ChatItemId, reaction :: MsgReaction}
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
-  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int, sendAsGroup :: ShowGroupAsSender}
+  | APIForwardChatItems {toChatRef :: ChatRef, sendAsGroup :: ShowGroupAsSender, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}

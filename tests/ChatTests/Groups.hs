@@ -8883,17 +8883,17 @@ testChannelOwnerReaction ps =
             bob <# "#team> hello"
             [cath, dan, eve] *<# "#team> hello [>>]"
 
-            -- owner reacts to own channel message
+            -- owner reacts to own channel message - reaction is forwarded as member
             alice ##> "+1 #team hello"
             alice <## "added 👍"
             bob <# "#team alice> > hello"
             bob <## "    + 👍"
             concurrentlyN_
-              [ do cath <# "#team> > hello"
+              [ do cath <# "#team alice> > hello"
                    cath <## "    + 👍",
-                do dan <# "#team> > hello"
+                do dan <# "#team alice> > hello"
                    dan <## "    + 👍",
-                do eve <# "#team> > hello"
+                do eve <# "#team alice> > hello"
                    eve <## "    + 👍"
               ]
 
@@ -9069,17 +9069,17 @@ testChannelReactionAttribution ps =
             bob <# "#team alice> hello"
             [cath, dan, eve] *<# "#team alice> hello [>>]"
 
-            -- owner reacts to own member message - reaction is forwarded as channel (owner is anonymous)
+            -- owner reacts to own member message - reaction is forwarded as member
             alice ##> "+1 #team hello"
             alice <## "added 👍"
             bob <# "#team alice> > alice hello"
             bob <## "    + 👍"
             concurrentlyN_
-              [ do cath <# "#team> > alice hello"
+              [ do cath <# "#team alice> > alice hello"
                    cath <## "    + 👍",
-                do dan <# "#team> > alice hello"
+                do dan <# "#team alice> > alice hello"
                    dan <## "    + 👍",
-                do eve <# "#team> > alice hello"
+                do eve <# "#team alice> > alice hello"
                    eve <## "    + 👍"
               ]
 
@@ -9124,7 +9124,7 @@ testChannelUpdateFallbackSendAsGroup ps =
             aliceMsgId2 <- lastItemId alice
             alice ##> ("/_update item #1 " <> aliceMsgId2 <> " text member msg updated")
             alice <# "#team [edited] member msg updated"
-            -- bob's internally deleted item is still in DB, update finds it with correct member direction
+            -- bob's internally deleted item is re-created as from member (sendAsGroup=False)
             bob <# "#team alice> [edited] member msg updated"
             -- forwarded members see correct member attribution
             [cath, dan, eve] *<# "#team alice> [edited] member msg updated"
@@ -9147,7 +9147,7 @@ testForwardAPIUsesParameter ps =
               -- forward to channel with sendAsGroup=True (as channel)
               alice ##> "/last_item_id @frank"
               msgId <- getTermLine alice
-              alice ##> ("/_forward #1 @2 " <> msgId <> " sendAsGroup=on")
+              alice ##> ("/_forward #1 sendAsGroup=on @2 " <> msgId)
               alice <# "#team <- @frank"
               alice <## "      hi there"
               bob <# "#team> -> forwarded"
@@ -9162,7 +9162,7 @@ testForwardAPIUsesParameter ps =
                 ]
 
               -- forward to channel with sendAsGroup=False (as member)
-              alice ##> ("/_forward #1 @2 " <> msgId <> " sendAsGroup=off")
+              alice ##> ("/_forward #1 sendAsGroup=off @2 " <> msgId)
               alice <# "#team <- @frank"
               alice <## "      hi there"
               bob <# "#team alice> -> forwarded"

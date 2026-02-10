@@ -200,8 +200,8 @@ toggleNtf m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
-prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ShowGroupAsSender -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
-prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItemId_ itemForwarded fInv_ timed_ live showGroupAsSender = case (quotedItemId_, itemForwarded) of
+prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
   (Nothing, Nothing) ->
     let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender)
      in pure (XMsgNew mc', Nothing)
@@ -1246,7 +1246,7 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   asGroup = isNothing sender_
               -- TODO [knocking] send history to other scopes too?
-              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False asGroup
+              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing asGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
               let senderVRange = maybe (memberChatVRange' membership) memberChatVRange' sender_
                   xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
@@ -2239,7 +2239,7 @@ saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothi
 saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
 saveSndChatItem' user cd msg content ciFile quotedItem itemForwarded itemTimed live = do
   let itemTexts = ciContentTexts content
-  saveSndChatItems user cd [Right NewSndChatItemData {msg, content, itemTexts, itemMentions = M.empty, ciFile, quotedItem, itemForwarded}] itemTimed live False >>= \case
+  saveSndChatItems user cd False [Right NewSndChatItemData {msg, content, itemTexts, itemMentions = M.empty, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
     [Right ci] -> pure ci
     _ -> throwChatError $ CEInternalError "saveSndChatItem': expected 1 item"
 
@@ -2258,12 +2258,12 @@ saveSndChatItems ::
   ChatTypeI c =>
   User ->
   ChatDirection c 'MDSnd ->
+  ShowGroupAsSender ->
   [Either ChatError (NewSndChatItemData c)] ->
   Maybe CITimed ->
   Bool ->
-  ShowGroupAsSender ->
   CM [Either ChatError (ChatItem c 'MDSnd)]
-saveSndChatItems user cd itemsData itemTimed live showGroupAsSender = do
+saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
   createdAt <- liftIO getCurrentTime
   vr <- chatVersionRange
   when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
@@ -2273,7 +2273,7 @@ saveSndChatItems user cd itemsData itemTimed live showGroupAsSender = do
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId}, content, itemTexts, itemMentions, ciFile, quotedItem, itemForwarded} = do
       let hasLink_ = ciContentHasLink content (snd itemTexts)
-      ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live hasLink_ showGroupAsSender createdAt
+      ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
       let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing createdAt
       Right <$> case cd of
