@@ -165,9 +165,9 @@
         <target>%d файлов не было загружено.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d hours" xml:space="preserve">
+      <trans-unit id="%d hours" xml:space="preserve" approved="no">
         <source>%d hours</source>
-        <target>%d час.</target>
+        <target state="translated">%d ч.</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d messages not forwarded" xml:space="preserve">
@@ -3310,8 +3310,9 @@ chat item action</note>
         <target>Ошибка подключения к пересылающему серверу %@. Попробуйте позже.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
+      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve" approved="no">
         <source>Error connecting to the server used to receive messages from this connection: %@</source>
+        <target state="translated">Ошибка подключения к серверу, используемому для получения сообщений от этого соединения: %@</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -8474,8 +8475,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Транспортные сессии</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
+      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve" approved="no">
         <source>Trying to connect to the server used to receive messages from this connection.</source>
+        <target state="translated">Попытка подключиться к серверу, используемому для получения сообщений от этого соединения.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
@@ -9187,8 +9189,9 @@ Repeat join request?</source>
 Повторить запрос на вступление?</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
+      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve" approved="no">
         <source>You are connected to the server used to receive messages from this connection.</source>
+        <target state="translated">Вы подключены к серверу, используемому для приема сообщений от этого соединения.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -9196,8 +9199,9 @@ Repeat join request?</source>
         <target>Вы приглашены в группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve" approved="no">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
+        <target state="translated">Вы не подключены к серверу, используемому для получения сообщений по этому соединению (нет подписки).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10259,8 +10263,9 @@ pref value</note>
         <target>нет e2e шифрования</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no subscription" xml:space="preserve">
+      <trans-unit id="no subscription" xml:space="preserve" approved="no">
         <source>no subscription</source>
+        <target state="translated">нет подписки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
