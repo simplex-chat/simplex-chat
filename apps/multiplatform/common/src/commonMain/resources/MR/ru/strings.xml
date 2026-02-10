@@ -2622,4 +2622,16 @@
     <string name="server_no_sub">нет подписки</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Вы не подключенны к серверу через который Вы получали сообщения от этого контакта (без подписки).</string>
     <string name="remove_member_delete_messages_confirmation">Удалить члена группы и удалить сообщения</string>
+    <string name="content_filter_all_messages">Все сообщения</string>
+    <string name="content_filter_files">Файлы</string>
+    <string name="content_filter_menu_item">Фильтр</string>
+    <string name="content_filter_images">Изображения</string>
+    <string name="content_filter_links">Ссылки</string>
+    <string name="placeholder_search_files">Поиск файлов</string>
+    <string name="placeholder_search_images">Поиск изображений</string>
+    <string name="placeholder_search_links">Поиск ссылок</string>
+    <string name="placeholder_search_videos">Поиск видео</string>
+    <string name="placeholder_search_voice_messages">Поиск голосовых сообщений</string>
+    <string name="content_filter_videos">Видео</string>
+    <string name="content_filter_voice_messages">Голосовые сообщения</string>
 </resources>
