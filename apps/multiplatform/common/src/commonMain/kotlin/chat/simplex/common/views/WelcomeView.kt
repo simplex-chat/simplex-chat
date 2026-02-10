@@ -161,7 +161,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
               contentAlignment = Alignment.Center
             ) {
               Image(
-                painter = painterResource(MR.images.intro_2),
+                painter = painterResource(MR.images.create_profile),
                 contentDescription = null,
                 modifier = Modifier.size(200.dp),
                 contentScale = ContentScale.Fit

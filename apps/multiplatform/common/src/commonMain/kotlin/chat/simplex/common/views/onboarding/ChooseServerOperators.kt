@@ -15,7 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
- import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.BuildConfigCommon
@@ -53,8 +53,8 @@ fun ModalData.OnboardingConditionsView() {
       ) {
         Column(
           (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+            .fillMaxWidth()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           // Isometric illustration (conditional on USE_BRANDED_IMAGES)
@@ -67,7 +67,7 @@ fun ModalData.OnboardingConditionsView() {
               contentAlignment = Alignment.Center
             ) {
               Image(
-                painter = painterResource(MR.images.intro_2),
+                painter = painterResource(MR.images.use_conditions),
                 contentDescription = null,
                 modifier = Modifier.size(200.dp),
                 contentScale = ContentScale.Fit
@@ -75,7 +75,6 @@ fun ModalData.OnboardingConditionsView() {
             }
             Spacer(Modifier.height(DEFAULT_PADDING))
           }
-          
           // Title: "Conditions of use" (centered, bold)
           Text(
             text = stringResource(MR.strings.conditions_of_use_title),
@@ -85,16 +84,14 @@ fun ModalData.OnboardingConditionsView() {
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
           )
-          
-          Spacer(Modifier.height(DEFAULT_PADDING * 2))
+
+          Spacer(Modifier.height(DEFAULT_PADDING))
         }
 
-        Spacer(Modifier.weight(1f))
-        
         Column(
           (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+            .fillMaxWidth()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
           // Body text (left-aligned)
@@ -127,7 +124,7 @@ fun ModalData.OnboardingConditionsView() {
           // Privacy policy link (blue, underlined)
           Text(
             stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-            style = TextStyle(fontSize = 17.sp, textDecoration = TextDecoration.Underline),
+            style = TextStyle(fontSize = 17.sp),
             color = MaterialTheme.colors.primary,
             modifier = Modifier
               .clickable(
@@ -140,11 +137,14 @@ fun ModalData.OnboardingConditionsView() {
               }
           )
         }
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(DEFAULT_PADDING * 3))
 
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Spacer(Modifier.height(DEFAULT_PADDING))
+
           AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
-          
+
+          Spacer(Modifier.height(DEFAULT_PADDING))
           // Configure server operators link with icon
           Row(
             modifier = Modifier
@@ -166,15 +166,15 @@ fun ModalData.OnboardingConditionsView() {
               fontSize = 16.sp
             )
             Spacer(Modifier.width(8.dp))
-            // Server operator icon - using network icon if available, otherwise a simple circle
-            Icon(
-              painterResource(MR.images.ic_info),
-              contentDescription = null,
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier.size(16.dp)
-            )
+            serverOperators.value.forEach { op ->
+              Image(
+                painterResource(op.logo),
+                contentDescription = op.tradeName,
+                modifier = Modifier.size(24.dp)
+              )
+              Spacer(Modifier.width(4.dp))
+            }
           }
-          
           // Configure notifications link with icon
           Row(
             modifier = Modifier
@@ -196,14 +196,15 @@ fun ModalData.OnboardingConditionsView() {
               fontSize = 16.sp
             )
             Spacer(Modifier.width(8.dp))
-            // Notification icon - using bolt/lightning icon
             Icon(
               BoltFilled,
               contentDescription = null,
               tint = MaterialTheme.colors.primary,
-              modifier = Modifier.size(16.dp)
+              modifier = Modifier.size(24.dp)
             )
           }
+
+          Spacer(Modifier.width(DEFAULT_PADDING * 2))
         }
       }
     }
@@ -238,10 +239,11 @@ fun ModalData.ChooseServerOperators(
         }
 
         Spacer(Modifier.weight(1f))
-        Column((
-            if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+        Column(
+          (
+              if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
+            .fillMaxWidth()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           serverOperators.value.forEachIndexed { index, srvOperator ->
@@ -271,13 +273,14 @@ fun ModalData.ChooseServerOperators(
 @Composable
 private fun OperatorCheckView(serverOperator: ServerOperator, selectedOperatorIds: MutableState<Set<Long>>) {
   val checked = selectedOperatorIds.value.contains(serverOperator.operatorId)
-  TextButton({
-    if (checked) {
-      selectedOperatorIds.value -= serverOperator.operatorId
-    } else {
-      selectedOperatorIds.value += serverOperator.operatorId
-    }
-  },
+  TextButton(
+    {
+      if (checked) {
+        selectedOperatorIds.value -= serverOperator.operatorId
+      } else {
+        selectedOperatorIds.value += serverOperator.operatorId
+      }
+    },
     border = BorderStroke(1.dp, color = if (checked) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
     shape = RoundedCornerShape(18.dp)
   ) {
@@ -368,7 +371,7 @@ private fun AcceptConditionsButton(
 }
 
 private fun continueToNextStep() {
-    appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
+  appPrefs.onboardingStage.set(if (appPlatform.isAndroid) OnboardingStage.Step4_SetNotificationsMode else OnboardingStage.OnboardingComplete)
 }
 
 private fun continueToSetNotificationsAfterAccept() {

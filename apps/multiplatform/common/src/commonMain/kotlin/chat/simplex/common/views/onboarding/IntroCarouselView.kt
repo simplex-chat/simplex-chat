@@ -1,5 +1,6 @@
 package chat.simplex.common.views.onboarding
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -8,6 +9,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatModel
@@ -42,14 +44,11 @@ private fun IntroCarouselContent(chatModel: ChatModel) {
     Box(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(top = DEFAULT_PADDING + 8.dp),
+        .padding(top = 100.dp),
       contentAlignment = Alignment.Center,
     ) {
       SimpleXLogo(modifier = Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp))
     }
-
-    Spacer(Modifier.height(24.dp))
-
 
     HorizontalPager(
       state = pagerState,
@@ -72,19 +71,22 @@ private fun IntroCarouselContent(chatModel: ChatModel) {
       }
       val showButtons = page == 2
       val introImage = when (page) {
-        0 -> MR.images.intro_2
+        0 -> MR.images.intro_1
         1 -> MR.images.intro_2
-        else -> MR.images.intro_2
+        else -> MR.images.intro_3
       }
       IntroPage(
         headline = headline,
         subtitle = subtitle,
         centralContent = {
           if (BuildConfigCommon.USE_BRANDED_IMAGES) {
-            Icon(
+            Image(
               painter = painterResource(introImage),
               contentDescription = null,
-              modifier = Modifier.size(200.dp),
+              modifier = Modifier
+                .fillMaxWidth(0.65f)
+                .aspectRatio(1f),
+              contentScale = ContentScale.Fit,
             )
           }
         },

@@ -31,16 +31,16 @@ fun IntroPage(
     verticalArrangement = Arrangement.Top,
   ) {
 
+    Spacer(Modifier.weight(1f))
+
     Box(
-      modifier = Modifier
-        .weight(0.5f)
-        .fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth(),
       contentAlignment = Alignment.Center
     ) {
       centralContent()
     }
 
-    Spacer(Modifier.height(32.dp))
+    Spacer(Modifier.height(24.dp))
 
     Text(
       text = headline,
@@ -50,7 +50,7 @@ fun IntroPage(
       textAlign = TextAlign.Center,
       lineHeight = 38.sp,
     )
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(12.dp))
     Text(
       text = subtitle,
       style = MaterialTheme.typography.body1,
@@ -59,8 +59,9 @@ fun IntroPage(
       lineHeight = 24.sp,
     )
 
+    Spacer(Modifier.weight(if (showButtons) 0.5f else 1f))
+
     if (showButtons && (onCreateProfile != null || onMigrate != null)) {
-      Spacer(Modifier.height(DEFAULT_PADDING * 2))
       Column(
         Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
