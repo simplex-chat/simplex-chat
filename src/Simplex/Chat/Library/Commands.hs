@@ -672,7 +672,7 @@ processChatCommand vr nm = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
@@ -695,7 +695,7 @@ processChatCommand vr nm = \case
           -- TODO [knocking] check chat item scope?
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable, showGroupAsSender}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
@@ -706,7 +706,7 @@ processChatCommand vr nm = \case
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
                       SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
@@ -927,7 +927,7 @@ processChatCommand vr nm = \case
                 MCChat {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
-  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL _sendAsGroup -> withUser $ \user -> case toCType of
+  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL sendAsGroup -> withUser $ \user -> case toCType of
     CTDirect -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
@@ -941,7 +941,7 @@ processChatCommand vr nm = \case
         Just cmrs' ->
           withGroupLock "forwardChatItem, to group" toChatId $ do
             gInfo <- withFastStore $ \db -> getGroupInfo db vr user toChatId
-            sendGroupContentMessages user gInfo toScope (sendAsGroup' gInfo) False itemTTL cmrs'
+            sendGroupContentMessages user gInfo toScope sendAsGroup False itemTTL cmrs'
         Nothing -> pure $ CRNewChatItems user []
     CTLocal -> do
       cmrs <- prepareForward user
@@ -1275,7 +1275,7 @@ processChatCommand vr nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
           Nothing -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -2188,17 +2188,20 @@ processChatCommand vr nm = \case
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing False
+    asGroup <- getSendAsGroup user toChatRef
+    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing asGroup
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing False
+    asGroup <- getSendAsGroup user toChatRef
+    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing asGroup
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing False
+    asGroup <- getSendAsGroup user toChatRef
+    processChatCommand vr nm $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing asGroup
   SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
     case sendName of
@@ -3200,6 +3203,9 @@ processChatCommand vr nm = \case
           | otherwise -> throwCmdError "not supported"
         _ -> throwCmdError "not supported"
       pure $ ChatRef cType chatId Nothing
+    getSendAsGroup :: User -> ChatRef -> CM ShowGroupAsSender
+    getSendAsGroup user' (ChatRef CTGroup chatId _) = sendAsGroup' <$> withFastStore (\db -> getGroupInfo db vr user' chatId)
+    getSendAsGroup _ _ = pure False
     getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, Map MemberName GroupMemberId)
     getChatRefAndMentions user cName msg = do
       chatRef@(ChatRef cType chatId _) <- getChatRef user cName
@@ -4630,7 +4636,7 @@ chatCommandP =
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> (knownReaction <$?> jsonP)),
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
-      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP <*> pure False),
+      "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP <*> (" sendAsGroup=" *> onOffP <|> pure False)),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),

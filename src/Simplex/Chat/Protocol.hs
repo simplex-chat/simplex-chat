@@ -308,7 +308,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -1089,7 +1089,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         ttl <- opt "ttl"
         live <- opt "live"
         scope <- opt "scope"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope}
+        asGroup <- opt "asGroup"
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope"
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
@@ -1158,7 +1159,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     params = \case
       XMsgNew container -> msgContainerJSON container
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope} -> o $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]

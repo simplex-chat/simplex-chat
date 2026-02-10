@@ -1406,7 +1406,7 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
           SELECT chat_item_id
           FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
+          WHERE user_id = ? AND group_id = ? AND group_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ?
           ORDER BY chat_item_id DESC
           LIMIT 1
         
@@ -1432,16 +1432,6 @@ Query:
         
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
-
-Query: 
-          SELECT chat_item_id
-          FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND shared_msg_id = ?
-          ORDER BY chat_item_id DESC
-          LIMIT 1
-        
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 
 Query: 
           SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
