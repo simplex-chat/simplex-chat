@@ -6,13 +6,16 @@ module Simplex.Chat.Types.Shared where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Data.Text (Text)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole
-  = GRObserver -- connects to all group members and receives all messages, can't send messages
+  = GRUnknown Text -- unknown role from a newer client
+  | GRRelay -- chat relay: forwards messages, can't send its own messages
+  | GRObserver -- connects to all group members and receives all messages, can't send messages
   | GRAuthor -- reserved, unused
   | GRMember -- + can send messages to all group members
   | GRModerator -- + moderate messages and block members (excl. Admins and Owners)
@@ -32,14 +35,17 @@ instance TextEncoding GroupMemberRole where
     GRMember -> "member"
     GRAuthor -> "author"
     GRObserver -> "observer"
-  textDecode = \case
-    "owner" -> Just GROwner
-    "admin" -> Just GRAdmin
-    "moderator" -> Just GRModerator
-    "member" -> Just GRMember
-    "author" -> Just GRAuthor
-    "observer" -> Just GRObserver
-    r -> Nothing
+    GRRelay -> "relay"
+    GRUnknown t -> t
+  textDecode = Just . \case
+    "owner" -> GROwner
+    "admin" -> GRAdmin
+    "moderator" -> GRModerator
+    "member" -> GRMember
+    "author" -> GRAuthor
+    "observer" -> GRObserver
+    "relay" -> GRRelay
+    t -> GRUnknown t
 
 instance FromJSON GroupMemberRole where
   parseJSON = textParseJSON "GroupMemberRole"

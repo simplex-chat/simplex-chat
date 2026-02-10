@@ -30,6 +30,7 @@ This file is generated automatically.
 - [APILeaveGroup](#apileavegroup)
 - [APIListMembers](#apilistmembers)
 - [APINewGroup](#apinewgroup)
+- [APINewPublicGroup](#apinewpublicgroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -593,7 +594,7 @@ Add contact to group. Requires bot to have Admin role.
 **Syntax**:
 
 ```
-/_add #<groupId> <contactId> observer|author|member|moderator|admin|owner
+/_add #<groupId> <contactId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -672,7 +673,7 @@ Accept group member. Requires Admin role.
 **Syntax**:
 
 ```
-/_accept member #<groupId> <groupMemberId> observer|author|member|moderator|admin|owner
+/_accept member #<groupId> <groupMemberId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -715,7 +716,7 @@ Set members role. Requires Admin role.
 **Syntax**:
 
 ```
-/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] observer|author|member|moderator|admin|owner
+/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -940,6 +941,48 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APINewPublicGroup
+
+Create public group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- incognito: bool
+- relayIds: [int64]
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
+
+**Syntax**:
+
+```
+/_public group <userId>[ incognito=on] <relayIds[0]>[,<relayIds[1]>...] <json(groupProfile)>
+```
+
+```javascript
+'/_public group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + relayIds.join(',') + ' ' + JSON.stringify(groupProfile) // JavaScript
+```
+
+```python
+'/_public group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + ','.join(map(str, relayIds)) + ' ' + json.dumps(groupProfile) # Python
+```
+
+**Responses**:
+
+PublicGroupCreated: Public group created.
+- type: "publicGroupCreated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ### APIUpdateGroupProfile
 
 Update group profile.
@@ -998,7 +1041,7 @@ Create group link.
 **Syntax**:
 
 ```
-/_create link #<groupId> observer|author|member|moderator|admin|owner
+/_create link #<groupId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1037,7 +1080,7 @@ Set member role for group link.
 **Syntax**:
 
 ```
-/_set link role #<groupId> observer|author|member|moderator|admin|owner
+/_set link role #<groupId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
