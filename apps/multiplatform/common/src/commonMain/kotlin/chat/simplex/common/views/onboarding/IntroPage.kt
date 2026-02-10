@@ -31,7 +31,7 @@ fun IntroPage(
     verticalArrangement = Arrangement.Top,
   ) {
 
-    Spacer(Modifier.weight(1f))
+    Spacer(Modifier.height(DEFAULT_PADDING * 2))
 
     Box(
       modifier = Modifier.fillMaxWidth(),
