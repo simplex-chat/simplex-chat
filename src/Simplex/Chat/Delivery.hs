@@ -119,15 +119,15 @@ memberEventDeliveryContext m@GroupMember {memberRole, memberStatus}
   | memberRole >= GRModerator = Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}, sentAsGroup = False}
   | otherwise = Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False}
 
-data FwdSender
-  = FwdMember MemberId ContactName
-  | FwdChannel
-  deriving (Show)
-
 data NewMessageDeliveryTask = NewMessageDeliveryTask
   { messageId :: MessageId,
     taskContext :: DeliveryTaskContext
   }
+  deriving (Show)
+
+data FwdSender
+  = FwdMember MemberId ContactName
+  | FwdChannel
   deriving (Show)
 
 data MessageDeliveryTask = MessageDeliveryTask
