@@ -2065,18 +2065,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       Right cci -> pure (Right cci)
                       Left _ -> pure (Left e)
               Nothing -> tryChannelLookup
-        delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
-        delete cci asGroup byGroupMember = do
-          scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db vr user gInfo (cChatItemId cci)
-          let fullDelete
-                | asGroup = groupFeatureAllowed SGFFullDelete gInfo
-                | otherwise = maybe False (\m -> groupFeatureMemberAllowed SGFFullDelete m gInfo) m_
-          deletions <-
-            if fullDelete
-              then deleteGroupCIs user gInfo scopeInfo [cci] byGroupMember brokerTs
-              else markGroupCIsDeleted user gInfo scopeInfo [cci] byGroupMember brokerTs
-          toView $ CEvtChatItemsDeleted user deletions False False
-          pure $ if isNothing m_ then Nothing else Just $ infoToDeliveryContext gInfo scopeInfo asGroup
         moderate :: GroupMember -> GroupMember -> CChatItem 'CTGroup -> CM (Maybe DeliveryTaskContext)
         moderate sender mem cci = case sndMemberId_ of
           Just sndMemberId
@@ -2090,6 +2078,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions" $> Nothing
           | otherwise = a
+        delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
+        delete cci asGroup byGroupMember = do
+          scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db vr user gInfo (cChatItemId cci)
+          let fullDelete
+                | asGroup = groupFeatureAllowed SGFFullDelete gInfo
+                | otherwise = maybe False (\m -> groupFeatureMemberAllowed SGFFullDelete m gInfo) m_
+          deletions <-
+            if fullDelete
+              then deleteGroupCIs user gInfo scopeInfo [cci] byGroupMember brokerTs
+              else markGroupCIsDeleted user gInfo scopeInfo [cci] byGroupMember brokerTs
+          toView $ CEvtChatItemsDeleted user deletions False False
+          pure $ if isNothing m_ then Nothing else Just $ infoToDeliveryContext gInfo scopeInfo asGroup
         archiveMessageReports :: CChatItem 'CTGroup -> GroupMember -> CM ()
         archiveMessageReports (CChatItem _ ci) byMember = do
           ciIds <- withStore' $ \db -> markMessageReportsDeleted db user gInfo ci byMember brokerTs
