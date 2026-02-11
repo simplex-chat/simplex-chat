@@ -222,8 +222,8 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, Maybe GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
-    quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc, meta = CIMeta {showGroupAsSender}} membership'
-      | showGroupAsSender = pure (qmc, CIQGroupSnd, True, Nothing)
+    quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc, meta = CIMeta {showGroupAsSender = sentAsGroup}} membership'
+      | sentAsGroup = pure (qmc, CIQGroupSnd, True, Nothing)
       | otherwise = pure (qmc, CIQGroupSnd, True, Just membership')
     quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, Just m)
     quoteData ChatItem {chatDir = CIChannelRcv, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv Nothing, False, Nothing)

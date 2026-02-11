@@ -41,6 +41,16 @@ instance TextEncoding DeliveryWorkerScope where
     DWSMemberSupport -> "member_support"
     -- DWSMemberProfileUpdate -> "member_profile_update"
 
+-- Context for creating a delivery task. Separate from DeliveryJobScope because
+-- sentAsGroup is only needed for task persistence and batching into XGrpMsgForward events.
+-- Once batched into jobs, sentAsGroup=True and sentAsGroup=False messages can be mixed,
+-- so jobs don't need this flag.
+data DeliveryTaskContext = DeliveryTaskContext
+  { jobScope :: DeliveryJobScope,
+    sentAsGroup :: ShowGroupAsSender
+  }
+  deriving (Show)
+
 data DeliveryJobScope
   = DJSGroup {jobSpec :: DeliveryJobSpec}
   | DJSMemberSupport {supportGMId :: GroupMemberId}
@@ -92,12 +102,6 @@ jobSpecImpliedPending :: DeliveryJobSpec -> Bool
 jobSpecImpliedPending = \case
   DJDeliveryJob {includePending} -> includePending
   DJRelayRemoved -> True
-
-data DeliveryTaskContext = DeliveryTaskContext
-  { jobScope :: DeliveryJobScope,
-    sentAsGroup :: ShowGroupAsSender
-  }
-  deriving (Show)
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
 infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
