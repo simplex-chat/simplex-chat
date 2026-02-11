@@ -1258,8 +1258,8 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
                 _ -> pure []
               let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
                   memberId_ = memberId' <$> sender_
-                  memberName = memberShortenedName <$> sender_
-                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId_ memberName cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                  memberName_ = memberShortenedName <$> sender_
+                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId_ memberName_ cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
               pure msgForwardEvents
 
 memberShortenedName :: GroupMember -> ContactName
@@ -2618,6 +2618,8 @@ createChatItems user itemTs_ dirsCIContents = do
           let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
           pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
+-- rcvMem_ Nothing means message from channel - treated same as message from moderator,
+-- e.g. it can reset unanswered counter if newer than last unanswered message.
 memberAttentionChange :: Int -> (Maybe UTCTime) -> Maybe GroupMember -> GroupChatScopeInfo -> MemberAttention
 memberAttentionChange unread brokerTs_ rcvMem_ = \case
   GCSIMemberSupport (Just suppMem)
