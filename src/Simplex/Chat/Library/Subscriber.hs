@@ -2014,20 +2014,39 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- regular deletion
               Nothing
                 | sameMemberId memberId mem && rcvItemDeletable ci brokerTs ->
-                    delete cci False (Just m) Nothing
+                    delete cci False Nothing
                 | otherwise ->
                     messageError "x.msg.del: member attempted invalid message delete" $> Nothing
               -- moderation (not limited by time)
               Just _
                 | sameMemberId memberId mem && msgMemberId == memberId ->
-                    delete cci False (Just m) (Just m)
+                    delete cci False (Just m)
                 | otherwise -> moderate m mem cci
           (CIChannelRcv, _)
-            | isNothing sndMemberId_ && isOwner -> delete cci True m_ Nothing
+            | isNothing sndMemberId_ && isOwner -> delete cci True Nothing
             | otherwise -> messageError "x.msg.del: invalid channel message delete" $> Nothing
           (CIGroupSnd, Just m) -> moderate m membership cci
           _ -> messageError "x.msg.del: invalid message deletion" $> Nothing
-        Left e -> notFound e
+        Left e -> case m_ of
+          Just m@GroupMember {memberId, memberRole = senderRole} -> do
+            let msgMemberId = fromMaybe memberId sndMemberId_
+            if
+              | msgMemberId == memberId ->
+                  messageError ("x.msg.del: message not found, " <> tshow e) $> Nothing
+              | senderRole < GRModerator -> do
+                  messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
+                  pure Nothing
+              | otherwise -> case scope_ of
+                  Just (MSMember scopeMemberId) ->
+                    withStore $ \db -> do
+                      liftIO $ createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
+                      supportGMId <- getScopeMemberIdViaMemberId db user gInfo m scopeMemberId
+                      pure $ Just $ DeliveryTaskContext {jobScope = DJSMemberSupport supportGMId, sentAsGroup = False}
+                  Nothing -> do
+                    withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
+                    pure $ Just $ DeliveryTaskContext {jobScope = DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}, sentAsGroup = False}
+          Nothing ->
+            messageError ("x.msg.del: channel message not found, " <> tshow e) $> Nothing
       where
         isOwner = maybe True (\m -> memberRole' m == GROwner) m_
         RcvMessage {msgId} = rcvMsg
@@ -2037,10 +2056,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               tryChannelLookup =
                 withStore' (\db -> runExceptT $ getGroupChatItemBySharedMsgId db user gInfo Nothing sharedMsgId)
           case sndMemberId_ of
-            Just sId ->
-              tryMemberLookup sId >>= \case
-                Right cci -> pure (Right cci)
-                Left _ -> tryChannelLookup
+            Just sId -> tryMemberLookup sId
             Nothing -> case m_ of
               Just GroupMember {memberId} ->
                 tryMemberLookup memberId >>= \case
@@ -2050,12 +2066,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       Right cci -> pure (Right cci)
                       Left _ -> pure (Left e)
               Nothing -> tryChannelLookup
-        delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
-        delete cci asGroup delMember_ byGroupMember = do
+        delete :: CChatItem 'CTGroup -> Bool -> Maybe GroupMember -> CM (Maybe DeliveryTaskContext)
+        delete cci asGroup byGroupMember = do
           scopeInfo <- withStore $ \db -> getGroupChatScopeInfoForItem db vr user gInfo (cChatItemId cci)
           let fullDelete
                 | asGroup = groupFeatureAllowed SGFFullDelete gInfo
-                | otherwise = maybe False (\m -> groupFeatureMemberAllowed SGFFullDelete m gInfo) delMember_
+                | otherwise = maybe False (\m -> groupFeatureMemberAllowed SGFFullDelete m gInfo) m_
           deletions <-
             if fullDelete
               then deleteGroupCIs user gInfo scopeInfo [cci] byGroupMember brokerTs
@@ -2066,7 +2082,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         moderate sender mem cci = case sndMemberId_ of
           Just sndMemberId
             | sameMemberId sndMemberId mem -> checkRole (memberRole' sender) mem $ do
-                ctx_ <- delete cci False (Just sender) (Just sender)
+                ctx_ <- delete cci False (Just sender)
                 archiveMessageReports cci sender
                 pure ctx_
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId" $> Nothing
@@ -2079,25 +2095,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         archiveMessageReports (CChatItem _ ci) byMember = do
           ciIds <- withStore' $ \db -> markMessageReportsDeleted db user gInfo ci byMember brokerTs
           unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo ciIds False (Just byMember)
-        notFound e = case (sndMemberId_, m_) of
-          (Nothing, _) ->
-            messageError ("x.msg.del: message not found, " <> tshow e) $> Nothing
-          (Just _, Just m)
-            | memberRole' m < GRModerator -> do
-                messageError $ "x.msg.del: message not found, insufficient member permissions, " <> tshow e
-                pure Nothing
-            | otherwise -> do
-                let msgMemberId = fromMaybe (memberId' m) sndMemberId_
-                fmap (\js -> DeliveryTaskContext js False) <$> case scope_ of
-                  Just (MSMember scopeMemberId) ->
-                    withStore $ \db -> do
-                      liftIO $ createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                      Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user gInfo m scopeMemberId
-                  Nothing -> do
-                    withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                    pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
-          (Just _, Nothing) ->
-            messageError ("x.msg.del: message not found, " <> tshow e) $> Nothing
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()
