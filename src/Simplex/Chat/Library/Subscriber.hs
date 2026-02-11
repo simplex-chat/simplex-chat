@@ -1430,7 +1430,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-    memberCanSend Nothing _ a = a
+    memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
     memberCanSend (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
       Just MSMember {} -> a
       Nothing
