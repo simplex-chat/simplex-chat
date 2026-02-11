@@ -1875,10 +1875,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   pure Nothing
                 Nothing -> do
                   createContentItem gInfo' (Just m') scopeInfo
-                  pure $ Just $ infoToDeliveryContext gInfo scopeInfo sentAsGroup
+                  pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
       where
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
-        timed_ = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
+        timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
         live' = fromMaybe False live_
         ExtMsgContent content mentions fInv_ itemTTL live_ msgScope_ asGroup_ = mcExtMsgContent mc
         sentAsGroup = asGroup_ == Just True
@@ -1891,7 +1891,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         createBlockedByAdmin gInfo' m' scopeInfo
           | groupFeatureAllowed SGFFullDelete gInfo' = do
               -- ignores member role when blocked by admin
-              (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo (ciContentNoParse CIRcvBlocked) Nothing timed_ False M.empty
+              (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo (ciContentNoParse CIRcvBlocked) Nothing (timed_ gInfo') False M.empty
               ci' <- withStore' $ \db -> updateGroupCIBlockedByAdmin db user gInfo' ci brokerTs
               groupMsgToView cInfo ci'
           | otherwise = do
@@ -1903,7 +1903,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | moderatorRole < GRModerator || moderatorRole < memberRole =
               createContentItem gInfo' (Just m') scopeInfo
           | groupFeatureMemberAllowed SGFFullDelete moderator gInfo' = do
-              (ci, cInfo) <- saveRcvCI gInfo' (Just m') scopeInfo (ciContentNoParse CIRcvModerated) Nothing timed_ False M.empty
+              (ci, cInfo) <- saveRcvCI gInfo' (Just m') scopeInfo (ciContentNoParse CIRcvModerated) Nothing (timed_ gInfo') False M.empty
               ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo' ci moderator moderatedAt
               groupMsgToView cInfo ci'
           | otherwise = do
@@ -1913,10 +1913,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CEvtChatItemsDeleted user deletions False False
         -- m' is Maybe GroupMember
         createNonLive gInfo' m' scopeInfo file_ = do
-          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) timed_ False mentions
+          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') False mentions
         createContentItem gInfo' m' scopeInfo = do
           file_ <- processFileInv gInfo' m'
-          newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) timed_ live'
+          newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') live'
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
@@ -1930,7 +1930,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           groupMsgToView cInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
-    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_ forwarded asGroup_
+    groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_ _forwarded asGroup_
       | Just m <- m_, prohibitedSimplexLinks gInfo m ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
@@ -1938,29 +1938,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- This patches initial sharedMsgId into chat item when locally deleted chat item
             -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
             -- Chat item and update message which created it will have different sharedMsgId in this case...
-            let showGroupAsSender = fromMaybe (isNothing m_) asGroup_
-                timed_ = if forwarded then rcvCITimed_ (Just Nothing) ttl_ else rcvGroupCITimed gInfo ttl_
+            let timed_ = rcvGroupCITimed gInfo ttl_
+                showGroupAsSender = fromMaybe (isNothing m_) asGroup_
             if showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_
               then messageError "x.msg.update: member attempted to update as group" $> Nothing
               else do
-                (chatDir, mentions', scopeInfo) <-
+                (gInfo', chatDir, mentions', scopeInfo) <-
                   if showGroupAsSender
-                    then pure (CDChannelRcv gInfo Nothing, M.empty, Nothing)
+                    then pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
                     else case m_ of
                       Just m -> do
                         let mentions' = if memberBlocked m then [] else mentions
                         (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m mc msgScope_
-                        pure (CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
-                      Nothing -> pure (CDChannelRcv gInfo Nothing, M.empty, Nothing)
+                        pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
+                      Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
                 (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
                 ci' <- withStore' $ \db -> do
                   createChatItemVersion db (chatItemId' ci) brokerTs mc
                   updateGroupChatItem db user groupId ci content True live Nothing
                 ci'' <- case chatDir of
-                  CDGroupRcv gInfo' _ m' -> blockedMemberCI gInfo' m' ci'
+                  CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
                   CDChannelRcv {} -> pure ci'
                 toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
-                pure $ Just $ infoToDeliveryContext gInfo scopeInfo showGroupAsSender
+                pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc
