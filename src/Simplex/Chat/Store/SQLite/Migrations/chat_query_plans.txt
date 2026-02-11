@@ -4742,14 +4742,6 @@ Plan:
 SEARCH protocol_servers USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE rcv_files
-      SET to_receive = 1, user_approved_relays = ?, updated_at = ?
-      WHERE file_id = ?
-    
-Plan:
-SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
       UPDATE remote_controllers
       SET ctrl_device_name = ?, dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
       WHERE remote_ctrl_id = ?
