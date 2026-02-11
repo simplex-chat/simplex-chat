@@ -237,7 +237,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  fdescribe "channels" $ do
+  describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -265,6 +265,8 @@ chatGroupTests = do
       it "should recreate deleted item with correct sendAsGroup from update" testChannelUpdateFallbackSendAsGroup
       it "should respect sendAsGroup parameter in forward API" testForwardAPIUsesParameter
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
+      it "should update member message in channel" testChannelMemberMessageUpdate
+      it "should delete member message in channel" testChannelMemberMessageDelete
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -9205,6 +9207,69 @@ testForwardCLISendAsGroup ps =
                   do eve <# "#team> -> forwarded [>>]"
                      eve <## "      hi [>>]"
                 ]
+
+testChannelMemberMessageUpdate :: HasCallStack => TestParams -> IO ()
+testChannelMemberMessageUpdate ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- member sends a message
+            cath #> "#team hello"
+            bob <# "#team cath> hello"
+            concurrentlyN_
+              [ do alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                   alice <# "#team cath> hello [>>]",
+                do dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                   dan <# "#team cath> hello [>>]",
+                do eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                   eve <# "#team cath> hello [>>]"
+              ]
+
+            -- member updates their message
+            cathMsgId <- lastItemId cath
+            cath ##> ("/_update item #1 " <> cathMsgId <> " text hello updated")
+            cath <# "#team [edited] hello updated"
+            bob <# "#team cath> [edited] hello updated"
+            concurrentlyN_
+              [ alice <# "#team cath> [edited] hello updated",
+                dan <# "#team cath> [edited] hello updated",
+                eve <# "#team cath> [edited] hello updated"
+              ]
+
+testChannelMemberMessageDelete :: HasCallStack => TestParams -> IO ()
+testChannelMemberMessageDelete ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- member sends a message
+            cath #> "#team hello"
+            bob <# "#team cath> hello"
+            concurrentlyN_
+              [ do alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                   alice <# "#team cath> hello [>>]",
+                do dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                   dan <# "#team cath> hello [>>]",
+                do eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                   eve <# "#team cath> hello [>>]"
+              ]
+
+            -- member deletes their message
+            cathMsgId <- lastItemId cath
+            cath #$> ("/_delete item #1 " <> cathMsgId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] hello"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] hello",
+                dan <# "#team cath> [marked deleted] hello",
+                eve <# "#team cath> [marked deleted] hello"
+              ]
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
