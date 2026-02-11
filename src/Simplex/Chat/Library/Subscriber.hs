@@ -942,14 +942,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             deliveryTaskContext_ <- case event of
               XMsgNew mc ->
                 checkSendAsGroup asGroup $
-                  memberCanSend m'' scope Nothing $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
+                  memberCanSend (Just m'') scope $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
                 where
                   ExtMsgContent {scope, asGroup} = mcExtMsgContent mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
                 checkSendAsGroup asGroup_ $
-                  memberCanSend m'' msgScope Nothing $
+                  memberCanSend (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live False asGroup_
               XMsgDel sharedMsgId memberId_ scope_ -> groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add ->
@@ -976,7 +976,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpInfo p' -> fmap ctx <$> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps'
               -- TODO [knocking] why don't we forward these messages?
-              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend m'' msgScope Nothing $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
+              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward memberId memberName msg' msgTs -> Nothing <$ xGrpMsgForward gInfo' m'' memberId memberName msg' msgTs brokerTs
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
@@ -1429,21 +1429,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
-    memberCanSend ::
-      GroupMember ->
-      Maybe MsgScope ->
-      a ->
-      CM a ->
-      CM a
-    memberCanSend m@GroupMember {memberRole} msgScope def a = case msgScope of
+    memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
+    memberCanSend Nothing _ a = a
+    memberCanSend (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
       Just MSMember {} -> a
       Nothing
         | memberRole > GRObserver || memberPending m -> a
-        | otherwise -> messageError "member is not allowed to send messages" $> def
-
-    memberCanSend' :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
-    memberCanSend' Nothing _ a = a
-    memberCanSend' (Just m) scope a = memberCanSend m scope Nothing a
+        | otherwise -> messageError "member is not allowed to send messages" $> Nothing
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -3162,13 +3154,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ body chatMsg brokerTs
           forM_ rcvMsg_ $ \rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
-              void $ memberCanSend' author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
+              void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
               where
                 ExtMsgContent {scope} = mcExtMsgContent mc
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
-              void $ memberCanSend' author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live True asGroup_
+              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live True asGroup_
             XMsgDel sharedMsgId memId scope_ ->
               void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add ->
