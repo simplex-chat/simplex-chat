@@ -9149,7 +9149,7 @@ testForwardAPIUsesParameter ps =
               -- forward to channel with sendAsGroup=True (as channel)
               alice ##> "/last_item_id @frank"
               msgId <- getTermLine alice
-              alice ##> ("/_forward #1 sendAsGroup=on @2 " <> msgId)
+              alice ##> ("/_forward #1 as_group=on @2 " <> msgId)
               alice <# "#team <- @frank"
               alice <## "      hi there"
               bob <# "#team> -> forwarded"
@@ -9164,7 +9164,7 @@ testForwardAPIUsesParameter ps =
                 ]
 
               -- forward to channel with sendAsGroup=False (as member)
-              alice ##> ("/_forward #1 sendAsGroup=off @2 " <> msgId)
+              alice ##> ("/_forward #1 as_group=off @2 " <> msgId)
               alice <# "#team <- @frank"
               alice <## "      hi there"
               bob <# "#team alice> -> forwarded"
