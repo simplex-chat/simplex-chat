@@ -3395,11 +3395,14 @@ processChatCommand vr nm = \case
               let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
                in userProfileInGroup' user allowSimplexLinks incognitoProfile
             Nothing -> userProfileDirect user incognitoProfile Nothing True
-          chatEvent = case gInfo_ of
-            Just (Just gInfo) | useRelays' gInfo ->
-              let GroupInfo {membership = GroupMember {memberId}} = gInfo
-               in XMember profileToSend memberId
-            _ -> XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+      g <- asks random
+      chatEvent <- case gInfo_ of
+        Just (Just gInfo) | useRelays' gInfo -> do
+          let GroupInfo {membership = GroupMember {memberId}} = gInfo
+          (memberPubKey, _memberPrivKey) <- atomically $ C.generateKeyPair g
+          -- TODO: store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
+          pure $ XMember profileToSend memberId (MemberKey memberPubKey)
+        _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       dm <- encodeConnInfoPQ pqSup chatV chatEvent
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode

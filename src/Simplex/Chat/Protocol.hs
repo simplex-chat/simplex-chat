@@ -54,6 +54,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -305,6 +306,28 @@ data ChatMessage e = ChatMessage
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
+-- Can be extended to support profile identity keys (e.g., secp256k1 for Nostr)
+data KeyRef = KRMember MemberId
+  deriving (Eq, Show)
+
+data ChatBinding
+  = CBDirect {securityCode :: ByteString}
+  | CBGroup {groupRootKey :: C.PublicKeyEd25519, senderMemberId :: MemberId}
+  deriving (Eq, Show)
+
+data MsgSignature = MsgSignature KeyRef C.ASignature
+  deriving (Show)
+
+data MsgSignatures = MsgSignatures
+  { chatBinding :: ChatBinding,
+    signatures :: L.NonEmpty MsgSignature
+  }
+
+data SignedChatMessages = SignedChatMessages
+  { signatures :: Maybe MsgSignatures,
+    messages :: [AChatMessage]
+  }
+
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
@@ -318,13 +341,13 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
-  XMember :: {profile :: Profile, newMemberId :: MemberId} -> ChatMsgEvent 'Json
+  XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
-  XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
+  XGrpLinkMem :: Profile -> Maybe MemberKey -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
   XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
@@ -675,19 +698,27 @@ parseChatMessages msg = case B.head msg of
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
+      '{' -> [parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map parseItem v
         Left e -> [Left e]
+      '=' -> decodeBinaryBatch (B.tail s)
       _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+    parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
     decodeCompressed :: ByteString -> [Either String AChatMessage]
-    decodeCompressed s' = case smpDecode s' of
+    decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
+    -- Binary batch format: '=' <count:1> (<len:2> <body>)*
+    -- TODO [member keys] signatures will also be parsed here.
+    decodeBinaryBatch :: ByteString -> [Either String AChatMessage]
+    decodeBinaryBatch s = case parseAll smpListP s of
+      Left e -> [Left e]
+      Right msgs -> map (parseMsg . unLarge) msgs
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
@@ -992,7 +1023,7 @@ toCMEventTag msg = case msg of
   XGrpAcpt _ -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkReject _ -> XGrpLinkReject_
-  XGrpLinkMem _ -> XGrpLinkMem_
+  XGrpLinkMem _ _ -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpRelayInv _ -> XGrpRelayInv_
   XGrpRelayAcpt _ -> XGrpRelayAcpt_
@@ -1107,13 +1138,13 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
-      XMember_ -> XMember <$> p "profile" <*> p "newMemberId"
+      XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
-      XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
+      XGrpLinkMem_ -> XGrpLinkMem <$> p "profile" <*> opt "memberKey"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
       XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
       XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink"
@@ -1169,13 +1200,13 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
-      XMember {profile, newMemberId} -> o ["profile" .= profile, "newMemberId" .= newMemberId]
+      XMember {profile, newMemberId, newMemberKey} -> o ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
-      XGrpLinkMem profile -> o ["profile" .= profile]
+      XGrpLinkMem profile memberKey -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
       XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
       XGrpRelayAcpt relayLink -> o ["relayLink" .= relayLink]
@@ -1239,3 +1270,29 @@ data GroupShortLinkData = GroupShortLinkData
 $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
+
+instance Encoding KeyRef where
+  smpEncode = \case
+    KRMember (MemberId memberId) -> smpEncode ('M', memberId)
+  smpP =
+    smpP >>= \case
+      'M' -> KRMember . MemberId <$> smpP
+      c -> fail $ "invalid KeyRef tag: " <> show c
+
+instance Encoding ChatBinding where
+  smpEncode = \case
+    CBDirect securityCode -> smpEncode ('D', securityCode)
+    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
+  smpP =
+    smpP >>= \case
+      'D' -> CBDirect <$> smpP
+      'G' -> CBGroup <$> smpP <*> smpP
+      c -> fail $ "invalid ChatBinding tag: " <> show c
+
+instance Encoding MsgSignature where
+  smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
+  smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
+
+instance Encoding MsgSignatures where
+  smpEncode (MsgSignatures chat sigs) = smpEncode ('S', chat, sigs)
+  smpP = A.char 'S' *> (MsgSignatures <$> smpP <*> smpP)
