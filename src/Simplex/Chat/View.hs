@@ -552,6 +552,7 @@ chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
   (GroupChat g _scopeInfo, CIGroupRcv m) -> groupNtf user g mention && not (memberBlocked m)
+  (GroupChat g _scopeInfo, CIChannelRcv) -> groupNtf user g mention
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
@@ -673,16 +674,18 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           _ -> showSndItem to
           where
             to = ttyToGroup g scopeInfo
-        CIGroupRcv m -> case content of
-          CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
-          CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
-          CIRcvGroupInvitation {} -> showRcvItemProhibited from
-          CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m) context meta [plainContent content] False
-          CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m) context meta [plainContent content] False
-          _ -> showRcvItem from
-          where
-            from = ttyFromGroupAttention g scopeInfo m userMention
+        CIGroupRcv m -> rcvGroupItem (Just m)
+        CIChannelRcv -> rcvGroupItem Nothing
         where
+          rcvGroupItem m_ = case content of
+            CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
+            CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+            CIRcvGroupInvitation {} | isJust m_ -> showRcvItemProhibited from
+            CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
+            CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
+            _ -> showRcvItem from
+            where
+              from = ttyFromGroupAttention g scopeInfo m_ userMention
           context =
             maybe
               (maybe [] forwardedFrom itemForwarded)
@@ -813,19 +816,22 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
           (directQuote chatDir)
           quotedItem
   GroupChat g scopeInfo -> case chatDir of
-    CIGroupRcv m -> case content of
-      CIRcvMsgContent mc
-        | itemLive == Just True && not liveItems -> []
-        | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
-      _ -> []
-      where
-        from = if itemEdited then ttyFromGroupEdited g scopeInfo m else ttyFromGroup g scopeInfo m
+    CIGroupRcv m -> updGroupItem (Just m)
+    CIChannelRcv -> updGroupItem Nothing
     CIGroupSnd -> case content of
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to context mc ts tz meta
       _ -> []
       where
         to = if itemEdited then ttyToGroupEdited g scopeInfo else ttyToGroup g scopeInfo
     where
+      updGroupItem :: Maybe GroupMember -> [StyledString]
+      updGroupItem m_ = case content of
+        CIRcvMsgContent mc
+          | itemLive == Just True && not liveItems -> []
+          | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
+        _ -> []
+        where
+          from = if itemEdited then ttyFromGroupEdited g scopeInfo m_ else ttyFromGroup g scopeInfo m_
       context =
         maybe
           (maybe [] forwardedFrom itemForwarded)
@@ -881,7 +887,7 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 viewItemReaction :: forall c d. Bool -> ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
+viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content, meta = CIMeta {showGroupAsSender}}, sentAt, reaction} added ts tz =
   case (chat, chatDir) of
     (DirectChat c, CIDirectRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
@@ -889,12 +895,8 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g scopeInfo, CIGroupRcv m) -> case ciMsgContent content of
-      Just mc -> view from $ reactionMsg mc
-      _ -> []
-      where
-        from = ttyFromGroup g scopeInfo m
-        reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
+    (GroupChat g scopeInfo, CIGroupRcv m) -> groupReaction g scopeInfo (Just m) (sentByMember' g itemDir)
+    (GroupChat g scopeInfo, CIChannelRcv) -> groupReaction g scopeInfo Nothing (sentByMember' g itemDir)
     (LocalChat _, CILocalRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
@@ -906,6 +908,13 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
     (_, CILocalSnd) -> [sentText]
     (CInfoInvalidJSON {}, _) -> []
   where
+    groupReaction g scopeInfo m_ sentBy = case ciMsgContent content of
+      Just mc -> view from $ reactionMsg mc
+      _ -> []
+      where
+        from = ttyFromGroup g scopeInfo m_
+        reactionMsg mc = quoteText mc . ttyQuotedMember $
+          if showGroupAsSender then Nothing else sentBy
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
       | otherwise = []
@@ -946,10 +955,11 @@ sentByMember GroupInfo {membership} = \case
   CIQGroupSnd -> Just membership
   CIQGroupRcv m -> m
 
-sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> GroupMember
+sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> Maybe GroupMember
 sentByMember' GroupInfo {membership} = \case
-  CIGroupSnd -> membership
-  CIGroupRcv m -> m
+  CIGroupSnd -> Just membership
+  CIGroupRcv m -> Just m
+  CIChannelRcv -> Nothing
 
 quoteText :: MsgContent -> StyledString -> [StyledString]
 quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
@@ -2270,6 +2280,7 @@ cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
 fileFrom _ (CIGroupRcv m) = " from " <> ttyMember m
+fileFrom (GroupChat g _) CIChannelRcv = " from " <> ttyGroup' g
 fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
@@ -2698,7 +2709,7 @@ ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ viewName c <> ">"
 
 ttyQuotedMember :: Maybe GroupMember -> StyledString
 ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom (viewName c)
-ttyQuotedMember _ = "> " <> ttyFrom "?"
+ttyQuotedMember Nothing = ">"
 
 ttyFromContact :: Contact -> StyledString
 ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> ")
@@ -2734,26 +2745,29 @@ ttyFullGroup :: GroupInfo -> StyledString
 ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName, shortDescr}} =
   ttyGroup g <> optFullName g fullName shortDescr
 
-ttyFromGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> StyledString
-ttyFromGroup g scopeInfo m = ttyFromGroupAttention g scopeInfo m False
+ttyFromGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> StyledString
+ttyFromGroup g scopeInfo m_ = ttyFromGroupAttention g scopeInfo m_ False
 
-ttyFromGroupAttention :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Bool -> StyledString
-ttyFromGroupAttention g scopeInfo m attention = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m attention)
+ttyFromGroupAttention :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Bool -> StyledString
+ttyFromGroupAttention g scopeInfo m_ attention = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m_ attention)
 
-ttyFromGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> StyledString
-ttyFromGroupEdited g scopeInfo m = membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m <> "[edited] ")
+ttyFromGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> StyledString
+ttyFromGroupEdited g scopeInfo m_ = membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m_ <> "[edited] ")
 
-ttyFromGroupDeleted :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe Text -> StyledString
-ttyFromGroupDeleted g scopeInfo m deletedText_ =
-  membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
+ttyFromGroupDeleted :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Maybe Text -> StyledString
+ttyFromGroupDeleted g scopeInfo m_ deletedText_ =
+  membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m_ <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
-fromGroup_ :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Text
-fromGroup_ g scopeInfo m = fromGroupAttention_ g scopeInfo m False
+fromGroup_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Text
+fromGroup_ g scopeInfo m_ = fromGroupAttention_ g scopeInfo m_ False
 
-fromGroupAttention_ :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Bool -> Text
-fromGroupAttention_ g scopeInfo m attention =
+fromGroupAttention_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Bool -> Text
+fromGroupAttention_ g scopeInfo m_ attention =
   let attn = if attention then "!" else ""
-   in "#" <> viewGroupName g <> " " <> groupScopeInfoStr scopeInfo <> viewMemberName m <> attn <> "> "
+   in "#" <> viewGroupName g
+        <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo)
+        <> maybe "" ((" " <>) . viewMemberName) m_
+        <> attn <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -2762,17 +2776,17 @@ ttyTo :: Text -> StyledString
 ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> StyledString
-ttyToGroup g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " " <> groupScopeInfoStr scopeInfo)
+ttyToGroup g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo) <> " ")
 
 ttyToGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> StyledString
-ttyToGroupEdited g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> groupScopeInfoStr scopeInfo <> " [edited] ")
+ttyToGroupEdited g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo) <> " [edited] ")
 
-groupScopeInfoStr :: Maybe GroupChatScopeInfo -> Text
+groupScopeInfoStr :: Maybe GroupChatScopeInfo -> Maybe Text
 groupScopeInfoStr = \case
-  Nothing -> ""
-  Just (GCSIMemberSupport {groupMember_}) -> case groupMember_ of
-    Nothing -> "(support) "
-    Just m -> "(support: " <> viewMemberName m <> ") "
+  Nothing -> Nothing
+  Just (GCSIMemberSupport {groupMember_}) -> Just $ case groupMember_ of
+    Nothing -> "(support)"
+    Just m -> "(support: " <> viewMemberName m <> ")"
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

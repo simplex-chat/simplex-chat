@@ -10,7 +10,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId)
+import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -40,6 +40,16 @@ instance TextEncoding DeliveryWorkerScope where
     DWSGroup -> "group"
     DWSMemberSupport -> "member_support"
     -- DWSMemberProfileUpdate -> "member_profile_update"
+
+-- Context for creating a delivery task. Separate from DeliveryJobScope because
+-- sentAsGroup is only needed for task persistence and batching into XGrpMsgForward events.
+-- Once batched into jobs, sentAsGroup=True and sentAsGroup=False messages can be mixed,
+-- so jobs don't need this flag.
+data DeliveryTaskContext = DeliveryTaskContext
+  { jobScope :: DeliveryJobScope,
+    sentAsGroup :: ShowGroupAsSender
+  }
+  deriving (Show)
 
 data DeliveryJobScope
   = DJSGroup {jobSpec :: DeliveryJobSpec}
@@ -93,12 +103,14 @@ jobSpecImpliedPending = \case
   DJDeliveryJob {includePending} -> includePending
   DJRelayRemoved -> True
 
-infoToDeliveryScope :: GroupInfo -> Maybe GroupChatScopeInfo -> DeliveryJobScope
-infoToDeliveryScope GroupInfo {membership} = \case
-  Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
-  Just GCSIMemberSupport {groupMember_} ->
-    let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
-     in DJSMemberSupport {supportGMId}
+infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
+infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
+  where
+    jobScope = case scopeInfo of
+      Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+      Just GCSIMemberSupport {groupMember_} ->
+        let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
+         in DJSMemberSupport {supportGMId}
 
 memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
 memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
@@ -109,20 +121,22 @@ memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
 
 data NewMessageDeliveryTask = NewMessageDeliveryTask
   { messageId :: MessageId,
-    jobScope :: DeliveryJobScope,
-    messageFromChannel :: MessageFromChannel
+    taskContext :: DeliveryTaskContext
   }
+  deriving (Show)
+
+data FwdSender
+  = FwdMember MemberId ContactName
+  | FwdChannel
   deriving (Show)
 
 data MessageDeliveryTask = MessageDeliveryTask
   { taskId :: Int64,
     jobScope :: DeliveryJobScope,
     senderGMId :: GroupMemberId,
-    senderMemberId :: MemberId,
-    senderMemberName :: ContactName,
+    fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    chatMessage :: ChatMessage 'Json,
-    messageFromChannel :: MessageFromChannel
+    chatMessage :: ChatMessage 'Json
   }
   deriving (Show)
 

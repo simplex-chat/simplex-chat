@@ -2,7 +2,13 @@
 
 This file provides guidance on coding style and approaches and on building the code.
 
-## Code Style and Formatting
+## Code Security
+
+When designing code and planning implementations:
+- Apply adversarial thinking, and consider what may happen if one of the communicating parties is malicious.
+- Formulate an explicit threat model for each change - who can do which undesirable things and under which circumstances.
+
+## Code Style, Formatting and Approaches
 
 The project uses **fourmolu** for Haskell code formatting. Configuration is in `fourmolu.yaml`.
 
@@ -38,8 +44,15 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 
 **Diff and refactoring:**
 - Avoid unnecessary changes and code movements
+- Never rename existing variables, parameters, or functions unless the rename is the point of the change
 - Never do refactoring unless it substantially reduces cost of solving the current problem, including the cost of refactoring
 - Aim to minimize the code changes - do what is minimally required to solve users' problems
+
+**Type-driven development:**
+- Types must reflect business semantics, not data shape. E.g., `CIChannelRcv` (channel message) vs `CIGroupRcv GroupMember` (member message) are semantically distinct — do not collapse them into `CIGroupRcv (Maybe GroupMember)` just because the data overlaps. Duplicate pattern match arms across semantic constructors are acceptable.
+- Duplicate function bodies are not acceptable. When adding a new variant of existing behavior, parameterize existing functions to handle both variants — do not copy function bodies into parallel code paths.
+- Concrete example: if `groupMessageFileDescription` and `channelMessageFileDescription` share 90% of their logic, extract a shared helper and make both into thin wrappers — do not maintain two near-identical function bodies.
+- When the return type differs between variants (e.g., one returns `Maybe X`, another returns `()`), use the more general return type and have callers discard what they don't need.
 
 **Document and code structure:**
 - **Never move existing code or sections around** - add new content at appropriate locations without reorganizing existing structure.

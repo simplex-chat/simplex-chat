@@ -180,7 +180,8 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo m, text)
+        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo (Just m), text)
+        (GroupChat g scopeInfo, CIChannelRcv) -> sendNtf (fromGroup_ g scopeInfo Nothing, text)
         _ -> pure ()
     where
       text = msgText mc formattedText
