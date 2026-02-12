@@ -5,7 +5,7 @@ module Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- TODO [channels fwd] add later in new migration for MemberProfileUpdate delivery jobs:
+-- TODO [relays] add later in new migration for MemberProfileUpdate delivery jobs:
 -- TODO   - ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
 -- TODO   - ALTER TABLE group_members ADD COLUMN join_ts TEXT;
 
@@ -21,7 +21,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- delivery_tasks table:
 -- - sender_group_member_id <-> GroupMemberId (sender of the original message that created task),
 -- - message_id <-> MessageId (reference to the original message that created task),
--- - message_from_channel <-> Maybe MessageFromChannel (for MessageDeliveryTask),
+-- - message_from_channel <-> ShowGroupAsSender (for MessageDeliveryTask),
 -- - task_status <-> DeliveryTaskStatus,
 -- - task_err_reason <-> Maybe Text (set when task status is DTSError, not encoded in status to allow filtering by DTSError in queries).
 
