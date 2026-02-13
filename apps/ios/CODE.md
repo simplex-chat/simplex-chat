@@ -109,7 +109,7 @@ apps/ios/
 | `src/Simplex/Chat/Controller.hs` | [spec/api.md](spec/api.md) | [product/concepts.md](product/concepts.md) |
 | `src/Simplex/Chat/Types.hs` | [spec/api.md](spec/api.md) | [product/glossary.md](product/glossary.md) |
 | `src/Simplex/Chat/Core.hs` | [spec/architecture.md](spec/architecture.md) | [product/concepts.md](product/concepts.md) |
-| `src/Simplex/Chat/Protocol.hs` | [spec/architecture.md](spec/architecture.md) | [product/concepts.md](product/concepts.md) |
+| `src/Simplex/Chat/Protocol.hs` (chat-level message envelopes, x-events, MsgContent) | [spec/architecture.md](spec/architecture.md) | [product/concepts.md](product/concepts.md) |
 | `src/Simplex/Chat/Messages.hs` | [spec/api.md](spec/api.md) | [product/flows/messaging.md](product/flows/messaging.md) |
 | `src/Simplex/Chat/Messages/CIContent.hs` | [spec/api.md](spec/api.md) | [product/flows/messaging.md](product/flows/messaging.md) |
 | `src/Simplex/Chat/Call.hs` | [spec/services/calls.md](spec/services/calls.md) | [product/flows/calling.md](product/flows/calling.md) |

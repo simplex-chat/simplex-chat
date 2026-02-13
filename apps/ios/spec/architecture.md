@@ -37,8 +37,11 @@ The app follows a strict layered model where each layer communicates only with i
 │  C FFI Layer                            │  chat_send_cmd_retry, chat_recv_msg_wait
 │  (SimpleX.h, libsimplex.a)             │  Compiled Haskell via GHC cross-compiler
 ├─────────────────────────────────────────┤
-│  Haskell Core (chat_ctrl)               │  Chat logic, encryption, SMP/XFTP protocols
-│  (Simplex.Chat.Controller)              │  Double-ratchet, database operations
+│  Haskell Core (chat_ctrl)               │  Chat logic, chat protocol (x-events),
+│  (Simplex.Chat.Controller)              │  database operations, file management
+├─────────────────────────────────────────┤
+│  simplexmq library (external)           │  SMP/XFTP protocols, SMP Agent,
+│  (github.com/simplex-chat/simplexmq)    │  double-ratchet (PQDR), transport (TLS)
 └─────────────────────────────────────────┘
 ```
 
@@ -273,3 +276,18 @@ Optional desktop pairing allows controlling the mobile app from a desktop client
 | C header | `SimpleXChat/SimpleX.h` |
 | NSE | `SimpleX NSE/NotificationService.swift` |
 | Haskell core | `../../src/Simplex/Chat/Controller.hs` |
+| Chat protocol (x-events, message envelopes) | `../../src/Simplex/Chat/Protocol.hs` |
+
+### External: simplexmq Library
+
+The lower-level protocol and encryption layers are in the separate [simplexmq](https://github.com/simplex-chat/simplexmq) library:
+
+| Component | Spec | Implementation |
+|-----------|------|----------------|
+| SMP protocol | `simplexmq/protocol/simplex-messaging.md` | `simplexmq/src/Simplex/Messaging/Protocol.hs` |
+| XFTP protocol | `simplexmq/protocol/xftp.md` | `simplexmq/src/Simplex/FileTransfer/Protocol.hs` |
+| SMP Agent (duplex connections) | `simplexmq/protocol/agent-protocol.md` | `simplexmq/src/Simplex/Messaging/Agent.hs` |
+| Double ratchet (PQDR) | `simplexmq/protocol/pqdr.md` | `simplexmq/src/Simplex/Messaging/Crypto/Ratchet.hs` |
+| Post-quantum KEM (sntrup761) | `simplexmq/protocol/pqdr.md` | `simplexmq/src/Simplex/Messaging/Crypto/SNTRUP761.hs` |
+| TLS transport | — | `simplexmq/src/Simplex/Messaging/Transport.hs` |
+| File encryption | — | `simplexmq/src/Simplex/Messaging/Crypto/File.hs` |
