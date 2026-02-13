@@ -1,11 +1,26 @@
-import {readFileSync} from "fs"
+import {readFileSync, writeFileSync, existsSync} from "fs"
 import {join} from "path"
 import {bot, api} from "simplex-chat"
+import {T} from "@simplex-chat/types"
 import {parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
 import {GrokApiClient} from "./grok.js"
 import {welcomeMessage} from "./messages.js"
 import {log, logError} from "./util.js"
+
+interface BotState {
+  teamGroupId?: number
+  grokContactId?: number
+}
+
+function readState(path: string): BotState {
+  if (!existsSync(path)) return {}
+  try { return JSON.parse(readFileSync(path, "utf-8")) } catch { return {} }
+}
+
+function writeState(path: string, state: BotState): void {
+  writeFileSync(path, JSON.stringify(state), "utf-8")
+}
 
 async function main(): Promise<void> {
   const config = parseConfig(process.argv.slice(2))
@@ -14,10 +29,11 @@ async function main(): Promise<void> {
     grokDbPrefix: config.grokDbPrefix,
     teamGroup: config.teamGroup,
     teamMembers: config.teamMembers,
-    grokContact: config.grokContact,
-    firstRun: config.firstRun,
     timezone: config.timezone,
   })
+
+  const stateFilePath = `${config.dbPrefix}_state.json`
+  const state = readState(stateFilePath)
 
   // --- Init Grok agent (direct ChatApi) ---
   log("Initializing Grok agent...")
@@ -30,42 +46,6 @@ async function main(): Promise<void> {
   log(`Grok user: ${grokUser.profile.displayName}`)
   await grokChat.startChat()
 
-  // --- First-run mode: establish contact between bot and Grok agent ---
-  if (config.firstRun) {
-    log("First-run mode: establishing bot↔Grok contact...")
-    // We need to init the main bot first to create the invitation link
-    const mainChat = await api.ChatApi.init(config.dbPrefix)
-    let mainUser = await mainChat.apiGetActiveUser()
-    if (!mainUser) {
-      log("No main bot user, creating...")
-      mainUser = await mainChat.apiCreateActiveUser({displayName: "SimpleX Support", fullName: ""})
-    }
-    await mainChat.startChat()
-
-    const invLink = await mainChat.apiCreateLink(mainUser.userId)
-    log(`Invitation link created: ${invLink}`)
-
-    await grokChat.apiConnectActiveUser(invLink)
-    log("Grok agent connecting...")
-
-    const evt = await mainChat.wait("contactConnected", 60000)
-    if (!evt) {
-      console.error("Timeout waiting for Grok agent to connect (60s). Exiting.")
-      process.exit(1)
-    }
-    const contactId = evt.contact.contactId
-    const displayName = evt.contact.profile.displayName
-    log(`Grok contact established. ContactId=${contactId}`)
-    console.log(`\nGrok contact established. Use: --grok-contact ${contactId}:${displayName}\n`)
-    process.exit(0)
-  }
-
-  // --- Normal mode: validate config, init main bot ---
-  if (!config.grokContact) {
-    console.error("--grok-contact is required (unless --first-run)")
-    process.exit(1)
-  }
-
   // SupportBot forward-reference: assigned after bot.run returns.
   // Events use optional chaining so any events during init are safely skipped.
   let supportBot: SupportBot | undefined
@@ -77,6 +57,7 @@ async function main(): Promise<void> {
     deletedMemberUser: (evt) => supportBot?.onDeletedMemberUser(evt),
     groupDeleted: (evt) => supportBot?.onGroupDeleted(evt),
     connectedToGroupMember: (evt) => supportBot?.onMemberConnected(evt),
+    newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
   }
 
   log("Initializing main bot...")
@@ -99,49 +80,133 @@ async function main(): Promise<void> {
   })
   log(`Main bot user: ${mainUser.profile.displayName}`)
 
-  // --- Startup validation ---
-  log("Validating config against live data...")
+  // --- Auto-accept direct messages from group members ---
+  await mainChat.sendChatCmd(`/_set accept member contacts ${mainUser.userId} on`)
+  log("Auto-accept member contacts enabled")
 
-  // Validate team group
-  const groups = await mainChat.apiListGroups(mainUser.userId)
-  const teamGroup = groups.find(g => g.groupId === config.teamGroup.id)
-  if (!teamGroup) {
-    console.error(`Team group not found: ID=${config.teamGroup.id}. Available groups: ${groups.map(g => `${g.groupId}:${g.groupProfile.displayName}`).join(", ") || "(none)"}`)
-    process.exit(1)
-  }
-  if (teamGroup.groupProfile.displayName !== config.teamGroup.name) {
-    console.error(`Team group name mismatch: expected "${config.teamGroup.name}", got "${teamGroup.groupProfile.displayName}" (ID=${config.teamGroup.id})`)
-    process.exit(1)
-  }
-  log(`Team group validated: ${config.teamGroup.id}:${config.teamGroup.name}`)
-
-  // Validate contacts (team members + Grok)
+  // --- List contacts ---
   const contacts = await mainChat.apiListContacts(mainUser.userId)
-  for (const member of config.teamMembers) {
-    const contact = contacts.find(c => c.contactId === member.id)
-    if (!contact) {
-      console.error(`Team member not found: ID=${member.id}. Available contacts: ${contacts.map(c => `${c.contactId}:${c.profile.displayName}`).join(", ") || "(none)"}`)
-      process.exit(1)
+  log(`Contacts (${contacts.length}):`, contacts.map(c => `${c.contactId}:${c.profile.displayName}`))
+
+  // --- Resolve Grok contact: from state file or auto-establish ---
+  log("Resolving Grok contact...")
+
+  if (typeof state.grokContactId === "number") {
+    const found = contacts.find(c => c.contactId === state.grokContactId)
+    if (found) {
+      config.grokContactId = found.contactId
+      log(`Grok contact resolved from state file: ID=${config.grokContactId}`)
+    } else {
+      log(`Persisted Grok contact ID=${state.grokContactId} no longer exists, will re-establish`)
     }
-    if (contact.profile.displayName !== member.name) {
-      console.error(`Team member name mismatch: expected "${member.name}", got "${contact.profile.displayName}" (ID=${member.id})`)
-      process.exit(1)
-    }
-    log(`Team member validated: ${member.id}:${member.name}`)
   }
 
-  const grokContact = contacts.find(c => c.contactId === config.grokContact!.id)
-  if (!grokContact) {
-    console.error(`Grok contact not found: ID=${config.grokContact.id}. Available contacts: ${contacts.map(c => `${c.contactId}:${c.profile.displayName}`).join(", ") || "(none)"}`)
-    process.exit(1)
-  }
-  if (grokContact.profile.displayName !== config.grokContact.name) {
-    console.error(`Grok contact name mismatch: expected "${config.grokContact.name}", got "${grokContact.profile.displayName}" (ID=${config.grokContact.id})`)
-    process.exit(1)
-  }
-  log(`Grok contact validated: ${config.grokContact.id}:${config.grokContact.name}`)
+  if (config.grokContactId === null) {
+    log("Establishing bot↔Grok contact...")
+    const invLink = await mainChat.apiCreateLink(mainUser.userId)
+    await grokChat.apiConnectActiveUser(invLink)
+    log("Grok agent connecting...")
 
-  log("All config validated.")
+    const evt = await mainChat.wait("contactConnected", 60000)
+    if (!evt) {
+      console.error("Timeout waiting for Grok agent to connect (60s). Exiting.")
+      process.exit(1)
+    }
+    config.grokContactId = evt.contact.contactId
+    state.grokContactId = config.grokContactId
+    writeState(stateFilePath, state)
+    log(`Grok contact established: ID=${config.grokContactId} (persisted)`)
+  }
+
+  // --- Resolve team group: from state file or auto-create ---
+  log("Resolving team group...")
+
+  // Workaround: apiListGroups sends "/_groups {userId}" but the native parser
+  // expects "/_groups{userId}" (no space). Send the command directly.
+  const groupsResult = await mainChat.sendChatCmd(`/_groups${mainUser.userId}`)
+  if (groupsResult.type !== "groupsList") {
+    console.error("Failed to list groups:", groupsResult)
+    process.exit(1)
+  }
+  const groups = groupsResult.groups
+
+  if (typeof state.teamGroupId === "number") {
+    const found = groups.find(g => g.groupId === state.teamGroupId)
+    if (found) {
+      config.teamGroup.id = found.groupId
+      log(`Team group resolved from state file: ${config.teamGroup.id}:${found.groupProfile.displayName}`)
+    } else {
+      log(`Persisted team group ID=${state.teamGroupId} no longer exists, will create new`)
+    }
+  }
+
+  const teamGroupPreferences: T.GroupPreferences = {
+    directMessages: {enable: T.GroupFeatureEnabled.On},
+  }
+
+  if (config.teamGroup.id === 0) {
+    log(`Creating team group "${config.teamGroup.name}"...`)
+    const newGroup = await mainChat.apiNewGroup(mainUser.userId, {
+      displayName: config.teamGroup.name,
+      fullName: "",
+      groupPreferences: teamGroupPreferences,
+    })
+    config.teamGroup.id = newGroup.groupId
+    state.teamGroupId = config.teamGroup.id
+    writeState(stateFilePath, state)
+    log(`Team group created: ${config.teamGroup.id}:${config.teamGroup.name} (persisted)`)
+  } else {
+    // Ensure direct messages are enabled on existing team group
+    await mainChat.apiUpdateGroupProfile(config.teamGroup.id, {
+      displayName: config.teamGroup.name,
+      fullName: "",
+      groupPreferences: teamGroupPreferences,
+    })
+  }
+
+  // --- Create invite link for team group (for team members to join) ---
+  // Delete any stale link from a previous run (e.g., crash without graceful shutdown)
+  try { await mainChat.apiDeleteGroupLink(config.teamGroup.id) } catch {}
+  const teamGroupInviteLink = await mainChat.apiCreateGroupLink(config.teamGroup.id, T.GroupMemberRole.Member)
+  log(`Team group invite link created`)
+  console.log(`\nTeam group invite link (expires in 10 min):\n${teamGroupInviteLink}\n`)
+
+  // Schedule invite link deletion after 10 minutes
+  let inviteLinkDeleted = false
+  async function deleteInviteLink(): Promise<void> {
+    if (inviteLinkDeleted) return
+    inviteLinkDeleted = true
+    try {
+      await mainChat.apiDeleteGroupLink(config.teamGroup.id)
+      log("Team group invite link deleted")
+    } catch (err) {
+      logError("Failed to delete team group invite link", err)
+    }
+  }
+  const inviteLinkTimer = setTimeout(async () => {
+    log("10 minutes elapsed, deleting team group invite link...")
+    await deleteInviteLink()
+  }, 10 * 60 * 1000)
+  inviteLinkTimer.unref() // don't keep process alive for the timer
+
+  // --- Validate team member contacts (if provided) ---
+  if (config.teamMembers.length > 0) {
+    log("Validating team member contacts...")
+    for (const member of config.teamMembers) {
+      const contact = contacts.find(c => c.contactId === member.id)
+      if (!contact) {
+        console.error(`Team member not found: ID=${member.id}. Available contacts: ${contacts.map(c => `${c.contactId}:${c.profile.displayName}`).join(", ") || "(none)"}`)
+        process.exit(1)
+      }
+      if (contact.profile.displayName !== member.name) {
+        console.error(`Team member name mismatch: expected "${member.name}", got "${contact.profile.displayName}" (ID=${member.id})`)
+        process.exit(1)
+      }
+      log(`Team member validated: ${member.id}:${member.name}`)
+    }
+  }
+
+  log("Startup complete.")
 
   // Load Grok context docs
   let docsContext = ""
@@ -161,16 +226,19 @@ async function main(): Promise<void> {
   grokChat.on("receivedGroupInvitation", async (evt) => {
     await supportBot?.onGrokGroupInvitation(evt)
   })
+  grokChat.on("connectedToGroupMember", (evt) => {
+    supportBot?.onGrokMemberConnected(evt)
+  })
 
-  // Keep process alive
-  process.on("SIGINT", () => {
-    log("Received SIGINT, shutting down...")
+  // Graceful shutdown: delete invite link before exit
+  async function shutdown(signal: string): Promise<void> {
+    log(`Received ${signal}, shutting down...`)
+    clearTimeout(inviteLinkTimer)
+    await deleteInviteLink()
     process.exit(0)
-  })
-  process.on("SIGTERM", () => {
-    log("Received SIGTERM, shutting down...")
-    process.exit(0)
-  })
+  }
+  process.on("SIGINT", () => shutdown("SIGINT"))
+  process.on("SIGTERM", () => shutdown("SIGTERM"))
 }
 
 main().catch(err => {
