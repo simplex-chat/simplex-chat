@@ -96,6 +96,15 @@ export class SupportBot {
     log(`Member connected in group ${evt.groupInfo.groupId}: ${evt.member.memberProfile.displayName}`)
   }
 
+  onMemberContactReceivedInv(evt: CEvt.NewMemberContactReceivedInv): void {
+    const {contact, groupInfo, member} = evt
+    if (groupInfo.groupId === this.config.teamGroup.id) {
+      log(`Accepted DM contact from team group member: ${contact.contactId}:${member.memberProfile.displayName}`)
+    } else {
+      log(`DM contact received from non-team group ${groupInfo.groupId}, member ${member.memberProfile.displayName}`)
+    }
+  }
+
   // --- Event Handler (Grok agent) ---
 
   async onGrokGroupInvitation(evt: CEvt.ReceivedGroupInvitation): Promise<void> {
@@ -114,12 +123,20 @@ export class SupportBot {
       return
     }
 
-    // Join succeeded — set maps and resolve waiter
+    // Join request sent — set maps, but don't resolve waiter yet.
+    // The waiter resolves when grokChat fires connectedToGroupMember (see onGrokMemberConnected).
     this.grokGroupMap.set(mainGroupId, evt.groupInfo.groupId)
     this.reverseGrokMap.set(evt.groupInfo.groupId, mainGroupId)
+  }
+
+  onGrokMemberConnected(evt: CEvt.ConnectedToGroupMember): void {
+    const grokGroupId = evt.groupInfo.groupId
+    const mainGroupId = this.reverseGrokMap.get(grokGroupId)
+    if (mainGroupId === undefined) return
     const resolver = this.grokJoinResolvers.get(mainGroupId)
     if (resolver) {
       this.grokJoinResolvers.delete(mainGroupId)
+      log(`Grok fully connected in group: mainGroupId=${mainGroupId}, grokGroupId=${grokGroupId}`)
       resolver()
     }
   }
@@ -132,8 +149,13 @@ export class SupportBot {
     const groupInfo = chatInfo.groupInfo
     if (!groupInfo.businessChat) return
     const groupId = groupInfo.groupId
-    const state = this.conversations.get(groupId)
-    if (!state) return
+    let state = this.conversations.get(groupId)
+    if (!state) {
+      // After restart, re-initialize state for existing business chats
+      state = {type: "teamQueue", userMessages: []}
+      this.conversations.set(groupId, state)
+      log(`Re-initialized conversation state for group ${groupId} after restart`)
+    }
 
     if (chatItem.chatDir.type === "groupSnd") return
     if (chatItem.chatDir.type !== "groupRcv") return
@@ -227,7 +249,11 @@ export class SupportBot {
     groupId: number,
     state: {type: "teamQueue"; userMessages: string[]},
   ): Promise<void> {
-    const grokContactId = this.config.grokContact!.id
+    if (this.config.grokContactId === null) {
+      await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
+      return
+    }
+    const grokContactId = this.config.grokContactId
     let member: T.GroupMember | undefined
     try {
       member = await this.mainChat.apiAddMember(groupId, grokContactId, T.GroupMemberRole.Member)
@@ -366,9 +392,24 @@ export class SupportBot {
       }
       this.cleanupGrokMaps(groupId)
     }
+    if (this.config.teamMembers.length === 0) {
+      logError(`No team members configured, cannot add team member to group ${groupId}`, new Error("no team members"))
+      if (wasGrokMode) {
+        this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
+      }
+      await this.sendToGroup(groupId, "No team members are available yet. Please try again later or click /grok.")
+      return
+    }
     try {
       const teamContactId = this.config.teamMembers[0].id
-      const member = await this.mainChat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
+      const member = await this.addOrFindTeamMember(groupId, teamContactId)
+      if (!member) {
+        if (wasGrokMode) {
+          this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
+        }
+        await this.sendToGroup(groupId, "Sorry, there was an error adding a team member. Please try again.")
+        return
+      }
       this.conversations.set(groupId, {
         type: "teamPending",
         teamMemberGId: member.groupMemberId,
@@ -387,14 +428,37 @@ export class SupportBot {
   // --- Helpers ---
 
   private async addReplacementTeamMember(groupId: number): Promise<void> {
+    if (this.config.teamMembers.length === 0) return
     try {
       const teamContactId = this.config.teamMembers[0].id
-      const member = await this.mainChat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
-      this.conversations.set(groupId, {type: "teamLocked", teamMemberGId: member.groupMemberId})
+      const member = await this.addOrFindTeamMember(groupId, teamContactId)
+      if (member) {
+        this.conversations.set(groupId, {type: "teamLocked", teamMemberGId: member.groupMemberId})
+      }
     } catch (err) {
       logError(`Failed to add replacement team member to group ${groupId}`, err)
       // Stay in teamLocked with stale teamMemberGId — one-way gate must hold
       // Team will see the message in team group and can join manually
+    }
+  }
+
+  private async addOrFindTeamMember(groupId: number, teamContactId: number): Promise<T.GroupMember | null> {
+    try {
+      return await this.mainChat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
+    } catch (err: any) {
+      if (err?.chatError?.errorType?.type === "groupDuplicateMember") {
+        // Team member already in group (e.g., from previous session) — find existing member
+        log(`Team member already in group ${groupId}, looking up existing member`)
+        const members = await this.mainChat.apiListMembers(groupId)
+        const existing = members.find(m => m.memberContactId === teamContactId)
+        if (existing) {
+          log(`Found existing team member: groupMemberId=${existing.groupMemberId}`)
+          return existing
+        }
+        logError(`Team member contact ${teamContactId} reported as duplicate but not found in group ${groupId}`, err)
+        return null
+      }
+      throw err
     }
   }
 

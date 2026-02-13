@@ -75,12 +75,16 @@ class MockChatApi {
   added: AddedMember[] = []
   removed: RemovedMembers[] = []
   joined: number[] = []
+  members: Map<number, any[]> = new Map()  // groupId → members list
 
   private addMemberFail = false
+  private addMemberDuplicate = false
   private nextMemberGId = 50
 
   apiAddMemberWillFail()              { this.addMemberFail = true }
+  apiAddMemberWillDuplicate()         { this.addMemberDuplicate = true }
   setNextGroupMemberId(id: number)    { this.nextMemberGId = id }
+  setGroupMembers(groupId: number, members: any[]) { this.members.set(groupId, members) }
 
   async apiSendTextMessage(chat: [string, number], text: string) {
     this.sent.push({chat, text})
@@ -88,6 +92,12 @@ class MockChatApi {
 
   async apiAddMember(groupId: number, contactId: number, role: string) {
     if (this.addMemberFail) { this.addMemberFail = false; throw new Error("apiAddMember failed") }
+    if (this.addMemberDuplicate) {
+      this.addMemberDuplicate = false
+      const err: any = new Error("groupDuplicateMember")
+      err.chatError = {type: "error", errorType: {type: "groupDuplicateMember", contactName: "TeamGuy"}}
+      throw err
+    }
     const gid = this.nextMemberGId++
     this.added.push({groupId, contactId, role})
     return {groupMemberId: gid, memberId: `member-${gid}`}
@@ -101,6 +111,10 @@ class MockChatApi {
     this.joined.push(groupId)
   }
 
+  async apiListMembers(groupId: number) {
+    return this.members.get(groupId) || []
+  }
+
   sentTo(groupId: number): string[] {
     return this.sent.filter(m => m.chat[1] === groupId).map(m => m.text)
   }
@@ -112,7 +126,8 @@ class MockChatApi {
 
   reset() {
     this.sent = []; this.added = []; this.removed = []; this.joined = []
-    this.addMemberFail = false; this.nextMemberGId = 50
+    this.members.clear()
+    this.addMemberFail = false; this.addMemberDuplicate = false; this.nextMemberGId = 50
   }
 }
 
@@ -295,6 +310,11 @@ const grokAgent = {
         membership: {memberId},
       },
     } as any)
+    // Waiter resolves on connectedToGroupMember, not on apiJoinGroup
+    bot.onGrokMemberConnected({
+      groupInfo: {groupId: GROK_LOCAL},
+      member: {memberProfile: {displayName: "Bot"}},
+    } as any)
   },
 
   async timesOut() {
@@ -368,15 +388,14 @@ const TEAM_ADD_ERROR =
 // ─── Setup ──────────────────────────────────────────────────────
 
 const config = {
-  teamGroup:   {id: 1, name: "SupportTeam"},
-  teamMembers: [{id: 2, name: "Bob"}],
-  grokContact: {id: 4, name: "Grok AI"},
-  timezone:    "America/New_York",
-  groupLinks:  "https://simplex.chat/contact#...",
-  grokApiKey:  "test-key",
-  dbPrefix:    "./test-data/bot",
-  grokDbPrefix:"./test-data/grok",
-  firstRun:    false,
+  teamGroup:     {id: 1, name: "SupportTeam"},
+  teamMembers:   [{id: 2, name: "Bob"}],
+  grokContactId: 4,
+  timezone:      "America/New_York",
+  groupLinks:    "https://simplex.chat/contact#...",
+  grokApiKey:    "test-key",
+  dbPrefix:      "./test-data/bot",
+  grokDbPrefix:  "./test-data/grok",
 }
 
 beforeEach(() => {
@@ -1020,6 +1039,8 @@ describe("Race Conditions", () => {
 
     const grokPromise = customer.sends("/grok")
     await grokAgent.joins()
+    // Flush microtasks so activateGrok proceeds past waitForGrokJoin into grokApi.chat
+    await new Promise<void>(r => setTimeout(r, 0))
     // activateGrok now blocked on grokApi.chat
 
     // While API call is pending, /team changes state
@@ -1131,16 +1152,17 @@ describe("Edge Cases", () => {
     hasNoState(999)
   })
 
-  test("message in group with no conversation state → ignored", async () => {
-    // Group 888 never had onBusinessRequest called
+  test("message in business chat with no state → re-initialized to teamQueue", async () => {
+    // Group 888 never had onBusinessRequest called (e.g., bot restarted)
     const ci = customerChatItem("Hello", null)
     ci.chatInfo.groupInfo = businessGroupInfo(888)
     mainChat.sent = []
 
     await bot.onNewChatItems({chatItems: [ci]} as any)
 
-    expect(mainChat.sent.length).toBe(0)
-    hasNoState(888)
+    // Re-initialized as teamQueue, message forwarded to team (no queue reply — already past welcome)
+    stateIs(888, "teamQueue")
+    teamGroup.received("[Alice #888]\nHello")
   })
 
   test("Grok's own messages in grokMode → ignored by bot", async () => {
@@ -1333,6 +1355,40 @@ describe("Edge Cases", () => {
     // addReplacementTeamMember failed, but one-way gate holds
     stateIs(GROUP_ID, "teamLocked")
   })
+
+  test("/grok with null grokContactId → unavailable message", async () => {
+    const nullGrokConfig = {...config, grokContactId: null}
+    const nullBot = new SupportBot(mainChat as any, grokChat as any, grokApi as any, nullGrokConfig as any)
+    nullBot.onBusinessRequest({groupInfo: businessGroupInfo()} as any)
+    const ci = customerChatItem("Hello", null)
+    await nullBot.onNewChatItems({chatItems: [ci]} as any)
+    mainChat.sent = []
+
+    const grokCi = customerChatItem("/grok", "grok")
+    await nullBot.onNewChatItems({chatItems: [grokCi]} as any)
+
+    const msgs = mainChat.sentTo(GROUP_ID)
+    expect(msgs).toContain("Grok is temporarily unavailable. Please try again or click /team for a team member.")
+    const state = (nullBot as any).conversations.get(GROUP_ID)
+    expect(state.type).toBe("teamQueue")
+  })
+
+  test("/team with empty teamMembers → unavailable message", async () => {
+    const noTeamConfig = {...config, teamMembers: []}
+    const noTeamBot = new SupportBot(mainChat as any, grokChat as any, grokApi as any, noTeamConfig as any)
+    noTeamBot.onBusinessRequest({groupInfo: businessGroupInfo()} as any)
+    const ci = customerChatItem("Hello", null)
+    await noTeamBot.onNewChatItems({chatItems: [ci]} as any)
+    mainChat.sent = []
+
+    const teamCi = customerChatItem("/team", "team")
+    await noTeamBot.onNewChatItems({chatItems: [teamCi]} as any)
+
+    const msgs = mainChat.sentTo(GROUP_ID)
+    expect(msgs).toContain("No team members are available yet. Please try again later or click /grok.")
+    const state = (noTeamBot as any).conversations.get(GROUP_ID)
+    expect(state.type).toBe("teamQueue")
+  })
 })
 
 
@@ -1418,6 +1474,169 @@ describe("End-to-End Flows", () => {
 })
 
 
+// ─── 15. Restart Recovery ───────────────────────────────────────
+
+describe("Restart Recovery", () => {
+
+  test("after restart, customer message in unknown group → re-init to teamQueue, forward", async () => {
+    // Simulate restart: no onBusinessRequest was called for group 777
+    const ci = customerChatItem("I had a question earlier", null)
+    ci.chatInfo.groupInfo = businessGroupInfo(777)
+    mainChat.sent = []
+
+    await bot.onNewChatItems({chatItems: [ci]} as any)
+
+    // Re-initialized as teamQueue, message forwarded to team (no queue reply — already past welcome)
+    stateIs(777, "teamQueue")
+    teamGroup.received("[Alice #777]\nI had a question earlier")
+  })
+
+  test("after restart re-init, /grok works in re-initialized group", async () => {
+    // Re-init group via first message
+    const ci = customerChatItem("Hello", null)
+    ci.chatInfo.groupInfo = businessGroupInfo(777)
+    await bot.onNewChatItems({chatItems: [ci]} as any)
+    stateIs(777, "teamQueue")
+
+    // Now /grok
+    mainChat.setNextGroupMemberId(80)
+    lastGrokMemberGId = 80
+    grokApi.willRespond("Grok answer")
+    const grokCi = customerChatItem("/grok", "grok")
+    grokCi.chatInfo.groupInfo = businessGroupInfo(777)
+    const p = bot.onNewChatItems({chatItems: [grokCi]} as any)
+    // Grok joins
+    await new Promise<void>(r => setTimeout(r, 0))
+    const memberId = `member-${lastGrokMemberGId}`
+    await bot.onGrokGroupInvitation({
+      groupInfo: {groupId: 201, membership: {memberId}},
+    } as any)
+    bot.onGrokMemberConnected({
+      groupInfo: {groupId: 201},
+      member: {memberProfile: {displayName: "Bot"}},
+    } as any)
+    await p
+
+    stateIs(777, "grokMode")
+  })
+})
+
+
+// ─── 16. Grok connectedToGroupMember ───────────────────────────
+
+describe("Grok connectedToGroupMember", () => {
+
+  test("waiter not resolved by onGrokGroupInvitation alone", async () => {
+    mainChat.setNextGroupMemberId(60)
+    lastGrokMemberGId = 60
+    await reachTeamQueue("Hello")
+    grokApi.willRespond("answer")
+
+    const p = customer.sends("/grok")
+
+    // Only fire invitation (no connectedToGroupMember) — waiter should NOT resolve
+    await new Promise<void>(r => setTimeout(r, 0))
+    const memberId = `member-${lastGrokMemberGId}`
+    await bot.onGrokGroupInvitation({
+      groupInfo: {groupId: GROK_LOCAL, membership: {memberId}},
+    } as any)
+
+    // Maps set but waiter not resolved — state still teamQueue
+    expect((bot as any).grokGroupMap.has(GROUP_ID)).toBe(true)
+    stateIs(GROUP_ID, "teamQueue")
+
+    // Now fire connectedToGroupMember → waiter resolves
+    bot.onGrokMemberConnected({
+      groupInfo: {groupId: GROK_LOCAL},
+      member: {memberProfile: {displayName: "Bot"}},
+    } as any)
+    await p
+
+    stateIs(GROUP_ID, "grokMode")
+  })
+
+  test("onGrokMemberConnected for unknown group → ignored", () => {
+    // Should not throw
+    bot.onGrokMemberConnected({
+      groupInfo: {groupId: 9999},
+      member: {memberProfile: {displayName: "Someone"}},
+    } as any)
+  })
+})
+
+
+// ─── 17. groupDuplicateMember Handling ─────────────────────────
+
+describe("groupDuplicateMember Handling", () => {
+
+  test("/team with duplicate member → finds existing, transitions to teamPending", async () => {
+    await reachTeamQueue("Hello")
+    mainChat.apiAddMemberWillDuplicate()
+    mainChat.setGroupMembers(GROUP_ID, [
+      {groupMemberId: 42, memberContactId: 2, memberStatus: "memConnected"},
+    ])
+    mainChat.sent = []
+
+    await customer.sends("/team")
+
+    customer.received(TEAM_ADDED_24H)
+    const state = (bot as any).conversations.get(GROUP_ID)
+    expect(state.type).toBe("teamPending")
+    expect(state.teamMemberGId).toBe(42)
+  })
+
+  test("/team with duplicate but member not found in list → error message", async () => {
+    await reachTeamQueue("Hello")
+    mainChat.apiAddMemberWillDuplicate()
+    mainChat.setGroupMembers(GROUP_ID, [])  // empty — member not found
+    mainChat.sent = []
+
+    await customer.sends("/team")
+
+    customer.received(TEAM_ADD_ERROR)
+    stateIs(GROUP_ID, "teamQueue")
+  })
+
+  test("replacement team member with duplicate → finds existing, stays locked", async () => {
+    await reachTeamLocked()
+    mainChat.apiAddMemberWillDuplicate()
+    mainChat.setGroupMembers(GROUP_ID, [
+      {groupMemberId: 99, memberContactId: 2, memberStatus: "memConnected"},
+    ])
+
+    await teamMember.leaves()
+
+    const state = (bot as any).conversations.get(GROUP_ID)
+    expect(state.type).toBe("teamLocked")
+    expect(state.teamMemberGId).toBe(99)
+  })
+})
+
+
+// ─── 18. DM Contact Received ───────────────────────────────────
+
+describe("DM Contact Received", () => {
+
+  test("onMemberContactReceivedInv from team group → no crash", () => {
+    bot.onMemberContactReceivedInv({
+      contact: {contactId: 10},
+      groupInfo: {groupId: TEAM_GRP_ID},
+      member: {memberProfile: {displayName: "TeamGuy"}},
+    } as any)
+    // No error, logged acceptance
+  })
+
+  test("onMemberContactReceivedInv from non-team group → no crash", () => {
+    bot.onMemberContactReceivedInv({
+      contact: {contactId: 11},
+      groupInfo: {groupId: 999},
+      member: {memberProfile: {displayName: "Stranger"}},
+    } as any)
+    // No error
+  })
+})
+
+
 // ═══════════════════════════════════════════════════════════════
 //  Coverage Matrix
 // ═══════════════════════════════════════════════════════════════
@@ -1449,3 +1668,7 @@ describe("End-to-End Flows", () => {
 //  Concurrent conversations                | 13.7
 //  History passed to GrokApiClient         | 13.5
 //  Full E2E flows                          | 14.1, 14.2
+//  Restart recovery (re-init teamQueue)    | 15.1, 15.2
+//  Grok connectedToGroupMember waiter      | 16.1, 16.2
+//  groupDuplicateMember handling           | 17.1, 17.2, 17.3
+//  DM contact received                     | 18.1, 18.2
