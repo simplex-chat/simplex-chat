@@ -49,9 +49,9 @@ apps/simplex-chat-support-bot/
     └── simplex-context.md  # Curated SimpleX docs injected into Grok system prompt
 ```
 
-## 4. Configuration — ID:name Format
+## 4. Configuration
 
-All entity references use `ID:name` format. The bot validates each pair at startup against live data from `apiListContacts()` / `apiListGroups()`.
+All runtime state (team group ID, Grok contact ID) is auto-resolved and persisted to `{dbPrefix}_state.json`. No manual IDs needed for core entities.
 
 **CLI args:**
 
@@ -59,14 +59,10 @@ All entity references use `ID:name` format. The bot validates each pair at start
 |-----|----------|---------|--------|---------|
 | `--db-prefix` | No | `./data/bot` | path | Main bot database file prefix |
 | `--grok-db-prefix` | No | `./data/grok` | path | Grok agent database file prefix |
-| `--team-group` | Yes | — | `ID:name` | Group for forwarding customer messages to team |
-| `--team-members` | Yes | — | `ID:name,...` | Comma-separated team member contacts |
-| `--grok-contact` | Yes* | — | `ID:name` | Grok agent's contactId in main bot's database |
+| `--team-group` | Yes | — | `name` | Team group display name (auto-created if absent) |
+| `--team-members` | No | `""` | `ID:name,...` | Comma-separated team member contacts (optional) |
 | `--group-links` | No | `""` | string | Public group link(s) for welcome message |
 | `--timezone` | No | `"UTC"` | IANA tz | For weekend detection (24h vs 48h) |
-| `--first-run` | No | false | flag | Auto-establish contact between bot and Grok agent |
-
-*`--grok-contact` required unless `--first-run` is used.
 
 **Env vars:** `GROK_API_KEY` (required) — xAI API key.
 
@@ -74,34 +70,41 @@ All entity references use `ID:name` format. The bot validates each pair at start
 interface Config {
   dbPrefix: string
   grokDbPrefix: string
-  teamGroup: {id: number; name: string}
-  teamMembers: {id: number; name: string}[]
-  grokContact: {id: number; name: string} | null  // null during first-run
+  teamGroup: {id: number; name: string}  // id=0 at parse time, resolved at startup
+  teamMembers: {id: number; name: string}[]  // optional, empty if not provided
+  grokContactId: number | null  // resolved at startup from state file
   groupLinks: string
   timezone: string
   grokApiKey: string
-  firstRun: boolean
 }
 ```
 
-**ID:name parsing:**
-```typescript
-function parseIdName(s: string): {id: number; name: string} {
-  const i = s.indexOf(":")
-  if (i < 1) throw new Error(`Invalid ID:name format: "${s}"`)
-  return {id: parseInt(s.slice(0, i), 10), name: s.slice(i + 1)}
-}
+**State file** — `{dbPrefix}_state.json`:
+```json
+{"teamGroupId": 123, "grokContactId": 4}
 ```
 
-**Startup validation** (exact API calls):
+Both IDs are persisted to ensure the bot reconnects to the same entities across restarts, even if multiple groups share the same display name.
 
-| What | API Call | Validation |
-|------|----------|------------|
-| Team group | `mainChat.apiListGroups(userId)` → find by `groupId === config.teamGroup.id` | Assert `groupProfile.displayName === config.teamGroup.name` |
-| Team members | `mainChat.apiListContacts(userId)` → find each by `contactId` | Assert `profile.displayName === member.name` for each |
-| Grok contact | `mainChat.apiListContacts(userId)` → find by `contactId === config.grokContact.id` | Assert `profile.displayName === config.grokContact.name` |
+**Grok contact resolution** (auto-establish):
+1. Read `grokContactId` from state file → validate it exists in `apiListContacts`
+2. If not found: create invitation link (`apiCreateLink`), connect Grok agent (`apiConnectActiveUser`), wait for `contactConnected` (60s), persist new contact ID
+3. If Grok contact is unavailable, bot runs but `/grok` returns "temporarily unavailable"
 
-Fail-fast with descriptive error on any mismatch.
+**Team group resolution** (auto-create):
+1. Read `teamGroupId` from state file → validate it exists in `apiListGroups`
+2. If not found: create with `apiNewGroup`, persist new group ID
+
+**Team group invite link lifecycle:**
+1. Delete any stale link from previous run: `apiDeleteGroupLink` (best-effort)
+2. Create invite link: `apiCreateGroupLink(teamGroupId, GroupMemberRole.Member)`
+3. Display link on stdout for team members to join
+4. Schedule deletion after 10 minutes: `apiDeleteGroupLink(teamGroupId)`
+5. On shutdown (SIGINT/SIGTERM), delete link before exit (idempotent, best-effort)
+
+**Team member validation** (optional):
+- If `--team-members` provided: validate each contact ID/name pair via `apiListContacts`, fail-fast on mismatch
+- If not provided: bot runs without team members; `/team` returns "No team members are available yet"
 
 ## 5. State Machine
 
@@ -139,16 +142,20 @@ teamLocked ──(any)──> no action (team sees directly)
 **Solution:** In-process maps correlated via protocol-level `memberId` (string, same across databases).
 
 ```typescript
-const pendingGrokJoins = new Map<string, number>()  // memberId → mainGroupId
-const grokGroupMap = new Map<number, number>()       // mainGroupId → grokLocalGroupId
-const reverseGrokMap = new Map<number, number>()     // grokLocalGroupId → mainGroupId
+const pendingGrokJoins = new Map<string, number>()      // memberId → mainGroupId
+const grokGroupMap = new Map<number, number>()           // mainGroupId → grokLocalGroupId
+const reverseGrokMap = new Map<number, number>()         // grokLocalGroupId → mainGroupId
+const grokJoinResolvers = new Map<number, () => void>()  // mainGroupId → resolve fn
 ```
 
 **Flow:**
 1. Main bot: `mainChat.apiAddMember(mainGroupId, grokContactId, "member")` → response `member.memberId`
 2. Store: `pendingGrokJoins.set(member.memberId, mainGroupId)`
-3. Grok agent receives `receivedGroupInvitation` event → `evt.groupInfo.membership.memberId` matches → `grokChat.apiJoinGroup(evt.groupInfo.groupId)` → store bidirectional mapping
-4. Send Grok response: `grokChat.apiSendTextMessage([T.ChatType.Group, grokGroupMap.get(mainGroupId)!], text)`
+3. Grok agent receives `receivedGroupInvitation` event → `evt.groupInfo.membership.memberId` matches → `grokChat.apiJoinGroup(evt.groupInfo.groupId)` → store bidirectional mapping (but do NOT resolve waiter yet)
+4. Grok agent receives `connectedToGroupMember` event → `reverseGrokMap` lookup → resolve waiter (Grok is now fully connected and can send messages)
+5. Send Grok response: `grokChat.apiSendTextMessage([T.ChatType.Group, grokGroupMap.get(mainGroupId)!], text)`
+
+**Important:** `apiJoinGroup` sends the join request, but Grok is not fully connected until the `connectedToGroupMember` event fires. Sending messages before this results in "not current member" errors.
 
 **Grok agent event subscriptions:**
 ```typescript
@@ -157,9 +164,20 @@ grokChat.on("receivedGroupInvitation", async ({groupInfo}) => {
   const mainGroupId = pendingGrokJoins.get(memberId)
   if (mainGroupId !== undefined) {
     pendingGrokJoins.delete(memberId)
+    await grokChat.apiJoinGroup(groupInfo.groupId)
+    // Set maps but don't resolve waiter — wait for connectedToGroupMember
     grokGroupMap.set(mainGroupId, groupInfo.groupId)
     reverseGrokMap.set(groupInfo.groupId, mainGroupId)
-    await grokChat.apiJoinGroup(groupInfo.groupId)
+  }
+})
+
+grokChat.on("connectedToGroupMember", ({groupInfo}) => {
+  const mainGroupId = reverseGrokMap.get(groupInfo.groupId)
+  if (mainGroupId === undefined) return
+  const resolver = grokJoinResolvers.get(mainGroupId)
+  if (resolver) {
+    grokJoinResolvers.delete(mainGroupId)
+    resolver()
   }
 })
 ```
@@ -193,6 +211,7 @@ const [mainChat, mainUser, mainAddress] = await bot.run({
     deletedMemberUser: (evt) => supportBot?.onDeletedMemberUser(evt),
     groupDeleted: (evt) => supportBot?.onGroupDeleted(evt),
     connectedToGroupMember: (evt) => supportBot?.onMemberConnected(evt),
+    newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
   },
 })
 ```
@@ -203,20 +222,20 @@ const grokChat = await ChatApi.init(config.grokDbPrefix)
 let grokUser = await grokChat.apiGetActiveUser()
 if (!grokUser) grokUser = await grokChat.apiCreateActiveUser({displayName: "Grok AI", fullName: ""})
 await grokChat.startChat()
-// Subscribe Grok event handlers (receivedGroupInvitation)
+// Subscribe Grok event handlers
+grokChat.on("receivedGroupInvitation", async (evt) => supportBot?.onGrokGroupInvitation(evt))
+grokChat.on("connectedToGroupMember", (evt) => supportBot?.onGrokMemberConnected(evt))
 ```
 
-**First-run mode** (`--first-run`):
-1. Both instances init and create users
-2. Main bot: `mainChat.apiCreateLink(mainUser.userId)` → invitation link
-3. Grok agent: `grokChat.apiConnectActiveUser(invLink)`
-4. Main bot: `mainChat.wait("contactConnected", 60000)` — wait for connection
-5. Print: "Grok contact established. ContactId=X. Use: --grok-contact X:GrokAI"
-6. Exit (user restarts without `--first-run`)
-
-**Startup validation** (after init, before event loop):
-1. `mainChat.apiListContacts(mainUser.userId)` → validate `--team-members` and `--grok-contact` ID:name pairs
-2. `mainChat.apiListGroups(mainUser.userId)` → validate `--team-group` ID:name pair
+**Startup resolution** (after init, before event loop):
+1. Read `{dbPrefix}_state.json` for persisted `grokContactId` and `teamGroupId`
+2. Enable auto-accept DM contacts from group members: `sendChatCmd("/_set accept member contacts ${mainUser.userId} on")`
+3. `mainChat.apiListContacts(mainUser.userId)` → log contacts list, resolve Grok contact (from state or auto-establish via `apiCreateLink` + `apiConnectActiveUser` + `wait("contactConnected", 60000)`)
+4. `sendChatCmd("/_groups${mainUser.userId}")` → resolve team group (from state or auto-create via `apiNewGroup` + persist)
+5. Ensure direct messages enabled on team group: `apiUpdateGroupProfile(teamGroupId, {groupPreferences: {directMessages: {enable: On}}})` for existing groups; included in `apiNewGroup` for new groups
+6. Delete stale invite link (best-effort), then `apiCreateGroupLink(teamGroupId, Member)` → display, schedule 10min deletion
+7. If `--team-members` provided: validate each contact ID/name pair via contacts list, fail-fast on mismatch
+8. On SIGINT/SIGTERM → delete invite link with `apiDeleteGroupLink`, then exit
 
 ## 8. Event Processing
 
@@ -230,6 +249,14 @@ await grokChat.startChat()
 | `deletedMemberUser` | `onDeletedMemberUser` | Bot removed from group → delete state |
 | `groupDeleted` | `onGroupDeleted` | Delete state, delete grokGroupMap entry |
 | `connectedToGroupMember` | `onMemberConnected` | Log for debugging |
+| `newMemberContactReceivedInv` | `onMemberContactReceivedInv` | Log DM contact from team group member (auto-accepted via `/_set accept member contacts`) |
+
+**Grok agent event handlers:**
+
+| Event | Handler | Action |
+|-------|---------|--------|
+| `receivedGroupInvitation` | `onGrokGroupInvitation` | Match `memberId` → `apiJoinGroup` → set bidirectional maps (waiter NOT resolved yet) |
+| `connectedToGroupMember` | `onGrokMemberConnected` | Resolve `grokJoinResolvers` waiter — Grok is now fully connected and can send messages |
 
 We do NOT use `onMessage`/`onCommands` from `bot.run()` — all routing is done in the `newChatItems` event handler for full control over state-dependent command handling.
 
@@ -241,8 +268,12 @@ for (const ci of evt.chatItems) {
   const groupInfo = chatInfo.groupInfo
   if (!groupInfo.businessChat) continue  // only process business chats
   const groupId = groupInfo.groupId
-  const state = conversations.get(groupId)
-  if (!state) continue
+  let state = conversations.get(groupId)
+  if (!state) {
+    // After restart, re-initialize state for existing business chats
+    state = {type: "teamQueue", userMessages: []}
+    conversations.set(groupId, state)
+  }
 
   if (chatItem.chatDir.type === "groupSnd") continue  // our own message
   if (chatItem.chatDir.type !== "groupRcv") continue
@@ -310,12 +341,16 @@ async activateTeam(groupId: number, state: ConversationState): Promise<void> {
   // Remove Grok immediately if present (per spec: "When switching to team mode, Grok is removed")
   if (state.type === "grokMode") {
     try { await this.mainChat.apiRemoveMembers(groupId, [state.grokMemberGId]) } catch {}
-    const grokLocalGId = grokGroupMap.get(groupId)
-    grokGroupMap.delete(groupId)
-    if (grokLocalGId) reverseGrokMap.delete(grokLocalGId)
+    this.cleanupGrokMaps(groupId)
   }
-  const teamContactId = this.config.teamMembers[0].id  // round-robin or first available
-  const member = await this.mainChat.apiAddMember(groupId, teamContactId, "member")
+  if (this.config.teamMembers.length === 0) {
+    // No team members configured — revert to teamQueue if was grokMode
+    if (state.type === "grokMode") this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
+    await this.sendToGroup(groupId, "No team members are available yet. Please try again later or click /grok.")
+    return
+  }
+  const teamContactId = this.config.teamMembers[0].id
+  const member = await this.addOrFindTeamMember(groupId, teamContactId)  // handles groupDuplicateMember
   this.conversations.set(groupId, {
     type: "teamPending",
     teamMemberGId: member.groupMemberId,
@@ -324,6 +359,19 @@ async activateTeam(groupId: number, state: ConversationState): Promise<void> {
     [T.ChatType.Group, groupId],
     teamAddedMessage(this.config.timezone)
   )
+}
+
+// Helper: handles groupDuplicateMember error (team member already in group from previous session)
+private async addOrFindTeamMember(groupId: number, teamContactId: number): Promise<GroupMember | null> {
+  try {
+    return await this.mainChat.apiAddMember(groupId, teamContactId, "member")
+  } catch (err: any) {
+    if (err?.chatError?.errorType?.type === "groupDuplicateMember") {
+      const members = await this.mainChat.apiListMembers(groupId)
+      return members.find(m => m.memberContactId === teamContactId) ?? null
+    }
+    throw err
+  }
 }
 ```
 
@@ -358,11 +406,13 @@ class GrokApiClient {
 **Activating Grok** (on `/grok` in teamQueue):
 1. `mainChat.apiAddMember(groupId, grokContactId, "member")` → stores `pendingGrokJoins.set(member.memberId, groupId)`
 2. Send bot activation message: `mainChat.apiSendTextMessage([Group, groupId], grokActivatedMsg)`
-3. Wait for Grok join: poll `grokGroupMap.has(groupId)` with 30s timeout (or use `mainChat.wait("connectedToGroupMember", pred, 30000)`)
-4. Build initial Grok history from `state.userMessages`
-5. Call Grok API with accumulated messages
-6. Send response via Grok identity: `grokChat.apiSendTextMessage([Group, grokGroupMap.get(groupId)!], response)`
-7. Transition to `grokMode` with history
+3. Wait for Grok join via `waitForGrokJoin(groupId, 30000)` — Promise-based waiter resolved by `onGrokMemberConnected` (fires on `grokChat.connectedToGroupMember`), times out after 30s
+4. Re-check state (user may have sent `/team` concurrently — abort if state changed)
+5. Build initial Grok history from `state.userMessages`
+6. Call Grok API with accumulated messages
+7. Re-check state again after API call (another event may have changed it)
+8. Send response via Grok identity: `grokChat.apiSendTextMessage([Group, grokGroupMap.get(groupId)!], response)`
+9. Transition to `grokMode` with history
 
 **Fallback:** If Grok API fails → send error message via `mainChat.apiSendTextMessage`, keep accumulated messages, stay in `teamQueue`.
 
@@ -426,11 +476,16 @@ function isWeekend(timezone: string): boolean {
 | 2 | Init Grok agent | Startup | grokChat | `ChatApi.init(grokDbPrefix)` | dbFilePrefix | `ChatApi` | Exit on failure |
 | 3 | Get/create Grok user | Startup | grokChat | `apiGetActiveUser()` / `apiCreateActiveUser(profile)` | profile: {displayName: "Grok AI"} | `User` | Exit on failure |
 | 4 | Start Grok chat | Startup | grokChat | `startChat()` | — | void | Exit on failure |
-| 5 | Validate team group | Startup | mainChat | `apiListGroups(userId)` | userId | `GroupInfo[]` | Exit if ID:name mismatch |
-| 6 | Validate contacts | Startup | mainChat | `apiListContacts(userId)` | userId | `Contact[]` | Exit if ID:name mismatch |
-| 7 | First-run: create link | First-run | mainChat | `apiCreateLink(userId)` | userId | `string` (invitation link) | Exit on failure |
-| 8 | First-run: connect | First-run | grokChat | `apiConnectActiveUser(invLink)` | connLink | `ConnReqType` | Exit on failure |
-| 9 | First-run: wait | First-run | mainChat | `wait("contactConnected", 60000)` | event, timeout | `ChatEvent \| undefined` | Exit on timeout |
+| 5 | Resolve team group | Startup | mainChat | Read `{dbPrefix}_state.json` → `sendChatCmd("/_groups${userId}")` find by persisted ID, or `apiNewGroup(userId, {groupPreferences: {directMessages: {enable: On}}})` + persist | userId, groupProfile | `GroupInfo[]` / `GroupInfo` | Exit on failure |
+| 5a | Ensure DM on team group | Startup (existing group) | mainChat | `apiUpdateGroupProfile(teamGroupId, {groupPreferences: {directMessages: {enable: On}}})` | groupId, groupProfile | `GroupInfo` | Exit on failure |
+| 5b | Create team group invite link | Startup | mainChat | `apiDeleteGroupLink(groupId)` (best-effort) then `apiCreateGroupLink(groupId, Member)` | groupId, memberRole | `string` (invite link) | Exit on failure |
+| 5c | Delete team group invite link | 10min timer or shutdown | mainChat | `apiDeleteGroupLink(groupId)` | groupId | `void` | Log error (best-effort) |
+| 6 | Enable auto-accept DM contacts | Startup | mainChat | `sendChatCmd("/_set accept member contacts ${userId} on")` | userId | — | Log warning |
+| 6a | List contacts | Startup | mainChat | `apiListContacts(userId)` | userId | `Contact[]` | Exit on failure |
+| 6b | Validate team members | Startup (if `--team-members` provided) | mainChat | Match contacts by ID/name | contact list | — | Exit if ID:name mismatch |
+| 7 | Auto-establish Grok contact | Startup (if not in state file) | mainChat | `apiCreateLink(userId)` | userId | `string` (invitation link) | Exit on failure |
+| 8 | Auto-establish Grok contact | Startup (if not in state file) | grokChat | `apiConnectActiveUser(invLink)` | connLink | `ConnReqType` | Exit on failure |
+| 9 | Auto-establish Grok contact | Startup (if not in state file) | mainChat | `wait("contactConnected", 60000)` | event, timeout | `ChatEvent \| undefined` | Exit on timeout |
 | 10 | Send msg to customer | Various | mainChat | `apiSendTextMessage([Group, groupId], text)` | chat, text | `AChatItem[]` | Log error |
 | 11 | Forward to team | welcome→teamQueue, teamQueue msg, grokMode msg | mainChat | `apiSendTextMessage([Group, teamGroupId], fwd)` | chat, formatted text | `AChatItem[]` | Log error |
 | 12 | Invite Grok to group | /grok in teamQueue | mainChat | `apiAddMember(groupId, grokContactId, "member")` | groupId, contactId, role | `GroupMember` | Send error msg, stay in teamQueue |
@@ -440,6 +495,7 @@ function isWeekend(timezone: string): boolean {
 | 16 | Remove Grok | /team from grokMode | mainChat | `apiRemoveMembers(groupId, [grokMemberGId])` | groupId, memberIds | `GroupMember[]` | Ignore (may have left) |
 | 17 | Update bot profile | Startup (via bot.run) | mainChat | `apiUpdateProfile(userId, profile)` | userId, profile with peerType+commands | `UserProfileUpdateSummary` | Log warning |
 | 18 | Set address settings | Startup (via bot.run) | mainChat | `apiSetAddressSettings(userId, settings)` | userId, {businessAddress, autoAccept, welcomeMessage} | void | Exit on failure |
+| 19 | List group members | `groupDuplicateMember` fallback | mainChat | `apiListMembers(groupId)` | groupId | `GroupMember[]` | Log error |
 
 ## 15. Error Handling
 
@@ -456,18 +512,22 @@ function isWeekend(timezone: string): boolean {
 | Grok leaves during `grokMode` | Revert to `teamQueue`, delete grokGroupMap entry |
 | Team member leaves | Revert to `teamQueue` (accumulate messages again) |
 | Bot removed from group (`deletedMemberUser`) | Delete conversation state |
+| Grok contact unavailable (`grokContactId === null`) | `/grok` returns "Grok is temporarily unavailable" message, stay in current state |
+| No team members configured (`teamMembers.length === 0`) | `/team` returns "No team members are available yet" message; if was grokMode, revert to teamQueue |
 | Grok agent connection lost | Log error; Grok features unavailable until restart |
 | `apiSendTextMessage` fails | Log error, continue (message lost but bot stays alive) |
-| Config validation fails | Print descriptive error with actual vs expected name, exit |
+| Team member config validation fails | Print descriptive error with actual vs expected name, exit |
+| `groupDuplicateMember` on `apiAddMember` | Catch error, call `apiListMembers` to find existing member by `memberContactId`, use existing `groupMemberId` |
+| Restart: unknown business chat group | Re-initialize conversation state as `teamQueue` (no welcome reply), forward messages to team |
 
 ## 16. Implementation Sequence
 
 **Phase 1: Scaffold**
 - Create project: `package.json`, `tsconfig.json`
-- Implement `config.ts`: CLI arg parsing, ID:name format, `Config` type
-- Implement `index.ts`: init both ChatApi instances, verify profiles
+- Implement `config.ts`: CLI arg parsing, ID:name format (team members), `Config` type
+- Implement `index.ts`: init both ChatApi instances, auto-resolve Grok contact and team group from state file, verify profiles
 - Implement `util.ts`: `isWeekend`, logging
-- **Verify:** Both instances init, print user profiles, validate config
+- **Verify:** Both instances init, print user profiles, Grok contact established, team group created
 
 **Phase 2: State machine + event loop**
 - Implement `state.ts`: `ConversationState` union type
@@ -481,19 +541,20 @@ function isWeekend(timezone: string): boolean {
 **Phase 3: Grok integration**
 - Implement `grok.ts`: `GrokApiClient` with system prompt + docs injection
 - Implement Grok agent event handler (`receivedGroupInvitation` → auto-join)
-- Implement `activateGrok`: add member, ID mapping, wait for join, Grok API call, send response via grokChat
+- Implement `activateGrok`: null guard for `grokContactId`, add member, ID mapping, wait for join, Grok API call, send response via grokChat
 - Implement `forwardToGrok`: ongoing message routing in grokMode
 - **Verify:** `/grok` → Grok joins as separate participant → Grok responses appear from Grok profile
 
 **Phase 4: Team mode + one-way gate**
-- Implement `activateTeam`: remove Grok if present, add team member
+- Implement `activateTeam`: empty teamMembers guard, remove Grok if present, add team member
 - Implement `onTeamMemberMessage`: detect team msg → lock state
 - Implement `/grok` rejection in `teamPending` and `teamLocked`
 - **Verify:** Full flow: teamQueue → /grok → grokMode → /team → Grok removed + teamPending → /grok rejected → team msg → teamLocked
 
-**Phase 5: Polish + first-run**
-- Implement `--first-run` auto-contact establishment
+**Phase 5: Polish + edge cases**
 - Handle edge cases: customer leave, group delete, Grok timeout, member leave
+- Team group invite link lifecycle: create on startup, delete after 10min or on shutdown
+- Graceful shutdown (SIGINT/SIGTERM)
 - Write `docs/simplex-context.md` for Grok prompt injection
 - End-to-end test all flows
 
@@ -515,22 +576,30 @@ Any edit restarts the review cycle. Batch changes within a round.
 
 ## 18. Verification
 
-**First-run setup:**
+**Startup** (all auto-resolution happens automatically):
 ```bash
 cd apps/simplex-chat-support-bot
 npm install
-npx ts-node src/index.ts --first-run --db-prefix ./data/bot --grok-db-prefix ./data/grok
-# → Prints: "Grok contact established. ContactId=X. Use: --grok-contact X:GrokAI"
-```
-
-**Normal run:**
-```bash
-npx ts-node src/index.ts \
-  --team-group 1:SupportTeam \
-  --team-members 2:Alice,3:Bob \
-  --grok-contact 4:GrokAI \
+GROK_API_KEY=xai-... npx ts-node src/index.ts \
+  --team-group SupportTeam \
   --timezone America/New_York \
   --group-links "https://simplex.chat/contact#..."
+```
+
+On first startup, the bot auto-establishes the Grok contact and creates the team group, persisting both IDs to `{dbPrefix}_state.json`. It prints:
+```
+Team group invite link (expires in 10 min):
+https://simplex.chat/contact#...
+```
+
+Team members scan/click the link to join the team group. After 10 minutes, the link is deleted. On subsequent startups, the existing Grok contact and team group are resolved by persisted ID (not by name — safe even with duplicate group names) and a fresh team group invite link is created.
+
+**With optional team members** (for pre-validated contacts):
+```bash
+GROK_API_KEY=xai-... npx ts-node src/index.ts \
+  --team-group SupportTeam \
+  --team-members 2:Alice,3:Bob \
+  --timezone America/New_York
 ```
 
 **Test scenarios:**
@@ -544,6 +613,22 @@ npx ts-node src/index.ts \
 8. Test weekend: set timezone to weekend timezone → verify "48 hours" in messages
 9. Customer disconnects → verify state cleanup
 10. Grok API failure → verify error message, graceful fallback to teamQueue
+11. Team group auto-creation: start with a new group name → verify group created, ID persisted to state file, team group invite link displayed
+12. Team group invite link deletion: wait 10 minutes → verify link deleted; kill bot → verify link deleted on shutdown
+13. Team group persistence: restart bot → verify same group ID used from state file (not a new group)
+14. Team group recovery: delete persisted group externally → restart bot → verify new group created and state file updated
+15. Grok contact auto-establish: first startup with empty state file → verify Grok contact created and persisted
+16. Grok contact persistence: restart bot → verify same Grok contact ID used from state file
+17. Grok contact recovery: delete persisted contact externally → restart bot → verify new contact established and state file updated
+18. No team members: start without `--team-members` → send `/team` → verify "No team members are available yet" message
+19. Null grokContactId: if Grok contact unavailable → send `/grok` → verify "Grok is temporarily unavailable" message
+20. Restart recovery: customer message in unknown group → re-init to teamQueue, forward to team (no queue reply)
+21. Restart recovery: after re-init, `/grok` works in re-initialized group
+22. Grok join waiter: `onGrokGroupInvitation` alone does NOT resolve waiter — `onGrokMemberConnected` required
+23. groupDuplicateMember: `/team` when team member already in group → `apiListMembers` lookup, transition to teamPending
+24. groupDuplicateMember: member not found in list → error message, stay in current state
+25. DM contact received: `newMemberContactReceivedInv` from team group → logged, no crash
+26. Direct messages enabled on team group (via `groupPreferences`) for both new and existing groups
 
 ### Critical Reference Files
 

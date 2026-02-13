@@ -6,13 +6,12 @@ export interface IdName {
 export interface Config {
   dbPrefix: string
   grokDbPrefix: string
-  teamGroup: IdName
-  teamMembers: IdName[]
-  grokContact: IdName | null // null during first-run
+  teamGroup: IdName          // name from CLI, id resolved at startup from state file
+  teamMembers: IdName[]      // optional, empty if not provided
+  grokContactId: number | null  // resolved at startup from state file
   groupLinks: string
   timezone: string
   grokApiKey: string
-  firstRun: boolean
 }
 
 export function parseIdName(s: string): IdName {
@@ -36,26 +35,15 @@ function optionalArg(args: string[], flag: string, defaultValue: string): string
 }
 
 export function parseConfig(args: string[]): Config {
-  const firstRun = args.includes("--first-run")
-
   const grokApiKey = process.env.GROK_API_KEY
   if (!grokApiKey) throw new Error("Missing environment variable: GROK_API_KEY")
 
   const dbPrefix = optionalArg(args, "--db-prefix", "./data/bot")
   const grokDbPrefix = optionalArg(args, "--grok-db-prefix", "./data/grok")
-  const teamGroup = parseIdName(requiredArg(args, "--team-group"))
-  const teamMembers = requiredArg(args, "--team-members").split(",").map(parseIdName)
-  if (teamMembers.length === 0) throw new Error("--team-members must have at least one member")
-
-  let grokContact: IdName | null = null
-  if (!firstRun) {
-    grokContact = parseIdName(requiredArg(args, "--grok-contact"))
-  } else {
-    const i = args.indexOf("--grok-contact")
-    if (i >= 0 && i + 1 < args.length) {
-      grokContact = parseIdName(args[i + 1])
-    }
-  }
+  const teamGroupName = requiredArg(args, "--team-group")
+  const teamGroup: IdName = {id: 0, name: teamGroupName} // id resolved at startup
+  const teamMembersRaw = optionalArg(args, "--team-members", "")
+  const teamMembers = teamMembersRaw ? teamMembersRaw.split(",").map(parseIdName) : []
 
   const groupLinks = optionalArg(args, "--group-links", "")
   const timezone = optionalArg(args, "--timezone", "UTC")
@@ -65,10 +53,9 @@ export function parseConfig(args: string[]): Config {
     grokDbPrefix,
     teamGroup,
     teamMembers,
-    grokContact,
+    grokContactId: null, // resolved at startup from state file
     groupLinks,
     timezone,
     grokApiKey,
-    firstRun,
   }
 }
