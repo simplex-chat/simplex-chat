@@ -129,6 +129,8 @@ const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
 
+expect fun clearImageCaches()
+
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 expect suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
 
@@ -422,6 +424,7 @@ fun deleteAppFiles() {
   } catch (e: java.lang.Exception) {
     Log.e(TAG, "Util deleteAppFiles error: ${e.stackTraceToString()}")
   }
+  clearImageCaches()
 }
 
 fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in bytes
