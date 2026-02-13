@@ -26,7 +26,7 @@ import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 
 @Composable
 fun CIImageView(
@@ -38,6 +38,7 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+  val previewBitmap = remember(image) { base64ToBitmap(image) }
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -144,7 +145,7 @@ fun CIImageView(
         .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
-        imageView(base64ToBitmap(image), onClick = {
+        imageView(previewBitmap, onClick = {
           if (fileSource != null) {
             openFile(fileSource)
           }
@@ -178,14 +179,16 @@ fun CIImageView(
 
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .then(
+        if (!smallView) {
+          val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          Modifier.width(w).aspectRatio(previewBitmap.width.toFloat() / previewBitmap.height.toFloat())
+        } else Modifier
+      )
       .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
-    val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
-      mutableStateOf(
-        if (chatModel.connectedToRemote()) null else runBlocking { imageAndFilePath(file) }
-      )
-    }
+    val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
         withBGApi {
@@ -195,9 +198,9 @@ fun CIImageView(
         }
       }
     } else {
-      KeyChangeEffect(file) {
+      LaunchedEffect(file) {
         if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-          res.value = imageAndFilePath(file)
+          res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
         }
       }
     }
@@ -206,7 +209,7 @@ fun CIImageView(
       val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
     } else {
-      imageView(base64ToBitmap(image), onClick = {
+      imageView(previewBitmap, onClick = {
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->
