@@ -1,6 +1,6 @@
 # SimpleX Chat iOS -- Concept Index
 
-> Codewatch concept index. Maps every product concept to its documentation and source code with bidirectional links.
+> SimpleX Chat iOS concept index. Maps every product concept to its documentation and source code with bidirectional links.
 
 ## Table of Contents
 
@@ -59,7 +59,7 @@ Core data entities, their storage, and the operations that manage their lifecycl
 | **User** | `users` | `CreateActiveUser` in `Controller.hs` | `APIListUsers`, `APISetActiveUser` in `Controller.hs` | `APISetActiveUser`, `APIHideUser`, `APIUnhideUser`, `APIMuteUser`, `APIUpdateProfile` in `Controller.hs` | `APIDeleteUser` in `Controller.hs`; `Store/Profiles.hs` |
 | **Contact** | `contacts`, `contact_profiles` | `APIAddContact`, `APIConnect` in `Controller.hs` | `APIGetChat` in `Controller.hs`; `Store/Direct.hs` (getContact) | `APISetContactAlias`, `APISetConnectionAlias` in `Controller.hs`; `Store/Direct.hs` | `APIDeleteChat` in `Controller.hs`; `Store/Direct.hs` (deleteContact) |
 | **GroupInfo** | `groups`, `group_profiles` | `APINewGroup` in `Controller.hs`; `Store/Groups.hs` (createNewGroup) | `APIGetChat`, `APIGetGroupInfo` in `Controller.hs`; `Store/Groups.hs` | `APIUpdateGroupProfile` in `Controller.hs`; `Store/Groups.hs` (updateGroupProfile) | `APIDeleteChat` in `Controller.hs`; `Store/Groups.hs` (deleteGroup) |
-| **GroupMember** | `group_members`, `contact_profiles` | `APIAddMember`, `APIJoinGroup` in `Controller.hs`; `Store/Groups.hs` (createNewGroupMember) | `APIGetGroupMembers` in `Controller.hs`; `Store/Groups.hs` (getGroupMembers) | `APIUpdateMemberRole` in `Controller.hs`; `Store/Groups.hs` (updateGroupMemberRole) | `APIRemoveMember` in `Controller.hs`; `Store/Groups.hs` (deleteGroupMember) |
+| **GroupMember** | `group_members`, `contact_profiles` | `APIAddMember`, `APIJoinGroup` in `Controller.hs`; `Store/Groups.hs` (createNewGroupMember) | `APIListMembers` in `Controller.hs`; `Store/Groups.hs` (getGroupMembers) | `APIMembersRole` in `Controller.hs`; `Store/Groups.hs` (updateGroupMemberRole) | `APIRemoveMembers` in `Controller.hs`; `Store/Groups.hs` (deleteGroupMember) |
 | **ChatItem** | `chat_items`, `chat_item_versions` | `APISendMessages` in `Controller.hs`; `Store/Messages.hs` (createNewChatItem) | `APIGetChat`, `APIGetChatItems` in `Controller.hs`; `Store/Messages.hs` (getChatItems) | `APIUpdateChatItem`, `APIChatItemReaction` in `Controller.hs`; `Store/Messages.hs` (updateChatItem) | `APIDeleteChatItem` in `Controller.hs`; `Store/Messages.hs` (deleteChatItem) |
 | **Connection** | `connections` | `createConnection` via SMP agent; `Store/Connections.hs` | `Store/Connections.hs` (getConnectionEntity) | `Store/Connections.hs` (updateConnectionStatus) | `Store/Connections.hs` (deleteConnection) |
 | **FileTransfer** | `files`, `snd_files`, `rcv_files`, `xftp_file_descriptions` | `APISendMessages` (with file), `APIReceiveFile` in `Controller.hs`; `Store/Files.hs` | `Store/Files.hs` (getFileTransfer) | `Store/Files.hs` (updateFileStatus, updateFileProgress) | `Store/Files.hs` (deleteFileTransfer) |

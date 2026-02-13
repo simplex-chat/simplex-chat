@@ -64,7 +64,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 
 ### 4. Accept Contact Request
 
-1. When a peer connects via the user's SimpleX address, core generates a `ChatEvent.contactRequest`.
+1. When a peer connects via the user's SimpleX address, core generates a `ChatEvent.receivedContactRequest`.
 2. `processReceivedMsg` handles the event, adding a `UserContactRequest` to `ChatModel`.
 3. Contact request appears in `ChatListView` as a special `ContactRequestView` row.
 4. User taps "Accept":
@@ -115,7 +115,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 | `CreatedConnLink` | `SimpleXChat/APITypes.swift` | Contains `connFullLink` (URI) and optional `connShortLink` |
 | `PendingContactConnection` | `SimpleXChat/ChatTypes.swift` | Represents an in-progress connection before contact is established |
 | `ConnectionPlan` | `Shared/Model/AppAPITypes.swift` | Enum describing what a link will do: connect contact, join group, already connected, etc. |
-| `ConnReqType` | `Shared/Views/NewChat/NewChatView.swift` | `.invitation` or `.contact` -- type of connection request |
+| `ConnReqType` | `Shared/Views/NewChat/NewChatView.swift` | `.invitation`, `.contact`, or `.groupLink` -- type of connection request |
 | `Contact` | `SimpleXChat/ChatTypes.swift` | Full contact model with profile, connection status, preferences |
 | `UserContactRequest` | `SimpleXChat/ChatTypes.swift` | Incoming contact request awaiting acceptance |
 | `ChatType` | `SimpleXChat/ChatTypes.swift` | `.direct`, `.group`, `.local`, `.contactRequest`, `.contactConnection` |

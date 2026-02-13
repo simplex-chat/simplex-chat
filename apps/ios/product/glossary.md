@@ -1,6 +1,6 @@
 # SimpleX Chat iOS -- Glossary
 
-> Codewatch domain glossary. Defines all domain terms used in SimpleX Chat with links to relevant specifications and source code.
+> SimpleX Chat iOS domain glossary. Defines all domain terms used in SimpleX Chat with links to relevant specifications and source code.
 
 ## Table of Contents
 

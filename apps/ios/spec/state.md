@@ -286,11 +286,12 @@ Represents a single conversation in the chat list. Each `Chat` is an independent
 ### ChatStats
 
 ```swift
-struct ChatStats: Decodable {
+struct ChatStats: Decodable, Hashable {
     var unreadCount: Int = 0
+    var unreadMentions: Int = 0
+    var reportsCount: Int = 0
     var minUnreadItemId: Int64 = 0
     var unreadChat: Bool = false
-    var unreadMentions: Int = 0
 }
 ```
 
@@ -315,11 +316,11 @@ Represents the type and metadata of a conversation:
 ```swift
 public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     case direct(contact: Contact)
-    case group(groupInfo: GroupInfo, membership_: GroupMember? = nil)
+    case group(groupInfo: GroupInfo, groupChatScope: GroupChatScopeInfo?)
     case local(noteFolder: NoteFolder)
     case contactRequest(contactRequest: UserContactRequest)
     case contactConnection(contactConnection: PendingContactConnection)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?)
 }
 ```
 
@@ -328,11 +329,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 | Case | Associated Value | Description |
 |------|-----------------|-------------|
 | `.direct` | `Contact` | One-to-one conversation |
-| `.group` | `GroupInfo, GroupMember?` | Group conversation |
+| `.group` | `GroupInfo, GroupChatScopeInfo?` | Group conversation (optional scope for member support threads) |
 | `.local` | `NoteFolder` | Local notes (self-chat) |
 | `.contactRequest` | `UserContactRequest` | Incoming contact request |
 | `.contactConnection` | `PendingContactConnection` | Pending connection |
-| `.invalidJSON` | `String` | Undecodable chat data |
+| `.invalidJSON` | `Data?` | Undecodable chat data |
 
 ### Key Computed Properties on ChatInfo
 

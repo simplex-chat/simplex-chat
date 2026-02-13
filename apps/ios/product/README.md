@@ -1,6 +1,6 @@
 # SimpleX Chat iOS -- Product Overview
 
-> Codewatch product specification. Bidirectional code links: product docs reference source files, source files reference product docs.
+> SimpleX Chat iOS product specification. Bidirectional code links: product docs reference source files, source files reference product docs.
 
 ## Table of Contents
 

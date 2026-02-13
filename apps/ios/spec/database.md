@@ -121,9 +121,11 @@ The migration process:
 
 Migration results are decoded in Swift as `DBMigrationResult`:
 - `.ok` -- migrations applied successfully
+- `.invalidConfirmation` -- migration requires user confirmation
 - `.errorNotADatabase(dbFile:)` -- file is not a valid SQLite database
 - `.errorMigration(dbFile:, migrationError:)` -- migration failed
-- `.errorKeyChain` -- keychain access failed
+- `.errorSQL(dbFile:, migrationSQLError:)` -- SQL error during migration
+- `.errorKeychain` -- keychain access failed
 - `.unknown(json:)` -- unrecognized response
 
 ---
@@ -167,9 +169,9 @@ The encryption key is stored in the iOS Keychain via `kcDatabasePassword`:
 ```
 {App Container}/
 ├── Documents/
-│   ├── files/              -- Downloaded and sent files
+│   ├── app_files/          -- Downloaded and sent files
 │   ├── temp_files/         -- Temporary files during transfer
-│   └── wallpapers/         -- Custom wallpaper images
+│   └── assets/wallpapers/  -- Custom wallpaper images
 ├── {App Group Container}/
 │   ├── simplex_v1_chat.db  -- Chat database
 │   ├── simplex_v1_agent.db -- Agent database
@@ -195,16 +197,16 @@ When `apiSetEncryptLocalFiles(enable: true)` is set, files stored on device are 
 
 - Encryption/decryption uses `chat_encrypt_file` / `chat_decrypt_file` C FFI functions
 - Each file gets a unique key and nonce stored alongside the file reference
-- The `CryptoFile` type wraps `(filePath: String, cryptoArgs: CryptoFileArgs?)` where `CryptoFileArgs` contains `(key: String, nonce: String)`
+- The `CryptoFile` type wraps `(filePath: String, cryptoArgs: CryptoFileArgs?)` where `CryptoFileArgs` contains `(fileKey: String, fileNonce: String)`
 
 ### File Path Helpers
 
 ```swift
 public func getDocumentsDirectory() -> URL      // Standard documents dir
 public func getGroupContainerDirectory() -> URL // App group container
-func getAppFilesDirectory() -> URL              // Documents/files/
-func getTempFilesDirectory() -> URL             // Documents/temp_files/
-func getWallpaperDirectory() -> URL             // Documents/wallpapers/
+func getAppFilesDirectory() -> URL              // {appDir}/app_files/
+func getTempFilesDirectory() -> URL             // {appDir}/temp_files/
+func getWallpaperDirectory() -> URL             // {appDir}/assets/wallpapers/
 ```
 
 ### Cleanup

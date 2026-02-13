@@ -156,8 +156,8 @@ The NSE uses a subset of the chat API:
 
 | Mode | Title | Body |
 |------|-------|------|
-| `.displayNameAndMessage` | Contact name | Message text |
-| `.displayNameOnly` | Contact name | "New message" |
+| `.message` | Contact name | Message text |
+| `.contact` | Contact name | "New message" |
 | `.hidden` | "SimpleX" | "New message" |
 
 ---
@@ -190,10 +190,14 @@ The NSE uses a subset of the chat API:
 |--------|-------------|
 | `.new` | Token just registered, not yet verified |
 | `.registered` | Token registered with notification server |
-| `.verified` | Token verified and active |
+| `.confirmed` | Token confirmed and ready |
 | `.active` | Token actively receiving notifications |
 | `.expired` | Token expired, needs re-registration |
 | `.invalid` | Token invalid, needs new registration |
+| `.invalidBad` | Token invalid due to bad data |
+| `.invalidTopic` | Token invalid due to wrong topic |
+| `.invalidExpired` | Token invalid because it expired |
+| `.invalidUnregistered` | Token invalid, was unregistered |
 
 ### Token Deletion
 

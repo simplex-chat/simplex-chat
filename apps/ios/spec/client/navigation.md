@@ -275,12 +275,13 @@ When `DEFAULT_PERFORM_LA` is enabled:
 First-launch experience controlled by `ChatModel.onboardingStage`:
 
 ```swift
-enum OnboardingStage {
-    case step1_SimpleXInfo      // Welcome screen
-    case step2_CreateProfile    // Create first user profile
-    case step3_ChooseNotifications // Set notification preferences
-    case step4_SetupComplete    // Setup complete
-    case onboardingComplete     // Normal operation
+enum OnboardingStage: String, Identifiable {
+    case step1_SimpleXInfo              // Welcome screen
+    case step2_CreateProfile            // deprecated
+    case step3_CreateSimpleXAddress     // deprecated
+    case step3_ChooseServerOperators    // Choose server operators
+    case step4_SetNotificationsMode     // Set notification preferences
+    case onboardingComplete             // Normal operation
 }
 ```
 

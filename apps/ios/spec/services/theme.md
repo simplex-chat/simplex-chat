@@ -108,7 +108,7 @@ enum DefaultTheme {
     case SIMPLEX
     case BLACK
 
-    static let SYSTEM_THEME_NAME = "system"
+    static let SYSTEM_THEME_NAME = "SYSTEM"
 
     var themeName: String { ... }
     var mode: DefaultThemeMode { ... }  // .light or .dark

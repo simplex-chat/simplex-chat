@@ -279,7 +279,7 @@ struct RcvCallInvitation {
     var contact: Contact
     var callType: CallType
     var sharedKey: String?       // Optional E2E encryption key
-    var callUUID: String
+    var callUUID: String?
     var callTs: Date
 }
 ```
