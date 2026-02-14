@@ -1304,6 +1304,13 @@ fun ComposeView(
         chatModel.removeLiveDummy()
       },
       editPrevMessage = ::editPrevMessage,
+      onEscape = {
+        when (composeState.value.contextItem) {
+          is ComposeContextItem.EditingItem -> clearState()
+          ComposeContextItem.NoContextItem -> {}
+          else -> composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
+        }
+      },
       onFilesPasted = { composeState.onFilesAttached(it) },
       onMessageChange = ::onMessageChange,
       textStyle = textStyle,
