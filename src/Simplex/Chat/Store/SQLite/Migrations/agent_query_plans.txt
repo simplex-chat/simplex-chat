@@ -1205,10 +1205,6 @@ Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
-Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
-Plan:
-SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:
 SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
