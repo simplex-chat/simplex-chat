@@ -20,12 +20,9 @@ No mention of Grok, no choices. User simply types their question. Messages at th
 ## Step 2 — After user sends first message
 
 All messages are forwarded to the team group. Bot replies:
-> Thank you for your message, it is forwarded to the team.
-> It may take a team member up to 24 hours to reply.
+> Your message is forwarded to the team. A reply may take up to 24 hours.
 >
-> Click /grok if your question is about SimpleX apps or network, is not sensitive, and you want Grok LLM to answer it right away. **Your previous message and all subsequent messages will be forwarded to Grok** until you click /team. You can ask Grok questions in any language and it will not see your profile name.
->
-> We appreciate if you try Grok: you can learn a lot about SimpleX Chat from it. It is objective, answers the way our team would, and it saves our team time. 
+> If your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.
 
 On weekends, the bot says "48 hours" instead of "24 hours".
 
@@ -37,7 +34,7 @@ Bot replies:
 
 Grok must be added as a separate participant to the chat, so that user can differentiate bot messages from Grok messages. When switching to team mode, Grok is removed.
 
-Grok is prompted as a privacy expert and SimpleX Chat evangelist who knows everything about SimpleX Chat apps, network, design choices, and trade-offs. It answers honestly — for every criticism it explains why the team made that design choice. Relevant documentation pages and links must be injected into the context by the bot.
+Grok is prompted as a privacy expert and support assistant who knows SimpleX Chat apps, network, design choices, and trade-offs. It gives concise, mobile-friendly answers — brief numbered steps for how-to questions, 1-2 sentence explanations for design questions. For criticism, it briefly acknowledges the concern and explains the design choice. It avoids filler and markdown formatting. Relevant documentation pages and links must be injected into the context by the bot.
 
 ## Step 4 — `/team` (Team mode, one-way gate)
 
@@ -55,5 +52,6 @@ This gate should trigger only after team joins and member sends message to team.
 |---------|-------------|--------|
 | `/grok` | Team Queue (before escalation only) | Enter Grok mode |
 | `/team` | Grok mode or Team Queue | Add team member, permanently enter Team mode |
+| `/add` | Team group only | Team member sends `/add groupId:name` → bot adds them to the customer group |
 
 **Unrecognized commands:** treated as normal messages in the current mode.
