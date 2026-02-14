@@ -18,7 +18,7 @@ SimpleX Chat support bot — standalone Node.js app using `simplex-chat-nodejs` 
 │    • Grok identity, auto-joins groups            │
 │    • DB: data/grok_chat.db + data/grok_agent.db  │
 │                                                  │
-│  conversations: Map<groupId, ConversationState>  │
+│  State: derived from group composition + chat DB  │
 │  grokGroupMap: Map<mainGroupId, grokGroupId>     │
 │  GrokApiClient → api.x.ai/v1/chat/completions   │
 └─────────────────────────────────────────────────┘
@@ -33,16 +33,16 @@ SimpleX Chat support bot — standalone Node.js app using `simplex-chat-nodejs` 
 ## 3. Project Structure
 
 ```
-apps/simplex-chat-support-bot/
+apps/simplex-support-bot/
 ├── package.json          # deps: simplex-chat, @simplex-chat/types
 ├── tsconfig.json         # ES2022, strict, Node16 module resolution
 ├── src/
 │   ├── index.ts          # Entry: parse config, init instances, run
 │   ├── config.ts         # CLI arg parsing, ID:name validation, Config type
-│   ├── bot.ts            # SupportBot class: state mgmt, event dispatch, routing
-│   ├── state.ts          # ConversationState union type
+│   ├── bot.ts            # SupportBot class: stateless state derivation, event dispatch, routing
+│   ├── state.ts          # GrokMessage type
 │   ├── grok.ts           # GrokApiClient: xAI API wrapper, system prompt, history
-│   ├── messages.ts       # All user-facing message templates (verbatim from spec)
+│   ├── messages.ts       # All user-facing message templates
 │   └── util.ts           # isWeekend, logging helpers
 ├── data/                 # SQLite databases (created at runtime)
 └── docs/
@@ -81,10 +81,10 @@ interface Config {
 
 **State file** — `{dbPrefix}_state.json`:
 ```json
-{"teamGroupId": 123, "grokContactId": 4}
+{"teamGroupId": 123, "grokContactId": 4, "grokGroupMap": {"100": 200}}
 ```
 
-Both IDs are persisted to ensure the bot reconnects to the same entities across restarts, even if multiple groups share the same display name.
+Team group ID, Grok contact ID, and Grok group map are persisted to ensure the bot reconnects to the same entities across restarts. The Grok group map (`mainGroupId → grokLocalGroupId`) is updated on every Grok join/leave event.
 
 **Grok contact resolution** (auto-establish):
 1. Read `grokContactId` from state file → validate it exists in `apiListContacts`
@@ -106,30 +106,36 @@ Both IDs are persisted to ensure the bot reconnects to the same entities across 
 - If `--team-members` provided: validate each contact ID/name pair via `apiListContacts`, fail-fast on mismatch
 - If not provided: bot runs without team members; `/team` returns "No team members are available yet"
 
-## 5. State Machine
+## 5. State Derivation (Stateless)
 
-Keyed by `groupId` of business chat group. In-memory (restart resets; team group retains forwarded messages).
+State is derived from group composition (`apiListMembers`) and chat history (`apiGetChat` via `sendChatCmd`). No in-memory `conversations` map — survives restarts naturally.
 
-```typescript
-type ConversationState =
-  | {type: "welcome"}
-  | {type: "teamQueue"; userMessages: string[]}
-  | {type: "grokMode"; grokMemberGId: number; history: GrokMessage[]}
-  | {type: "teamPending"; teamMemberGId: number}
-  | {type: "teamLocked"; teamMemberGId: number}
+**Derived states:**
+
+| Condition | Equivalent State |
+|-----------|-----------------|
+| No bot `groupSnd` containing "forwarded to the team" | welcome |
+| No Grok member, no team member, bot has sent queue reply | teamQueue |
+| Grok member present (active) | grokMode |
+| Team member present, hasn't sent message | teamPending |
+| Team member present, has sent message | teamLocked |
+
+**State derivation helpers:**
+- `getGroupComposition(groupId)` → `{grokMember, teamMember}` from `apiListMembers`
+- `isFirstCustomerMessage(groupId)` → checks if bot has sent "forwarded to the team" via `apiGetChat`
+- `getGrokHistory(groupId, grokMember, customerId)` → reconstructs Grok conversation from chat history
+- `getCustomerMessages(groupId, customerId)` → accumulated customer messages from chat history
+- `hasTeamMemberSentMessage(groupId, teamMember)` → teamPending vs teamLocked from chat history
+
+**Transitions (same as stateful approach):**
 ```
-
-`teamQueue.userMessages` accumulates user messages for Grok initial context on `/grok` activation.
-
-**Transitions:**
-```
-welcome ──(1st user msg)──> teamQueue
-teamQueue ──(user msg)──> teamQueue (append to userMessages)
-teamQueue ──(/grok)──> grokMode (userMessages → initial Grok history)
+welcome ──(1st user msg)──> teamQueue (forward to team + queue reply)
+teamQueue ──(user msg)──> teamQueue (forward to team)
+teamQueue ──(/grok)──> grokMode (invite Grok, send accumulated msgs to API)
 teamQueue ──(/team)──> teamPending (add team member)
-grokMode ──(user msg)──> grokMode (forward to Grok API, append to history)
-grokMode ──(/team)──> teamPending (remove Grok immediately, add team member)
-teamPending ──(team member msg)──> teamLocked
+grokMode ──(user msg)──> grokMode (forward to Grok API + team)
+grokMode ──(/team)──> teamPending (remove Grok, add team member)
+teamPending ──(team member msg)──> teamLocked (implicit via hasTeamMemberSentMessage)
 teamPending ──(/grok)──> reply "team mode"
 teamLocked ──(/grok)──> reply "team mode", stay locked
 teamLocked ──(any)──> no action (team sees directly)
@@ -201,15 +207,15 @@ const [mainChat, mainUser, mainAddress] = await bot.run({
     commands: [
       {type: "command", keyword: "grok", label: "Ask Grok AI"},
       {type: "command", keyword: "team", label: "Switch to team"},
+      {type: "command", keyword: "add", label: "Join group"},
     ],
     useBotProfile: true,
   },
   events: {
     acceptingBusinessRequest: (evt) => supportBot?.onBusinessRequest(evt),
     newChatItems: (evt) => supportBot?.onNewChatItems(evt),
+    chatItemUpdated: (evt) => supportBot?.onChatItemUpdated(evt),
     leftMember: (evt) => supportBot?.onLeftMember(evt),
-    deletedMemberUser: (evt) => supportBot?.onDeletedMemberUser(evt),
-    groupDeleted: (evt) => supportBot?.onGroupDeleted(evt),
     connectedToGroupMember: (evt) => supportBot?.onMemberConnected(evt),
     newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
   },
@@ -243,11 +249,10 @@ grokChat.on("connectedToGroupMember", (evt) => supportBot?.onGrokMemberConnected
 
 | Event | Handler | Action |
 |-------|---------|--------|
-| `acceptingBusinessRequest` | `onBusinessRequest` | `conversations.set(groupInfo.groupId, {type: "welcome"})` |
-| `newChatItems` | `onNewChatItems` | For each chatItem: identify sender, extract text, dispatch to routing |
-| `leftMember` | `onLeftMember` | If customer left → delete state. If team member left → revert to teamQueue. If Grok left during grokMode → revert to teamQueue. |
-| `deletedMemberUser` | `onDeletedMemberUser` | Bot removed from group → delete state |
-| `groupDeleted` | `onGroupDeleted` | Delete state, delete grokGroupMap entry |
+| `acceptingBusinessRequest` | `onBusinessRequest` | Enable file uploads on business group via `apiUpdateGroupProfile` |
+| `newChatItems` | `onNewChatItems` | For each chatItem: identify sender, extract text, dispatch to routing. Also handles `/add` in team group. |
+| `chatItemUpdated` | `onChatItemUpdated` | Forward message edits to team group (update forwarded message text) |
+| `leftMember` | `onLeftMember` | If customer left → cleanup grok maps. If Grok left → cleanup grok maps. If team member left → add replacement if engaged (`hasTeamMemberSentMessage`), else revert to queue (implicit). |
 | `connectedToGroupMember` | `onMemberConnected` | Log for debugging |
 | `newMemberContactReceivedInv` | `onMemberContactReceivedInv` | Log DM contact from team group member (auto-accepted via `/_set accept member contacts`) |
 
@@ -260,64 +265,38 @@ grokChat.on("connectedToGroupMember", (evt) => supportBot?.onGrokMemberConnected
 
 We do NOT use `onMessage`/`onCommands` from `bot.run()` — all routing is done in the `newChatItems` event handler for full control over state-dependent command handling.
 
-**Sender identification in `newChatItems`:**
+**Message processing in `newChatItems` (stateless):**
 ```typescript
-for (const ci of evt.chatItems) {
-  const {chatInfo, chatItem} = ci
-  if (chatInfo.type !== "group") continue
-  const groupInfo = chatInfo.groupInfo
-  if (!groupInfo.businessChat) continue  // only process business chats
-  const groupId = groupInfo.groupId
-  let state = conversations.get(groupId)
-  if (!state) {
-    // After restart, re-initialize state for existing business chats
-    state = {type: "teamQueue", userMessages: []}
-    conversations.set(groupId, state)
-  }
-
-  if (chatItem.chatDir.type === "groupSnd") continue  // our own message
-  if (chatItem.chatDir.type !== "groupRcv") continue
-  const sender = chatItem.chatDir.groupMember
-
-  const isCustomer = sender.memberId === groupInfo.businessChat.customerId
-  const isTeamMember = (state.type === "teamPending" || state.type === "teamLocked")
-    && sender.groupMemberId === state.teamMemberGId
-  const isGrok = state.type === "grokMode"
-    && state.grokMemberGId === sender.groupMemberId
-
-  if (isGrok) continue  // skip Grok messages (we sent them via grokChat)
-  if (isCustomer) onCustomerMessage(groupId, groupInfo, chatItem, state)
-  else if (isTeamMember) onTeamMemberMessage(groupId, state)
-}
+// For each chatItem in evt.chatItems:
+// 1. Handle /add command in team group (if groupId === teamGroup.id)
+// 2. Skip non-business-chat groups
+// 3. Skip groupSnd (own messages)
+// 4. Skip non-groupRcv
+// 5. Identify sender:
+//    - Customer: sender.memberId === businessChat.customerId
+//    - Team member: sender.memberContactId matches teamMembers config
+// 6. For non-customer messages: forward team member messages to team group
+// 7. For customer messages: derive state from group composition (getGroupComposition)
+//    - Team member present → handleTeamMode
+//    - Grok member present → handleGrokMode
+//    - Neither present → handleNoSpecialMembers (welcome or teamQueue)
 ```
 
-**Command detection** — use `util.ciBotCommand()` for `/grok` and `/team`; all other text (including unrecognized `/commands`) is routed as "other text" per spec ("Unrecognized commands: treated as normal messages in the current mode"):
-```typescript
-function extractText(chatItem: T.ChatItem): string | null {
-  const text = util.ciContentText(chatItem)
-  return text?.trim() || null
-}
-
-// In onCustomerMessage:
-const cmd = util.ciBotCommand(chatItem)
-if (cmd?.keyword === "grok") { /* handle /grok */ }
-else if (cmd?.keyword === "team") { /* handle /team */ }
-else { /* handle as normal text message, including unrecognized /commands */ }
-```
+**Command detection** — use `util.ciBotCommand()` for `/grok` and `/team`; all other text (including unrecognized `/commands`) is routed as "other text" per spec ("Unrecognized commands: treated as normal messages in the current mode").
 
 ## 9. Message Routing Table
 
-`onCustomerMessage(groupId, groupInfo, chatItem, state)`:
+Customer message routing (derived state → action):
 
 | State | Input | Actions | API Calls | Next State |
 |-------|-------|---------|-----------|------------|
-| `welcome` | any text | Forward to team, send queue reply | `mainChat.apiSendTextMessage([Group, teamGroupId], fwd)` + `mainChat.apiSendTextMessage([Group, groupId], queueMsg)` | `teamQueue` (store msg) |
+| `welcome` | any text | Forward to team, send queue reply, send `/add` command | `mainChat.apiSendTextMessage([Group, teamGroupId], fwd)` + `mainChat.apiSendTextMessage([Group, groupId], queueMsg)` + `mainChat.apiSendTextMessage([Group, teamGroupId], addCmd)` | `teamQueue` |
 | `teamQueue` | `/grok` | Activate Grok (invite, wait join, send accumulated msgs to Grok API, relay response) | `mainChat.apiAddMember(groupId, grokContactId, "member")` + `mainChat.apiSendTextMessage([Group, groupId], grokActivatedMsg)` + wait for join + `grokChat.apiSendTextMessage([Group, grokLocalGId], grokResponse)` | `grokMode` |
 | `teamQueue` | `/team` | Add team member | `mainChat.apiAddMember(groupId, teamContactId, "member")` + `mainChat.apiSendTextMessage([Group, groupId], teamAddedMsg)` | `teamPending` |
-| `teamQueue` | other text | Forward to team, append to userMessages | `mainChat.apiSendTextMessage([Group, teamGroupId], fwd)` | `teamQueue` |
+| `teamQueue` | other text | Forward to team | `mainChat.apiSendTextMessage([Group, teamGroupId], fwd)` | `teamQueue` |
 | `grokMode` | `/grok` | Ignore (already in grok mode) | — | `grokMode` |
 | `grokMode` | `/team` | Remove Grok, add team member | `mainChat.apiRemoveMembers(groupId, [grokMemberGId])` + `mainChat.apiAddMember(groupId, teamContactId, "member")` + `mainChat.apiSendTextMessage([Group, groupId], teamAddedMsg)` | `teamPending` |
-| `grokMode` | other text | Forward to Grok API + forward to team | Grok API call + `grokChat.apiSendTextMessage([Group, grokLocalGId], response)` + `mainChat.apiSendTextMessage([Group, teamGroupId], fwd)` | `grokMode` (append history) |
+| `grokMode` | other text | Forward to Grok API + forward to team | Grok API call + `grokChat.apiSendTextMessage([Group, grokLocalGId], response)` + `mainChat.apiSendTextMessage([Group, teamGroupId], fwd)` | `grokMode` |
 | `teamPending` | `/grok` | Reply "team mode" | `mainChat.apiSendTextMessage([Group, groupId], teamLockedMsg)` | `teamPending` |
 | `teamPending` | `/team` | Ignore (already team) | — | `teamPending` |
 | `teamPending` | other text | No forwarding (team sees directly in group) | — | `teamPending` |
@@ -330,35 +309,30 @@ else { /* handle as normal text message, including unrecognized /commands */ }
 ```typescript
 async forwardToTeam(groupId: number, groupInfo: T.GroupInfo, text: string): Promise<void> {
   const name = groupInfo.groupProfile.displayName || `group-${groupId}`
-  const fwd = `[${name} #${groupId}]\n${text}`
+  const fwd = `${name}:${groupId}: ${text}`
   await this.mainChat.apiSendTextMessage(
     [T.ChatType.Group, this.config.teamGroup.id],
     fwd
   )
 }
 
-async activateTeam(groupId: number, state: ConversationState): Promise<void> {
+async activateTeam(groupId: number, grokMember: T.GroupMember | undefined): Promise<void> {
   // Remove Grok immediately if present (per spec: "When switching to team mode, Grok is removed")
-  if (state.type === "grokMode") {
-    try { await this.mainChat.apiRemoveMembers(groupId, [state.grokMemberGId]) } catch {}
+  if (grokMember) {
+    try { await this.mainChat.apiRemoveMembers(groupId, [grokMember.groupMemberId]) } catch {}
     this.cleanupGrokMaps(groupId)
   }
   if (this.config.teamMembers.length === 0) {
-    // No team members configured — revert to teamQueue if was grokMode
-    if (state.type === "grokMode") this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
     await this.sendToGroup(groupId, "No team members are available yet. Please try again later or click /grok.")
     return
   }
   const teamContactId = this.config.teamMembers[0].id
   const member = await this.addOrFindTeamMember(groupId, teamContactId)  // handles groupDuplicateMember
-  this.conversations.set(groupId, {
-    type: "teamPending",
-    teamMemberGId: member.groupMemberId,
-  })
-  await this.mainChat.apiSendTextMessage(
-    [T.ChatType.Group, groupId],
-    teamAddedMessage(this.config.timezone)
-  )
+  if (!member) {
+    await this.sendToGroup(groupId, "Sorry, there was an error adding a team member. Please try again.")
+    return
+  }
+  await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone))
 }
 
 // Helper: handles groupDuplicateMember error (team member already in group from previous session)
@@ -398,7 +372,7 @@ class GrokApiClient {
   }
 
   private systemPrompt(): string {
-    return `You are a privacy expert and SimpleX Chat evangelist...\n\n${this.docsContext}`
+    return `You are a support assistant for SimpleX Chat, answering questions inside the app as instant messages on mobile. You are a privacy expert who knows SimpleX Chat apps, network, design choices, and trade-offs.\n\nGuidelines:\n- Be concise. Keep answers short enough to read comfortably on a phone screen.\n- Answer simple questions in 1-2 sentences.\n- For how-to questions, give brief numbered steps — no extra explanation unless needed.\n- For design questions, give the key reason in 1-2 sentences, then trade-offs only if asked.\n- For criticism, briefly acknowledge the concern and explain the design choice.\n- If you don't know something, say so honestly.\n- Do not use markdown formatting...\n- Avoid filler, preambles, and repeating the question back.\n\n${this.docsContext}`
   }
 }
 ```
@@ -407,30 +381,28 @@ class GrokApiClient {
 1. `mainChat.apiAddMember(groupId, grokContactId, "member")` → stores `pendingGrokJoins.set(member.memberId, groupId)`
 2. Send bot activation message: `mainChat.apiSendTextMessage([Group, groupId], grokActivatedMsg)`
 3. Wait for Grok join via `waitForGrokJoin(groupId, 30000)` — Promise-based waiter resolved by `onGrokMemberConnected` (fires on `grokChat.connectedToGroupMember`), times out after 30s
-4. Re-check state (user may have sent `/team` concurrently — abort if state changed)
-5. Build initial Grok history from `state.userMessages`
+4. Re-check group composition (user may have sent `/team` concurrently — abort if team member appeared)
+5. Get accumulated customer messages from chat history via `getCustomerMessages(groupId, customerId)`
 6. Call Grok API with accumulated messages
-7. Re-check state again after API call (another event may have changed it)
+7. Re-check group composition again after API call (another event may have changed it)
 8. Send response via Grok identity: `grokChat.apiSendTextMessage([Group, grokGroupMap.get(groupId)!], response)`
-9. Transition to `grokMode` with history
 
-**Fallback:** If Grok API fails → send error message via `mainChat.apiSendTextMessage`, keep accumulated messages, stay in `teamQueue`.
+**Fallback:** If Grok API fails → remove Grok from group, cleanup grok maps, send "Grok temporarily unavailable" message.
 
 ## 12. One-Way Gate Logic
 
-Per spec: "When switching to team mode, Grok is removed" and "once the user switches to team mode, /grok command is permanently disabled." Grok removal happens immediately in `activateTeam` (section 10). The one-way gate locks the state after team member engages:
+Per spec: "When switching to team mode, Grok is removed" and "once the user switches to team mode, /grok command is permanently disabled." Grok removal happens immediately in `activateTeam` (section 10).
 
-```typescript
-async onTeamMemberMessage(groupId: number, state: ConversationState): Promise<void> {
-  if (state.type !== "teamPending") return
-  this.conversations.set(groupId, {type: "teamLocked", teamMemberGId: state.teamMemberGId})
-}
-```
+**Stateless one-way gate:** The gate is derived from group composition + chat history:
+- Team member present → `handleTeamMode` → `/grok` replies "team mode"
+- `hasTeamMemberSentMessage()` determines teamPending vs teamLocked:
+  - If team member has NOT sent a message and leaves → reverts to teamQueue (implicit, no state to update)
+  - If team member HAS sent a message and leaves → replacement team member added
 
 Timeline per spec:
-1. User sends `/team` → Grok removed immediately (if present) → team member added → state = `teamPending`
-2. `/grok` in `teamPending` → reply "team mode" (Grok already gone, command disabled)
-3. Team member sends message → `onTeamMemberMessage` → state = `teamLocked`
+1. User sends `/team` → Grok removed immediately (if present) → team member added → teamPending (derived)
+2. `/grok` in teamPending → reply "team mode" (Grok already gone, command disabled)
+3. Team member sends message → teamLocked (derived via `hasTeamMemberSentMessage`)
 4. Any subsequent `/grok` → reply "You are now in team mode. A team member will reply to your message."
 
 ## 13. Message Templates (verbatim from spec)
@@ -444,7 +416,7 @@ function welcomeMessage(groupLinks: string): string {
 // After first message (teamQueue)
 function teamQueueMessage(timezone: string): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  return `Thank you for your message, it is forwarded to the team.\nIt may take a team member up to ${hours} hours to reply.\n\nClick /grok if your question is about SimpleX apps or network, is not sensitive, and you want Grok LLM to answer it right away. *Your previous message and all subsequent messages will be forwarded to Grok* until you click /team. You can ask Grok questions in any language and it will not see your profile name.\n\nWe appreciate if you try Grok: you can learn a lot about SimpleX Chat from it. It is objective, answers the way our team would, and it saves our team time.`
+  return `Your message is forwarded to the team. A reply may take up to ${hours} hours.\n\nIf your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.`
 }
 
 // Grok activated
@@ -502,23 +474,23 @@ function isWeekend(timezone: string): boolean {
 | Scenario | Handling |
 |----------|----------|
 | ChatApi init fails | Log error, exit (let process manager restart) |
-| Grok API error (HTTP/timeout) | `mainChat.apiSendTextMessage` "Grok temporarily unavailable", revert to `teamQueue` |
-| `apiAddMember` fails (Grok) | `mainChat.apiSendTextMessage` error msg, stay in `teamQueue` |
-| `apiAddMember` fails (team) | `mainChat.apiSendTextMessage` error msg, stay in current state |
+| Grok API error (HTTP/timeout) | Remove Grok from group, cleanup grok maps, send "Grok temporarily unavailable" message |
+| Grok API error during conversation | Remove Grok from group, cleanup grok maps, send "Grok temporarily unavailable" message (next message → teamQueue via stateless derivation) |
+| `apiAddMember` fails (Grok) | `mainChat.apiSendTextMessage` error msg, stay in teamQueue (stateless) |
+| `apiAddMember` fails (team) | `mainChat.apiSendTextMessage` error msg, stay in current state (stateless) |
 | `apiRemoveMembers` fails | Catch and ignore (member may have left) |
-| Grok join timeout (30s) | `mainChat.apiSendTextMessage` "Grok unavailable", stay in `teamQueue` |
-| Customer leaves (`leftMember` where member is customer) | Delete conversation state, delete grokGroupMap entry |
-| Group deleted | Delete conversation state, delete grokGroupMap entry |
-| Grok leaves during `grokMode` | Revert to `teamQueue`, delete grokGroupMap entry |
-| Team member leaves | Revert to `teamQueue` (accumulate messages again) |
-| Bot removed from group (`deletedMemberUser`) | Delete conversation state |
-| Grok contact unavailable (`grokContactId === null`) | `/grok` returns "Grok is temporarily unavailable" message, stay in current state |
-| No team members configured (`teamMembers.length === 0`) | `/team` returns "No team members are available yet" message; if was grokMode, revert to teamQueue |
+| Grok join timeout (30s) | `mainChat.apiSendTextMessage` "Grok unavailable", stay in teamQueue (stateless) |
+| Customer leaves (`leftMember` where member is customer) | Cleanup grokGroupMap entry |
+| Grok leaves during grokMode | Cleanup grokGroupMap entry (next message → teamQueue via stateless derivation) |
+| Team member leaves (pending, not engaged) | No action needed; next message → teamQueue via stateless derivation |
+| Team member leaves (locked, engaged) | Add replacement team member (`addReplacementTeamMember`) |
+| Grok contact unavailable (`grokContactId === null`) | `/grok` returns "Grok is temporarily unavailable" message |
+| No team members configured (`teamMembers.length === 0`) | `/team` returns "No team members are available yet" message |
 | Grok agent connection lost | Log error; Grok features unavailable until restart |
 | `apiSendTextMessage` fails | Log error, continue (message lost but bot stays alive) |
 | Team member config validation fails | Print descriptive error with actual vs expected name, exit |
 | `groupDuplicateMember` on `apiAddMember` | Catch error, call `apiListMembers` to find existing member by `memberContactId`, use existing `groupMemberId` |
-| Restart: unknown business chat group | Re-initialize conversation state as `teamQueue` (no welcome reply), forward messages to team |
+| Restart: any business chat group | State derived from group composition + chat history (no explicit re-initialization needed) |
 
 ## 16. Implementation Sequence
 
@@ -529,12 +501,12 @@ function isWeekend(timezone: string): boolean {
 - Implement `util.ts`: `isWeekend`, logging
 - **Verify:** Both instances init, print user profiles, Grok contact established, team group created
 
-**Phase 2: State machine + event loop**
-- Implement `state.ts`: `ConversationState` union type
-- Implement `bot.ts`: `SupportBot` class with `conversations` map
-- Handle `acceptingBusinessRequest` → init state as `welcome`
-- Handle `newChatItems` → sender identification → customer message dispatch
-- Implement welcome → teamQueue transition + team forwarding
+**Phase 2: Stateless event processing**
+- Implement `state.ts`: `GrokMessage` type
+- Implement `bot.ts`: `SupportBot` class with stateless state derivation helpers
+- Handle `acceptingBusinessRequest` → enable file uploads on business group
+- Handle `newChatItems` → sender identification → derive state from group composition → dispatch
+- Implement welcome detection (`isFirstCustomerMessage`) + team forwarding
 - Implement `messages.ts`: all templates
 - **Verify:** Customer connects → welcome auto-reply → sends msg → forwarded to team group → queue reply received
 
@@ -547,16 +519,23 @@ function isWeekend(timezone: string): boolean {
 
 **Phase 4: Team mode + one-way gate**
 - Implement `activateTeam`: empty teamMembers guard, remove Grok if present, add team member
-- Implement `onTeamMemberMessage`: detect team msg → lock state
-- Implement `/grok` rejection in `teamPending` and `teamLocked`
+- Implement `handleTeamMode`: `/grok` rejection when team member present
+- Implement `hasTeamMemberSentMessage`: teamPending vs teamLocked derivation
 - **Verify:** Full flow: teamQueue → /grok → grokMode → /team → Grok removed + teamPending → /grok rejected → team msg → teamLocked
 
 **Phase 5: Polish + edge cases**
-- Handle edge cases: customer leave, group delete, Grok timeout, member leave
+- Handle edge cases: customer leave, Grok timeout, member leave
 - Team group invite link lifecycle: create on startup, delete after 10min or on shutdown
 - Graceful shutdown (SIGINT/SIGTERM)
 - Write `docs/simplex-context.md` for Grok prompt injection
 - End-to-end test all flows
+
+**Phase 6: Extra features (beyond MVP)**
+- Edit forwarding: `chatItemUpdated` → forward edits to team group (update forwarded message)
+- Team member reply forwarding: team member messages in business chats → forwarded to team group
+- `/add` command: team members send `/add groupId:name` in team group → bot adds them to the customer group
+- Grok group map persistence: `grokGroupMap` persisted to state file → survives restarts
+- Profile images: bot and Grok agent have profile images set on startup
 
 ## 17. Self-Review Requirement
 
@@ -578,7 +557,7 @@ Any edit restarts the review cycle. Batch changes within a round.
 
 **Startup** (all auto-resolution happens automatically):
 ```bash
-cd apps/simplex-chat-support-bot
+cd apps/simplex-support-bot
 npm install
 GROK_API_KEY=xai-... npx ts-node src/index.ts \
   --team-group SupportTeam \
@@ -604,7 +583,7 @@ GROK_API_KEY=xai-... npx ts-node src/index.ts \
 
 **Test scenarios:**
 1. Connect from SimpleX client to bot's business address → verify welcome message
-2. Send question → verify forwarded to team group with `[CustomerName #groupId]` prefix, queue reply received
+2. Send question → verify forwarded to team group with `CustomerName:groupId: ` prefix, queue reply received
 3. Send `/grok` → verify Grok joins as separate participant, responses appear from "Grok AI" profile
 4. Send text in grokMode → verify Grok response + forwarded to team
 5. Send `/team` → verify Grok removed, team member added, team added message
