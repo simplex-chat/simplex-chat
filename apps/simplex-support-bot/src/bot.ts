@@ -1,17 +1,34 @@
 import {api, util} from "simplex-chat"
 import {T, CEvt} from "@simplex-chat/types"
 import {Config} from "./config.js"
-import {ConversationState, GrokMessage} from "./state.js"
+import {GrokMessage} from "./state.js"
 import {GrokApiClient} from "./grok.js"
 import {teamQueueMessage, grokActivatedMessage, teamAddedMessage, teamLockedMessage} from "./messages.js"
 import {log, logError} from "./util.js"
 
+interface GroupComposition {
+  grokMember: T.GroupMember | undefined
+  teamMember: T.GroupMember | undefined
+}
+
+function isActiveMember(m: T.GroupMember): boolean {
+  return m.memberStatus === T.GroupMemberStatus.Connected
+    || m.memberStatus === T.GroupMemberStatus.Complete
+    || m.memberStatus === T.GroupMemberStatus.Announced
+}
+
 export class SupportBot {
-  private conversations = new Map<number, ConversationState>()
+  // Grok group mapping (persisted via onGrokMapChanged callback)
   private pendingGrokJoins = new Map<string, number>()      // memberId → mainGroupId
   private grokGroupMap = new Map<number, number>()           // mainGroupId → grokLocalGroupId
   private reverseGrokMap = new Map<number, number>()         // grokLocalGroupId → mainGroupId
   private grokJoinResolvers = new Map<number, () => void>()  // mainGroupId → resolve fn
+
+  // Forwarded message tracking: "groupId:itemId" → {teamItemId, prefix}
+  private forwardedItems = new Map<string, {teamItemId: number; prefix: string}>()
+
+  // Callback to persist grokGroupMap changes
+  onGrokMapChanged: ((map: ReadonlyMap<number, number>) => void) | null = null
 
   constructor(
     private mainChat: api.ChatApi,
@@ -20,12 +37,96 @@ export class SupportBot {
     private config: Config,
   ) {}
 
+  // Restore grokGroupMap from persisted state (call after construction, before events)
+  restoreGrokGroupMap(entries: [number, number][]): void {
+    for (const [mainGroupId, grokLocalGroupId] of entries) {
+      this.grokGroupMap.set(mainGroupId, grokLocalGroupId)
+      this.reverseGrokMap.set(grokLocalGroupId, mainGroupId)
+    }
+    log(`Restored Grok group map: ${entries.length} entries`)
+  }
+
+  // --- State Derivation Helpers ---
+
+  private async getGroupComposition(groupId: number): Promise<GroupComposition> {
+    const members = await this.mainChat.apiListMembers(groupId)
+    return {
+      grokMember: members.find(m =>
+        m.memberContactId === this.config.grokContactId && isActiveMember(m)),
+      teamMember: members.find(m =>
+        this.config.teamMembers.some(tm => tm.id === m.memberContactId) && isActiveMember(m)),
+    }
+  }
+
+  private async isFirstCustomerMessage(groupId: number): Promise<boolean> {
+    const chat = await this.apiGetChat(groupId, 20)
+    // The platform sends auto-messages on connect (welcome, commands, etc.) as groupSnd.
+    // The bot's teamQueueMessage (sent after first customer message) uniquely contains
+    // "forwarded to the team" — none of the platform auto-messages do.
+    return !chat.chatItems.some((ci: T.ChatItem) =>
+      ci.chatDir.type === "groupSnd"
+      && util.ciContentText(ci)?.includes("forwarded to the team"))
+  }
+
+  private async getGrokHistory(groupId: number, grokMember: T.GroupMember, customerId: string): Promise<GrokMessage[]> {
+    const chat = await this.apiGetChat(groupId, 100)
+    const history: GrokMessage[] = []
+    for (const ci of chat.chatItems) {
+      if (ci.chatDir.type !== "groupRcv") continue
+      const text = util.ciContentText(ci)?.trim()
+      if (!text) continue
+      if (ci.chatDir.groupMember.groupMemberId === grokMember.groupMemberId) {
+        history.push({role: "assistant", content: text})
+      } else if (ci.chatDir.groupMember.memberId === customerId) {
+        history.push({role: "user", content: text})
+      }
+    }
+    return history
+  }
+
+  private async getCustomerMessages(groupId: number, customerId: string): Promise<string[]> {
+    const chat = await this.apiGetChat(groupId, 100)
+    return chat.chatItems
+      .filter((ci: T.ChatItem) =>
+        ci.chatDir.type === "groupRcv"
+        && ci.chatDir.groupMember.memberId === customerId
+        && !util.ciBotCommand(ci))
+      .map((ci: T.ChatItem) => util.ciContentText(ci)?.trim())
+      .filter((t): t is string => !!t)
+  }
+
+  private async hasTeamMemberSentMessage(groupId: number, teamMember: T.GroupMember): Promise<boolean> {
+    const chat = await this.apiGetChat(groupId, 50)
+    return chat.chatItems.some((ci: T.ChatItem) =>
+      ci.chatDir.type === "groupRcv"
+      && ci.chatDir.groupMember.groupMemberId === teamMember.groupMemberId)
+  }
+
+  // Interim apiGetChat wrapper using sendChatCmd directly
+  private async apiGetChat(groupId: number, count: number): Promise<T.AChat> {
+    const r = await this.mainChat.sendChatCmd(`/_get chat #${groupId} count=${count}`) as any
+    if (r.type === "apiChat") return r.chat
+    throw new Error(`error getting chat for group ${groupId}: ${r.type}`)
+  }
+
   // --- Event Handlers (main bot) ---
 
-  onBusinessRequest(evt: CEvt.AcceptingBusinessRequest): void {
+  async onBusinessRequest(evt: CEvt.AcceptingBusinessRequest): Promise<void> {
     const groupId = evt.groupInfo.groupId
-    log(`New business request: groupId=${groupId}`)
-    this.conversations.set(groupId, {type: "welcome"})
+    try {
+      const profile = evt.groupInfo.groupProfile
+      await this.mainChat.apiUpdateGroupProfile(groupId, {
+        displayName: profile.displayName,
+        fullName: profile.fullName,
+        groupPreferences: {
+          ...profile.groupPreferences,
+          files: {enable: T.GroupFeatureEnabled.On},
+        },
+      })
+      log(`Enabled media uploads for business group ${groupId}`)
+    } catch (err) {
+      logError(`Failed to enable media uploads for group ${groupId}`, err)
+    }
   }
 
   async onNewChatItems(evt: CEvt.NewChatItems): Promise<void> {
@@ -40,9 +141,6 @@ export class SupportBot {
 
   async onLeftMember(evt: CEvt.LeftMember): Promise<void> {
     const groupId = evt.groupInfo.groupId
-    const state = this.conversations.get(groupId)
-    if (!state) return
-
     const member = evt.member
     const bc = evt.groupInfo.businessChat
     if (!bc) return
@@ -50,46 +148,59 @@ export class SupportBot {
     // Customer left
     if (member.memberId === bc.customerId) {
       log(`Customer left group ${groupId}, cleaning up`)
-      this.conversations.delete(groupId)
       this.cleanupGrokMaps(groupId)
       return
     }
 
-    // Team member left — teamPending: gate not yet triggered, revert to teamQueue
-    if (state.type === "teamPending" && member.groupMemberId === state.teamMemberGId) {
-      log(`Team member left group ${groupId} (teamPending), reverting to teamQueue`)
-      this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
-      return
-    }
-
-    // Team member left — teamLocked: one-way gate triggered, stay in team mode (add another member)
-    if (state.type === "teamLocked" && member.groupMemberId === state.teamMemberGId) {
-      log(`Team member left group ${groupId} (teamLocked), adding replacement team member`)
-      await this.addReplacementTeamMember(groupId)
-      return
-    }
-
-    // Grok left during grokMode
-    if (state.type === "grokMode" && member.groupMemberId === state.grokMemberGId) {
-      log(`Grok left group ${groupId} during grokMode, reverting to teamQueue`)
-      this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
+    // Grok left
+    if (member.memberContactId === this.config.grokContactId) {
+      log(`Grok left group ${groupId}`)
       this.cleanupGrokMaps(groupId)
       return
     }
+
+    // Team member left — check if they had engaged (teamLocked vs teamPending)
+    if (this.config.teamMembers.some(tm => tm.id === member.memberContactId)) {
+      const engaged = await this.hasTeamMemberSentMessage(groupId, member)
+      if (engaged) {
+        log(`Engaged team member left group ${groupId}, adding replacement`)
+        await this.addReplacementTeamMember(groupId)
+      } else {
+        log(`Pending team member left group ${groupId}, reverting to queue`)
+        // No state to revert — member is already gone from DB
+      }
+    }
   }
 
-  onDeletedMemberUser(evt: CEvt.DeletedMemberUser): void {
-    const groupId = evt.groupInfo.groupId
-    log(`Bot removed from group ${groupId}`)
-    this.conversations.delete(groupId)
-    this.cleanupGrokMaps(groupId)
-  }
+  async onChatItemUpdated(evt: CEvt.ChatItemUpdated): Promise<void> {
+    const {chatInfo, chatItem} = evt.chatItem
+    if (chatInfo.type !== "group") return
+    const groupInfo = chatInfo.groupInfo
+    if (!groupInfo.businessChat) return
+    const groupId = groupInfo.groupId
 
-  onGroupDeleted(evt: CEvt.GroupDeleted): void {
-    const groupId = evt.groupInfo.groupId
-    log(`Group ${groupId} deleted`)
-    this.conversations.delete(groupId)
-    this.cleanupGrokMaps(groupId)
+    if (chatItem.chatDir.type !== "groupRcv") return
+
+    const itemId = chatItem.meta.itemId
+    const key = `${groupId}:${itemId}`
+    const entry = this.forwardedItems.get(key)
+    if (!entry) return
+
+    const text = util.ciContentText(chatItem)?.trim()
+    if (!text) return
+
+    const fwd = `${entry.prefix}${text}`
+    try {
+      await this.mainChat.apiUpdateChatItem(
+        T.ChatType.Group,
+        this.config.teamGroup.id,
+        entry.teamItemId,
+        {type: "text", text: fwd},
+        false,
+      )
+    } catch (err) {
+      logError(`Failed to forward edit to team for group ${groupId}, item ${itemId}`, err)
+    }
   }
 
   onMemberConnected(evt: CEvt.ConnectedToGroupMember): void {
@@ -124,9 +235,9 @@ export class SupportBot {
     }
 
     // Join request sent — set maps, but don't resolve waiter yet.
-    // The waiter resolves when grokChat fires connectedToGroupMember (see onGrokMemberConnected).
     this.grokGroupMap.set(mainGroupId, evt.groupInfo.groupId)
     this.reverseGrokMap.set(evt.groupInfo.groupId, mainGroupId)
+    this.onGrokMapChanged?.(this.grokGroupMap)
   }
 
   onGrokMemberConnected(evt: CEvt.ConnectedToGroupMember): void {
@@ -147,108 +258,119 @@ export class SupportBot {
     const {chatInfo, chatItem} = ci
     if (chatInfo.type !== "group") return
     const groupInfo = chatInfo.groupInfo
-    if (!groupInfo.businessChat) return
     const groupId = groupInfo.groupId
-    let state = this.conversations.get(groupId)
-    if (!state) {
-      // After restart, re-initialize state for existing business chats
-      state = {type: "teamQueue", userMessages: []}
-      this.conversations.set(groupId, state)
-      log(`Re-initialized conversation state for group ${groupId} after restart`)
+
+    // Handle /add command in team group
+    if (groupId === this.config.teamGroup.id) {
+      await this.processTeamGroupMessage(chatItem)
+      return
     }
+
+    if (!groupInfo.businessChat) return
 
     if (chatItem.chatDir.type === "groupSnd") return
     if (chatItem.chatDir.type !== "groupRcv") return
     const sender = chatItem.chatDir.groupMember
 
     const isCustomer = sender.memberId === groupInfo.businessChat.customerId
-    const isTeamMember = (state.type === "teamPending" || state.type === "teamLocked")
-      && sender.groupMemberId === state.teamMemberGId
-    const isGrok = state.type === "grokMode"
-      && state.grokMemberGId === sender.groupMemberId
 
-    if (isGrok) return
-    if (isCustomer) await this.onCustomerMessage(groupId, groupInfo, chatItem, state)
-    else if (isTeamMember) await this.onTeamMemberMessage(groupId, state)
+    if (!isCustomer) {
+      // Team member message → forward to team group
+      if (this.config.teamMembers.some(tm => tm.id === sender.memberContactId)) {
+        const text = util.ciContentText(chatItem)?.trim()
+        if (text) {
+          const customerName = groupInfo.groupProfile.displayName || `group-${groupId}`
+          const teamMemberName = sender.memberProfile.displayName
+          const contactId = sender.memberContactId
+          const itemId = chatItem.meta?.itemId
+          const prefix = `${teamMemberName}:${contactId} > ${customerName}:${groupId}: `
+          await this.forwardToTeam(groupId, prefix, text, itemId)
+        }
+      }
+      return
+    }
+
+    // Customer message — derive state from group composition
+    const {grokMember, teamMember} = await this.getGroupComposition(groupId)
+
+    if (teamMember) {
+      await this.handleTeamMode(groupId, chatItem)
+    } else if (grokMember) {
+      await this.handleGrokMode(groupId, groupInfo, chatItem, grokMember)
+    } else {
+      await this.handleNoSpecialMembers(groupId, groupInfo, chatItem)
+    }
   }
 
-  private async onCustomerMessage(
+  // Customer message when a team member is present (teamPending or teamLocked)
+  private async handleTeamMode(groupId: number, chatItem: T.ChatItem): Promise<void> {
+    const cmd = util.ciBotCommand(chatItem)
+    if (cmd?.keyword === "grok") {
+      await this.sendToGroup(groupId, teamLockedMessage)
+    }
+    // /team → ignore (already team). Other text → no forwarding (team sees directly).
+  }
+
+  // Customer message when Grok is present
+  private async handleGrokMode(
     groupId: number,
     groupInfo: T.GroupInfo,
     chatItem: T.ChatItem,
-    state: ConversationState,
+    grokMember: T.GroupMember,
   ): Promise<void> {
     const cmd = util.ciBotCommand(chatItem)
     const text = util.ciContentText(chatItem)?.trim() || null
 
-    switch (state.type) {
-      case "welcome": {
-        if (!text) return
-        await this.forwardToTeam(groupId, groupInfo, text)
-        await this.sendToGroup(groupId, teamQueueMessage(this.config.timezone))
-        this.conversations.set(groupId, {type: "teamQueue", userMessages: [text]})
-        break
-      }
-
-      case "teamQueue": {
-        if (cmd?.keyword === "grok") {
-          await this.activateGrok(groupId, state)
-          return
-        }
-        if (cmd?.keyword === "team") {
-          await this.activateTeam(groupId, state)
-          return
-        }
-        if (!text) return
-        await this.forwardToTeam(groupId, groupInfo, text)
-        state.userMessages.push(text)
-        break
-      }
-
-      case "grokMode": {
-        if (cmd?.keyword === "grok") return
-        if (cmd?.keyword === "team") {
-          await this.activateTeam(groupId, state)
-          return
-        }
-        if (!text) return
-        await this.forwardToTeam(groupId, groupInfo, text)
-        await this.forwardToGrok(groupId, text, state)
-        break
-      }
-
-      case "teamPending": {
-        if (cmd?.keyword === "grok") {
-          await this.sendToGroup(groupId, teamLockedMessage)
-          return
-        }
-        // /team → ignore (already team). Other text → no forwarding (team sees directly).
-        break
-      }
-
-      case "teamLocked": {
-        if (cmd?.keyword === "grok") {
-          await this.sendToGroup(groupId, teamLockedMessage)
-          return
-        }
-        // No action — team sees directly
-        break
-      }
+    if (cmd?.keyword === "grok") return // already in grok mode
+    if (cmd?.keyword === "team") {
+      await this.activateTeam(groupId, grokMember)
+      return
     }
+    if (!text) return
+    const prefix = this.customerForwardPrefix(groupId, groupInfo)
+    await this.forwardToTeam(groupId, prefix, text, chatItem.meta?.itemId)
+    await this.forwardToGrok(groupId, groupInfo, text, grokMember)
   }
 
-  private async onTeamMemberMessage(groupId: number, state: ConversationState): Promise<void> {
-    if (state.type !== "teamPending") return
-    log(`Team member engaged in group ${groupId}, locking to teamLocked`)
-    this.conversations.set(groupId, {type: "teamLocked", teamMemberGId: state.teamMemberGId})
+  // Customer message when neither Grok nor team is present (welcome or teamQueue)
+  private async handleNoSpecialMembers(
+    groupId: number,
+    groupInfo: T.GroupInfo,
+    chatItem: T.ChatItem,
+  ): Promise<void> {
+    const cmd = util.ciBotCommand(chatItem)
+    const text = util.ciContentText(chatItem)?.trim() || null
+
+    // Check if this is the first customer message (welcome state)
+    const firstMessage = await this.isFirstCustomerMessage(groupId)
+
+    if (firstMessage) {
+      // Welcome state — first message transitions to teamQueue
+      if (!text) return
+      const prefix = this.customerForwardPrefix(groupId, groupInfo)
+      await this.forwardToTeam(groupId, prefix, text, chatItem.meta?.itemId)
+      await this.sendToGroup(groupId, teamQueueMessage(this.config.timezone))
+      await this.sendAddCommand(groupId, groupInfo)
+      return
+    }
+
+    // teamQueue state
+    if (cmd?.keyword === "grok") {
+      await this.activateGrok(groupId, groupInfo)
+      return
+    }
+    if (cmd?.keyword === "team") {
+      await this.activateTeam(groupId, undefined)
+      return
+    }
+    if (!text) return
+    const prefix = this.customerForwardPrefix(groupId, groupInfo)
+    await this.forwardToTeam(groupId, prefix, text, chatItem.meta?.itemId)
   }
 
   // --- Grok Activation ---
 
-  private async activateGrok(
-    groupId: number,
-    state: {type: "teamQueue"; userMessages: string[]},
-  ): Promise<void> {
+  private async activateGrok(groupId: number, groupInfo: T.GroupInfo): Promise<void> {
     if (this.config.grokContactId === null) {
       await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
       return
@@ -274,10 +396,10 @@ export class SupportBot {
       return
     }
 
-    // Verify state hasn't changed while awaiting (e.g., user sent /team concurrently)
-    const currentState = this.conversations.get(groupId)
-    if (!currentState || currentState.type !== "teamQueue") {
-      log(`State changed during Grok activation for group ${groupId} (now ${currentState?.type}), aborting`)
+    // Verify group composition hasn't changed while awaiting (e.g., user sent /team concurrently)
+    const {teamMember} = await this.getGroupComposition(groupId)
+    if (teamMember) {
+      log(`Team member appeared during Grok activation for group ${groupId}, aborting`)
       try {
         await this.mainChat.apiRemoveMembers(groupId, [member.groupMemberId])
       } catch {
@@ -287,15 +409,17 @@ export class SupportBot {
       return
     }
 
-    // Grok joined — call API with accumulated messages
+    // Grok joined — call API with accumulated customer messages from chat history
     try {
-      const initialUserMsg = state.userMessages.join("\n")
+      const customerId = groupInfo.businessChat!.customerId
+      const customerMessages = await this.getCustomerMessages(groupId, customerId)
+      const initialUserMsg = customerMessages.join("\n")
       const response = await this.grokApi.chat([], initialUserMsg)
 
-      // Re-check state after async API call — another event may have changed it
-      const postApiState = this.conversations.get(groupId)
-      if (!postApiState || postApiState.type !== "teamQueue") {
-        log(`State changed during Grok API call for group ${groupId} (now ${postApiState?.type}), aborting`)
+      // Re-check composition after async API call
+      const postApi = await this.getGroupComposition(groupId)
+      if (postApi.teamMember) {
+        log(`Team member appeared during Grok API call for group ${groupId}, aborting`)
         try {
           await this.mainChat.apiRemoveMembers(groupId, [member.groupMemberId])
         } catch {
@@ -305,26 +429,14 @@ export class SupportBot {
         return
       }
 
-      const history: GrokMessage[] = [
-        {role: "user", content: initialUserMsg},
-        {role: "assistant", content: response},
-      ]
-
       const grokLocalGId = this.grokGroupMap.get(groupId)
       if (grokLocalGId === undefined) {
         log(`Grok map entry missing after join for group ${groupId}`)
         return
       }
       await this.grokChat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], response)
-
-      this.conversations.set(groupId, {
-        type: "grokMode",
-        grokMemberGId: member.groupMemberId,
-        history,
-      })
     } catch (err) {
       logError(`Grok API/send failed for group ${groupId}`, err)
-      // Remove Grok since activation failed after join
       try {
         await this.mainChat.apiRemoveMembers(groupId, [member.groupMemberId])
       } catch {
@@ -332,7 +444,6 @@ export class SupportBot {
       }
       this.cleanupGrokMaps(groupId)
       await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
-      // Stay in teamQueue
     }
   }
 
@@ -340,13 +451,14 @@ export class SupportBot {
 
   private async forwardToGrok(
     groupId: number,
+    groupInfo: T.GroupInfo,
     text: string,
-    state: {type: "grokMode"; grokMemberGId: number; history: GrokMessage[]},
+    grokMember: T.GroupMember,
   ): Promise<void> {
     try {
-      const response = await this.grokApi.chat(state.history, text)
-      state.history.push({role: "user", content: text})
-      state.history.push({role: "assistant", content: response})
+      const customerId = groupInfo.businessChat!.customerId
+      const history = await this.getGrokHistory(groupId, grokMember, customerId)
+      const response = await this.grokApi.chat(history, text)
 
       const grokLocalGId = this.grokGroupMap.get(groupId)
       if (grokLocalGId !== undefined) {
@@ -354,39 +466,39 @@ export class SupportBot {
       }
     } catch (err) {
       logError(`Grok API error for group ${groupId}`, err)
-      // Per plan: revert to teamQueue on Grok API failure — remove Grok, clean up
       try {
-        await this.mainChat.apiRemoveMembers(groupId, [state.grokMemberGId])
+        await this.mainChat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
       } catch {
         // ignore — may have already left
       }
       this.cleanupGrokMaps(groupId)
-      this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
       await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
     }
   }
 
   // --- Team Actions ---
 
-  private async forwardToTeam(groupId: number, groupInfo: T.GroupInfo, text: string): Promise<void> {
-    const name = groupInfo.groupProfile.displayName || `group-${groupId}`
-    const fwd = `[${name} #${groupId}]\n${text}`
+  private async forwardToTeam(groupId: number, prefix: string, text: string, sourceItemId?: number): Promise<void> {
+    const fwd = `${prefix}${text}`
     try {
-      await this.mainChat.apiSendTextMessage(
+      const result = await this.mainChat.apiSendTextMessage(
         [T.ChatType.Group, this.config.teamGroup.id],
         fwd,
       )
+      if (sourceItemId !== undefined && result && result[0]) {
+        const teamItemId = result[0].chatItem.meta.itemId
+        this.forwardedItems.set(`${groupId}:${sourceItemId}`, {teamItemId, prefix})
+      }
     } catch (err) {
       logError(`Failed to forward to team for group ${groupId}`, err)
     }
   }
 
-  private async activateTeam(groupId: number, state: ConversationState): Promise<void> {
-    // Remove Grok immediately if present (per spec: "When switching to team mode, Grok is removed")
-    const wasGrokMode = state.type === "grokMode"
-    if (wasGrokMode) {
+  private async activateTeam(groupId: number, grokMember: T.GroupMember | undefined): Promise<void> {
+    // Remove Grok immediately if present
+    if (grokMember) {
       try {
-        await this.mainChat.apiRemoveMembers(groupId, [state.grokMemberGId])
+        await this.mainChat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
       } catch {
         // ignore — may have already left
       }
@@ -394,9 +506,6 @@ export class SupportBot {
     }
     if (this.config.teamMembers.length === 0) {
       logError(`No team members configured, cannot add team member to group ${groupId}`, new Error("no team members"))
-      if (wasGrokMode) {
-        this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
-      }
       await this.sendToGroup(groupId, "No team members are available yet. Please try again later or click /grok.")
       return
     }
@@ -404,25 +513,47 @@ export class SupportBot {
       const teamContactId = this.config.teamMembers[0].id
       const member = await this.addOrFindTeamMember(groupId, teamContactId)
       if (!member) {
-        if (wasGrokMode) {
-          this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
-        }
         await this.sendToGroup(groupId, "Sorry, there was an error adding a team member. Please try again.")
         return
       }
-      this.conversations.set(groupId, {
-        type: "teamPending",
-        teamMemberGId: member.groupMemberId,
-      })
       await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone))
     } catch (err) {
       logError(`Failed to add team member to group ${groupId}`, err)
-      // If Grok was removed, state is stale (grokMode but Grok gone) — revert to teamQueue
-      if (wasGrokMode) {
-        this.conversations.set(groupId, {type: "teamQueue", userMessages: []})
-      }
       await this.sendToGroup(groupId, "Sorry, there was an error adding a team member. Please try again.")
     }
+  }
+
+  private customerForwardPrefix(groupId: number, groupInfo: T.GroupInfo): string {
+    const name = groupInfo.groupProfile.displayName || `group-${groupId}`
+    return `${name}:${groupId}: `
+  }
+
+  // --- Team Group Commands ---
+
+  private async processTeamGroupMessage(chatItem: T.ChatItem): Promise<void> {
+    if (chatItem.chatDir.type !== "groupRcv") return
+    const text = util.ciContentText(chatItem)?.trim()
+    if (!text) return
+    const match = text.match(/^\/add\s+(\d+):/)
+    if (!match) return
+
+    const targetGroupId = parseInt(match[1])
+    const senderContactId = chatItem.chatDir.groupMember.memberContactId
+    if (!senderContactId) return
+
+    try {
+      await this.addOrFindTeamMember(targetGroupId, senderContactId)
+      log(`Team member ${senderContactId} added to group ${targetGroupId} via /add command`)
+    } catch (err) {
+      logError(`Failed to add team member to group ${targetGroupId} via /add`, err)
+    }
+  }
+
+  private async sendAddCommand(groupId: number, groupInfo: T.GroupInfo): Promise<void> {
+    const name = groupInfo.groupProfile.displayName || `group-${groupId}`
+    const formatted = name.includes(" ") ? `'${name}'` : name
+    const cmd = `/add ${groupId}:${formatted}`
+    await this.sendToGroup(this.config.teamGroup.id, cmd)
   }
 
   // --- Helpers ---
@@ -431,14 +562,9 @@ export class SupportBot {
     if (this.config.teamMembers.length === 0) return
     try {
       const teamContactId = this.config.teamMembers[0].id
-      const member = await this.addOrFindTeamMember(groupId, teamContactId)
-      if (member) {
-        this.conversations.set(groupId, {type: "teamLocked", teamMemberGId: member.groupMemberId})
-      }
+      await this.addOrFindTeamMember(groupId, teamContactId)
     } catch (err) {
       logError(`Failed to add replacement team member to group ${groupId}`, err)
-      // Stay in teamLocked with stale teamMemberGId — one-way gate must hold
-      // Team will see the message in team group and can join manually
     }
   }
 
@@ -447,7 +573,6 @@ export class SupportBot {
       return await this.mainChat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
     } catch (err: any) {
       if (err?.chatError?.errorType?.type === "groupDuplicateMember") {
-        // Team member already in group (e.g., from previous session) — find existing member
         log(`Team member already in group ${groupId}, looking up existing member`)
         const members = await this.mainChat.apiListMembers(groupId)
         const existing = members.find(m => m.memberContactId === teamContactId)
@@ -486,9 +611,9 @@ export class SupportBot {
 
   private cleanupGrokMaps(groupId: number): void {
     const grokLocalGId = this.grokGroupMap.get(groupId)
+    if (grokLocalGId === undefined) return
     this.grokGroupMap.delete(groupId)
-    if (grokLocalGId !== undefined) {
-      this.reverseGrokMap.delete(grokLocalGId)
-    }
+    this.reverseGrokMap.delete(grokLocalGId)
+    this.onGrokMapChanged?.(this.grokGroupMap)
   }
 }

@@ -6,7 +6,7 @@ export function welcomeMessage(groupLinks: string): string {
 
 export function teamQueueMessage(timezone: string): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  return `Thank you for your message, it is forwarded to the team.\nIt may take a team member up to ${hours} hours to reply.\n\nClick /grok if your question is about SimpleX apps or network, is not sensitive, and you want Grok LLM to answer it right away. *Your previous message and all subsequent messages will be forwarded to Grok* until you click /team. You can ask Grok questions in any language and it will not see your profile name.\n\nWe appreciate if you try Grok: you can learn a lot about SimpleX Chat from it. It is objective, answers the way our team would, and it saves our team time.`
+  return `Your message is forwarded to the team. A reply may take up to ${hours} hours.\n\nIf your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.`
 }
 
 export const grokActivatedMessage = `*You are now chatting with Grok. You can send questions in any language.* Your message(s) have been forwarded.\nSend /team at any time to switch to a human team member.`
