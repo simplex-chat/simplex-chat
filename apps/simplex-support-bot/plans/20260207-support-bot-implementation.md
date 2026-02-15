@@ -206,8 +206,7 @@ const [mainChat, mainUser, mainAddress] = await bot.run({
     },
     commands: [
       {type: "command", keyword: "grok", label: "Ask Grok AI"},
-      {type: "command", keyword: "team", label: "Switch to team"},
-      {type: "command", keyword: "add", label: "Join group"},
+      {type: "command", keyword: "team", label: "Connect to team"}
     ],
     useBotProfile: true,
   },

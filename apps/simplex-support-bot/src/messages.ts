@@ -13,7 +13,7 @@ export const grokActivatedMessage = `*You are now chatting with Grok. You can se
 
 export function teamAddedMessage(timezone: string): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  return `A team member has been added and will reply within ${hours} hours. You can keep describing your issue — they will see the full conversation.`
+  return `The team was notified. Somebody will reply within ${hours} hours. Please send your question or problem description - it will be visible to the team.`
 }
 
 export const teamLockedMessage = "You are now in team mode. A team member will reply to your message."
