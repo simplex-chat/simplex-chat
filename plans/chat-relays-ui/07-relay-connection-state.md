@@ -14,379 +14,501 @@
 
 ## 1. Overview
 
-**What**: Show relay connection progress when a member joins a channel. The progress is displayed **inside ChatView** — above or instead of the compose area — not as a separate modal or view. The user lands in the channel's chat immediately and sees relay connection status inline.
+**What**: Show relay connection progress during the channel join flow. Three phases with distinct UI:
+1. **Pre-join**: Show relay addresses above "Join channel" button so user can evaluate before joining.
+2. **Sync phase** (on button tap): Hidden behind button spinner. If ALL relays fail → alert with Retry.
+3. **Async phase** (after API success): Per-relay connection status with spinners in bottom panel. Transitions to observer view when complete.
 
-**Why**: When joining a channel, the member needs to connect to multiple relays. This takes time. Showing per-relay progress directly in the chat view gives the user immediate context and avoids blocking navigation.
+**Why**: Users need transparency about which relays serve a channel before joining, and connection feedback afterward. The two-phase error model (sync all-or-nothing, async per-relay) requires distinct UI handling.
 
-**User impact**: After joining a channel link, the user is taken directly to the channel chat. At the bottom of the chat (where the compose bar normally is), they see relay connection progress. Once all relays are connected, the progress disappears and the normal observer UI appears (reactions only, no compose).
+**User impact**: Informed join decision (see relay addresses), clear connection progress (per-relay spinners), and appropriate error handling for each failure mode.
 
 ---
 
 ## 2. Prerequisites & Dependencies
 
-- **Backend §3.2 (Relay Connection State Events)**: Backend must emit per-relay connection state updates. Without this, the UI can only show a generic "Connecting..." spinner.
-- **§4.1 (API Type Updates)**: `GroupRelay`, `RelayStatus` types needed for state display.
-- **§4.2 (Channel Visual Distinction)**: `useRelays` field to detect channel context.
-- **Existing connect plan flow**: `planAndConnect` / `APIPrepareGroup` → `APIConnectPreparedGroup` flow must support relay groups (backend §3.1).
+- **Backend `APIConnectPreparedGroup`**: Relay path must work (sync concurrent connection + async retry).
+- **§4.1 (API Type Updates)**: `GroupRelay`, `RelayStatus` types in Swift.
+- **§4.2 (Channel Visual Distinction)**: `useRelays` field on `GroupInfo`.
+- **Relay addresses in PreparedGroup**: Relay short link domains must be available before join. **Backend change required** — see §3.3 for gap analysis. Until implemented, fall back to Alt A.
+- **Async events**: `CEvtGroupLinkConnecting`, `CEvtUserJoinedGroup`, and relay failure events must be surfaced to iOS.
 
 ---
 
 ## 3. Data Model
 
-### 3.1 Relay Connection State Events
+### 3.1 Backend State Machine (APIConnectPreparedGroup)
 
-Backend emits events when relay connection state changes during join. Expected shape:
-
-```swift
-// ChatResponse variant (from backend §3.2)
-case groupRelayStatus(groupInfo: GroupInfo, relay: GroupRelay)
+```
+User taps "Join channel"
+  │
+  ▼
+Sync phase: mapConcurrently connectToRelay (all relays)
+  │
+  ├─ ALL fail → throw best error (prefer temp) → UI alert
+  │              User can Retry → re-enter sync phase
+  │
+  ├─ SOME succeed, SOME fail (temp) → setPreparedGroupStartedConnection
+  │   │  retryRelayConnectionAsync for temp failures
+  │   │  return CRStartedConnectionToGroup
+  │   ▼
+  │   Async phase: per-relay connection events
+  │     CEvtGroupLinkConnecting → relay connecting
+  │     CEvtUserJoinedGroup     → relay connected
+  │     (first connected host creates chat items)
+  │
+  └─ ALL succeed → same as above, no retries needed
 ```
 
-Or batch update:
-```swift
-case groupRelaysUpdated(groupInfo: GroupInfo, relays: [GroupRelay])
+### 3.2 Relay Member Statuses (joining member perspective)
+
+The joining member sees relay members as `GroupMember` with `memberCategory = GCHostMember`:
+
+```
+GSMemAccepted  → "Pending"     (relay member created, not yet connecting)
+GSMemConnecting → "Connecting"  (CEvtGroupLinkConnecting received)
+GSMemConnected  → "Connected"   (CEvtUserJoinedGroup received)
 ```
 
-### 3.2 RelayStatus Progression During Join
+Failures: relay member stays in non-connected state. Permanent failures emit `TEGroupLinkRejected` (a terminal event, not a `CEvt`). Note: `CEvtGroupLinkConnecting` is emitted on both `XGrpLinkInv` (relay connecting) and `XGrpLinkReject` (relay rejected) — the event alone does not distinguish success from rejection.
 
-For a joining member, relays progress through states:
-```
-RSNew → RSInvited → RSAccepted → RSActive
-```
+### 3.3 Pre-Join Relay Addresses
 
-The member sees this as:
-```
-New       → "Pending"    (not yet contacted)
-Invited   → "Connecting" (relay invitation sent)
-Accepted  → "Connected"  (relay accepted, setting up)
-Active    → "Active"     (ready to receive messages)
-```
+**Backend gap**: Current `PreparedGroup` type has only `connLinkToConnect`, `connLinkPreparedConnection`, `connLinkStartedConnection`, `welcomeSharedMsgId`, `requestSharedMsgId` — no relay fields. Relay addresses (`UserContactData.relays :: [ShortLinkContact]`) are fetched from the server's mutable link data inside `APIConnectPreparedGroup` (at join time), not during `APIPrepareGroup`.
 
-### 3.3 Channel Join State in ChatView
-
-ChatView needs to know:
-1. Is this a channel? (`groupInfo.useRelays`)
-2. Are we currently joining? (relays not all active)
-3. Per-relay status for display
-
-The channel's `GroupInfo` already has `groupRelays: [GroupRelay]?`. The connection progress is derived from the relay statuses.
+**Required backend change**: To show relay addresses before join, `APIPrepareGroup` (or a new API) must resolve the short link and return relay domains in the `PreparedGroup` response. Until this backend change is implemented, fall back to Alt A (no pre-join relay display).
 
 ---
 
 ## 4. Implementation Plan
 
-### 4.1 `Shared/Views/Chat/ChatView.swift` — Connection Progress in Compose Area
+### 4.1 `ComposeView.swift` — Pre-Join Relay Address Bar
 
-**Location**: Bottom of ChatView, where the compose bar appears
+**Location**: Above `connectButtonView` (L414-419), when `nextConnectPrepared && useRelays`.
 
-**Current behavior**: For observer members in groups, the compose bar is already hidden and replaced with a reactions-only bar. For channels, members are observers by default.
-
-**Change**: When a channel's relays are not all active (still connecting), show a connection progress view instead of the reactions bar:
+Add a compact bar showing relay short addresses between `ContextProfilePickerView` and the join button. Relay addresses come from the prepared group's link data.
 
 ```swift
-// In ChatView's bottom area:
-@ViewBuilder
-private func bottomBar() -> some View {
-    if case let .group(groupInfo, _) = chat.chatInfo,
-       groupInfo.useRelays,
-       let relays = groupInfo.groupRelays,
-       !relays.allSatisfy({ $0.relayStatus == .active }) {
-        // Show relay connection progress
-        channelConnectionProgress(groupInfo: groupInfo, relays: relays)
-    } else if /* existing observer check */ {
-        // Existing reactions-only bar
-    } else {
-        // Existing compose bar
+if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
+    ContextProfilePickerView(...)
+    Divider()
+    if let relays = chat.chatInfo.groupInfo?.preparedRelayAddresses {
+        relayAddressBar(relays)  // NEW
     }
+    connectButtonView("Join channel", icon: "megaphone.fill", connect: connectPreparedGroup)
 }
 ```
 
-### 4.2 Connection Progress Component
+### 4.2 `ComposeView.swift` — Join Button Label
 
-**New component** (inline in ChatView or extracted):
+When `useRelays`, change label from "Join group" to "Join channel" and icon from `person.2.fill` to `megaphone.fill` (or channel-appropriate icon).
+
+### 4.3 Sync Phase Error Handling
+
+`connectPreparedGroup()` already shows alert on failure via `apiConnectResponseAlert`. For channels, the alert should offer "Retry":
+- Temp error (all relays failed with temp errors) → "Failed to connect. Retry?" with Retry/Cancel buttons
+- Permanent error → "Failed to join channel." with OK button
+
+### 4.4 `ChatView.swift` — Async Connection Progress Panel
+
+**Location**: Bottom of ChatView, replacing compose area during async connecting phase.
+
+**Condition**: `useRelays && connLinkStartedConnection == true && !allRelaysFinished`
+
+Show per-relay status list with spinners instead of compose bar:
 
 ```swift
 @ViewBuilder
-private func channelConnectionProgress(groupInfo: GroupInfo, relays: [GroupRelay]) -> some View {
-    let activeCount = relays.filter { $0.relayStatus == .active }.count
-    let totalCount = relays.count
-
-    VStack(spacing: 8) {
-        Divider()
-
-        HStack {
-            Image(systemName: "megaphone")
-                .foregroundColor(theme.colors.secondary)
-            Text("Connecting to channel...")
-                .font(.callout)
-                .foregroundColor(theme.colors.secondary)
-            Spacer()
-            Text("\(activeCount)/\(totalCount)")
-                .font(.caption)
-                .foregroundColor(theme.colors.secondary)
-        }
-        .padding(.horizontal, 16)
-
-        // Per-relay status indicators
+private func channelConnectionPanel(relays: [RelayConnectionStatus]) -> some View {
+    VStack(spacing: 6) {
+        Text("Connecting to channel...")
+            .font(.callout)
+            .foregroundColor(theme.colors.secondary)
         ForEach(relays) { relay in
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(relayStatusColor(relay.relayStatus))
-                    .frame(width: 8, height: 8)
-                Text(relayDisplayName(relay))
+            HStack {
+                relayStatusIndicator(relay)  // spinner, check, or X
+                Text(relay.displayAddress)
                     .font(.caption)
-                    .foregroundColor(theme.colors.onBackground)
                 Spacer()
-                Text(relay.relayStatus.displayText)
-                    .font(.caption)
-                    .foregroundColor(theme.colors.secondary)
             }
             .padding(.horizontal, 16)
         }
-
-        // Progress bar
-        ProgressView(value: Double(activeCount), total: Double(totalCount))
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
     }
-    .background(theme.colors.background)
+    .padding(.vertical, 8)
 }
 ```
 
-### 4.3 Reactive State Updates
+### 4.5 Transition States
 
-**Location**: ChatView's event handling
+Track relay connection progress via events. When all relays finish (connected or permanently failed):
 
-**Change**: Listen for relay status change events and update `groupInfo.groupRelays`:
+- **All connected**: Hide connection panel → show "you are observer" disabled compose bar
+- **Some permanently failed**: Show summary bar ("2 of 3 relays connected") above "you are observer" compose bar
+- **All permanently failed**: Show inoperable warning in chat + warning badge in chat list
 
-```swift
-.onReceive(chatModel.relayStatusUpdates) { update in
-    if update.groupId == chat.chatInfo.apiId {
-        // Update relay status in groupInfo
-        if var gInfo = chat.chatInfo.groupInfo {
-            gInfo.groupRelays = update.relays
-            // Update chat info in model
-        }
-    }
-}
-```
+### 4.6 ChatBannerView — Channel Context Text
 
-The exact mechanism depends on how the backend §3.2 events are surfaced to the UI. Options:
-1. Published property on ChatModel
-2. NotificationCenter notification
-3. Direct ChatItem update (service message)
+When `useRelays`:
+- Pre-join: "Tap Join channel" (instead of "Tap Join group")
+- After join started: no special context text (just channel name/description)
 
-### 4.4 Transition to Normal State
+### 4.7 Reactive Event Handling
 
-When all relays become active:
-1. Connection progress view disappears
-2. Normal observer UI appears (reactions bar)
-3. Optionally, a service message is inserted: "Connected to channel"
-
-The transition should be smooth — no jarring view change.
-
-### 4.5 `Shared/Views/Chat/ComposeMessage/ComposeView.swift` — No Changes Needed
-
-The compose view is already hidden for observer members. The connection progress replaces the compose area at a higher level (ChatView), so ComposeView doesn't need modification.
+Listen for backend events that update relay member statuses:
+- `CEvtGroupLinkConnecting` → update relay member status (emitted on both `XGrpLinkInv` and `XGrpLinkReject` — check member status to distinguish connecting from rejected)
+- `CEvtUserJoinedGroup` → update relay status to "connected" (CON event on GCHostMember)
+- `TEGroupLinkRejected` → mark relay as permanently failed (terminal event, not `CEvt`; provides `GroupRejectionReason`)
 
 ---
 
 ## 5. Wireframes
 
-### 5.1 Primary Design — Connection Progress in ChatView
+### 5.1 Pre-Join — Relay Addresses + Join Button
+
+User has opened a channel link. Chat shows ChatBannerView. Bottom area shows relay addresses above the join button.
 
 ```
 ┌──────────────────────────────────────────┐
-│  < [📢] SimpleX News               ...  │
+│  < [📢] SimpleX News                ... │
 │         Channel                          │
 ├──────────────────────────────────────────┤
 │                                          │
-│  ─── Connected to channel ───           │
-│  (or: welcome message displayed here)    │
 │                                          │
+│          ┌────────────┐                  │
+│          │  [📢 img]  │                  │
+│          └────────────┘                  │
+│         SimpleX News                     │
+│     News and updates from                │
+│     the SimpleX Chat team                │
 │                                          │
-│                                          │
-│                                          │
+│     Tap Join channel                     │
 │                                          │
 │                                          │
 │                                          │
 ├──────────────────────────────────────────┤
-│  📢 Connecting to channel...      2/3   │
-│                                          │
-│  ● relay1.simplex.im         Active      │
-│  ○ relay2.simplex.im         Connecting  │
-│  ● relay3.simplex.im         Active      │
-│                                          │
-│  ━━━━━━━━━━━━━━━━━━▒▒▒▒▒▒▒▒            │
+│  alice (you)                          v  │
+├──────────────────────────────────────────┤
+│  Relays:                                 │
+│  relay1.simplex.im                       │
+│  relay2.simplex.im                       │
+│  relay3.simplex.im                       │
+├──────────────────────────────────────────┤
+│         [    Join channel    ]           │
 └──────────────────────────────────────────┘
 ```
 
-### 5.2 Primary Design — All Connected
+**Notes**:
+- ChatBannerView: channel image, name, description, "Tap Join channel" context (requires adding `useRelays` branch to `chatContext` in ChatBannerView — currently only has "Tap Join group")
+- Profile picker: "alice (you)" with dropdown to select profile / go incognito
+- Relay address bar: shows relay short link domains (e.g., `relay1.simplex.im`). **Requires backend change** (§3.3) — relay addresses not currently in PreparedGroup. Until implemented, fall back to Alt A (no pre-join relay display).
+- "Join channel" button: full-width, 60pt, megaphone icon
+
+### 5.2 Sync Phase — All Relays Failed (Alert)
+
+User tapped "Join channel", all relay connections failed synchronously.
+
+```
+         ┌──────────────────────────┐
+         │  Connection failed       │
+         │                          │
+         │  Failed to connect to    │
+         │  channel relays.         │
+         │                          │
+         │  [ Retry ]    [ Cancel ] │
+         └──────────────────────────┘
+```
+
+**Notes**:
+- Alert shown via existing `apiConnectResponseAlert` mechanism
+- "Retry" re-calls `apiConnectPreparedGroup`
+- "Cancel" returns to pre-join state (relay addresses + join button still visible)
+- Relay list NOT shown yet — sync phase is behind the button
+
+### 5.3 Async Connecting — Per-Relay Spinners
+
+API returned success (`CRStartedConnectionToGroup`). Chat shows ChatBannerView. Bottom panel shows relay connection status.
 
 ```
 ┌──────────────────────────────────────────┐
-│  < [📢] SimpleX News               ...  │
+│  < [📢] SimpleX News                ... │
 │         Channel                          │
 ├──────────────────────────────────────────┤
 │                                          │
-│  ─── Connected to channel ───           │
+│          ┌────────────┐                  │
+│          │  [📢 img]  │                  │
+│          └────────────┘                  │
+│         SimpleX News                     │
+│     News and updates from                │
+│     the SimpleX Chat team                │
+│                                          │
+│                                          │
+│                                          │
+│                                          │
+│                                          │
+├──────────────────────────────────────────┤
+│  Connecting to channel...                │
+│                                          │
+│  ✅  relay1.simplex.im                   │
+│  🔄  relay2.simplex.im                   │
+│  🔄  relay3.simplex.im                   │
+└──────────────────────────────────────────┘
+```
+
+**Notes**:
+- ChatBannerView: no more "Tap Join channel" context (connLinkStartedConnection is now true)
+- Bottom panel replaces compose area
+- Per-relay: spinner (🔄) for connecting, checkmark (✅) for connected
+- No overall progress bar — individual spinners per relay
+- Messages may start arriving through connected relays (displayed normally above the panel)
+
+### 5.4 All Connected — Normal Observer View
+
+All relays connected. Connection panel hidden. Normal channel view.
+
+```
+┌──────────────────────────────────────────┐
+│  < [📢] SimpleX News                ... │
+│         Channel                          │
+├──────────────────────────────────────────┤
+│                                          │
+│          ┌────────────┐                  │
+│          │  [📢 img]  │                  │
+│          └────────────┘                  │
+│         SimpleX News                     │
+│     News and updates from                │
+│     the SimpleX Chat team                │
 │                                          │
 │  [📢]  SimpleX News                     │
 │  ┌──────────────────────────────────┐   │
-│  │ Welcome! This is the official   │   │
-│  │ SimpleX News channel.           │   │
-│  │                       5:00 PM ✓ │   │
+│  │ Welcome to the official SimpleX │   │
+│  │ News channel!                    │   │
+│  │                       5:00 PM  ✓ │   │
 │  └──────────────────────────────────┘   │
 │                                          │
 ├──────────────────────────────────────────┤
-│  Reactions: [👍] [❤️] [+]               │
+│  ┌──────────────────────────────┐  [+]  │
+│  │ you are observer             │  [📷] │
+│  └──────────────────────────────┘  [➤]  │
 └──────────────────────────────────────────┘
 ```
 
-Once all relays are active, the connection progress disappears and the normal observer reactions bar appears.
+**Notes**:
+- ChatBannerView at top, then welcome message (first channel message)
+- "you are observer" inside disabled compose field (matching plan 03 observer pattern)
+- Connection panel fully hidden — clean transition to normal observer view
 
-### 5.3 Primary Design — Connection Starting
+### 5.5 Partial Permanent Failure — Summary Bar
+
+Some relays connected, some permanently failed. After all relays finish, replace detailed list with summary.
 
 ```
 ┌──────────────────────────────────────────┐
-│  < [📢] SimpleX News               ...  │
+│  < [📢] SimpleX News                ... │
 │         Channel                          │
 ├──────────────────────────────────────────┤
 │                                          │
-│                                          │
-│        (empty chat area)                 │
-│                                          │
-│                                          │
-│                                          │
+│  (ChatBannerView + messages)             │
 │                                          │
 ├──────────────────────────────────────────┤
-│  📢 Connecting to channel...      0/3   │
-│                                          │
-│  ○ relay1.simplex.im         Pending     │
-│  ○ relay2.simplex.im         Pending     │
-│  ○ relay3.simplex.im         Pending     │
-│                                          │
-│  ━▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒        │
+│  ⚠️ 2 of 3 relays connected             │
+├──────────────────────────────────────────┤
+│  ┌──────────────────────────────┐  [+]  │
+│  │ you are observer             │  [📷] │
+│  └──────────────────────────────┘  [➤]  │
 └──────────────────────────────────────────┘
 ```
 
-### 5.4 Alternative Design A — Minimal Progress (Spinner Only)
+**Notes**:
+- Summary bar between messages and compose area
+- Yellow warning icon + count text
+- Channel is partially functional — messages arrive through connected relays
+- "you are observer" compose bar still shown below summary
 
-Instead of per-relay detail, show a compact spinner in the compose area:
+### 5.6 All Permanently Failed — Inoperable Warning
 
-```
-├──────────────────────────────────────────┤
-│  📢 Connecting to channel...  [spinner]  │
-└──────────────────────────────────────────┘
-```
+All relays permanently failed. Channel cannot function.
 
-### 5.5 Alternative Design B — Banner at Top
-
-Show connection progress as a banner at the top of the chat, not at the bottom:
-
+**In chat**:
 ```
 ┌──────────────────────────────────────────┐
-│  < [📢] SimpleX News               ...  │
-├──────────────────────────────────────────┤
-│  Connecting... 2 of 3 relays    [━━▒▒]  │
+│  < [📢] SimpleX News                ... │
+│         Channel                          │
 ├──────────────────────────────────────────┤
 │                                          │
-│  (chat messages area)                    │
+│  (ChatBannerView)                        │
 │                                          │
 ├──────────────────────────────────────────┤
-│  Reactions: [👍] [❤️] [+]               │
+│  ❌ Channel not connected                │
+│     All relays failed to connect.        │
 └──────────────────────────────────────────┘
 ```
 
-### 5.6 State Variations
-
-**Network error on a relay**:
+**In chat list**:
 ```
-│  ● relay1.simplex.im         Active      │
-│  ✕ relay2.simplex.im         Error       │
-│  ● relay3.simplex.im         Active      │
-│                                          │
-│  Some relays could not connect.          │
-│  Messages may be delayed.                │
+┌────────────────────────────────────────────────┐
+│ ┌────┐                                         │
+│ │ 📢 │  SimpleX News           3:42 PM         │
+│ │  ⚠ │  Channel not connected                  │
+│ └────┘                                         │
+└────────────────────────────────────────────────┘
 ```
 
-**All relays failed**:
+**Notes**:
+- No "you are observer" compose bar — channel is inoperable
+- Chat list shows warning icon overlay on channel avatar + "Channel not connected" preview text
+- No compose area at all — just the error banner at bottom
+
+### 5.7 Alt A — No Pre-Join Relay Display
+
+Don't show relay addresses before joining. Just the join button (current behavior for groups).
+
 ```
-│  📢 Connection failed                   │
-│                                          │
-│  ✕ relay1.simplex.im         Error       │
-│  ✕ relay2.simplex.im         Error       │
-│  ✕ relay3.simplex.im         Error       │
-│                                          │
-│  Could not connect to channel relays.    │
-│  [Retry]                                 │
+├──────────────────────────────────────────┤
+│  alice (you)                          v  │
+├──────────────────────────────────────────┤
+│         [    Join channel    ]           │
+└──────────────────────────────────────────┘
 ```
 
-**Partial success (enough to function)**:
+Simpler, but user can't evaluate relay infrastructure before joining.
+
+### 5.8 Alt B — Relay Addresses in ChatBannerView
+
+Instead of a separate bar, show relay domains inside the ChatBannerView card:
+
 ```
-│  📢 Connected to channel          2/3   │
+│          ┌────────────┐                  │
+│          │  [📢 img]  │                  │
+│          └────────────┘                  │
+│         SimpleX News                     │
+│     News and updates from                │
+│     the SimpleX Chat team                │
 │                                          │
-│  ● relay1.simplex.im         Active      │
-│  ✕ relay2.simplex.im         Error       │
-│  ● relay3.simplex.im         Active      │
+│     Relays: simplex.im (3)              │
 │                                          │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━▒▒▒▒▒        │
+│     Tap Join channel                     │
 ```
 
-Transitions to normal reactions bar since enough relays are active.
+More compact, but mixes channel info with infrastructure details.
+
+### 5.9 Alt C — Minimal Connecting State
+
+Instead of per-relay list, show a single "Connecting..." with spinner:
+
+```
+├──────────────────────────────────────────┤
+│  🔄 Connecting to channel...             │
+└──────────────────────────────────────────┘
+```
+
+Simpler, but no per-relay visibility. Acceptable fallback if backend doesn't emit per-relay events.
+
+### 5.10 Alt D — Inoperable Warning Variants
+
+**Variant 1 — Prominent in-chat warning card**:
+```
+│  ┌──────────────────────────────────┐   │
+│  │  ❌ Channel not connected        │   │
+│  │                                   │   │
+│  │  All relays failed to connect.   │   │
+│  │  This channel cannot receive     │   │
+│  │  messages.                        │   │
+│  │                                   │   │
+│  └──────────────────────────────────┘   │
+```
+
+**Variant 2 — Chat list with distinct badge**:
+```
+│ ┌────┐                                         │
+│ │ 📢 │  SimpleX News           3:42 PM         │
+│ │ ❌ │  Not connected                           │
+│ └────┘                                         │
+```
+
+**Variant 3 — Chat list with offline indicator (subtle)**:
+```
+│ ┌────┐                                         │
+│ │ 📢 │  SimpleX News (offline)  3:42 PM        │
+│ │    │  Last message...                         │
+│ └────┘                                         │
+```
 
 ---
 
 ## 6. Design Rationale
 
-**In-ChatView (Primary) > Separate modal/view**:
-- User is already in the channel — no context switching needed
-- Connection progress is temporary — fits naturally in the transient compose area
-- Follows the pattern of ConnectProgressManager which shows progress inline
-- Users can still see chat header, welcome messages, etc. while connecting
+### Pre-join relay display (Primary) > No relay display (Alt A)
 
-**Bottom placement (Primary) > Top banner (Alt B)**:
-- Bottom placement replaces the compose area which is already unavailable during connection
-- Top banner competes with navigation bar and chat header
-- Bottom is where the user's eye naturally rests when waiting for something
+- Users should know which infrastructure relays their messages before committing to join
+- SimpleX philosophy: full transparency about infrastructure
+- Small addition — typically 3 relay addresses
+- Helps privacy-conscious users make informed decisions
 
-**Per-relay detail (Primary) > Spinner only (Alt A)**:
-- Transparency about what's happening — user can see which relays are connecting
-- Helps debug connectivity issues (can see which relay is slow/failing)
-- Only 3 relays typically — doesn't take much space
-- Consistent with channel info relay list (§4.6)
+### Relay addresses as separate bar (Primary) > In ChatBannerView (Alt B)
+
+- ChatBannerView is for channel identity (name, description, image)
+- Relay addresses are infrastructure detail — separate concern
+- Easier to add/remove without modifying ChatBannerView layout
+- Bar placement (between profile picker and button) creates natural information flow: identity → relays → action
+
+### Per-relay spinners (Primary) > Minimal spinner (Alt C)
+
+- Transparency about per-relay progress
+- Only 3 relays typically — small list
+- Helps debug connectivity issues
+- Consistent with ChannelRelaysView (plan 06)
+
+### Summary bar after completion > Keep detailed list
+
+- Detailed list is only useful during active connection
+- After all relays finish, per-relay detail is noise
+- Summary bar is compact and informative for permanent failures
+- Clean transition to normal observer view
+
+### Two-phase error model
+
+- **Sync phase (behind button)**: All-or-nothing from UI perspective. Backend handles partial retries internally. User only sees failure if ALL relays fail → simple alert with Retry.
+- **Async phase (visible)**: Per-relay progress with spinners. User sees granular status. Transitions to summary when all finish.
+- This separation keeps the common case simple (button → connecting → connected) while providing full detail when needed.
 
 ---
 
 ## 7. Edge Cases
 
-1. **User joins channel with 1 relay**: Progress shows single relay status. Still useful for connection feedback.
+1. **Relay addresses not available pre-join**: Current `PreparedGroup` does NOT contain relay addresses (see §3.3). Until backend adds relay domains to `APIPrepareGroup` response, fall back to Alt A (no pre-join relay display, just join button).
 
-2. **Instant connection**: All relays connect immediately (fast network). Progress briefly flashes and transitions to normal view. Consider minimum display time of ~0.5s to prevent jarring flash.
+2. **Instant connection**: All relays connect immediately (fast network). Connection panel appears briefly then transitions to observer view. Consider minimum 0.5s display to prevent jarring flash.
 
-3. **User navigates away during connection**: Connection continues in background. When user returns, current state is shown (or normal view if all connected).
+3. **Messages arrive before all relays connected**: Display normally. Messages come through already-connected relays. Connection panel stays at bottom while messages appear above.
 
-4. **Message arrives before all relays connected**: Display the message normally. Connection progress doesn't block message display — messages can arrive through already-active relays.
+4. **User navigates away during async phase**: Connection continues in background. When user returns, show current state (connecting/connected/failed).
 
-5. **Channel with no relays in groupInfo**: Should not happen for channels, but handle gracefully — show generic "Connecting..." without per-relay detail.
+5. **Single relay channel**: Only one relay. Progress shows single item. Still useful for connection feedback.
 
-6. **Relay status goes backward** (Active → Error): Backend reconnection event. Update UI to show error state. This is edge case for network instability.
+6. **Temp failure during async phase**: Backend retries automatically. UI shows spinner continuing. No user intervention needed.
 
-7. **Very slow connection**: After timeout (e.g., 60s), show "Taking longer than expected. Check your network connection." but don't auto-cancel.
+7. **Mix of temp and permanent failures**: Some relays permanently fail, others still retrying. Show permanent failures as X, retrying as spinner. Transition to summary only when all relays are either connected or permanently failed (no more retries pending).
 
-8. **User force-closes app during connection**: On relaunch, the channel is in the chat list. Connection resumes automatically in background. Chat view shows current state.
+8. **Channel with no relays in GroupInfo**: Should not happen for channels. Fallback: show generic "Connecting..." (Alt C behavior).
+
+9. **Sync phase partial failure with retry**: Backend handles this internally (retries temp-failed relays async). UI only sees the API response: success or all-fail. No intermediate state visible.
 
 ---
 
 ## 8. Testing Notes
 
-1. **Entry point**: Join channel link → navigate to channel chat → verify connection progress appears in compose area
-2. **Per-relay progress**: Mock relay status events → verify each relay row updates
-3. **Progress bar**: Verify progress bar reflects active/total ratio
-4. **Transition**: All relays become active → verify progress disappears and reactions bar appears
-5. **Messages during connection**: Mock message arrival while connecting → verify message displays normally above progress area
-6. **Error state**: Mock relay error → verify error indicator and message shown
-7. **Retry**: After all-failed state, verify "Retry" button reconnects
-8. **Partial success**: 2 of 3 relays active → verify normal view appears with functional channel
-9. **Navigation away/back**: Leave chat during connection, return → verify current state displayed
-10. **ChatView layout**: Verify connection progress doesn't overlap with messages or navigation
+1. **Pre-join**: Verify relay addresses appear above "Join channel" button for channels
+2. **Pre-join (no relays)**: Verify graceful fallback when relay addresses not available
+3. **Join button**: Verify "Join channel" label and channel icon (not "Join group")
+4. **Sync all-fail**: Mock all relay failures → verify alert with Retry button
+5. **Sync all-fail retry**: After Retry, verify second attempt proceeds correctly
+6. **Sync partial success**: Mock some succeed, some fail → verify API returns success, async phase starts
+7. **Async connecting**: Verify per-relay spinners appear, no progress bar
+8. **Async relay connected**: Mock CEvtUserJoinedGroup → verify spinner → checkmark transition
+9. **All connected**: Verify connection panel hidden, "you are observer" compose bar appears
+10. **ChatBannerView**: Verify channel image, name, description render correctly in all states
+11. **Welcome message**: Verify welcome message appears after first relay connects
+12. **Partial permanent failure**: Verify summary bar "N of M relays connected" appears
+13. **All permanently failed**: Verify in-chat error banner and chat list warning
+14. **Navigation away/back**: Leave during connecting, return → verify current state shown
+15. **Message during connecting**: Verify messages display above connection panel
