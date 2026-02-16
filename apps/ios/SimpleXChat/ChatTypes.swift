@@ -2086,11 +2086,6 @@ public struct ContactRef: Decodable, Equatable, Hashable {
     public var id: ChatId { get { "@\(contactId)" } }
 }
 
-public struct ContactSubStatus: Decodable, Hashable {
-    public var contact: Contact
-    public var contactError: ChatError?
-}
-
 public struct Connection: Decodable, Hashable {
     public var connId: Int64
     public var agentConnId: String
@@ -2640,19 +2635,18 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
+        return userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
-        if !canBeRemoved(groupInfo: groupInfo) || memberPending { return nil }
+        if !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
         let userRole = groupInfo.membership.memberRole
         return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .moderator
+        return memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
             && !memberPending
     }
@@ -2866,16 +2860,9 @@ public enum InvitedBy: Decodable, Hashable {
     case unknown
 }
 
-public struct MemberSubError: Decodable, Hashable {
-    var member: GroupMemberIds
-    var memberError: ChatError
-}
-
 public enum ConnectionEntity: Decodable, Hashable {
     case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
     case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
     case userContactConnection(entityConnection: Connection, userContact: UserContact)
 
     public var id: String? {
@@ -2886,8 +2873,6 @@ public enum ConnectionEntity: Decodable, Hashable {
             groupMember.id
         case let .userContactConnection(_, userContact):
             userContact.id
-        default:
-            nil
         }
     }
 
@@ -2908,8 +2893,6 @@ public enum ConnectionEntity: Decodable, Hashable {
         switch self {
         case let .rcvDirectMsgConnection(entityConnection, _): entityConnection
         case let .rcvGroupMsgConnection(entityConnection, _, _): entityConnection
-        case let .sndFileConnection(entityConnection, _): entityConnection
-        case let .rcvFileConnection(entityConnection, _): entityConnection
         case let .userContactConnection(entityConnection, _): entityConnection
         }
     }
@@ -3087,33 +3070,33 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var mergeCategory: CIMergeCategory? {
-        switch content {
-        case .rcvChatFeature: .chatFeature
-        case .sndChatFeature: .chatFeature
-        case .rcvGroupFeature: .chatFeature
-        case .sndGroupFeature: .chatFeature
-        case let.rcvGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userDeleted: nil
-            case .groupDeleted: nil
-            case .memberCreatedContact: nil
-            case .newMemberPendingReview: nil
-            default: .rcvGroupEvent
-            }
-        case let .sndGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userLeft: nil
-            case .memberAccepted: nil
-            case .userPendingReview: nil
-            default: .sndGroupEvent
-            }
-        default:
-            if meta.itemDeleted == nil {
+        if meta.itemDeleted != nil {
+            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+        } else {
+            switch content {
+            case .rcvChatFeature: .chatFeature
+            case .sndChatFeature: .chatFeature
+            case .rcvGroupFeature: .chatFeature
+            case .sndGroupFeature: .chatFeature
+            case let.rcvGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userDeleted: nil
+                case .groupDeleted: nil
+                case .memberCreatedContact: nil
+                case .newMemberPendingReview: nil
+                default: .rcvGroupEvent
+                }
+            case let .sndGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userLeft: nil
+                case .memberAccepted: nil
+                case .userPendingReview: nil
+                default: .sndGroupEvent
+                }
+            default:
                 nil
-            } else {
-                chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
             }
         }
     }
@@ -4618,7 +4601,7 @@ extension MsgContent: Encodable {
     }
 }
 
-public enum MsgContentTag: String {
+public enum MsgContentTag: String, Decodable {
     case text
     case link
     case image

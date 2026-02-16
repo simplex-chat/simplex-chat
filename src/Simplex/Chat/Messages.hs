@@ -31,7 +31,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -49,7 +49,6 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -184,24 +183,6 @@ toChatScope = \case
 toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
 toMsgScope GroupInfo {membership} = \case
   GCSIMemberSupport {groupMember_} -> MSMember $ memberId' $ fromMaybe membership groupMember_
-
-data GroupForwardScope
-  = GFSAll -- message should be forwarded to all group members, even pending (e.g. XGrpDel, XGrpInfo)
-  | GFSMain -- message should be forwarded to current group members only (e.g. regular messages in group)
-  | GFSMemberSupport GroupMemberId
-  deriving (Eq, Ord, Show)
-
-toGroupForwardScope :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupForwardScope
-toGroupForwardScope GroupInfo {membership} = \case
-  Nothing -> GFSMain
-  Just GCSIMemberSupport {groupMember_} -> GFSMemberSupport $ groupMemberId' $ fromMaybe membership groupMember_
-
-memberEventForwardScope :: GroupMember -> Maybe GroupForwardScope
-memberEventForwardScope m@GroupMember {memberRole, memberStatus}
-  | memberStatus == GSMemPendingApproval = Nothing
-  | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport $ groupMemberId' m
-  | memberRole >= GRModerator = Just GFSAll
-  | otherwise = Just GFSMain
 
 chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
@@ -518,6 +499,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     userMention :: Bool, -- True for messages that mention user or reply to user messages
+    hasLink :: BoolDef,
     deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
@@ -529,11 +511,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention currentTs itemTs forwardedByMember showGroupAsSender createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, deletable, editable, forwardedByMember, showGroupAsSender, createdAt, updatedAt}
+      hasLink = BoolDef hasLink_
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
@@ -559,6 +542,7 @@ dummyMeta itemId ts itemText =
       itemTimed = Nothing,
       itemLive = Nothing,
       userMention = False,
+      hasLink = BoolDef False,
       deletable = False,
       editable = False,
       forwardedByMember = Nothing,
@@ -1163,7 +1147,8 @@ data SndMessage = SndMessage
 
 data NewRcvMessage e = NewRcvMessage
   { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    brokerTs :: UTCTime
   }
   deriving (Show)
 

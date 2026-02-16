@@ -12,15 +12,17 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_, when)
+import qualified Data.Aeson as J
 import qualified Data.Text as T
 import Directory.Captcha
+import Directory.Listing
 import Directory.Options
 import Directory.Service
 import Directory.Store
-import GHC.IO.Handle (hClose)
+import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
+import System.IO (hClose)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
-import Simplex.Chat.Core
+import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -65,20 +67,30 @@ directoryServiceTests = do
     it "should prohibit confirmation if a duplicate group is listed" testDuplicateProhibitConfirmation
     it "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
-  describe "list groups" $ do
-    it "should list user's groups" testListUserGroups
+  describe "list and promote groups" $ do
+    it "should list and promote user's groups" $ testListUserGroups True
   describe "member admission" $ do
     it "should ask member to pass captcha screen" testCapthaScreening
+    it "should send voice captcha on /audio command" testVoiceCaptchaScreening
+    it "should retry with voice captcha after switching to audio mode" testVoiceCaptchaRetry
+    it "should send voice captcha when voice disabled but client supports v17" testVoiceCaptchaVoiceDisabled
+    it "should show unavailable message for old client in voice-disabled group" testVoiceCaptchaOldClient
+    it "should reject member after too many captcha attempts" testCaptchaTooManyAttempts
+    it "should respond to unknown command during captcha" testCaptchaUnknownCommand
   describe "store log" $ do
     it "should restore directory service state" testRestoreDirectory
   describe "captcha" $ do
     it "should accept some incorrect spellings" testCaptcha
+    it "should generate captcha of correct length" testGetCaptchaStr
+  describe "help commands" $ do
+    it "should not list audio command" testHelpNoAudio
+    it "should reject audio command in DM" testAudioCommandInDM
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
 
-mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> DirectoryOpts
-mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
+mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
+mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
   DirectoryOpts
     { coreOptions =
         testCoreOpts
@@ -94,16 +106,20 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
       adminUsers = [],
       superUsers,
       ownersGroup,
+      noAddress = False,
       blockedFragmentsFile = Nothing,
       blockedWordsFile = Nothing,
       blockedExtensionRules = Nothing,
       nameSpellingFile = Nothing,
       profileNameLimit = maxBound,
       captchaGenerator = Nothing,
+      voiceCaptchaGenerator = Nothing,
       directoryLog = Just $ ps </> "directory_service.log",
+      migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
       runCLI = False,
       searchResults = 3,
+      webFolder,
       testing = True
     }
 
@@ -273,6 +289,7 @@ testSuspendResume ps =
       bob <## "The group is listed in directory."
       superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated - only link or whitespace changes."
       superUser <## "The group remained listed in directory."
+#if !defined(dbPostgres)
       -- upgrade link
       -- make it upgradeable first
       superUser #> "@'SimpleX Directory' /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
@@ -301,6 +318,7 @@ testSuspendResume ps =
       superUser <# "'SimpleX Directory'> > /owner 1:privacy hello there"
       superUser <## "      Forwarded to @bob, the owner of the group ID 1 (privacy)"
       bob <# "'SimpleX Directory'> hello there"
+#endif
 
 testDeleteGroup :: HasCallStack => TestParams -> IO ()
 testDeleteGroup ps =
@@ -398,9 +416,11 @@ testJoinGroup ps =
           cath <## "connection request sent!"
           cath <## "#privacy: joining the group..."
           cath <## "#privacy: you joined the group"
-          cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
-          cath <## "use @'SimpleX Directory' <message> to send messages"
-          cath <# ("#privacy 'SimpleX Directory'> " <> welcomeMsg)
+          cath
+            <### [ "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'",
+                   "use @'SimpleX Directory' <message> to send messages",
+                   Predicate (\l -> l == welcomeMsg || dropTime_ l == Just ("#privacy 'SimpleX Directory'> " <> welcomeMsg) || dropTime_ l == Just ("#privacy 'SimpleX Directory_1'> " <> welcomeMsg))
+                 ]
           cath <## "#privacy: member bob (Bob) is connected"
           bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
           bob <## "#privacy: new member cath is connected"
@@ -531,7 +551,7 @@ testSearchGroups ps =
 
 testInviteToOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteToOwnersGroup ps =
-  withDirectoryServiceCfgOwnersGroup ps testCfg True $ \superUser dsLink ->
+  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupId superUser bob "privacy" "Privacy" 2 1
@@ -969,7 +989,7 @@ testDuplicateAskConfirmation ps =
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
         welcomeWithLink <- groupAccepted cath "privacy"
         groupNotFound bob "privacy"
-        completeRegistration superUser cath "privacy" "Privacy" welcomeWithLink 2
+        completeRegistrationId superUser cath "privacy" "Privacy" welcomeWithLink 2 1
         groupFound bob "privacy"
 
 testDuplicateProhibitRegistration :: HasCallStack => TestParams -> IO ()
@@ -1027,10 +1047,10 @@ testDuplicateProhibitWhenUpdated ps =
         cath <# "'SimpleX Directory'> The group privacy (Privacy) is already listed in the directory, please choose another name."
         cath ##> "/gp privacy security Security"
         cath <## "changed to #security (Security)"
-        cath <# "'SimpleX Directory'> Thank you! The group link for ID 2 (security) is added to the welcome message."
+        cath <# "'SimpleX Directory'> Thank you! The group link for ID 1 (security) is added to the welcome message."
         cath <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         notifySuperUser superUser cath "security" "Security" welcomeWithLink' 2
-        approveRegistration superUser cath "security" 2
+        approveRegistrationId superUser cath "security" 2 1
         groupFound bob "security"
         groupFound cath "security"
 
@@ -1049,7 +1069,7 @@ testDuplicateProhibitApproval ps =
         cath <# "'SimpleX Directory'> /confirm 1:privacy"
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
         welcomeWithLink' <- groupAccepted cath "privacy"
-        updateProfileWithLink cath "privacy" welcomeWithLink' 2
+        updateProfileWithLink cath "privacy" welcomeWithLink' 1
         notifySuperUser superUser cath "privacy" "Privacy" welcomeWithLink' 2
         groupNotFound cath "privacy"
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
@@ -1060,14 +1080,15 @@ testDuplicateProhibitApproval ps =
         superUser <# ("'SimpleX Directory'> > " <> approve)
         superUser <## "      The group ID 2 (privacy) is already listed in the directory."
 
-testListUserGroups :: HasCallStack => TestParams -> IO ()
-testListUserGroups ps =
-  withDirectoryService ps $ \superUser dsLink ->
+testListUserGroups :: HasCallStack => Bool -> TestParams -> IO ()
+testListUserGroups promote ps =
+  withDirectoryServiceCfgOwnersGroup ps testCfg False (Just "./tests/tmp/web") $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
+        checkListings ["privacy"] []
         connectUsers bob cath
         fullAddMember "privacy" "Privacy" bob cath GRMember
         joinGroup "privacy" cath bob
@@ -1075,7 +1096,9 @@ testListUserGroups ps =
         cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
         cath <## "use @'SimpleX Directory' <message> to send messages"
         registerGroupId superUser bob "security" "Security" 2 2
+        checkListings ["privacy", "security"] []
         registerGroupId superUser cath "anonymity" "Anonymity" 3 1
+        checkListings ["privacy", "security", "anonymity"] []
         listUserGroup cath "anonymity" "Anonymity"
         -- with de-listed group
         groupFound cath "anonymity"
@@ -1085,8 +1108,52 @@ testListUserGroups ps =
         cath <## ""
         cath <## "The group is no longer listed in the directory."
         superUser <# "'SimpleX Directory'> The group ID 3 (anonymity) is de-listed (SimpleX Directory role is changed to member)."
+        checkListings ["privacy", "security"] []
         groupNotFound cath "anonymity"
         listGroups superUser bob cath
+        when promote $ do
+          superUser #> "@'SimpleX Directory' /promote 1:privacy on"
+          superUser <# "'SimpleX Directory'> > /promote 1:privacy on"
+          superUser <## "      Group promotion enabled."
+          checkListings ["privacy", "security"] ["privacy"]
+          bob ##> "/gp privacy privacy"
+          bob <## "description removed"
+          bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated!"
+          bob <## "It is hidden from the directory until approved."
+          cath <## "bob updated group #privacy:"
+          cath <## "description removed"
+          superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated."
+          superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
+          superUser <## "privacy"
+          superUser <## "Welcome message:"
+          superUser <##. "Link to join the group privacy: https://localhost/g#"
+          superUser <## "3 members"
+          superUser <## ""
+          superUser <## "To approve send:"
+          superUser <# "'SimpleX Directory'> /approve 1:privacy 1 promote=on"
+          checkListings ["security"] []
+          superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
+          superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
+          superUser <## "      Group approved (promoted)!"
+          bob <# "'SimpleX Directory'> The group ID 1 (privacy) is approved and listed in directory - please moderate it!"
+          bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+          bob <## ""
+          bob <## "Supported commands:"
+          bob <## "/'filter 1' - to configure anti-spam filter."
+          bob <## "/'role 1' - to set default member role."
+          bob <## "/'link 1' - to view/upgrade group link."
+          checkListings ["privacy", "security"] ["privacy"]
+
+checkListings :: HasCallStack => [T.Text] -> [T.Text] -> IO ()
+checkListings listed promoted = do
+  threadDelay 100000
+  checkListing listingFileName listed
+  checkListing promotedFileName promoted
+  where
+    checkListing f expected = do
+      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web/data" </> f
+      map groupName gs `shouldBe` expected
+    groupName DirectoryEntry {displayName} = displayName
 
 testCapthaScreening :: HasCallStack => TestParams -> IO ()
 testCapthaScreening ps =
@@ -1115,8 +1182,7 @@ testCapthaScreening ps =
         bob <## "/'filter 1 off' - disable filter"
         -- connect with captcha screen
         _ <- join cath groupLink
-        cath ##> "/_send #1(_support) text 123" -- sending incorrect captcha
-        cath <# "#privacy (support) 123"
+        cath #> "#privacy (support) 123" -- sending incorrect captcha
         cath <# "#privacy (support) 'SimpleX Directory'!> > cath 123"
         cath <## "      Incorrect text, please try again."
         captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
@@ -1168,28 +1234,298 @@ testCapthaScreening ps =
       cath <## "Send captcha text to join the group privacy."
       dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
     sendCaptcha cath captcha = do
-      cath ##> ("/_send #1(_support) text " <> captcha)
-      cath <# ("#privacy (support) " <> captcha)
+      cath #> ("#privacy (support) " <> captcha)
       cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
       cath <## "      Correct, you joined the group privacy"
       cath <## "#privacy: you joined the group"
 
+testVoiceCaptchaScreening :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen.py"
+  -- Mock script writes a dummy audio file, prints path and duration
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        -- get group link
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        -- enable captcha
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- cath joins, receives text captcha with /audio hint
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        cath <## "Send /audio to receive a voice captcha."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        -- cath requests audio captcha
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 1"
+        -- cath sends /audio again, already enabled
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath /audio"
+        cath <## "      Audio captcha is already enabled."
+        -- send correct captcha
+        sendCaptcha cath captcha
+        cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+  where
+    sendCaptcha cath captcha = do
+      cath #> ("#privacy (support) " <> captcha)
+      cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+      cath <## "      Correct, you joined the group privacy"
+      cath <## "#privacy: you joined the group"
+
+testVoiceCaptchaRetry :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaRetry ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen_retry.py"
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- cath joins, receives text captcha with /audio hint
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        cath <## "Send /audio to receive a voice captcha."
+        _ <- getTermLine cath -- captcha image/text
+        -- cath requests audio captcha
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 1"
+        -- cath sends WRONG answer after switching to audio mode
+        cath #> "#privacy (support) wrong_answer"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath wrong_answer"
+        cath <## "      Incorrect text, please try again."
+        -- KEY ASSERTION: retry sends BOTH image and voice because captchaMode=CMAudio
+        _ <- getTermLine cath -- captcha image/text
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 2"
+
+testVoiceCaptchaVoiceDisabled :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaVoiceDisabled ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen_vdisabled.py"
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- disable voice messages in the group
+        bob ##> "/set voice #privacy off"
+        bob <## "updated group preferences:"
+        bob <## "Voice messages: off"
+        -- cath (new client, supports v17 exemption) joins, /audio hint shown
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        cath <## "Send /audio to receive a voice captcha."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        -- voice captcha works despite voice being disabled (v17 host approval exemption)
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 1"
+        sendCaptcha cath captcha
+        cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+  where
+    sendCaptcha cath captcha = do
+      cath #> ("#privacy (support) " <> captcha)
+      cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+      cath <## "      Correct, you joined the group privacy"
+      cath <## "#privacy: you joined the group"
+
+testVoiceCaptchaOldClient :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen_oldclient.py"
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- disable voice messages in the group
+        bob ##> "/set voice #privacy off"
+        bob <## "updated group preferences:"
+        bob <## "Voice messages: off"
+        -- cath (old client, max version < v17) joins, /audio hint NOT shown
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        -- /audio unavailable: old client can't receive voice in voice-disabled group
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath /audio"
+        cath <## "      Voice captcha is not available - please update SimpleX Chat to v6.5+ or use text captcha."
+        -- text captcha still works
+        sendCaptcha cath captcha
+        cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+  where
+    sendCaptcha cath captcha = do
+      cath #> ("#privacy (support) " <> captcha)
+      cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+      cath <## "      Correct, you joined the group privacy"
+      cath <## "#privacy: you joined the group"
+
+withDirectoryServiceVoiceCaptcha :: HasCallStack => TestParams -> FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceVoiceCaptcha ps voiceScript test = do
+  dsLink <-
+    withNewTestChatCfg ps testCfg serviceDbPrefix directoryProfile $ \ds ->
+      withNewTestChatCfg ps testCfg "super_user" aliceProfile $ \superUser -> do
+        connectUsers ds superUser
+        ds ##> "/ad"
+        getContactLink ds True
+  let opts = (mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing) {voiceCaptchaGenerator = Just voiceScript}
+  runDirectory testCfg opts $
+    withTestChatCfg ps testCfg "super_user" $ \superUser -> do
+      superUser <## "subscribed 1 connections on server localhost"
+      test superUser dsLink
+
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
-  testListUserGroups ps
-  restoreDirectoryService ps 3 3 $ \superUser _dsLink ->
+  testListUserGroups False ps
+  restoreDirectoryService ps 11 $ \superUser _dsLink ->
     withTestChat ps "bob" $ \bob ->
       withTestChat ps "cath" $ \cath -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob
-          <### [ "#privacy: connected to server(s)",
-                 "#security: connected to server(s)"
-               ]
-        cath <## "2 contacts connected (use /cs for the list)"
-        cath
-          <### [ "#privacy: connected to server(s)",
-                 "#anonymity: connected to server(s)"
-               ]
+        bob <## "subscribed 5 connections on server localhost"
+        cath <## "subscribed 5 connections on server localhost"
         listGroups superUser bob cath
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
@@ -1294,10 +1630,10 @@ withDirectoryService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()
 withDirectoryService ps = withDirectoryServiceCfg ps testCfg
 
 withDirectoryServiceCfg :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False
+withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False Nothing
 
-withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup test = do
+withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
   dsLink <-
     withNewTestChatCfg ps cfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps cfg "super_user" aliceProfile $ \superUser -> do
@@ -1315,16 +1651,13 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup test = do
           superUser <## "#owners: 'SimpleX Directory' joined the group"
         ds ##> "/ad"
         getContactLink ds True
-  withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup test
+  withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test
 
-restoreDirectoryService :: HasCallStack => TestParams -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
-restoreDirectoryService ps ctCount grCount test = do
+restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> String -> IO ()) -> IO ()
+restoreDirectoryService ps connCount test = do
   dsLink <-
     withTestChat ps serviceDbPrefix $ \ds -> do
-      ds <## (show ctCount <> " contacts connected (use /cs for the list)")
-      ds <## "Your address is active! To show: /sa"
-      ds <## (show grCount <> " group links active")
-      forM_ [1 .. grCount] $ \_ -> ds <##. "#"
+      ds .<## ("subscribed " <> show connCount <> " connections on server localhost")
       ds ##> "/sa"
       dsLink <- getContactLink ds False
       ds <## "auto_accept on"
@@ -1332,29 +1665,24 @@ restoreDirectoryService ps ctCount grCount test = do
   withDirectory ps testCfg dsLink test
 
 withDirectory :: HasCallStack => TestParams -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
-withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False
+withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False Nothing
 
-withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup test = do
-  let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] $ if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing
+withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
+  let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
   runDirectory cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
-      superUser <## "1 contacts connected (use /cs for the list)"
-      when createOwnersGroup $
-        superUser <## "#owners: connected to server(s)"
+      if createOwnersGroup
+        then superUser <## "subscribed 2 connections on server localhost"
+        else superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
-  st <- restoreDirectoryStore directoryLog
-  t <- forkIO $ bot st
+  st <- openDirectoryLog directoryLog
+  t <- forkIO $ directoryService st opts cfg
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
-  where
-    bot st = do
-      env <- newServiceState opts
-      let cfg' = cfg {chatHooks = defaultChatHooks {acceptMember = Just $ acceptMemberHook opts env}}
-      simplexChatCore cfg' (mkChatOpts opts) $ directoryService st opts env
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
@@ -1375,8 +1703,10 @@ submitGroup u n fn = do
 
 groupAccepted :: TestCC -> String -> IO String
 groupAccepted u n = do
-  u <# ("'SimpleX Directory'> Joining the group " <> n <> "…")
-  u <## ("#" <> viewName n <> ": 'SimpleX Directory' joined the group")
+  u <###
+    [ WithTime ("'SimpleX Directory'> Joining the group " <> n <> "…"),
+      ConsoleString ("#" <> viewName n <> ": 'SimpleX Directory' joined the group")
+    ]
   u <# ("'SimpleX Directory'> Joined the group " <> n <> ", creating the link…")
   u <# "'SimpleX Directory'> Created the public link to join the group via this directory service that is always online."
   u <## ""
@@ -1501,3 +1831,119 @@ groupNotFound_ suffix u s = do
   u #> ("@'SimpleX Directory" <> suffix <> "' " <> s)
   u <# ("'SimpleX Directory" <> suffix <> "'> > " <> s)
   u <## "      No groups found"
+
+testCaptchaTooManyAttempts :: HasCallStack => TestParams -> IO ()
+testCaptchaTooManyAttempts ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        _ <- getTermLine cath
+        forM_ [1 :: Int .. 4] $ \i -> do
+          cath #> "#privacy (support) wrong"
+          cath <# "#privacy (support) 'SimpleX Directory'!> > cath wrong"
+          if i == 4
+            then cath <## "      Incorrect text, please try again - this is your last attempt."
+            else cath <## "      Incorrect text, please try again."
+          _ <- getTermLine cath
+          pure ()
+        cath #> "#privacy (support) wrong"
+        cath <# "#privacy (support) 'SimpleX Directory'> Too many failed attempts, you can't join group."
+        -- member removal produces multiple messages
+        _ <- getTermLine cath
+        _ <- getTermLine cath
+        _ <- getTermLine cath
+        pure ()
+
+testCaptchaUnknownCommand :: HasCallStack => TestParams -> IO ()
+testCaptchaUnknownCommand ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        _ <- getTermLine cath
+        cath #> "#privacy (support) /help"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath /help"
+        cath <## "      Unknown command, please enter captcha text."
+
+testHelpNoAudio :: HasCallStack => TestParams -> IO ()
+testHelpNoAudio ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      -- commands help should not mention /audio
+      bob #> "@'SimpleX Directory' /help commands"
+      bob <# "'SimpleX Directory'> /'help commands' - receive this help message."
+      bob <## "/help - how to register your group to be added to directory."
+      bob <## "/list - list the groups you registered."
+      bob <## "`/role <ID>` - view and set default member role for your group."
+      bob <## "`/filter <ID>` - view and set spam filter settings for group."
+      bob <## "`/link <ID>` - view and upgrade group link."
+      bob <## "`/delete <ID>:<NAME>` - remove the group you submitted from directory, with ID and name as shown by /list command."
+      bob <## ""
+      bob <## "To search for groups, send the search text."
+
+testAudioCommandInDM :: HasCallStack => TestParams -> IO ()
+testAudioCommandInDM ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      bob #> "@'SimpleX Directory' /audio"
+      bob <# "'SimpleX Directory'> > /audio"
+      bob <## "      Unknown command"
+
+testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
+testGetCaptchaStr _ps = do
+  s0 <- getCaptchaStr 0 ""
+  s0 `shouldBe` ""
+  s7 <- getCaptchaStr 7 ""
+  length s7 `shouldBe` 7
+  all (`elem` ("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" :: String)) s7 `shouldBe` True

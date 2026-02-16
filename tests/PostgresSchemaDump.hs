@@ -14,7 +14,7 @@ import Data.Maybe (fromJust, isJust)
 import Simplex.Messaging.Agent.Store.Postgres (closeDBStore, createDBStore)
 import Simplex.Messaging.Agent.Store.Postgres.Common (DBOpts (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
-import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
 import System.Process (readCreateProcess, shell)
@@ -24,20 +24,20 @@ testSchemaPath :: FilePath
 testSchemaPath = "tests/tmp/test_schema.sql"
 
 -- copied from simplexmq
-postgresSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
-postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
+postgresSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
+postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify schema down migrations" testSchemaMigrations
   where
     testVerifySchemaDump = do
       savedSchema <- ifM (doesFileExist srcSchemaPath) (readFile srcSchemaPath) (pure "")
       savedSchema `deepseq` pure ()
-      void $ createDBStore testDBOpts migrations MCConsole
+      void $ createDBStore testDBOpts migrations (MigrationConfig MCConsole Nothing)
       getSchema srcSchemaPath `shouldReturn` savedSchema
 
     testSchemaMigrations = do
       let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) migrations
-      st <- createDBStore testDBOpts noDownMigrations MCYesUpDown >>= \case
+      st <- createDBStore testDBOpts noDownMigrations (MigrationConfig MCYesUpDown Nothing) >>= \case
         Right st -> pure st
         Left e -> error $ show e
       mapM_ (testDownMigration st) $ drop (length noDownMigrations) migrations
@@ -48,14 +48,14 @@ postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBO
           putStrLn $ "down migration " <> name m
           let downMigr = fromJust $ toDownMigration m
           schema <- getSchema testSchemaPath
-          Migrations.run st $ MTRUp [m]
+          Migrations.run st Nothing $ MTRUp [m]
           schema' <- getSchema testSchemaPath
           schema' `shouldNotBe` schema
-          Migrations.run st $ MTRDown [downMigr]
+          Migrations.run st Nothing $ MTRDown [downMigr]
           unless (name m `elem` skipComparisonForDownMigrations) $ do
             schema'' <- getSchema testSchemaPath
             schema'' `shouldBe` schema
-          Migrations.run st $ MTRUp [m]
+          Migrations.run st Nothing $ MTRUp [m]
           schema''' <- getSchema testSchemaPath
           schema''' `shouldBe` schema'
 
@@ -72,3 +72,11 @@ postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBO
       void $ readCreateProcess (shell $ sed <> " '/^--/d' " <> schemaPath) ""
       sch <- readFile schemaPath
       sch `deepseq` pure sch
+
+skipComparisonForDownMigrations :: [String]
+skipComparisonForDownMigrations =
+  [ -- via_group field moves
+    "20250922_remove_unused_connections",
+    -- group_member_intro_id field moves
+    "20251128_migrate_member_relations"
+  ]

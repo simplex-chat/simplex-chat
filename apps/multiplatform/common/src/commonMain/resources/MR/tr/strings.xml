@@ -1023,7 +1023,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">Sohbet profillerini parola ile koru!</string>
     <string name="v4_5_reduced_battery_usage">Daha az pil kullanımı</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Gizliliği korumak için, SimpleX her bir konuşma için farklı bir ID kullanır.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
     <string name="v4_4_live_messages_desc">Alıcılar güncellemeleri siz yazdıkça görürler.</string>
     <string name="auth_log_in_using_credential">Bilgilerinizi kullanarak giriş yapın</string>
     <string name="markdown_in_messages">Mesajlarda Markdown</string>

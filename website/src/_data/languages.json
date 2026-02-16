@@ -4,7 +4,8 @@
             "label": "en",
             "name": "English",
             "flag": "/img/flags/en.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "ar",
@@ -13,6 +14,7 @@
             "textColor": "white",
             "iconBg": "green",
             "enabled": true,
+            "home": true,
             "rtl": true
         },
         {
@@ -25,13 +27,15 @@
             "label": "de",
             "name": "Deutsch",
             "flag": "/img/flags/de.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "es",
             "name": "Español",
             "flag": "/img/flags/es.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "fi",
@@ -56,13 +60,22 @@
             "label": "hu",
             "name": "Magyar",
             "flag": "/img/flags/hu.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
+        },
+        {
+            "label": "id",
+            "name": "Indonesia",
+            "flag": "/img/flags/id.svg",
+            "enabled": true,
+            "home": true
         },
         {
             "label": "it",
             "name": "Italiano",
             "flag": "/img/flags/it.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "ja",
@@ -110,7 +123,8 @@
             "label": "ru",
             "name": "Русский",
             "flag": "/img/flags/ru.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         }
    ]
 }

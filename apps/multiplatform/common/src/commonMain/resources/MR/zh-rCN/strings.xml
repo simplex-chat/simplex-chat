@@ -575,7 +575,7 @@
     <string name="update_network_settings_question">更新网络设置？</string>
     <string name="only_you_can_delete_messages">只有你可以不可逆地删除消息（你的联系人可以将它们标记为删除）。（24小时）</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">重新启动应用程序以创建新的聊天资料。</string>
-    <string name="error_smp_test_server_auth">服务器需要授权才能创建队列，检查密码</string>
+    <string name="error_smp_test_server_auth">服务器需要授权才能创建队列，检查密码。</string>
     <string name="error_smp_test_failed_at_step">测试在步骤 %s 失败。</string>
     <string name="failed_to_create_user_duplicate_desc">你已经有一个显示名相同的聊天资料。请选择另一个名字。</string>
     <string name="icon_descr_sent_msg_status_sent">已发送</string>
@@ -589,8 +589,8 @@
     <string name="rcv_group_event_member_deleted">已删除 %1$s</string>
     <string name="snd_group_event_member_deleted">你删除了 %1$s</string>
     <string name="profile_will_be_sent_to_contact_sending_link">你的个人资料将发送给你收到此链接的联系人。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">正在尝试连接到用于从该联系人接收消息的服务器（错误：%1$s）。</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">你已连接到用于接收该联系人消息的服务器。</string>
+    <string name="error_connecting_to_server_to_receive_messages">正在尝试连接到用于从该联系人接收消息的服务器（错误：%1$s）。</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">你已连接到用于接收该连接消息的服务器。</string>
     <string name="description_you_shared_one_time_link">你分享了一次性链接</string>
     <string name="message_delivery_error_desc">很可能此联系人已经删除了与你的联系。</string>
     <string name="icon_descr_profile_image_placeholder">资料图片占位符</string>
@@ -609,7 +609,7 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">你当前的聊天数据库将被删除并替换为导入的数据库。 \n此操作无法撤消——你的个人资料、联系人、消息和文件将不可逆地丢失。</string>
     <string name="rcv_group_event_member_added">已邀请 %1$s</string>
     <string name="save_group_profile">保存群资料</string>
-    <string name="error_smp_test_certificate">服务器地址中的证书指纹可能不正确</string>
+    <string name="error_smp_test_certificate">服务器地址指纹和证书不匹配。</string>
     <string name="network_error_desc">请使用 %1$s 检查你的网络连接，然后重试。</string>
     <string name="v4_5_multiple_chat_profiles">多个聊天资料</string>
     <string name="database_initialization_error_desc">数据库不能正常工作。点击了解更多</string>
@@ -777,7 +777,7 @@
     <string name="send_us_an_email">给我们发电子邮件</string>
     <string name="smp_servers">SMP 服务器</string>
     <string name="sending_files_not_yet_supported">尚不支持发送文件</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">正在尝试连接到用于从该联系人接收消息的服务器。</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">尝试连接到用于从该连接接收消息的服务器。</string>
     <string name="receiving_files_not_yet_supported">尚不支持接收文件</string>
     <string name="unknown_message_format">未知消息格式</string>
     <string name="smp_servers_test_server">测试服务器</string>
@@ -1004,7 +1004,7 @@
     <string name="icon_descr_video_snd_complete">视频已发送</string>
     <string name="icon_descr_video_asked_to_receive">要求接收视频</string>
     <string name="video_will_be_received_when_contact_completes_uploading">视频将在你的联系人完成上传后收到。</string>
-    <string name="error_xftp_test_server_auth">服务器需要授权来上传，检查密码</string>
+    <string name="error_xftp_test_server_auth">服务器需要授权来上传，检查密码。</string>
     <string name="smp_server_test_upload_file">上传文件</string>
     <string name="xftp_servers">XFTP 服务器</string>
     <string name="your_XFTP_servers">你的 XFTP 服务器</string>
@@ -2409,7 +2409,7 @@
     <string name="group_new_support_chat_one">和一名成员的一个聊天</string>
     <string name="cant_send_message_generic">无法发送消息</string>
     <string name="cant_send_message_you_left">你离开了</string>
-    <string name="error_deleting_member_support_chat">删除和成员的聊天出错</string>
+    <string name="error_deleting_member_support_chat">删除聊天出错</string>
     <string name="cant_send_message_alert_title">你无法发送消息！</string>
     <string name="cant_send_message_contact_disabled">禁用了联系人</string>
     <string name="cant_send_message_group_deleted">群被删除了</string>
@@ -2519,5 +2519,10 @@
     <string name="privacy_chat_list_open_full_web_link">打开完整链接</string>
     <string name="sanitize_links_toggle">删除链接跟踪</string>
     <string name="simplex_link_relay">SimpleX 中继链接</string>
-    <string name="error_marking_member_support_chat_read">将和成员的聊天标记为已读时出错</string>
+    <string name="error_marking_member_support_chat_read">标记为已读时出错</string>
+    <string name="proxy_destination_error_unknown_ca">目标服务器地址的指纹和证书不匹配：%1$s。</string>
+    <string name="smp_proxy_error_unknown_ca">转发服务器地址的指纹和证书不匹配：%1$s。</string>
+    <string name="network_error_unknown_ca">服务器地址证书和证书不匹配：%1$s。</string>
+    <string name="server_no_sub">无订阅</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">未连接到用于从该连接接收消息的服务器（无订阅）。</string>
 </resources>

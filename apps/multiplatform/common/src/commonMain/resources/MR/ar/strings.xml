@@ -910,7 +910,7 @@
     <string name="group_member_status_removed">أُزيل</string>
     <string name="la_please_remember_to_store_password">يُرجى تذكرها أو تخزينها بأمان - لا توجد طريقة لاستعادة كلمة المرور المفقودة!</string>
     <string name="group_welcome_preview">معاينة</string>
-    <string name="error_smp_test_certificate">من المحتمل أن الملف المرجعي للشهادة في عنوان الخادم غير صحيح</string>
+    <string name="error_smp_test_certificate">البصمة في عنوان الخادم لا تتطابق مع الشهادة.</string>
     <string name="simplex_service_notification_text">يتم استلام الرسائل…</string>
     <string name="observer_cant_send_message_desc">يُرجى الاتصال بمُدير المجموعة.</string>
     <string name="sync_connection_force_confirm">أعد التفاوض</string>
@@ -1050,8 +1050,8 @@
     <string name="show_dev_options">أظهر:</string>
     <string name="show_developer_options">أظهر خيارات المطور</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="error_smp_test_server_auth">يتطلب الخادم إذنًا لإنشاء قوائم انتظار، تحقق من كلمة المرور</string>
-    <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للرفع، تحقق من كلمة المرور</string>
+    <string name="error_smp_test_server_auth">يتطلب الخادم إذنًا لإنشاء قوائم انتظار، تحقق من كلمة المرور.</string>
+    <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للرفع، تحقق من كلمة المرور.</string>
     <string name="notification_preview_mode_contact_desc">أظهر جهة الاتصال فقط</string>
     <string name="ntf_channel_calls">مكالمات SimpleX Chat</string>
     <string name="simplex_service_notification_title">خدمة SimpleX Chat</string>
@@ -1128,16 +1128,16 @@
     <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق).
 \nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
     <string name="unfavorite_chat">أزل من المفضلة</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من هذا الاتصال.</string>
     <string name="choose_file_title">اختيار ملف</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">إرسال غير مصرح به</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
     <string name="la_notice_turn_on">تشغيل</string>
     <string name="webrtc_ice_servers">خوادم WebRTC ICE</string>
     <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملف تعريف متخفي لهذه المجموعة - لمنع مشاركة ملفك التعريفي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>
     <string name="snd_group_event_changed_member_role">غيّرتَ دور %s إلى %s</string>
     <string name="chat_preferences_yes">نعم</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">أنت متصل بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">أنت متصل بالخادم المستخدم لاستلام الرسائل من هذا الاتصال.</string>
     <string name="sender_you_pronoun">أنت</string>
     <string name="description_you_shared_one_time_link">لقد شاركت رابط لمرة واحدة</string>
     <string name="profile_will_be_sent_to_contact_sending_link">سيتم إرسال ملف التعريفك إلى جهة الاتصال التي استلمت منها هذا الرابط.</string>
@@ -2396,7 +2396,7 @@
     <string name="member_criteria_all">الكل</string>
     <string name="member_admission">دخول العضو</string>
     <string name="admission_stage_review_descr">راجع الأعضاء قبل القبول (الطرق).</string>
-    <string name="error_deleting_member_support_chat">حدث خطأ أثناء حذف الدردشة مع العضو.</string>
+    <string name="error_deleting_member_support_chat">خطأ في حذف الدردشة</string>
     <string name="cant_send_message_generic">لا يمكن إرسال الرسائل</string>
     <string name="cant_send_message_rejected">رُفض طلب الانضمام</string>
     <string name="cant_send_message_you_left">غادرت</string>
@@ -2516,5 +2516,10 @@
     <string name="privacy_chat_list_open_full_web_link">افتح الرابط الكامل</string>
     <string name="sanitize_links_toggle">أزل تتبع الروابط</string>
     <string name="simplex_link_relay">رابط مُرحل SimpleX</string>
-    <string name="error_marking_member_support_chat_read">خطأ في وضع علامة \"مقروءة\" على الدردشة مع العضو</string>
+    <string name="error_marking_member_support_chat_read">خطأ في وضع علامة \"مقروءة\"</string>
+    <string name="proxy_destination_error_unknown_ca">البصمة في عنوان الخادم الوجهة لا تتطابق مع الشهادة: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">البصمة في عنوان خادم التحويل لا تتطابق مع الشهادة: %1$s.</string>
+    <string name="network_error_unknown_ca">البصمة في عنوان الخادم لا تتطابق مع الشهادة: %1$s.</string>
+    <string name="server_no_sub">لا اشتراك</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">أنت غير متصل بالخادم المستخدم لاستقبال الرسائل من هذا الاتصال (لا يوجد اشتراك).</string>
 </resources>

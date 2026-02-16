@@ -53,7 +53,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", "docs", "fdroid", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -69,6 +69,13 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
 const translations = require("./translations.json")
 
 module.exports = function (ty) {
+  // Add this after your markdownLib definition
+  ty.addShortcode("mdInclude", function (filepath) {
+    const fullPath = path.join(__dirname, 'src/_includes', filepath);
+    const content = fs.readFileSync(fullPath, 'utf8');
+    return markdownLib.render(content);
+  });
+
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
   ty.addFilter("getlang", (path) => {
@@ -106,9 +113,10 @@ module.exports = function (ty) {
 
       allContentNodes.forEach((node) => {
         const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
-        const replacement = `<span data-glossary="tooltip-${id}" class="glossary-term">${term.term}</span>`
         const beforeContent = node.innerHTML
-        node.innerHTML = node.innerHTML.replace(regex, replacement)
+        node.innerHTML = node.innerHTML.replace(regex, (match) => {
+          return `<span data-glossary="tooltip-${id}" class="glossary-term">${match}</span>`
+        })
         if (beforeContent !== node.innerHTML && !changeNoted) {
           changeNoted = true
         }
@@ -256,8 +264,9 @@ module.exports = function (ty) {
       else if (obj.lang === "en")
         return `${obj.url}`
       return `/${obj.lang}${obj.url}`
-    }
-    else if (supportedLangs.includes(urlParts[1])) {
+    } else if (urlParts[1] === "old") {
+      return `/${obj.lang}${obj.url}`
+    } else if (supportedLangs.includes(urlParts[1])) {
       if (urlParts[2] == "blog")
         return `/blog`
       else if (obj.lang === "en")

@@ -612,13 +612,14 @@ private fun SingleOperatorUsageConditionsView(
   }
 }
 
+val defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
+
 @Composable
 fun ConditionsTextView(
   rhId: Long?
 ) {
   val conditionsData = remember { mutableStateOf<Triple<UsageConditionsDetail, String?, UsageConditionsDetail?>?>(null) }
   val failedToLoad = remember { mutableStateOf(false) }
-  val defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
   val scope = rememberCoroutineScope()
   // can show conditions when animation between modals finishes to prevent glitches
   val canShowConditionsAt = remember { System.currentTimeMillis() + 300 }

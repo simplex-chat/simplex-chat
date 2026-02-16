@@ -22,27 +22,26 @@
         <meta property="og:type" content="website"/>
         <meta property="og:title" content="{{ title }}"/>
         <meta property="og:description" content="{{ description }}"/>
-        <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
+        <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg"/>
         <meta name="twitter:card" content="summary"/>
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
 
         <link rel="stylesheet" href="/css/swiper-bundle.min.css">
+        <link rel="stylesheet" href="/css/blog.css">
         <link href="/css/tailwind.css" rel="stylesheet"/>
         <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="/css/design3-nav.css">
         <script async defer src="https://buttons.github.io/buttons.js"></script>
         <script src="/js/flag-anchor.js"></script>
         {% block js_scripts %}{% endblock %}
     </head>
-    <body class="bg-white dark:bg-[#0C0B13]">
-        <section class="w-full bg-transparent fixed top-0 z-50">
-            {% include "navbar.html" %}
-        </section>
+    <body class="bg-[#F3FAFF] dark:bg-[#000832]">
+        {% include "navbar.html" %}
 
         {{ content | applyGlossary | safe }}
 
         {% include "footer.html" %}
 
-        <script src="/js/animation.js"></script>
         <script src="/js/swiper-bundle.min.js"></script>
         <script src="/js/script.js"></script>
     </body>

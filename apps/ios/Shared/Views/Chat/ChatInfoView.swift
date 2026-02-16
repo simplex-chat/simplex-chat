@@ -92,7 +92,6 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @ObservedObject var networkModel = NetworkModel.shared
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
@@ -115,7 +114,7 @@ struct ChatInfoView: View {
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
-        case networkStatusAlert
+        case subStatusAlert(status: SubscriptionStatus)
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
@@ -126,7 +125,7 @@ struct ChatInfoView: View {
         var id: String {
             switch self {
             case .clearChatAlert: return "clearChatAlert"
-            case .networkStatusAlert: return "networkStatusAlert"
+            case let .subStatusAlert(status): return "subStatusAlert \(status)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
@@ -236,10 +235,12 @@ struct ChatInfoView: View {
 
                     if contact.ready && contact.active {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
-                            networkStatusRow()
-                                .onTapGesture {
-                                    alert = .networkStatusAlert
-                                }
+                            if let chatSubStatus = chatModel.chatSubStatus {
+                                SubStatusRow(status: chatSubStatus)
+                                    .onTapGesture {
+                                        alert = .subStatusAlert(status: chatSubStatus)
+                                    }
+                            }
                             if let connStats = connectionStats {
                                 Button("Change receiving address") {
                                     alert = .switchAddressAlert
@@ -325,7 +326,7 @@ struct ChatInfoView: View {
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .clearChatAlert: return clearChatAlert()
-            case .networkStatusAlert: return networkStatusAlert()
+            case let .subStatusAlert(status): return subStatusAlert(status)
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert:
@@ -546,26 +547,6 @@ struct ChatInfoView: View {
         }
     }
 
-    private func networkStatusRow() -> some View {
-        HStack {
-            Text("Network status")
-            Image(systemName: "info.circle")
-                .foregroundColor(theme.colors.primary)
-                .font(.system(size: 14))
-            Spacer()
-            Text(networkModel.contactNetworkStatus(contact).statusString)
-                .foregroundColor(theme.colors.secondary)
-            serverImage()
-        }
-    }
-
-    private func serverImage() -> some View {
-        let status = networkModel.contactNetworkStatus(contact)
-        return Image(systemName: status.imageName)
-            .foregroundColor(status == .connected ? .green : theme.colors.secondary)
-            .font(.system(size: 12))
-    }
-
     private func deleteContactButton() -> some View {
         Button(role: .destructive) {
             deleteContactDialog(
@@ -605,10 +586,10 @@ struct ChatInfoView: View {
         )
     }
 
-    private func networkStatusAlert() -> Alert {
+    private func subStatusAlert(_ status: SubscriptionStatus) -> Alert {
         Alert(
             title: Text("Network status"),
-            message: Text(networkModel.contactNetworkStatus(contact).statusExplanation)
+            message: Text(status.statusExplanation)
         )
     }
 
@@ -664,6 +645,30 @@ struct ChatInfoView: View {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
             }
         }
+    }
+}
+
+struct SubStatusRow: View {
+    @EnvironmentObject var theme: AppTheme
+    var status: SubscriptionStatus
+
+    var body: some View {
+        HStack {
+            Text("Network status")
+            Image(systemName: "info.circle")
+                .foregroundColor(theme.colors.primary)
+                .font(.system(size: 14))
+            Spacer()
+            Text(status.statusString)
+                .foregroundColor(theme.colors.secondary)
+            serverImage(status)
+        }
+    }
+
+    private func serverImage(_ status: SubscriptionStatus) -> some View {
+        return Image(systemName: status.imageName)
+            .foregroundColor(status == .active ? .green : theme.colors.secondary)
+            .font(.system(size: 12))
     }
 }
 

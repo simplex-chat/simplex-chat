@@ -52,7 +52,7 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Veuillez vérifier que vous avez utilisé le bon lien ou demandez à votre contact de vous en envoyer un autre.</string>
     <string name="connection_error">Erreur de connexion</string>
     <string name="error_adding_members">Erreur lors de l\'ajout de membre·s</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : %1$s).</string>
     <string name="invalid_message_format">format de message invalide</string>
     <string name="simplex_link_mode_full">Lien entier</string>
     <string name="error_saving_smp_servers">Erreur lors de la sauvegarde des serveurs SMP</string>

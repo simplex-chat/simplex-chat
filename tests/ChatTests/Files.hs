@@ -68,7 +68,7 @@ runTestMessageWithFile :: HasCallStack => TestParams -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
   connectUsers alice bob
 
-  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}]"
+  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"hi, sending a file\"}}]"
   alice <# "@bob hi, sending a file"
   alice <# "/f @bob ./tests/fixtures/test.jpg"
   alice <## "use /fc 1 to cancel sending"
@@ -83,12 +83,42 @@ runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withX
            "started receiving file 1 (test.jpg) from alice"
          ]
   bob <## "completed receiving file 1 (test.jpg) from alice"
+  bob #> "@alice received"
+  alice <# "bob> received"
 
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
-  alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-  bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+
+  alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg"), ((0, "received"), Nothing)])
+  alice ##> "/_get content types @2"
+  alice <## "Chat content types: file, text"
+  alice #$> ("/_get chat @2 content=file count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+
+  bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg"), ((1, "received"), Nothing)])
+  bob ##> "/_get content types @2"
+  bob <## "Chat content types: file, text"
+  bob #$> ("/_get chat @2 content=file count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+
+  -- Test file with link in text - should appear in both file and link filters
+  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"check https://example.com for docs\"}}]"
+  alice <# "@bob check https://example.com for docs"
+  alice <# "/f @bob ./tests/fixtures/test.pdf"
+  alice <## "use /fc 2 to cancel sending"
+  bob <# "alice> check https://example.com for docs"
+  bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+  bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+  alice <## "completed uploading file 2 (test.pdf) for bob"
+
+  alice ##> "/_get content types @2"
+  alice <## "Chat content types: file, text"
+  alice #$> ("/_get chat @2 content=file count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg"), ((1, "check https://example.com for docs"), Just "./tests/fixtures/test.pdf")])
+  alice #$> ("/_get chat @2 content=link count=100", chatF, [((1, "check https://example.com for docs"), Just "./tests/fixtures/test.pdf")])
+
+  bob ##> "/_get content types @2"
+  bob <## "Chat content types: file, text"
+  bob #$> ("/_get chat @2 content=file count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg"), ((0, "check https://example.com for docs"), Nothing)])
+  bob #$> ("/_get chat @2 content=link count=100", chatF, [((0, "check https://example.com for docs"), Nothing)])
 
 testSendImage :: HasCallStack => TestParams -> IO ()
 testSendImage =
@@ -343,15 +373,33 @@ testGroupSendImage =
                "started receiving file 1 (test.jpg) from alice"
              ]
       cath <## "completed receiving file 1 (test.jpg) from alice"
+      threadDelay 1000000
+      bob #> "#team received"
+      [alice, cath] *<# "#team bob> received"
+      threadDelay 1000000
+      cath #> "#team received too"
+      [alice, bob] *<# "#team cath> received too"
 
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
       dest2 <- B.readFile "./tests/tmp/test_1.jpg"
       dest2 `shouldBe` src
-      alice #$> ("/_get chat #1 count=1", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
-      cath #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
+
+      alice #$> ("/_get chat #1 count=3", chatF, [((1, ""), Just "./tests/fixtures/test.jpg"), ((0, "received"), Nothing), ((0, "received too"), Nothing)])
+      alice ##> "/_get content types #1"
+      alice <## "Chat content types: image, text"
+      alice #$> ("/_get chat #1 content=image count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
+
+      bob #$> ("/_get chat #1 count=3", chatF, [((0, ""), Just "./tests/tmp/test.jpg"), ((1, "received"), Nothing), ((0, "received too"), Nothing)])
+      bob ##> "/_get content types #1"
+      bob <## "Chat content types: image, text"
+      bob #$> ("/_get chat #1 content=image count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+
+      cath #$> ("/_get chat #1 count=3", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg"), ((0, "received"), Nothing), ((1, "received too"), Nothing)])
+      cath ##> "/_get content types #1"
+      cath <## "Chat content types: image, text"
+      cath #$> ("/_get chat #1 content=image count=100", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
 
 testGroupSendImageWithTextAndQuote :: HasCallStack => TestParams -> IO ()
 testGroupSendImageWithTextAndQuote =
@@ -761,7 +809,9 @@ testXFTPDeleteUploadedFileGroup =
 
       alice ##> "/fc 1"
       concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.pdf) to bob, cath",
+        [ do
+            recipients <- dropStrPrefix "cancelled sending file 1 (test.pdf) to " <$> getTermLine alice
+            recipients == "bob, cath" || recipients == "cath, bob" `shouldBe` True,
           cath <## "alice cancelled sending file 1 (test.pdf)"
         ]
 
@@ -818,7 +868,7 @@ testXFTPContinueRcv ps = do
 
   -- server is down - file is not received
   withTestChat ps "bob" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+    bob <## "subscribed 1 connections on server localhost"
     bob ##> "/fr 1 ./tests/tmp"
     bob
       <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
@@ -833,7 +883,7 @@ testXFTPContinueRcv ps = do
   withXFTPServer $ do
     -- server is up - file reception is continued
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "subscribed 1 connections on server localhost"
       bob <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
@@ -866,7 +916,7 @@ testXFTPMarkToReceive = do
       bob <## "chat started"
 
       bob
-        <### [ "1 contacts connected (use /cs for the list)",
+        <### [ "subscribed 1 connections on server localhost",
                "started receiving file 1 (test.pdf) from alice",
                "saving file 1 from alice to test.pdf"
              ]
@@ -892,7 +942,7 @@ testXFTPRcvError ps = do
   -- server is up w/t store log - file reception should fail
   withXFTPServer' xftpServerConfig {storeLogFile = Nothing} $ do
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "subscribed 1 connections on server localhost"
       bob ##> "/fr 1 ./tests/tmp"
       bob
         <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",

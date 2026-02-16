@@ -34,11 +34,10 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -53,7 +52,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
-import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -78,12 +77,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
 -- 16 - support short link data (2025-06-10)
+-- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 16
+currentChatVersion = VersionChat 17
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -146,6 +146,10 @@ groupKnockingVersion = VersionChat 15
 shortLinkDataVersion :: VersionChat
 shortLinkDataVersion = VersionChat 16
 
+-- support host voice messages during member approval regardless of group voice setting
+memberSupportVoiceVersion :: VersionChat
+memberSupportVoiceVersion = VersionChat 17
+
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
   | v < pqdrSMPAgentVersion = initialChatVersion
@@ -154,8 +158,6 @@ agentToChatVersion v
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
-  | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
-  | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
@@ -165,8 +167,6 @@ connEntityInfo :: ConnectionEntity -> String
 connEntityInfo = \case
   RcvDirectMsgConnection c ct_ -> ctInfo ct_ <> ", status: " <> show (connStatus c)
   RcvGroupMsgConnection c g m -> mInfo g m <> ", status: " <> show (connStatus c)
-  SndFileConnection c _ft -> "snd file, status: " <> show (connStatus c)
-  RcvFileConnection c _ft -> "rcv file, status: " <> show (connStatus c)
   UserContactConnection c _uc -> "user address, status: " <> show (connStatus c)
   where
     ctInfo = maybe "connection" $ \Contact {contactId} -> "contact " <> show contactId
@@ -176,8 +176,6 @@ updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
   RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = Just $ st c}) <$> ct_)
   RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
-  SndFileConnection c ft -> SndFileConnection (st c) ft
-  RcvFileConnection c ft -> RcvFileConnection (st c) ft
   UserContactConnection c uc -> UserContactConnection (st c) uc
   where
     st c = c {connStatus}
@@ -234,8 +232,7 @@ instance StrEncoding AppMessageBinary where
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
 
-data MsgScope
-  = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+data MsgScope = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MS") ''MsgScope)
@@ -312,6 +309,8 @@ data ChatMessage e = ChatMessage
   deriving (Eq, Show)
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
+
+type MessageFromChannel = Bool
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -391,32 +390,6 @@ isForwardedGroupMsg ev = case ev of
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   _ -> False
-
--- applied after building list of messages to forward and building list of group members to forward to, see Chat;
---
--- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
--- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
--- to these members;
---
--- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
--- members with role less than moderator when forwarding
-msgsForwardedToMember :: NonEmpty (ChatMessage 'Json) -> GroupMember -> Bool
-msgsForwardedToMember fwdMsgs GroupMember {memberId, memberRole} =
-  (memberId `notElem` restrictMemberIds) && (not hasReport || memberRole >= GRModerator)
-  where
-    restrictMemberIds = mapMaybe restrictMemberId $ L.toList fwdMsgs
-    restrictMemberId :: ChatMessage 'Json -> Maybe MemberId
-    restrictMemberId ChatMessage {chatMsgEvent} =
-      case chatMsgEvent of
-        XGrpMemRestrict mId _ -> Just mId
-        _ -> Nothing
-    hasReport = any isReportEvent fwdMsgs
-    isReportEvent ChatMessage {chatMsgEvent} =
-      case chatMsgEvent of
-        XMsgNew mc -> case mcExtMsgContent mc of
-          ExtMsgContent {content = MCReport {}} -> True
-          _ -> False
-        _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -549,6 +522,8 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+instance FromField MsgContentTag where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
 instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
 data MsgContainer
@@ -673,6 +648,9 @@ maxEncodedMsgLength = 15602
 maxCompressedMsgLength :: Int
 maxCompressedMsgLength = 13380
 
+maxDecompressedMsgLength :: Int
+maxDecompressedMsgLength = 65536
+
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
 maxEncodedInfoLength :: Int
@@ -695,20 +673,24 @@ encodeChatMessage maxSize msg = do
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]
-parseChatMessages s = case B.head s of
-  '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
-  '[' -> case J.eitherDecodeStrict' s of
-    Right v -> map parseItem v
-    Left e -> [Left e]
-  'X' -> decodeCompressed (B.drop 1 s)
-  _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+parseChatMessages msg = case B.head msg of
+  'X' -> decodeCompressed (B.tail msg)
+  c -> parseUncompressed c msg
   where
+    parseUncompressed c s = case c of
+      '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
+      '[' -> case J.eitherDecodeStrict' s of
+        Right v -> map parseItem v
+        Left e -> [Left e]
+      _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseChatMessages . decompress1) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
+    parseUncompressed' "" = [Left "empty string"]
+    parseUncompressed' s = parseUncompressed (B.head s) s
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
@@ -1221,6 +1203,9 @@ instance ToJSON (ChatMessage 'Json) where
 
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
+
+instance FromField (ChatMessage 'Json) where
+  fromField = blobFieldDecoder J.eitherDecodeStrict'
 
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,

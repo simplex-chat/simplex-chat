@@ -10,11 +10,13 @@
 module Directory.Events
   ( DirectoryEvent (..),
     DirectoryCmd (..),
+    DirectoryCmdTag (..),
     ADirectoryCmd (..),
     DirectoryHelpSection (..),
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
+    directoryCmdP,
     directoryCmdTag,
   )
 where
@@ -135,6 +137,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCInviteOwnerToGroup_ :: DirectoryCmdTag 'DRAdmin
   -- DCAddBlockedWord_ :: DirectoryCmdTag 'DRAdmin
   -- DCRemoveBlockedWord_ :: DirectoryCmdTag 'DRAdmin
+  DCPromoteGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -157,7 +160,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
   DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCShowUpgradeGroupLink :: GroupId -> Maybe GroupName -> DirectoryCmd 'DRUser
-  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
+  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId, promote :: Maybe Bool} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -167,6 +170,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCInviteOwnerToGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   -- DCAddBlockedWord :: Text -> DirectoryCmd 'DRAdmin
   -- DCRemoveBlockedWord :: Text -> DirectoryCmd 'DRAdmin
+  DCPromoteGroup :: GroupId -> GroupName -> Bool -> DirectoryCmd 'DRSuperUser
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -211,6 +215,7 @@ directoryCmdP =
         "invite" -> au DCInviteOwnerToGroup_
         -- "block_word" -> au DCAddBlockedWord_
         -- "unblock_word" -> au DCRemoveBlockedWord_
+        "promote" -> su DCPromoteGroup_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -270,7 +275,8 @@ directoryCmdP =
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
-        pure DCApproveGroup {groupId, displayName, groupApprovalId}
+        promote <- Just <$> (" promote=" *> onOffP) <|> pure Nothing
+        pure DCApproveGroup {groupId, displayName, groupApprovalId, promote}
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
@@ -283,12 +289,17 @@ directoryCmdP =
       DCInviteOwnerToGroup_ -> gc DCInviteOwnerToGroup
       -- DCAddBlockedWord_ -> DCAddBlockedWord <$> wordP
       -- DCRemoveBlockedWord_ -> DCRemoveBlockedWord <$> wordP
+      DCPromoteGroup_ -> do
+        (groupId, displayName) <- gc (,)
+        promote <- A.space *> onOffP
+        pure $ DCPromoteGroup groupId displayName promote
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (spacesP *> A.takeText)
       where
         gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
         gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
         -- wordP = spacesP *> A.takeTill isSpace
         spacesP = A.takeWhile1 isSpace
+        onOffP = (A.string "on" $> True) <|> (A.string "off" $> False)
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
@@ -314,6 +325,7 @@ directoryCmdTag = \case
   DCInviteOwnerToGroup {} -> "invite"
   -- DCAddBlockedWord _ -> "block_word"
   -- DCRemoveBlockedWord _ -> "unblock_word"
+  DCPromoteGroup {} -> "promote"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"
