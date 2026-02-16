@@ -491,8 +491,8 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, 
     throw r.unexpected
 }
 
-func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
+func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool = false, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
@@ -524,8 +524,8 @@ func apiReorderChatTags(tagIds: [Int64]) async throws {
     try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
-func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, live: live, ttl: ttl, composedMessages: composedMessages)
+func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool = false, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, sendAsGroup: sendAsGroup, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
 }
 
@@ -783,10 +783,10 @@ func setUserServers(userServers: [UserOperatorServers]) async throws {
     throw r.unexpected
 }
 
-func validateServers(userServers: [UserOperatorServers]) async throws -> [UserServersError] {
+func validateServers(userServers: [UserOperatorServers]) async throws -> ([UserServersError], [UserServersWarning]) {
     let userId = try currentUserId("validateServers")
     let r: ChatResponse0 = try await chatSendCmd(.apiValidateServers(userId: userId, userServers: userServers))
-    if case let .userServersValidation(_, serverErrors) = r { return serverErrors }
+    if case let .userServersValidation(_, serverErrors, serverWarnings) = r { return (serverErrors, serverWarnings) }
     logger.error("validateServers error: \(String(describing: r))")
     throw r.unexpected
 }
@@ -1109,9 +1109,9 @@ func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactS
     throw r.unexpected
 }
 
-func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
+func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool = true, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareGroup")
-    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, groupShortLinkData: groupShortLinkData))
+    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, directLink: directLink, groupShortLinkData: groupShortLinkData))
     if case let .newPreparedChat(_, chat) = r { return chat }
     throw r.unexpected
 }
@@ -1807,6 +1807,15 @@ func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInf
     let userId = try currentUserId("apiNewGroup")
     let r: ChatResponse2 = try chatSendCmdSync(.apiNewGroup(userId: userId, incognito: incognito, groupProfile: groupProfile))
     if case let .groupCreated(_, groupInfo) = r { return groupInfo }
+    throw r.unexpected
+}
+
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay]) {
+    let userId = try currentUserId("apiNewPublicGroup")
+    let r: ChatResponse2 = try await chatSendCmd(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
+    if case let .publicGroupCreated(_, groupInfo, groupLink, groupRelays) = r {
+        return (groupInfo, groupLink, groupRelays)
+    }
     throw r.unexpected
 }
 

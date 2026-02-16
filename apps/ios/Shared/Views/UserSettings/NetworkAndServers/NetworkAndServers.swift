@@ -363,7 +363,8 @@ func validateServers_(_ userServers: Binding<[UserOperatorServers]>, _ serverErr
     let userServersToValidate = userServers.wrappedValue
     Task {
         do {
-            let errs = try await validateServers(userServers: userServersToValidate)
+            // TODO [relays] process warnings (e.g. noChatRelays)
+            let (errs, _warns) = try await validateServers(userServers: userServersToValidate)
             await MainActor.run {
                 serverErrors.wrappedValue = errs
             }

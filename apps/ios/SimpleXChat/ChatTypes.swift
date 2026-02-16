@@ -42,6 +42,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var autoAcceptMemberContacts: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
+    public var userChatRelay: Bool
 
     public var id: Int64 { userId }
 
@@ -67,7 +68,8 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false,
-        autoAcceptMemberContacts: false
+        autoAcceptMemberContacts: false,
+        userChatRelay: false
     )
 }
 
@@ -2333,6 +2335,8 @@ public struct Group: Decodable, Hashable {
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
+    public var useRelays: Bool
+    public var relayOwnStatus: RelayStatus? = nil
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var businessChat: BusinessChatInfo?
@@ -2385,6 +2389,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public static let sampleData = GroupInfo(
         groupId: 1,
+        useRelays: false,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
         fullGroupPreferences: FullGroupPreferences.sampleData,
@@ -2416,6 +2421,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         shortDescr: String? = nil,
         description: String? = nil,
         image: String? = nil,
+        groupLink: String? = nil,
         groupPreferences: GroupPreferences? = nil,
         memberAdmission: GroupMemberAdmission? = nil
     ) {
@@ -2424,6 +2430,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         self.shortDescr = shortDescr
         self.description = description
         self.image = image
+        self.groupLink = groupLink
         self.groupPreferences = groupPreferences
         self.memberAdmission = memberAdmission
     }
@@ -2433,6 +2440,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var shortDescr: String?
     public var description: String?
     public var image: String?
+    public var groupLink: String?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
     public var localAlias: String { "" }
@@ -2484,6 +2492,22 @@ public struct ContactShortLinkData: Codable, Hashable {
 
 public struct GroupShortLinkData: Codable, Hashable {
     public var groupProfile: GroupProfile
+}
+
+public enum RelayStatus: String, Decodable, Equatable, Hashable {
+    case rsNew = "new"
+    case rsInvited = "invited"
+    case rsAccepted = "accepted"
+    case rsActive = "active"
+}
+
+public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
+    public var groupRelayId: Int64
+    public var groupMemberId: Int64
+    public var userChatRelayId: Int64
+    public var relayStatus: RelayStatus
+    public var relayLink: String?
+    public var id: Int64 { groupRelayId }
 }
 
 public struct BusinessChatInfo: Decodable, Hashable {
@@ -2717,6 +2741,7 @@ public struct GroupMemberIds: Decodable, Hashable {
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
+    case relay
     case observer
     case author
     case member
@@ -2730,6 +2755,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public var text: String {
         switch self {
+        case .relay: return NSLocalizedString("relay", comment: "member role")
         case .observer: return NSLocalizedString("observer", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
@@ -2741,12 +2767,13 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     private var comparisonValue: Int {
         switch self {
-        case .observer: 0
-        case .author: 1
-        case .member: 2
-        case .moderator: 3
-        case .admin: 4
-        case .owner: 5
+        case .relay: 0
+        case .observer: 1
+        case .author: 2
+        case .member: 3
+        case .moderator: 4
+        case .admin: 5
+        case .owner: 6
         }
     }
 
@@ -3434,6 +3461,7 @@ public enum CIDirection: Decodable, Hashable {
     case directRcv
     case groupSnd
     case groupRcv(groupMember: GroupMember)
+    case channelRcv
     case localSnd
     case localRcv
 
@@ -3444,6 +3472,7 @@ public enum CIDirection: Decodable, Hashable {
             case .directRcv: return false
             case .groupSnd: return true
             case .groupRcv: return false
+            case .channelRcv: return false
             case .localSnd: return true
             case .localRcv: return false
             }
@@ -3453,6 +3482,7 @@ public enum CIDirection: Decodable, Hashable {
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
+        case (.channelRcv, .channelRcv): true
         default: sent == dir.sent
         }
     }
@@ -4044,6 +4074,7 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
         case .directRcv: return nil
         case .groupSnd: return membership?.displayName ?? "you"
         case let .groupRcv(member): return member.displayName
+        case .channelRcv: return nil
         case .localSnd: return "you"
         case .localRcv: return nil
         case nil: return nil

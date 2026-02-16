@@ -1329,7 +1329,7 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupSLinkData_):
+                    case let .ok(_groupSLinkInfo_, groupSLinkData_): // TODO [relays] pass `groupSLinkInfo_.direct` to apiPrepareGroup
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
