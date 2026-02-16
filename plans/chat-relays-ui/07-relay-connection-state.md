@@ -403,7 +403,57 @@ Instead of per-relay list, show a single "Connecting..." with spinner:
 
 Simpler, but no per-relay visibility. Acceptable fallback if backend doesn't emit per-relay events.
 
-### 5.10 Alt D — Inoperable Warning Variants
+### 5.10 Alt D — Connection Status at Top
+
+Instead of a bottom panel, show relay connection status below the navigation bar (via `.safeAreaInset(edge: .top)`, same pattern as `searchToolbar()`). This keeps the compose area free for the observer bar during connecting.
+
+**Variant 1 — Full (per-relay list at top)**:
+```
+┌──────────────────────────────────────────┐
+│  < [📢] SimpleX News                ... │
+│         Channel                          │
+├──────────────────────────────────────────┤
+│  Connecting to channel...                │
+│  ✅ relay1.simplex.im                    │
+│  🔄 relay2.simplex.im                    │
+│  🔄 relay3.simplex.im                    │
+├──────────────────────────────────────────┤
+│                                          │
+│  (ChatBannerView)                        │
+│                                          │
+├──────────────────────────────────────────┤
+│  ┌──────────────────────────────┐  [+]  │
+│  │ you are observer             │  [📷] │
+│  └──────────────────────────────┘  [➤]  │
+└──────────────────────────────────────────┘
+```
+
+**Variant 2 — Concise (single-line summary at top)**:
+```
+┌──────────────────────────────────────────┐
+│  < [📢] SimpleX News                ... │
+│         Channel                          │
+├──────────────────────────────────────────┤
+│  🔄 Connecting... 1 of 3 relays         │
+├──────────────────────────────────────────┤
+│                                          │
+│  (ChatBannerView + messages)             │
+│                                          │
+├──────────────────────────────────────────┤
+│  ┌──────────────────────────────┐  [+]  │
+│  │ you are observer             │  [📷] │
+│  └──────────────────────────────┘  [➤]  │
+└──────────────────────────────────────────┘
+```
+
+**Notes**:
+- Top placement uses existing `.safeAreaInset(edge: .top)` pattern (like `searchToolbar()`)
+- Observer compose bar is visible immediately (not replaced by connection panel)
+- Full variant shows per-relay detail; concise variant is a single progress line
+- Collapses to summary or disappears when all relays finish (same transition rules as primary)
+- Disadvantage: reduces visible chat content area during connecting
+
+### 5.11 Alt E — Inoperable Warning Variants
 
 **Variant 1 — Prominent in-chat warning card**:
 ```
@@ -457,6 +507,13 @@ Simpler, but no per-relay visibility. Acceptable fallback if backend doesn't emi
 - Only 3 relays typically — small list
 - Helps debug connectivity issues
 - Consistent with ChannelRelaysView (plan 06)
+
+### Connection panel at bottom (Primary) > At top (Alt E)
+
+- Bottom panel replaces compose area naturally — observer can't send anyway during connecting
+- Top placement competes with navigation bar and reduces chat content area
+- Bottom is where "you are observer" will eventually appear — same zone, natural transition
+- However, top placement allows observer bar to be visible immediately, which may feel more polished
 
 ### Summary bar after completion > Keep detailed list
 
