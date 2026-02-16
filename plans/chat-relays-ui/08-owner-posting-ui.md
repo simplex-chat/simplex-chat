@@ -150,9 +150,9 @@ func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] 
 
 ### 4.4 Compose Bar Availability
 
-For channel members who are observers (most members), the compose bar is already hidden — the existing observer role logic handles this. Only owners and admins see the compose bar in channels.
+For channel members who are observers (most members), the compose bar is disabled with italic "you are observer" text — the existing `userCantSendReason` logic in ChatTypes.swift:1580 handles this when `memberRole == .observer`. Only owners and admins see the active compose bar in channels.
 
-**Verification**: Check that the compose bar visibility logic correctly considers channel membership roles. The existing code likely checks `groupInfo.membership.memberRole >= .member` for compose bar visibility. In channels, observers are below member role, so compose is hidden. Owners/admins are above, so compose is shown. This should work correctly.
+**Verification**: The existing code checks `groupInfo.membership.memberRole == .observer` and returns `("you are observer", "Please contact group admin.")` which feeds into ComposeView's `disabledText` parameter. This works for channels automatically since channels are groups with observer members.
 
 ---
 
@@ -232,11 +232,13 @@ Since all messages from owners automatically appear as channel messages, perhaps
 ```
 Same banner — admins post as the channel too.
 
-**Member/observer** (no compose bar):
+**Member/observer** (disabled compose bar):
 ```
-│  Reactions: [👍] [❤️] [+]               │
+│  ┌──────────────────────────────┐  [+]  │
+│  │ you are observer             │  [📷] │
+│  └──────────────────────────────┘  [➤]  │
 ```
-Standard observer bar — no compose capability.
+Disabled compose field with italic "you are observer" text (existing pattern from `userCantSendReason` in ChatTypes.swift:1580).
 
 ---
 
@@ -275,7 +277,7 @@ Standard observer bar — no compose capability.
 
 6. **Multiple owners** (post-MVP): All owners see the same banner and all post as channel.
 
-7. **Owner demoted to admin**: If role changes while ChatView is open, the banner should still appear (admins can post too). If demoted below admin, banner disappears and compose bar is replaced with reactions bar.
+7. **Owner demoted to admin**: If role changes while ChatView is open, the banner should still appear (admins can post too). If demoted below admin, banner disappears and compose bar shows disabled "you are observer" text.
 
 ---
 
@@ -283,7 +285,7 @@ Standard observer bar — no compose capability.
 
 1. **Banner visibility**: Owner opens channel → verify "Posting as [Channel]" banner appears above compose field
 2. **Admin visibility**: Admin opens channel → verify same banner appears
-3. **Observer invisibility**: Regular member opens channel → verify no compose bar, only reactions
+3. **Observer compose**: Regular member opens channel → verify disabled compose bar with "you are observer" text
 4. **Send as channel**: Owner sends message → verify the message appears with channel avatar/name (CIChannelRcv rendering)
 5. **Banner persistence**: Type text, attach file → verify banner stays visible
 6. **Reply context**: Reply to a message → verify banner stays above the reply context
