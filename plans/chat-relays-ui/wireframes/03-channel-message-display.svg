@@ -1,0 +1,251 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="2020" viewBox="0 0 440 2020">
+  <defs>
+    <style>
+      text { font-family: -apple-system, Helvetica, sans-serif; }
+    </style>
+    <!-- Megaphone icon for channel avatar -->
+    <symbol id="megaphone" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="12" fill="#0A84FF" opacity="0.2"/>
+      <path d="M18 4L10 8H6C5.45 8 5 8.45 5 9V15C5 15.55 5.45 16 6 16H7L9 20H11L9 16H10L18 20V4Z" fill="#0A84FF"/>
+    </symbol>
+    <!-- Back arrow -->
+    <symbol id="back-arrow" viewBox="0 0 12 20">
+      <polyline points="10,2 2,10 10,18" stroke="#0A84FF" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- Checkmark -->
+    <symbol id="check" viewBox="0 0 12 10">
+      <polyline points="1,5 4.5,8.5 11,1.5" stroke="#8E8E93" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <!-- Full background -->
+  <rect width="440" height="2020" fill="#111111"/>
+
+  <!-- ============================================ -->
+  <!-- §5.1 Subscriber View                         -->
+  <!-- ============================================ -->
+  <text x="25" y="30" fill="#8E8E93" font-size="16" font-weight="bold">§5.1 Subscriber View</text>
+
+  <g transform="translate(25, 45)">
+    <!-- Phone frame -->
+    <rect x="0" y="0" width="390" height="750" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+
+    <!-- Status bar area -->
+    <rect x="1" y="1" width="388" height="44" rx="20" ry="20" fill="#1C1C1E"/>
+    <text x="195" y="28" fill="#FFFFFF" font-size="12" font-weight="600" text-anchor="middle">9:41</text>
+
+    <!-- Nav bar -->
+    <rect x="1" y="44" width="388" height="56" fill="#2C2C2E"/>
+    <line x1="1" y1="100" x2="389" y2="100" stroke="#3A3A3C" stroke-width="0.5"/>
+
+    <!-- Back arrow -->
+    <use href="#back-arrow" x="16" y="58" width="12" height="20"/>
+
+    <!-- Channel avatar in nav -->
+    <circle cx="52" cy="68" r="16" fill="#0A84FF" opacity="0.2"/>
+    <use href="#megaphone" x="36" y="52" width="32" height="32"/>
+
+    <!-- Nav title -->
+    <text x="78" y="64" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
+    <text x="78" y="80" fill="#8E8E93" font-size="13">Channel</text>
+
+    <!-- Ellipsis menu -->
+    <text x="365" y="72" fill="#8E8E93" font-size="20" text-anchor="middle">...</text>
+
+    <!-- Chat area background -->
+    <rect x="1" y="100" width="388" height="560" fill="#1C1C1E"/>
+
+    <!-- First message group — with avatar -->
+    <!-- Channel avatar -->
+    <circle cx="30" cy="140" r="16" fill="#0A84FF" opacity="0.2"/>
+    <use href="#megaphone" x="14" y="124" width="32" height="32"/>
+
+    <!-- Sender name -->
+    <text x="54" y="130" fill="#0A84FF" font-size="13" font-weight="600">SimpleX News</text>
+
+    <!-- Message bubble 1 -->
+    <rect x="54" y="138" width="310" height="92" rx="12" ry="12" fill="#2C2C2E"/>
+    <text x="66" y="158" fill="#FFFFFF" font-size="14">We're excited to announce v7.0!</text>
+    <text x="66" y="176" fill="#FFFFFF" font-size="14">New channel feature allows large</text>
+    <text x="66" y="194" fill="#FFFFFF" font-size="14">public groups with relay-forwarded</text>
+    <text x="66" y="212" fill="#FFFFFF" font-size="14">messages.</text>
+    <text x="308" y="224" fill="#8E8E93" font-size="11">3:42 PM</text>
+    <use href="#check" x="348" y="216" width="10" height="8"/>
+
+    <!-- Message bubble 2 (same sender, no avatar) -->
+    <rect x="54" y="246" width="310" height="58" rx="12" ry="12" fill="#2C2C2E"/>
+    <text x="66" y="266" fill="#FFFFFF" font-size="14">Check out the blog post:</text>
+    <text x="66" y="284" fill="#0A84FF" font-size="14">simplex.chat/blog/v7</text>
+    <text x="308" y="296" fill="#8E8E93" font-size="11">3:45 PM</text>
+    <use href="#check" x="348" y="288" width="10" height="8"/>
+
+    <!-- Time gap — visual spacing before next group -->
+
+    <!-- Second message group — avatar shown again after gap -->
+    <circle cx="30" cy="370" r="16" fill="#0A84FF" opacity="0.2"/>
+    <use href="#megaphone" x="14" y="354" width="32" height="32"/>
+
+    <!-- Sender name again -->
+    <text x="54" y="360" fill="#0A84FF" font-size="13" font-weight="600">SimpleX News</text>
+
+    <!-- Message bubble 3 -->
+    <rect x="54" y="368" width="310" height="56" rx="12" ry="12" fill="#2C2C2E"/>
+    <text x="66" y="392" fill="#FFFFFF" font-size="14">We're also working on...</text>
+    <text x="308" y="416" fill="#8E8E93" font-size="11">4:10 PM</text>
+    <use href="#check" x="348" y="408" width="10" height="8"/>
+
+    <!-- Bottom compose area — disabled (observer) -->
+    <rect x="1" y="660" width="388" height="89" fill="#2C2C2E" rx="0" ry="0"/>
+    <!-- Clip bottom corners to match phone frame -->
+    <rect x="1" y="730" width="388" height="19" rx="20" ry="20" fill="#2C2C2E"/>
+    <line x1="1" y1="660" x2="389" y2="660" stroke="#3A3A3C" stroke-width="0.5"/>
+
+    <!-- Compose text field (disabled) -->
+    <rect x="14" y="680" width="280" height="36" rx="18" ry="18" fill="#3A3A3C"/>
+    <text x="30" y="703" fill="#8E8E93" font-size="14" font-style="italic">you are observer</text>
+
+    <!-- Grayed-out + button -->
+    <circle cx="316" cy="698" r="14" fill="none" stroke="#3A3A3C" stroke-width="1.5"/>
+    <text x="316" y="703" fill="#3A3A3C" font-size="16" text-anchor="middle">+</text>
+
+    <!-- Grayed-out camera button -->
+    <circle cx="350" cy="698" r="14" fill="none" stroke="#3A3A3C" stroke-width="1.5"/>
+    <rect x="343" y="692" width="14" height="10" rx="2" fill="none" stroke="#3A3A3C" stroke-width="1.2"/>
+    <circle cx="350" cy="697" r="2.5" fill="none" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Grayed-out send button -->
+    <circle cx="375" cy="726" r="0" fill="none"/>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- §5.2 Owner View                              -->
+  <!-- ============================================ -->
+  <!-- 45 + 750 + 40 = 835 -->
+  <text x="25" y="830" fill="#8E8E93" font-size="16" font-weight="bold">§5.2 Owner View</text>
+
+  <g transform="translate(25, 845)">
+    <!-- Phone frame -->
+    <rect x="0" y="0" width="390" height="650" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+
+    <!-- Status bar -->
+    <rect x="1" y="1" width="388" height="44" rx="20" ry="20" fill="#1C1C1E"/>
+    <text x="195" y="28" fill="#FFFFFF" font-size="12" font-weight="600" text-anchor="middle">9:41</text>
+
+    <!-- Nav bar -->
+    <rect x="1" y="44" width="388" height="56" fill="#2C2C2E"/>
+    <line x1="1" y1="100" x2="389" y2="100" stroke="#3A3A3C" stroke-width="0.5"/>
+
+    <!-- Back arrow -->
+    <use href="#back-arrow" x="16" y="58" width="12" height="20"/>
+
+    <!-- Channel avatar in nav -->
+    <circle cx="52" cy="68" r="16" fill="#0A84FF" opacity="0.2"/>
+    <use href="#megaphone" x="36" y="52" width="32" height="32"/>
+
+    <!-- Nav title -->
+    <text x="78" y="64" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
+    <text x="78" y="80" fill="#8E8E93" font-size="13">Channel</text>
+
+    <!-- Ellipsis -->
+    <text x="365" y="72" fill="#8E8E93" font-size="20" text-anchor="middle">...</text>
+
+    <!-- Chat area -->
+    <rect x="1" y="100" width="388" height="450" fill="#1C1C1E"/>
+
+    <!-- Channel avatar -->
+    <circle cx="30" cy="140" r="16" fill="#0A84FF" opacity="0.2"/>
+    <use href="#megaphone" x="14" y="124" width="32" height="32"/>
+
+    <!-- Sender name -->
+    <text x="54" y="130" fill="#0A84FF" font-size="13" font-weight="600">SimpleX News</text>
+
+    <!-- Message bubble -->
+    <rect x="54" y="138" width="310" height="58" rx="12" ry="12" fill="#2C2C2E"/>
+    <text x="66" y="158" fill="#FFFFFF" font-size="14">We're excited to announce v7.0!</text>
+    <text x="308" y="188" fill="#8E8E93" font-size="11">3:42 PM</text>
+    <use href="#check" x="348" y="180" width="10" height="8"/>
+
+    <!-- Bottom compose area — active (owner) -->
+    <rect x="1" y="550" width="388" height="99" fill="#2C2C2E"/>
+    <rect x="1" y="630" width="388" height="19" rx="20" ry="20" fill="#2C2C2E"/>
+    <line x1="1" y1="550" x2="389" y2="550" stroke="#3A3A3C" stroke-width="0.5"/>
+
+    <!-- Posting as label with megaphone icon -->
+    <use href="#megaphone" x="14" y="558" width="16" height="16"/>
+    <text x="36" y="571" fill="#8E8E93" font-size="13">Posting as SimpleX News</text>
+
+    <!-- Active compose text field -->
+    <rect x="14" y="582" width="250" height="36" rx="18" ry="18" fill="#3A3A3C"/>
+    <text x="30" y="605" fill="#8E8E93" font-size="14">Type a message...</text>
+
+    <!-- Active + button (blue) -->
+    <circle cx="286" cy="600" r="14" fill="none" stroke="#0A84FF" stroke-width="1.5"/>
+    <text x="286" y="605" fill="#0A84FF" font-size="16" text-anchor="middle">+</text>
+
+    <!-- Active camera button (blue) -->
+    <circle cx="320" cy="600" r="14" fill="none" stroke="#0A84FF" stroke-width="1.5"/>
+    <rect x="313" y="594" width="14" height="10" rx="2" fill="none" stroke="#0A84FF" stroke-width="1.2"/>
+    <circle cx="320" cy="599" r="2.5" fill="none" stroke="#0A84FF" stroke-width="1"/>
+
+    <!-- Send arrow button (blue filled circle) -->
+    <circle cx="356" cy="600" r="14" fill="#0A84FF"/>
+    <!-- Arrow up icon -->
+    <path d="M356,607 L356,593 M350,599 L356,593 L362,599" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- §5.3 Chat List Preview                       -->
+  <!-- ============================================ -->
+  <!-- 845 + 650 + 40 = 1535 -->
+  <text x="25" y="1535" fill="#8E8E93" font-size="16" font-weight="bold">§5.3 Chat List Preview</text>
+
+  <g transform="translate(25, 1550)">
+    <!-- Row frame -->
+    <rect x="0" y="0" width="390" height="80" rx="12" ry="12" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Channel avatar -->
+    <circle cx="40" cy="40" r="24" fill="#0A84FF" opacity="0.2"/>
+    <use href="#megaphone" x="16" y="16" width="48" height="48"/>
+
+    <!-- Channel name -->
+    <text x="76" y="32" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
+
+    <!-- Time -->
+    <text x="365" y="32" fill="#8E8E93" font-size="13" text-anchor="end">3:42 PM</text>
+
+    <!-- Preview text -->
+    <text x="76" y="54" fill="#8E8E93" font-size="14">Latest update about v7...</text>
+
+    <!-- Unread badge -->
+    <rect x="345" y="42" width="26" height="22" rx="11" fill="#0A84FF"/>
+    <text x="358" y="57" fill="#FFFFFF" font-size="12" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Annotation note -->
+    <text x="0" y="108" fill="#8E8E93" font-size="12" font-style="italic">Note: No sender prefix (showGroupAsSender)</text>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- §5.4 Alt — Compact Channel Header            -->
+  <!-- ============================================ -->
+  <!-- 1550 + 80 + 30 (annotation) + 40 = 1700 -->
+  <text x="25" y="1710" fill="#8E8E93" font-size="16" font-weight="bold">§5.4 Alt — Compact Channel Header</text>
+
+  <g transform="translate(25, 1725)">
+    <!-- Partial chat mockup frame -->
+    <rect x="0" y="0" width="390" height="180" rx="12" ry="12" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Centered divider with channel name -->
+    <line x1="20" y1="40" x2="95" y2="40" stroke="#3A3A3C" stroke-width="1"/>
+    <text x="195" y="44" fill="#8E8E93" font-size="12" text-anchor="middle">SimpleX News · 3:42 PM</text>
+    <line x1="295" y1="40" x2="370" y2="40" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Message bubble below, no avatar -->
+    <rect x="30" y="60" width="330" height="100" rx="12" ry="12" fill="#2C2C2E"/>
+    <text x="42" y="82" fill="#FFFFFF" font-size="14">We're excited to announce v7.0!</text>
+    <text x="42" y="100" fill="#FFFFFF" font-size="14">New channel feature allows large</text>
+    <text x="42" y="118" fill="#FFFFFF" font-size="14">public groups with relay-forwarded</text>
+    <text x="42" y="136" fill="#FFFFFF" font-size="14">messages.</text>
+    <text x="304" y="152" fill="#8E8E93" font-size="11">3:42 PM</text>
+    <use href="#check" x="344" y="144" width="10" height="8"/>
+  </g>
+</svg>

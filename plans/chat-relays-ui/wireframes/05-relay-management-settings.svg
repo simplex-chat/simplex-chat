@@ -1,0 +1,297 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="3440" viewBox="0 0 440 3440">
+  <defs>
+    <style>
+      text { font-family: -apple-system, Helvetica, sans-serif; }
+      .section-label { font-size: 16px; font-weight: bold; fill: #8E8E93; }
+      .title { font-size: 17px; font-weight: bold; fill: #FFFFFF; }
+      .body { font-size: 14px; fill: #FFFFFF; }
+      .caption { font-size: 12px; fill: #8E8E93; }
+      .section-header { font-size: 13px; fill: #8E8E93; letter-spacing: 0.5px; }
+      .accent { fill: #0A84FF; }
+      .green { fill: #30D158; }
+      .red { fill: #FF453A; }
+      .nav-title { font-size: 17px; font-weight: bold; fill: #FFFFFF; }
+      .nav-back { font-size: 17px; fill: #0A84FF; }
+      .footer-text { font-size: 12px; fill: #8E8E93; }
+      .toggle-on { fill: #30D158; }
+      .toggle-off { fill: #3A3A3C; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="440" height="3440" fill="#000000" rx="0"/>
+
+  <!-- ==================== -->
+  <!-- S5.1 OperatorView     -->
+  <!-- ==================== -->
+  <text x="25" y="30" class="section-label">S5.1 OperatorView —With Relay Section</text>
+
+  <!-- Phone frame -->
+  <rect x="25" y="45" width="390" height="700" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+  <!-- USE FOR FILES section -->
+  <text x="41" y="82" class="section-header">USE FOR FILES</text>
+  <!-- Card -->
+  <rect x="41" y="92" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="119" class="body">To send</text>
+  <!-- Toggle ON -->
+  <rect x="339" y="102" width="44" height="24" rx="12" ry="12" class="toggle-on"/>
+  <circle cx="371" cy="114" r="10" fill="#FFFFFF"/>
+
+  <!-- MEDIA & FILE SERVERS section -->
+  <text x="41" y="168" class="section-header">MEDIA &amp; FILE SERVERS</text>
+  <!-- Card -->
+  <rect x="41" y="178" width="358" height="88" rx="10" ry="10" fill="#2C2C2E"/>
+  <!-- Row 1 -->
+  <text x="57" y="207" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="207" class="body">xftp1.simplex.im</text>
+  <!-- Divider -->
+  <line x1="57" y1="222" x2="383" y2="222" stroke="#3A3A3C" stroke-width="0.5"/>
+  <!-- Row 2 -->
+  <text x="57" y="251" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="251" class="body">xftp2.simplex.im</text>
+
+  <!-- CHAT RELAYS section (NEW) -->
+  <text x="41" y="303" class="section-header">CHAT RELAYS</text>
+  <rect x="339" y="289" width="40" height="18" rx="4" ry="4" fill="#0A84FF"/>
+  <text x="347" y="302" font-size="10" font-weight="bold" fill="#FFFFFF">NEW</text>
+
+  <!-- Card -->
+  <rect x="41" y="313" width="358" height="176" rx="10" ry="10" fill="#2C2C2E"/>
+  <!-- Row 1 -->
+  <text x="57" y="342" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="342" class="body">relay1.simplex.im</text>
+  <text x="77" y="358" class="caption">simplex.im</text>
+  <!-- Chevron -->
+  <text x="379" y="345" class="caption" font-size="14">&#x203A;</text>
+  <!-- Divider -->
+  <line x1="57" y1="370" x2="383" y2="370" stroke="#3A3A3C" stroke-width="0.5"/>
+  <!-- Row 2 -->
+  <text x="57" y="397" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="397" class="body">relay2.simplex.im</text>
+  <text x="77" y="413" class="caption">simplex.im</text>
+  <text x="379" y="400" class="caption" font-size="14">&#x203A;</text>
+  <!-- Divider -->
+  <line x1="57" y1="425" x2="383" y2="425" stroke="#3A3A3C" stroke-width="0.5"/>
+  <!-- Row 3 -->
+  <text x="57" y="452" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="452" class="body">relay3.simplex.im</text>
+  <text x="77" y="468" class="caption">simplex.im</text>
+  <text x="379" y="455" class="caption" font-size="14">&#x203A;</text>
+
+  <!-- Footer -->
+  <text x="57" y="510" class="footer-text">Relays forward messages in channels</text>
+  <text x="57" y="525" class="footer-text">you create.</text>
+
+  <!-- Test servers button -->
+  <rect x="41" y="545" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="220" y="572" class="body" fill="#0A84FF" text-anchor="middle">Test servers</text>
+
+
+  <!-- ==================== -->
+  <!-- S5.2 YourServersView  -->
+  <!-- ==================== -->
+  <text x="25" y="790" class="section-label">S5.2 YourServersView</text>
+
+  <!-- Phone frame -->
+  <rect x="25" y="805" width="390" height="700" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+  <!-- Nav bar -->
+  <text x="50" y="842" class="nav-back">&#x2039; Your servers</text>
+  <!-- Horizontal line under nav -->
+  <line x1="25" y1="855" x2="415" y2="855" stroke="#3A3A3C" stroke-width="0.5"/>
+
+  <!-- MESSAGE SERVERS section -->
+  <text x="41" y="888" class="section-header">MESSAGE SERVERS</text>
+  <rect x="41" y="898" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="925" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="925" class="body">mysmp.example.com</text>
+  <text x="379" y="925" class="caption" font-size="14">&#x203A;</text>
+
+  <!-- MEDIA & FILE SERVERS section -->
+  <text x="41" y="974" class="section-header">MEDIA &amp; FILE SERVERS</text>
+  <rect x="41" y="984" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="1011" class="green" font-size="14">&#x2713;</text>
+  <text x="77" y="1011" class="body">myxftp.example.com</text>
+  <text x="379" y="1011" class="caption" font-size="14">&#x203A;</text>
+
+  <!-- CHAT RELAYS section -->
+  <text x="41" y="1060" class="section-header">CHAT RELAYS</text>
+  <rect x="41" y="1070" width="358" height="56" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="1095" class="red" font-size="14">&#x2717;</text>
+  <text x="77" y="1095" class="body">myrelay.example.com</text>
+  <text x="77" y="1111" class="caption">example.com</text>
+  <text x="379" y="1098" class="caption" font-size="14">&#x203A;</text>
+
+  <!-- Add server button -->
+  <rect x="41" y="1146" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="220" y="1173" class="body" fill="#0A84FF" text-anchor="middle">Add server...</text>
+
+  <!-- Test servers row -->
+  <rect x="41" y="1210" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="1237" class="body" fill="#0A84FF">Test servers</text>
+
+  <!-- How to use row -->
+  <rect x="41" y="1270" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="1297" class="body" fill="#0A84FF">How to use your servers</text>
+  <text x="379" y="1297" class="caption" font-size="14">&#x203A;</text>
+
+
+  <!-- ========================== -->
+  <!-- S5.3 ChatRelayView Preset  -->
+  <!-- ========================== -->
+  <text x="25" y="1550" class="section-label">S5.3 ChatRelayView —Preset</text>
+
+  <!-- Phone frame -->
+  <rect x="25" y="1565" width="390" height="480" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+  <!-- Nav bar -->
+  <text x="50" y="1602" class="nav-back">&#x2039; relay1.simplex.im</text>
+  <line x1="25" y1="1615" x2="415" y2="1615" stroke="#3A3A3C" stroke-width="0.5"/>
+
+  <!-- PRESET RELAY section -->
+  <text x="41" y="1648" class="section-header">PRESET RELAY</text>
+  <rect x="41" y="1658" width="358" height="76" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="1685" class="body">relay1.simplex.im</text>
+  <line x1="57" y1="1698" x2="383" y2="1698" stroke="#3A3A3C" stroke-width="0.5"/>
+  <text x="57" y="1722" class="caption">Domains:</text>
+  <text x="120" y="1722" class="body">simplex.im</text>
+
+  <!-- USE RELAY section -->
+  <text x="41" y="1768" class="section-header">USE RELAY</text>
+  <rect x="41" y="1778" width="358" height="88" rx="10" ry="10" fill="#2C2C2E"/>
+  <!-- Test relay row -->
+  <text x="57" y="1807" class="body">Test relay</text>
+  <text x="370" y="1807" class="green" font-size="16">&#x2713;</text>
+  <!-- Divider -->
+  <line x1="57" y1="1822" x2="383" y2="1822" stroke="#3A3A3C" stroke-width="0.5"/>
+  <!-- Use for new channels -->
+  <text x="57" y="1851" class="body">Use for new channels</text>
+  <!-- Toggle ON -->
+  <rect x="339" y="1837" width="44" height="24" rx="12" ry="12" class="toggle-on"/>
+  <circle cx="371" cy="1849" r="10" fill="#FFFFFF"/>
+
+
+  <!-- ========================== -->
+  <!-- S5.3 ChatRelayView Custom  -->
+  <!-- ========================== -->
+  <text x="25" y="2090" class="section-label">S5.3 ChatRelayView —Custom</text>
+
+  <!-- Phone frame -->
+  <rect x="25" y="2105" width="390" height="720" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+  <!-- Nav bar -->
+  <text x="50" y="2142" class="nav-back">&#x2039; myrelay.example.com</text>
+  <line x1="25" y1="2155" x2="415" y2="2155" stroke="#3A3A3C" stroke-width="0.5"/>
+
+  <!-- YOUR RELAY ADDRESS section -->
+  <text x="41" y="2188" class="section-header">YOUR RELAY ADDRESS</text>
+  <!-- Editable text area -->
+  <rect x="41" y="2198" width="358" height="80" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="57" y="2222" class="body" fill="#8E8E93">simplex:/relay?v=1&amp;...</text>
+  <text x="57" y="2242" class="body" fill="#8E8E93">smp=myrelay.example.com</text>
+  <text x="57" y="2262" class="body" fill="#8E8E93">&amp;fp=abc123...</text>
+
+  <!-- USE RELAY section -->
+  <text x="41" y="2312" class="section-header">USE RELAY</text>
+  <rect x="41" y="2322" width="358" height="88" rx="10" ry="10" fill="#2C2C2E"/>
+  <!-- Test relay row -->
+  <text x="57" y="2351" class="body">Test relay</text>
+  <text x="370" y="2351" class="red" font-size="16">&#x2717;</text>
+  <!-- Divider -->
+  <line x1="57" y1="2366" x2="383" y2="2366" stroke="#3A3A3C" stroke-width="0.5"/>
+  <!-- Use for new channels -->
+  <text x="57" y="2395" class="body">Use for new channels</text>
+  <!-- Toggle ON -->
+  <rect x="339" y="2381" width="44" height="24" rx="12" ry="12" class="toggle-on"/>
+  <circle cx="371" cy="2393" r="10" fill="#FFFFFF"/>
+
+  <!-- QR Code placeholder -->
+  <rect x="120" y="2440" width="200" height="200" rx="10" ry="10" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1" stroke-dasharray="4,4"/>
+  <!-- QR grid pattern -->
+  <g fill="#3A3A3C">
+    <rect x="140" y="2460" width="16" height="16"/>
+    <rect x="160" y="2460" width="16" height="16"/>
+    <rect x="180" y="2460" width="16" height="16"/>
+    <rect x="200" y="2480" width="16" height="16"/>
+    <rect x="220" y="2460" width="16" height="16"/>
+    <rect x="240" y="2480" width="16" height="16"/>
+    <rect x="260" y="2460" width="16" height="16"/>
+    <rect x="280" y="2460" width="16" height="16"/>
+    <rect x="140" y="2480" width="16" height="16"/>
+    <rect x="180" y="2480" width="16" height="16"/>
+    <rect x="260" y="2480" width="16" height="16"/>
+    <rect x="280" y="2480" width="16" height="16"/>
+    <rect x="140" y="2500" width="16" height="16"/>
+    <rect x="160" y="2500" width="16" height="16"/>
+    <rect x="180" y="2500" width="16" height="16"/>
+    <rect x="220" y="2500" width="16" height="16"/>
+    <rect x="260" y="2500" width="16" height="16"/>
+    <rect x="280" y="2500" width="16" height="16"/>
+    <rect x="140" y="2520" width="16" height="16"/>
+    <rect x="200" y="2520" width="16" height="16"/>
+    <rect x="240" y="2520" width="16" height="16"/>
+    <rect x="280" y="2520" width="16" height="16"/>
+    <rect x="140" y="2540" width="16" height="16"/>
+    <rect x="160" y="2540" width="16" height="16"/>
+    <rect x="180" y="2540" width="16" height="16"/>
+    <rect x="220" y="2540" width="16" height="16"/>
+    <rect x="260" y="2540" width="16" height="16"/>
+    <rect x="280" y="2540" width="16" height="16"/>
+    <rect x="160" y="2560" width="16" height="16"/>
+    <rect x="200" y="2560" width="16" height="16"/>
+    <rect x="240" y="2560" width="16" height="16"/>
+    <rect x="280" y="2560" width="16" height="16"/>
+    <rect x="140" y="2580" width="16" height="16"/>
+    <rect x="180" y="2580" width="16" height="16"/>
+    <rect x="200" y="2580" width="16" height="16"/>
+    <rect x="220" y="2580" width="16" height="16"/>
+    <rect x="260" y="2580" width="16" height="16"/>
+    <rect x="140" y="2600" width="16" height="16"/>
+    <rect x="160" y="2600" width="16" height="16"/>
+    <rect x="180" y="2600" width="16" height="16"/>
+    <rect x="240" y="2600" width="16" height="16"/>
+    <rect x="260" y="2600" width="16" height="16"/>
+    <rect x="280" y="2600" width="16" height="16"/>
+  </g>
+  <text x="220" y="2535" class="caption" text-anchor="middle" font-size="14" fill="#8E8E93">QR Code</text>
+
+  <!-- Delete relay button -->
+  <rect x="41" y="2670" width="358" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="220" y="2697" class="body" fill="#FF453A" text-anchor="middle">Delete relay</text>
+
+
+  <!-- ========================== -->
+  <!-- S5.4 Add Server Dialog     -->
+  <!-- ========================== -->
+  <text x="25" y="2870" class="section-label">S5.4 Add Server Dialog (Action Sheet)</text>
+
+  <!-- Phone frame -->
+  <rect x="25" y="2885" width="390" height="520" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+  <!-- Dimmed background overlay -->
+  <rect x="25" y="2885" width="390" height="520" rx="20" ry="20" fill="#000000" opacity="0.5"/>
+
+  <!-- Action sheet card -->
+  <rect x="41" y="3115" width="358" height="200" rx="14" ry="14" fill="#2C2C2E"/>
+
+  <!-- Title -->
+  <text x="220" y="3150" class="caption" text-anchor="middle" font-size="13" fill="#8E8E93">Add server</text>
+  <line x1="41" y1="3162" x2="399" y2="3162" stroke="#3A3A3C" stroke-width="0.5"/>
+
+  <!-- Option 1 -->
+  <text x="220" y="3192" class="body" fill="#0A84FF" text-anchor="middle" font-size="17">Enter server manually</text>
+  <line x1="41" y1="3206" x2="399" y2="3206" stroke="#3A3A3C" stroke-width="0.5"/>
+
+  <!-- Option 2 -->
+  <text x="220" y="3236" class="body" fill="#0A84FF" text-anchor="middle" font-size="17">Add chat relay</text>
+  <line x1="41" y1="3250" x2="399" y2="3250" stroke="#3A3A3C" stroke-width="0.5"/>
+
+  <!-- Option 3 -->
+  <text x="220" y="3280" class="body" fill="#0A84FF" text-anchor="middle" font-size="17">Scan server QR code</text>
+
+  <!-- Cancel button -->
+  <rect x="41" y="3335" width="358" height="50" rx="14" ry="14" fill="#2C2C2E"/>
+  <text x="220" y="3366" font-size="17" font-weight="bold" fill="#0A84FF" text-anchor="middle" font-family="-apple-system, Helvetica, sans-serif">Cancel</text>
+
+</svg>

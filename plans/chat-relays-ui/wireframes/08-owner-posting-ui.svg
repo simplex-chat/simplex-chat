@@ -1,0 +1,454 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="2060" viewBox="0 0 440 2060">
+  <defs>
+    <style>
+      text { font-family: -apple-system, Helvetica, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- Full background -->
+  <rect width="440" height="2060" fill="#000000" rx="0"/>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5.1: Owner Compose View (full phone)                 -->
+  <!-- ============================================================ -->
+  <text x="25" y="28" font-size="16" font-weight="bold" fill="#8E8E93">&#xa7;5.1 Owner Compose View</text>
+
+  <g transform="translate(25, 44)">
+    <!-- Phone frame -->
+    <rect x="0" y="0" width="390" height="620" rx="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- STATUS BAR -->
+    <g transform="translate(0, 0)">
+      <text x="32" y="30" font-size="14" font-weight="600" fill="#FFFFFF">9:41</text>
+      <g transform="translate(310, 18)">
+        <rect x="0" y="5" width="4" height="8" rx="1" fill="#FFFFFF"/>
+        <rect x="6" y="3" width="4" height="10" rx="1" fill="#FFFFFF"/>
+        <rect x="12" y="1" width="4" height="12" rx="1" fill="#FFFFFF"/>
+        <rect x="18" y="-1" width="4" height="14" rx="1" fill="#FFFFFF"/>
+        <rect x="30" y="2" width="22" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+        <rect x="52" y="5" width="2" height="4" rx="1" fill="#FFFFFF"/>
+        <rect x="32" y="4" width="16" height="6" rx="1" fill="#30D158"/>
+      </g>
+    </g>
+
+    <!-- NAV BAR -->
+    <g transform="translate(0, 44)">
+      <rect x="0" y="0" width="390" height="44" fill="#2C2C2E"/>
+      <!-- Back arrow -->
+      <g transform="translate(16, 12)">
+        <path d="M12,0 L2,10 L12,20" fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <!-- Megaphone icon next to title -->
+      <g transform="translate(42, 8)">
+        <circle cx="12" cy="12" r="12" fill="#0A84FF" opacity="0.2"/>
+        <g fill="#0A84FF" transform="translate(5, 5) scale(0.55)">
+          <path d="M8,6 L18,2 L18,24 L8,20 Z"/>
+          <rect x="4" y="9" width="5" height="8" rx="1"/>
+          <path d="M18,2 Q28,8 28,13 Q28,18 18,24" fill="none" stroke="#0A84FF" stroke-width="2"/>
+          <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20"/>
+        </g>
+      </g>
+      <!-- Title + subtitle -->
+      <text x="72" y="16" font-size="17" font-weight="600" fill="#FFFFFF">SimpleX News</text>
+      <text x="72" y="32" font-size="12" fill="#8E8E93">Channel</text>
+      <!-- Ellipsis menu -->
+      <g transform="translate(362, 16)">
+        <circle cx="0" cy="0" r="2" fill="#0A84FF"/>
+        <circle cx="0" cy="7" r="2" fill="#0A84FF"/>
+        <circle cx="0" cy="14" r="2" fill="#0A84FF"/>
+      </g>
+      <!-- Divider -->
+      <line x1="0" y1="43" x2="390" y2="43" stroke="#3A3A3C" stroke-width="0.5"/>
+    </g>
+
+    <!-- CHAT AREA -->
+    <g transform="translate(0, 88)">
+      <!-- Date separator -->
+      <text x="195" y="30" font-size="12" fill="#8E8E93" text-anchor="middle">Today</text>
+
+      <!-- Channel message -->
+      <g transform="translate(16, 50)">
+        <!-- Channel avatar -->
+        <circle cx="16" cy="16" r="16" fill="#0A84FF" opacity="0.2"/>
+        <g fill="#0A84FF" transform="translate(7, 7) scale(0.5)">
+          <path d="M8,6 L18,2 L18,24 L8,20 Z"/>
+          <rect x="4" y="9" width="5" height="8" rx="1"/>
+          <path d="M18,2 Q28,8 28,13 Q28,18 18,24" fill="none" stroke="#0A84FF" stroke-width="2"/>
+          <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20"/>
+        </g>
+        <!-- Sender name -->
+        <text x="40" y="10" font-size="14" font-weight="600" fill="#0A84FF">SimpleX News</text>
+        <!-- Message bubble -->
+        <rect x="40" y="18" width="280" height="52" rx="12" fill="#2C2C2E"/>
+        <text x="52" y="38" font-size="14" fill="#FFFFFF">Previous channel message with</text>
+        <text x="52" y="54" font-size="14" fill="#FFFFFF">some content here...</text>
+        <!-- Timestamp + checkmark -->
+        <text x="304" y="62" font-size="11" fill="#8E8E93" text-anchor="end">3:42 PM</text>
+        <!-- Checkmark -->
+        <g transform="translate(308, 54)">
+          <path d="M0,4 L3,7 L8,0" fill="none" stroke="#8E8E93" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </g>
+
+      <!-- Second channel message -->
+      <g transform="translate(16, 140)">
+        <!-- Message bubble (no avatar, consecutive from same sender) -->
+        <rect x="40" y="0" width="260" height="52" rx="12" fill="#2C2C2E"/>
+        <text x="52" y="20" font-size="14" fill="#FFFFFF">Another channel message with</text>
+        <text x="52" y="36" font-size="14" fill="#FFFFFF">more details and info.</text>
+        <text x="284" y="44" font-size="11" fill="#8E8E93" text-anchor="end">3:45 PM</text>
+        <g transform="translate(288, 36)">
+          <path d="M0,4 L3,7 L8,0" fill="none" stroke="#8E8E93" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </g>
+
+      <!-- Large empty space for chat body -->
+      <rect x="0" y="200" width="390" height="200" fill="transparent"/>
+    </g>
+
+    <!-- BOTTOM COMPOSE AREA -->
+    <g transform="translate(0, 500)">
+      <!-- Separator -->
+      <line x1="0" y1="0" x2="390" y2="0" stroke="#3A3A3C" stroke-width="0.5"/>
+
+      <!-- "Posting as" label -->
+      <g transform="translate(16, 18)">
+        <text x="0" y="0" font-size="12" fill="#8E8E93">
+          <tspan fill="#0A84FF">&#x1F4E2;</tspan>
+          <tspan dx="4" fill="#8E8E93">Posting as SimpleX News</tspan>
+        </text>
+      </g>
+
+      <!-- Compose field background -->
+      <g transform="translate(16, 30)">
+        <!-- Attachment button -->
+        <g transform="translate(0, 10)">
+          <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+          <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
+        </g>
+        <!-- Camera button -->
+        <g transform="translate(36, 10)">
+          <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+          <g transform="translate(6, 7)">
+            <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+            <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+            <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+          </g>
+        </g>
+        <!-- Text field -->
+        <rect x="68" y="10" width="240" height="36" rx="18" fill="#3A3A3C"/>
+        <text x="84" y="33" font-size="14" fill="#8E8E93">Type a message...</text>
+        <!-- Send button -->
+        <g transform="translate(318, 10)">
+          <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
+          <g transform="translate(10, 9)">
+            <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- Home indicator -->
+      <g transform="translate(145, 86)">
+        <rect x="0" y="0" width="100" height="4" rx="2" fill="#3A3A3C"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5.2: Composing with Attachments (partial)            -->
+  <!-- ============================================================ -->
+  <text x="25" y="712" font-size="16" font-weight="bold" fill="#8E8E93">&#xa7;5.2 Composing with Attachments</text>
+
+  <g transform="translate(25, 728)">
+    <!-- Partial phone frame (bottom compose area only) -->
+    <rect x="0" y="0" width="390" height="180" rx="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- "Posting as" label -->
+    <g transform="translate(16, 22)">
+      <text x="0" y="0" font-size="12" fill="#8E8E93">
+        <tspan fill="#0A84FF">&#x1F4E2;</tspan>
+        <tspan dx="4" fill="#8E8E93">Posting as SimpleX News</tspan>
+      </text>
+    </g>
+
+    <!-- Image preview thumbnail -->
+    <g transform="translate(16, 36)">
+      <rect x="0" y="0" width="64" height="64" rx="8" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1"/>
+      <!-- Landscape icon inside thumbnail -->
+      <g transform="translate(12, 12)">
+        <g fill="#8E8E93">
+          <rect x="0" y="0" width="40" height="40" rx="4" fill="none" stroke="#8E8E93" stroke-width="0" opacity="0"/>
+          <path d="M4,36 L16,16 L24,28 L30,20 L38,36 Z" fill="#8E8E93" opacity="0.4"/>
+          <circle cx="30" cy="14" r="5" fill="#8E8E93" opacity="0.4"/>
+        </g>
+      </g>
+      <!-- Close button on thumbnail -->
+      <g transform="translate(52, -4)">
+        <circle cx="0" cy="0" r="10" fill="#3A3A3C"/>
+        <g transform="translate(-4, -4)">
+          <line x1="1" y1="1" x2="7" y2="7" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="7" y1="1" x2="1" y2="7" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Compose field -->
+    <g transform="translate(16, 110)">
+      <!-- Attachment button -->
+      <g transform="translate(0, 4)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
+      </g>
+      <!-- Camera button -->
+      <g transform="translate(36, 4)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <g transform="translate(6, 7)">
+          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+        </g>
+      </g>
+      <!-- Text field with caption text -->
+      <rect x="68" y="4" width="240" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="84" y="27" font-size="14" fill="#8E8E93">Caption for the image...</text>
+      <!-- Send button (active blue) -->
+      <g transform="translate(318, 4)">
+        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
+        <g transform="translate(10, 9)">
+          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Home indicator -->
+    <g transform="translate(145, 158)">
+      <rect x="0" y="0" width="100" height="4" rx="2" fill="#3A3A3C"/>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5.3: Owner Replying (partial)                        -->
+  <!-- ============================================================ -->
+  <text x="25" y="952" font-size="16" font-weight="bold" fill="#8E8E93">&#xa7;5.3 Owner Replying</text>
+
+  <g transform="translate(25, 968)">
+    <!-- Partial phone frame -->
+    <rect x="0" y="0" width="390" height="180" rx="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- "Posting as" label -->
+    <g transform="translate(16, 22)">
+      <text x="0" y="0" font-size="12" fill="#8E8E93">
+        <tspan fill="#0A84FF">&#x1F4E2;</tspan>
+        <tspan dx="4" fill="#8E8E93">Posting as SimpleX News</tspan>
+      </text>
+    </g>
+
+    <!-- Reply context bar -->
+    <g transform="translate(16, 34)">
+      <!-- Blue left border -->
+      <rect x="0" y="0" width="3" height="40" rx="1.5" fill="#0A84FF"/>
+      <!-- Reply content area -->
+      <rect x="3" y="0" width="335" height="40" rx="0" fill="#2C2C2E"/>
+      <rect x="332" y="0" width="6" height="40" rx="3" fill="#2C2C2E"/>
+      <!-- Reply label -->
+      <text x="12" y="15" font-size="12" font-weight="600" fill="#0A84FF">Replying to</text>
+      <!-- Reply preview text -->
+      <text x="12" y="32" font-size="13" fill="#8E8E93">Previous message text...</text>
+      <!-- Close reply button -->
+      <g transform="translate(346, 12)">
+        <circle cx="0" cy="0" r="10" fill="#3A3A3C"/>
+        <g transform="translate(-4, -4)">
+          <line x1="1" y1="1" x2="7" y2="7" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="7" y1="1" x2="1" y2="7" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Compose field -->
+    <g transform="translate(16, 86)">
+      <!-- Attachment button -->
+      <g transform="translate(0, 14)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
+      </g>
+      <!-- Camera button -->
+      <g transform="translate(36, 14)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <g transform="translate(6, 7)">
+          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+        </g>
+      </g>
+      <!-- Text field with reply text -->
+      <rect x="68" y="14" width="240" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="84" y="37" font-size="14" fill="#8E8E93">Reply text...</text>
+      <!-- Send button -->
+      <g transform="translate(318, 14)">
+        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
+        <g transform="translate(10, 9)">
+          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Home indicator -->
+    <g transform="translate(145, 158)">
+      <rect x="0" y="0" width="100" height="4" rx="2" fill="#3A3A3C"/>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5.4: Alt A - Inline Label (partial)                  -->
+  <!-- ============================================================ -->
+  <text x="25" y="1192" font-size="16" font-weight="bold" fill="#8E8E93">&#xa7;5.4 Alt A &#x2014; Inline Label</text>
+
+  <g transform="translate(25, 1208)">
+    <!-- Partial phone frame (just compose area) -->
+    <rect x="0" y="0" width="390" height="100" rx="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Compose field with inline label -->
+    <g transform="translate(16, 18)">
+      <!-- Attachment button -->
+      <g transform="translate(0, 4)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
+      </g>
+      <!-- Camera button -->
+      <g transform="translate(36, 4)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <g transform="translate(6, 7)">
+          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+        </g>
+      </g>
+      <!-- Text field with inline megaphone + channel name -->
+      <rect x="68" y="4" width="240" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="84" y="27" font-size="14" fill="#8E8E93">
+        <tspan fill="#0A84FF">&#x1F4E2; SimpleX News:</tspan>
+        <tspan fill="#8E8E93"> Type...</tspan>
+      </text>
+      <!-- Send button -->
+      <g transform="translate(318, 4)">
+        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
+        <g transform="translate(10, 9)">
+          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Home indicator -->
+    <g transform="translate(145, 76)">
+      <rect x="0" y="0" width="100" height="4" rx="2" fill="#3A3A3C"/>
+    </g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 5.6: State Variations                                -->
+  <!-- ============================================================ -->
+  <text x="25" y="1358" font-size="16" font-weight="bold" fill="#8E8E93">&#xa7;5.6 State Variations</text>
+
+  <!-- Variation 1: Admin posting (active compose) -->
+  <text x="25" y="1388" font-size="13" font-weight="600" fill="#8E8E93">Admin posting</text>
+
+  <g transform="translate(25, 1400)">
+    <!-- Partial phone frame -->
+    <rect x="0" y="0" width="390" height="130" rx="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Separator -->
+    <line x1="0" y1="10" x2="390" y2="10" stroke="#3A3A3C" stroke-width="0.5"/>
+
+    <!-- "Posting as" label -->
+    <g transform="translate(16, 30)">
+      <text x="0" y="0" font-size="12" fill="#8E8E93">
+        <tspan fill="#0A84FF">&#x1F4E2;</tspan>
+        <tspan dx="4" fill="#8E8E93">Posting as SimpleX News</tspan>
+      </text>
+    </g>
+
+    <!-- Compose field -->
+    <g transform="translate(16, 44)">
+      <!-- Attachment button -->
+      <g transform="translate(0, 10)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
+      </g>
+      <!-- Camera button -->
+      <g transform="translate(36, 10)">
+        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
+        <g transform="translate(6, 7)">
+          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
+          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+        </g>
+      </g>
+      <!-- Active text field -->
+      <rect x="68" y="10" width="240" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="84" y="33" font-size="14" fill="#8E8E93">Type a message...</text>
+      <!-- Send button (active blue) -->
+      <g transform="translate(318, 10)">
+        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
+        <g transform="translate(10, 9)">
+          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Home indicator -->
+    <g transform="translate(145, 108)">
+      <rect x="0" y="0" width="100" height="4" rx="2" fill="#3A3A3C"/>
+    </g>
+  </g>
+
+  <!-- Variation 2: Observer/member (disabled compose) -->
+  <text x="25" y="1578" font-size="13" font-weight="600" fill="#8E8E93">Observer / member (read-only)</text>
+
+  <g transform="translate(25, 1590)">
+    <!-- Partial phone frame -->
+    <rect x="0" y="0" width="390" height="110" rx="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+
+    <!-- Separator -->
+    <line x1="0" y1="10" x2="390" y2="10" stroke="#3A3A3C" stroke-width="0.5"/>
+
+    <!-- Compose field (disabled) -->
+    <g transform="translate(16, 26)">
+      <!-- Attachment button (grayed out) -->
+      <g transform="translate(0, 10)">
+        <circle cx="14" cy="14" r="14" fill="#2C2C2E"/>
+        <text x="14" y="19" font-size="16" fill="#3A3A3C" text-anchor="middle">+</text>
+      </g>
+      <!-- Camera button (grayed out) -->
+      <g transform="translate(36, 10)">
+        <circle cx="14" cy="14" r="14" fill="#2C2C2E"/>
+        <g transform="translate(6, 7)">
+          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#3A3A3C" stroke-width="1.2"/>
+          <circle cx="8" cy="8" r="3" fill="none" stroke="#3A3A3C" stroke-width="1.2"/>
+          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#3A3A3C" stroke-width="1"/>
+        </g>
+      </g>
+      <!-- Disabled text field -->
+      <rect x="68" y="10" width="240" height="36" rx="18" fill="#2C2C2E"/>
+      <text x="84" y="33" font-size="14" fill="#8E8E93" font-style="italic">you are observer</text>
+      <!-- Send button (grayed out) -->
+      <g transform="translate(318, 10)">
+        <circle cx="18" cy="18" r="18" fill="#2C2C2E"/>
+        <g transform="translate(10, 9)">
+          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#3A3A3C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="8" y1="0" x2="8" y2="18" stroke="#3A3A3C" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Home indicator -->
+    <g transform="translate(145, 86)">
+      <rect x="0" y="0" width="100" height="4" rx="2" fill="#3A3A3C"/>
+    </g>
+  </g>
+
+</svg>
