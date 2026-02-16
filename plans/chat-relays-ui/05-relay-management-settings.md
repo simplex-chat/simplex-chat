@@ -14,521 +14,384 @@
 
 ## 1. Overview
 
-**What**: User-level relay configuration screen in Network & Servers settings. Lists preset and custom relays. Supports add, remove, enable/disable, and test connectivity. Follows the existing `ProtocolServersView` / `UserServer` management pattern.
+**What**: Integrate chat relay management into the existing Network & Servers settings hierarchy. Preset relays appear in each operator's view (alongside SMP and XFTP servers). Custom relays appear in "Your servers". Follows established `UserServer` / `ProtocolServerViewLink` patterns exactly.
 
-**Why**: Channel owners need relays configured before creating channels. Relay management is infrastructure-level configuration, alongside SMP and XFTP servers.
+**Why**: Relays are operator infrastructure like SMP/XFTP servers — they belong in the same management hierarchy, not in a separate view.
 
-**User impact**: Users can see which relays are available, add custom relays, test connectivity, and manage their relay infrastructure — all from the familiar server settings area.
+**User impact**: Relay management feels natural alongside existing server configuration. No new navigation patterns to learn.
 
 ---
 
 ## 2. Prerequisites & Dependencies
 
-- **§4.1 (API Type Updates)**: `UserChatRelay` type must exist in Swift.
-- **Backend §2.5 (`APITestChatRelay`)**: Test command must be implemented for the "Test relays" button to work. Can stub the button if backend isn't ready.
-- **Backend API**: Commands for listing, adding, removing, updating relays must exist. These likely parallel the `APIGetUserServers` / `APISetUserServers` pattern.
-- **Preset relays**: `Operators/Presets.hs` has 3 placeholder relays. Real addresses needed for production (§2.6).
+- **§4.1 (API Type Updates)**: `UserChatRelay` type, `chatRelays` field on `UserOperatorServers`.
+- **Backend `APITestChatRelay`** (§2.5): For test button. Can stub if not ready.
+- **Preset relays in `Operators/Presets.hs`**: Real addresses needed (§2.6).
+- **`chatRelays` already on `UserOperatorServers`**: Field exists (`[UserChatRelay]? = nil`), loaded/saved alongside `smpServers`/`xftpServers`.
 
 ---
 
 ## 3. Data Model
 
-### 3.1 UserChatRelay (from Operators.hs:262)
+### Existing Hierarchy
 
-```haskell
-data UserChatRelay' s = UserChatRelay
-  { chatRelayId :: DBEntityId' s,
-    address :: ShortLinkContact,
-    name :: Text,
-    domains :: [Text],
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: Bool,
-    deleted :: Bool
-  }
+```
+UserOperatorServers
+├── operator: ServerOperator?     // nil = "Your servers"
+├── smpServers: [UserServer]
+├── xftpServers: [UserServer]
+└── chatRelays: [UserChatRelay]?  // NEW — same level as SMP/XFTP
 ```
 
-Swift:
-```swift
-public struct UserChatRelay: Identifiable, Decodable, Equatable {
-    public var chatRelayId: Int64
-    public var address: String       // ShortLinkContact serialized
-    public var name: String
-    public var domains: [String]
-    public var preset: Bool
-    public var tested: Bool?         // nil=untested, true=pass, false=fail
-    public var enabled: Bool
-    public var deleted: Bool
+Each operator's `UserOperatorServers` contains its preset relays (e.g., SimpleX Chat preset relays). The `operator == nil` slot contains user-added custom relays.
 
-    public var id: Int64 { chatRelayId }
+### UserChatRelay (already implemented in §4.1)
+
+```swift
+struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
+    var chatRelayId: Int64?
+    var address: String
+    var name: String
+    var domains: [String]
+    var preset: Bool
+    var tested: Bool?       // nil=untested, true=pass, false=fail
+    var enabled: Bool
+    var deleted: Bool
+    var createdAt = Date()
+    // id, ==, CodingKeys — matching UserServer pattern
 }
 ```
 
-### 3.2 PresetOperator Context
+### Relay Test Status Display
 
-Relays are stored under operators, similar to SMP/XFTP servers (`Operators.hs:281-289`):
-```haskell
-data PresetOperator = PresetOperator
-  { ...
-    chatRelays :: [NewUserChatRelay],
-    useChatRelays :: Int
-  }
+Same as `UserServer`:
 ```
-
-### 3.3 API Commands (Expected)
-
-Based on existing server management patterns:
-```swift
-// List user's chat relays
-func apiGetUserChatRelays() async throws -> [UserChatRelay]
-
-// Update user's chat relays (add/remove/modify)
-func apiSetUserChatRelays(relays: [UserChatRelay]) async throws -> [UserChatRelay]
-
-// Test a specific relay
-func apiTestChatRelay(chatRelayId: Int64) async throws -> Maybe<ProtocolTestFailure>
-```
-
-### 3.4 Relay Status Display Mapping
-
-```
-tested == nil   → No icon (untested)
-tested == true  → Green checkmark (passed)
-tested == false → Red X (failed)
-enabled == false → Greyed out row
-deleted == true  → Not shown in UI
+tested == nil   → no icon (untested)
+tested == true  → green checkmark
+tested == false → red X
+enabled == false → slash.circle in secondary
 ```
 
 ---
 
 ## 4. Implementation Plan
 
-### 4.1 `Shared/Views/UserSettings/NetworkAndServers/NetworkAndServers.swift` — Add Entry Point
+### 4.1 `OperatorView.swift` — Add Relay Sections
 
-**Location**: After XFTP servers section, before advanced settings
+Add "Chat relays" and "Added chat relays" sections after the XFTP sections. Pattern: identical to how "Message servers" (preset SMP) and "Added message servers" (custom SMP) are rendered.
 
-**Change**: Add NavigationLink to ChatRelaysView:
-```swift
-Section {
-    NavigationLink {
-        ChatRelaysView()
-    } label: {
-        HStack {
-            Image(systemName: "megaphone")
-                .frame(width: 24, alignment: .center)
-            Text("Chat relays")
-        }
-    }
-} header: {
-    Text("Chat relays")
-} footer: {
-    Text("Relays forward messages in channels you create.")
-}
+```
+Existing OperatorView sections:
+  Operator info + use toggle
+  Use for messages (SMP roles)
+  Message servers (preset SMP)
+  Added message servers (custom SMP)
+  Use for files (XFTP roles)
+  Media & file servers (preset XFTP)
+  Added media & file servers (custom XFTP)
+  Test all
+
+New sections (after XFTP, before Test all):
+  Chat relays (preset relays, where preset && !deleted)
+  Added chat relays (custom relays under operator, where !preset && !deleted)
 ```
 
-### 4.2 `Shared/Views/UserSettings/NetworkAndServers/ChatRelaysView.swift` — New File
+Relay rows use a new `ChatRelayViewLink` (analogous to `ProtocolServerViewLink`) that navigates to `ChatRelayView` (analogous to `ProtocolServerView`).
 
-**Pattern**: Follows `YourServersView` (ProtocolServersView.swift:14-186) structure:
+### 4.2 `YourServersView` (in ProtocolServersView.swift) — Add Relay Section
 
-```swift
-struct ChatRelaysView: View {
-    @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var theme: AppTheme
-    @Environment(\.editMode) private var editMode
-    @State private var relays: [UserChatRelay] = []
-    @State private var testing = false
-    @State private var showAddRelay = false
-    @State private var newRelayNavLinkActive = false
-    @State private var showScanRelay = false
-    @State private var alert: SomeAlert?
+Add "Chat relays" section after XFTP section. Shows custom relays from the `operator == nil` slot. Swipe-to-delete, same pattern as `deleteSMPServer`/`deleteXFTPServer`.
 
-    var body: some View {
-        relaysView()
-            .opacity(testing ? 0.4 : 1)
-            .overlay {
-                if testing {
-                    ProgressView().scaleEffect(2)
-                }
-            }
-            .allowsHitTesting(!testing)
-            .onAppear { loadRelays() }
-            .navigationTitle("Chat relays")
-            .alert(item: $alert) { $0.alert }
-    }
+### 4.3 `ChatRelayViewLink` — New View (in ProtocolServersView.swift or new file)
 
-    private func relaysView() -> some View {
-        List {
-            // PRESET RELAYS SECTION
-            presetRelaysSection()
+Analogous to `ProtocolServerViewLink`. NavigationLink row showing:
+- Relay name (primary text)
+- Relay domains (caption, secondary)
+- Status icon: `showTestStatus` / duplicate/disabled indicators
 
-            // YOUR RELAYS SECTION
-            customRelaysSection()
+### 4.4 `ChatRelayView` — New View
 
-            // ADD RELAY
-            addRelaySection()
+Analogous to `ProtocolServerView`. Two modes:
+- **Preset**: Read-only address, test + enable toggle
+- **Custom**: Editable address, test + enable toggle + delete
 
-            // TEST & INFO
-            testSection()
-        }
-    }
-}
-```
+**Note**: Unlike `ProtocolServerView` (which has no delete button — deletion is via swipe in parent list), `ChatRelayView` adds an explicit "Delete relay" button in custom mode for clarity. This is a minor deviation from the pattern.
 
-**Key sections**:
+### 4.5 `TestServersButton` — Extend
 
-**Preset relays**:
-```swift
-private func presetRelaysSection() -> some View {
-    let presetRelays = relays.filter { $0.preset && !$0.deleted }
-    return Group {
-        if !presetRelays.isEmpty {
-            Section(header: Text("SimpleX Chat relays")) {
-                ForEach(presetRelays) { relay in
-                    relayRow(relay)
-                }
-            }
-        }
-    }
-}
-```
+`TestServersButton` currently tests SMP and XFTP servers. Extend to also test chat relays. Add `chatRelays: Binding<[UserChatRelay]>?` parameter (optional, nil when no relays). Uses `apiTestChatRelay` (new API, analogous to `testProtoServer`).
 
-**Custom relays**:
-```swift
-private func customRelaysSection() -> some View {
-    let customRelays = relays.filter { !$0.preset && !$0.deleted }
-    return Group {
-        if !customRelays.isEmpty {
-            Section(header: Text("Your relays")) {
-                ForEach(customRelays) { relay in
-                    relayRow(relay)
-                }
-                .onDelete { indexSet in
-                    deleteCustomRelays(indexSet)
-                }
-            }
-        }
-    }
-}
-```
+### 4.6 `EditButton` Toolbar — Extend
 
-**Relay row**:
-```swift
-private func relayRow(_ relay: UserChatRelay) -> some View {
-    HStack {
-        VStack(alignment: .leading) {
-            Text(relay.name)
-                .foregroundColor(relay.enabled ? theme.colors.onBackground : theme.colors.secondary)
-            if !relay.domains.isEmpty {
-                Text(relay.domains.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundColor(theme.colors.secondary)
-            }
-        }
-        Spacer()
-        // Test status icon
-        if let tested = relay.tested {
-            Image(systemName: tested ? "checkmark" : "xmark")
-                .foregroundColor(tested ? .green : .red)
-        }
-    }
-}
-```
+Both `OperatorView` and `YourServersView` show `EditButton()` only when non-preset/non-deleted SMP or XFTP servers exist. Extend visibility condition to also check for non-preset/non-deleted relays.
 
-### 4.3 `Shared/Views/UserSettings/NetworkAndServers/ChatRelayView.swift` — New File
+### 4.7 Add Relay Flow
 
-Individual relay detail/edit view. Shows:
-- Relay name
-- Relay address
-- Domains
-- Enable/disable toggle
-- Test button
-- Delete button (custom relays only)
+Extend `YourServersView`'s existing "Add server" confirmationDialog (currently: "Enter server manually" / "Scan server QR code") with a third option "Add chat relay". This navigates to a relay-specific address entry view. Alternatively, add a separate "Add relay" button in the relay section. QR scan via existing `ScanProtocolServer`, extended to detect relay addresses.
 
-```swift
-struct ChatRelayView: View {
-    @Binding var relay: UserChatRelay
-    var onDelete: (() -> Void)?
+### 4.8 Validation
 
-    var body: some View {
-        List {
-            Section {
-                HStack {
-                    Text("Name")
-                    Spacer()
-                    Text(relay.name)
-                        .foregroundColor(.secondary)
-                }
-                HStack {
-                    Text("Address")
-                    Spacer()
-                    Text(relay.address)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-            }
+`validateServers_` already handles `UserServersError.duplicateChatRelayName` and `duplicateChatRelayAddress`. The relay section rows should show duplicate indicators same as SMP/XFTP.
 
-            Section {
-                Toggle("Enabled", isOn: $relay.enabled)
-            }
-
-            Section {
-                Button("Test relay") { testRelay() }
-                    .disabled(!relay.enabled)
-            }
-
-            if !relay.preset, let onDelete {
-                Section {
-                    Button("Delete relay", role: .destructive) { onDelete() }
-                }
-            }
-        }
-        .navigationTitle(relay.name)
-    }
-}
-```
-
-### 4.4 `Shared/Model/SimpleXAPI.swift` — API Functions
-
-```swift
-func apiGetUserChatRelays() async throws -> [UserChatRelay] {
-    let userId = try currentUserId("apiGetUserChatRelays")
-    let r = await chatSendCmd(.apiGetUserChatRelays(userId: userId))
-    if case let .userChatRelays(_, relays) = r { return relays }
-    throw r
-}
-
-func apiTestChatRelay(chatRelayId: Int64) async throws -> Maybe<ProtocolTestFailure> {
-    // ...
-}
-```
-
-### 4.5 `SimpleXChat/ChatTypes.swift` — UserChatRelay Type
-
-Add `UserChatRelay` struct as defined in §3.1.
+**Note**: Relay duplicate errors currently fall into the `default: return nil` arm of `globalError`/`globalSMPError`/`globalXFTPError`, so they don't produce global banner errors. A `globalChatRelayError` computed property may be needed, or relay errors can remain inline-only.
 
 ---
 
 ## 5. Wireframes
 
-### 5.1 Primary Design — Relay List
+### 5.1 OperatorView — With Relay Section
+
+Shown inside an operator view (e.g., "SimpleX Chat servers"). New relay sections appear after XFTP servers.
 
 ```
-┌─────────────────────────────────┐
-│  < Chat relays                  │
-├─────────────────────────────────┤
-│  SIMPLEX CHAT RELAYS            │
-│                                 │
-│  relay1.simplex.im         [*]  │
-│  simplex.im                     │
-│                                 │
-│  relay2.simplex.im         [*]  │
-│  simplex.im                     │
-│                                 │
-│  relay3.simplex.im         [*]  │
-│  simplex.im                     │
-│                                 │
-├─────────────────────────────────┤
-│  YOUR RELAYS                    │
-│                                 │
-│  myrelay.example.com       [!]  │
-│  example.com                    │
-│                                 │
-│  + Add relay...                 │
-│                                 │
-├─────────────────────────────────┤
-│  Test all relays                │
-│  How to use chat relays       > │
-│                                 │
-│  Chat relays forward messages   │
-│  in channels you create.        │
-└─────────────────────────────────┘
-
-Legend:
-  [*] = green checkmark (test passed)
-  [!] = red X (test failed)
-  (no icon) = untested
+┌──────────────────────────────────────┐
+│  < SimpleX Chat servers              │
+├──────────────────────────────────────┤
+│  OPERATOR                            │
+│  Use servers                  [ON ]  │
+│                                      │
+├──────────────────────────────────────┤
+│  USE FOR MESSAGES                    │
+│  To receive                   [ON ]  │
+│  For private routing          [ON ]  │
+│                                      │
+├──────────────────────────────────────┤
+│  MESSAGE SERVERS                     │
+│  ✅  smp1.simplex.im                 │
+│  ✅  smp2.simplex.im                 │
+│                                      │
+├──────────────────────────────────────┤
+│  USE FOR FILES                       │
+│  To send                      [ON ]  │
+│                                      │
+├──────────────────────────────────────┤
+│  MEDIA & FILE SERVERS                │
+│  ✅  xftp1.simplex.im                │
+│  ✅  xftp2.simplex.im                │
+│                                      │
+├──────────────────────────────────────┤
+│  CHAT RELAYS                         │
+│  ✅  relay1.simplex.im               │
+│      simplex.im                      │
+│  ✅  relay2.simplex.im               │
+│      simplex.im                      │
+│  ✅  relay3.simplex.im               │
+│      simplex.im                      │
+│                                      │
+│  Relays forward messages in          │
+│  channels you create.                │
+│                                      │
+├──────────────────────────────────────┤
+│  Test servers                        │
+└──────────────────────────────────────┘
 ```
 
-### 5.2 Primary Design — Individual Relay
+**Notes**:
+- "CHAT RELAYS" section placed after XFTP, before "Test servers"
+- Each relay row shows name (primary) + domains (caption) + test status icon
+- Relay rows navigate to `ChatRelayView` on tap (like SMP/XFTP rows → `ProtocolServerView`)
+- No relay roles toggle (unlike SMP/XFTP which have storage/proxy roles)
+- Footer explains relay purpose
+- If user adds custom relays under this operator, an "ADDED CHAT RELAYS" section appears below (same pattern as "Added message servers" / "Added media & file servers")
+
+### 5.2 YourServersView — With Relay Section
+
+"Your servers" view shows custom relays alongside custom SMP/XFTP servers.
 
 ```
-┌─────────────────────────────────┐
-│  < relay1.simplex.im            │
-├─────────────────────────────────┤
-│  Name       relay1.simplex.im   │
-│  Address    simplex:/a/...      │
-│  Domains    simplex.im          │
-│                                 │
-├─────────────────────────────────┤
-│  Enabled               [ON ]   │
-│                                 │
-├─────────────────────────────────┤
-│  Test relay                     │
-│  (Result: Passed / Failed)      │
-│                                 │
-└─────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  < Your servers                      │
+├──────────────────────────────────────┤
+│  MESSAGE SERVERS                     │
+│  ✅  mysmp.example.com               │
+│                                      │
+├──────────────────────────────────────┤
+│  MEDIA & FILE SERVERS                │
+│  ✅  myxftp.example.com              │
+│                                      │
+├──────────────────────────────────────┤
+│  CHAT RELAYS                         │
+│  ❌  myrelay.example.com             │
+│      example.com                     │
+│                                      │
+├──────────────────────────────────────┤
+│  Add server...                       │
+│                                      │
+├──────────────────────────────────────┤
+│  Test servers                        │
+│  How to use your servers          >  │
+└──────────────────────────────────────┘
 ```
 
-### 5.3 Primary Design — Add Relay Dialog
+**Notes**:
+- Custom relays in "CHAT RELAYS" section, same level as message/file servers
+- Swipe-to-delete on relay rows (same as custom SMP/XFTP)
+- "Add server..." dialog gains a relay option (see §5.4)
 
+### 5.3 ChatRelayView — Individual Relay Detail
+
+Follows `ProtocolServerView` pattern.
+
+**Preset relay** (read-only address):
 ```
-         ┌───────────────────────┐
-         │  Add relay            │
-         │                       │
-         │  Enter relay manually │
-         │  Scan relay QR code   │
-         │                       │
-         │  Cancel               │
-         └───────────────────────┘
-```
-
-### 5.4 Alternative Design A — Flat List (No Sections)
-
-All relays in a single list without preset/custom separation:
-
-```
-┌─────────────────────────────────┐
-│  Chat relays                    │
-├─────────────────────────────────┤
-│  relay1.simplex.im  preset [*]  │
-│  relay2.simplex.im  preset [*]  │
-│  relay3.simplex.im  preset [*]  │
-│  myrelay.example.com       [!]  │
-│                                 │
-│  + Add relay...                 │
-│  Test all relays                │
-└─────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  < relay1.simplex.im                 │
+├──────────────────────────────────────┤
+│  PRESET RELAY                        │
+│  relay1.simplex.im                   │
+│  Domains: simplex.im                 │
+│                                      │
+├──────────────────────────────────────┤
+│  USE RELAY                           │
+│  Test relay                     ✅   │
+│  Use for new channels         [ON ]  │
+│                                      │
+└──────────────────────────────────────┘
 ```
 
-### 5.5 Alternative Design B — Inline in NetworkAndServers
-
-Instead of a separate view, show relays inline in the NetworkAndServers view:
-
+**Custom relay** (editable):
 ```
-┌─────────────────────────────────┐
-│  Network & servers              │
-├─────────────────────────────────┤
-│  SMP SERVERS                    │
-│  ...                            │
-├─────────────────────────────────┤
-│  XFTP SERVERS                   │
-│  ...                            │
-├─────────────────────────────────┤
-│  CHAT RELAYS                    │
-│  relay1.simplex.im         [*]  │
-│  relay2.simplex.im         [*]  │
-│  relay3.simplex.im         [*]  │
-│  + Add relay...                 │
-│  Test relays                    │
-├─────────────────────────────────┤
-│  ADVANCED                       │
-│  ...                            │
-└─────────────────────────────────┘
-```
-
-### 5.6 State Variations
-
-**No relays at all** (unlikely — presets should exist):
-```
-┌─────────────────────────────────┐
-│  Chat relays                    │
-├─────────────────────────────────┤
-│                                 │
-│  No relays configured.          │
-│                                 │
-│  + Add relay...                 │
-│                                 │
-│  Chat relays are needed to      │
-│  create channels.               │
-└─────────────────────────────────┘
+┌──────────────────────────────────────┐
+│  < myrelay.example.com              │
+├──────────────────────────────────────┤
+│  YOUR RELAY ADDRESS                  │
+│  ┌──────────────────────────────┐   │
+│  │ simplex:/...                 │   │
+│  └──────────────────────────────┘   │
+│                                      │
+├──────────────────────────────────────┤
+│  USE RELAY                           │
+│  Test relay                     ❌   │
+│  Use for new channels         [ON ]  │
+│                                      │
+├──────────────────────────────────────┤
+│  ┌──────────────────────────────┐   │
+│  │                              │   │
+│  │        [QR Code]             │   │
+│  │                              │   │
+│  └──────────────────────────────┘   │
+│                                      │
+├──────────────────────────────────────┤
+│  🗑  Delete relay                    │
+│                                      │
+└──────────────────────────────────────┘
 ```
 
-**Testing in progress**:
+### 5.4 Add Server Dialog — Extended
+
+Existing "Add server" confirmationDialog (currently: "Enter server manually" / "Scan server QR code") gains a third option:
+
 ```
-┌─────────────────────────────────┐
-│  Chat relays                    │
-├─────────────────────────────────┤
-│  (dimmed, non-interactive)      │
-│                                 │
-│        ┌──────┐                │
-│        │ [~~] │                │
-│        │      │  Testing...    │
-│        └──────┘                │
-│                                 │
-│  relay1.simplex.im         [*]  │
-│  relay2.simplex.im         [ ]  │
-│  relay3.simplex.im         [ ]  │
-└─────────────────────────────────┘
+         ┌──────────────────────────┐
+         │  Add server              │
+         │                          │
+         │  Enter server manually   │
+         │  Add chat relay          │
+         │  Scan server QR code     │
+         │                          │
+         │  Cancel                  │
+         └──────────────────────────┘
 ```
 
-**Test failures alert**:
+- "Enter server manually" → existing `NewServerView` (SMP/XFTP address entry, unchanged)
+- "Add chat relay" → relay-specific address entry view (new)
+- "Scan server QR code" → existing `ScanProtocolServer`, extended to detect relay addresses
+
+### 5.5 Alt A — Separate ChatRelaysView
+
+Instead of integrating into OperatorView/YourServersView, a standalone "Chat relays" NavigationLink in NetworkAndServers:
+
 ```
-         ┌───────────────────────┐
-         │  Tests failed!        │
-         │                       │
-         │  Some relays failed   │
-         │  the test:            │
-         │  myrelay.example.com: │
-         │  Connection refused   │
-         │                       │
-         │       [OK]            │
-         └───────────────────────┘
+NetworkAndServers:
+├── SimpleX Chat        >  (OperatorView — SMP + XFTP only)
+├── Flux                >  (OperatorView — SMP + XFTP only)
+├── Your servers        >  (YourServersView — SMP + XFTP only)
+├── Chat relays         >  (NEW standalone view)
+│   └── ChatRelaysView
+│       ├── SIMPLEX CHAT RELAYS (preset)
+│       ├── YOUR RELAYS (custom)
+│       ├── Add relay...
+│       └── Test relays
+├── Advanced settings   >
+└── Save servers
 ```
+
+### 5.6 State Variation — Testing in Progress
+
+Same pattern as existing server testing — dimmed list with spinner overlay:
+
+```
+┌──────────────────────────────────────┐
+│  (dimmed, non-interactive)           │
+│                                      │
+│            ┌──────┐                  │
+│            │ [~~] │  Testing...      │
+│            └──────┘                  │
+│                                      │
+│  CHAT RELAYS                         │
+│  ✅  relay1.simplex.im               │
+│      relay2.simplex.im               │
+│      relay3.simplex.im               │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+### 5.7 State Variation — Operator Disabled
+
+When operator toggle "Use servers" is OFF, all server sections (including relays) are hidden. Same existing behavior — `OperatorView` conditionally shows sections only when `operator.enabled`.
 
 ---
 
 ## 6. Design Rationale
 
-**Separate ChatRelaysView (Primary) > Flat list (Alt A)**:
-- Sections clearly distinguish preset (managed by SimpleX) from custom (user-added)
-- Follows existing ProtocolServersView pattern — consistency
-- Preset relays may have different UI affordances (no delete, maybe no disable)
+### Integrated into operator views (Primary) > Standalone ChatRelaysView (Alt A)
 
-**Separate view (Primary) > Inline in NetworkAndServers (Alt B)**:
-- NetworkAndServers is already dense — adding relay rows inline would make it too long
-- Separate view provides room for per-relay details, add/test actions
-- Follows existing pattern: SMP/XFTP each have their own sub-views
+- Relays are operator infrastructure, same category as SMP/XFTP
+- `chatRelays` field already lives on `UserOperatorServers` alongside `smpServers`/`xftpServers`
+- Keeps operator views as single source of truth for all operator services
+- No new NavigationLink in the already-dense NetworkAndServers root
+- Users configure everything per-operator in one place
+- Follows principle: don't introduce new navigation patterns when existing ones work
 
-**Following ProtocolServersView pattern**:
+### Following ProtocolServerViewLink / ProtocolServerView pattern
+
 - Proven UX pattern in the app
-- Users familiar with the interaction model
-- Code reuse potential (test button, add dialog, row rendering)
-- Same `tested: Bool?` status indicator pattern
+- Same `tested: Bool?` status indicator
+- Same preset/custom distinction
+- Same soft-delete lifecycle
+- Same test button + enable toggle
+
+### Relay rows show name + domains (not raw address)
+
+- `UserChatRelay` has `name` and `domains` fields (unlike `UserServer` which only has `server` address string)
+- Name is more readable than the `simplex:/a/...` address
+- Domains shown as caption (like subtitle) for context
+- Matches how operators show `serverDomains`
 
 ---
 
 ## 7. Edge Cases
 
-1. **Deleting a relay with active channels**: Backend checks `group_relays` references. If relay is used by active channels, mark as `deleted` but keep functional. UI should warn: "This relay is used by N channels. It will continue serving existing channels."
-
-2. **Disabling all relays**: Allowed, but channel creation will be blocked (no enabled relays). Show info text: "Enable at least one relay to create channels."
-
-3. **Adding duplicate relay**: Backend should reject duplicate addresses. Show error message.
-
-4. **Invalid relay address**: Validate format before submitting. Show inline error for malformed addresses.
-
-5. **Test timeout**: Relay test may take time. Show spinner on the row being tested. Timeout after reasonable period and mark as failed.
-
-6. **Preset relay unavailable**: If a preset relay fails testing, show the failure but don't allow deletion. User can disable it and use alternatives.
-
-7. **Network offline**: Test buttons disabled or tests fail immediately with "No network" error.
-
-8. **Multiple users**: Relay configuration is per-user (follows `UserServer` pattern). Each user profile has independent relay settings.
+1. **chatRelays is nil**: Guard on optional — show no relay section if nil. Backend may not yet return relays for older protocol versions.
+2. **Deleting relay used by channels**: Backend checks references. UI warns: "This relay is used by active channels."
+3. **Disabling all relays across all operators**: `UserServersWarning.noChatRelays` is a soft warning (not a hard error). Currently warnings are not yet processed in `validateServers_` (`// TODO [relays] process warnings`). When implemented, this should show a warning banner but not prevent saving.
+4. **Adding duplicate relay**: `UserServersError.duplicateChatRelayAddress` — show inline error indicator on the row (same as duplicate SMP/XFTP).
+5. **Test timeout**: Spinner on row being tested. Timeout → mark as failed.
+6. **Preset relay failing test**: Show failure but don't allow deletion. User can disable.
+7. **Multiple operators with relays**: Each operator's relays appear in their own OperatorView. This is the natural per-operator grouping.
 
 ---
 
 ## 8. Testing Notes
 
-1. **Navigation**: Settings > Network & Servers > Chat relays — verify NavigationLink works
-2. **Preset relays**: Verify 3 preset relays appear in "SimpleX Chat relays" section
-3. **Add custom relay**: Add via manual entry — verify appears in "Your relays" section
-4. **Add via QR**: Scan relay QR code — verify adds to list
-5. **Delete custom**: Swipe-to-delete custom relay — verify removed
-6. **Delete preset**: Verify preset relays cannot be deleted
-7. **Enable/disable**: Toggle relay — verify visual state change
-8. **Test single**: Test individual relay — verify checkmark/X appears
-9. **Test all**: Tap "Test all relays" — verify all enabled relays tested, spinner shown
-10. **Test failure**: Mock relay test failure — verify red X and alert
-11. **Empty state**: Remove all custom relays, disable all presets — verify empty state message
-12. **Per-user isolation**: Switch user profiles — verify independent relay configurations
+1. **Operator view**: Verify relay section appears after XFTP in OperatorView when operator has relays
+2. **Your servers**: Verify relay section appears in YourServersView for custom relays
+3. **Preset relays**: Cannot delete, can disable, can test
+4. **Custom relays**: Can delete (swipe), can disable, can test, can edit address
+5. **Add relay**: "Add server" dialog includes "Chat relay" option
+6. **Test single relay**: Test button in ChatRelayView — checkmark/X appears
+7. **Test all**: "Test servers" button tests SMP + XFTP + relays
+8. **Operator disabled**: Relay section hidden when operator toggle is OFF
+9. **chatRelays nil**: No relay section shown, no crash
+10. **Validation**: Duplicate relay name/address shows inline error
+11. **Save flow**: Relay changes included in "Save servers" alongside SMP/XFTP changes
