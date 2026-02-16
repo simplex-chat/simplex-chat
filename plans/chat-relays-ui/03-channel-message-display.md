@@ -14,249 +14,77 @@
 
 ## 1. Overview
 
-**What**: Handle the `CIChannelRcv` chat item direction in iOS message rendering. Channel messages display the channel name and icon as the sender (not a member name), using the existing `showGroupAsSender` rendering path.
+**What**: Handle `CIChannelRcv` direction in iOS message rendering. Channel messages display the channel name and icon as sender via the existing `showGroupAsSender` path.
 
-**Why**: `CIChannelRcv` is a new `CIDirection` case sent by the backend for messages received in channels. Without handling it, channel messages would crash or be invisible.
+**Why**: Without handling, channel messages would crash or fall back to `CIInvalidJSON`.
 
-**User impact**: Messages in channels show the channel's avatar and name as the sender, making it clear the message is "from the channel" rather than from an individual member.
+**User impact**: Messages in channels show the channel's avatar and name as sender, making it clear messages are "from the channel" rather than from an individual.
 
 ---
 
 ## 2. Prerequisites & Dependencies
 
-- **Backend**: `CIChannelRcv` already exists in Haskell (`Messages.hs:290`). Backend sends it. Swift just needs to decode it.
-- **§4.2 (Channel Visual Distinction)**: Should be done first so the channel icon is correct in message avatars.
-- **§4.1 (API Type Updates)**: `.channelRcv` must be added to Swift `CIDirection` enum.
-- **Can start immediately** (the type addition is small and self-contained).
+- **§4.2 (Channel Visual Distinction)**: Channel icon should be correct in message avatars.
+- **§4.1 (API Type Updates)**: `.channelRcv` added to Swift `CIDirection` (done).
+- **Can start immediately** — type addition is self-contained.
 
 ---
 
 ## 3. Data Model
 
-### 3.1 CIDirection in Haskell (Messages.hs)
+### CIDirection
 
-```haskell
-data CIDirection (c :: MsgDirectionI) where
-  CIDirectSnd :: CIDirection 'MDSnd
-  CIDirectRcv :: CIDirection 'MDRcv
-  CIGroupSnd :: CIDirection 'MDSnd
-  CIGroupRcv :: GroupMember -> CIDirection 'MDRcv
-  CIChannelRcv :: CIDirection 'MDRcv          -- NEW: no member attached
-  CILocalSnd :: CIDirection 'MDSnd
-  CILocalRcv :: CIDirection 'MDRcv
-```
+Haskell `CIChannelRcv` has **no `GroupMember` parameter** — message is from the channel itself.
 
-Key difference from `CIGroupRcv`: `CIChannelRcv` has **no `GroupMember` parameter**. The message is from the channel itself, not from any particular member.
-
-### 3.2 CIDirection in Swift (ChatTypes.swift ~line 3432)
-
-Current Swift enum:
+Swift (already added in §4.1):
 ```swift
-public enum CIDirection: Decodable, Hashable {
-    case directSnd
-    case directRcv
-    case groupSnd
-    case groupRcv(groupMember: GroupMember)
-    case localSnd
-    case localRcv
-}
+case channelRcv  // no associated member
 ```
 
-Add:
-```swift
-    case channelRcv  // NEW — no associated member
-```
+### Rendering Path
 
-### 3.3 CIMeta.showGroupAsSender
-
-Already exists (`ChatTypes.swift ~line 3477`):
-```swift
-public struct CIMeta: Decodable, Hashable {
-    // ...
-    public var showGroupAsSender: Bool
-    // ...
-}
-```
-
-For `CIChannelRcv` items, the backend sets `showGroupAsSender = true`. The existing rendering path in ChatView.swift already handles this flag — it shows the group avatar and group name instead of a member avatar and member name.
-
-### 3.4 Message Rendering Data Flow
-
-```
-Backend sends ChatItem with:
-  chatDir = CIChannelRcv
-  meta.showGroupAsSender = true
-
-iOS receives, decodes:
-  ci.chatDir = .channelRcv
-  ci.meta.showGroupAsSender = true
-
-ChatView.swift message rendering:
-  Currently only enters group avatar/name path when:
-    case let .groupRcv(member) = ci.chatDir
-  Must ALSO enter that path when:
-    case .channelRcv = ci.chatDir
-
-  Inside the path, showGroupAsSender already triggers:
-    - Group profile image (or chatIconName fallback)
-    - Group display name
-    - "group" role label (may need adjustment for channels)
-```
+Backend sets `showGroupAsSender = true` for `CIChannelRcv` items. The existing rendering in ChatView.swift (lines 1829-1895) shows group avatar + name when this flag is set. `.channelRcv` items should enter this same code path.
 
 ---
 
 ## 4. Implementation Plan
 
-### 4.1 `SimpleXChat/ChatTypes.swift` — Add `.channelRcv` to CIDirection
+### 4.1 `ChatView.swift` — Message Rendering (~line 1829)
 
-**Location**: `CIDirection` enum (~line 3432)
-
-**Change**:
-```swift
-public enum CIDirection: Decodable, Hashable {
-    case directSnd
-    case directRcv
-    case groupSnd
-    case groupRcv(groupMember: GroupMember)
-    case channelRcv    // NEW
-    case localSnd
-    case localRcv
-}
-```
-
-**Decoding**: Update the `init(from decoder:)` to handle `"channelRcv"` tag. Follow existing pattern:
-```swift
-// In CIDirection's Decodable init:
-case "channelRcv": self = .channelRcv
-```
-
-**Hashable/Equatable**: `.channelRcv` has no associated values, so synthesized conformance works.
-
-### 4.2 `SimpleXChat/ChatTypes.swift` — CIDirection Computed Properties
-
-Several computed properties on `CIDirection` need updating:
-
-```swift
-// sent property (returns Bool)
-public var sent: Bool {
-    switch self {
-    case .directSnd, .groupSnd, .localSnd: return true
-    case .directRcv, .groupRcv, .localRcv: return false
-    case .channelRcv: return false  // NEW
-    }
-}
-```
-
-Check all `switch` statements on `CIDirection` in the file and add `.channelRcv` handling. It should behave like `.groupRcv` in most cases (it's a received message in a group context).
-
-### 4.3 `Shared/Views/Chat/ChatView.swift` — Message Rendering
-
-**Location**: Group message rendering block (~lines 1829-1895)
-
-**Current code** (simplified):
-```swift
-if case let .groupRcv(member) = ci.chatDir,
-   case let .group(groupInfo, _) = chat.chatInfo {
-    // Shows member/group avatar depending on showGroupAsSender
-    HStack(alignment: .top, spacing: 0) {
-        // Avatar logic
-        if memCount == 1 && (member.memberRole > .member || ci.meta.showGroupAsSender) {
-            if ci.meta.showGroupAsSender {
-                // Group avatar + group name
-                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, ...)
-            } else {
-                // Member avatar + member name
-                MemberProfileImage(member, ...)
-            }
-        }
-        // Message bubble
-        chatItemWithMenu(ci, ...)
-    }
-}
-```
-
-**Change**: Add `.channelRcv` handling. Two approaches:
-
-**Approach A (Preferred)**: Handle `.channelRcv` in the same block, synthesizing the rendering without a member:
+Extend the group message rendering block to handle `.channelRcv`:
 ```swift
 if case let .group(groupInfo, _) = chat.chatInfo {
     if case let .groupRcv(member) = ci.chatDir {
         // existing member-based rendering
     } else if case .channelRcv = ci.chatDir {
-        // channel rendering — always show group as sender
-        // No member to show, use group avatar + name directly
-        HStack(alignment: .top, spacing: 0) {
-            // Always show group avatar for channel messages
-            ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, ...)
-            // Message bubble
-            chatItemWithMenu(ci, ...)
-        }
+        // channel rendering — always show group avatar + name
     }
 }
 ```
 
-**Approach B**: Since `showGroupAsSender` is always `true` for `CIChannelRcv`, factor out the "show as group" rendering into a shared function and call it from both `.groupRcv` (when `showGroupAsSender`) and `.channelRcv`.
+### 4.2 `ChatView.swift` — Message Grouping
 
-Approach A is simpler. Approach B avoids duplication if the rendering logic is complex. Decide based on how much code the `showGroupAsSender` path contains.
+Consecutive `.channelRcv` items should be treated as "same sender" (the channel) for avatar grouping.
 
-### 4.4 `Shared/Views/Chat/ChatView.swift` — Message Grouping
+### 4.3 `ChatTypes.swift` — CIDirection Computed Properties
 
-Messages are grouped by consecutive same-sender for avatar display optimization (show avatar only on first message in a group). The grouping logic checks `ci.chatDir`:
+All `switch` statements on `CIDirection` need `.channelRcv` handling. It behaves like `.groupRcv` but returns `nil` for member-related properties.
 
-**Location**: Message grouping / `memCount` calculation
+### 4.4 `ChatPreviewView.swift` — Preview Text (~line 300)
 
-**Change**: `CIChannelRcv` messages should always be considered "same sender" (the channel), so they group together. Ensure the grouping comparator treats consecutive `.channelRcv` items as same sender.
+`memberDisplayName` already returns `nil` for `.channelRcv` (no member to display). `showGroupAsSender` suppresses sender prefix. No sender prefix in channel previews.
 
-### 4.5 `Shared/Views/ChatList/ChatPreviewView.swift` — Preview Text
+### 4.5 Exhaustive Switch Audit
 
-**Location**: Chat preview message rendering (~line 300)
-
-**Current**: `showGroupAsSender` already suppresses member name prefix:
-```swift
-messageText(..., sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, ...)
-```
-
-**Change needed**: `cItem.memberDisplayName` may crash or return empty for `.channelRcv` (no member). Ensure `memberDisplayName` handles `.channelRcv` gracefully (return `nil`).
-
-Check the `memberDisplayName` computed property on `ChatItem`:
-```swift
-public var memberDisplayName: String? {
-    if case let .groupRcv(groupMember) = chatDir {
-        return groupMember.displayName
-    }
-    return nil
-}
-```
-
-Add `.channelRcv` case — return `nil` (no member to display):
-```swift
-public var memberDisplayName: String? {
-    switch chatDir {
-    case let .groupRcv(groupMember): return groupMember.displayName
-    case .channelRcv: return nil
-    default: return nil
-    }
-}
-```
-
-### 4.6 Other CIDirection Switch Exhaustiveness
-
-Search for all `switch ci.chatDir` or `case .groupRcv` pattern matches in Swift code. Each needs `.channelRcv` handling. Key files:
-
-- `ChatView.swift` — message rendering, reactions, context menus
-- `ChatPreviewView.swift` — preview text
-- `ChatItemView.swift` — item layout
-- `ComposeView.swift` — reply context
-- `ChatItemInfoView.swift` — item details
-- `ChatTypes.swift` — computed properties
-
-For each, `.channelRcv` should behave like `.groupRcv` but without member data.
+Check all `switch ci.chatDir` / `case .groupRcv` in:
+- `ChatItemView.swift`, `ComposeView.swift`, `ChatItemInfoView.swift`
+- `ChatItemsMerger.swift` (done — `.channelRcv: 3`)
 
 ---
 
 ## 5. Wireframes
 
-### 5.1 Primary Design — Channel Messages
+### 5.1 Primary Design — Channel Messages (Subscriber View)
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -285,21 +113,45 @@ For each, `.channelRcv` should behave like `.groupRcv` but without member data.
 │  │                           4:10 PM  ✓ │  │
 │  └───────────────────────────────────────┘  │
 │                                             │
-│  ─────────────────────────────────────────  │
-│  (compose area hidden for observers)        │
-│  Reactions: [👍] [❤️] [+]                   │
+├─────────────────────────────────────────────┤
+│  ┌─────────────────────────────────┐  [+]  │
+│  │ you are observer                │  [📷] │
+│  └─────────────────────────────────┘  [➤]  │
 └─────────────────────────────────────────────┘
 ```
 
 **Key elements**:
-- Channel avatar (profile image or megaphone fallback) shown for first message in group
-- Channel name shown as sender
-- Consecutive messages from same channel grouped (avatar hidden on 2nd message)
-- Avatar shown again after time gap (same as member grouping rules)
-- Compose bar hidden for observer role (existing behavior)
-- Reaction bar shown (existing observer behavior)
+- Channel avatar shown for first message in a group; hidden on consecutive messages
+- Avatar shown again after time gap (same grouping rules as member messages)
+- Compose field **visible but disabled** with italic "you are observer" text inside the field
+- Tapping disabled compose area shows alert: "You can't send messages!" / "Please contact group admin."
+- This matches existing observer behavior in groups (ComposeView.swift:718-725, `disabledText` parameter)
 
-### 5.2 Primary Design — Chat List Preview
+### 5.2 Primary Design — Owner View
+
+```
+┌─────────────────────────────────────────────┐
+│  < [📢] SimpleX News                   ... │
+│         Channel                             │
+├─────────────────────────────────────────────┤
+│                                             │
+│  [📢 img]  SimpleX News                    │
+│  ┌───────────────────────────────────────┐  │
+│  │ We're excited to announce v7.0!      │  │
+│  │                           3:42 PM  ✓ │  │
+│  └───────────────────────────────────────┘  │
+│                                             │
+├─────────────────────────────────────────────┤
+│  📢 Posting as SimpleX News                 │
+│  ┌─────────────────────────────────┐  [+]  │
+│  │ Type a message...               │  [📷] │
+│  └─────────────────────────────────┘  [➤]  │
+└─────────────────────────────────────────────┘
+```
+
+Owner sees enabled compose bar with "Posting as [Channel Name]" label. Messages are sent with `sendAsGroup: true`.
+
+### 5.3 Primary Design — Chat List Preview
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -310,90 +162,58 @@ For each, `.channelRcv` should behave like `.groupRcv` but without member data.
 └────────────────────────────────────────────────┘
 ```
 
-No sender prefix in preview (already handled by `showGroupAsSender`).
+No sender prefix in preview (handled by `showGroupAsSender`).
 
-### 5.3 Alternative Design — Compact Channel Header
+### 5.4 Alternative Design — Compact Channel Header
 
-Instead of showing channel avatar + name on every first message, show a thin header bar:
+Instead of avatar + name on first message, show a thin centered header:
 
 ```
-┌─────────────────────────────────────────────┐
 │  ───── SimpleX News · 3:42 PM ─────        │
 │  ┌───────────────────────────────────────┐  │
 │  │ We're excited to announce v7.0!      │  │
 │  │                           3:42 PM  ✓ │  │
 │  └───────────────────────────────────────┘  │
-│                                             │
-│  ┌───────────────────────────────────────┐  │
-│  │ Check out the blog post:             │  │
-│  │                           3:45 PM  ✓ │  │
-│  └───────────────────────────────────────┘  │
-│                                             │
-│  ───── SimpleX News · 4:10 PM ─────        │
-│  ┌───────────────────────────────────────┐  │
-│  │ We're also working on...             │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
 ```
 
-### 5.4 State Variations
+### 5.5 State Variations
 
-**Single message**:
-- Always shows avatar + name (first message in group)
-
-**Mixed content (message + image + file)**:
-- Same rendering as group messages, just with channel avatar instead of member avatar
-
-**Forwarded message indicator**:
-- If the channel message was originally forwarded from another chat, the forwarding indicator still appears
-
-**Deleted/moderated message**:
-- Shows "[deleted]" placeholder with channel avatar, same as group moderation
-
-**Loading state**:
-- N/A — messages arrive via existing real-time pipeline
+- **Single message**: Always shows avatar + name
+- **Mixed content (image + file)**: Same rendering, channel avatar instead of member avatar
+- **Deleted/moderated**: "[deleted]" placeholder with channel avatar
+- **Reply/quote**: Quoted sender shows channel name, not member name
 
 ---
 
 ## 6. Design Rationale
 
-**Primary (avatar + name like group messages) > Alternative (compact header bar)**:
-- Consistent with existing group message rendering — users already understand the pattern
-- `showGroupAsSender` path already implements this exact rendering
-- Compact header would require new view component and different grouping logic
-- Avatar provides visual anchor, especially in channels with profile images
+**Primary (avatar + name) > Alternative (compact header)**:
+- Consistent with existing group message rendering
+- `showGroupAsSender` path already implements this
+- Compact header would need new view component
 
-**No member associated with CIChannelRcv**:
-- Correct by design: channel messages are "from the channel", not from a specific person
-- The owner's identity is deliberately hidden from members in channels
-- This matches the `showGroupAsSender` intent — present messages as group-authored
+**Observer compose area not hidden**:
+- Matches existing group observer behavior (ComposeView shows disabled bar + label)
+- Keeps consistent UX — users see "you are observer" in both groups and channels
 
 ---
 
 ## 7. Edge Cases
 
-1. **CIChannelRcv in non-group chat context**: Should not happen (backend only sends this direction for group chats). If it occurs, render as a simple received message without avatar.
-
-2. **Reply/quote to channel message**: When quoting a `.channelRcv` message, the quote should show "SimpleX News" (channel name) as the quoted sender, not a member name.
-
-3. **Reactions to channel messages**: Work the same as group reactions. Observer members can add reactions (existing behavior).
-
-4. **Search results**: Channel messages in search should show channel name as context, not member name.
-
-5. **Message info view**: Tapping message info on a `.channelRcv` item should not show member details (no member). Show channel info or minimal info.
-
-6. **Old client receiving CIChannelRcv**: If Swift CIDirection decoding fails for unknown `"channelRcv"` tag, the item falls back to `CIInvalidJSON`. This is acceptable — old clients can't join relay groups anyway (version gated).
-
-7. **Consecutive `.groupRcv` and `.channelRcv`**: In theory, a channel could have both member messages (from admin sending as member) and channel messages. Grouping should treat these as different senders (different avatar).
+1. **CIChannelRcv in non-group context**: Should not happen. Render as simple received message.
+2. **Reply/quote**: Show channel name as quoted sender.
+3. **Reactions**: Work same as groups. Observers can react (existing behavior).
+4. **Message info view**: No member details. Show channel info.
+5. **Old client**: Falls back to `CIInvalidJSON` (version-gated).
+6. **Mixed .groupRcv and .channelRcv**: Different senders for grouping purposes.
 
 ---
 
 ## 8. Testing Notes
 
-1. **Decode test**: Add JSON test for `CIDirection` with `"channelRcv"` tag — verify decodes to `.channelRcv`
-2. **Rendering test**: Mock a `ChatItem` with `.channelRcv` direction and `showGroupAsSender = true` — verify channel avatar and name appear
-3. **Preview test**: Verify chat list preview for channel messages has no sender prefix
-4. **Grouping test**: Verify consecutive `.channelRcv` messages group correctly (avatar shown only on first)
-5. **Exhaustiveness**: Build with all warnings — verify no missing cases for `.channelRcv` in switch statements
-6. **memberDisplayName**: Verify returns `nil` for `.channelRcv` items
-7. **Quote/reply**: Quote a channel message and verify the quoted sender shows channel name
+1. JSON decode test for `CIDirection` with `"channelRcv"` tag
+2. Rendering: channel avatar + name appear for `.channelRcv` items
+3. Preview: no sender prefix in chat list
+4. Grouping: consecutive `.channelRcv` items group correctly
+5. Exhaustiveness: build with warnings — no missing `.channelRcv` cases
+6. Observer compose: disabled bar with "you are observer" text

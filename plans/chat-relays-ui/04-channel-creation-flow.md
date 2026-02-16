@@ -14,302 +14,98 @@
 
 ## 1. Overview
 
-**What**: "Create channel" entry point in the New Chat sheet, leading to a creation wizard: name/image input -> creation with the user's enabled relays -> real-time relay status feedback -> navigate to channel. The wizard uses whichever relays are enabled in the user's relay configuration (see §4.5 Relay Management Settings for how users configure relays).
+**What**: "Create channel" entry in New Chat sheet → creation wizard with 3 phases: form (name/image) → relay selection & connection → channel link.
 
-**Why**: Channel creation is fundamentally different from group creation: it requires relay server infrastructure, uses `APINewPublicGroup` instead of `APINewGroup`, and needs a relay connection status phase.
+**Why**: Channels use `APINewPublicGroup` with relay infrastructure, fundamentally different from group creation.
 
-**User impact**: Users can create channels from the same place they create groups. The flow guides them through channel-specific setup and shows relay connection progress.
+**User impact**: Guided channel creation with relay progress feedback and link sharing.
 
 ---
 
 ## 2. Prerequisites & Dependencies
 
-- **§4.1 (API Type Updates)**: `apiNewPublicGroup` wrapper, `UserChatRelay`, `GroupRelay`, `RelayStatus` types must exist in Swift.
-- **Backend §3.2 (Relay Connection State Events)**: Backend must emit per-relay status events during channel creation. Without this, the relay status step shows a spinner but no per-relay progress.
-- **§4.5 (Relay Management)**: Relay configuration must exist so the user has relays available. If no relays configured, creation should show an appropriate message.
-- **Backend `APINewPublicGroup` exists** (Controller.hs:513): `APINewPublicGroup {userId, incognito, relayIds :: NonEmpty Int64, groupProfile}`
+- **§4.1 (API Type Updates)**: `apiNewPublicGroup`, `UserChatRelay`, `GroupRelay`, `RelayStatus` types.
+- **Backend §3.2**: Relay status events (`groupLinkRelaysUpdated`).
+- **§4.5 (Relay Management)**: User must have relays configured (preset relays always exist — Network & servers validates that user can't remove/disable all relays).
 
 ---
 
 ## 3. Data Model
 
-### 3.1 API Command
-
-Haskell (`Controller.hs:513`):
-```haskell
-| APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
-```
-
-Swift wrapper needed:
+### API Command
 ```swift
-func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) throws -> GroupInfo
+case apiNewPublicGroup(userId: Int64, incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile)
 ```
 
-### 3.2 UserChatRelay
-
-From `Operators.hs:262`:
-```haskell
-data UserChatRelay' s = UserChatRelay
-  { chatRelayId :: DBEntityId' s,
-    address :: ShortLinkContact,
-    name :: Text,
-    domains :: [Text],
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: Bool,
-    deleted :: Bool
-  }
-```
-
-Swift:
+### API Response
 ```swift
-public struct UserChatRelay: Identifiable, Decodable, Equatable {
-    public var chatRelayId: Int64
-    public var address: String
-    public var name: String
-    public var domains: [String]
-    public var preset: Bool
-    public var tested: Bool?
-    public var enabled: Bool
-    public var deleted: Bool
-
-    public var id: Int64 { chatRelayId }
-}
+case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
 ```
 
-### 3.3 Relay Status Events
+Returns group link immediately. Relay statuses update via `groupLinkRelaysUpdated` events.
 
-Backend emits events during channel creation showing relay progress. Expected response type (§3.2 — TBD):
-```swift
-// Placeholder — exact type depends on backend §3.2 implementation
-case relayConnectionState(groupId: Int64, relays: [GroupRelay])
+### Relay Status Progression
+```
+RSNew → RSInvited → RSAccepted → RSActive
 ```
 
-### 3.4 GroupRelay
+### Backend Behavior (Two Phases)
 
-From `Types.hs:995`:
-```haskell
-data GroupRelay = GroupRelay
-  { groupRelayId :: Int64,
-    groupMemberId :: Int64,
-    userChatRelayId :: Int64,
-    relayStatus :: RelayStatus,
-    relayLink :: Maybe Text
-  }
-```
+**Synchronous phase**: `apiNewPublicGroup` creates the group and sends relay invitations. If any invitation fails to be **sent**, the entire API call fails — channel is NOT created.
 
-### 3.5 Creation Flow Data
-
-```
-User input:
-  - displayName: String
-  - image: UIImage? (optional)
-  - incognito: Bool
-
-System provides:
-  - relayIds: [Int64] (from configured/preset UserChatRelays)
-
-API call:
-  apiNewPublicGroup(incognito: incognito, relayIds: relayIds, groupProfile: profile)
-
-Response:
-  GroupInfo (with useRelays = true, groupRelays populated)
-```
+**Asynchronous phase**: After all invitations are sent successfully, the API succeeds. Relays then independently accept invitations (RSNew → RSInvited → RSAccepted → RSActive). Partial failure is possible here (some relays accept, others don't), but there is no recovery mechanism yet.
 
 ---
 
 ## 4. Implementation Plan
 
-### 4.1 `Shared/Views/NewChat/NewChatMenuButton.swift` — Add Entry Point
+### 4.1 Entry Point — `NewChatMenuButton.swift`
 
-**Location**: `NewChatSheet.viewBody()` Section (lines 98-128), after "Create group" NavigationLink
+Add "Create channel" NavigationLink after "Create group" (line ~127).
 
-**Change**: Add "Create channel" NavigationLink:
-```swift
-NavigationLink {
-    AddChannelView()
-        .navigationTitle("Create channel")
-        .modifier(ThemedBackground(grouped: true))
-        .navigationBarTitleDisplayMode(.large)
-} label: {
-    Label("Create channel", systemImage: "megaphone.fill")
-}
+### 4.2 Creation View — `AddChannelView.swift` (new file)
+
+Modeled on `AddGroupView.swift`. Three phases controlled by `@State`:
+
+```
+Phase 1: createChannelView()       — name + image form
+Phase 2: relaySelectionView()      — relay selection → create → connection status
+Phase 3: channelLinkView()         — link sharing (GroupLinkView pattern)
 ```
 
-Also update `sheetHeight` calculation (line 69) to account for the new row:
-```swift
-let sheetHeight: CGFloat = showArchive ? 650 : 575  // increased from 575/500
+Phase 2 is a separate view that serves dual purpose: first relay selection, then connection monitoring after API call.
+
+### 4.3 Phase transitions
+
 ```
+Phase 1 → Phase 2:
+  User enters name/image, taps "Continue" → pushes relay selection view
 
-### 4.2 `Shared/Views/NewChat/AddChannelView.swift` — New File
+Phase 2 (selection mode):
+  Shows relay list with toggles, "Create" button
+  createChannel() called:
+    → apiNewPublicGroup(relayIds: selectedRelayIds, ...)
+    → on success: store groupInfo, groupLink, groupRelays → switch to status mode
+    → on failure: show error alert with Retry
 
-**Pattern**: Based on `AddGroupView.swift` structure, with these differences:
-- Shows relay info instead of incognito toggle (or in addition to)
-- Calls `apiNewPublicGroup` instead of `apiNewGroup`
-- After creation, shows relay status phase instead of member invite
-- No "Add Members" step (channels don't have manual member adds)
+Phase 2 (status mode):
+  → listen for groupLinkRelaysUpdated events
+  → update groupRelays state
+  → "Proceed" enabled when all relays Active
+  → "Skip waiting" shown when ≥1 relay Active but not all
 
-**Structure**:
-```swift
-struct AddChannelView: View {
-    @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var theme: AppTheme
-    @Environment(\.dismiss) var dismiss: DismissAction
-
-    @State private var chat: Chat?
-    @State private var groupInfo: GroupInfo?
-    @State private var profile = GroupProfile(displayName: "", fullName: "")
-    @FocusState private var focusDisplayName
-    @State private var showChooseSource = false
-    @State private var showImagePicker = false
-    @State private var showTakePhoto = false
-    @State private var chosenImage: UIImage? = nil
-    @State private var creationInProgress = false
-
-    var body: some View {
-        if let chat = chat, let groupInfo = groupInfo {
-            // Phase 2: Show relay connection status
-            ChannelRelayStatusView(chat: chat, groupInfo: groupInfo)
-        } else {
-            // Phase 1: Channel creation form
-            createChannelView()
-        }
-    }
-
-    func createChannelView() -> some View { ... }
-    func createChannel() { ... }
-}
-```
-
-**createChannel() function**:
-```swift
-func createChannel() {
-    focusDisplayName = false
-    creationInProgress = true
-    Task {
-        do {
-            profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
-            profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
-
-            // Get enabled relay IDs from ChatModel
-            let relayIds = m.userChatRelays
-                .filter { $0.enabled && !$0.deleted }
-                .map { $0.chatRelayId }
-
-            guard !relayIds.isEmpty else {
-                // Show error: no relays configured
-                return
-            }
-
-            let gInfo = try await apiNewPublicGroup(
-                incognito: false,  // channels always non-incognito for MVP
-                relayIds: relayIds,
-                groupProfile: profile
-            )
-
-            await m.loadGroupMembers(gInfo)
-            let c = Chat(chatInfo: .group(groupInfo: gInfo, groupChatScope: nil), chatItems: [])
-            await MainActor.run {
-                m.addChat(c)
-                groupInfo = gInfo
-                chat = c
-                creationInProgress = false
-            }
-        } catch {
-            await MainActor.run {
-                creationInProgress = false
-                AlertManager.shared.showAlert(
-                    Alert(title: Text("Error creating channel"),
-                          message: Text(responseError(error)))
-                )
-            }
-        }
-    }
-}
-```
-
-### 4.3 `Shared/Views/NewChat/ChannelRelayStatusView.swift` — New File (Optional)
-
-Shows relay connection progress after channel creation. Could be inline in `AddChannelView` or a separate view.
-
-**Structure**:
-```swift
-struct ChannelRelayStatusView: View {
-    var chat: Chat
-    @State var groupInfo: GroupInfo
-
-    var body: some View {
-        List {
-            Section {
-                // Channel name + image
-                channelHeader()
-            }
-
-            Section(header: Text("Chat relays")) {
-                if let relays = groupInfo.groupRelays {
-                    ForEach(relays) { relay in
-                        relayStatusRow(relay)
-                    }
-                }
-            } footer: {
-                Text("Connecting to relays. Your channel will be ready when relays are active.")
-            }
-
-            Section {
-                // "Open channel" button - enabled when all relays active
-                Button("Open channel") {
-                    dismissAllSheets(animated: true) {
-                        ItemsModel.shared.loadOpenChat(groupInfo.id)
-                    }
-                }
-                .disabled(!allRelaysActive)
-
-                // "Skip waiting" button - enabled when at least one relay active
-                if !allRelaysActive && someRelaysActive {
-                    Button("Skip waiting") {
-                        dismissAllSheets(animated: true) {
-                            ItemsModel.shared.loadOpenChat(groupInfo.id)
-                        }
-                    }
-                    .foregroundColor(theme.colors.secondary)
-                }
-            }
-        }
-        .onReceive(/* relay state change notifications */) { ... }
-    }
-}
-```
-
-### 4.4 `Shared/Model/SimpleXAPI.swift` — API Wrapper
-
-**Add**:
-```swift
-func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> GroupInfo {
-    let userId = try currentUserId("apiNewPublicGroup")
-    let r = await chatSendCmd(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
-    if case let .groupCreated(_, groupInfo) = r { return groupInfo }
-    throw r
-}
-```
-
-### 4.5 `Shared/Model/AppAPITypes.swift` — ChatCommand Extension
-
-**Add** to `ChatCommand` enum:
-```swift
-case apiNewPublicGroup(userId: Int64, incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile)
-```
-
-**Add** encoding in `cmdString`:
-```swift
-case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile):
-    return "/_new public group \(userId) \(onOff(incognito)) \(relayIds.map(String.init).joined(separator: ",")) \(encodeJSON(groupProfile))"
+Phase 3:
+  → show QR code + share/copy link (like GroupLinkView with creatingGroup: true)
+  → "Continue" toolbar button → dismiss all sheets, open channel
 ```
 
 ---
 
 ## 5. Wireframes
 
-### 5.1 Primary Design — Creation Form (Phase 1)
+### 5.1 Phase 1 — Creation Form
+
+Follows `AddGroupView` layout: centered image picker, pencil icon + placeholder text field (no label), continue button.
 
 ```
 ┌─────────────────────────────────┐
@@ -321,23 +117,58 @@ case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile):
 │         │  [cam]  │            │
 │         │         │            │
 │         └─────────┘            │
-│      (tap to add image)        │
 │                                 │
 ├─────────────────────────────────┤
-│  Channel name                   │
-│  ┌─────────────────────────┐   │
-│  │ Enter channel name...   │   │
-│  └─────────────────────────┘   │
+│  ✏️  Enter channel name...      │
 │                                 │
-│  [checkmark] Create channel     │
+│  ➤  Continue                    │
+│                                 │
+│  Your profile **alice** will    │
+│  be shared with channel relays. │
+│  Subscribers see only the       │
+│  channel name.                  │
 └─────────────────────────────────┘
 ```
 
-### 5.2 Primary Design — Relay Status (Phase 2)
+**Notes**:
+- Text field: pencil icon + placeholder only (matches `AddGroupView.groupNameTextField()`)
+- No incognito toggle for MVP (owner identity hidden from subscribers by design)
+- "Continue" disabled until name valid; pushes to Phase 2 (relay selection & connection view)
+- Actual "Create channel" button is in Phase 2 after relay selection
+
+### 5.2 Phase 2 — Relay Selection (Before API Call)
+
+Separate view showing user's relays with toggles. All enabled relays pre-selected.
 
 ```
 ┌─────────────────────────────────┐
-│  < Creating channel...          │
+│  < Channel relays               │
+├─────────────────────────────────┤
+│  SIMPLEX CHAT RELAYS            │
+│  ☑ relay1.simplex.im            │
+│  ☑ relay2.simplex.im            │
+│  ☑ relay3.simplex.im            │
+├─────────────────────────────────┤
+│  YOUR RELAYS                    │
+│  ☐ myrelay.example.com          │
+├─────────────────────────────────┤
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │     Create channel       │   │
+│  └─────────────────────────┘   │
+│                                 │
+│  Select relays for the channel. │
+│  At least one relay required.   │
+└─────────────────────────────────┘
+```
+
+### 5.3 Phase 2 — Relay Connection Status (After API Success)
+
+Same view transitions to show per-relay status. Toggles replaced by status indicators. Back button hidden (channel already created, can't undo — matches `GroupLinkView` with `creatingGroup: true`).
+
+```
+┌─────────────────────────────────┐
+│  Creating channel...            │
 ├─────────────────────────────────┤
 │                                 │
 │         ┌─────────┐            │
@@ -349,200 +180,310 @@ case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile):
 │  CHAT RELAYS                    │
 │                                 │
 │  relay1.simplex.im              │
-│  Active                    [*]  │
+│  ✅ Active                      │
 │                                 │
 │  relay2.simplex.im              │
-│  Connecting...             [~]  │
+│  🔄 Invited                     │
 │                                 │
 │  relay3.simplex.im              │
-│  Active                    [*]  │
+│  🔄 Invited                     │
 │                                 │
 ├─────────────────────────────────┤
 │                                 │
 │  ┌─────────────────────────┐   │
-│  │     Open channel        │   │
+│  │       Proceed            │   │
 │  └─────────────────────────┘   │
+│  (enabled when all Active)      │
 │                                 │
 │       Skip waiting              │
+│  (shown when ≥1 Active,         │
+│   not all Active yet)           │
 │                                 │
 └─────────────────────────────────┘
 ```
 
-### 5.3 Primary Design — All Relays Active
+**Relay status indicators**:
+| Status | Display |
+|--------|---------|
+| RSNew | `● New` |
+| RSInvited | `🔄 Invited` |
+| RSAccepted | `🔄 Accepted` |
+| RSActive | `✅ Active` |
+
+**"Skip waiting"** only visible when ≥1 relay Active but not all.
+
+**"Proceed"** navigates to Phase 3 (channel link view).
+
+### 5.4 Phase 2 — All Relays Active
 
 ```
 ┌─────────────────────────────────┐
 │  Channel created                │
 ├─────────────────────────────────┤
-│                                 │
 │         ┌─────────┐            │
 │         │ [image] │            │
 │         └─────────┘            │
 │       SimpleX News              │
+├─────────────────────────────────┤
+│  CHAT RELAYS                    │
+│  relay1.simplex.im   ✅ Active  │
+│  relay2.simplex.im   ✅ Active  │
+│  relay3.simplex.im   ✅ Active  │
+├─────────────────────────────────┤
+│  ┌─────────────────────────┐   │
+│  │       Proceed            │   │
+│  └─────────────────────────┘   │
+└─────────────────────────────────┘
+```
+
+### 5.5 Phase 3 — Channel Link
+
+Modeled on `GroupLinkView` with `creatingGroup: true`. Shows channel link for sharing before navigating to the channel.
+
+```
+┌─────────────────────────────────┐
+│  Channel link          Continue │
+├─────────────────────────────────┤
 │                                 │
+│  You can share a link or QR     │
+│  code — anyone can use it to    │
+│  join the channel.              │
+│                                 │
+├─────────────────────────────────┤
+│  ┌─────────────────────────┐   │
+│  │                         │   │
+│  │      [QR Code]          │   │
+│  │                         │   │
+│  └─────────────────────────┘   │
+│                                 │
+│  🔗  Share link                 │
+│                                 │
+└─────────────────────────────────┘
+```
+
+**"Continue"** in toolbar → dismisses all sheets, opens channel chat.
+
+### 5.6 Phase 1 Alt A — Inline Relay Selection
+
+Relay toggles as a section in the creation form (no separate relay view). Here "Create channel" directly calls the API since relay selection is inline:
+
+```
+┌─────────────────────────────────┐
+│  < Create channel               │
+├─────────────────────────────────┤
+│         ┌─────────┐            │
+│         │  [cam]  │            │
+│         └─────────┘            │
+├─────────────────────────────────┤
+│  ✏️  Enter channel name...      │
+│                                 │
+│  ☑  Create channel              │
+│                                 │
+│  Your profile **alice** will    │
+│  be shared with channel relays. │
+├─────────────────────────────────┤
+│  CHAT RELAYS                    │
+│  ☑ relay1.simplex.im    preset  │
+│  ☑ relay2.simplex.im    preset  │
+│  ☐ myrelay.example.com  custom  │
+│                                 │
+│  Select relays for the channel. │
+│  Configure in Network settings. │
+└─────────────────────────────────┘
+```
+
+### 5.6 Phase 1 Alt B — No Relay Selection
+
+Use 3 enabled relays automatically. Info-only summary in form:
+
+```
+│  ☑  Create channel              │
+│                                 │
+│  CHAT RELAYS                    │
+│  ● relay1.simplex.im    preset  │
+│  ● relay2.simplex.im    preset  │
+│  ● relay3.simplex.im    preset  │
+│                                 │
+│  Preset relays are used.        │
+│  Configure in Network settings. │
+```
+
+### 5.7 Error — API Failure: Invitation Send Failed (Current)
+
+Synchronous phase: any relay invitation fails to be sent → whole API fails, channel NOT created. Alert with Retry.
+
+```
+┌──────────────────────────────────────┐
+│                                      │
+│         Error creating channel       │
+│                                      │
+│  Relay invitation failed:            │
+│  relay2.simplex.im: connection       │
+│  timeout                             │
+│                                      │
+│  ┌──────────┐  ┌──────────────────┐  │
+│  │    OK    │  │      Retry       │  │
+│  └──────────┘  └──────────────────┘  │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**OK** → stays on relay selection (user can adjust relays and try again).
+**Retry** → calls `apiNewPublicGroup` again with same parameters.
+
+### 5.8 Error — Async: Partial Relay Acceptance Failure (Current)
+
+Asynchronous phase: API succeeded (all invitations sent), but some relays fail to accept. Channel IS created. No recovery mechanism currently.
+
+```
+┌─────────────────────────────────┐
+│  Channel created                │
+├─────────────────────────────────┤
+│         ┌─────────┐            │
+│         │ [image] │            │
+│         └─────────┘            │
+│       SimpleX News              │
 ├─────────────────────────────────┤
 │  CHAT RELAYS                    │
 │                                 │
 │  relay1.simplex.im              │
-│  Active                    [*]  │
+│  ✅ Active                      │
 │                                 │
 │  relay2.simplex.im              │
-│  Active                    [*]  │
+│  ❌ Failed to accept            │
 │                                 │
 │  relay3.simplex.im              │
-│  Active                    [*]  │
+│  ✅ Active                      │
 │                                 │
+│  ⚠️  1 relay failed. Channel    │
+│  works with remaining relays.   │
 ├─────────────────────────────────┤
-│                                 │
 │  ┌─────────────────────────┐   │
-│  │     Open channel        │   │  <-- now enabled
-│  └─────────────────────────┘   │
-│                                 │
-└─────────────────────────────────┘
-```
-
-### 5.4 Alternative Design A — Single-Page Form with Inline Relay Status
-
-Instead of two phases, show relay status inline below the creation form. The form stays visible, and relays connect in background:
-
-```
-┌─────────────────────────────────┐
-│  Create channel                 │
-├─────────────────────────────────┤
-│  [image]  SimpleX News          │
-│                                 │
-│  [checkmark] Create channel     │
-│  (greyed out / already tapped)  │
-├─────────────────────────────────┤
-│  CONNECTING RELAYS              │
-│  relay1.simplex.im   Active [*] │
-│  relay2.simplex.im   ...    [~] │
-│  relay3.simplex.im   Active [*] │
-│                                 │
-│  ┌─────────────────────────┐   │
-│  │     Open channel        │   │
+│  │       Proceed            │   │
 │  └─────────────────────────┘   │
 └─────────────────────────────────┘
 ```
 
-### 5.5 Alternative Design B — Modal Dialog for Relay Status
+"Proceed" enabled because ≥1 relay is Active. Failed relays are shown but not actionable.
 
-Pop up a modal sheet over the creation form showing relay progress:
+### 5.9 Error — Async: All Relays Fail to Accept (Current)
 
-```
-         ┌───────────────────┐
-         │  Connecting...    │
-         │                   │
-         │  relay1  Active   │
-         │  relay2  ...      │
-         │  relay3  Active   │
-         │                   │
-         │  [Open channel]   │
-         └───────────────────┘
-```
+All invitations were sent (API succeeded), but no relay accepts.
 
-### 5.6 State Variations
-
-**No relays configured**:
 ```
 ┌─────────────────────────────────┐
-│  Create channel                 │
+│  Channel created                │
 ├─────────────────────────────────┤
-│  [image picker]                 │
-│  [name field]                   │
-│                                 │
-│  [checkmark] Create channel     │
-│  (DISABLED)                     │
+│         ┌─────────┐            │
+│         │ [image] │            │
+│         └─────────┘            │
+│       SimpleX News              │
 ├─────────────────────────────────┤
 │  CHAT RELAYS                    │
+│  relay1.simplex.im  ❌ Failed   │
+│  relay2.simplex.im  ❌ Failed   │
+│  relay3.simplex.im  ❌ Failed   │
 │                                 │
-│  No relays configured.          │
-│  Add relays in Settings >       │
-│  Network & servers > Chat relays│
+│  All relays failed to accept.   │
+│  Channel won't work without     │
+│  active relays.                 │
+├─────────────────────────────────┤
+│  ┌─────────────────────────┐   │
+│  │       Proceed            │   │  ← disabled
+│  └─────────────────────────┘   │
 │                                 │
+│  ┌─────────────────────────┐   │
+│  │    Delete channel        │   │
+│  └─────────────────────────┘   │
 └─────────────────────────────────┘
 ```
 
-**Relay connection error**:
+### 5.10 Future Improvement 1 — Partial Sync Failure
+
+Backend improved to succeed if at least some relay invitations are sent. Channel created with subset of relays; unsent relays show as failed.
+
+```
+┌──────────────────────────────────────┐
+│                                      │
+│         Channel created              │
+│                                      │
+│  2 of 3 relay invitations sent.      │
+│  relay2.simplex.im: send failed.     │
+│                                      │
+│  ┌──────────────────────────────┐    │
+│  │        Retry failed          │    │
+│  └──────────────────────────────┘    │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+### 5.11 Future Improvement 2 — Retry for Async Acceptance Failures
+
+Backend adds retry for relays that fail to accept invitations. Failed relays in status view become actionable.
+
 ```
 │  relay2.simplex.im              │
-│  Connection failed         [!]  │
-│  Tap to retry                   │
+│  ❌ Failed to accept    [Retry] │
 ```
 
-**All relays failed**:
-```
-│  ┌─────────────────────────┐   │
-│  │     Open channel        │   │  <-- disabled
-│  └─────────────────────────┘   │
-│                                 │
-│  All relays failed to connect.  │
-│  Check relay settings and       │
-│  try again.                     │
-│                                 │
-│  [Delete channel]               │
-```
-
-**Creation API error**:
-```
-Alert: "Error creating channel"
-Message: [error detail]
-[OK]
-```
+"Retry" re-sends the invitation to the specific relay. On success, relay re-enters RSNew → RSInvited → RSAccepted → RSActive progression.
 
 ---
 
 ## 6. Design Rationale
 
-**Two-phase approach (Primary) > Single-page (Alt A)**:
-- Clear state transition: user completes input, then waits for infrastructure
-- Prevents accidental edits during relay connection
-- Follows iOS wizard pattern (commit action -> show results)
-- Similar to AddGroupView's transition to AddGroupMembersView
+### Phase separation (Form → Relay Selection & Connection → Link)
 
-**Two-phase > Modal dialog (Alt B)**:
-- Modal can be dismissed accidentally
-- Two-phase gives more screen real estate for relay status
-- Modal pattern is for quick confirmations, not multi-relay progress tracking
+Follows `AddGroupView` pattern: form → post-creation view. Adding the link phase matches the incognito group flow (`GroupLinkView` with `creatingGroup: true`).
 
-**No incognito toggle for channels**:
-- Channel owner identity is shared with relay servers (necessary for relay protocol)
-- Subscribers don't see owner identity (they see channel name via `showGroupAsSender`)
-- Incognito makes less sense when owner is always hidden from subscribers
+### Relay selection: Separate view (primary) recommended
+
+- Clear separation: name/image form stays simple like AddGroupView
+- Relay selection view transitions naturally into connection status (same view, dual purpose)
+- User focuses on one thing at a time
+- Alt A (inline) clutters the creation form with relay infrastructure details
+- Alt B (no selection) is too rigid — user may want different relay sets per channel
+
+### "Proceed" instead of "Open channel"
+
+User needs to see and share the channel link before entering the channel. "Proceed" → link view → "Continue" matches the incognito group creation flow.
+
+### "Skip waiting" constraint
+
+Only after ≥1 Active relay. Without any active relays, the channel can't deliver messages, so skipping is meaningless.
+
+### Error model
+
+Two distinct failure modes reflect backend architecture:
+- **Sync** (invitation sending): all-or-nothing currently → simple Retry
+- **Async** (invitation acceptance): partial failure possible, no recovery → show status, let user proceed with working relays
+
+Future improvements add granularity to both phases independently.
 
 ---
 
 ## 7. Edge Cases
 
-1. **Empty relay list**: Disable "Create channel" button. Show explanation linking to relay settings.
-
-2. **All relays disabled**: Same as empty — no enabled relays available for channel creation.
-
-3. **Partial relay failure**: Some relays connect, others fail. "Open channel" enabled if at least one relay active. Show warning about reduced redundancy.
-
-4. **Network loss during creation**: API call may fail. Show standard error alert with retry suggestion.
-
-5. **Network loss during relay connection**: Relays stuck in "Connecting" state. Show timeout message after reasonable period. Allow "Open channel" with active relays.
-
-6. **Channel name validation**: Same rules as group names — `validDisplayName()`. Trim whitespace.
-
-7. **Duplicate channel name**: Backend allows duplicate names. No client-side uniqueness check needed.
-
-8. **User dismisses sheet during relay connection**: Channel already created in backend. It appears in chat list with whatever relay state it has. Relays will continue connecting in background.
-
-9. **Sheet height**: The new "Create channel" row adds ~44pt to the sheet. Update `sheetHeight` accordingly.
+1. **Network loss during creation**: API call fails. Show error alert with Retry.
+2. **Network loss during relay connection**: Relays stuck in RSNew/RSInvited. User can "Skip waiting" once ≥1 is Active, or dismiss sheet (channel exists, relays continue in background).
+3. **Sheet dismissed during relay connection**: Channel already created. Appears in chat list. Relays finish connecting in background.
+4. **Channel name validation**: Same as groups — `validDisplayName()`, trim whitespace.
+5. **Duplicate names**: Backend allows. No client-side check.
+6. **Sheet height**: Add ~44pt for new "Create channel" row. Update `sheetHeight`.
 
 ---
 
 ## 8. Testing Notes
 
-1. **Entry point**: Verify "Create channel" appears in NewChatSheet after "Create group"
-2. **Form validation**: Empty name -> button disabled. Valid name -> enabled
-3. **Image picker**: Same behavior as group creation image picker
-4. **API call**: Mock `apiNewPublicGroup` success -> transitions to phase 2
-5. **API call failure**: Mock error -> alert shown, stays on form
-6. **Relay status updates**: Mock relay state events -> UI updates in real-time
-7. **Open channel**: Tapping "Open channel" -> dismisses all sheets, opens channel chat
-8. **Skip waiting**: Available when some (not all) relays active -> opens channel
-9. **No relays**: When `userChatRelays` is empty -> "Create channel" disabled or shows explanation
-10. **Sheet height**: Verify sheet doesn't clip with the additional row on iOS 16+ with oneHandUI
+1. Entry point: "Create channel" in NewChatSheet after "Create group"
+2. Form: empty name → disabled; valid name → enabled
+3. Image picker: same behavior as group creation
+4. Relay selection: all enabled relays pre-selected; toggle works; ≥1 required
+5. API success → relay selection view transitions to status mode
+6. API failure → alert with OK + Retry
+7. Relay status updates via `groupLinkRelaysUpdated` → UI updates per-relay
+8. "Skip waiting" only visible when ≥1 Active, not all Active
+9. "Proceed" → channel link view with QR + share
+10. "Continue" → dismisses sheets, opens channel
+11. Partial async failure → shows failed relays, Proceed still enabled
+12. All async failure → Proceed disabled, Delete channel shown
