@@ -4,9 +4,11 @@
       text { font-family: -apple-system, Helvetica, sans-serif; }
     </style>
     <!-- Megaphone icon for channel avatar -->
-    <symbol id="megaphone" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="12" fill="#0A84FF" opacity="0.2"/>
-      <path d="M18 4L10 8H6C5.45 8 5 8.45 5 9V15C5 15.55 5.45 16 6 16H7L9 20H11L9 16H10L18 20V4Z" fill="#0A84FF"/>
+    <symbol id="megaphone" viewBox="0 0 28 28">
+      <path d="M8,6 L18,2 L18,24 L8,20 Z" fill="#0A84FF"/>
+      <rect x="4" y="9" width="5" height="8" rx="1" fill="#0A84FF"/>
+      <path d="M18,2 Q28,8 28,13 Q28,18 18,24" fill="none" stroke="#0A84FF" stroke-width="2"/>
+      <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20" fill="#0A84FF"/>
     </symbol>
     <!-- Back arrow -->
     <symbol id="back-arrow" viewBox="0 0 12 20">
@@ -19,7 +21,7 @@
   </defs>
 
   <!-- Full background -->
-  <rect width="440" height="2020" fill="#111111"/>
+  <rect width="440" height="2020" fill="#000000"/>
 
   <!-- ============================================ -->
   <!-- §5.1 Subscriber View                         -->
@@ -49,8 +51,10 @@
     <text x="78" y="64" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
     <text x="78" y="80" fill="#8E8E93" font-size="13">Channel</text>
 
-    <!-- Ellipsis menu -->
-    <text x="365" y="72" fill="#8E8E93" font-size="20" text-anchor="middle">...</text>
+    <!-- Ellipsis menu (horizontal three dots) -->
+    <circle cx="358" cy="68" r="2" fill="#0A84FF"/>
+    <circle cx="365" cy="68" r="2" fill="#0A84FF"/>
+    <circle cx="372" cy="68" r="2" fill="#0A84FF"/>
 
     <!-- Chat area background -->
     <rect x="1" y="100" width="388" height="560" fill="#1C1C1E"/>
@@ -100,21 +104,16 @@
     <rect x="1" y="730" width="388" height="19" rx="20" ry="20" fill="#2C2C2E"/>
     <line x1="1" y1="660" x2="389" y2="660" stroke="#3A3A3C" stroke-width="0.5"/>
 
-    <!-- Compose text field (disabled) -->
-    <rect x="14" y="680" width="280" height="36" rx="18" ry="18" fill="#3A3A3C"/>
-    <text x="30" y="703" fill="#8E8E93" font-size="14" font-style="italic">you are observer</text>
+    <!-- Grayed-out paperclip icon (LEFT of text field) -->
+    <g transform="translate(14, 685)">
+      <path d="M15,3 L15,16 C15,19 12,22 9,22 C6,22 3,19 3,16 L3,7 C3,5 5,3 7,3 C9,3 11,5 11,7 L11,16 C11,17.5 10,19 8.5,19" fill="none" stroke="#8E8E93" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
 
-    <!-- Grayed-out + button -->
-    <circle cx="316" cy="698" r="14" fill="none" stroke="#3A3A3C" stroke-width="1.5"/>
-    <text x="316" y="703" fill="#3A3A3C" font-size="16" text-anchor="middle">+</text>
+    <!-- Compose text field pill (disabled, after paperclip) -->
+    <rect x="46" y="680" width="330" height="36" rx="18" ry="18" fill="#3A3A3C"/>
+    <text x="64" y="703" fill="#8E8E93" font-size="14" font-style="italic">you are observer</text>
 
-    <!-- Grayed-out camera button -->
-    <circle cx="350" cy="698" r="14" fill="none" stroke="#3A3A3C" stroke-width="1.5"/>
-    <rect x="343" y="692" width="14" height="10" rx="2" fill="none" stroke="#3A3A3C" stroke-width="1.2"/>
-    <circle cx="350" cy="697" r="2.5" fill="none" stroke="#3A3A3C" stroke-width="1"/>
-
-    <!-- Grayed-out send button -->
-    <circle cx="375" cy="726" r="0" fill="none"/>
+    <!-- No send button when disabled -->
   </g>
 
   <!-- ============================================ -->
@@ -146,8 +145,10 @@
     <text x="78" y="64" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
     <text x="78" y="80" fill="#8E8E93" font-size="13">Channel</text>
 
-    <!-- Ellipsis -->
-    <text x="365" y="72" fill="#8E8E93" font-size="20" text-anchor="middle">...</text>
+    <!-- Ellipsis menu (horizontal three dots) -->
+    <circle cx="358" cy="68" r="2" fill="#0A84FF"/>
+    <circle cx="365" cy="68" r="2" fill="#0A84FF"/>
+    <circle cx="372" cy="68" r="2" fill="#0A84FF"/>
 
     <!-- Chat area -->
     <rect x="1" y="100" width="388" height="450" fill="#1C1C1E"/>
@@ -174,23 +175,19 @@
     <use href="#megaphone" x="14" y="558" width="16" height="16"/>
     <text x="36" y="571" fill="#8E8E93" font-size="13">Posting as SimpleX News</text>
 
-    <!-- Active compose text field -->
-    <rect x="14" y="582" width="250" height="36" rx="18" ry="18" fill="#3A3A3C"/>
-    <text x="30" y="605" fill="#8E8E93" font-size="14">Type a message...</text>
+    <!-- Paperclip icon (LEFT of text field) -->
+    <g transform="translate(14, 587)">
+      <path d="M15,3 L15,16 C15,19 12,22 9,22 C6,22 3,19 3,16 L3,7 C3,5 5,3 7,3 C9,3 11,5 11,7 L11,16 C11,17.5 10,19 8.5,19" fill="none" stroke="#0A84FF" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
 
-    <!-- Active + button (blue) -->
-    <circle cx="286" cy="600" r="14" fill="none" stroke="#0A84FF" stroke-width="1.5"/>
-    <text x="286" y="605" fill="#0A84FF" font-size="16" text-anchor="middle">+</text>
+    <!-- Active compose text field pill -->
+    <rect x="46" y="582" width="330" height="36" rx="18" ry="18" fill="#3A3A3C"/>
+    <text x="64" y="605" fill="#8E8E93" font-size="14">Type a message...</text>
 
-    <!-- Active camera button (blue) -->
-    <circle cx="320" cy="600" r="14" fill="none" stroke="#0A84FF" stroke-width="1.5"/>
-    <rect x="313" y="594" width="14" height="10" rx="2" fill="none" stroke="#0A84FF" stroke-width="1.2"/>
-    <circle cx="320" cy="599" r="2.5" fill="none" stroke="#0A84FF" stroke-width="1"/>
-
-    <!-- Send arrow button (blue filled circle) -->
-    <circle cx="356" cy="600" r="14" fill="#0A84FF"/>
-    <!-- Arrow up icon -->
-    <path d="M356,607 L356,593 M350,599 L356,593 L362,599" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Send button (arrow.up.circle.fill) INSIDE pill at bottom-right -->
+    <circle cx="361" cy="600" r="14.5" fill="#0A84FF"/>
+    <path d="M356,602 L361,596 L366,602" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="361" y1="597" x2="361" y2="606" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
   </g>
 
   <!-- ============================================ -->

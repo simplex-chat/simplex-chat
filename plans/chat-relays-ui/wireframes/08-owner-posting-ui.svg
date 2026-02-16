@@ -51,11 +51,11 @@
       <!-- Title + subtitle -->
       <text x="72" y="16" font-size="17" font-weight="600" fill="#FFFFFF">SimpleX News</text>
       <text x="72" y="32" font-size="12" fill="#8E8E93">Channel</text>
-      <!-- Ellipsis menu -->
-      <g transform="translate(362, 16)">
+      <!-- Horizontal ellipsis menu -->
+      <g transform="translate(350, 22)">
         <circle cx="0" cy="0" r="2" fill="#0A84FF"/>
-        <circle cx="0" cy="7" r="2" fill="#0A84FF"/>
-        <circle cx="0" cy="14" r="2" fill="#0A84FF"/>
+        <circle cx="7" cy="0" r="2" fill="#0A84FF"/>
+        <circle cx="14" cy="0" r="2" fill="#0A84FF"/>
       </g>
       <!-- Divider -->
       <line x1="0" y1="43" x2="390" y2="43" stroke="#3A3A3C" stroke-width="0.5"/>
@@ -119,31 +119,23 @@
         </text>
       </g>
 
-      <!-- Compose field background -->
+      <!-- Compose field -->
       <g transform="translate(16, 30)">
-        <!-- Attachment button -->
-        <g transform="translate(0, 10)">
-          <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-          <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
-        </g>
-        <!-- Camera button -->
-        <g transform="translate(36, 10)">
-          <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-          <g transform="translate(6, 7)">
-            <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-            <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-            <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+        <!-- Paperclip icon (active) -->
+        <g transform="translate(2, 14)">
+          <g transform="scale(1.4)">
+            <path d="M15.5,2.5 C13.5,0.5 10.2,0.5 8.2,2.5 L2.5,8.2 C1.2,9.5 1.2,11.6 2.5,12.9 L2.5,12.9 C3.8,14.2 5.9,14.2 7.2,12.9 L12.2,7.9 C12.9,7.2 12.9,6.1 12.2,5.4 L12.2,5.4 C11.5,4.7 10.4,4.7 9.7,5.4 L5.7,9.4" fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </g>
-        <!-- Text field -->
-        <rect x="68" y="10" width="240" height="36" rx="18" fill="#3A3A3C"/>
-        <text x="84" y="33" font-size="14" fill="#8E8E93">Type a message...</text>
-        <!-- Send button -->
-        <g transform="translate(318, 10)">
-          <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
-          <g transform="translate(10, 9)">
-            <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        <!-- Text field pill -->
+        <rect x="34" y="10" width="324" height="36" rx="18" fill="#3A3A3C"/>
+        <text x="50" y="33" font-size="14" fill="#8E8E93">Type a message...</text>
+        <!-- Send button (inside pill, bottom-right) -->
+        <g transform="translate(325, 13.5)">
+          <circle cx="14.5" cy="14.5" r="14.5" fill="#0A84FF"/>
+          <g transform="translate(8, 7)">
+            <path d="M0,7 L6.5,0 L13,7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="6.5" y1="0" x2="6.5" y2="15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
           </g>
         </g>
       </g>
@@ -195,29 +187,21 @@
 
     <!-- Compose field -->
     <g transform="translate(16, 110)">
-      <!-- Attachment button -->
-      <g transform="translate(0, 4)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
-      </g>
-      <!-- Camera button -->
-      <g transform="translate(36, 4)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <g transform="translate(6, 7)">
-          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+      <!-- Paperclip icon (active) -->
+      <g transform="translate(2, 8)">
+        <g transform="scale(1.4)">
+          <path d="M15.5,2.5 C13.5,0.5 10.2,0.5 8.2,2.5 L2.5,8.2 C1.2,9.5 1.2,11.6 2.5,12.9 L2.5,12.9 C3.8,14.2 5.9,14.2 7.2,12.9 L12.2,7.9 C12.9,7.2 12.9,6.1 12.2,5.4 L12.2,5.4 C11.5,4.7 10.4,4.7 9.7,5.4 L5.7,9.4" fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
       </g>
-      <!-- Text field with caption text -->
-      <rect x="68" y="4" width="240" height="36" rx="18" fill="#3A3A3C"/>
-      <text x="84" y="27" font-size="14" fill="#8E8E93">Caption for the image...</text>
-      <!-- Send button (active blue) -->
-      <g transform="translate(318, 4)">
-        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
-        <g transform="translate(10, 9)">
-          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <!-- Text field pill -->
+      <rect x="34" y="4" width="324" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="50" y="27" font-size="14" fill="#8E8E93">Caption for the image...</text>
+      <!-- Send button (inside pill, bottom-right) -->
+      <g transform="translate(325, 7.5)">
+        <circle cx="14.5" cy="14.5" r="14.5" fill="#0A84FF"/>
+        <g transform="translate(8, 7)">
+          <path d="M0,7 L6.5,0 L13,7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="6.5" y1="0" x2="6.5" y2="15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
         </g>
       </g>
     </g>
@@ -268,29 +252,21 @@
 
     <!-- Compose field -->
     <g transform="translate(16, 86)">
-      <!-- Attachment button -->
-      <g transform="translate(0, 14)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
-      </g>
-      <!-- Camera button -->
-      <g transform="translate(36, 14)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <g transform="translate(6, 7)">
-          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+      <!-- Paperclip icon (active) -->
+      <g transform="translate(2, 18)">
+        <g transform="scale(1.4)">
+          <path d="M15.5,2.5 C13.5,0.5 10.2,0.5 8.2,2.5 L2.5,8.2 C1.2,9.5 1.2,11.6 2.5,12.9 L2.5,12.9 C3.8,14.2 5.9,14.2 7.2,12.9 L12.2,7.9 C12.9,7.2 12.9,6.1 12.2,5.4 L12.2,5.4 C11.5,4.7 10.4,4.7 9.7,5.4 L5.7,9.4" fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
       </g>
-      <!-- Text field with reply text -->
-      <rect x="68" y="14" width="240" height="36" rx="18" fill="#3A3A3C"/>
-      <text x="84" y="37" font-size="14" fill="#8E8E93">Reply text...</text>
-      <!-- Send button -->
-      <g transform="translate(318, 14)">
-        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
-        <g transform="translate(10, 9)">
-          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <!-- Text field pill -->
+      <rect x="34" y="14" width="324" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="50" y="37" font-size="14" fill="#8E8E93">Reply text...</text>
+      <!-- Send button (inside pill, bottom-right) -->
+      <g transform="translate(325, 17.5)">
+        <circle cx="14.5" cy="14.5" r="14.5" fill="#0A84FF"/>
+        <g transform="translate(8, 7)">
+          <path d="M0,7 L6.5,0 L13,7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="6.5" y1="0" x2="6.5" y2="15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
         </g>
       </g>
     </g>
@@ -312,32 +288,24 @@
 
     <!-- Compose field with inline label -->
     <g transform="translate(16, 18)">
-      <!-- Attachment button -->
-      <g transform="translate(0, 4)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
-      </g>
-      <!-- Camera button -->
-      <g transform="translate(36, 4)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <g transform="translate(6, 7)">
-          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+      <!-- Paperclip icon (active) -->
+      <g transform="translate(2, 8)">
+        <g transform="scale(1.4)">
+          <path d="M15.5,2.5 C13.5,0.5 10.2,0.5 8.2,2.5 L2.5,8.2 C1.2,9.5 1.2,11.6 2.5,12.9 L2.5,12.9 C3.8,14.2 5.9,14.2 7.2,12.9 L12.2,7.9 C12.9,7.2 12.9,6.1 12.2,5.4 L12.2,5.4 C11.5,4.7 10.4,4.7 9.7,5.4 L5.7,9.4" fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
       </g>
-      <!-- Text field with inline megaphone + channel name -->
-      <rect x="68" y="4" width="240" height="36" rx="18" fill="#3A3A3C"/>
-      <text x="84" y="27" font-size="14" fill="#8E8E93">
+      <!-- Text field pill with inline megaphone + channel name -->
+      <rect x="34" y="4" width="324" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="50" y="27" font-size="14" fill="#8E8E93">
         <tspan fill="#0A84FF">&#x1F4E2; SimpleX News:</tspan>
         <tspan fill="#8E8E93"> Type...</tspan>
       </text>
-      <!-- Send button -->
-      <g transform="translate(318, 4)">
-        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
-        <g transform="translate(10, 9)">
-          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <!-- Send button (inside pill, bottom-right) -->
+      <g transform="translate(325, 7.5)">
+        <circle cx="14.5" cy="14.5" r="14.5" fill="#0A84FF"/>
+        <g transform="translate(8, 7)">
+          <path d="M0,7 L6.5,0 L13,7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="6.5" y1="0" x2="6.5" y2="15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
         </g>
       </g>
     </g>
@@ -373,29 +341,21 @@
 
     <!-- Compose field -->
     <g transform="translate(16, 44)">
-      <!-- Attachment button -->
-      <g transform="translate(0, 10)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <text x="14" y="19" font-size="16" fill="#FFFFFF" text-anchor="middle">+</text>
-      </g>
-      <!-- Camera button -->
-      <g transform="translate(36, 10)">
-        <circle cx="14" cy="14" r="14" fill="#3A3A3C"/>
-        <g transform="translate(6, 7)">
-          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <circle cx="8" cy="8" r="3" fill="none" stroke="#FFFFFF" stroke-width="1.2"/>
-          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+      <!-- Paperclip icon (active) -->
+      <g transform="translate(2, 14)">
+        <g transform="scale(1.4)">
+          <path d="M15.5,2.5 C13.5,0.5 10.2,0.5 8.2,2.5 L2.5,8.2 C1.2,9.5 1.2,11.6 2.5,12.9 L2.5,12.9 C3.8,14.2 5.9,14.2 7.2,12.9 L12.2,7.9 C12.9,7.2 12.9,6.1 12.2,5.4 L12.2,5.4 C11.5,4.7 10.4,4.7 9.7,5.4 L5.7,9.4" fill="none" stroke="#0A84FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
       </g>
-      <!-- Active text field -->
-      <rect x="68" y="10" width="240" height="36" rx="18" fill="#3A3A3C"/>
-      <text x="84" y="33" font-size="14" fill="#8E8E93">Type a message...</text>
-      <!-- Send button (active blue) -->
-      <g transform="translate(318, 10)">
-        <circle cx="18" cy="18" r="18" fill="#0A84FF"/>
-        <g transform="translate(10, 9)">
-          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="8" y1="0" x2="8" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      <!-- Active text field pill -->
+      <rect x="34" y="10" width="324" height="36" rx="18" fill="#3A3A3C"/>
+      <text x="50" y="33" font-size="14" fill="#8E8E93">Type a message...</text>
+      <!-- Send button (inside pill, bottom-right) -->
+      <g transform="translate(325, 13.5)">
+        <circle cx="14.5" cy="14.5" r="14.5" fill="#0A84FF"/>
+        <g transform="translate(8, 7)">
+          <path d="M0,7 L6.5,0 L13,7" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="6.5" y1="0" x2="6.5" y2="15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
         </g>
       </g>
     </g>
@@ -418,31 +378,15 @@
 
     <!-- Compose field (disabled) -->
     <g transform="translate(16, 26)">
-      <!-- Attachment button (grayed out) -->
-      <g transform="translate(0, 10)">
-        <circle cx="14" cy="14" r="14" fill="#2C2C2E"/>
-        <text x="14" y="19" font-size="16" fill="#3A3A3C" text-anchor="middle">+</text>
-      </g>
-      <!-- Camera button (grayed out) -->
-      <g transform="translate(36, 10)">
-        <circle cx="14" cy="14" r="14" fill="#2C2C2E"/>
-        <g transform="translate(6, 7)">
-          <rect x="0" y="3" width="16" height="10" rx="2" fill="none" stroke="#3A3A3C" stroke-width="1.2"/>
-          <circle cx="8" cy="8" r="3" fill="none" stroke="#3A3A3C" stroke-width="1.2"/>
-          <rect x="4" y="1" width="8" height="3" rx="1" fill="none" stroke="#3A3A3C" stroke-width="1"/>
+      <!-- Paperclip icon (grayed/disabled) -->
+      <g transform="translate(2, 14)">
+        <g transform="scale(1.4)">
+          <path d="M15.5,2.5 C13.5,0.5 10.2,0.5 8.2,2.5 L2.5,8.2 C1.2,9.5 1.2,11.6 2.5,12.9 L2.5,12.9 C3.8,14.2 5.9,14.2 7.2,12.9 L12.2,7.9 C12.9,7.2 12.9,6.1 12.2,5.4 L12.2,5.4 C11.5,4.7 10.4,4.7 9.7,5.4 L5.7,9.4" fill="none" stroke="#8E8E93" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
       </g>
-      <!-- Disabled text field -->
-      <rect x="68" y="10" width="240" height="36" rx="18" fill="#2C2C2E"/>
-      <text x="84" y="33" font-size="14" fill="#8E8E93" font-style="italic">you are observer</text>
-      <!-- Send button (grayed out) -->
-      <g transform="translate(318, 10)">
-        <circle cx="18" cy="18" r="18" fill="#2C2C2E"/>
-        <g transform="translate(10, 9)">
-          <path d="M0,9 L8,0 L16,9" fill="none" stroke="#3A3A3C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="8" y1="0" x2="8" y2="18" stroke="#3A3A3C" stroke-width="2" stroke-linecap="round"/>
-        </g>
-      </g>
+      <!-- Disabled text field pill (no send button) -->
+      <rect x="34" y="10" width="324" height="36" rx="18" fill="#2C2C2E"/>
+      <text x="50" y="33" font-size="14" fill="#8E8E93" font-style="italic">you are observer</text>
     </g>
 
     <!-- Home indicator -->

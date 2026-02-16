@@ -9,10 +9,10 @@
       .accent { font-size: 14px; fill: #0A84FF; }
       .red-text { font-size: 14px; fill: #FF453A; }
       .green-text { font-size: 14px; fill: #30D158; }
-      .section-header { font-size: 12px; font-weight: 600; fill: #8E8E93; letter-spacing: 0.5px; }
+      .section-header { font-size: 13px; font-weight: 600; fill: #8E8E93; letter-spacing: 0.5px; }
       .nav-text { font-size: 17px; fill: #0A84FF; }
       .chevron { font-size: 14px; fill: #8E8E93; }
-      .section-label { font-size: 20px; font-weight: bold; fill: #FFFFFF; }
+      .section-label { font-size: 16px; font-weight: bold; fill: #8E8E93; }
     </style>
   </defs>
 
@@ -25,7 +25,7 @@
   <text x="25" y="30" class="section-label">5.1 Channel Info — Owner View</text>
 
   <!-- Phone frame -->
-  <rect x="25" y="45" width="390" height="1380" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+  <rect x="25" y="45" width="390" height="1380" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
 
   <!-- Status bar area -->
   <rect x="25" y="45" width="390" height="44" rx="20" ry="20" fill="#1C1C1E"/>
@@ -37,7 +37,7 @@
   <text x="50" y="108" class="nav-text">&lt; Channel info</text>
 
   <!-- Header: channel image + name -->
-  <circle cx="220" cy="165" r="35" fill="#0A84FF"/>
+  <circle cx="220" cy="165" r="35" fill="#0A84FF" opacity="0.2"/>
   <text x="220" y="170" text-anchor="middle" style="font-size:20px; fill:#FFFFFF; font-weight:bold;">SN</text>
   <text x="220" y="218" text-anchor="middle" class="title">SimpleX News</text>
   <text x="220" y="238" text-anchor="middle" class="secondary">News and updates</text>
@@ -46,14 +46,27 @@
   <rect x="45" y="258" width="350" height="44" rx="10" ry="10" fill="#2C2C2E"/>
   <text x="62" y="285" class="secondary">Set chat name...</text>
 
-  <!-- Action buttons row -->
-  <rect x="45" y="318" width="170" height="56" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="130" y="342" text-anchor="middle" style="font-size:20px;">&#x1F50D;</text>
-  <text x="130" y="362" text-anchor="middle" class="caption">Search</text>
+  <!-- Action buttons row (card style: rounded rect, icon centered above caption) -->
+  <g transform="translate(45, 318)">
+    <!-- Search card -->
+    <rect x="0" y="0" width="170" height="60" rx="10" ry="10" fill="#2C2C2E"/>
+    <!-- Search icon (magnifying glass) -->
+    <g transform="translate(85, 20)" fill="none" stroke="#0A84FF" stroke-width="1">
+      <circle cx="-2" cy="-2" r="6"/>
+      <line x1="2.5" y1="2.5" x2="7" y2="7"/>
+    </g>
+    <text x="85" y="52" text-anchor="middle" style="font-size:12px; fill:#0A84FF;">Search</text>
 
-  <rect x="225" y="318" width="170" height="56" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="310" y="342" text-anchor="middle" style="font-size:20px;">&#x1F507;</text>
-  <text x="310" y="362" text-anchor="middle" class="caption">Mute</text>
+    <!-- Mute card -->
+    <rect x="180" y="0" width="170" height="60" rx="10" ry="10" fill="#2C2C2E"/>
+    <!-- Mute icon (speaker with slash) -->
+    <g transform="translate(265, 14)" fill="none" stroke="#0A84FF" stroke-width="1">
+      <path d="M-4,0 L-4,8 L-8,8 L-8,0 Z" fill="#0A84FF" stroke="none"/>
+      <path d="M-4,0 L2,-5 L2,13 L-4,8"/>
+      <line x1="5" y1="0" x2="11" y2="8" stroke-linecap="round"/>
+    </g>
+    <text x="265" y="52" text-anchor="middle" style="font-size:12px; fill:#0A84FF;">Mute</text>
+  </g>
 
   <!-- Section 1: Links/Relays/Members -->
   <rect x="45" y="394" width="350" height="176" rx="10" ry="10" fill="#2C2C2E"/>
@@ -115,7 +128,7 @@
   <text x="25" y="1480" class="section-label">5.2 Channel Info — Member View</text>
 
   <!-- Phone frame -->
-  <rect x="25" y="1495" width="390" height="1000" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+  <rect x="25" y="1495" width="390" height="1000" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
 
   <!-- Status bar -->
   <rect x="25" y="1495" width="390" height="44" rx="20" ry="20" fill="#1C1C1E"/>
@@ -127,19 +140,32 @@
   <text x="50" y="1558" class="nav-text">&lt; Channel info</text>
 
   <!-- Header -->
-  <circle cx="220" cy="1615" r="35" fill="#0A84FF"/>
+  <circle cx="220" cy="1615" r="35" fill="#0A84FF" opacity="0.2"/>
   <text x="220" y="1620" text-anchor="middle" style="font-size:20px; fill:#FFFFFF; font-weight:bold;">SN</text>
   <text x="220" y="1668" text-anchor="middle" class="title">SimpleX News</text>
   <text x="220" y="1688" text-anchor="middle" class="secondary">News and updates</text>
 
-  <!-- Action buttons -->
-  <rect x="45" y="1708" width="170" height="56" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="130" y="1732" text-anchor="middle" style="font-size:20px;">&#x1F50D;</text>
-  <text x="130" y="1752" text-anchor="middle" class="caption">Search</text>
+  <!-- Action buttons (card style: rounded rect, icon centered above caption) -->
+  <g transform="translate(45, 1708)">
+    <!-- Search card -->
+    <rect x="0" y="0" width="170" height="60" rx="10" ry="10" fill="#2C2C2E"/>
+    <!-- Search icon (magnifying glass) -->
+    <g transform="translate(85, 20)" fill="none" stroke="#0A84FF" stroke-width="1">
+      <circle cx="-2" cy="-2" r="6"/>
+      <line x1="2.5" y1="2.5" x2="7" y2="7"/>
+    </g>
+    <text x="85" y="52" text-anchor="middle" style="font-size:12px; fill:#0A84FF;">Search</text>
 
-  <rect x="225" y="1708" width="170" height="56" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="310" y="1732" text-anchor="middle" style="font-size:20px;">&#x1F507;</text>
-  <text x="310" y="1752" text-anchor="middle" class="caption">Mute</text>
+    <!-- Mute card -->
+    <rect x="180" y="0" width="170" height="60" rx="10" ry="10" fill="#2C2C2E"/>
+    <!-- Mute icon (speaker with slash) -->
+    <g transform="translate(265, 14)" fill="none" stroke="#0A84FF" stroke-width="1">
+      <path d="M-4,0 L-4,8 L-8,8 L-8,0 Z" fill="#0A84FF" stroke="none"/>
+      <path d="M-4,0 L2,-5 L2,13 L-4,8"/>
+      <line x1="5" y1="0" x2="11" y2="8" stroke-linecap="round"/>
+    </g>
+    <text x="265" y="52" text-anchor="middle" style="font-size:12px; fill:#0A84FF;">Mute</text>
+  </g>
 
   <!-- Section: Relays / Chat with admins -->
   <rect x="45" y="1784" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
@@ -179,7 +205,7 @@
   <text x="25" y="2560" class="section-label">5.3 ChannelRelaysView</text>
 
   <!-- Phone frame -->
-  <rect x="25" y="2575" width="390" height="400" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+  <rect x="25" y="2575" width="390" height="400" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
 
   <!-- Status bar -->
   <rect x="25" y="2575" width="390" height="44" rx="20" ry="20" fill="#1C1C1E"/>
@@ -194,17 +220,20 @@
   <rect x="45" y="2660" width="350" height="132" rx="10" ry="10" fill="#2C2C2E"/>
   <!-- Relay 1 -->
   <text x="62" y="2690" class="body">relay1.simplex.im</text>
-  <circle cx="350" cy="2686" r="4" fill="#30D158"/>
+  <circle cx="350" cy="2686" r="6" fill="#30D158"/>
+  <polyline points="347,2686 349,2688 353,2684" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="362" y="2690" class="green-text" style="font-size:12px;">Active</text>
   <line x1="62" y1="2704" x2="375" y2="2704" stroke="#3A3A3C" stroke-width="0.5"/>
   <!-- Relay 2 -->
   <text x="62" y="2734" class="body">relay2.simplex.im</text>
-  <circle cx="350" cy="2730" r="4" fill="#30D158"/>
+  <circle cx="350" cy="2730" r="6" fill="#30D158"/>
+  <polyline points="347,2730 349,2732 353,2728" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="362" y="2734" class="green-text" style="font-size:12px;">Active</text>
   <line x1="62" y1="2748" x2="375" y2="2748" stroke="#3A3A3C" stroke-width="0.5"/>
   <!-- Relay 3 -->
   <text x="62" y="2778" class="body">relay3.simplex.im</text>
-  <circle cx="350" cy="2774" r="4" fill="#30D158"/>
+  <circle cx="350" cy="2774" r="6" fill="#30D158"/>
+  <polyline points="347,2774 349,2776 353,2772" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="362" y="2778" class="green-text" style="font-size:12px;">Active</text>
 
   <!-- Footer -->
@@ -216,7 +245,7 @@
   <text x="25" y="3040" class="section-label">5.4 Alt A — Inline Relay Section</text>
 
   <!-- Partial phone frame -->
-  <rect x="25" y="3055" width="390" height="440" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+  <rect x="25" y="3055" width="390" height="440" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
 
   <!-- Channel link row -->
   <rect x="45" y="3080" width="350" height="44" rx="10" ry="10" fill="#2C2C2E"/>
@@ -230,17 +259,20 @@
   <rect x="45" y="3164" width="350" height="132" rx="10" ry="10" fill="#2C2C2E"/>
   <!-- Relay 1 -->
   <text x="62" y="3194" class="body">relay1.simplex.im</text>
-  <circle cx="350" cy="3190" r="4" fill="#30D158"/>
+  <circle cx="350" cy="3190" r="6" fill="#30D158"/>
+  <polyline points="347,3190 349,3192 353,3188" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="362" y="3194" class="green-text" style="font-size:12px;">Active</text>
   <line x1="62" y1="3208" x2="375" y2="3208" stroke="#3A3A3C" stroke-width="0.5"/>
   <!-- Relay 2 -->
   <text x="62" y="3238" class="body">relay2.simplex.im</text>
-  <circle cx="350" cy="3234" r="4" fill="#30D158"/>
+  <circle cx="350" cy="3234" r="6" fill="#30D158"/>
+  <polyline points="347,3234 349,3236 353,3232" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="362" y="3238" class="green-text" style="font-size:12px;">Active</text>
   <line x1="62" y1="3252" x2="375" y2="3252" stroke="#3A3A3C" stroke-width="0.5"/>
   <!-- Relay 3 -->
   <text x="62" y="3282" class="body">relay3.simplex.im</text>
-  <circle cx="350" cy="3278" r="4" fill="#30D158"/>
+  <circle cx="350" cy="3278" r="6" fill="#30D158"/>
+  <polyline points="347,3278 349,3280 353,3276" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="362" y="3282" class="green-text" style="font-size:12px;">Active</text>
 
   <!-- Footer -->
@@ -261,7 +293,7 @@
   <text x="25" y="3560" class="section-label">5.5 Alt B — Owner Member List</text>
 
   <!-- Partial phone frame -->
-  <rect x="25" y="3575" width="390" height="360" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1.5"/>
+  <rect x="25" y="3575" width="390" height="360" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
 
   <!-- Section header: 150 SUBSCRIBERS -->
   <text x="62" y="3615" class="section-header">150 SUBSCRIBERS</text>

@@ -153,11 +153,11 @@
       <!-- Title + subtitle -->
       <text x="80" y="62" font-size="17" font-weight="600" fill="#FFFFFF">SimpleX News</text>
       <text x="80" y="78" font-size="12" fill="#8E8E93">Channel</text>
-      <!-- Ellipsis menu -->
-      <g transform="translate(360, 60)">
+      <!-- Ellipsis menu (horizontal, matching iOS ellipsis) -->
+      <g transform="translate(353, 67)">
         <circle cx="0" cy="0" r="2" fill="#0A84FF"/>
-        <circle cx="0" cy="7" r="2" fill="#0A84FF"/>
-        <circle cx="0" cy="14" r="2" fill="#0A84FF"/>
+        <circle cx="7" cy="0" r="2" fill="#0A84FF"/>
+        <circle cx="14" cy="0" r="2" fill="#0A84FF"/>
       </g>
       <!-- Divider -->
       <line x1="0" y1="87" x2="390" y2="87" stroke="#3A3A3C" stroke-width="0.5"/>
@@ -201,11 +201,11 @@
       <!-- Title + subtitle -->
       <text x="80" y="62" font-size="17" font-weight="600" fill="#FFFFFF">Team Chat</text>
       <text x="80" y="78" font-size="12" fill="#8E8E93">5 members</text>
-      <!-- Ellipsis menu -->
-      <g transform="translate(360, 60)">
+      <!-- Ellipsis menu (horizontal, matching iOS ellipsis) -->
+      <g transform="translate(353, 67)">
         <circle cx="0" cy="0" r="2" fill="#0A84FF"/>
-        <circle cx="0" cy="7" r="2" fill="#0A84FF"/>
-        <circle cx="0" cy="14" r="2" fill="#0A84FF"/>
+        <circle cx="7" cy="0" r="2" fill="#0A84FF"/>
+        <circle cx="14" cy="0" r="2" fill="#0A84FF"/>
       </g>
     </g>
   </g>

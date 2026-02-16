@@ -20,7 +20,7 @@
   </defs>
 
   <!-- Background -->
-  <rect width="440" height="4920" fill="#111111"/>
+  <rect width="440" height="4920" fill="#000000"/>
 
   <!-- ==================== -->
   <!-- 5.1 Creation Form    -->
