@@ -52,16 +52,16 @@
     <g transform="translate(0, 76)">
       <rect x="0" y="0" width="390" height="76" rx="0" fill="#1C1C1E"/>
       <!-- Avatar circle: megaphone -->
-      <circle cx="52" cy="38" r="24" fill="#0A84FF" opacity="0.2"/>
+      <circle cx="52" cy="38" r="24" fill="#2C2C2E"/>
       <!-- Megaphone icon -->
       <g transform="translate(36, 24)">
-        <g fill="#0A84FF">
+        <g fill="#8E8E93">
           <!-- Megaphone body (cone flaring right) -->
           <path d="M10,6 L24,2 L24,24 L10,20 Z"/>
           <!-- Mouthpiece barrel -->
           <rect x="4" y="9" width="7" height="8" rx="2"/>
           <!-- Handle -->
-          <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20" fill="#0A84FF"/>
+          <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20" fill="#8E8E93"/>
         </g>
       </g>
       <!-- Text -->
@@ -138,18 +138,18 @@
         <path d="M12,0 L2,10 L12,20" fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <!-- Channel avatar (small) -->
-      <circle cx="56" cy="66" r="16" fill="#0A84FF" opacity="0.2"/>
+      <circle cx="134" cy="66" r="16" fill="#2C2C2E"/>
       <!-- Mini megaphone -->
-      <g transform="translate(46, 57)">
-        <g fill="#0A84FF" transform="scale(0.6)">
+      <g transform="translate(124, 57)">
+        <g fill="#8E8E93" transform="scale(0.6)">
           <path d="M10,6 L24,2 L24,24 L10,20 Z"/>
           <rect x="4" y="9" width="7" height="8" rx="2"/>
           <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20"/>
         </g>
       </g>
-      <!-- Title + subtitle -->
-      <text x="80" y="62" font-size="17" font-weight="600" fill="#FFFFFF">SimpleX News</text>
-      <text x="80" y="78" font-size="12" fill="#8E8E93">Channel</text>
+      <!-- Title (centered with avatar) -->
+      <text x="158" y="71" font-size="17" font-weight="600" fill="#FFFFFF">SimpleX News</text>
+
       <!-- Ellipsis menu (horizontal, matching iOS ellipsis) -->
       <g transform="translate(353, 67)">
         <circle cx="0" cy="0" r="2" fill="#0A84FF"/>
@@ -187,17 +187,16 @@
         <path d="M12,0 L2,10 L12,20" fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <!-- Group avatar (small) -->
-      <circle cx="56" cy="66" r="16" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1"/>
+      <circle cx="148" cy="66" r="16" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1"/>
       <!-- Mini person.2 icon -->
-      <g transform="translate(56, 66)" fill="#8E8E93">
+      <g transform="translate(148, 66)" fill="#8E8E93">
         <circle cx="-2" cy="-5" r="3.5"/>
         <path d="M-8,3 Q-8,-1 -2,-1 Q4,-1 4,3 L4,4.5 Q4,5 3,5 L-7,5 Q-8,5 -8,4.5 Z"/>
         <circle cx="6" cy="-6.5" r="2.8" opacity="0.6"/>
         <path d="M1.5,1.5 Q2.5,-1.5 6,-1.5 Q9.5,-1.5 10,1.5 L10,2.5 Q10,3 9.5,3 L6.5,3" opacity="0.6"/>
       </g>
-      <!-- Title + subtitle -->
-      <text x="80" y="62" font-size="17" font-weight="600" fill="#FFFFFF">Team Chat</text>
-      <text x="80" y="78" font-size="12" fill="#8E8E93">5 members</text>
+      <!-- Title (centered with avatar) -->
+      <text x="172" y="71" font-size="17" font-weight="600" fill="#FFFFFF">Team Chat</text>
       <!-- Ellipsis menu (horizontal, matching iOS ellipsis) -->
       <g transform="translate(353, 67)">
         <circle cx="0" cy="0" r="2" fill="#0A84FF"/>

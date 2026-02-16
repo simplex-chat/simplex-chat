@@ -128,7 +128,7 @@
   <text x="25" y="1480" class="section-label">5.2 Channel Info — Member View</text>
 
   <!-- Phone frame -->
-  <rect x="25" y="1495" width="390" height="1000" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
+  <rect x="25" y="1495" width="390" height="1054" rx="20" ry="20" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="1"/>
 
   <!-- Status bar -->
   <rect x="25" y="1495" width="390" height="44" rx="20" ry="20" fill="#1C1C1E"/>
@@ -145,8 +145,12 @@
   <text x="220" y="1668" text-anchor="middle" class="title">SimpleX News</text>
   <text x="220" y="1688" text-anchor="middle" class="secondary">News and updates</text>
 
+  <!-- Set chat name field -->
+  <rect x="45" y="1698" width="350" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="62" y="1725" class="secondary">Set chat name...</text>
+
   <!-- Action buttons (card style: rounded rect, icon centered above caption) -->
-  <g transform="translate(45, 1708)">
+  <g transform="translate(45, 1762)">
     <!-- Search card -->
     <rect x="0" y="0" width="170" height="60" rx="10" ry="10" fill="#2C2C2E"/>
     <!-- Search icon (magnifying glass) -->
@@ -168,36 +172,36 @@
   </g>
 
   <!-- Section: Relays / Chat with admins -->
-  <rect x="45" y="1784" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="62" y="1811" class="body">&#x1F4E1;  Chat relays</text>
-  <text x="375" y="1811" text-anchor="end" class="chevron">&gt;</text>
-  <line x1="62" y1="1828" x2="375" y2="1828" stroke="#3A3A3C" stroke-width="0.5"/>
-  <text x="62" y="1855" class="body">&#x1F4AC;  Chat with admins</text>
-  <text x="375" y="1855" text-anchor="end" class="chevron">&gt;</text>
+  <rect x="45" y="1838" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="62" y="1865" class="body">&#x1F4E1;  Chat relays</text>
+  <text x="375" y="1865" text-anchor="end" class="chevron">&gt;</text>
+  <line x1="62" y1="1882" x2="375" y2="1882" stroke="#3A3A3C" stroke-width="0.5"/>
+  <text x="62" y="1909" class="body">&#x1F4AC;  Chat with admins</text>
+  <text x="375" y="1909" text-anchor="end" class="chevron">&gt;</text>
 
   <!-- Section: Channel preferences -->
-  <rect x="45" y="1892" width="350" height="44" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="62" y="1919" class="body">&#x2699;&#xFE0F;  Channel preferences</text>
-  <text x="375" y="1919" text-anchor="end" class="chevron">&gt;</text>
-  <text x="62" y="1956" class="caption">Only channel owners can change channel preferences.</text>
+  <rect x="45" y="1946" width="350" height="44" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="62" y="1973" class="body">&#x2699;&#xFE0F;  Channel preferences</text>
+  <text x="375" y="1973" text-anchor="end" class="chevron">&gt;</text>
+  <text x="62" y="2010" class="caption">Only channel owners can change channel preferences.</text>
 
   <!-- Section: Theme / Delete messages -->
-  <rect x="45" y="1976" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="62" y="2003" class="body">Chat theme</text>
-  <text x="375" y="2003" text-anchor="end" class="chevron">&gt;</text>
-  <line x1="62" y1="2020" x2="375" y2="2020" stroke="#3A3A3C" stroke-width="0.5"/>
-  <text x="62" y="2047" class="body">Delete messages after</text>
-  <text x="375" y="2047" text-anchor="end" class="chevron">&gt;</text>
-  <text x="62" y="2084" class="caption">Delete chat messages from your device.</text>
+  <rect x="45" y="2030" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="62" y="2057" class="body">Chat theme</text>
+  <text x="375" y="2057" text-anchor="end" class="chevron">&gt;</text>
+  <line x1="62" y1="2074" x2="375" y2="2074" stroke="#3A3A3C" stroke-width="0.5"/>
+  <text x="62" y="2101" class="body">Delete messages after</text>
+  <text x="375" y="2101" text-anchor="end" class="chevron">&gt;</text>
+  <text x="62" y="2138" class="caption">Delete chat messages from your device.</text>
 
   <!-- 150 SUBSCRIBERS -->
-  <text x="62" y="2120" class="section-header">150 SUBSCRIBERS</text>
+  <text x="62" y="2174" class="section-header">150 SUBSCRIBERS</text>
 
   <!-- Destructive actions -->
-  <rect x="45" y="2138" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
-  <text x="62" y="2165" class="red-text">&#x1F5D1;  Clear chat</text>
-  <line x1="62" y1="2182" x2="375" y2="2182" stroke="#3A3A3C" stroke-width="0.5"/>
-  <text x="62" y="2209" class="red-text">&#x1F6AA;  Leave channel</text>
+  <rect x="45" y="2192" width="350" height="88" rx="10" ry="10" fill="#2C2C2E"/>
+  <text x="62" y="2219" class="red-text">&#x1F5D1;  Clear chat</text>
+  <line x1="62" y1="2236" x2="375" y2="2236" stroke="#3A3A3C" stroke-width="0.5"/>
+  <text x="62" y="2263" class="red-text">&#x1F6AA;  Leave channel</text>
 
   <!-- ============================================================ -->
   <!-- SECTION 5.3: ChannelRelaysView                               -->

@@ -5,9 +5,9 @@
     </style>
     <!-- Megaphone icon for channel avatar -->
     <symbol id="megaphone" viewBox="0 0 28 28">
-      <path d="M10,6 L24,2 L24,24 L10,20 Z" fill="#0A84FF"/>
-      <rect x="4" y="9" width="7" height="8" rx="2" fill="#0A84FF"/>
-      <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20" fill="#0A84FF"/>
+      <path d="M10,6 L24,2 L24,24 L10,20 Z" fill="#8E8E93"/>
+      <rect x="4" y="9" width="7" height="8" rx="2" fill="#8E8E93"/>
+      <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20" fill="#8E8E93"/>
     </symbol>
     <!-- Back arrow -->
     <symbol id="back-arrow" viewBox="0 0 12 20">
@@ -42,25 +42,24 @@
     <!-- Back arrow -->
     <use href="#back-arrow" x="16" y="58" width="12" height="20"/>
 
-    <!-- Channel avatar in nav -->
-    <circle cx="52" cy="68" r="16" fill="#0A84FF" opacity="0.2"/>
-    <use href="#megaphone" x="36" y="52" width="32" height="32"/>
+    <!-- Channel avatar in nav (centered) -->
+    <circle cx="134" cy="72" r="16" fill="#2C2C2E"/>
+    <use href="#megaphone" x="118" y="56" width="32" height="32"/>
 
-    <!-- Nav title -->
-    <text x="78" y="64" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
-    <text x="78" y="80" fill="#8E8E93" font-size="13">Channel</text>
+    <!-- Nav title (centered with avatar) -->
+    <text x="158" y="77" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
 
     <!-- Ellipsis menu (horizontal three dots) -->
-    <circle cx="358" cy="68" r="2" fill="#0A84FF"/>
-    <circle cx="365" cy="68" r="2" fill="#0A84FF"/>
-    <circle cx="372" cy="68" r="2" fill="#0A84FF"/>
+    <circle cx="358" cy="72" r="2" fill="#0A84FF"/>
+    <circle cx="365" cy="72" r="2" fill="#0A84FF"/>
+    <circle cx="372" cy="72" r="2" fill="#0A84FF"/>
 
     <!-- Chat area background -->
     <rect x="1" y="100" width="388" height="560" fill="#1C1C1E"/>
 
     <!-- First message group — with avatar -->
     <!-- Channel avatar -->
-    <circle cx="30" cy="140" r="16" fill="#0A84FF" opacity="0.2"/>
+    <circle cx="30" cy="140" r="16" fill="#2C2C2E"/>
     <use href="#megaphone" x="14" y="124" width="32" height="32"/>
 
     <!-- Sender name -->
@@ -85,7 +84,7 @@
     <!-- Time gap — visual spacing before next group -->
 
     <!-- Second message group — avatar shown again after gap -->
-    <circle cx="30" cy="370" r="16" fill="#0A84FF" opacity="0.2"/>
+    <circle cx="30" cy="370" r="16" fill="#2C2C2E"/>
     <use href="#megaphone" x="14" y="354" width="32" height="32"/>
 
     <!-- Sender name again -->
@@ -136,24 +135,23 @@
     <!-- Back arrow -->
     <use href="#back-arrow" x="16" y="58" width="12" height="20"/>
 
-    <!-- Channel avatar in nav -->
-    <circle cx="52" cy="68" r="16" fill="#0A84FF" opacity="0.2"/>
-    <use href="#megaphone" x="36" y="52" width="32" height="32"/>
+    <!-- Channel avatar in nav (centered) -->
+    <circle cx="134" cy="72" r="16" fill="#2C2C2E"/>
+    <use href="#megaphone" x="118" y="56" width="32" height="32"/>
 
-    <!-- Nav title -->
-    <text x="78" y="64" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
-    <text x="78" y="80" fill="#8E8E93" font-size="13">Channel</text>
+    <!-- Nav title (centered with avatar) -->
+    <text x="158" y="77" fill="#FFFFFF" font-size="17" font-weight="bold">SimpleX News</text>
 
     <!-- Ellipsis menu (horizontal three dots) -->
-    <circle cx="358" cy="68" r="2" fill="#0A84FF"/>
-    <circle cx="365" cy="68" r="2" fill="#0A84FF"/>
-    <circle cx="372" cy="68" r="2" fill="#0A84FF"/>
+    <circle cx="358" cy="72" r="2" fill="#0A84FF"/>
+    <circle cx="365" cy="72" r="2" fill="#0A84FF"/>
+    <circle cx="372" cy="72" r="2" fill="#0A84FF"/>
 
     <!-- Chat area -->
     <rect x="1" y="100" width="388" height="450" fill="#1C1C1E"/>
 
     <!-- Channel avatar -->
-    <circle cx="30" cy="140" r="16" fill="#0A84FF" opacity="0.2"/>
+    <circle cx="30" cy="140" r="16" fill="#2C2C2E"/>
     <use href="#megaphone" x="14" y="124" width="32" height="32"/>
 
     <!-- Sender name -->
@@ -200,7 +198,7 @@
     <rect x="0" y="0" width="390" height="80" rx="12" ry="12" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1"/>
 
     <!-- Channel avatar -->
-    <circle cx="40" cy="40" r="24" fill="#0A84FF" opacity="0.2"/>
+    <circle cx="40" cy="40" r="24" fill="#2C2C2E"/>
     <use href="#megaphone" x="16" y="16" width="48" height="48"/>
 
     <!-- Channel name -->
