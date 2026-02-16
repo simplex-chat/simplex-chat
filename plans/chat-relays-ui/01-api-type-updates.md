@@ -4,41 +4,72 @@
 
 ## Table of Contents
 1. [Overview](#1-overview)
-2. [Prerequisites & Dependencies](#2-prerequisites--dependencies)
-3. [Data Model](#3-data-model)
-4. [Implementation Plan](#4-implementation-plan)
-5. [Type Mapping Reference](#5-type-mapping-reference)
-6. [Edge Cases](#6-edge-cases)
-7. [Testing Notes](#7-testing-notes)
+2. [New Types](#2-new-types)
+3. [Existing Type Changes](#3-existing-type-changes)
+4. [API Command Changes](#4-api-command-changes)
+5. [API Response/Event Changes](#5-api-responseevent-changes)
+6. [Type Mapping Reference](#6-type-mapping-reference)
+7. [Edge Cases](#7-edge-cases)
 
 ---
 
 ## 1. Overview
 
-**What**: Add all Swift type definitions needed for channel/relay UI. This includes new types (`UserChatRelay`, `GroupRelay`, `RelayStatus`), new enum cases (`CIDirection.channelRcv`), new fields on existing types (`GroupInfo.useRelays`, `GroupInfo.groupRelays`), and new API command/response wrappers.
+Swift type additions and modifications to mirror Haskell changes in the `chat-relays` branch. Derived from `git diff master..HEAD` — no invented types.
 
-**Why**: All other UI items (§4.2-4.8) depend on these types. This must be completed first to unblock parallel UI development.
+**Scope**: Types needed for channel UI: "as group" chat items, sending/forwarding as group, creating/joining channels with relays, managing chat relays. Excludes: protocol-only types (`GroupRelayInvitation`, `RelayRequestData`), key types (`GroupRootKey`, `GroupKeys`, `memberPubKey`).
 
-**User impact**: None directly — pure type definitions. But enables all visible UI changes.
-
-**No wireframes** — this is a data model/API item.
-
----
-
-## 2. Prerequisites & Dependencies
-
-- **Backend**: All Haskell types already exist. This is purely Swift-side mirroring.
-- **No UI dependency** — can start immediately.
-- **Blocks**: All other §4.x items.
+**Files**:
+- `SimpleXChat/ChatTypes.swift` — new types, field additions
+- `Shared/Model/AppAPITypes.swift` — command/response changes
+- `Shared/Model/SimpleXAPI.swift` — API wrapper changes
 
 ---
 
-## 3. Data Model
+## 2. New Types
 
-### 3.1 New Types to Add
+### 2.1 RelayStatus
 
-#### UserChatRelay (from Operators.hs:262)
+Haskell (`Types.hs`): `data RelayStatus = RSNew | RSInvited | RSAccepted | RSActive`
 
+```swift
+public enum RelayStatus: String, Decodable, Equatable, Hashable {
+    case rsNew = "new"
+    case rsInvited = "invited"
+    case rsAccepted = "accepted"
+    case rsActive = "active"
+}
+```
+
+JSON: `"new"`, `"invited"`, `"accepted"`, `"active"` (via `enumJSON $ dropPrefix "RS"`).
+
+### 2.2 GroupRelay
+
+Haskell (`Types.hs`):
+```haskell
+data GroupRelay = GroupRelay
+  { groupRelayId :: Int64,
+    groupMemberId :: GroupMemberId,
+    userChatRelayId :: Int64,
+    relayStatus :: RelayStatus,
+    relayLink :: Maybe ShortLinkContact  -- serialized as String
+  }
+```
+
+```swift
+public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
+    public var groupRelayId: Int64
+    public var groupMemberId: Int64
+    public var userChatRelayId: Int64
+    public var relayStatus: RelayStatus
+    public var relayLink: String?
+    public var id: Int64 { groupRelayId }
+}
+```
+
+### 2.3 UserChatRelay
+
+Haskell (`Operators.hs`):
 ```haskell
 data UserChatRelay' s = UserChatRelay
   { chatRelayId :: DBEntityId' s,
@@ -52,96 +83,8 @@ data UserChatRelay' s = UserChatRelay
   }
 ```
 
-#### GroupRelay (from Types.hs:995)
-
-```haskell
-data GroupRelay = GroupRelay
-  { groupRelayId :: Int64,
-    groupMemberId :: Int64,
-    userChatRelayId :: Int64,
-    relayStatus :: RelayStatus,
-    relayLink :: Maybe Text
-  }
-```
-
-#### RelayStatus (from Types.hs:1004)
-
-```haskell
-data RelayStatus = RSNew | RSInvited | RSAccepted | RSActive
-```
-
-JSON encoding: `"new"`, `"invited"`, `"accepted"`, `"active"` (via textEncode/textDecode).
-
-#### BoolDef (from Types.hs:2006)
-
-```haskell
-newtype BoolDef = BoolDef {isTrue :: Bool}
-```
-
-JSON: encoded as plain `Bool`. `omittedField = Just (BoolDef False)` — defaults to `false` when absent.
-
-### 3.2 Existing Type Extensions
-
-#### GroupInfo — new fields
-
-```haskell
-data GroupInfo = GroupInfo
-  { ...
-    useRelays :: BoolDef,       -- NEW
-    ...
-    groupRelays :: Maybe [GroupRelay],  -- NEW (may need verification)
-    ...
-  }
-```
-
-#### CIDirection — new case
-
-```haskell
-data CIDirection (c :: MsgDirectionI) where
-  ...
-  CIChannelRcv :: CIDirection 'MDRcv   -- NEW
-```
-
-#### GroupMemberRole — new case
-
-```haskell
-data GroupMemberRole = ... | GRRelay   -- NEW relay role
-```
-
-### 3.3 API Commands & Responses
-
-#### New Commands
-
-```haskell
-| APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
-| APITestChatRelay Int64   -- test relay by chatRelayId
-| APIGetUserChatRelays UserId
-| APISetUserChatRelays UserId [UserChatRelay]
-```
-
-#### New/Modified Responses
-
-```haskell
--- Existing response used for new command:
-| CRGroupCreated User GroupInfo    -- used by both APINewGroup and APINewPublicGroup
-
--- Potentially new:
-| CRUserChatRelays User [UserChatRelay]
-| CRGroupRelayStatus GroupInfo GroupRelay   -- relay state change event
-```
-
----
-
-## 4. Implementation Plan
-
-### 4.1 `SimpleXChat/ChatTypes.swift` — New Types
-
-**Location**: Near existing group-related types
-
-#### UserChatRelay
-
 ```swift
-public struct UserChatRelay: Identifiable, Decodable, Equatable {
+public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     public var chatRelayId: Int64
     public var address: String
     public var name: String
@@ -150,257 +93,424 @@ public struct UserChatRelay: Identifiable, Decodable, Equatable {
     public var tested: Bool?
     public var enabled: Bool
     public var deleted: Bool
-
     public var id: Int64 { chatRelayId }
 }
 ```
 
-#### GroupRelay
+Needs `Codable` (not just `Decodable`) because it's sent back to backend in `UserOperatorServers`.
+
+### 2.4 GroupShortLinkInfo
+
+Haskell (`Controller.hs`):
+```haskell
+data GroupShortLinkInfo = GroupShortLinkInfo
+  { direct :: Bool,
+    groupRelays :: [ShortLinkContact],
+    sharedGroupId :: Maybe B64UrlByteString
+  }
+```
 
 ```swift
-public struct GroupRelay: Identifiable, Decodable, Equatable {
-    public var groupRelayId: Int64
-    public var groupMemberId: Int64
-    public var userChatRelayId: Int64
-    public var relayStatus: RelayStatus
-    public var relayLink: String?
-
-    public var id: Int64 { groupRelayId }
+public struct GroupShortLinkInfo: Decodable, Hashable {
+    public var direct: Bool
+    public var groupRelays: [String]
+    public var sharedGroupId: String?
 }
 ```
 
-#### RelayStatus
+Used in `GroupLinkPlan.ok` to distinguish direct groups from relay channels during connect plan.
+
+### 2.5 UserServersWarning
+
+Haskell (`Operators.hs`):
+```haskell
+data UserServersWarning = USWNoChatRelays {user :: Maybe User}
+```
 
 ```swift
-public enum RelayStatus: String, Decodable, Equatable {
-    case new = "new"
-    case invited = "invited"
-    case accepted = "accepted"
-    case active = "active"
-
-    public var displayText: String {
-        switch self {
-        case .new: return NSLocalizedString("New", comment: "relay status")
-        case .invited: return NSLocalizedString("Invited", comment: "relay status")
-        case .accepted: return NSLocalizedString("Accepted", comment: "relay status")
-        case .active: return NSLocalizedString("Active", comment: "relay status")
-        }
-    }
+public enum UserServersWarning: Decodable {
+    case noChatRelays(user: UserRef?)
 }
 ```
 
-### 4.2 `SimpleXChat/ChatTypes.swift` — GroupInfo Extension
+JSON tag prefix: `USW` → `noChatRelays`.
 
-**Location**: `GroupInfo` struct (~line 2334)
+---
 
-**Add fields**:
+## 3. Existing Type Changes
+
+### 3.1 CIDirection — add `.channelRcv`
+
+Haskell (`Messages.hs`): adds `CIChannelRcv :: CIDirection 'MDRcv` (no associated `GroupMember`).
+
+Current Swift (`ChatTypes.swift:3432`): 6 cases, synthesized `Decodable`, no custom `init(from:)`.
+
+**Change**: Add case + update all switches:
 ```swift
-public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
-    // ... existing fields ...
-    public var useRelays: Bool = false          // decoded from BoolDef, defaults false
-    public var groupRelays: [GroupRelay]? = nil // optional, may not be present
-    // ... existing fields ...
+public enum CIDirection: Decodable, Hashable {
+    // existing...
+    case channelRcv   // NEW — no associated member
 }
 ```
 
-**Note on BoolDef**: In JSON, `BoolDef` encodes as plain `Bool`. With `omittedField`, the field may be absent. Using `= false` default in Swift handles both cases (absent = false, present = decoded value).
+Switches to update:
+- `sent` → `.channelRcv: return false`
+- `sameDirection` → `.channelRcv` matches `.channelRcv` only
 
-**Note on Hashable**: `GroupRelay` must conform to `Hashable` since `GroupInfo` conforms to `Hashable`. Add `Hashable` to `GroupRelay`:
-```swift
-public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable { ... }
-```
+Since `CIDirection` uses synthesized `Decodable`, the new case decodes automatically from `{"channelRcv":{}}` JSON.
 
-### 4.3 `SimpleXChat/ChatTypes.swift` — chatIconName Update
+### 3.2 GroupMemberRole — add `.relay` and unknown handling
 
-**Location**: `chatIconName` computed property on `GroupInfo` (~line 2378)
+Haskell (`Types/Shared.hs`): adds `GRRelay` (between observer and author) and `GRUnknown Text` for forward compat.
+
+Current Swift (`ChatTypes.swift:2719`): `String` rawValue enum, `Comparable` via `comparisonValue`.
 
 **Change**:
 ```swift
-public var chatIconName: String {
-    if useRelays { return "megaphone.fill" }
-    switch businessChat?.chatType {
-    case .none: return "person.2.circle.fill"
-    case .business: return "briefcase.circle.fill"
-    case .customer: return "person.crop.circle.fill"
-    }
+public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
+    case relay = "relay"       // NEW — below observer
+    case observer
+    case author
+    // ... existing ...
 }
 ```
 
-### 4.4 `SimpleXChat/ChatTypes.swift` — CIDirection Extension
+Update `comparisonValue`: relay = 0, observer = 1, author = 2, member = 3, moderator = 4, admin = 5, owner = 6.
 
-**Location**: `CIDirection` enum (~line 3432)
+For `GRUnknown`: Add custom `init(from:)` that falls back to `.relay` (or a new `.unknown` case) for unrecognized strings, and custom `encode(to:)` that stores the original raw string for round-trip fidelity. Alternatively, rely on parent decode failure handling (`CIInvalidJSON`), but this degrades the whole chat item.
 
-**Add case**:
+### 3.3 GroupInfo — add `useRelays` and `relayOwnStatus`
+
+Haskell (`Types.hs`):
+```haskell
+data GroupInfo = GroupInfo
+  { groupId :: GroupId,
+    useRelays :: BoolDef,           -- NEW
+    relayOwnStatus :: Maybe RelayStatus, -- NEW
+    localDisplayName :: GroupName,
+    ...
+  }
+```
+
+Current Swift (`ChatTypes.swift:2334`): no `useRelays`, no `relayOwnStatus`.
+
+**Change**: Add fields to `GroupInfo`:
 ```swift
-public enum CIDirection: Decodable, Hashable {
-    case directSnd
-    case directRcv
-    case groupSnd
-    case groupRcv(groupMember: GroupMember)
-    case channelRcv   // NEW
-    case localSnd
-    case localRcv
+public var useRelays: Bool       // BoolDef → Bool (always present from local backend)
+public var relayOwnStatus: RelayStatus?  // relay's own status in this group
+```
+
+**BoolDef handling**: `BoolDef` is a Haskell newtype for remote desktop compatibility (defaults to `false` when absent in JSON). The local backend always serializes it as a plain `Bool`, so Swift uses `Bool` directly.
+
+**Note**: `GroupInfo` does NOT have `groupRelays: [GroupRelay]?`. The old plan invented this field. Instead, relays come via `CRPublicGroupCreated` response and `CEvtGroupLinkRelaysUpdated` event as separate parameters.
+
+### 3.4 GroupProfile — add `groupLink`
+
+Haskell (`Types.hs`): adds `groupLink :: Maybe ShortLinkContact` between `image` and `groupPreferences`.
+
+Current Swift (`ChatTypes.swift:2412`): has explicit `init`, no `groupLink`.
+
+**Change**: Add field + update init:
+```swift
+public var groupLink: String?    // NEW — ShortLinkContact serialized as String
+```
+
+Update the explicit `init` to include `groupLink: String? = nil`.
+
+### 3.5 User — add `userChatRelay`
+
+Haskell (`Types.hs`): adds `userChatRelay :: BoolDef` to `User`.
+
+Current Swift (`ChatTypes.swift:23`): no `userChatRelay`.
+
+**Change**:
+```swift
+public var userChatRelay: Bool   // BoolDef → Bool
+```
+
+### 3.6 UserOperatorServers — add `chatRelays`
+
+Haskell (`Operators.hs`): adds `chatRelays :: [UserChatRelay]` to `UserOperatorServers`.
+
+Current Swift (`AppAPITypes.swift:1705`): `operator`, `smpServers`, `xftpServers` only.
+
+**Change**:
+```swift
+struct UserOperatorServers: Identifiable, Equatable, Codable {
+    var `operator`: ServerOperator?
+    var smpServers: [UserServer]
+    var xftpServers: [UserServer]
+    var chatRelays: [UserChatRelay]?   // NEW — nil when absent for compat
 }
 ```
 
-**Update Decodable init**:
-```swift
-// In CIDirection init(from:):
-case "channelRcv": self = .channelRcv
+### 3.7 UserServersError — add relay cases
+
+Haskell (`Operators.hs`): adds two cases:
+```haskell
+| USEDuplicateChatRelayName {duplicateChatRelay :: Text}
+| USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
 ```
 
-**Update all computed properties** that switch on CIDirection:
-- `sent` → `.channelRcv: return false`
-- Any other switch statements — add `.channelRcv` case
+Current Swift (`AppAPITypes.swift:1748`): 4 cases.
 
-### 4.5 `SimpleXChat/ChatTypes.swift` — GroupMemberRole Extension
-
-**Location**: `GroupMemberRole` enum
-
-**Add case** (if not already present):
+**Change**: Add:
 ```swift
-public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable {
-    // ... existing cases ...
-    case relay = "relay"   // NEW — relay member role
-}
+case duplicateChatRelayName(duplicateChatRelay: String)
+case duplicateChatRelayAddress(duplicateChatRelay: String, duplicateAddress: String)
 ```
 
-**Ordering**: `GRRelay` should sort between observer and member in the role hierarchy, or at a separate level. Check Haskell ordering to match.
+### 3.8 GroupLinkPlan — add `groupSLinkInfo_`
 
-### 4.6 `Shared/Model/AppAPITypes.swift` — ChatCommand Extension
+Haskell (`Controller.hs`): `GLPOk` gains first field `groupSLinkInfo_ :: Maybe GroupShortLinkInfo`.
 
-**Add commands**:
+Current Swift (`AppAPITypes.swift:1328`): `case ok(groupSLinkData_: GroupShortLinkData?)`.
 
+**Change**:
+```swift
+case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?)
+```
+
+### 3.9 ChatErrorType — add `chatRelayExists`
+
+Haskell (`Controller.hs`): adds `CEChatRelayExists` between `CEUserExists` and `CEDifferentActiveUser`.
+
+**File**: `SimpleXChat/APITypes.swift` (line 716), NOT `AppAPITypes.swift`.
+
+**Change**: Add between `userExists` (line 723) and `differentActiveUser` (line 725):
+```swift
+case chatRelayExists
+```
+
+### 3.10 StoreError — add 5 relay-related variants
+
+Haskell (`Store/Shared.hs`): adds 5 new `StoreError` constructors. JSON via `sumTypeJSON $ dropPrefix "SE"`.
+
+**File**: `SimpleXChat/APITypes.swift` (line 795).
+
+**Change**: Add:
+```swift
+case relayUserNotFound
+case duplicateMemberId
+case userChatRelayNotFound(chatRelayId: Int64)
+case groupRelayNotFound(groupRelayId: Int64)
+case groupRelayNotFoundByMemberId(groupMemberId: Int64)
+```
+
+`StoreError` uses synthesized `Decodable` with no fallback — missing cases cause the entire `ChatError` to fail decoding. These must be added.
+
+---
+
+## 4. API Command Changes
+
+### 4.1 apiSendMessages — add `sendAsGroup`
+
+Haskell: `SendRef` gains `ShowGroupAsSender` on `SRGroup`. Wire: `/_send #<id>(as_group=on) live=...`
+
+The `asGroupP` parser: `("(as_group=" *> onOffP <* ')') <|> pure False` — parens, no space, appended directly to ref.
+
+Current Swift (`AppAPITypes.swift:46`):
+```swift
+case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+```
+
+**Change**: Add `sendAsGroup: Bool` parameter:
+```swift
+case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+```
+
+Update `cmdString` (`AppAPITypes.swift:231`):
+```swift
+let asGroup = sendAsGroup ? "(as_group=on)" : ""
+return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+```
+
+Note: `(as_group=on)` is appended directly to ref string with NO space.
+
+Update `apiSendMessages` wrapper (`SimpleXAPI.swift:527`) and all callers to pass `sendAsGroup: false` by default.
+
+### 4.2 apiForwardChatItems — add `sendAsGroup`
+
+Haskell: adds `sendAsGroup :: ShowGroupAsSender` between `toChatRef` and `fromChatRef`. Wire: `/_forward #<toId> as_group=on #<fromId> ...`
+
+Parser: `(" as_group=" *> onOffP <|> pure False)` — space before, no parens, between refs.
+
+Current Swift (`AppAPITypes.swift:62`):
+```swift
+case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
+```
+
+**Change**: Add `sendAsGroup: Bool` after `toScope`:
+```swift
+case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
+```
+
+Update `cmdString` (`AppAPITypes.swift:253`):
+```swift
+let asGroup = sendAsGroup ? " as_group=on" : ""
+return "/_forward \(ref(toChatType, toChatId, scope: toScope))\(asGroup) \(ref(fromChatType, fromChatId, scope: fromScope)) \(itemIds...) ttl=\(ttlStr)"
+```
+
+Note: ` as_group=on` has a space before it, no parens, inserted between the two refs.
+
+### 4.3 apiPrepareGroup — add `directLink`
+
+Haskell: adds `DirectLink` (type alias for `Bool`) between `CreatedLinkContact` and `GroupShortLinkData`. Wire: `/_prepare group <userId> <link> direct=on|off <json>`, default `true` when absent.
+
+Current Swift (`AppAPITypes.swift:127`):
+```swift
+case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData)
+```
+
+**Change**: Add `directLink: Bool`:
+```swift
+case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData)
+```
+
+Update `cmdString` (`AppAPITypes.swift:330`):
+```swift
+return "/_prepare group \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") direct=\(onOff(directLink)) \(encodeJSON(groupShortLinkData))"
+```
+
+### 4.4 apiNewPublicGroup — new command
+
+Haskell:
+```haskell
+| APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
+```
+
+Wire: `/_public group <userId> incognito=on|off <relayIds_csv> <json>`
+
+Parser in `Commands.hs`: `"/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP)`
+
+Note: `_strP` reads a space-prefixed comma-separated list of Int64s (the `relayIds`), followed by a space then JSON.
+
+**Add** to `ChatCommand`:
 ```swift
 case apiNewPublicGroup(userId: Int64, incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile)
-case apiGetUserChatRelays(userId: Int64)
-case apiSetUserChatRelays(userId: Int64, relays: [UserChatRelay])
-case apiTestChatRelay(chatRelayId: Int64)
 ```
 
-**Add cmdString encoding**:
+Note: Haskell uses `NonEmpty Int64` — callers must ensure at least one relay ID is passed.
+
+`cmdString`:
 ```swift
 case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile):
-    return "/_new public group \(userId) \(onOff(incognito)) \(relayIds.map(String.init).joined(separator: ",")) \(encodeJSON(groupProfile))"
-
-case let .apiGetUserChatRelays(userId):
-    return "/_get user relays \(userId)"
-
-case let .apiSetUserChatRelays(userId, relays):
-    return "/_set user relays \(userId) \(encodeJSON(relays))"
-
-case let .apiTestChatRelay(chatRelayId):
-    return "/_test chat relay \(chatRelayId)"
+    return "/_public group \(userId) incognito=\(onOff(incognito)) \(relayIds.map(String.init).joined(separator: ",")) \(encodeJSON(groupProfile))"
 ```
 
-**Note**: The exact command strings must match the Haskell `ChatCommand` parser. Verify against `Commands.hs` parser patterns.
-
-### 4.7 `Shared/Model/AppAPITypes.swift` — ChatResponse Extension
-
-**Add response cases** (if not already present):
-
+**Add** wrapper in `SimpleXAPI.swift`:
 ```swift
-case userChatRelays(user: User, relays: [UserChatRelay])
-case groupRelayStatus(groupInfo: GroupInfo, relay: GroupRelay)
-```
-
-### 4.8 `Shared/Model/SimpleXAPI.swift` — API Wrapper Functions
-
-```swift
-func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> GroupInfo {
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay]) {
     let userId = try currentUserId("apiNewPublicGroup")
     let r = await chatSendCmd(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
-    if case let .groupCreated(_, groupInfo) = r { return groupInfo }
-    throw r
-}
-
-func apiGetUserChatRelays() async throws -> [UserChatRelay] {
-    let userId = try currentUserId("apiGetUserChatRelays")
-    let r = await chatSendCmd(.apiGetUserChatRelays(userId: userId))
-    if case let .userChatRelays(_, relays) = r { return relays }
-    throw r
-}
-
-func apiSetUserChatRelays(relays: [UserChatRelay]) async throws -> [UserChatRelay] {
-    let userId = try currentUserId("apiSetUserChatRelays")
-    let r = await chatSendCmd(.apiSetUserChatRelays(userId: userId, relays: relays))
-    if case let .userChatRelays(_, updatedRelays) = r { return updatedRelays }
-    throw r
-}
-
-func apiTestChatRelay(chatRelayId: Int64) async throws {
-    let r = await chatSendCmd(.apiTestChatRelay(chatRelayId: chatRelayId))
-    // Handle response — may return test result or error
-}
-```
-
-### 4.9 `Shared/Model/ChatModel.swift` — Model Properties
-
-**Add** relay storage to ChatModel:
-```swift
-@Published var userChatRelays: [UserChatRelay] = []
-```
-
----
-
-## 5. Type Mapping Reference
-
-| Haskell Type | Module | Swift Type | Swift File |
-|---|---|---|---|
-| `UserChatRelay` | Operators.hs:262 | `UserChatRelay` | ChatTypes.swift |
-| `GroupRelay` | Types.hs:995 | `GroupRelay` | ChatTypes.swift |
-| `RelayStatus` | Types.hs:1004 | `RelayStatus` | ChatTypes.swift |
-| `BoolDef` | Types.hs:2006 | `Bool` (with default) | ChatTypes.swift (inline) |
-| `CIChannelRcv` | Messages.hs:290 | `.channelRcv` | ChatTypes.swift |
-| `GRRelay` | Types/Shared.hs | `.relay` | ChatTypes.swift |
-| `APINewPublicGroup` | Controller.hs:513 | `.apiNewPublicGroup` | AppAPITypes.swift |
-| `GroupInfo.useRelays` | Types.hs:467 | `useRelays: Bool` | ChatTypes.swift |
-| `GroupInfo.groupRelays` | Types.hs | `groupRelays: [GroupRelay]?` | ChatTypes.swift |
-
----
-
-## 6. Edge Cases
-
-1. **BoolDef absent in JSON**: `useRelays` field missing → defaults to `false`. This handles backward compatibility with older backends.
-
-2. **groupRelays absent**: `groupRelays` field missing → defaults to `nil`. UI shows "Loading..." or empty state for relay sections.
-
-3. **CIDirection unknown tag**: If an even newer backend sends a direction tag the client doesn't know, the `CIDirection` decoder should fall through to `CIInvalidJSON`. Ensure the decoder has a default case or the parent `ChatItem` handles decode failure.
-
-4. **RelayStatus unknown value**: If backend adds new statuses (e.g., "error", "disconnected"), the `String` rawValue decoder will fail. Add an `unknown` case or handle gracefully:
-    ```swift
-    public init(from decoder: Decoder) throws {
-        let value = try decoder.singleValueContainer().decode(String.self)
-        self = RelayStatus(rawValue: value) ?? .new  // fallback to .new
+    if case let .publicGroupCreated(_, groupInfo, groupLink, groupRelays) = r {
+        return (groupInfo, groupLink, groupRelays)
     }
-    ```
-
-5. **GroupMemberRole ordering**: `GRRelay` must sort correctly in the role hierarchy. Verify Haskell `Ord` instance matches Swift `Comparable`.
-
-6. **Hashable conformance**: `GroupInfo` is `Hashable`. New fields (`useRelays`, `groupRelays`) must be hashable. `Bool` and `[GroupRelay]?` are hashable if `GroupRelay` is.
-
-7. **Encodable for UserChatRelay**: If `apiSetUserChatRelays` sends relays as JSON, `UserChatRelay` needs `Encodable` (or `Codable`).
+    throw r
+}
+```
 
 ---
 
-## 7. Testing Notes
+## 5. API Response/Event Changes
 
-1. **JSON decode tests**: Add to `JSONTests.hs` (or Swift JSON tests):
-   - `UserChatRelay` round-trip
-   - `GroupRelay` decode
-   - `RelayStatus` decode for all 4 values
-   - `CIDirection` decode with `"channelRcv"`
-   - `GroupInfo` decode with and without `useRelays` field
-   - `GroupInfo` decode with and without `groupRelays` field
+### 5.1 CRPublicGroupCreated — new response
 
-2. **Default values**: Test `GroupInfo` decode without `useRelays` → `false`
+Haskell:
+```haskell
+| CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+```
 
-3. **Unknown RelayStatus**: Test decode with unknown string → graceful fallback
+**Add** to `ChatResponse2`:
+```swift
+case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+```
 
-4. **CIDirection exhaustiveness**: Build with all warnings — verify no missing cases in switch statements
+### 5.2 CEvtGroupLinkRelaysUpdated — new event
 
-5. **API command strings**: Verify `cmdString` output matches Haskell parser expectations for each new command
+Haskell:
+```haskell
+| CEvtGroupLinkRelaysUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+```
 
-6. **Type conformances**: Verify `Identifiable`, `Decodable`, `Equatable`, `Hashable` compile correctly for all new types
+**Add** to `ChatEvent`:
+```swift
+case groupLinkRelaysUpdated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+```
 
-7. **ChatModel integration**: Verify `userChatRelays` property updates correctly when API response received
+### 5.3 CRUserServersValidation — add `serverWarnings`
+
+Haskell: field added: `serverWarnings :: [UserServersWarning]`.
+
+Current Swift (`AppAPITypes.swift:660`):
+```swift
+case userServersValidation(user: UserRef, serverErrors: [UserServersError])
+```
+
+**Change**:
+```swift
+case userServersValidation(user: UserRef, serverErrors: [UserServersError], serverWarnings: [UserServersWarning])
+```
+
+---
+
+## 6. Type Mapping Reference
+
+| Haskell | Swift | File | Notes |
+|---|---|---|---|
+| `RelayStatus` (Types.hs) | `RelayStatus` | ChatTypes.swift | enum, String raw |
+| `GroupRelay` (Types.hs) | `GroupRelay` | ChatTypes.swift | struct |
+| `UserChatRelay` (Operators.hs) | `UserChatRelay` | ChatTypes.swift | struct, Codable |
+| `GroupShortLinkInfo` (Controller.hs) | `GroupShortLinkInfo` | AppAPITypes.swift | struct |
+| `UserServersWarning` (Operators.hs) | `UserServersWarning` | AppAPITypes.swift | enum |
+| `BoolDef` (Types.hs) | `Bool` | inline | always present from local backend |
+| `ShortLinkContact` (Types.hs) | `String` | inline | type alias in Haskell |
+| `CIChannelRcv` (Messages.hs) | `.channelRcv` | ChatTypes.swift | no member |
+| `GRRelay` (Types/Shared.hs) | `.relay` | ChatTypes.swift | below observer |
+| `GroupInfo.useRelays` | `useRelays: Bool` | ChatTypes.swift | BoolDef |
+| `GroupInfo.relayOwnStatus` | `relayOwnStatus: RelayStatus?` | ChatTypes.swift | |
+| `GroupProfile.groupLink` | `groupLink: String?` | ChatTypes.swift | ShortLinkContact |
+| `User.userChatRelay` | `userChatRelay: Bool` | ChatTypes.swift | BoolDef |
+| `UserOperatorServers.chatRelays` | `chatRelays: [UserChatRelay]?` | AppAPITypes.swift | |
+| `GLPOk.groupSLinkInfo_` | `groupSLinkInfo_: GroupShortLinkInfo?` | AppAPITypes.swift | new first param |
+| `SendRef.ShowGroupAsSender` | `sendAsGroup: Bool` | AppAPITypes.swift | on apiSendMessages |
+| `APIForwardChatItems.sendAsGroup` | `sendAsGroup: Bool` | AppAPITypes.swift | |
+| `APIPrepareGroup.DirectLink` | `directLink: Bool` | AppAPITypes.swift | |
+| `APINewPublicGroup` | `.apiNewPublicGroup` | AppAPITypes.swift | new command |
+| `CRPublicGroupCreated` | `.publicGroupCreated` | AppAPITypes.swift | new response |
+| `CEvtGroupLinkRelaysUpdated` | `.groupLinkRelaysUpdated` | AppAPITypes.swift | new event |
+| `CEChatRelayExists` | `.chatRelayExists` | APITypes.swift | new error |
+| `SERelayUserNotFound` | `.relayUserNotFound` | APITypes.swift | new StoreError |
+| `SEDuplicateMemberId` | `.duplicateMemberId` | APITypes.swift | new StoreError |
+| `SEUserChatRelayNotFound` | `.userChatRelayNotFound` | APITypes.swift | new StoreError |
+| `SEGroupRelayNotFound` | `.groupRelayNotFound` | APITypes.swift | new StoreError |
+| `SEGroupRelayNotFoundByMemberId` | `.groupRelayNotFoundByMemberId` | APITypes.swift | new StoreError |
+
+**NOT included** (per scope):
+- `GroupRelayInvitation`, `RelayRequestData` — protocol only
+- `GroupRootKey`, `GroupKeys`, `memberPubKey` — key management
+- `GetUserChatRelays`, `SetUserChatRelays` — CLI-only commands; relays managed via existing `UserOperatorServers` API
+- `GroupInfo.groupRelays` — does NOT exist in Haskell; relays come as separate response/event params
+
+---
+
+## 7. Edge Cases
+
+1. **BoolDef fields**: `useRelays`/`userChatRelay` are `Bool` in Swift. Always present from local backend. Remote desktop compat handled on Haskell side only.
+
+2. **CIDirection unknown tag**: Synthesized Decodable will throw for unknown tags. Parent `ChatItem` decode catches this via `CIInvalidJSON` fallback path.
+
+3. **GroupMemberRole unknown value**: `GRUnknown Text` in Haskell catches forward-compat unknown roles. In Swift, unknown raw values will fail `String`-based decode. Need custom `init(from:)` that stores the raw string and falls back to a `.unknown` case, plus custom `encode(to:)` that re-emits the original string for round-trip fidelity. Without this, any `GroupMember` with an unknown role will fail to decode (degrading to `CIInvalidJSON`), and cannot be re-encoded if round-tripped.
+
+4. **Wire format precision**:
+   - Send: `(as_group=on)` directly appended to ref, no space
+   - Forward: ` as_group=on` with leading space, no parens
+   - PrepareGroup: ` direct=on|off` with leading space, defaults `true` when absent
+
+5. **GroupProfile.groupLink in Encodable**: `GroupProfile` is `Codable`. New `groupLink` field must be included in encoding. Since it defaults to `nil`, `encodeIfPresent` handles it automatically with synthesized `Encodable`.
+
+6. **UserOperatorServers.chatRelays compatibility**: Using `[UserChatRelay]?` (optional) ensures old backends that don't include `chatRelays` in JSON still decode correctly.
+
+7. **CIQDirection quote encoding change**: In Haskell, `null` chatDir in quotes now maps to `channelRcv` (was `groupRcv(nil)` before). If Swift's `CIQDirection` decode assumed `null` = anonymous group quote, it must now handle `{"channelRcv":{}}` for channel message quotes.
+
+8. **StoreError has no decode fallback**: `StoreError` uses synthesized `Decodable` with no `CIInvalidJSON`-style fallback. New variants MUST be added or the entire `ChatError` will fail to decode when the backend emits them.

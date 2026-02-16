@@ -151,58 +151,15 @@ The `showGroupAsSender` rendering already handles this at lines 1843-1895 — sh
 
 ### §4.1 API Type Updates (FIRST)
 
-**Scope**: Pure Swift type definitions — no wireframes.
+**Scope**: Swift type additions/changes derived from Haskell diff — no wireframes.
 **Complexity**: Medium
 
-**Files to modify**:
-- `SimpleXChat/ChatTypes.swift` — UserChatRelay, GroupRelay, RelayStatus, CIDirection.channelRcv, BoolDef
-- `Shared/Model/AppAPITypes.swift` — GroupShortLinkInfo, ChatCommand.apiNewPublicGroup, relay event types
-- `Shared/Model/SimpleXAPI.swift` — API wrapper functions
+**New types**: `RelayStatus`, `GroupRelay`, `UserChatRelay`, `GroupShortLinkInfo`, `UserServersWarning`
+**Modified types**: `CIDirection` (+channelRcv), `GroupMemberRole` (+relay), `GroupInfo` (+useRelays, +relayOwnStatus), `GroupProfile` (+groupLink), `User` (+userChatRelay), `UserOperatorServers` (+chatRelays), `UserServersError` (+relay cases), `GroupLinkPlan.ok` (+groupSLinkInfo_), `ChatErrorType` (+chatRelayExists)
+**API changes**: `apiSendMessages` (+sendAsGroup), `apiForwardChatItems` (+sendAsGroup), `apiPrepareGroup` (+directLink), new `apiNewPublicGroup` command
+**New responses/events**: `publicGroupCreated`, `groupLinkRelaysUpdated`, `userServersValidation` (+serverWarnings)
 
-**Types to add (matching Haskell)**:
-```swift
-// UserChatRelay (from Operators.hs)
-struct UserChatRelay: Identifiable, Codable, Equatable {
-    var chatRelayId: Int64
-    var address: String       // ShortLinkContact
-    var name: String
-    var domains: [String]
-    var preset: Bool
-    var tested: Bool?
-    var enabled: Bool
-    var deleted: Bool
-}
-
-// GroupRelay (from Types.hs)
-struct GroupRelay: Identifiable, Decodable {
-    var groupRelayId: Int64
-    var groupMemberId: Int64
-    var userChatRelayId: Int64
-    var relayStatus: RelayStatus
-    var relayLink: String?
-}
-
-// RelayStatus (from Types.hs)
-enum RelayStatus: String, Decodable {
-    case new = "new"
-    case invited = "invited"
-    case accepted = "accepted"
-    case active = "active"
-}
-
-// CIDirection extension
-enum CIDirection: Decodable, Hashable {
-    // existing cases...
-    case channelRcv  // NEW
-}
-
-// GroupInfo extension
-struct GroupInfo {
-    // existing fields...
-    var useRelays: Bool  // NEW (decoded from BoolDef)
-    var groupRelays: [GroupRelay]?  // NEW
-}
-```
+See `01-api-type-updates.md` for full details, wire formats, and Haskell↔Swift mapping table.
 
 ### §4.2 Channel Visual Distinction
 
