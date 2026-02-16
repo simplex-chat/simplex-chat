@@ -42,9 +42,8 @@
       <g transform="translate(42, 8)">
         <circle cx="12" cy="12" r="12" fill="#0A84FF" opacity="0.2"/>
         <g fill="#0A84FF" transform="translate(5, 5) scale(0.55)">
-          <path d="M8,6 L18,2 L18,24 L8,20 Z"/>
-          <rect x="4" y="9" width="5" height="8" rx="1"/>
-          <path d="M18,2 Q28,8 28,13 Q28,18 18,24" fill="none" stroke="#0A84FF" stroke-width="2"/>
+          <path d="M10,6 L24,2 L24,24 L10,20 Z"/>
+          <rect x="4" y="9" width="7" height="8" rx="2"/>
           <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20"/>
         </g>
       </g>
@@ -71,9 +70,8 @@
         <!-- Channel avatar -->
         <circle cx="16" cy="16" r="16" fill="#0A84FF" opacity="0.2"/>
         <g fill="#0A84FF" transform="translate(7, 7) scale(0.5)">
-          <path d="M8,6 L18,2 L18,24 L8,20 Z"/>
-          <rect x="4" y="9" width="5" height="8" rx="1"/>
-          <path d="M18,2 Q28,8 28,13 Q28,18 18,24" fill="none" stroke="#0A84FF" stroke-width="2"/>
+          <path d="M10,6 L24,2 L24,24 L10,20 Z"/>
+          <rect x="4" y="9" width="7" height="8" rx="2"/>
           <path d="M6,20 L6,24 Q6,26 8,26 L10,26 Q11,26 11,24 L11,20"/>
         </g>
         <!-- Sender name -->
