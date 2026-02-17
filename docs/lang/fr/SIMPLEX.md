@@ -2,7 +2,7 @@
 title: Plateforme SimpleX
 revision: 07.02.2023
 ---
-| 07.02.2023 | FR, [EN](/docs/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md), [PL](/docs/lang/pl/SIMPLEX.md) |
+| 07.02.2023 | FR, [EN](/docs/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md), [PL](/docs/lang/pl/SIMPLEX.md), [JA](/docs/lang/ja/SIMPLEX.md) |
 
 # Plateforme SimpleX - motivation et comparaison
 

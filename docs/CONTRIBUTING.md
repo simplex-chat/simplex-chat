@@ -3,7 +3,7 @@ title: Contributing guide
 revision: 25.07.2025
 ---
 
-| Updated 25.07.2025 | Languages: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
+| Updated 25.07.2025 | Languages: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md), [JA](/docs/lang/ja/CONTRIBUTING.md) |
 
 # Contributing guide
 
