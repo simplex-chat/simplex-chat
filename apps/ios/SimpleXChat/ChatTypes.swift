@@ -3043,6 +3043,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var viewTimestamp = Date.now
     public var isLiveDummy: Bool = false
+    public var mergeCount: Int = 0
 
     private enum CodingKeys: String, CodingKey {
         case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
