@@ -707,9 +707,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             either (\_ -> "The group ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow groupId <> ": ") ct_
               <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
-      let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
-      withAdminUsers $ \cId ->
-        sendComposedMessages_ cc (SRDirect cId) ((Nothing, msg) :| [(Nothing, approveCmd)])
+      withAdminUsers $ \cId -> do
+        let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
+        sendComposedMessages cc (SRDirect cId) [msg, approveCmd]
 
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {groupId, membership = GroupMember {memberRole = serviceRole}} ctId contactRole = do
