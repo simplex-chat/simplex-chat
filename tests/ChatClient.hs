@@ -118,7 +118,9 @@ testOpts =
       muteNotifications = True,
       markRead = True,
       createBot = Nothing,
-      maintenance = False
+      maintenance = False,
+      optExportArchive = Nothing,
+      optImportArchive = Nothing
     }
 
 testCoreOpts :: CoreChatOpts

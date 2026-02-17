@@ -24,6 +24,7 @@ revision: 31.01.2023
   - [Groups](#groups)
   - [Sending files](#sending-files)
   - [User contact addresses](#user-contact-addresses)
+  - [Database archives](#database-archives)
   - [Access chat history](#access-chat-history)
 
 ## Terminal chat features
@@ -243,3 +244,11 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 Use `/help address` for other commands.
 
 ![simplex-chat](../images/user-addresses.gif)
+
+### Database archives
+
+You can export your chat database to a portable archive with `simplex-chat --export-archive <file_path>` - this is useful for backups and migrating to a new device.
+
+To import a previously exported archive use `simplex-chat --import-archive <file_path>`. Your current database will be backed up with `.bak` extension before import.
+
+Archives are ZIP files containing your messages, contacts, groups, and file metadata. They are compatible with archives created by SimpleX mobile and desktop apps.
