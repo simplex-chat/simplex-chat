@@ -37,7 +37,7 @@
 ```
 website/
 ├── file-src/                    # NEW: Vite source (TypeScript)
-│   ├── main.ts                  # Entry: sodium init, hash routing
+│   ├── main.ts                  # Entry: hash routing
 │   ├── upload.ts                # Upload UI
 │   ├── download.ts              # Download UI
 │   ├── progress.ts              # Canvas progress ring
@@ -79,17 +79,12 @@ build:js → build:file → build:eleventy → build:tailwind
 +  "build": "npm run build:js && npm run build:file && npm run build:eleventy && npm run build:tailwind",
  },
  "devDependencies": {
-+  "@types/libsodium-wrappers-sumo": "^0.7.8",
 +  "vite": "^6.0.0",
  },
  "dependencies": {
 +  "@shhhum/xftp-web": "*",
-+  "libsodium-wrappers-sumo": "^0.7.13",
  }
 ```
-
-**Notes**:
-- `libsodium-wrappers-sumo` is a transitive dep of xftp-web, but must be direct because main.ts imports it explicitly (`await sodium.ready`).
 
 ### Step 2: Create Vite config
 
@@ -115,7 +110,7 @@ All imports from `@shhhum/xftp-web` (the public API described in the library REA
 | `progress.ts` | Canvas progress ring (adapted from `xftp-web/web/progress.ts`, dark mode color adaptation) |
 | `upload.ts` | Upload UI — uses `encryptFileForUpload()` + `uploadFile()`, share link from `result.uri` |
 | `download.ts` | Download UI — uses `decodeDescriptionURI()` + `downloadFile()` → triggers browser save |
-| `main.ts` | Entry: `await sodium.ready`, hash routing (`#` → download, else → upload), targets `#file-app` |
+| `main.ts` | Entry: hash routing (`#` → download, else → upload), targets `#file-app` |
 
 **API usage**:
 
