@@ -1431,14 +1431,6 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH i USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          SELECT member_status
-          FROM group_members
-          WHERE group_id = ? AND user_id = ?
-        
-Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
-
-Query: 
           SELECT r.file_id
           FROM rcv_files r
           JOIN files f ON f.file_id = r.file_id
