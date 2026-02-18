@@ -24,7 +24,7 @@
 | Action | Files |
 |--------|-------|
 | **Create** | 5 files in `website/file-src/` (TS source), 1 `website/src/file.html` (11ty page), 1 `website/vite.file.config.ts`, 1 `website/file-src/servers.json` |
-| **Modify** | `website/package.json`, `website/.eleventy.js` (1 line each: passthrough + supportedRoutes), `website/src/_includes/navbar.html` (nav link + lang-selector exclusion), `website/langs/en.json` (1 translation key), `.gitignore` (1 line) |
+| **Modify** | `website/package.json`, `website/.eleventy.js` (1 line each: passthrough + supportedRoutes), `website/src/_includes/navbar.html` (nav link + lang-selector exclusion), `website/langs/en.json` (1 translation key), `website/tailwind.config.js` (content scan), `.gitignore` (1 line) |
 | **Generated** | `website/src/file-assets/` (Vite build output, gitignored) |
 | **Haskell** | None |
 
@@ -61,7 +61,7 @@ build:js → build:file → build:eleventy → build:tailwind
 
 ### Data Flow
 
-**Upload**: File → `encryptFileForUpload(bytes, name)` → `uploadFile(agent, servers, encrypted)` → `result.uri` → share link with `#<uri>`
+**Upload**: File → `await encryptFileForUpload(bytes, name, onProgress)` → `uploadFile(agent, servers, encrypted)` → `result.uri` → share link with `#<uri>`
 **Download**: Hash → `decodeDescriptionURI(hash)` → `downloadFile(agent, fd)` → `{header, content}` → browser save
 
 ---
@@ -108,7 +108,7 @@ All imports from `@shhhum/xftp-web` (the public API described in the library REA
 | `servers.json` | Preset XFTP server addresses for SimpleX and Flux operators (copy from `xftp-web/web/servers.json`) |
 | `servers.ts` | Parses `__XFTP_SERVERS__` (injected by Vite define) with `parseXFTPServer()` into `XFTPServer[]` |
 | `progress.ts` | Canvas progress ring (adapted from `xftp-web/web/progress.ts`, dark mode color adaptation) |
-| `upload.ts` | Upload UI — uses `encryptFileForUpload()` + `uploadFile()`, share link from `result.uri` |
+| `upload.ts` | Upload UI — `await encryptFileForUpload(bytes, name, onProgress)` + `uploadFile()`, share link from `result.uri` |
 | `download.ts` | Download UI — uses `decodeDescriptionURI()` + `downloadFile()` → triggers browser save |
 | `main.ts` | Entry: hash routing (`#` → download, else → upload), targets `#file-app` |
 
@@ -116,7 +116,7 @@ All imports from `@shhhum/xftp-web` (the public API described in the library REA
 
 *Preset servers*: `servers.json` defines XFTP server addresses for two operators — SimpleX and Flux. Vite injects them at build time via `define.__XFTP_SERVERS__`. `servers.ts` parses them with `parseXFTPServer()` into `XFTPServer[]`.
 
-*Upload flow*: `encryptFileForUpload(fileBytes, fileName)` encrypts in-memory, returning `EncryptedFileInfo` (encData, digest, key, nonce, chunkSizes). `uploadFile(agent, servers, encrypted, {onProgress})` distributes chunks across servers randomly. `result.uri` is the pre-encoded share URI (handles redirect compression internally).
+*Upload flow*: `await encryptFileForUpload(fileBytes, fileName, onProgress)` encrypts asynchronously (64KB slices with yielding, non-blocking), returning `EncryptedFileInfo` (encData, digest, key, nonce, chunkSizes). `uploadFile(agent, servers, encrypted, {onProgress})` distributes chunks across servers randomly. `result.uri` is the pre-encoded share URI (handles redirect compression internally).
 
 *Download flow*: `decodeDescriptionURI(hash)` parses the URI into a `FileDescription`. `downloadFile(agent, fd, onProgress)` fetches and decrypts all chunks, returning `{header, content}`. `header.fileName` provides the original filename for the browser save.
 
@@ -137,11 +137,6 @@ templateEngineOverride: njk
 active_file: true
 ---
 
-<style>
-  /* Drop zone, progress ring, share link, security note styles */
-  /* ~60 lines of custom CSS (dark mode via .dark prefix) */
-</style>
-
 <section class="py-10 px-5 mt-[66px] dark:text-white">
   <div class="container" style="max-width: 520px;">
     <h1 class="text-[38px] text-center font-bold text-active-blue mb-8">
@@ -153,6 +148,8 @@ active_file: true
 
 <script type="module" src="/file-assets/file.js"></script>
 ```
+
+All UI styling uses Tailwind classes in the JS-generated HTML (upload.ts, download.ts). No custom `<style>` block needed.
 
 ### Step 5: Add navbar link
 
@@ -188,7 +185,15 @@ const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "
 ty.addPassthroughCopy("src/file-assets")
 ```
 
-### Step 8: Gitignore build artifacts
+### Step 8: Update Tailwind content scan
+
+**Modify**: `website/tailwind.config.js` — add `file-src/` to the content array so Tailwind includes classes used in JS-generated HTML:
+
+```js
+content: ["./src/**/*.{html,js,njk}", "./file-src/**/*.ts"],
+```
+
+### Step 9: Gitignore build artifacts
 
 Add to root `.gitignore` (at `.gitignore`, in the website section after line 58):
 ```
