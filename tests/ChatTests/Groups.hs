@@ -16,12 +16,13 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, unless, void, when)
+import System.Timeout (timeout)
 import Data.Bifunctor (second)
 import Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate, isInfixOf, sort)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
@@ -415,13 +416,24 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   -- Bob receives the messages.
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
 
-  -- All messages are unread for bob, should return area around unread
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
+  -- All messages are unread for bob, should return area around unread.
+  -- "connected" item_ts can be before or after message "1" depending on timing.
+  bob ##> "/_get chat #1 initial=2"
+  r <- chat <$> getTermLine bob
+  r `shouldSatisfy` (`elem`
+    [ [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")],
+      [(0, "Member reports: on"), (0, "Recent history: on"), (0, "1"), (0, "connected"), (0, "2")]
+    ])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "items read for chat")
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+  bob ##> "/_get chat #1 initial=2"
+  r2 <- chat <$> getTermLine bob
+  r2 `shouldSatisfy` (`elem`
+    [ [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")],
+      [(0, "connected"), (0, "2"), (0, "3"), (0, "4"), (0, "5")]
+    ])
 
   -- Read all items
   bob #$> ("/_read chat #1", id, "ok")
@@ -3030,13 +3042,6 @@ testGLinkRejectBlockedName =
       bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBlockedName"
 
-      threadDelay 100000
-
-      alice `hasContactProfiles` ["alice"]
-      memCount <- withCCTransaction alice $ \db ->
-        DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
-      memCount `shouldBe` [[1]]
-
       -- rejected member can't send messages to group
       bob ##> "#team hello"
       bob <## "bad chat command: not current member"
@@ -3044,6 +3049,18 @@ testGLinkRejectBlockedName =
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
+
+      -- profile cleanup is async (INFO handler round-trip from bob);
+      -- poll until cleanup completes (up to 3s, checking every 50ms)
+      let waitCleanup 0 = pure ()
+          waitCleanup n = do
+            profiles <- getContactProfiles alice
+            unless (sort profiles == ["alice"]) $ threadDelay 50000 >> waitCleanup (n - 1)
+      waitCleanup (60 :: Int)
+      alice `hasContactProfiles` ["alice"]
+      memCount <- withCCTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
+      memCount `shouldBe` [[1]]
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
 
@@ -8344,15 +8361,25 @@ testScopedSupportMemberLeaves =
     alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
 
     bob ##> "/l team"
-    concurrentlyN_
-      [ do
-          bob <## "#team: you left the group"
-          bob <## "use /d #team to delete the group",
-        alice <## "#team: bob left the group"
-      ]
+    bob <## "#team: you left the group"
+    bob <## "use /d #team to delete the group"
+    -- alice may receive async messages (e.g., AUTH errors from deleted connection)
+    -- before "bob left the group"; skip unexpected messages
+    let findLeftMsg 0 = error "expected but not received: #team: bob left the group"
+        findLeftMsg n = do
+          line <- getTermLine alice
+          unless (line == "#team: bob left the group") $ findLeftMsg (n - 1)
+    findLeftMsg (5 :: Int)
 
     alice ##> "/member support chats #team"
     alice <## "members require attention: 0"
+
+    -- drain any remaining async messages from delivery task processing
+    let drainAlice 0 = pure ()
+        drainAlice n = do
+          msg_ <- 100000 `timeout` getTermLine alice
+          forM_ msg_ $ \_ -> drainAlice (n - 1)
+    drainAlice (10 :: Int)
   where
     opts =
       testOpts
