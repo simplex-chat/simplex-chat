@@ -9,7 +9,7 @@ SimpleX Chat (aka SimpleX) is a decentralized communication network that provide
 
 This document aims to help you make the best use of SimpleX Chat if you choose to engage with its users.
 
-## Communcate with customers via business address
+## Communicate with customers via business address
 
 In the same way you can connect to our "SimpleX Chat team" profile via the app, you can provide the address for your existing and prospective customers:
 - to buy your product and services via chat,
@@ -85,7 +85,7 @@ To install SimpleX Chat CLI in the cloud, follow this:
    simplex-chat
    ```
 
-To deattach from running CLI simply press `Ctrl+B` and then `D`.
+To detach from running CLI simply press `Ctrl+B` and then `D`.
 
 To reattach back to CLI, run: `tmux attach -t simplex-cli`.
 
