@@ -34,6 +34,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.invitation_redesign.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -291,12 +292,18 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   if (!chatModel.desktopNoUserNoRemote) {
     ChatList(searchText = searchText, listState)
   }
+  EmptyChatListView()
+
   if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-    Text(
-      stringResource(
-        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
-      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
-    )
+    if (chatModel.chatRunning.value == null) {
+      Text(
+        stringResource(MR.strings.loading_chats),
+        Modifier.align(Alignment.Center),
+        color = MaterialTheme.colors.secondary
+      )
+    } else {
+      EmptyChatListView()
+    }
   }
 }
 
@@ -754,6 +761,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val connectBannerCardShown = remember { appPrefs.connectBannerCardShown.state }
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -832,7 +840,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
+    if (!oneHandUICardShown.value || !addressCreationCardShown.value || !connectBannerCardShown.value) {
       item {
         ChatListFeatureCards()
       }
@@ -908,8 +916,12 @@ private fun ChatListFeatureCards() {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val connectBannerCardShown = remember { appPrefs.connectBannerCardShown.state }
 
   Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    if (!connectBannerCardShown.value) {
+      ConnectBannerCard()
+    }
     if (!oneHandUICardShown.value && !oneHandUI.value) {
       ToggleChatListCard()
     }
