@@ -1,5 +1,7 @@
 # Messaging Flow
 
+> **Related spec:** [spec/api.md](../../spec/api.md) | [spec/client/chat-view.md](../../spec/client/chat-view.md) | [spec/client/compose.md](../../spec/client/compose.md)
+
 ## Overview
 
 Complete message lifecycle in SimpleX Chat iOS: composing, sending, receiving, editing, deleting, reacting to, replying to, and forwarding messages. All messages are end-to-end encrypted via the SMP protocol. The Haskell core handles encryption, routing, and persistence; the Swift UI layer drives composition and display.

@@ -1,5 +1,7 @@
 # Group Lifecycle Flow
 
+> **Related spec:** [spec/api.md](../../spec/api.md) | [spec/database.md](../../spec/database.md)
+
 ## Overview
 
 Complete group management in SimpleX Chat iOS: creating groups, inviting members, joining via links, managing roles and admission, and group deletion. Groups use the same E2E encryption as direct messages -- each member pair has independent encrypted channels. Group metadata (name, image, preferences) is distributed via the group protocol.

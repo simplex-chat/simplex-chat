@@ -1,6 +1,8 @@
 # SimpleX Chat iOS -- Product Overview
 
 > SimpleX Chat iOS product specification. Bidirectional code links: product docs reference source files, source files reference product docs.
+>
+> **Related spec:** [spec/README.md](../spec/README.md) | [spec/architecture.md](../spec/architecture.md)
 
 ## Table of Contents
 

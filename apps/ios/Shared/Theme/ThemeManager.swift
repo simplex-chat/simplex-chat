@@ -5,6 +5,7 @@
 //  Created by Avently on 03.06.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/theme.md
 
 import Foundation
 import SwiftUI

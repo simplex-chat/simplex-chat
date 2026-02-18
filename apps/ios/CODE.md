@@ -164,7 +164,7 @@ After completing all changes (code + documentation), you MUST run an adversarial
 |----------------|---------------|-----------------|
 | Shared/ContentView.swift | spec/client/navigation.md | product/views/chat-list.md |
 | Shared/SimpleXApp.swift | spec/architecture.md | product/flows/onboarding.md |
-| Shared/AppDelegate.swift | spec/architecture.md | product/flows/onboarding.md |
+| Shared/AppDelegate.swift | spec/services/notifications.md | product/flows/onboarding.md |
 | Shared/Views/ChatList/ChatListView.swift | spec/client/chat-list.md | product/views/chat-list.md |
 | Shared/Views/Chat/ChatView.swift | spec/client/chat-view.md | product/views/chat.md |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | spec/client/compose.md | product/views/chat.md |
@@ -173,6 +173,7 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | Shared/Views/Chat/Group/GroupChatInfoView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/Chat/Group/GroupLinkView.swift | spec/client/chat-view.md | product/views/group-info.md |
+| Shared/Views/Chat/Group/GroupMemberInfoView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/NewChat/NewChatView.swift | spec/client/navigation.md | product/views/new-chat.md |
 | Shared/Views/NewChat/QRCode.swift | spec/client/navigation.md | product/views/new-chat.md |
 | Shared/Views/Call/ActiveCallView.swift | spec/services/calls.md | product/views/call.md |
@@ -187,12 +188,12 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | Shared/Views/Database/ | spec/database.md | product/views/settings.md |
 | Shared/Views/Migration/ | spec/database.md | product/flows/onboarding.md |
 | Shared/Model/ChatModel.swift | spec/state.md | product/concepts.md |
-| Shared/Model/SimpleXAPI.swift | spec/api.md | product/concepts.md |
+| Shared/Model/SimpleXAPI.swift | spec/api.md, spec/architecture.md | product/concepts.md |
 | Shared/Model/AppAPITypes.swift | spec/api.md | product/concepts.md |
 | Shared/Model/NtfManager.swift | spec/services/notifications.md | product/flows/messaging.md |
 | Shared/Model/BGManager.swift | spec/services/notifications.md | product/flows/messaging.md |
 | Shared/Theme/ThemeManager.swift | spec/services/theme.md | product/views/settings.md |
-| SimpleXChat/ChatTypes.swift | spec/api.md | product/glossary.md |
+| SimpleXChat/ChatTypes.swift | spec/state.md, spec/api.md | product/glossary.md |
 | SimpleXChat/APITypes.swift | spec/api.md | product/concepts.md |
 | SimpleXChat/CallTypes.swift | spec/services/calls.md | product/flows/calling.md |
 | SimpleXChat/FileUtils.swift | spec/services/files.md | product/flows/file-transfer.md |

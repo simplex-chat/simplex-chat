@@ -5,6 +5,8 @@
 > Related specs: [Chat View](chat-view.md) | [Navigation](navigation.md) | [State Management](../state.md) | [README](../README.md)
 > Related product: [Chat List View](../../product/views/chat-list.md)
 
+**Source:** [`ChatListView.swift`](../../Shared/Views/ChatList/ChatListView.swift)
+
 ---
 
 ## Table of Contents
@@ -51,7 +53,7 @@ ChatListView
 
 ---
 
-## 2. ChatListView
+## 2. [`ChatListView`](../../Shared/Views/ChatList/ChatListView.swift#L139) {#2-chatlistview}
 
 **File**: `Shared/Views/ChatList/ChatListView.swift`
 
@@ -60,7 +62,7 @@ The root list view. Key responsibilities:
 ### Data Source
 - Reads `ChatModel.shared.chats` (all conversations)
 - Applies active filter from `ChatTagsModel.shared.activeFilter`
-- Applies search query filtering
+- Applies search query filtering via [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L473)
 - Sorts by last activity (most recent first), with pinned chats at top
 
 ### Layout
@@ -73,9 +75,19 @@ The root list view. Key responsibilities:
 - Pending contact connections (`ChatInfo.contactConnection`) shown as cards
 - Contact requests (`ChatInfo.contactRequest`) shown with accept/reject UI via `ContactRequestView`
 
+### Key Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| [`body`](../../Shared/Views/ChatList/ChatListView.swift#L164) | 163 | Main view body |
+| [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L473) | 472 | Applies active filter and search to chat list |
+| [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L515) | 514 | Normalizes search text for comparison |
+| [`unreadBadge()`](../../Shared/Views/ChatList/ChatListView.swift#L449) | 448 | Renders unread count circle badge |
+| [`stopAudioPlayer()`](../../Shared/Views/ChatList/ChatListView.swift#L468) | 467 | Stops any playing voice message |
+
 ---
 
-## 3. ChatPreviewView
+## 3. [`ChatPreviewView`](../../Shared/Views/ChatList/ChatPreviewView.swift#L12) {#3-chatpreviewview}
 
 **File**: `Shared/Views/ChatList/ChatPreviewView.swift`
 
@@ -104,18 +116,18 @@ Renders a single row in the chat list. Shows:
 
 ---
 
-## 4. ChatListNavLink
+## 4. [`ChatListNavLink`](../../Shared/Views/ChatList/ChatListNavLink.swift#L43) {#4-chatlistnavlink}
 
 **File**: `Shared/Views/ChatList/ChatListNavLink.swift`
 
 Wraps `ChatPreviewView` in a navigation link with tap and swipe behavior:
 
 ### Tap Behavior
-- Direct chat: navigates to `ChatView` via `ItemsModel.loadOpenChat(chatId)`
-- Group chat: navigates to `ChatView`
-- Contact request: shows `ContactRequestView` with accept/reject
-- Contact connection: shows `ContactConnectionInfo`
-- Notes folder: navigates to `ChatView`
+- Direct chat: navigates to `ChatView` via `ItemsModel.loadOpenChat(chatId)` -- [`contactNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L93) L93
+- Group chat: navigates to `ChatView` -- [`groupNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L214) L214
+- Contact request: shows `ContactRequestView` with accept/reject -- [`contactRequestNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L486) L486
+- Contact connection: shows `ContactConnectionInfo` -- [`contactConnectionNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L520) L520
+- Notes folder: navigates to `ChatView` -- [`noteFolderNavLink()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L298) L298
 
 ### Navigation
 - Uses `NavigationLink` (iOS 15) or programmatic navigation (iOS 16+)
@@ -126,7 +138,7 @@ Wraps `ChatPreviewView` in a navigation link with tap and swipe behavior:
 
 ## 5. Filtering & Tags
 
-### Filter Tabs (TagListView)
+### Filter Tabs ([`TagListView`](../../Shared/Views/ChatList/TagListView.swift#L19))
 
 **File**: `Shared/Views/ChatList/TagListView.swift`
 
@@ -143,9 +155,11 @@ Horizontal scrolling tab bar below the navigation bar. Tabs:
 | Group Reports | `.presetTag(.groupReports)` | Groups with pending reports |
 | User tags | `.userTag(ChatTag)` | User-defined custom tags |
 
+Filter matching is handled by [`presetTagMatchesChat()`](../../Shared/Views/ChatList/ChatListView.swift#L899) (L899) and the in-view [`TagsView`](../../Shared/Views/ChatList/ChatListView.swift#L696) struct (L696).
+
 ### ChatTagsModel State
 
-Filtering state is managed by `ChatTagsModel.shared`:
+Filtering state is managed by [`ChatTagsModel`](../../Shared/Model/ChatModel.swift#L183) (`ChatModel.swift` L183):
 
 ```swift
 class ChatTagsModel: ObservableObject {
@@ -156,9 +170,17 @@ class ChatTagsModel: ObservableObject {
 }
 ```
 
-- `presetTags` counts are updated whenever `chats` changes via `updateChatTags()`
+- `presetTags` counts are updated whenever `chats` changes via [`updateChatTags()`](../../Shared/Model/ChatModel.swift#L191) (L191)
 - Tags with zero matching chats are auto-hidden
 - Active filter is auto-cleared when its tag has no matching chats
+
+### Supporting Types
+
+| Type | File | Line | Description |
+|------|------|------|-------------|
+| [`PresetTag`](../../Shared/Views/ChatList/ChatListView.swift#L35) | ChatListView.swift | 34 | Enum of built-in filter categories |
+| [`ActiveFilter`](../../Shared/Views/ChatList/ChatListView.swift#L50) | ChatListView.swift | 49 | Enum wrapping preset, user-tag, or unread filter |
+| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L879) | ChatListView.swift | 878 | Applies a filter and persists selection |
 
 ### Tag Management Commands
 - `apiCreateChatTag(tag: ChatTagData)` -- create tag
@@ -173,12 +195,15 @@ class ChatTagsModel: ObservableObject {
 
 Search is available via pull-down gesture or search button in the navigation bar.
 
+**Search bar UI:** [`ChatListSearchBar`](../../Shared/Views/ChatList/ChatListView.swift#L578) (ChatListView.swift L578)
+
 ### Filtering Logic
 - Filters `ChatModel.chats` by matching search text against:
   - `chatInfo.displayName` (contact/group name)
   - `chatInfo.localAlias` (local alias)
   - `chatInfo.fullName` (full name)
 - For deeper message content search, uses `apiGetChat(chatId:, search:)` parameter
+- Core logic in [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L473) (L473) and [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L515) (L515)
 
 ### Search Results
 - Matching chats are displayed in the same list format
@@ -193,23 +218,23 @@ Search is available via pull-down gesture or search button in the navigation bar
 
 ### Leading Swipe (left-to-right)
 
-| Action | Icon | API | Condition |
-|--------|------|-----|-----------|
-| Pin / Unpin | pin | `apiSetChatSettings` (favorite) | Always |
-| Read / Unread | envelope | `apiChatRead` / `apiChatUnread` | Always |
+| Action | Icon | Handler | Line | API | Condition |
+|--------|------|---------|------|-----|-----------|
+| Pin / Unpin | pin | [`toggleFavoriteButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L347) | 347 | `apiSetChatSettings` (favorite) | Always |
+| Read / Unread | envelope | [`markReadButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L328) | 328 | `apiChatRead` / `apiChatUnread` | Always |
 
 ### Trailing Swipe (right-to-left)
 
-| Action | Icon | API | Condition |
-|--------|------|-----|-----------|
-| Mute / Unmute | bell.slash | `apiSetChatSettings` (enableNtfs) | Always |
-| Clear | trash | `apiClearChat` | Has messages |
-| Delete | trash.fill | `apiDeleteChat` | Not active chat |
-| Tag | tag | `apiSetChatTags` | Always |
+| Action | Icon | Handler | Line | API | Condition |
+|--------|------|---------|------|-----|-----------|
+| Mute / Unmute | bell.slash | [`toggleNtfsButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L365) | 365 | `apiSetChatSettings` (enableNtfs) | Always |
+| Clear | trash | [`clearChatButton()`](../../Shared/Views/ChatList/ChatListNavLink.swift#L385) | 385 | `apiClearChat` | Has messages |
+| Delete | trash.fill | -- | -- | `apiDeleteChat` | Not active chat |
+| Tag | tag | -- | -- | `apiSetChatTags` | Always |
 
 ---
 
-## 8. UserPicker
+## 8. [`UserPicker`](../../Shared/Views/ChatList/UserPicker.swift#L9) {#8-userpicker}
 
 **File**: `Shared/Views/ChatList/UserPicker.swift`
 
@@ -240,16 +265,16 @@ The FAB (floating action button) in the bottom-right corner opens the new chat f
 
 ## Source Files
 
-| File | Path |
-|------|------|
-| Chat list view | `Shared/Views/ChatList/ChatListView.swift` |
-| Chat preview row | `Shared/Views/ChatList/ChatPreviewView.swift` |
-| Navigation link wrapper | `Shared/Views/ChatList/ChatListNavLink.swift` |
-| Tag filter tabs | `Shared/Views/ChatList/TagListView.swift` |
-| User picker sheet | `Shared/Views/ChatList/UserPicker.swift` |
-| Getting started help | `Shared/Views/ChatList/ChatHelp.swift` |
-| Contact request view | `Shared/Views/ChatList/ContactRequestView.swift` |
-| Contact connection info | `Shared/Views/ChatList/ContactConnectionInfo.swift` |
-| Contact connection view | `Shared/Views/ChatList/ContactConnectionView.swift` |
-| Server summary | `Shared/Views/ChatList/ServersSummaryView.swift` |
-| One-hand UI card | `Shared/Views/ChatList/OneHandUICard.swift` |
+| File | Path | Key struct | Line |
+|------|------|------------|------|
+| Chat list view | [`ChatListView.swift`](../../Shared/Views/ChatList/ChatListView.swift) | `ChatListView` | [138](../../Shared/Views/ChatList/ChatListView.swift#L139) |
+| Chat preview row | [`ChatPreviewView.swift`](../../Shared/Views/ChatList/ChatPreviewView.swift) | `ChatPreviewView` | [12](../../Shared/Views/ChatList/ChatPreviewView.swift#L12) |
+| Navigation link wrapper | [`ChatListNavLink.swift`](../../Shared/Views/ChatList/ChatListNavLink.swift) | `ChatListNavLink` | [43](../../Shared/Views/ChatList/ChatListNavLink.swift#L43) |
+| Tag filter tabs | [`TagListView.swift`](../../Shared/Views/ChatList/TagListView.swift) | `TagListView` | [19](../../Shared/Views/ChatList/TagListView.swift#L19) |
+| User picker sheet | [`UserPicker.swift`](../../Shared/Views/ChatList/UserPicker.swift) | `UserPicker` | [9](../../Shared/Views/ChatList/UserPicker.swift#L9) |
+| Getting started help | [`ChatHelp.swift`](../../Shared/Views/ChatList/ChatHelp.swift) | | |
+| Contact request view | [`ContactRequestView.swift`](../../Shared/Views/ChatList/ContactRequestView.swift) | | |
+| Contact connection info | [`ContactConnectionInfo.swift`](../../Shared/Views/ChatList/ContactConnectionInfo.swift) | | |
+| Contact connection view | [`ContactConnectionView.swift`](../../Shared/Views/ChatList/ContactConnectionView.swift) | | |
+| Server summary | [`ServersSummaryView.swift`](../../Shared/Views/ChatList/ServersSummaryView.swift) | | |
+| One-hand UI card | [`OneHandUICard.swift`](../../Shared/Views/ChatList/OneHandUICard.swift) | | |

@@ -5,6 +5,7 @@
 //  Created by EP on 01/05/2025.
 //  Copyright © 2025 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/api.md
 
 import SimpleXChat
 import SwiftUI

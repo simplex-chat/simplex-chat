@@ -1,5 +1,7 @@
 # Onboarding Flow
 
+> **Related spec:** [spec/architecture.md](../../spec/architecture.md) | [spec/database.md](../../spec/database.md)
+
 ## Overview
 
 First-time setup and migration flows for SimpleX Chat iOS. Covers app initialization, profile creation, server operator selection, notification configuration, and database import/export for device migration. The app uses a Haskell runtime for its core chat engine, with SQLite databases shared between the main app and the Notification Service Extension (NSE).

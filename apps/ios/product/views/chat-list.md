@@ -1,5 +1,7 @@
 # Chat List (Home Screen)
 
+> **Related spec:** [spec/client/chat-list.md](../../spec/client/chat-list.md)
+
 ## Purpose
 
 Main screen of the SimpleX Chat app. Displays all conversations sorted by last activity, serves as the navigation root, and provides access to user profiles, settings, and new chat creation.

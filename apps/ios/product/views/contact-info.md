@@ -1,5 +1,7 @@
 # Contact Info
 
+> **Related spec:** [spec/client/chat-view.md](../../spec/client/chat-view.md)
+
 ## Purpose
 
 View contact details, manage per-contact preferences, verify security codes for E2E encryption, manage connection settings, and perform destructive actions like blocking or deleting a contact.

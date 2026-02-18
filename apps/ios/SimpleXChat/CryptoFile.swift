@@ -4,6 +4,7 @@
 //
 //  Created by Evgeny on 05/09/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
+// Spec: spec/services/files.md
 //
 
 import Foundation

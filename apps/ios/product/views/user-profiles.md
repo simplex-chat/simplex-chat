@@ -1,5 +1,7 @@
 # User Profiles
 
+> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md) | [spec/state.md](../../spec/state.md)
+
 ## Purpose
 
 Manage multiple chat profiles within a single app instance. Users can create, switch between, hide, mute, and delete profiles. Hidden profiles are protected by password and support a self-destruct password option.

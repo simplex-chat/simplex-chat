@@ -1,6 +1,8 @@
 # SimpleX Chat iOS -- Glossary
 
 > SimpleX Chat iOS domain glossary. Defines all domain terms used in SimpleX Chat with links to relevant specifications and source code.
+>
+> **Related spec:** [spec/api.md](../spec/api.md) | [spec/architecture.md](../spec/architecture.md)
 
 ## Table of Contents
 

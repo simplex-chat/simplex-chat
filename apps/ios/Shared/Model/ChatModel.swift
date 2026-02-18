@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 22/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/state.md
 
 import Foundation
 import Combine

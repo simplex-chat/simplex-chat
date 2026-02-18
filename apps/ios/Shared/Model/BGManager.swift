@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 08/02/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import Foundation
 import BackgroundTasks

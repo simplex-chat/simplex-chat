@@ -1,5 +1,7 @@
 # Audio / Video Call
 
+> **Related spec:** [spec/services/calls.md](../../spec/services/calls.md)
+
 ## Purpose
 
 Make and receive end-to-end encrypted audio and video calls over WebRTC. Supports CallKit integration for native iOS call UI, picture-in-picture for video calls, audio device selection, and collapsible call overlay.

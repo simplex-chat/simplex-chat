@@ -1,5 +1,7 @@
 # Onboarding
 
+> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md) | [spec/architecture.md](../../spec/architecture.md)
+
 ## Purpose
 
 First-time setup flow for new users. Guides through app introduction, profile creation, server operator conditions acceptance, and notification configuration. Also provides an entry point for device migration.

@@ -1,5 +1,7 @@
 # New Chat / Connection
 
+> **Related spec:** [spec/client/navigation.md](../../spec/client/navigation.md)
+
 ## Purpose
 
 Create new contacts, groups, or connect with others via one-time invitation links or by scanning/pasting SimpleX links. This is the primary onramp for establishing new E2E encrypted connections.

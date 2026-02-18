@@ -1,5 +1,7 @@
 # Connection Flow
 
+> **Related spec:** [spec/api.md](../../spec/api.md) | [spec/architecture.md](../../spec/architecture.md)
+
 ## Overview
 
 Establishing contact between two SimpleX Chat users. SimpleX uses no user identifiers; connections are formed through one-time invitation links or permanent SimpleX addresses. Each connection creates unique unidirectional SMP queues, ensuring no server can correlate sender and receiver. Supports incognito mode for per-contact random profile generation.

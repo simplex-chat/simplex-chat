@@ -1,5 +1,7 @@
 # Chat View (Conversation)
 
+> **Related spec:** [spec/client/chat-view.md](../../spec/client/chat-view.md) | [spec/client/compose.md](../../spec/client/compose.md)
+
 ## Purpose
 
 Full conversation view for displaying and interacting with messages in a direct contact chat, group chat, or note-to-self. Supports text messaging with markdown, media attachments, voice messages, E2E encrypted calls, message reactions, replies, forwarding, and content search/filtering.

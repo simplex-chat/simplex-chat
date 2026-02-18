@@ -5,6 +5,8 @@
 > Related specs: [Chat View](chat-view.md) | [File Transfer](../services/files.md) | [API Reference](../api.md) | [README](../README.md)
 > Related product: [Chat View](../../product/views/chat.md)
 
+**Source:** [`ComposeView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift)
+
 ---
 
 ## Table of Contents
@@ -41,7 +43,7 @@ ComposeView
 
 ---
 
-## 2. ComposeView
+## 2. [ComposeView](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L321) (`struct ComposeView: View`)
 
 **File**: `Shared/Views/Chat/ComposeMessage/ComposeView.swift`
 
@@ -63,14 +65,33 @@ ComposeView
 4. On success: clears compose state, scrolls to bottom
 5. On failure: shows error alert, preserves compose state
 
+### Key Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| [`body`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L360) | L360 | Main view body |
+| [`sendMessageView()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L683) | L683 | Builds the send-message UI |
+| [`sendMessage(ttl:)`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1091) | L1091 | Entry point: initiates send |
+| [`sendMessageAsync()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1099) | L1099 | Async send implementation |
+| [`clearState(live:)`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1446) | L1446 | Resets compose state after send |
+| [`addMediaContent()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L882) | L882 | Adds media attachment |
+| [`connectCheckLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L856) | L856 | Checks link preview before connect |
+| [`commandsButton()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L744) | L744 | Builds commands menu button |
+
 ### Draft Persistence
+
+| Function | Line | Description |
+|----------|------|-------------|
+| [`saveCurrentDraft()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1459) | L1459 | Saves compose state to `ChatModel.draft` |
+| [`clearCurrentDraft()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1464) | L1464 | Clears persisted draft |
+
 - When navigating away from a chat, compose state is saved to `ChatModel.draft` / `ChatModel.draftChatId`
 - When returning to the same chat, draft is restored
 - Drafts are not persisted across app restarts
 
 ---
 
-## 3. ComposeState Machine
+## 3. [ComposeState](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L40) Machine (`struct ComposeState`)
 
 The compose bar operates as a state machine with these primary states:
 
@@ -92,6 +113,19 @@ The compose bar operates as a state machine with these primary states:
    │ .replying │   │ .editing │   │ .forwarding│
    └──────────┘   └──────────┘   └───────────┘
 ```
+
+### Supporting Types
+
+| Type | Line | Description |
+|------|------|-------------|
+| [`enum ComposePreview`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L10) | L10 | Preview variants (image, voice, file, etc.) |
+| [`enum ComposeContextItem`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L18) | L18 | Context item for reply/quote |
+| [`enum VoiceMessageRecordingState`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L26) | L26 | Recording state enum |
+| [`struct ComposeState`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L40) | L40 | Full compose state struct |
+| [`copy()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L93) | L93 | Copy compose state with overrides |
+| [`mentionMemberName()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L113) | L113 | Format mention display name |
+| [`chatItemPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L260) | L260 | Build preview from chat item |
+| [`enum UploadContent`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L280) | L280 | Upload content variants |
 
 ### States
 
@@ -122,21 +156,21 @@ The compose bar operates as a state machine with these primary states:
 
 ## 4. Attachment Types
 
-### ComposeImageView
+### [ComposeImageView](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift#L12)
 
-**File**: `Shared/Views/Chat/ComposeMessage/ComposeImageView.swift`
+**File**: [`ComposeImageView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift) (struct at L12)
 
 Preview of selected image(s) before sending. Shows thumbnail with remove button. Images are compressed to `MAX_IMAGE_SIZE` (255KB) before sending.
 
-### ComposeFileView
+### [ComposeFileView](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift#L11)
 
-**File**: `Shared/Views/Chat/ComposeMessage/ComposeFileView.swift`
+**File**: [`ComposeFileView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift) (struct at L11)
 
 Preview of selected file or video. Shows filename, size, and remove button. Videos show a thumbnail frame.
 
-### ComposeVoiceView
+### [ComposeVoiceView](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift#L26)
 
-**File**: `Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift`
+**File**: [`ComposeVoiceView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift) (struct at L26)
 
 Voice message recording/playback preview. Shows waveform visualization, duration, and play/delete buttons.
 
@@ -204,7 +238,7 @@ The plan response may include a `forwardConfirmation` requiring user confirmatio
 
 ---
 
-## 8. Live Messages
+## 8. [Live Messages](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L32) (`struct LiveMessage`)
 
 Optional feature where the recipient sees typing in real-time.
 
@@ -214,6 +248,15 @@ Optional feature where the recipient sees typing in real-time.
 - Each call sends the current text as an update to the same message
 - Recipient sees the message being composed in real-time
 - Final send marks the message as complete
+
+### Key Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| [`sendLiveMessage()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L910) | L910 | Initiates a live message |
+| [`updateLiveMessage()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L927) | L927 | Sends incremental live update |
+| [`liveMessageToSend()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L945) | L945 | Determines text diff to send |
+| [`truncateToWords()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L950) | L950 | Truncates text at word boundary |
 
 ### API
 - Initial: `apiSendMessages(live: true, composedMessages: [...])` -- creates live message
@@ -232,25 +275,47 @@ Optional feature where the recipient sees typing in real-time.
 5. Preview with playback shown in compose area
 6. User taps send to deliver
 
+### Voice Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| [`startVoiceMessageRecording()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1365) | L1365 | Begins audio recording |
+| [`finishVoiceMessageRecording()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1405) | L1405 | Stops recording, shows preview |
+| [`allowVoiceMessagesToContact()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1415) | L1415 | Enables voice messages for contact |
+| [`updateComposeVMRFinished()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1422) | L1422 | Updates state after recording finishes |
+| [`cancelCurrentVoiceRecording()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1434) | L1434 | Cancels in-progress recording |
+| [`cancelVoiceMessageRecording()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1440) | L1440 | Cancels and cleans up recording file |
+
 ### Constraints
 - Maximum duration: `MAX_VOICE_MESSAGE_LENGTH = 300` seconds (5 minutes)
 - Auto-receive threshold: `MAX_VOICE_SIZE_AUTO_RCV = 522,240` bytes (510KB)
 - Compressed audio format for small file sizes
 
 ### Audio Management
-- `AudioRecPlay` (`Shared/Model/AudioRecPlay.swift`) manages recording and playback
+- [`AudioRecorder`](../../Shared/Model/AudioRecPlay.swift#L14) (`Shared/Model/AudioRecPlay.swift` L14) manages recording and playback
 - `ChatModel.stopPreviousRecPlay` coordinates exclusive audio playback (only one audio source plays at a time)
 
 ---
 
-## 10. Link Previews
+## 10. [Link Previews](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift#L13) (`ComposeLinkView`)
 
-**File**: `Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift`
+**File**: [`ComposeLinkView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift) (struct at L13)
 
 ### Auto-Detection
 - As user types, URLs in the text are detected
 - When a URL is found, `ComposeLinkView` fetches OpenGraph metadata
 - Preview card shows title, description, and thumbnail image
+
+### Link Preview Functions
+
+| Function | Line | Description |
+|----------|------|-------------|
+| [`showLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1471) | L1471 | Triggers link preview loading |
+| [`getMessageLinks()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1490) | L1490 | Extracts URLs from formatted text |
+| [`isSimplexLink()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1501) | L1501 | Checks if URL is a SimpleX link |
+| [`cancelLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1505) | L1505 | Cancels pending preview |
+| [`loadLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1516) | L1516 | Fetches OpenGraph metadata |
+| [`resetLinkPreview()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1533) | L1533 | Resets preview state |
 
 ### Behavior
 - Only the first URL in the message generates a preview
@@ -279,11 +344,12 @@ In group chats, typing `@` triggers member name autocomplete:
 
 ## Source Files
 
-| File | Path |
-|------|------|
-| Compose view | `Shared/Views/Chat/ComposeMessage/ComposeView.swift` |
-| Image preview | `Shared/Views/Chat/ComposeMessage/ComposeImageView.swift` |
-| File preview | `Shared/Views/Chat/ComposeMessage/ComposeFileView.swift` |
-| Voice preview | `Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift` |
-| Link preview | `Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift` |
-| Audio recording | `Shared/Model/AudioRecPlay.swift` |
+| File | Path | Struct/Class | Line |
+|------|------|--------------|------|
+| Compose view | [`ComposeView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift) | `ComposeView` | [L321](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L321) |
+| Send message UI | [`SendMessageView.swift`](../../Shared/Views/Chat/ComposeMessage/SendMessageView.swift) | `SendMessageView` | [L14](../../Shared/Views/Chat/ComposeMessage/SendMessageView.swift#L14) |
+| Image preview | [`ComposeImageView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift) | `ComposeImageView` | [L12](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift#L12) |
+| File preview | [`ComposeFileView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift) | `ComposeFileView` | [L11](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift#L11) |
+| Voice preview | [`ComposeVoiceView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift) | `ComposeVoiceView` | [L26](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift#L26) |
+| Link preview | [`ComposeLinkView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift) | `ComposeLinkView` | [L13](../../Shared/Views/Chat/ComposeMessage/ComposeLinkView.swift#L13) |
+| Audio recording | [`AudioRecPlay.swift`](../../Shared/Model/AudioRecPlay.swift) | `AudioRecorder` | [L14](../../Shared/Model/AudioRecPlay.swift#L14) |

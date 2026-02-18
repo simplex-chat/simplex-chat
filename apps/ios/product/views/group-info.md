@@ -1,5 +1,7 @@
 # Group Chat Info
 
+> **Related spec:** [spec/client/chat-view.md](../../spec/client/chat-view.md)
+
 ## Purpose
 
 View and manage group settings, member list, group preferences, group links, member admission, welcome messages, and moderation features. The scope of available actions depends on the user's role within the group (member, moderator, admin, owner).

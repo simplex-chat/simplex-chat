@@ -5,6 +5,7 @@
 //  Created by JRoberts on 15.04.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/files.md
 
 import Foundation
 import OSLog

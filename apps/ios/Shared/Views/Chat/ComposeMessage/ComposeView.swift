@@ -1,3 +1,4 @@
+// Spec: spec/client/compose.md
 
 import SwiftUI
 import SimpleXChat

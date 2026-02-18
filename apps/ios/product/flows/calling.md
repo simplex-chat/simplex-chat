@@ -1,5 +1,7 @@
 # Audio/Video Call Flow
 
+> **Related spec:** [spec/services/calls.md](../../spec/services/calls.md)
+
 ## Overview
 
 WebRTC-based audio and video calling in SimpleX Chat iOS. Calls are end-to-end encrypted with an additional shared key negotiated over the E2E encrypted SMP channel. The iOS app integrates with CallKit for native call UI (incoming call screen, lock screen integration) with a fallback mode for regions where CallKit is restricted (China). Call signaling (offer/answer/ICE candidates) is exchanged via SMP messages, not through a central signaling server.

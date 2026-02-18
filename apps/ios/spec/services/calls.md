@@ -5,6 +5,8 @@
 > Related specs: [Architecture](../architecture.md) | [API Reference](../api.md) | [Notifications](notifications.md) | [README](../README.md)
 > Related product: [Chat View](../../product/views/chat.md)
 
+**Source:** [`CallController.swift`](../../Shared/Views/Call/CallController.swift) | [`WebRTCClient.swift`](../../Shared/Views/Call/WebRTCClient.swift) | [`ActiveCallView.swift`](../../Shared/Views/Call/ActiveCallView.swift) | [`CallTypes.swift`](../../SimpleXChat/CallTypes.swift)
+
 ---
 
 ## Table of Contents
@@ -45,13 +47,13 @@ Caller                          SMP Relay              Callee
 
 ---
 
-## 2. CallController
+## [2. CallController](../../Shared/Views/Call/CallController.swift#L18-L440)
 
 **File**: `Shared/Views/Call/CallController.swift`
 
 Central call coordinator that bridges SimpleX call protocol with iOS CallKit (or non-CallKit fallback).
 
-### Class Definition
+### [Class Definition](../../Shared/Views/Call/CallController.swift#L18-L47)
 
 ```swift
 class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, ObservableObject {
@@ -72,15 +74,15 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
 ### Key Responsibilities
 
-| Method | Purpose |
-|--------|---------|
-| `reportNewIncomingCall()` | Reports incoming call to CallKit for native UI |
-| `reportOutgoingCall()` | Reports outgoing call to CallKit |
-| `provider(_:perform: CXAnswerCallAction)` | Handles user answering via CallKit UI |
-| `provider(_:perform: CXEndCallAction)` | Handles user ending via CallKit UI |
-| `provider(_:perform: CXStartCallAction)` | Handles outgoing call start |
-| `pushRegistry(_:didReceiveIncomingPushWith:)` | Handles VoIP push tokens |
-| `hasActiveCalls()` | Checks if any calls are active |
+| Method | Purpose | Line |
+|--------|---------|------|
+| [`reportNewIncomingCall()`](../../Shared/Views/Call/CallController.swift#L280) | Reports incoming call to CallKit for native UI | L280 |
+| [`reportOutgoingCall()`](../../Shared/Views/Call/CallController.swift#L320) | Reports outgoing call to CallKit | L320 |
+| [`provider(_:perform: CXAnswerCallAction)`](../../Shared/Views/Call/CallController.swift#L63) | Handles user answering via CallKit UI | L63 |
+| [`provider(_:perform: CXEndCallAction)`](../../Shared/Views/Call/CallController.swift#L92) | Handles user ending via CallKit UI | L92 |
+| [`provider(_:perform: CXStartCallAction)`](../../Shared/Views/Call/CallController.swift#L53) | Handles outgoing call start | L53 |
+| [`pushRegistry(_:didReceiveIncomingPushWith:)`](../../Shared/Views/Call/CallController.swift#L196) | Handles VoIP push tokens | L196 |
+| [`hasActiveCalls()`](../../Shared/Views/Call/CallController.swift#L426) | Checks if any calls are active | L426 |
 
 ### Call Manager (internal)
 
@@ -91,7 +93,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
 ---
 
-## 3. WebRTCClient
+## [3. WebRTCClient](../../Shared/Views/Call/WebRTCClient.swift#L12-L665)
 
 **File**: `Shared/Views/Call/WebRTCClient.swift` (~49KB)
 
@@ -107,18 +109,20 @@ Manages the WebRTC peer connection, media streams, and data channels.
 
 ### Key Operations
 
-| Operation | Description |
-|-----------|-------------|
-| Create offer | `peerConnection.offer(for:)` -- generates SDP offer for caller |
-| Create answer | `peerConnection.answer(for:)` -- generates SDP answer for callee |
-| Set local description | Apply local SDP (offer or answer) |
-| Set remote description | Apply remote SDP (received via SMP) |
-| Add ICE candidate | `peerConnection.add(RTCIceCandidate)` |
-| Toggle audio | Enable/disable local audio track |
-| Toggle video | Enable/disable local video track |
-| Switch camera | Front/back camera toggle |
+| Operation | Description | Line |
+|-----------|-------------|------|
+| [`initializeCall`](../../Shared/Views/Call/WebRTCClient.swift#L91) | Sets up peer connection, tracks, encryption | L91 |
+| [`createPeerConnection`](../../Shared/Views/Call/WebRTCClient.swift#L136) | Creates and configures RTCPeerConnection | L136 |
+| [`sendCallCommand`](../../Shared/Views/Call/WebRTCClient.swift#L171) | Dispatches WCallCommand (offer/answer/ICE) | L171 |
+| [`addIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L161) | `peerConnection.add(RTCIceCandidate)` | L161 |
+| [`getInitialIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L280) | Collects initial ICE candidates | L280 |
+| [`sendIceCandidates`](../../Shared/Views/Call/WebRTCClient.swift#L299) | Sends gathered ICE candidates | L299 |
+| [`enableMedia`](../../Shared/Views/Call/WebRTCClient.swift#L358) | Enable/disable audio or video track | L358 |
+| [`setupLocalTracks`](../../Shared/Views/Call/WebRTCClient.swift#L415) | Creates audio/video tracks and adds to connection | L415 |
+| [`startCaptureLocalVideo`](../../Shared/Views/Call/WebRTCClient.swift#L571) | Front/back camera toggle and capture start | L571 |
+| [`endCall`](../../Shared/Views/Call/WebRTCClient.swift#L634) | Tears down connection and tracks | L634 |
 
-### Additional Encryption
+### [Additional Encryption](../../Shared/Views/Call/WebRTCClient.swift#L494-L537)
 
 Beyond WebRTC's built-in SRTP encryption, SimpleX adds an extra encryption layer:
 - A shared key from the E2E SMP channel is used
@@ -189,11 +193,11 @@ All call signaling travels through the same encrypted SMP message channels used 
 
 ---
 
-## 5. CallKit Integration
+## [5. CallKit Integration](../../Shared/Views/Call/CallController.swift#L23-L150)
 
 CallKit provides the native iOS incoming call experience (lock screen UI, call history, system call handling).
 
-### CXProvider Configuration
+### [CXProvider Configuration](../../Shared/Views/Call/CallController.swift#L23-L36)
 
 ```swift
 let configuration = CXProviderConfiguration()
@@ -207,7 +211,7 @@ configuration.maximumCallsPerCallGroup = 1
 configuration.iconTemplateImageData = UIImage(named: "icon-transparent")?.pngData()
 ```
 
-### VoIP Push (PKPushRegistry)
+### [VoIP Push (PKPushRegistry)](../../Shared/Views/Call/CallController.swift#L192-L278)
 
 CallKit requires VoIP push for incoming calls on locked device:
 - `PKPushRegistry` registers for `.voIP` push type
@@ -216,24 +220,24 @@ CallKit requires VoIP push for incoming calls on locked device:
 
 ### CallKit Actions
 
-| CXAction | Handler | Description |
-|----------|---------|-------------|
-| `CXStartCallAction` | `provider(_:perform:)` | User starts outgoing call |
-| `CXAnswerCallAction` | `provider(_:perform:)` | User answers incoming call from CallKit UI |
-| `CXEndCallAction` | `provider(_:perform:)` | User ends call from CallKit UI |
-| `CXSetMutedCallAction` | `provider(_:perform:)` | User mutes from CallKit UI |
+| CXAction | Handler | Description | Line |
+|----------|---------|-------------|------|
+| `CXStartCallAction` | [`provider(_:perform:)`](../../Shared/Views/Call/CallController.swift#L53) | User starts outgoing call | L53 |
+| `CXAnswerCallAction` | [`provider(_:perform:)`](../../Shared/Views/Call/CallController.swift#L63) | User answers incoming call from CallKit UI | L63 |
+| `CXEndCallAction` | [`provider(_:perform:)`](../../Shared/Views/Call/CallController.swift#L92) | User ends call from CallKit UI | L92 |
+| `CXSetMutedCallAction` | [`provider(_:perform:)`](../../Shared/Views/Call/CallController.swift#L107) | User mutes from CallKit UI | L107 |
 
-### Lock Screen Answer
+### [Lock Screen Answer](../../Shared/Views/Call/CallController.swift#L63-L91)
 
 When answering from the lock screen:
 1. `CXAnswerCallAction` fires
-2. CallController waits for chat to be ready (`waitUntilChatStarted(timeoutMs: 30_000)`)
+2. CallController waits for chat to be ready ([`waitUntilChatStarted(timeoutMs: 30_000)`](../../Shared/Views/Call/CallController.swift#L178))
 3. WebRTC connection established
 4. `fulfillOnConnect` action is fulfilled only when WebRTC reaches connected state (required for audio to work on lock screen)
 
 ---
 
-## 6. CallKit-Free Mode
+## [6. CallKit-Free Mode](../../Shared/Views/Call/CallController.swift#L20-L21)
 
 In regions where CallKit is unavailable (e.g., China, determined by `SKStorefront.countryCode == "CHN"`), the app falls back to in-app notifications:
 
@@ -250,9 +254,9 @@ static func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get(
 
 ---
 
-## 7. Audio Routing
+## [7. Audio Routing](../../Shared/Views/Call/WebRTCClient.swift#L886-L994)
 
-### AVAudioSession Management
+### [AVAudioSession Management](../../Shared/Views/Call/WebRTCClient.swift#L886-L939)
 
 Audio routing is managed through `AVAudioSession`:
 - **Receiver**: Default for audio-only calls (ear speaker)
@@ -269,9 +273,9 @@ The `WebRTCClient` observes `AVAudioSession.routeChangeNotification` to handle:
 
 ---
 
-## 8. Key Types
+## [8. Key Types](../../SimpleXChat/CallTypes.swift#L1-L110)
 
-### RcvCallInvitation
+### [RcvCallInvitation](../../SimpleXChat/CallTypes.swift#L41-L67)
 
 ```swift
 struct RcvCallInvitation {
@@ -284,7 +288,7 @@ struct RcvCallInvitation {
 }
 ```
 
-### CallType
+### [CallType](../../SimpleXChat/CallTypes.swift#L69-L77)
 
 ```swift
 struct CallType {
@@ -298,7 +302,7 @@ enum CallMediaType: String {
 }
 ```
 
-### WebRTCCallOffer / WebRTCSession
+### [WebRTCCallOffer](../../SimpleXChat/CallTypes.swift#L13-L21) / [WebRTCSession](../../SimpleXChat/CallTypes.swift#L23-L31)
 
 ```swift
 struct WebRTCCallOffer {
@@ -312,7 +316,7 @@ struct WebRTCSession {
 }
 ```
 
-### WebRTCExtraInfo
+### [WebRTCExtraInfo](../../SimpleXChat/CallTypes.swift#L33-L39)
 
 ```swift
 struct WebRTCExtraInfo {
@@ -331,7 +335,7 @@ Stored in `ChatModel.activeCall`:
 
 ---
 
-## 9. ActiveCallView
+## [9. ActiveCallView](../../Shared/Views/Call/ActiveCallView.swift#L15-L284)
 
 **File**: `Shared/Views/Call/ActiveCallView.swift`
 
@@ -344,6 +348,19 @@ Full-screen call UI when `ChatModel.showCallView == true`:
 - Control buttons: mute, camera toggle, speaker toggle, camera flip, end call
 - Minimize button (collapses to banner)
 
+### [ActiveCallOverlay](../../Shared/Views/Call/ActiveCallView.swift#L286-L514)
+
+| Control | Method | Line |
+|---------|--------|------|
+| Audio call info | [`audioCallInfoView`](../../Shared/Views/Call/ActiveCallView.swift#L354) | L354 |
+| Video call info | [`videoCallInfoView`](../../Shared/Views/Call/ActiveCallView.swift#L374) | L374 |
+| End call | [`endCallButton`](../../Shared/Views/Call/ActiveCallView.swift#L403) | L403 |
+| Mute toggle | [`toggleMicButton`](../../Shared/Views/Call/ActiveCallView.swift#L414) | L414 |
+| Audio device | [`audioDeviceButton`](../../Shared/Views/Call/ActiveCallView.swift#L424) | L424 |
+| Speaker toggle | [`toggleSpeakerButton`](../../Shared/Views/Call/ActiveCallView.swift#L448) | L448 |
+| Camera toggle | [`toggleCameraButton`](../../Shared/Views/Call/ActiveCallView.swift#L460) | L460 |
+| Flip camera | [`flipCameraButton`](../../Shared/Views/Call/ActiveCallView.swift#L471) | L471 |
+
 ### PiP (Picture-in-Picture)
 
 When `ChatModel.activeCallViewIsCollapsed == true`:
@@ -355,11 +372,11 @@ When `ChatModel.activeCallViewIsCollapsed == true`:
 
 ## Source Files
 
-| File | Path |
-|------|------|
-| Call controller | `Shared/Views/Call/CallController.swift` |
-| WebRTC client | `Shared/Views/Call/WebRTCClient.swift` |
-| Active call UI | `Shared/Views/Call/ActiveCallView.swift` |
-| WebRTC helpers | `Shared/Views/Call/WebRTC.swift` |
-| Call types (Swift) | `SimpleXChat/CallTypes.swift` |
-| Call types (Haskell) | `../../src/Simplex/Chat/Call.hs` |
+| File | Path | Lines |
+|------|------|-------|
+| [Call controller](../../Shared/Views/Call/CallController.swift) | `Shared/Views/Call/CallController.swift` | 440 |
+| [WebRTC client](../../Shared/Views/Call/WebRTCClient.swift) | `Shared/Views/Call/WebRTCClient.swift` | 1128 |
+| [Active call UI](../../Shared/Views/Call/ActiveCallView.swift) | `Shared/Views/Call/ActiveCallView.swift` | 524 |
+| WebRTC helpers | `Shared/Views/Call/WebRTC.swift` | |
+| [Call types (Swift)](../../SimpleXChat/CallTypes.swift) | `SimpleXChat/CallTypes.swift` | 110 |
+| Call types (Haskell) | `../../src/Simplex/Chat/Call.hs` | |

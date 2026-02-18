@@ -5,6 +5,8 @@
 > Related specs: [State Management](../state.md) | [Architecture](../architecture.md) | [README](../README.md)
 > Related product: [Product Overview](../../product/README.md)
 
+**Source:** [`ThemeManager.swift`](../../Shared/Theme/ThemeManager.swift) | [`AppearanceSettings.swift`](../../Shared/Views/UserSettings/AppearanceSettings.swift) | [`ThemeTypes.swift`](../../SimpleXChat/Theme/ThemeTypes.swift) | [`ChatWallpaperTypes.swift`](../../SimpleXChat/Theme/ChatWallpaperTypes.swift) | [`Theme.swift`](../../Shared/Theme/Theme.swift)
+
 ---
 
 ## Table of Contents
@@ -42,13 +44,13 @@ The resolved theme is published as `AppTheme.shared` and consumed by all SwiftUI
 
 ---
 
-## 2. ThemeManager
+## 2. [ThemeManager](../../Shared/Theme/ThemeManager.swift) (L14)
 
-**File**: `Shared/Theme/ThemeManager.swift`
+**File**: [`Shared/Theme/ThemeManager.swift`](../../Shared/Theme/ThemeManager.swift)
 
 Static utility class that resolves the current theme by merging all customization layers.
 
-### ActiveTheme
+### [ActiveTheme](../../Shared/Theme/ThemeManager.swift#L15)
 
 The resolved theme output:
 
@@ -64,21 +66,32 @@ struct ActiveTheme: Equatable {
 
 ### Key Static Methods
 
-| Method | Purpose |
-|--------|---------|
-| `applyTheme(_:)` | Apply a theme by name, updates `AppTheme.shared` |
-| `currentColors(themeOverridesForType:, perChatTheme:, perUserTheme:, appSettingsTheme:)` | Resolve full theme from all layers |
-| `defaultActiveTheme(_ appSettingsTheme:)` | Get default theme override from app settings |
-| `currentThemeOverridesForExport(...)` | Get current overrides for YAML export |
+| Method | Purpose | Line |
+|--------|---------|------|
+| [`applyTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L118) | Apply a theme by name, updates `AppTheme.shared` | [L118](../../Shared/Theme/ThemeManager.swift#L118) |
+| [`currentColors(...)`](../../Shared/Theme/ThemeManager.swift#L60) | Resolve full theme from all layers | [L60](../../Shared/Theme/ThemeManager.swift#L60) |
+| [`defaultActiveTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L45) | Get default theme override from app settings | [L45](../../Shared/Theme/ThemeManager.swift#L45) |
+| [`currentThemeOverridesForExport(...)`](../../Shared/Theme/ThemeManager.swift#L100) | Get current overrides for YAML export | [L100](../../Shared/Theme/ThemeManager.swift#L100) |
+| [`adjustWindowStyle()`](../../Shared/Theme/ThemeManager.swift#L129) | Adjust window style after theme change | [L129](../../Shared/Theme/ThemeManager.swift#L129) |
+| [`changeDarkTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L159) | Change the dark theme variant | [L159](../../Shared/Theme/ThemeManager.swift#L159) |
+| [`saveAndApplyThemeColor(...)`](../../Shared/Theme/ThemeManager.swift#L165) | Save and apply a theme color override | [L165](../../Shared/Theme/ThemeManager.swift#L165) |
+| [`applyThemeColor(...)`](../../Shared/Theme/ThemeManager.swift#L178) | Apply a theme color to a binding | [L178](../../Shared/Theme/ThemeManager.swift#L178) |
+| [`saveAndApplyWallpaper(...)`](../../Shared/Theme/ThemeManager.swift#L182) | Save and apply a wallpaper change | [L182](../../Shared/Theme/ThemeManager.swift#L182) |
+| [`copyFromSameThemeOverrides(...)`](../../Shared/Theme/ThemeManager.swift#L204) | Copy overrides from matching theme | [L204](../../Shared/Theme/ThemeManager.swift#L204) |
+| [`applyWallpaper(...)`](../../Shared/Theme/ThemeManager.swift#L247) | Apply wallpaper to a binding | [L247](../../Shared/Theme/ThemeManager.swift#L247) |
+| [`saveAndApplyThemeOverrides(...)`](../../Shared/Theme/ThemeManager.swift#L257) | Save and apply full theme overrides | [L257](../../Shared/Theme/ThemeManager.swift#L257) |
+| [`resetAllThemeColors(_:)`](../../Shared/Theme/ThemeManager.swift#L277) | Reset all color overrides (CodableDefault) | [L277](../../Shared/Theme/ThemeManager.swift#L277) |
+| [`resetAllThemeColors(_:)`](../../Shared/Theme/ThemeManager.swift#L291) | Reset all color overrides (Binding) | [L291](../../Shared/Theme/ThemeManager.swift#L291) |
+| [`removeTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L299) | Remove a saved theme by ID | [L299](../../Shared/Theme/ThemeManager.swift#L299) |
 
 ### Theme Resolution Algorithm
 
-`currentColors()` in `ThemeManager.swift`:
+[`currentColors()`](../../Shared/Theme/ThemeManager.swift#L60) in `ThemeManager.swift`:
 
 1. Determine base theme from `currentThemeDefault`:
-   - If `"system"`: use light or dark based on `systemInDarkThemeCurrently`
+   - If `"system"`: use light or dark based on [`systemInDarkThemeCurrently`](../../Shared/Theme/Theme.swift#L92)
    - Dark mode maps to `systemDarkThemeDefault` (Dark, SimpleX, or Black)
-2. Get base color palette (`LightColorPalette`, `DarkColorPalette`, `SimplexColorPalette`, `BlackColorPalette`)
+2. Get base color palette ([`LightColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L641), [`DarkColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L620), [`SimplexColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L662), [`BlackColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L683))
 3. Look up app settings theme override (`themeOverridesDefault`)
 4. Look up per-user theme override (`User.uiThemes`)
 5. Look up per-chat theme override (from ChatInfo)
@@ -99,7 +112,7 @@ Four built-in themes with pre-defined color palettes:
 | **SimpleX** | `DefaultTheme.SIMPLEX` | Brand purple accents, dark background |
 | **Black** | `DefaultTheme.BLACK` | Pure black background (OLED), high contrast |
 
-### DefaultTheme Enum
+### [DefaultTheme](../../SimpleXChat/Theme/ThemeTypes.swift#L12) Enum
 
 ```swift
 enum DefaultTheme {
@@ -118,14 +131,14 @@ enum DefaultTheme {
 ### Color Palettes
 
 Each base theme defines two palette types:
-- `Colors`: Standard UI colors (primary, background, surface, error, onBackground, onSurface)
-- `AppColors`: App-specific colors (sentMessage, receivedMessage, title, primaryVariant2)
+- [`Colors`](../../SimpleXChat/Theme/ThemeTypes.swift#L42): Standard UI colors (primary, background, surface, error, onBackground, onSurface)
+- [`AppColors`](../../SimpleXChat/Theme/ThemeTypes.swift#L87): App-specific colors (sentMessage, receivedMessage, title, primaryVariant2)
 
 Palette instances:
-- `LightColorPalette` / `LightColorPaletteApp`
-- `DarkColorPalette` / `DarkColorPaletteApp`
-- `SimplexColorPalette` / `SimplexColorPaletteApp`
-- `BlackColorPalette` / `BlackColorPaletteApp`
+- [`LightColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L641) / [`LightColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L653)
+- [`DarkColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L620) / [`DarkColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L632)
+- [`SimplexColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L662) / [`SimplexColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L674)
+- [`BlackColorPalette`](../../SimpleXChat/Theme/ThemeTypes.swift#L683) / [`BlackColorPaletteApp`](../../SimpleXChat/Theme/ThemeTypes.swift#L695)
 
 ---
 
@@ -134,6 +147,8 @@ Palette instances:
 ### Layer 1: App Settings Theme
 
 Stored in `themeOverridesDefault` (UserDefaults). Contains `[ThemeOverrides]` -- an array of theme overrides, one per base theme.
+
+#### [`ThemeOverrides`](../../SimpleXChat/Theme/ThemeTypes.swift#L378)
 
 ```swift
 struct ThemeOverrides: Codable {
@@ -147,12 +162,18 @@ struct ThemeOverrides: Codable {
 
 Stored on the `User` object (`User.uiThemes: ThemeModeOverrides?`), persisted in the Haskell database via `apiSetUserUIThemes(userId:, themes:)`.
 
+#### [`ThemeModeOverrides`](../../SimpleXChat/Theme/ThemeTypes.swift#L562)
+
 ```swift
 struct ThemeModeOverrides: Codable {
     var light: ThemeModeOverride?
     var dark: ThemeModeOverride?
 }
+```
 
+#### [`ThemeModeOverride`](../../SimpleXChat/Theme/ThemeTypes.swift#L576)
+
+```swift
 struct ThemeModeOverride: Codable {
     var mode: DefaultThemeMode?
     var colors: ThemeColors?
@@ -173,9 +194,9 @@ Colors are merged field-by-field: if a more-specific layer defines a color, it o
 
 ## 5. Color System
 
-**File**: `SimpleXChat/Theme/ThemeTypes.swift`
+**File**: [`SimpleXChat/Theme/ThemeTypes.swift`](../../SimpleXChat/Theme/ThemeTypes.swift)
 
-### ThemeColors
+### [ThemeColors](../../SimpleXChat/Theme/ThemeTypes.swift#L225)
 
 Overridable color definitions:
 
@@ -198,7 +219,7 @@ struct ThemeColors: Codable {
 
 Colors are stored as hex strings (e.g., `"#FF6600"`) and converted to SwiftUI `Color` values at resolution time.
 
-### Colors (Resolved Palette)
+### [Colors](../../SimpleXChat/Theme/ThemeTypes.swift#L42) (Resolved Palette)
 
 ```swift
 struct Colors {
@@ -216,7 +237,7 @@ struct Colors {
 }
 ```
 
-### AppColors (Resolved App-Specific)
+### [AppColors](../../SimpleXChat/Theme/ThemeTypes.swift#L87) (Resolved App-Specific)
 
 ```swift
 struct AppColors {
@@ -233,7 +254,9 @@ struct AppColors {
 
 ## 6. Wallpapers
 
-### Preset Wallpapers
+**File**: [`SimpleXChat/Theme/ChatWallpaperTypes.swift`](../../SimpleXChat/Theme/ChatWallpaperTypes.swift)
+
+### [Preset Wallpapers](../../SimpleXChat/Theme/ChatWallpaperTypes.swift#L12)
 
 6 built-in wallpaper presets:
 
@@ -255,7 +278,7 @@ Users can set a custom image as wallpaper:
 - Scaled and tiled to fill the chat background
 - Custom wallpapers can be combined with color overrides
 
-### WallpaperType
+### [WallpaperType](../../SimpleXChat/Theme/ChatWallpaperTypes.swift#L309)
 
 ```swift
 enum WallpaperType {
@@ -265,7 +288,7 @@ enum WallpaperType {
 }
 ```
 
-### AppWallpaper (Resolved)
+### [AppWallpaper](../../SimpleXChat/Theme/ThemeTypes.swift#L138) (Resolved)
 
 ```swift
 struct AppWallpaper {
@@ -287,7 +310,7 @@ Configurable bubble appearance properties:
 | `chatItemTail` | Whether bubbles have a tail/arrow | App settings |
 | Avatar corner radius | Roundness of profile avatars | App settings |
 
-These are configured in `Shared/Views/UserSettings/AppearanceSettings.swift`.
+These are configured in [`Shared/Views/UserSettings/AppearanceSettings.swift`](../../Shared/Views/UserSettings/AppearanceSettings.swift) ([L25](../../Shared/Views/UserSettings/AppearanceSettings.swift#L25)).
 
 ---
 
@@ -305,13 +328,15 @@ Users can force light or dark mode regardless of system setting by selecting a s
 
 ### Detection
 
+[`systemInDarkThemeCurrently`](../../Shared/Theme/Theme.swift#L92):
+
 ```swift
 static var systemInDarkThemeCurrently: Bool {
     UIScreen.main.traitCollection.userInterfaceStyle == .dark
 }
 ```
 
-`ChatModel.currentUser` setter triggers `ThemeManager.applyTheme()` to handle per-user theme overrides when switching users.
+`ChatModel.currentUser` setter triggers [`ThemeManager.applyTheme()`](../../Shared/Theme/ThemeManager.swift#L118) to handle per-user theme overrides when switching users.
 
 ---
 
@@ -321,15 +346,24 @@ Theme configurations can be exported as YAML for sharing:
 
 ### Export
 
-`ThemeManager.currentThemeOverridesForExport()` generates a `ThemeOverrides` representing the current resolved theme, which is then serialized to YAML using the Yams library.
+[`ThemeManager.currentThemeOverridesForExport()`](../../Shared/Theme/ThemeManager.swift#L100) generates a `ThemeOverrides` representing the current resolved theme, which is then serialized to YAML using the Yams library.
 
 ### Import
 
 YAML theme strings are parsed back into `ThemeOverrides` and applied as app settings theme overrides.
 
+Key functions in [`AppearanceSettings.swift`](../../Shared/Views/UserSettings/AppearanceSettings.swift):
+
+| Function | Purpose | Line |
+|----------|---------|------|
+| [`ImportExportThemeSection`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L600) | UI section for import/export controls | [L600](../../Shared/Views/UserSettings/AppearanceSettings.swift#L600) |
+| [`ThemeImporter`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L636) | ViewModifier for YAML file import | [L636](../../Shared/Views/UserSettings/AppearanceSettings.swift#L636) |
+| [`decodeYAML(_:)`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1145) | Parse YAML string into Decodable type | [L1145](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1145) |
+| [`encodeThemeOverrides(_:)`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1154) | Encode ThemeOverrides to YAML string | [L1154](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1154) |
+
 ### Toolbar Material
 
-`toolbarMaterial` controls the navigation bar appearance:
+[`ToolbarMaterial`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L317) controls the navigation bar appearance:
 - Configurable opacity/material (translucent, opaque)
 - Stored in app settings
 
@@ -337,12 +371,13 @@ YAML theme strings are parsed back into `ThemeOverrides` and applied as app sett
 
 ## Source Files
 
-| File | Path |
-|------|------|
-| Theme manager | `Shared/Theme/ThemeManager.swift` |
-| Theme types & colors | `SimpleXChat/Theme/ThemeTypes.swift` |
-| Color utilities | `SimpleXChat/Theme/Color.swift` |
-| App theme observable | `Shared/Theme/Theme.swift` |
-| Appearance settings UI | `Shared/Views/UserSettings/AppearanceSettings.swift` |
-| Theme mode editor | `Shared/Views/Helpers/ThemeModeEditor.swift` |
-| Haskell theme types | `../../src/Simplex/Chat/Types/UITheme.hs` |
+| File | Path | Key Definitions |
+|------|------|-----------------|
+| Theme manager | [`Shared/Theme/ThemeManager.swift`](../../Shared/Theme/ThemeManager.swift) | `ThemeManager` (L14), `ActiveTheme` (L15) |
+| Theme types & colors | [`SimpleXChat/Theme/ThemeTypes.swift`](../../SimpleXChat/Theme/ThemeTypes.swift) | `DefaultTheme` (L12), `Colors` (L42), `AppColors` (L87), `AppWallpaper` (L138), `ThemeColors` (L225), `ThemeWallpaper` (L296), `ThemeOverrides` (L378), `ThemeModeOverrides` (L562), `ThemeModeOverride` (L576) |
+| Wallpaper types | [`SimpleXChat/Theme/ChatWallpaperTypes.swift`](../../SimpleXChat/Theme/ChatWallpaperTypes.swift) | `PresetWallpaper` (L12), `WallpaperType` (L309) |
+| Color utilities | [`SimpleXChat/Theme/Color.swift`](../../SimpleXChat/Theme/Color.swift) | Hex color conversion |
+| App theme observable | [`Shared/Theme/Theme.swift`](../../Shared/Theme/Theme.swift) | `AppTheme` (L20), `CurrentColors` (L13), `systemInDarkThemeCurrently` (L92) |
+| Appearance settings UI | [`Shared/Views/UserSettings/AppearanceSettings.swift`](../../Shared/Views/UserSettings/AppearanceSettings.swift) | `AppearanceSettings` (L25), `ToolbarMaterial` (L317), `ImportExportThemeSection` (L600) |
+| Theme mode editor | `Shared/Views/Helpers/ThemeModeEditor.swift` | Theme mode selection UI |
+| Haskell theme types | `../../src/Simplex/Chat/Types/UITheme.hs` | Server-side theme persistence |

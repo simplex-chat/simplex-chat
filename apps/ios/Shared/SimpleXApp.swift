@@ -4,6 +4,7 @@
 //
 //  Created by Evgeny Poberezkin on 17/01/2022.
 //
+// Spec: spec/architecture.md
 
 import SwiftUI
 import OSLog

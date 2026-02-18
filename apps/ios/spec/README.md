@@ -47,11 +47,15 @@ SimpleXApp (root entry point)
 | [WebRTC Calling](services/calls.md) | CallController, WebRTCClient, CallKit, signaling via SMP |
 | [File Transfer](services/files.md) | Inline/XFTP transfer, auto-receive, CryptoFile, file constants |
 | [Theme Engine](services/theme.md) | ThemeManager, default themes, customization layers, wallpapers |
+| [Impact Graph](impact.md) | Source file → product concept mapping, risk levels |
 
 ## Related Product Documentation
 
 - [Product Overview](../product/README.md)
 - [Concept Index](../product/concepts.md)
+- [Business Rules](../product/rules.md)
+- [Known Gaps](../product/gaps.md)
+- [Glossary](../product/glossary.md)
 - [Chat List View](../product/views/chat-list.md)
 - [Chat View](../product/views/chat.md)
 

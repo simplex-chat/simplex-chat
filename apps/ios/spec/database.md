@@ -1,5 +1,7 @@
 # SimpleX Chat iOS -- Database & Storage
 
+**Source:** [`FileUtils.swift`](../SimpleXChat/FileUtils.swift)
+
 > Technical specification for the database architecture, encryption, file storage, and export/import functionality.
 >
 > Related specs: [Architecture](architecture.md) | [State Management](state.md) | [README](README.md)
@@ -35,7 +37,7 @@ Both databases are initialized and migrated via the C FFI function `chat_migrate
 
 ## 2. Database Files & Paths
 
-### Path Resolution (FileUtils.swift)
+### [Path Resolution](../SimpleXChat/FileUtils.swift#L55-L64) (FileUtils.swift)
 
 ```swift
 let DB_FILE_PREFIX = "simplex_v1"
@@ -52,7 +54,7 @@ func getAppDatabasePath() -> URL {
 // Agent: {container}/simplex_v1_agent.db
 ```
 
-### File Constants
+### [File Constants](../SimpleXChat/FileUtils.swift#L33-L39)
 
 ```swift
 let CHAT_DB: String = "_chat.db"
@@ -62,6 +64,8 @@ private let AGENT_DB_BAK: String = "_agent.db.bak"
 ```
 
 ### Container Locations
+
+See [`getDocumentsDirectory()`](../SimpleXChat/FileUtils.swift#L41) and [`getGroupContainerDirectory()`](../SimpleXChat/FileUtils.swift#L45).
 
 | Container | Path | Used When |
 |-----------|------|-----------|
@@ -80,7 +84,7 @@ All database operations are implemented in Haskell. Key store modules (paths rel
 |--------|------|------|-------------|
 | Messages | `src/Simplex/Chat/Store/Messages.hs` | ~178KB | Message CRUD, pagination, search, reactions, delivery receipts |
 | Groups | `src/Simplex/Chat/Store/Groups.hs` | ~126KB | Group CRUD, member management, roles, links, invitations |
-| Direct | `src/Simplex/Chat/Store/Direct.hs` | ~52KB | Direct contact connections, contact requests |
+| Direct | `src/Simplex/Chat/Store/Direct.hs` | ~52KB | Direct contact connections, contact requests. See `createDirectChat` in `Store/Direct.hs` |
 | Files | `src/Simplex/Chat/Store/Files.hs` | ~43KB | File transfer state, XFTP chunks, inline files |
 | Profiles | `src/Simplex/Chat/Store/Profiles.hs` | ~42KB | User profiles, contact profiles, incognito profiles |
 | Connections | `src/Simplex/Chat/Store/Connections.hs` | ~17KB | Connection lifecycle, queue management |
@@ -157,8 +161,8 @@ The encryption key is stored in the iOS Keychain via `kcDatabasePassword`:
 
 ### UI
 
-- `Shared/Views/Database/DatabaseEncryptionView.swift` -- Encryption settings UI
-- `Shared/Views/Database/DatabaseView.swift` -- Database management UI (size, export, import, encryption)
+- [`DatabaseEncryptionView.swift`](../Shared/Views/Database/DatabaseEncryptionView.swift) -- Encryption settings UI
+- [`DatabaseView.swift`](../Shared/Views/Database/DatabaseView.swift) -- Database management UI (size, export, import, encryption)
 
 ---
 
@@ -178,7 +182,7 @@ The encryption key is stored in the iOS Keychain via `kcDatabasePassword`:
 │   └── ...
 ```
 
-### File Size Constants (FileUtils.swift)
+### [File Size Constants](../SimpleXChat/FileUtils.swift#L17-L31) (FileUtils.swift)
 
 ```swift
 public let MAX_IMAGE_SIZE: Int64 = 261_120        // 255 KB -- inline image compression target
@@ -199,7 +203,7 @@ When `apiSetEncryptLocalFiles(enable: true)` is set, files stored on device are 
 - Each file gets a unique key and nonce stored alongside the file reference
 - The `CryptoFile` type wraps `(filePath: String, cryptoArgs: CryptoFileArgs?)` where `CryptoFileArgs` contains `(fileKey: String, fileNonce: String)`
 
-### File Path Helpers
+### [File Path Helpers](../SimpleXChat/FileUtils.swift#L187-L207)
 
 ```swift
 public func getDocumentsDirectory() -> URL      // Standard documents dir
@@ -209,12 +213,14 @@ func getTempFilesDirectory() -> URL             // {appDir}/temp_files/
 func getWallpaperDirectory() -> URL             // {appDir}/assets/wallpapers/
 ```
 
-### Cleanup
+See also [`saveFile()`](../SimpleXChat/FileUtils.swift#L211), [`removeFile()`](../SimpleXChat/FileUtils.swift#L227), and [`getMaxFileSize()`](../SimpleXChat/FileUtils.swift#L258).
 
-- Files are deleted when their associated `ChatItem` is deleted
+### [Cleanup](../SimpleXChat/FileUtils.swift#L76-L105)
+
+- Files are deleted when their associated `ChatItem` is deleted. See [`cleanupFile()`](../SimpleXChat/FileUtils.swift#L249) and [`cleanupDirectFile()`](../SimpleXChat/FileUtils.swift#L243).
 - Timed message expiry triggers file deletion
-- `deleteAppDatabaseAndFiles()` removes all databases, files, temp files, and wallpapers
-- `deleteAppFiles()` removes only the files directory (preserving databases)
+- [`deleteAppDatabaseAndFiles()`](../SimpleXChat/FileUtils.swift#L76) removes all databases, files, temp files, and wallpapers
+- [`deleteAppFiles()`](../SimpleXChat/FileUtils.swift#L97) removes only the files directory (preserving databases)
 
 ---
 
@@ -284,9 +290,9 @@ The NSE checks this flag to determine whether to process notifications (it avoid
 
 | File | Path |
 |------|------|
-| File utilities & constants | `SimpleXChat/FileUtils.swift` |
-| Database management UI | `Shared/Views/Database/DatabaseView.swift` |
-| Encryption settings UI | `Shared/Views/Database/DatabaseEncryptionView.swift` |
+| File utilities & constants | [`SimpleXChat/FileUtils.swift`](../SimpleXChat/FileUtils.swift) |
+| Database management UI | [`Shared/Views/Database/DatabaseView.swift`](../Shared/Views/Database/DatabaseView.swift) |
+| Encryption settings UI | [`Shared/Views/Database/DatabaseEncryptionView.swift`](../Shared/Views/Database/DatabaseEncryptionView.swift) |
 | C FFI (migration, file ops) | `SimpleXChat/SimpleX.h` |
 | Haskell store root | `../../src/Simplex/Chat/Store/` |
 | Haskell migrations | `../../src/Simplex/Chat/Store/SQLite/Migrations/` |

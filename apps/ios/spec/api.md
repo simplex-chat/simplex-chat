@@ -5,6 +5,8 @@
 > Related specs: [Architecture](architecture.md) | [State Management](state.md) | [README](README.md)
 > Related product: [Concept Index](../product/concepts.md)
 
+**Source:** [`AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift) | [`SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) | [`APITypes.swift`](../SimpleXChat/APITypes.swift) | [`API.swift`](../SimpleXChat/API.swift)
+
 ---
 
 ## Table of Contents
@@ -30,257 +32,259 @@ The iOS app communicates with the Haskell core exclusively through a command/res
 5. Async events arrive separately via `chat_recv_msg_wait`, decoded as `ChatEvent`
 
 **Source files**:
-- `Shared/Model/AppAPITypes.swift` -- `ChatCommand`, `ChatResponse0/1/2`, `ChatEvent` enums
-- `SimpleXChat/APITypes.swift` -- `APIResult<R>`, `ChatError`, `ChatCmdProtocol` protocol
-- `Shared/Model/SimpleXAPI.swift` -- FFI bridge functions
+- [`Shared/Model/AppAPITypes.swift`](../Shared/Model/AppAPITypes.swift) -- `ChatCommand` ([L14](../Shared/Model/AppAPITypes.swift#L14)), `ChatResponse0` ([L647](../Shared/Model/AppAPITypes.swift#L647)), `ChatResponse1` ([L768](../Shared/Model/AppAPITypes.swift#L768)), `ChatResponse2` ([L907](../Shared/Model/AppAPITypes.swift#L907)), `ChatEvent` ([L1050](../Shared/Model/AppAPITypes.swift#L1050)) enums
+- [`SimpleXChat/APITypes.swift`](../SimpleXChat/APITypes.swift) -- `APIResult<R>` ([L26](../SimpleXChat/APITypes.swift#L26)), `ChatAPIResult` ([L63](../SimpleXChat/APITypes.swift#L63)), `ChatError` ([L695](../SimpleXChat/APITypes.swift#L695))
+- [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) -- FFI bridge functions (`chatSendCmd` [L117](../Shared/Model/SimpleXAPI.swift#L117), `chatRecvMsg` [L230](../Shared/Model/SimpleXAPI.swift#L230))
+- [`SimpleXChat/API.swift`](../SimpleXChat/API.swift) -- Low-level FFI (`sendSimpleXCmd` [L114](../SimpleXChat/API.swift#L114), `recvSimpleXMsg` [L136](../SimpleXChat/API.swift#L136))
 - `SimpleXChat/ChatTypes.swift` -- Data types used in commands/responses (User, Contact, GroupInfo, ChatItem, etc.)
+- `../../src/Simplex/Chat/Controller.hs` -- Haskell controller (function `chat_send_cmd_retry`, `chat_recv_msg_wait`)
 
 ---
 
 ## 2. Command Categories
 
-The `ChatCommand` enum (`Shared/Model/AppAPITypes.swift`) contains all commands the iOS app can send to the Haskell core. Commands are organized below by functional area.
+The `ChatCommand` enum ([`AppAPITypes.swift` L14](../Shared/Model/AppAPITypes.swift#L14)) contains all commands the iOS app can send to the Haskell core. Commands are organized below by functional area.
 
 ### 2.1 User Management
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `showActiveUser` | -- | Get current active user |
-| `createActiveUser` | `profile: Profile?, pastTimestamp: Bool` | Create new user profile |
-| `listUsers` | -- | List all user profiles |
-| `apiSetActiveUser` | `userId: Int64, viewPwd: String?` | Switch active user |
-| `apiHideUser` | `userId: Int64, viewPwd: String` | Hide user behind password |
-| `apiUnhideUser` | `userId: Int64, viewPwd: String` | Unhide hidden user |
-| `apiMuteUser` | `userId: Int64` | Mute notifications for user |
-| `apiUnmuteUser` | `userId: Int64` | Unmute notifications for user |
-| `apiDeleteUser` | `userId: Int64, delSMPQueues: Bool, viewPwd: String?` | Delete user profile |
-| `apiUpdateProfile` | `userId: Int64, profile: Profile` | Update user display name/image |
-| `setAllContactReceipts` | `enable: Bool` | Set delivery receipts for all contacts |
-| `apiSetUserContactReceipts` | `userId: Int64, userMsgReceiptSettings` | Per-user contact receipt settings |
-| `apiSetUserGroupReceipts` | `userId: Int64, userMsgReceiptSettings` | Per-user group receipt settings |
-| `apiSetUserAutoAcceptMemberContacts` | `userId: Int64, enable: Bool` | Auto-accept group member contacts |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `showActiveUser` | -- | Get current active user | [L15](../Shared/Model/AppAPITypes.swift#L15) |
+| `createActiveUser` | `profile: Profile?, pastTimestamp: Bool` | Create new user profile | [L16](../Shared/Model/AppAPITypes.swift#L16) |
+| `listUsers` | -- | List all user profiles | [L17](../Shared/Model/AppAPITypes.swift#L17) |
+| `apiSetActiveUser` | `userId: Int64, viewPwd: String?` | Switch active user | [L18](../Shared/Model/AppAPITypes.swift#L18) |
+| `apiHideUser` | `userId: Int64, viewPwd: String` | Hide user behind password | [L23](../Shared/Model/AppAPITypes.swift#L23) |
+| `apiUnhideUser` | `userId: Int64, viewPwd: String` | Unhide hidden user | [L24](../Shared/Model/AppAPITypes.swift#L24) |
+| `apiMuteUser` | `userId: Int64` | Mute notifications for user | [L25](../Shared/Model/AppAPITypes.swift#L25) |
+| `apiUnmuteUser` | `userId: Int64` | Unmute notifications for user | [L26](../Shared/Model/AppAPITypes.swift#L26) |
+| `apiDeleteUser` | `userId: Int64, delSMPQueues: Bool, viewPwd: String?` | Delete user profile | [L27](../Shared/Model/AppAPITypes.swift#L27) |
+| `apiUpdateProfile` | `userId: Int64, profile: Profile` | Update user display name/image | [L138](../Shared/Model/AppAPITypes.swift#L138) |
+| `setAllContactReceipts` | `enable: Bool` | Set delivery receipts for all contacts | [L19](../Shared/Model/AppAPITypes.swift#L19) |
+| `apiSetUserContactReceipts` | `userId: Int64, userMsgReceiptSettings` | Per-user contact receipt settings | [L20](../Shared/Model/AppAPITypes.swift#L20) |
+| `apiSetUserGroupReceipts` | `userId: Int64, userMsgReceiptSettings` | Per-user group receipt settings | [L21](../Shared/Model/AppAPITypes.swift#L21) |
+| `apiSetUserAutoAcceptMemberContacts` | `userId: Int64, enable: Bool` | Auto-accept group member contacts | [L22](../Shared/Model/AppAPITypes.swift#L22) |
 
 ### 2.2 Chat Lifecycle Control
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `startChat` | `mainApp: Bool, enableSndFiles: Bool` | Start chat engine |
-| `checkChatRunning` | -- | Check if chat is running |
-| `apiStopChat` | -- | Stop chat engine |
-| `apiActivateChat` | `restoreChat: Bool` | Resume from background |
-| `apiSuspendChat` | `timeoutMicroseconds: Int` | Suspend for background |
-| `apiSetAppFilePaths` | `filesFolder, tempFolder, assetsFolder` | Set file storage paths |
-| `apiSetEncryptLocalFiles` | `enable: Bool` | Toggle local file encryption |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `startChat` | `mainApp: Bool, enableSndFiles: Bool` | Start chat engine | [L28](../Shared/Model/AppAPITypes.swift#L28) |
+| `checkChatRunning` | -- | Check if chat is running | [L29](../Shared/Model/AppAPITypes.swift#L29) |
+| `apiStopChat` | -- | Stop chat engine | [L30](../Shared/Model/AppAPITypes.swift#L30) |
+| `apiActivateChat` | `restoreChat: Bool` | Resume from background | [L31](../Shared/Model/AppAPITypes.swift#L31) |
+| `apiSuspendChat` | `timeoutMicroseconds: Int` | Suspend for background | [L32](../Shared/Model/AppAPITypes.swift#L32) |
+| `apiSetAppFilePaths` | `filesFolder, tempFolder, assetsFolder` | Set file storage paths | [L33](../Shared/Model/AppAPITypes.swift#L33) |
+| `apiSetEncryptLocalFiles` | `enable: Bool` | Toggle local file encryption | [L34](../Shared/Model/AppAPITypes.swift#L34) |
 
 ### 2.3 Chat & Message Operations
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiGetChats` | `userId: Int64` | Get all chat previews for user |
-| `apiGetChat` | `chatId, scope, contentTag, pagination, search` | Get messages for a chat |
-| `apiGetChatContentTypes` | `chatId, scope` | Get content type counts for a chat |
-| `apiGetChatItemInfo` | `type, id, scope, itemId` | Get detailed info for a message |
-| `apiSendMessages` | `type, id, scope, live, ttl, composedMessages` | Send one or more messages |
-| `apiCreateChatItems` | `noteFolderId, composedMessages` | Create items in notes folder |
-| `apiUpdateChatItem` | `type, id, scope, itemId, updatedMessage, live` | Edit a sent message |
-| `apiDeleteChatItem` | `type, id, scope, itemIds, mode` | Delete messages |
-| `apiDeleteMemberChatItem` | `groupId, itemIds` | Moderate group messages |
-| `apiChatItemReaction` | `type, id, scope, itemId, add, reaction` | Add/remove emoji reaction |
-| `apiGetReactionMembers` | `userId, groupId, itemId, reaction` | Get who reacted |
-| `apiPlanForwardChatItems` | `fromChatType, fromChatId, fromScope, itemIds` | Plan message forwarding |
-| `apiForwardChatItems` | `toChatType, toChatId, toScope, from..., itemIds, ttl` | Forward messages |
-| `apiReportMessage` | `groupId, chatItemId, reportReason, reportText` | Report group message |
-| `apiChatRead` | `type, id, scope` | Mark entire chat as read |
-| `apiChatItemsRead` | `type, id, scope, itemIds` | Mark specific items as read |
-| `apiChatUnread` | `type, id, unreadChat` | Toggle unread badge |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiGetChats` | `userId: Int64` | Get all chat previews for user | [L43](../Shared/Model/AppAPITypes.swift#L43) |
+| `apiGetChat` | `chatId, scope, contentTag, pagination, search` | Get messages for a chat | [L44](../Shared/Model/AppAPITypes.swift#L44) |
+| `apiGetChatContentTypes` | `chatId, scope` | Get content type counts for a chat | [L45](../Shared/Model/AppAPITypes.swift#L45) |
+| `apiGetChatItemInfo` | `type, id, scope, itemId` | Get detailed info for a message | [L46](../Shared/Model/AppAPITypes.swift#L46) |
+| `apiSendMessages` | `type, id, scope, live, ttl, composedMessages` | Send one or more messages | [L47](../Shared/Model/AppAPITypes.swift#L47) |
+| `apiCreateChatItems` | `noteFolderId, composedMessages` | Create items in notes folder | [L53](../Shared/Model/AppAPITypes.swift#L53) |
+| `apiUpdateChatItem` | `type, id, scope, itemId, updatedMessage, live` | Edit a sent message | [L55](../Shared/Model/AppAPITypes.swift#L55) |
+| `apiDeleteChatItem` | `type, id, scope, itemIds, mode` | Delete messages | [L56](../Shared/Model/AppAPITypes.swift#L56) |
+| `apiDeleteMemberChatItem` | `groupId, itemIds` | Moderate group messages | [L57](../Shared/Model/AppAPITypes.swift#L57) |
+| `apiChatItemReaction` | `type, id, scope, itemId, add, reaction` | Add/remove emoji reaction | [L60](../Shared/Model/AppAPITypes.swift#L60) |
+| `apiGetReactionMembers` | `userId, groupId, itemId, reaction` | Get who reacted | [L61](../Shared/Model/AppAPITypes.swift#L61) |
+| `apiPlanForwardChatItems` | `fromChatType, fromChatId, fromScope, itemIds` | Plan message forwarding | [L62](../Shared/Model/AppAPITypes.swift#L62) |
+| `apiForwardChatItems` | `toChatType, toChatId, toScope, from..., itemIds, ttl` | Forward messages | [L63](../Shared/Model/AppAPITypes.swift#L63) |
+| `apiReportMessage` | `groupId, chatItemId, reportReason, reportText` | Report group message | [L54](../Shared/Model/AppAPITypes.swift#L54) |
+| `apiChatRead` | `type, id, scope` | Mark entire chat as read | [L163](../Shared/Model/AppAPITypes.swift#L163) |
+| `apiChatItemsRead` | `type, id, scope, itemIds` | Mark specific items as read | [L164](../Shared/Model/AppAPITypes.swift#L164) |
+| `apiChatUnread` | `type, id, unreadChat` | Toggle unread badge | [L165](../Shared/Model/AppAPITypes.swift#L165) |
 
 ### 2.4 Contact Management
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiAddContact` | `userId, incognito` | Create invitation link |
-| `apiConnect` | `userId, incognito, connLink` | Connect via link |
-| `apiConnectPlan` | `userId, connLink` | Plan connection (preview) |
-| `apiPrepareContact` | `userId, connLink, contactShortLinkData` | Prepare contact from link |
-| `apiConnectPreparedContact` | `contactId, incognito, msg` | Connect prepared contact |
-| `apiConnectContactViaAddress` | `userId, incognito, contactId` | Connect via address |
-| `apiAcceptContact` | `incognito, contactReqId` | Accept contact request |
-| `apiRejectContact` | `contactReqId` | Reject contact request |
-| `apiDeleteChat` | `type, id, chatDeleteMode` | Delete conversation |
-| `apiClearChat` | `type, id` | Clear conversation history |
-| `apiListContacts` | `userId` | List all contacts |
-| `apiSetContactPrefs` | `contactId, preferences` | Set contact preferences |
-| `apiSetContactAlias` | `contactId, localAlias` | Set local alias |
-| `apiSetConnectionAlias` | `connId, localAlias` | Set pending connection alias |
-| `apiContactInfo` | `contactId` | Get contact info + connection stats |
-| `apiSetConnectionIncognito` | `connId, incognito` | Toggle incognito on pending connection |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiAddContact` | `userId, incognito` | Create invitation link | [L123](../Shared/Model/AppAPITypes.swift#L123) |
+| `apiConnect` | `userId, incognito, connLink` | Connect via link | [L133](../Shared/Model/AppAPITypes.swift#L133) |
+| `apiConnectPlan` | `userId, connLink` | Plan connection (preview) | [L126](../Shared/Model/AppAPITypes.swift#L126) |
+| `apiPrepareContact` | `userId, connLink, contactShortLinkData` | Prepare contact from link | [L127](../Shared/Model/AppAPITypes.swift#L127) |
+| `apiConnectPreparedContact` | `contactId, incognito, msg` | Connect prepared contact | [L131](../Shared/Model/AppAPITypes.swift#L131) |
+| `apiConnectContactViaAddress` | `userId, incognito, contactId` | Connect via address | [L134](../Shared/Model/AppAPITypes.swift#L134) |
+| `apiAcceptContact` | `incognito, contactReqId` | Accept contact request | [L151](../Shared/Model/AppAPITypes.swift#L151) |
+| `apiRejectContact` | `contactReqId` | Reject contact request | [L152](../Shared/Model/AppAPITypes.swift#L152) |
+| `apiDeleteChat` | `type, id, chatDeleteMode` | Delete conversation | [L135](../Shared/Model/AppAPITypes.swift#L135) |
+| `apiClearChat` | `type, id` | Clear conversation history | [L136](../Shared/Model/AppAPITypes.swift#L136) |
+| `apiListContacts` | `userId` | List all contacts | [L137](../Shared/Model/AppAPITypes.swift#L137) |
+| `apiSetContactPrefs` | `contactId, preferences` | Set contact preferences | [L139](../Shared/Model/AppAPITypes.swift#L139) |
+| `apiSetContactAlias` | `contactId, localAlias` | Set local alias | [L140](../Shared/Model/AppAPITypes.swift#L140) |
+| `apiSetConnectionAlias` | `connId, localAlias` | Set pending connection alias | [L142](../Shared/Model/AppAPITypes.swift#L142) |
+| `apiContactInfo` | `contactId` | Get contact info + connection stats | [L109](../Shared/Model/AppAPITypes.swift#L109) |
+| `apiSetConnectionIncognito` | `connId, incognito` | Toggle incognito on pending connection | [L124](../Shared/Model/AppAPITypes.swift#L124) |
 
 ### 2.5 Group Management
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiNewGroup` | `userId, incognito, groupProfile` | Create new group |
-| `apiAddMember` | `groupId, contactId, memberRole` | Invite contact to group |
-| `apiJoinGroup` | `groupId` | Accept group invitation |
-| `apiAcceptMember` | `groupId, groupMemberId, memberRole` | Accept member (knocking) |
-| `apiRemoveMembers` | `groupId, memberIds, withMessages` | Remove members |
-| `apiLeaveGroup` | `groupId` | Leave group |
-| `apiListMembers` | `groupId` | List group members |
-| `apiUpdateGroupProfile` | `groupId, groupProfile` | Update group name/image/description |
-| `apiMembersRole` | `groupId, memberIds, memberRole` | Change member roles |
-| `apiBlockMembersForAll` | `groupId, memberIds, blocked` | Block members for all |
-| `apiCreateGroupLink` | `groupId, memberRole` | Create shareable group link |
-| `apiGroupLinkMemberRole` | `groupId, memberRole` | Change group link default role |
-| `apiDeleteGroupLink` | `groupId` | Delete group link |
-| `apiGetGroupLink` | `groupId` | Get existing group link |
-| `apiAddGroupShortLink` | `groupId` | Add short link to group |
-| `apiCreateMemberContact` | `groupId, groupMemberId` | Create direct contact from group member |
-| `apiSendMemberContactInvitation` | `contactId, msg` | Send contact invitation to member |
-| `apiGroupMemberInfo` | `groupId, groupMemberId` | Get member info + connection stats |
-| `apiDeleteMemberSupportChat` | `groupId, groupMemberId` | Delete member support chat |
-| `apiSetMemberSettings` | `groupId, groupMemberId, memberSettings` | Set per-member settings |
-| `apiSetGroupAlias` | `groupId, localAlias` | Set local group alias |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiNewGroup` | `userId, incognito, groupProfile` | Create new group | [L71](../Shared/Model/AppAPITypes.swift#L71) |
+| `apiAddMember` | `groupId, contactId, memberRole` | Invite contact to group | [L72](../Shared/Model/AppAPITypes.swift#L72) |
+| `apiJoinGroup` | `groupId` | Accept group invitation | [L73](../Shared/Model/AppAPITypes.swift#L73) |
+| `apiAcceptMember` | `groupId, groupMemberId, memberRole` | Accept member (knocking) | [L74](../Shared/Model/AppAPITypes.swift#L74) |
+| `apiRemoveMembers` | `groupId, memberIds, withMessages` | Remove members | [L78](../Shared/Model/AppAPITypes.swift#L78) |
+| `apiLeaveGroup` | `groupId` | Leave group | [L79](../Shared/Model/AppAPITypes.swift#L79) |
+| `apiListMembers` | `groupId` | List group members | [L80](../Shared/Model/AppAPITypes.swift#L80) |
+| `apiUpdateGroupProfile` | `groupId, groupProfile` | Update group name/image/description | [L81](../Shared/Model/AppAPITypes.swift#L81) |
+| `apiMembersRole` | `groupId, memberIds, memberRole` | Change member roles | [L76](../Shared/Model/AppAPITypes.swift#L76) |
+| `apiBlockMembersForAll` | `groupId, memberIds, blocked` | Block members for all | [L77](../Shared/Model/AppAPITypes.swift#L77) |
+| `apiCreateGroupLink` | `groupId, memberRole` | Create shareable group link | [L82](../Shared/Model/AppAPITypes.swift#L82) |
+| `apiGroupLinkMemberRole` | `groupId, memberRole` | Change group link default role | [L83](../Shared/Model/AppAPITypes.swift#L83) |
+| `apiDeleteGroupLink` | `groupId` | Delete group link | [L84](../Shared/Model/AppAPITypes.swift#L84) |
+| `apiGetGroupLink` | `groupId` | Get existing group link | [L85](../Shared/Model/AppAPITypes.swift#L85) |
+| `apiAddGroupShortLink` | `groupId` | Add short link to group | [L86](../Shared/Model/AppAPITypes.swift#L86) |
+| `apiCreateMemberContact` | `groupId, groupMemberId` | Create direct contact from group member | [L87](../Shared/Model/AppAPITypes.swift#L87) |
+| `apiSendMemberContactInvitation` | `contactId, msg` | Send contact invitation to member | [L88](../Shared/Model/AppAPITypes.swift#L88) |
+| `apiGroupMemberInfo` | `groupId, groupMemberId` | Get member info + connection stats | [L110](../Shared/Model/AppAPITypes.swift#L110) |
+| `apiDeleteMemberSupportChat` | `groupId, groupMemberId` | Delete member support chat | [L75](../Shared/Model/AppAPITypes.swift#L75) |
+| `apiSetMemberSettings` | `groupId, groupMemberId, memberSettings` | Set per-member settings | [L108](../Shared/Model/AppAPITypes.swift#L108) |
+| `apiSetGroupAlias` | `groupId, localAlias` | Set local group alias | [L141](../Shared/Model/AppAPITypes.swift#L141) |
 
 ### 2.6 Chat Tags
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiGetChatTags` | `userId` | Get all user tags |
-| `apiCreateChatTag` | `tag: ChatTagData` | Create a new tag |
-| `apiSetChatTags` | `type, id, tagIds` | Assign tags to a chat |
-| `apiDeleteChatTag` | `tagId` | Delete a tag |
-| `apiUpdateChatTag` | `tagId, tagData` | Update tag name/emoji |
-| `apiReorderChatTags` | `tagIds` | Reorder tags |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiGetChatTags` | `userId` | Get all user tags | [L42](../Shared/Model/AppAPITypes.swift#L42) |
+| `apiCreateChatTag` | `tag: ChatTagData` | Create a new tag | [L48](../Shared/Model/AppAPITypes.swift#L48) |
+| `apiSetChatTags` | `type, id, tagIds` | Assign tags to a chat | [L49](../Shared/Model/AppAPITypes.swift#L49) |
+| `apiDeleteChatTag` | `tagId` | Delete a tag | [L50](../Shared/Model/AppAPITypes.swift#L50) |
+| `apiUpdateChatTag` | `tagId, tagData` | Update tag name/emoji | [L51](../Shared/Model/AppAPITypes.swift#L51) |
+| `apiReorderChatTags` | `tagIds` | Reorder tags | [L52](../Shared/Model/AppAPITypes.swift#L52) |
 
 ### 2.7 File Operations
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `receiveFile` | `fileId, userApprovedRelays, encrypted, inline` | Accept and download file |
-| `setFileToReceive` | `fileId, userApprovedRelays, encrypted` | Mark file for auto-receive |
-| `cancelFile` | `fileId` | Cancel file transfer |
-| `apiUploadStandaloneFile` | `userId, file: CryptoFile` | Upload file to XFTP (no chat) |
-| `apiDownloadStandaloneFile` | `userId, url, file: CryptoFile` | Download from XFTP URL |
-| `apiStandaloneFileInfo` | `url` | Get file metadata from XFTP URL |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `receiveFile` | `fileId, userApprovedRelays, encrypted, inline` | Accept and download file | [L166](../Shared/Model/AppAPITypes.swift#L166) |
+| `setFileToReceive` | `fileId, userApprovedRelays, encrypted` | Mark file for auto-receive | [L167](../Shared/Model/AppAPITypes.swift#L167) |
+| `cancelFile` | `fileId` | Cancel file transfer | [L168](../Shared/Model/AppAPITypes.swift#L168) |
+| `apiUploadStandaloneFile` | `userId, file: CryptoFile` | Upload file to XFTP (no chat) | [L178](../Shared/Model/AppAPITypes.swift#L178) |
+| `apiDownloadStandaloneFile` | `userId, url, file: CryptoFile` | Download from XFTP URL | [L179](../Shared/Model/AppAPITypes.swift#L179) |
+| `apiStandaloneFileInfo` | `url` | Get file metadata from XFTP URL | [L180](../Shared/Model/AppAPITypes.swift#L180) |
 
 ### 2.8 WebRTC Call Operations
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiSendCallInvitation` | `contact, callType` | Initiate call |
-| `apiRejectCall` | `contact` | Reject incoming call |
-| `apiSendCallOffer` | `contact, callOffer: WebRTCCallOffer` | Send SDP offer |
-| `apiSendCallAnswer` | `contact, answer: WebRTCSession` | Send SDP answer |
-| `apiSendCallExtraInfo` | `contact, extraInfo: WebRTCExtraInfo` | Send ICE candidates |
-| `apiEndCall` | `contact` | End active call |
-| `apiGetCallInvitations` | -- | Get pending call invitations |
-| `apiCallStatus` | `contact, callStatus` | Report call status change |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiSendCallInvitation` | `contact, callType` | Initiate call | [L154](../Shared/Model/AppAPITypes.swift#L154) |
+| `apiRejectCall` | `contact` | Reject incoming call | [L155](../Shared/Model/AppAPITypes.swift#L155) |
+| `apiSendCallOffer` | `contact, callOffer: WebRTCCallOffer` | Send SDP offer | [L156](../Shared/Model/AppAPITypes.swift#L156) |
+| `apiSendCallAnswer` | `contact, answer: WebRTCSession` | Send SDP answer | [L157](../Shared/Model/AppAPITypes.swift#L157) |
+| `apiSendCallExtraInfo` | `contact, extraInfo: WebRTCExtraInfo` | Send ICE candidates | [L158](../Shared/Model/AppAPITypes.swift#L158) |
+| `apiEndCall` | `contact` | End active call | [L159](../Shared/Model/AppAPITypes.swift#L159) |
+| `apiGetCallInvitations` | -- | Get pending call invitations | [L160](../Shared/Model/AppAPITypes.swift#L160) |
+| `apiCallStatus` | `contact, callStatus` | Report call status change | [L161](../Shared/Model/AppAPITypes.swift#L161) |
 
 ### 2.9 Push Notifications
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiGetNtfToken` | -- | Get current notification token |
-| `apiRegisterToken` | `token, notificationMode` | Register device token with server |
-| `apiVerifyToken` | `token, nonce, code` | Verify token registration |
-| `apiCheckToken` | `token` | Check token status |
-| `apiDeleteToken` | `token` | Unregister token |
-| `apiGetNtfConns` | `nonce, encNtfInfo` | Get notification connections (NSE) |
-| `apiGetConnNtfMessages` | `connMsgReqs` | Get notification messages (NSE) |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiGetNtfToken` | -- | Get current notification token | [L64](../Shared/Model/AppAPITypes.swift#L64) |
+| `apiRegisterToken` | `token, notificationMode` | Register device token with server | [L65](../Shared/Model/AppAPITypes.swift#L65) |
+| `apiVerifyToken` | `token, nonce, code` | Verify token registration | [L66](../Shared/Model/AppAPITypes.swift#L66) |
+| `apiCheckToken` | `token` | Check token status | [L67](../Shared/Model/AppAPITypes.swift#L67) |
+| `apiDeleteToken` | `token` | Unregister token | [L68](../Shared/Model/AppAPITypes.swift#L68) |
+| `apiGetNtfConns` | `nonce, encNtfInfo` | Get notification connections (NSE) | [L69](../Shared/Model/AppAPITypes.swift#L69) |
+| `apiGetConnNtfMessages` | `connMsgReqs` | Get notification messages (NSE) | [L70](../Shared/Model/AppAPITypes.swift#L70) |
 
 ### 2.10 Settings & Configuration
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiSaveSettings` | `settings: AppSettings` | Save app settings to core |
-| `apiGetSettings` | `settings: AppSettings` | Get settings from core |
-| `apiSetChatSettings` | `type, id, chatSettings` | Per-chat notification settings |
-| `apiSetChatItemTTL` | `userId, seconds` | Set global message TTL |
-| `apiGetChatItemTTL` | `userId` | Get global message TTL |
-| `apiSetChatTTL` | `userId, type, id, seconds` | Per-chat message TTL |
-| `apiSetNetworkConfig` | `networkConfig: NetCfg` | Set network configuration |
-| `apiGetNetworkConfig` | -- | Get network configuration |
-| `apiSetNetworkInfo` | `networkInfo: UserNetworkInfo` | Set network type/status |
-| `reconnectAllServers` | -- | Force reconnect all servers |
-| `reconnectServer` | `userId, smpServer` | Reconnect specific server |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiSaveSettings` | `settings: AppSettings` | Save app settings to core | [L40](../Shared/Model/AppAPITypes.swift#L40) |
+| `apiGetSettings` | `settings: AppSettings` | Get settings from core | [L41](../Shared/Model/AppAPITypes.swift#L41) |
+| `apiSetChatSettings` | `type, id, chatSettings` | Per-chat notification settings | [L107](../Shared/Model/AppAPITypes.swift#L107) |
+| `apiSetChatItemTTL` | `userId, seconds` | Set global message TTL | [L99](../Shared/Model/AppAPITypes.swift#L99) |
+| `apiGetChatItemTTL` | `userId` | Get global message TTL | [L100](../Shared/Model/AppAPITypes.swift#L100) |
+| `apiSetChatTTL` | `userId, type, id, seconds` | Per-chat message TTL | [L101](../Shared/Model/AppAPITypes.swift#L101) |
+| `apiSetNetworkConfig` | `networkConfig: NetCfg` | Set network configuration | [L102](../Shared/Model/AppAPITypes.swift#L102) |
+| `apiGetNetworkConfig` | -- | Get network configuration | [L103](../Shared/Model/AppAPITypes.swift#L103) |
+| `apiSetNetworkInfo` | `networkInfo: UserNetworkInfo` | Set network type/status | [L104](../Shared/Model/AppAPITypes.swift#L104) |
+| `reconnectAllServers` | -- | Force reconnect all servers | [L105](../Shared/Model/AppAPITypes.swift#L105) |
+| `reconnectServer` | `userId, smpServer` | Reconnect specific server | [L106](../Shared/Model/AppAPITypes.swift#L106) |
 
 ### 2.11 Database & Storage
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiStorageEncryption` | `config: DBEncryptionConfig` | Set/change database encryption |
-| `testStorageEncryption` | `key: String` | Test encryption key |
-| `apiExportArchive` | `config: ArchiveConfig` | Export database archive |
-| `apiImportArchive` | `config: ArchiveConfig` | Import database archive |
-| `apiDeleteStorage` | -- | Delete all storage |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiStorageEncryption` | `config: DBEncryptionConfig` | Set/change database encryption | [L38](../Shared/Model/AppAPITypes.swift#L38) |
+| `testStorageEncryption` | `key: String` | Test encryption key | [L39](../Shared/Model/AppAPITypes.swift#L39) |
+| `apiExportArchive` | `config: ArchiveConfig` | Export database archive | [L35](../Shared/Model/AppAPITypes.swift#L35) |
+| `apiImportArchive` | `config: ArchiveConfig` | Import database archive | [L36](../Shared/Model/AppAPITypes.swift#L36) |
+| `apiDeleteStorage` | -- | Delete all storage | [L37](../Shared/Model/AppAPITypes.swift#L37) |
 
 ### 2.12 Server Operations
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiGetServerOperators` | -- | Get server operators |
-| `apiSetServerOperators` | `operators` | Set server operators |
-| `apiGetUserServers` | `userId` | Get user's configured servers |
-| `apiSetUserServers` | `userId, userServers` | Set user's servers |
-| `apiValidateServers` | `userId, userServers` | Validate server configuration |
-| `apiGetUsageConditions` | -- | Get usage conditions |
-| `apiAcceptConditions` | `conditionsId, operatorIds` | Accept usage conditions |
-| `apiTestProtoServer` | `userId, server` | Test server connectivity |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiGetServerOperators` | -- | Get server operators | [L91](../Shared/Model/AppAPITypes.swift#L91) |
+| `apiSetServerOperators` | `operators` | Set server operators | [L92](../Shared/Model/AppAPITypes.swift#L92) |
+| `apiGetUserServers` | `userId` | Get user's configured servers | [L93](../Shared/Model/AppAPITypes.swift#L93) |
+| `apiSetUserServers` | `userId, userServers` | Set user's servers | [L94](../Shared/Model/AppAPITypes.swift#L94) |
+| `apiValidateServers` | `userId, userServers` | Validate server configuration | [L95](../Shared/Model/AppAPITypes.swift#L95) |
+| `apiGetUsageConditions` | -- | Get usage conditions | [L96](../Shared/Model/AppAPITypes.swift#L96) |
+| `apiAcceptConditions` | `conditionsId, operatorIds` | Accept usage conditions | [L98](../Shared/Model/AppAPITypes.swift#L98) |
+| `apiTestProtoServer` | `userId, server` | Test server connectivity | [L90](../Shared/Model/AppAPITypes.swift#L90) |
 
 ### 2.13 Theme & UI
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiSetUserUIThemes` | `userId, themes: ThemeModeOverrides?` | Set per-user theme |
-| `apiSetChatUIThemes` | `chatId, themes: ThemeModeOverrides?` | Set per-chat theme |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiSetUserUIThemes` | `userId, themes: ThemeModeOverrides?` | Set per-user theme | [L143](../Shared/Model/AppAPITypes.swift#L143) |
+| `apiSetChatUIThemes` | `chatId, themes: ThemeModeOverrides?` | Set per-chat theme | [L144](../Shared/Model/AppAPITypes.swift#L144) |
 
 ### 2.14 Remote Desktop
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `setLocalDeviceName` | `displayName` | Set device name for pairing |
-| `connectRemoteCtrl` | `xrcpInvitation` | Connect to desktop via QR code |
-| `findKnownRemoteCtrl` | -- | Find previously paired desktops |
-| `confirmRemoteCtrl` | `remoteCtrlId` | Confirm known remote controller |
-| `verifyRemoteCtrlSession` | `sessionCode` | Verify session code |
-| `listRemoteCtrls` | -- | List known remote controllers |
-| `stopRemoteCtrl` | -- | Stop remote session |
-| `deleteRemoteCtrl` | `remoteCtrlId` | Delete known controller |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `setLocalDeviceName` | `displayName` | Set device name for pairing | [L170](../Shared/Model/AppAPITypes.swift#L170) |
+| `connectRemoteCtrl` | `xrcpInvitation` | Connect to desktop via QR code | [L171](../Shared/Model/AppAPITypes.swift#L171) |
+| `findKnownRemoteCtrl` | -- | Find previously paired desktops | [L172](../Shared/Model/AppAPITypes.swift#L172) |
+| `confirmRemoteCtrl` | `remoteCtrlId` | Confirm known remote controller | [L173](../Shared/Model/AppAPITypes.swift#L173) |
+| `verifyRemoteCtrlSession` | `sessionCode` | Verify session code | [L174](../Shared/Model/AppAPITypes.swift#L174) |
+| `listRemoteCtrls` | -- | List known remote controllers | [L175](../Shared/Model/AppAPITypes.swift#L175) |
+| `stopRemoteCtrl` | -- | Stop remote session | [L176](../Shared/Model/AppAPITypes.swift#L176) |
+| `deleteRemoteCtrl` | `remoteCtrlId` | Delete known controller | [L177](../Shared/Model/AppAPITypes.swift#L177) |
 
 ### 2.15 Diagnostics
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `showVersion` | -- | Get core version info |
-| `getAgentSubsTotal` | `userId` | Get total SMP subscriptions |
-| `getAgentServersSummary` | `userId` | Get server summary stats |
-| `resetAgentServersStats` | -- | Reset server statistics |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `showVersion` | -- | Get core version info | [L182](../Shared/Model/AppAPITypes.swift#L182) |
+| `getAgentSubsTotal` | `userId` | Get total SMP subscriptions | [L183](../Shared/Model/AppAPITypes.swift#L183) |
+| `getAgentServersSummary` | `userId` | Get server summary stats | [L184](../Shared/Model/AppAPITypes.swift#L184) |
+| `resetAgentServersStats` | -- | Reset server statistics | [L185](../Shared/Model/AppAPITypes.swift#L185) |
 
 ### 2.16 Address Management
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiCreateMyAddress` | `userId` | Create SimpleX address |
-| `apiDeleteMyAddress` | `userId` | Delete SimpleX address |
-| `apiShowMyAddress` | `userId` | Show current address |
-| `apiAddMyAddressShortLink` | `userId` | Add short link to address |
-| `apiSetProfileAddress` | `userId, on: Bool` | Toggle address in profile |
-| `apiSetAddressSettings` | `userId, addressSettings` | Configure address settings |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiCreateMyAddress` | `userId` | Create SimpleX address | [L145](../Shared/Model/AppAPITypes.swift#L145) |
+| `apiDeleteMyAddress` | `userId` | Delete SimpleX address | [L146](../Shared/Model/AppAPITypes.swift#L146) |
+| `apiShowMyAddress` | `userId` | Show current address | [L147](../Shared/Model/AppAPITypes.swift#L147) |
+| `apiAddMyAddressShortLink` | `userId` | Add short link to address | [L148](../Shared/Model/AppAPITypes.swift#L148) |
+| `apiSetProfileAddress` | `userId, on: Bool` | Toggle address in profile | [L149](../Shared/Model/AppAPITypes.swift#L149) |
+| `apiSetAddressSettings` | `userId, addressSettings` | Configure address settings | [L150](../Shared/Model/AppAPITypes.swift#L150) |
 
 ### 2.17 Connection Security
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `apiGetContactCode` | `contactId` | Get verification code |
-| `apiGetGroupMemberCode` | `groupId, groupMemberId` | Get member verification code |
-| `apiVerifyContact` | `contactId, connectionCode` | Verify contact identity |
-| `apiVerifyGroupMember` | `groupId, groupMemberId, connectionCode` | Verify group member identity |
-| `apiSwitchContact` | `contactId` | Switch contact connection (key rotation) |
-| `apiSwitchGroupMember` | `groupId, groupMemberId` | Switch group member connection |
-| `apiAbortSwitchContact` | `contactId` | Abort contact switch |
-| `apiAbortSwitchGroupMember` | `groupId, groupMemberId` | Abort member switch |
-| `apiSyncContactRatchet` | `contactId, force` | Sync double-ratchet state |
-| `apiSyncGroupMemberRatchet` | `groupId, groupMemberId, force` | Sync member ratchet |
+| Command | Parameters | Description | Source |
+|---------|-----------|-------------|--------|
+| `apiGetContactCode` | `contactId` | Get verification code | [L119](../Shared/Model/AppAPITypes.swift#L119) |
+| `apiGetGroupMemberCode` | `groupId, groupMemberId` | Get member verification code | [L120](../Shared/Model/AppAPITypes.swift#L120) |
+| `apiVerifyContact` | `contactId, connectionCode` | Verify contact identity | [L121](../Shared/Model/AppAPITypes.swift#L121) |
+| `apiVerifyGroupMember` | `groupId, groupMemberId, connectionCode` | Verify group member identity | [L122](../Shared/Model/AppAPITypes.swift#L122) |
+| `apiSwitchContact` | `contactId` | Switch contact connection (key rotation) | [L113](../Shared/Model/AppAPITypes.swift#L113) |
+| `apiSwitchGroupMember` | `groupId, groupMemberId` | Switch group member connection | [L114](../Shared/Model/AppAPITypes.swift#L114) |
+| `apiAbortSwitchContact` | `contactId` | Abort contact switch | [L115](../Shared/Model/AppAPITypes.swift#L115) |
+| `apiAbortSwitchGroupMember` | `groupId, groupMemberId` | Abort member switch | [L116](../Shared/Model/AppAPITypes.swift#L116) |
+| `apiSyncContactRatchet` | `contactId, force` | Sync double-ratchet state | [L117](../Shared/Model/AppAPITypes.swift#L117) |
+| `apiSyncGroupMemberRatchet` | `groupId, groupMemberId, force` | Sync member ratchet | [L118](../Shared/Model/AppAPITypes.swift#L118) |
 
 ---
 
@@ -290,162 +294,164 @@ Responses are split across three enums due to Swift enum size limitations:
 
 ### ChatResponse0
 
-Synchronous query responses:
+Synchronous query responses ([`AppAPITypes.swift` L647](../Shared/Model/AppAPITypes.swift#L647)):
 
-| Response | Key Fields | Description |
-|----------|-----------|-------------|
-| `activeUser` | `user: User` | Current active user |
-| `usersList` | `users: [UserInfo]` | All user profiles |
-| `chatStarted` | -- | Chat engine started |
-| `chatRunning` | -- | Chat is already running |
-| `chatStopped` | -- | Chat engine stopped |
-| `apiChats` | `user, chats: [ChatData]` | All chat previews |
-| `apiChat` | `user, chat: ChatData, navInfo` | Single chat with messages |
-| `chatTags` | `user, userTags: [ChatTag]` | User's chat tags |
-| `chatItemInfo` | `user, chatItem, chatItemInfo` | Message detail info |
-| `serverTestResult` | `user, testServer, testFailure` | Server test result |
-| `networkConfig` | `networkConfig: NetCfg` | Current network config |
-| `contactInfo` | `user, contact, connectionStats, customUserProfile` | Contact details |
-| `groupMemberInfo` | `user, groupInfo, member, connectionStats` | Member details |
-| `connectionVerified` | `verified, expectedCode` | Verification result |
-| `tagsUpdated` | `user, userTags, chatTags` | Tags changed |
+| Response | Key Fields | Description | Source |
+|----------|-----------|-------------|--------|
+| `activeUser` | `user: User` | Current active user | [L648](../Shared/Model/AppAPITypes.swift#L648) |
+| `usersList` | `users: [UserInfo]` | All user profiles | [L649](../Shared/Model/AppAPITypes.swift#L649) |
+| `chatStarted` | -- | Chat engine started | [L650](../Shared/Model/AppAPITypes.swift#L650) |
+| `chatRunning` | -- | Chat is already running | [L651](../Shared/Model/AppAPITypes.swift#L651) |
+| `chatStopped` | -- | Chat engine stopped | [L652](../Shared/Model/AppAPITypes.swift#L652) |
+| `apiChats` | `user, chats: [ChatData]` | All chat previews | [L653](../Shared/Model/AppAPITypes.swift#L653) |
+| `apiChat` | `user, chat: ChatData, navInfo` | Single chat with messages | [L654](../Shared/Model/AppAPITypes.swift#L654) |
+| `chatTags` | `user, userTags: [ChatTag]` | User's chat tags | [L656](../Shared/Model/AppAPITypes.swift#L656) |
+| `chatItemInfo` | `user, chatItem, chatItemInfo` | Message detail info | [L657](../Shared/Model/AppAPITypes.swift#L657) |
+| `serverTestResult` | `user, testServer, testFailure` | Server test result | [L658](../Shared/Model/AppAPITypes.swift#L658) |
+| `networkConfig` | `networkConfig: NetCfg` | Current network config | [L664](../Shared/Model/AppAPITypes.swift#L664) |
+| `contactInfo` | `user, contact, connectionStats, customUserProfile` | Contact details | [L665](../Shared/Model/AppAPITypes.swift#L665) |
+| `groupMemberInfo` | `user, groupInfo, member, connectionStats` | Member details | [L666](../Shared/Model/AppAPITypes.swift#L666) |
+| `connectionVerified` | `verified, expectedCode` | Verification result | [L676](../Shared/Model/AppAPITypes.swift#L676) |
+| `tagsUpdated` | `user, userTags, chatTags` | Tags changed | [L677](../Shared/Model/AppAPITypes.swift#L677) |
 
 ### ChatResponse1
 
-Contact, message, and profile responses:
+Contact, message, and profile responses ([`AppAPITypes.swift` L768](../Shared/Model/AppAPITypes.swift#L768)):
 
-| Response | Key Fields | Description |
-|----------|-----------|-------------|
-| `invitation` | `user, connLinkInvitation, connection` | Created invitation link |
-| `connectionPlan` | `user, connLink, connectionPlan` | Connection plan preview |
-| `newPreparedChat` | `user, chat: ChatData` | Prepared contact/group |
-| `contactDeleted` | `user, contact` | Contact deleted |
-| `newChatItems` | `user, chatItems: [AChatItem]` | New messages sent/received |
-| `chatItemUpdated` | `user, chatItem: AChatItem` | Message edited |
-| `chatItemReaction` | `user, added, reaction` | Reaction change |
-| `chatItemsDeleted` | `user, chatItemDeletions, byUser` | Messages deleted |
-| `contactsList` | `user, contacts: [Contact]` | All contacts list |
-| `userProfileUpdated` | `user, fromProfile, toProfile` | Profile changed |
-| `userContactLinkCreated` | `user, connLinkContact` | Address created |
-| `forwardPlan` | `user, chatItemIds, forwardConfirmation` | Forward plan result |
-| `groupChatItemsDeleted` | `user, groupInfo, chatItemIDs, byUser, member_` | Group items deleted |
+| Response | Key Fields | Description | Source |
+|----------|-----------|-------------|--------|
+| `invitation` | `user, connLinkInvitation, connection` | Created invitation link | [L769](../Shared/Model/AppAPITypes.swift#L769) |
+| `connectionPlan` | `user, connLink, connectionPlan` | Connection plan preview | [L772](../Shared/Model/AppAPITypes.swift#L772) |
+| `newPreparedChat` | `user, chat: ChatData` | Prepared contact/group | [L773](../Shared/Model/AppAPITypes.swift#L773) |
+| `contactDeleted` | `user, contact` | Contact deleted | [L782](../Shared/Model/AppAPITypes.swift#L782) |
+| `newChatItems` | `user, chatItems: [AChatItem]` | New messages sent/received | [L800](../Shared/Model/AppAPITypes.swift#L800) |
+| `chatItemUpdated` | `user, chatItem: AChatItem` | Message edited | [L803](../Shared/Model/AppAPITypes.swift#L803) |
+| `chatItemReaction` | `user, added, reaction` | Reaction change | [L805](../Shared/Model/AppAPITypes.swift#L805) |
+| `chatItemsDeleted` | `user, chatItemDeletions, byUser` | Messages deleted | [L807](../Shared/Model/AppAPITypes.swift#L807) |
+| `contactsList` | `user, contacts: [Contact]` | All contacts list | [L808](../Shared/Model/AppAPITypes.swift#L808) |
+| `userProfileUpdated` | `user, fromProfile, toProfile` | Profile changed | [L788](../Shared/Model/AppAPITypes.swift#L788) |
+| `userContactLinkCreated` | `user, connLinkContact` | Address created | [L796](../Shared/Model/AppAPITypes.swift#L796) |
+| `forwardPlan` | `user, chatItemIds, forwardConfirmation` | Forward plan result | [L802](../Shared/Model/AppAPITypes.swift#L802) |
+| `groupChatItemsDeleted` | `user, groupInfo, chatItemIDs, byUser, member_` | Group items deleted | [L801](../Shared/Model/AppAPITypes.swift#L801) |
 
 ### ChatResponse2
 
-Group, file, call, notification, and misc responses:
+Group, file, call, notification, and misc responses ([`AppAPITypes.swift` L907](../Shared/Model/AppAPITypes.swift#L907)):
 
-| Response | Key Fields | Description |
-|----------|-----------|-------------|
-| `groupCreated` | `user, groupInfo` | New group created |
-| `sentGroupInvitation` | `user, groupInfo, contact, member` | Group invitation sent |
-| `groupMembers` | `user, group: Group` | Group member list |
-| `membersRoleUser` | `user, groupInfo, members, toRole` | Role changed |
-| `groupUpdated` | `user, toGroup: GroupInfo` | Group profile updated |
-| `groupLinkCreated` | `user, groupInfo, groupLink` | Group link created |
-| `rcvFileAccepted` | `user, chatItem` | File download started |
-| `callInvitations` | `callInvitations: [RcvCallInvitation]` | Pending calls |
-| `ntfToken` | `token, status, ntfMode, ntfServer` | Notification token info |
-| `versionInfo` | `versionInfo, chatMigrations, agentMigrations` | Core version |
-| `cmdOk` | `user_` | Generic success |
-| `archiveExported` | `archiveErrors: [ArchiveError]` | Export result |
-| `archiveImported` | `archiveErrors: [ArchiveError]` | Import result |
-| `appSettings` | `appSettings: AppSettings` | Retrieved settings |
+| Response | Key Fields | Description | Source |
+|----------|-----------|-------------|--------|
+| `groupCreated` | `user, groupInfo` | New group created | [L909](../Shared/Model/AppAPITypes.swift#L909) |
+| `sentGroupInvitation` | `user, groupInfo, contact, member` | Group invitation sent | [L910](../Shared/Model/AppAPITypes.swift#L910) |
+| `groupMembers` | `user, group: Group` | Group member list | [L914](../Shared/Model/AppAPITypes.swift#L914) |
+| `membersRoleUser` | `user, groupInfo, members, toRole` | Role changed | [L918](../Shared/Model/AppAPITypes.swift#L918) |
+| `groupUpdated` | `user, toGroup: GroupInfo` | Group profile updated | [L920](../Shared/Model/AppAPITypes.swift#L920) |
+| `groupLinkCreated` | `user, groupInfo, groupLink` | Group link created | [L921](../Shared/Model/AppAPITypes.swift#L921) |
+| `rcvFileAccepted` | `user, chatItem` | File download started | [L928](../Shared/Model/AppAPITypes.swift#L928) |
+| `callInvitations` | `callInvitations: [RcvCallInvitation]` | Pending calls | [L937](../Shared/Model/AppAPITypes.swift#L937) |
+| `ntfToken` | `token, status, ntfMode, ntfServer` | Notification token info | [L940](../Shared/Model/AppAPITypes.swift#L940) |
+| `versionInfo` | `versionInfo, chatMigrations, agentMigrations` | Core version | [L948](../Shared/Model/AppAPITypes.swift#L948) |
+| `cmdOk` | `user_` | Generic success | [L949](../Shared/Model/AppAPITypes.swift#L949) |
+| `archiveExported` | `archiveErrors: [ArchiveError]` | Export result | [L953](../Shared/Model/AppAPITypes.swift#L953) |
+| `archiveImported` | `archiveErrors: [ArchiveError]` | Import result | [L954](../Shared/Model/AppAPITypes.swift#L954) |
+| `appSettings` | `appSettings: AppSettings` | Retrieved settings | [L955](../Shared/Model/AppAPITypes.swift#L955) |
 
 ---
 
 ## 4. Event Types
 
-The `ChatEvent` enum (`Shared/Model/AppAPITypes.swift`) represents async events from the Haskell core. These arrive via `chat_recv_msg_wait` polling, not as responses to commands.
+The `ChatEvent` enum ([`AppAPITypes.swift` L1050](../Shared/Model/AppAPITypes.swift#L1050)) represents async events from the Haskell core. These arrive via `chat_recv_msg_wait` polling, not as responses to commands.
+
+Event processing entry point: [`processReceivedMsg`](../Shared/Model/SimpleXAPI.swift#L2248) in `SimpleXAPI.swift`.
 
 ### Connection Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `contactConnected` | `user, contact, userCustomProfile` | Contact connection established |
-| `contactConnecting` | `user, contact` | Contact connecting in progress |
-| `contactSndReady` | `user, contact` | Ready to send to contact |
-| `contactDeletedByContact` | `user, contact` | Contact deleted by other party |
-| `contactUpdated` | `user, toContact` | Contact profile updated |
-| `receivedContactRequest` | `user, contactRequest, chat_` | Incoming contact request |
-| `subscriptionStatus` | `subscriptionStatus, connections` | Connection subscription change |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `contactConnected` | `user, contact, userCustomProfile` | Contact connection established | [L1057](../Shared/Model/AppAPITypes.swift#L1057) |
+| `contactConnecting` | `user, contact` | Contact connecting in progress | [L1058](../Shared/Model/AppAPITypes.swift#L1058) |
+| `contactSndReady` | `user, contact` | Ready to send to contact | [L1059](../Shared/Model/AppAPITypes.swift#L1059) |
+| `contactDeletedByContact` | `user, contact` | Contact deleted by other party | [L1056](../Shared/Model/AppAPITypes.swift#L1056) |
+| `contactUpdated` | `user, toContact` | Contact profile updated | [L1061](../Shared/Model/AppAPITypes.swift#L1061) |
+| `receivedContactRequest` | `user, contactRequest, chat_` | Incoming contact request | [L1060](../Shared/Model/AppAPITypes.swift#L1060) |
+| `subscriptionStatus` | `subscriptionStatus, connections` | Connection subscription change | [L1063](../Shared/Model/AppAPITypes.swift#L1063) |
 
 ### Message Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `newChatItems` | `user, chatItems: [AChatItem]` | New messages received |
-| `chatItemUpdated` | `user, chatItem: AChatItem` | Message edited remotely |
-| `chatItemReaction` | `user, added, reaction: ACIReaction` | Reaction added/removed |
-| `chatItemsDeleted` | `user, chatItemDeletions, byUser` | Messages deleted |
-| `chatItemsStatusesUpdated` | `user, chatItems: [AChatItem]` | Delivery status changed |
-| `groupChatItemsDeleted` | `user, groupInfo, chatItemIDs, byUser, member_` | Group items deleted |
-| `chatInfoUpdated` | `user, chatInfo` | Chat metadata changed |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `newChatItems` | `user, chatItems: [AChatItem]` | New messages received | [L1065](../Shared/Model/AppAPITypes.swift#L1065) |
+| `chatItemUpdated` | `user, chatItem: AChatItem` | Message edited remotely | [L1067](../Shared/Model/AppAPITypes.swift#L1067) |
+| `chatItemReaction` | `user, added, reaction: ACIReaction` | Reaction added/removed | [L1068](../Shared/Model/AppAPITypes.swift#L1068) |
+| `chatItemsDeleted` | `user, chatItemDeletions, byUser` | Messages deleted | [L1069](../Shared/Model/AppAPITypes.swift#L1069) |
+| `chatItemsStatusesUpdated` | `user, chatItems: [AChatItem]` | Delivery status changed | [L1066](../Shared/Model/AppAPITypes.swift#L1066) |
+| `groupChatItemsDeleted` | `user, groupInfo, chatItemIDs, byUser, member_` | Group items deleted | [L1071](../Shared/Model/AppAPITypes.swift#L1071) |
+| `chatInfoUpdated` | `user, chatInfo` | Chat metadata changed | [L1064](../Shared/Model/AppAPITypes.swift#L1064) |
 
 ### Group Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `receivedGroupInvitation` | `user, groupInfo, contact, memberRole` | Group invitation received |
-| `userAcceptedGroupSent` | `user, groupInfo, hostContact` | Joined group |
-| `groupLinkConnecting` | `user, groupInfo, hostMember` | Connecting via group link |
-| `joinedGroupMemberConnecting` | `user, groupInfo, hostMember, member` | Member joining |
-| `memberRole` | `user, groupInfo, byMember, member, fromRole, toRole` | Role changed |
-| `memberBlockedForAll` | `user, groupInfo, byMember, member, blocked` | Member blocked |
-| `deletedMemberUser` | `user, groupInfo, member, withMessages` | Current user removed |
-| `deletedMember` | `user, groupInfo, byMember, deletedMember` | Member removed |
-| `leftMember` | `user, groupInfo, member` | Member left |
-| `groupDeleted` | `user, groupInfo, member` | Group deleted |
-| `userJoinedGroup` | `user, groupInfo` | Successfully joined |
-| `joinedGroupMember` | `user, groupInfo, member` | New member joined |
-| `connectedToGroupMember` | `user, groupInfo, member, memberContact` | E2E session established with member |
-| `groupUpdated` | `user, toGroup: GroupInfo` | Group profile changed |
-| `groupMemberUpdated` | `user, groupInfo, fromMember, toMember` | Member info updated |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `receivedGroupInvitation` | `user, groupInfo, contact, memberRole` | Group invitation received | [L1072](../Shared/Model/AppAPITypes.swift#L1072) |
+| `userAcceptedGroupSent` | `user, groupInfo, hostContact` | Joined group | [L1073](../Shared/Model/AppAPITypes.swift#L1073) |
+| `groupLinkConnecting` | `user, groupInfo, hostMember` | Connecting via group link | [L1074](../Shared/Model/AppAPITypes.swift#L1074) |
+| `joinedGroupMemberConnecting` | `user, groupInfo, hostMember, member` | Member joining | [L1076](../Shared/Model/AppAPITypes.swift#L1076) |
+| `memberRole` | `user, groupInfo, byMember, member, fromRole, toRole` | Role changed | [L1078](../Shared/Model/AppAPITypes.swift#L1078) |
+| `memberBlockedForAll` | `user, groupInfo, byMember, member, blocked` | Member blocked | [L1079](../Shared/Model/AppAPITypes.swift#L1079) |
+| `deletedMemberUser` | `user, groupInfo, member, withMessages` | Current user removed | [L1080](../Shared/Model/AppAPITypes.swift#L1080) |
+| `deletedMember` | `user, groupInfo, byMember, deletedMember` | Member removed | [L1081](../Shared/Model/AppAPITypes.swift#L1081) |
+| `leftMember` | `user, groupInfo, member` | Member left | [L1082](../Shared/Model/AppAPITypes.swift#L1082) |
+| `groupDeleted` | `user, groupInfo, member` | Group deleted | [L1083](../Shared/Model/AppAPITypes.swift#L1083) |
+| `userJoinedGroup` | `user, groupInfo` | Successfully joined | [L1084](../Shared/Model/AppAPITypes.swift#L1084) |
+| `joinedGroupMember` | `user, groupInfo, member` | New member joined | [L1085](../Shared/Model/AppAPITypes.swift#L1085) |
+| `connectedToGroupMember` | `user, groupInfo, member, memberContact` | E2E session established with member | [L1086](../Shared/Model/AppAPITypes.swift#L1086) |
+| `groupUpdated` | `user, toGroup: GroupInfo` | Group profile changed | [L1087](../Shared/Model/AppAPITypes.swift#L1087) |
+| `groupMemberUpdated` | `user, groupInfo, fromMember, toMember` | Member info updated | [L1062](../Shared/Model/AppAPITypes.swift#L1062) |
 
 ### File Transfer Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `rcvFileStart` | `user, chatItem` | Download started |
-| `rcvFileProgressXFTP` | `user, chatItem_, receivedSize, totalSize` | Download progress |
-| `rcvFileComplete` | `user, chatItem` | Download complete |
-| `rcvFileSndCancelled` | `user, chatItem, rcvFileTransfer` | Sender cancelled |
-| `rcvFileError` | `user, chatItem_, agentError, rcvFileTransfer` | Download error |
-| `sndFileStart` | `user, chatItem, sndFileTransfer` | Upload started |
-| `sndFileComplete` | `user, chatItem, sndFileTransfer` | Upload complete (inline) |
-| `sndFileProgressXFTP` | `user, chatItem_, fileTransferMeta, sentSize, totalSize` | Upload progress |
-| `sndFileCompleteXFTP` | `user, chatItem, fileTransferMeta` | XFTP upload complete |
-| `sndFileError` | `user, chatItem_, fileTransferMeta, errorMessage` | Upload error |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `rcvFileStart` | `user, chatItem` | Download started | [L1092](../Shared/Model/AppAPITypes.swift#L1092) |
+| `rcvFileProgressXFTP` | `user, chatItem_, receivedSize, totalSize` | Download progress | [L1093](../Shared/Model/AppAPITypes.swift#L1093) |
+| `rcvFileComplete` | `user, chatItem` | Download complete | [L1094](../Shared/Model/AppAPITypes.swift#L1094) |
+| `rcvFileSndCancelled` | `user, chatItem, rcvFileTransfer` | Sender cancelled | [L1096](../Shared/Model/AppAPITypes.swift#L1096) |
+| `rcvFileError` | `user, chatItem_, agentError, rcvFileTransfer` | Download error | [L1097](../Shared/Model/AppAPITypes.swift#L1097) |
+| `sndFileStart` | `user, chatItem, sndFileTransfer` | Upload started | [L1100](../Shared/Model/AppAPITypes.swift#L1100) |
+| `sndFileComplete` | `user, chatItem, sndFileTransfer` | Upload complete (inline) | [L1101](../Shared/Model/AppAPITypes.swift#L1101) |
+| `sndFileProgressXFTP` | `user, chatItem_, fileTransferMeta, sentSize, totalSize` | Upload progress | [L1103](../Shared/Model/AppAPITypes.swift#L1103) |
+| `sndFileCompleteXFTP` | `user, chatItem, fileTransferMeta` | XFTP upload complete | [L1105](../Shared/Model/AppAPITypes.swift#L1105) |
+| `sndFileError` | `user, chatItem_, fileTransferMeta, errorMessage` | Upload error | [L1107](../Shared/Model/AppAPITypes.swift#L1107) |
 
 ### Call Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `callInvitation` | `callInvitation: RcvCallInvitation` | Incoming call |
-| `callOffer` | `user, contact, callType, offer, sharedKey, askConfirmation` | SDP offer received |
-| `callAnswer` | `user, contact, answer` | SDP answer received |
-| `callExtraInfo` | `user, contact, extraInfo` | ICE candidates received |
-| `callEnded` | `user, contact` | Call ended by remote |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `callInvitation` | `callInvitation: RcvCallInvitation` | Incoming call | [L1110](../Shared/Model/AppAPITypes.swift#L1110) |
+| `callOffer` | `user, contact, callType, offer, sharedKey, askConfirmation` | SDP offer received | [L1111](../Shared/Model/AppAPITypes.swift#L1111) |
+| `callAnswer` | `user, contact, answer` | SDP answer received | [L1112](../Shared/Model/AppAPITypes.swift#L1112) |
+| `callExtraInfo` | `user, contact, extraInfo` | ICE candidates received | [L1113](../Shared/Model/AppAPITypes.swift#L1113) |
+| `callEnded` | `user, contact` | Call ended by remote | [L1114](../Shared/Model/AppAPITypes.swift#L1114) |
 
 ### Connection Security Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `contactSwitch` | `user, contact, switchProgress` | Key rotation progress |
-| `groupMemberSwitch` | `user, groupInfo, member, switchProgress` | Member key rotation |
-| `contactRatchetSync` | `user, contact, ratchetSyncProgress` | Ratchet sync progress |
-| `groupMemberRatchetSync` | `user, groupInfo, member, ratchetSyncProgress` | Member ratchet sync |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `contactSwitch` | `user, contact, switchProgress` | Key rotation progress | [L1052](../Shared/Model/AppAPITypes.swift#L1052) |
+| `groupMemberSwitch` | `user, groupInfo, member, switchProgress` | Member key rotation | [L1053](../Shared/Model/AppAPITypes.swift#L1053) |
+| `contactRatchetSync` | `user, contact, ratchetSyncProgress` | Ratchet sync progress | [L1054](../Shared/Model/AppAPITypes.swift#L1054) |
+| `groupMemberRatchetSync` | `user, groupInfo, member, ratchetSyncProgress` | Member ratchet sync | [L1055](../Shared/Model/AppAPITypes.swift#L1055) |
 
 ### System Events
 
-| Event | Key Fields | Description |
-|-------|-----------|-------------|
-| `chatSuspended` | -- | Core suspended |
+| Event | Key Fields | Description | Source |
+|-------|-----------|-------------|--------|
+| `chatSuspended` | -- | Core suspended | [L1051](../Shared/Model/AppAPITypes.swift#L1051) |
 
 ---
 
 ## 5. Error Types
 
-Defined in `SimpleXChat/APITypes.swift`:
+Defined in [`SimpleXChat/APITypes.swift` L695](../SimpleXChat/APITypes.swift#L695):
 
 ```swift
 public enum ChatError: Decodable, Hashable {
@@ -461,27 +467,27 @@ public enum ChatError: Decodable, Hashable {
 
 ### Error Categories
 
-| Category | Enum | Description |
-|----------|------|-------------|
-| Chat logic | `ChatErrorType` | Business logic errors (e.g., invalid state, permission denied) |
-| SMP Agent | `AgentErrorType` | Protocol/network errors from the SMP agent layer |
-| Database store | `StoreError` | SQLite query/constraint errors |
-| Database engine | `DatabaseError` | DB open/migration/encryption errors |
-| Remote control | `RemoteCtrlError` | Remote desktop session errors |
-| Parse failure | `invalidJSON` | Failed to decode response JSON |
-| Unexpected | `unexpectedResult` | Response type does not match expected |
+| Category | Enum | Description | Source |
+|----------|------|-------------|--------|
+| Chat logic | `ChatErrorType` | Business logic errors (e.g., invalid state, permission denied) | [`APITypes.swift` L717](../SimpleXChat/APITypes.swift#L717) |
+| SMP Agent | `AgentErrorType` | Protocol/network errors from the SMP agent layer | [`APITypes.swift` L873](../SimpleXChat/APITypes.swift#L873) |
+| Database store | `StoreError` | SQLite query/constraint errors | [`APITypes.swift` L796](../SimpleXChat/APITypes.swift#L796) |
+| Database engine | `DatabaseError` | DB open/migration/encryption errors | [`APITypes.swift` L860](../SimpleXChat/APITypes.swift#L860) |
+| Remote control | `RemoteCtrlError` | Remote desktop session errors | [`APITypes.swift` L1043](../SimpleXChat/APITypes.swift#L1043) |
+| Parse failure | `invalidJSON` | Failed to decode response JSON | [`APITypes.swift` L695](../SimpleXChat/APITypes.swift#L695) |
+| Unexpected | `unexpectedResult` | Response type does not match expected | [`APITypes.swift` L695](../SimpleXChat/APITypes.swift#L695) |
 
 ---
 
 ## 6. FFI Bridge Functions
 
-Defined in `Shared/Model/SimpleXAPI.swift`:
+Defined in [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift):
 
 ### Synchronous (blocking current thread)
 
 ```swift
 // Throws on error, returns typed result
-func chatSendCmdSync<R: ChatAPIResult>(
+func chatSendCmdSync<R: ChatAPIResult>(           // SimpleXAPI.swift L91
     _ cmd: ChatCommand,
     bgTask: Bool = true,
     bgDelay: Double? = nil,
@@ -490,7 +496,7 @@ func chatSendCmdSync<R: ChatAPIResult>(
 ) throws -> R
 
 // Returns APIResult (caller handles error)
-func chatApiSendCmdSync<R: ChatAPIResult>(
+func chatApiSendCmdSync<R: ChatAPIResult>(         // SimpleXAPI.swift L96
     _ cmd: ChatCommand,
     bgTask: Bool = true,
     bgDelay: Double? = nil,
@@ -504,7 +510,7 @@ func chatApiSendCmdSync<R: ChatAPIResult>(
 
 ```swift
 // Throws on error, returns typed result
-func chatSendCmd<R: ChatAPIResult>(
+func chatSendCmd<R: ChatAPIResult>(                // SimpleXAPI.swift L117
     _ cmd: ChatCommand,
     bgTask: Bool = true,
     bgDelay: Double? = nil,
@@ -513,7 +519,7 @@ func chatSendCmd<R: ChatAPIResult>(
 ) async throws -> R
 
 // Returns APIResult with optional retry on network errors
-func chatApiSendCmdWithRetry<R: ChatAPIResult>(
+func chatApiSendCmdWithRetry<R: ChatAPIResult>(    // SimpleXAPI.swift L122
     _ cmd: ChatCommand,
     bgTask: Bool = true,
     bgDelay: Double? = nil,
@@ -526,18 +532,32 @@ func chatApiSendCmdWithRetry<R: ChatAPIResult>(
 
 ```swift
 // Direct C FFI call -- serializes cmd.cmdString, calls chat_send_cmd_retry, decodes response
-func sendSimpleXCmd<R: ChatAPIResult>(
+public func sendSimpleXCmd<R: ChatAPIResult>(      // API.swift L115
     _ cmd: ChatCmdProtocol,
     _ ctrl: chat_ctrl?,
     retryNum: Int32 = 0
 ) -> APIResult<R>
 ```
 
+### Event Receiver
+
+```swift
+// Polls for async events from the Haskell core
+func chatRecvMsg(                                  // SimpleXAPI.swift L230
+    _ ctrl: chat_ctrl? = nil
+) async -> APIResult<ChatEvent>?
+
+// Processes a received event and updates app state
+func processReceivedMsg(                           // SimpleXAPI.swift L2248
+    _ res: ChatEvent
+) async
+```
+
 ---
 
 ## 7. Result Type
 
-Defined in `SimpleXChat/APITypes.swift`:
+Defined in [`SimpleXChat/APITypes.swift` L26](../SimpleXChat/APITypes.swift#L26):
 
 ```swift
 public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
@@ -549,14 +569,14 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     public var unexpected: ChatError { ... }
 }
 
-public protocol ChatAPIResult: Decodable {
+public protocol ChatAPIResult: Decodable {         // APITypes.swift L63
     var responseType: String { get }
     var details: String { get }
     static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self?
 }
 ```
 
-The `decodeAPIResult<R>` function handles JSON decoding with fallback logic:
+The `decodeAPIResult<R>` function ([`APITypes.swift` L83](../SimpleXChat/APITypes.swift#L83)) handles JSON decoding with fallback logic:
 1. Try standard `JSONDecoder.decode(APIResult<R>.self, from: data)`
 2. If that fails, try manual JSON parsing via `JSONSerialization`
 3. Check for `"error"` key -- return `.error`
@@ -569,11 +589,12 @@ The `decodeAPIResult<R>` function handles JSON decoding with fallback logic:
 
 | File | Path |
 |------|------|
-| ChatCommand enum | `Shared/Model/AppAPITypes.swift` |
-| ChatResponse0/1/2 enums | `Shared/Model/AppAPITypes.swift` |
-| ChatEvent enum | `Shared/Model/AppAPITypes.swift` |
-| APIResult, ChatError | `SimpleXChat/APITypes.swift` |
-| FFI bridge functions | `Shared/Model/SimpleXAPI.swift` |
+| ChatCommand enum | [`Shared/Model/AppAPITypes.swift` L14](../Shared/Model/AppAPITypes.swift#L14) |
+| ChatResponse0/1/2 enums | [`Shared/Model/AppAPITypes.swift` L647, L768, L907](../Shared/Model/AppAPITypes.swift#L647) |
+| ChatEvent enum | [`Shared/Model/AppAPITypes.swift` L1050](../Shared/Model/AppAPITypes.swift#L1050) |
+| APIResult, ChatError | [`SimpleXChat/APITypes.swift` L26, L695](../SimpleXChat/APITypes.swift#L26) |
+| FFI bridge functions | [`Shared/Model/SimpleXAPI.swift`](../Shared/Model/SimpleXAPI.swift) |
+| Low-level FFI | [`SimpleXChat/API.swift`](../SimpleXChat/API.swift) |
 | Data types | `SimpleXChat/ChatTypes.swift` |
 | C header | `SimpleXChat/SimpleX.h` |
 | Haskell controller | `../../src/Simplex/Chat/Controller.hs` |

@@ -5,6 +5,7 @@
 //  Created by Diogo Cunha on 13/11/2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat

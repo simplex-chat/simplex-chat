@@ -5,6 +5,8 @@
 > Related specs: [Compose Module](../client/compose.md) | [Chat View](../client/chat-view.md) | [API Reference](../api.md) | [Database](../database.md) | [README](../README.md)
 > Related product: [Product Overview](../../product/README.md)
 
+**Source:** [`FileUtils.swift`](../../SimpleXChat/FileUtils.swift) | [`CryptoFile.swift`](../../SimpleXChat/CryptoFile.swift) | [`ChatTypes.swift`](../../SimpleXChat/ChatTypes.swift) | [`AppAPITypes.swift`](../../Shared/Model/AppAPITypes.swift) | [`SimpleXAPI.swift`](../../Shared/Model/SimpleXAPI.swift)
+
 ---
 
 ## Table of Contents
@@ -47,14 +49,14 @@ All files are end-to-end encrypted. The XFTP protocol adds a second encryption l
 
 ### Inline Transfer
 
-- Files up to `MAX_IMAGE_SIZE` (255KB) are base64-encoded and embedded directly in the SMP message body
+- Files up to [`MAX_IMAGE_SIZE`](../../SimpleXChat/FileUtils.swift#L17) (255KB) are base64-encoded and embedded directly in the SMP message body
 - No additional protocol or server needed
 - Delivered with the same reliability guarantees as regular messages
 - Used primarily for compressed images
 
 ### XFTP Transfer
 
-For files exceeding the inline threshold (up to `MAX_FILE_SIZE_XFTP` = 1GB):
+For files exceeding the inline threshold (up to [`MAX_FILE_SIZE_XFTP`](../../SimpleXChat/FileUtils.swift#L25) = 1GB):
 
 1. **Sender side**:
    - File is AES-encrypted with a random key
@@ -73,7 +75,7 @@ For files exceeding the inline threshold (up to `MAX_FILE_SIZE_XFTP` = 1GB):
 
 ### SMP Transfer (legacy)
 
-`MAX_FILE_SIZE_SMP` (8MB) exists as a constant for larger inline transfers through SMP, used in specific scenarios.
+[`MAX_FILE_SIZE_SMP`](../../SimpleXChat/FileUtils.swift#L29) (8MB) exists as a constant for larger inline transfers through SMP, used in specific scenarios.
 
 ---
 
@@ -81,20 +83,20 @@ For files exceeding the inline threshold (up to `MAX_FILE_SIZE_XFTP` = 1GB):
 
 Files below certain size thresholds are automatically accepted and downloaded without user confirmation:
 
-| Media Type | Auto-Receive Threshold | Constant |
-|------------|----------------------|----------|
-| Images | 510 KB | `MAX_IMAGE_SIZE_AUTO_RCV` |
-| Voice messages | 510 KB | `MAX_VOICE_SIZE_AUTO_RCV` |
-| Video | 1023 KB | `MAX_VIDEO_SIZE_AUTO_RCV` |
-| Other files | Not auto-received | Requires manual acceptance |
+| Media Type | Auto-Receive Threshold | Constant | Line |
+|------------|----------------------|----------|------|
+| Images | 510 KB | [`MAX_IMAGE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L19) | [L19](../../SimpleXChat/FileUtils.swift#L19) |
+| Voice messages | 510 KB | [`MAX_VOICE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L21) | [L21](../../SimpleXChat/FileUtils.swift#L21) |
+| Video | 1023 KB | [`MAX_VIDEO_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L23) | [L23](../../SimpleXChat/FileUtils.swift#L23) |
+| Other files | Not auto-received | Requires manual acceptance | -- |
 
 ### Behavior
 
 - When a message with a file attachment arrives:
   1. Check if file size is below the auto-receive threshold for its type
-  2. If below: automatically call `setFileToReceive(fileId:, userApprovedRelays:, encrypted:)` followed by download
+  2. If below: automatically call [`setFileToReceive(fileId:, userApprovedRelays:, encrypted:)`](../../Shared/Model/AppAPITypes.swift#L167) followed by download
   3. If above: show download button in chat item, wait for user action
-  4. User manually triggers download via `receiveFile(fileId:, userApprovedRelays:, encrypted:, inline:)`
+  4. User manually triggers download via [`receiveFile(fileId:, userApprovedRelays:, encrypted:, inline:)`](../../Shared/Model/AppAPITypes.swift#L166)
 
 ### Relay Approval
 
@@ -102,9 +104,20 @@ Files below certain size thresholds are automatically accepted and downloaded wi
 
 ---
 
-## 4. File Size Constants
+## [4. File Size Constants](../../SimpleXChat/FileUtils.swift#L17)
 
-Defined in `SimpleXChat/FileUtils.swift`:
+Defined in [`SimpleXChat/FileUtils.swift`](../../SimpleXChat/FileUtils.swift):
+
+| Constant | Value | Line |
+|----------|-------|------|
+| `MAX_IMAGE_SIZE` | 261,120 (255 KB) | [L17](../../SimpleXChat/FileUtils.swift#L17) |
+| `MAX_IMAGE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L19](../../SimpleXChat/FileUtils.swift#L19) |
+| `MAX_VOICE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L21](../../SimpleXChat/FileUtils.swift#L21) |
+| `MAX_VIDEO_SIZE_AUTO_RCV` | 1,047,552 (1023 KB) | [L23](../../SimpleXChat/FileUtils.swift#L23) |
+| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 (1 GB) | [L25](../../SimpleXChat/FileUtils.swift#L25) |
+| `MAX_FILE_SIZE_LOCAL` | Int64.max (no limit) | [L27](../../SimpleXChat/FileUtils.swift#L27) |
+| `MAX_FILE_SIZE_SMP` | 8,000,000 (~7.6 MB) | [L29](../../SimpleXChat/FileUtils.swift#L29) |
+| `MAX_VOICE_MESSAGE_LENGTH` | 300 s (5 min) | [L31](../../SimpleXChat/FileUtils.swift#L31) |
 
 ```swift
 // Image compression target for inline transfer
@@ -131,7 +144,7 @@ public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300) // 5 minutes (300 second
 ### Compression Pipeline
 
 1. User selects image (camera or photo library)
-2. Image is compressed to fit within `MAX_IMAGE_SIZE` (255KB):
+2. Image is compressed to fit within [`MAX_IMAGE_SIZE`](../../SimpleXChat/FileUtils.swift#L17) (255KB):
    - Progressive JPEG compression with decreasing quality
    - Resize if dimensions are too large
 3. Compressed image is base64-encoded into the message content
@@ -157,12 +170,12 @@ public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300) // 5 minutes (300 second
 1. `ComposeVoiceView` manages the recording UI
 2. `AudioRecPlay` handles `AVAudioRecorder` lifecycle
 3. Recorded in compressed audio format
-4. Maximum duration: 300 seconds (5 minutes)
+4. Maximum duration: [`MAX_VOICE_MESSAGE_LENGTH`](../../SimpleXChat/FileUtils.swift#L31) = 300 seconds (5 minutes)
 5. Waveform data extracted for visualization
 
 ### Transfer
 
-- Voice files up to `MAX_VOICE_SIZE_AUTO_RCV` (510KB) are auto-received
+- Voice files up to [`MAX_VOICE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L21) (510KB) are auto-received
 - Larger voice files follow standard file transfer flow
 - Voice messages include waveform metadata for UI rendering
 
@@ -175,11 +188,11 @@ public let MAX_VOICE_MESSAGE_LENGTH = TimeInterval(300) // 5 minutes (300 second
 
 ---
 
-## 7. CryptoFile -- At-Rest Encryption
+## [7. CryptoFile -- At-Rest Encryption](../../SimpleXChat/ChatTypes.swift#L4238)
 
-When `apiSetEncryptLocalFiles(enable: true)` is configured, files stored on the device are AES-encrypted.
+When [`apiSetEncryptLocalFiles(enable: true)`](../../Shared/Model/SimpleXAPI.swift#L373) is configured, files stored on the device are AES-encrypted.
 
-### CryptoFile Type
+### [`CryptoFile`](../../SimpleXChat/ChatTypes.swift#L4238) Type
 
 ```swift
 struct CryptoFile {
@@ -193,26 +206,38 @@ struct CryptoFileArgs {
 }
 ```
 
+> Defined in [`ChatTypes.swift` L4238](../../SimpleXChat/ChatTypes.swift#L4238) (`CryptoFile`) and [L4285](../../SimpleXChat/ChatTypes.swift#L4285) (`CryptoFileArgs`).
+
 ### Encryption Operations (C FFI)
 
-| Function | Purpose |
-|----------|---------|
-| `chat_write_file(ctrl, path, data, len)` | Write encrypted file, returns `WriteFileResult` JSON |
-| `chat_read_file(path, key, nonce)` | Read and decrypt file, returns buffer |
-| `chat_encrypt_file(ctrl, fromPath, toPath)` | Encrypt existing file to new path |
-| `chat_decrypt_file(fromPath, key, nonce, toPath)` | Decrypt file to new path |
+Implemented in [`CryptoFile.swift`](../../SimpleXChat/CryptoFile.swift):
+
+| Function | Purpose | Line |
+|----------|---------|------|
+| [`writeCryptoFile`](../../SimpleXChat/CryptoFile.swift#L17) | Write encrypted file, returns `CryptoFileArgs` | [L17](../../SimpleXChat/CryptoFile.swift#L17) |
+| [`readCryptoFile`](../../SimpleXChat/CryptoFile.swift#L29) | Read and decrypt file, returns `Data` | [L29](../../SimpleXChat/CryptoFile.swift#L29) |
+| [`encryptCryptoFile`](../../SimpleXChat/CryptoFile.swift#L51) | Encrypt existing file to new path | [L51](../../SimpleXChat/CryptoFile.swift#L51) |
+| [`decryptCryptoFile`](../../SimpleXChat/CryptoFile.swift#L62) | Decrypt file to new path | [L62](../../SimpleXChat/CryptoFile.swift#L62) |
 
 ### Storage
 
 - Encrypted files stored alongside unencrypted files in `Documents/files/`
 - The `CryptoFileArgs` (key + nonce) are stored in the Haskell database, not on the filesystem
-- Toggle via privacy settings: `apiSetEncryptLocalFiles(enable:)`
+- Toggle via privacy settings: [`apiSetEncryptLocalFiles(enable:)`](../../Shared/Model/SimpleXAPI.swift#L373)
 
 ---
 
-## 8. File Storage Paths
+## [8. File Storage Paths](../../SimpleXChat/FileUtils.swift#L187)
 
 ### Directory Structure
+
+| Function | Path | Line |
+|----------|------|------|
+| [`getAppFilesDirectory()`](../../SimpleXChat/FileUtils.swift#L195) | `Documents/files/` | [L195](../../SimpleXChat/FileUtils.swift#L195) |
+| [`getTempFilesDirectory()`](../../SimpleXChat/FileUtils.swift#L187) | `Documents/temp_files/` | [L187](../../SimpleXChat/FileUtils.swift#L187) |
+| [`getWallpaperDirectory()`](../../SimpleXChat/FileUtils.swift#L203) | `Documents/wallpapers/` | [L203](../../SimpleXChat/FileUtils.swift#L203) |
+| [`getAppFilePath(_:)`](../../SimpleXChat/FileUtils.swift#L199) | `Documents/files/{filename}` | [L199](../../SimpleXChat/FileUtils.swift#L199) |
+| [`getWallpaperFilePath(_:)`](../../SimpleXChat/FileUtils.swift#L207) | `Documents/wallpapers/{filename}` | [L207](../../SimpleXChat/FileUtils.swift#L207) |
 
 ```swift
 func getAppFilesDirectory() -> URL    // Documents/files/
@@ -225,7 +250,7 @@ func getWallpaperDirectory() -> URL   // Documents/wallpapers/
 - Downloaded files: `Documents/files/{filename}`
 - Temporary files during transfer: `Documents/temp_files/`
 - Wallpaper images: `Documents/wallpapers/`
-- File paths are set via `apiSetAppFilePaths(filesFolder:, tempFolder:, assetsFolder:)` at startup
+- File paths are set via [`apiSetAppFilePaths(filesFolder:, tempFolder:, assetsFolder:)`](../../Shared/Model/SimpleXAPI.swift#L367) at startup
 
 ---
 
@@ -273,58 +298,71 @@ Cancels an in-progress upload or download. For XFTP transfers, also requests chu
 
 ### Cleanup
 
+| Function | Purpose | Line |
+|----------|---------|------|
+| [`cleanupFile(_:)`](../../SimpleXChat/FileUtils.swift#L249) | Remove file associated with a chat item | [L249](../../SimpleXChat/FileUtils.swift#L249) |
+| [`cleanupDirectFile(_:)`](../../SimpleXChat/FileUtils.swift#L243) | Remove file only for direct chats | [L243](../../SimpleXChat/FileUtils.swift#L243) |
+| [`removeFile(_:)`](../../SimpleXChat/FileUtils.swift#L227) | Delete file at URL | [L227](../../SimpleXChat/FileUtils.swift#L227) |
+| [`removeFile(_:)`](../../SimpleXChat/FileUtils.swift#L235) | Delete file by name | [L235](../../SimpleXChat/FileUtils.swift#L235) |
+| [`deleteAppFiles()`](../../SimpleXChat/FileUtils.swift#L97) | Remove all app files (preserving databases) | [L97](../../SimpleXChat/FileUtils.swift#L97) |
+| [`deleteAppDatabaseAndFiles()`](../../SimpleXChat/FileUtils.swift#L76) | Remove everything | [L76](../../SimpleXChat/FileUtils.swift#L76) |
+
 - When a `ChatItem` is deleted, its associated file is deleted from disk
 - When a timed message expires, its file is deleted
 - `ChatModel.filesToDelete` queues files for deferred deletion
-- `deleteAppFiles()` removes all files (preserving databases)
-- `deleteAppDatabaseAndFiles()` removes everything
+- [`deleteAppFiles()`](../../SimpleXChat/FileUtils.swift#L97) removes all files (preserving databases)
+- [`deleteAppDatabaseAndFiles()`](../../SimpleXChat/FileUtils.swift#L76) removes everything
 
 ---
 
-## 10. API Commands
+## [10. API Commands](../../Shared/Model/AppAPITypes.swift#L166)
 
-| Command | Parameters | Description |
-|---------|-----------|-------------|
-| `receiveFile` | `fileId, userApprovedRelays, encrypted, inline` | Accept and start downloading a file |
-| `setFileToReceive` | `fileId, userApprovedRelays, encrypted` | Mark file for auto-receive (no immediate download) |
-| `cancelFile` | `fileId` | Cancel in-progress transfer |
-| `apiUploadStandaloneFile` | `userId, file: CryptoFile` | Upload file to XFTP without a chat context |
-| `apiDownloadStandaloneFile` | `userId, url, file: CryptoFile` | Download from XFTP URL |
-| `apiStandaloneFileInfo` | `url` | Get metadata for an XFTP URL |
+| Command | Parameters | Description | Line |
+|---------|-----------|-------------|------|
+| [`receiveFile`](../../Shared/Model/AppAPITypes.swift#L166) | `fileId, userApprovedRelays, encrypted, inline` | Accept and start downloading a file | [L166](../../Shared/Model/AppAPITypes.swift#L166) |
+| [`setFileToReceive`](../../Shared/Model/AppAPITypes.swift#L167) | `fileId, userApprovedRelays, encrypted` | Mark file for auto-receive (no immediate download) | [L167](../../Shared/Model/AppAPITypes.swift#L167) |
+| [`cancelFile`](../../Shared/Model/AppAPITypes.swift#L168) | `fileId` | Cancel in-progress transfer | [L168](../../Shared/Model/AppAPITypes.swift#L168) |
+| [`apiUploadStandaloneFile`](../../Shared/Model/AppAPITypes.swift#L178) | `userId, file: CryptoFile` | Upload file to XFTP without a chat context | [L178](../../Shared/Model/AppAPITypes.swift#L178) |
+| [`apiDownloadStandaloneFile`](../../Shared/Model/AppAPITypes.swift#L179) | `userId, url, file: CryptoFile` | Download from XFTP URL | [L179](../../Shared/Model/AppAPITypes.swift#L179) |
+| [`apiStandaloneFileInfo`](../../Shared/Model/AppAPITypes.swift#L180) | `url` | Get metadata for an XFTP URL | [L180](../../Shared/Model/AppAPITypes.swift#L180) |
 
 ### File Transfer Events
 
-| Event | Description |
-|-------|-------------|
-| `rcvFileAccepted` | Download request accepted |
-| `rcvFileStart` | Download started |
-| `rcvFileProgressXFTP` | Download progress (receivedSize, totalSize) |
-| `rcvFileComplete` | Download complete |
-| `rcvFileSndCancelled` | Sender cancelled the transfer |
-| `rcvFileError` | Download failed |
-| `rcvFileWarning` | Download warning (non-fatal) |
-| `sndFileStart` | Upload started |
-| `sndFileComplete` | Inline upload complete |
-| `sndFileProgressXFTP` | XFTP upload progress (sentSize, totalSize) |
-| `sndFileCompleteXFTP` | XFTP upload complete |
-| `sndFileRcvCancelled` | Receiver cancelled |
-| `sndFileError` | Upload failed |
-| `sndFileWarning` | Upload warning (non-fatal) |
+| Event | Description | Line |
+|-------|-------------|------|
+| [`rcvFileAccepted`](../../Shared/Model/AppAPITypes.swift#L1090) | Download request accepted | [L1090](../../Shared/Model/AppAPITypes.swift#L1090) |
+| [`rcvFileStart`](../../Shared/Model/AppAPITypes.swift#L1092) | Download started | [L1092](../../Shared/Model/AppAPITypes.swift#L1092) |
+| [`rcvFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1093) | Download progress (receivedSize, totalSize) | [L1093](../../Shared/Model/AppAPITypes.swift#L1093) |
+| [`rcvFileComplete`](../../Shared/Model/AppAPITypes.swift#L1094) | Download complete | [L1094](../../Shared/Model/AppAPITypes.swift#L1094) |
+| [`rcvFileSndCancelled`](../../Shared/Model/AppAPITypes.swift#L1096) | Sender cancelled the transfer | [L1096](../../Shared/Model/AppAPITypes.swift#L1096) |
+| [`rcvFileError`](../../Shared/Model/AppAPITypes.swift#L1097) | Download failed | [L1097](../../Shared/Model/AppAPITypes.swift#L1097) |
+| [`rcvFileWarning`](../../Shared/Model/AppAPITypes.swift#L1098) | Download warning (non-fatal) | [L1098](../../Shared/Model/AppAPITypes.swift#L1098) |
+| [`sndFileStart`](../../Shared/Model/AppAPITypes.swift#L1100) | Upload started | [L1100](../../Shared/Model/AppAPITypes.swift#L1100) |
+| [`sndFileComplete`](../../Shared/Model/AppAPITypes.swift#L1101) | Inline upload complete | [L1101](../../Shared/Model/AppAPITypes.swift#L1101) |
+| [`sndFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1103) | XFTP upload progress (sentSize, totalSize) | [L1103](../../Shared/Model/AppAPITypes.swift#L1103) |
+| [`sndFileCompleteXFTP`](../../Shared/Model/AppAPITypes.swift#L1105) | XFTP upload complete | [L1105](../../Shared/Model/AppAPITypes.swift#L1105) |
+| [`sndFileRcvCancelled`](../../Shared/Model/AppAPITypes.swift#L1102) | Receiver cancelled | [L1102](../../Shared/Model/AppAPITypes.swift#L1102) |
+| [`sndFileError`](../../Shared/Model/AppAPITypes.swift#L1107) | Upload failed | [L1107](../../Shared/Model/AppAPITypes.swift#L1107) |
+| [`sndFileWarning`](../../Shared/Model/AppAPITypes.swift#L1108) | Upload warning (non-fatal) | [L1108](../../Shared/Model/AppAPITypes.swift#L1108) |
 
 ---
 
 ## Source Files
 
-| File | Path |
-|------|------|
-| File utilities & constants | `SimpleXChat/FileUtils.swift` |
-| File view (chat item) | `Shared/Views/Chat/ChatItem/CIFileView.swift` |
-| Image view (chat item) | `Shared/Views/Chat/ChatItem/CIImageView.swift` |
-| Video view (chat item) | `Shared/Views/Chat/ChatItem/CIVideoView.swift` |
-| Voice view (chat item) | `Shared/Views/Chat/ChatItem/CIVoiceView.swift` |
-| Compose file preview | `Shared/Views/Chat/ComposeMessage/ComposeFileView.swift` |
-| Compose image preview | `Shared/Views/Chat/ComposeMessage/ComposeImageView.swift` |
-| Compose voice preview | `Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift` |
-| C FFI (file encryption) | `SimpleXChat/SimpleX.h` |
-| Haskell file logic | `../../src/Simplex/Chat/Files.hs` |
-| Haskell file store | `../../src/Simplex/Chat/Store/Files.hs` |
+| File | Path | Key Definitions |
+|------|------|-----------------|
+| File utilities & constants | [`SimpleXChat/FileUtils.swift`](../../SimpleXChat/FileUtils.swift) | `MAX_IMAGE_SIZE`, `saveFile`, `removeFile`, `getMaxFileSize` |
+| CryptoFile FFI operations | [`SimpleXChat/CryptoFile.swift`](../../SimpleXChat/CryptoFile.swift) | `writeCryptoFile`, `readCryptoFile`, `encryptCryptoFile`, `decryptCryptoFile` |
+| CryptoFile / CryptoFileArgs types | [`SimpleXChat/ChatTypes.swift`](../../SimpleXChat/ChatTypes.swift) | `CryptoFile` (L4238), `CryptoFileArgs` (L4285) |
+| API command definitions | [`Shared/Model/AppAPITypes.swift`](../../Shared/Model/AppAPITypes.swift) | `receiveFile`, `cancelFile`, `ChatEvent` file events |
+| API implementations | [`Shared/Model/SimpleXAPI.swift`](../../Shared/Model/SimpleXAPI.swift) | `receiveFile` (L1459), `cancelFile` (L1577) |
+| File view (chat item) | [`Shared/Views/Chat/ChatItem/CIFileView.swift`](../../Shared/Views/Chat/ChatItem/CIFileView.swift) | |
+| Image view (chat item) | [`Shared/Views/Chat/ChatItem/CIImageView.swift`](../../Shared/Views/Chat/ChatItem/CIImageView.swift) | |
+| Video view (chat item) | [`Shared/Views/Chat/ChatItem/CIVideoView.swift`](../../Shared/Views/Chat/ChatItem/CIVideoView.swift) | |
+| Voice view (chat item) | [`Shared/Views/Chat/ChatItem/CIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/CIVoiceView.swift) | |
+| Compose file preview | [`Shared/Views/Chat/ComposeMessage/ComposeFileView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeFileView.swift) | |
+| Compose image preview | [`Shared/Views/Chat/ComposeMessage/ComposeImageView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeImageView.swift) | |
+| Compose voice preview | [`Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift`](../../Shared/Views/Chat/ComposeMessage/ComposeVoiceView.swift) | |
+| C FFI (file encryption) | [`SimpleXChat/SimpleX.h`](../../SimpleXChat/SimpleX.h) | `chat_write_file`, `chat_read_file`, `chat_encrypt_file`, `chat_decrypt_file` |
+| Haskell file logic | `../../src/Simplex/Chat/Files.hs` | -- |
+| Haskell file store | `../../src/Simplex/Chat/Store/Files.hs` | -- |
