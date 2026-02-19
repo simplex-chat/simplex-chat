@@ -671,7 +671,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode, createdAt = connCreatedAt} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       -- TODO [certs rcv]
       INV (ACR _ cReq) _serviceId ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
@@ -795,10 +795,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+                itemTs = Just connCreatedAt
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) itemTs
             let prepared = preparedGroup gInfo''
-            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
-            memberConnectedChatItem gInfo'' scopeInfo m''
+            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'' itemTs
+            memberConnectedChatItem gInfo'' scopeInfo m'' itemTs
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
             unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
           GCInviteeMember -> do
@@ -811,7 +812,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   gInfo' <- withStore' $ \db -> increaseGroupMembersRequireAttention db user gInfo
                   pure (gInfo', memberStatus m)
             (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
-            memberConnectedChatItem gInfo'' scopeInfo m'
+            memberConnectedChatItem gInfo'' scopeInfo m' (Just connCreatedAt)
             case scopeInfo of
               Just (GCSIMemberSupport _) -> do
                 createInternalChatItem user (CDGroupRcv gInfo'' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
@@ -836,7 +837,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
-            notifyMemberConnected gInfo m Nothing
+            notifyMemberConnected gInfo m Nothing (Just connCreatedAt)
             let memCategory = memberCategory m
                 connectedIncognito = memberIncognito membership
             when (memCategory == GCPreMember) $
@@ -1443,15 +1444,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         cancelRcvFileTransfer user ft
         throwChatError $ CEFileRcvChunk err
 
-    memberConnectedChatItem :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> CM ()
-    memberConnectedChatItem gInfo scopeInfo m =
-      -- ts should be broker ts but we don't have it for CON
-      createInternalChatItem user (CDGroupRcv gInfo scopeInfo m) (CIRcvGroupEvent RGEMemberConnected) Nothing
+    memberConnectedChatItem :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe UTCTime -> CM ()
+    memberConnectedChatItem gInfo scopeInfo m itemTs_ =
+      createInternalChatItem user (CDGroupRcv gInfo scopeInfo m) (CIRcvGroupEvent RGEMemberConnected) itemTs_
 
-    notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> CM ()
-    notifyMemberConnected gInfo m ct_ = do
+    notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> Maybe UTCTime -> CM ()
+    notifyMemberConnected gInfo m ct_ itemTs_ = do
       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-      memberConnectedChatItem gInfo' scopeInfo m'
+      memberConnectedChatItem gInfo' scopeInfo m' itemTs_
       toView $ CEvtConnectedToGroupMember user gInfo' m' ct_
 
     probeMatchingMembers :: Contact -> IncognitoEnabled -> CM ()
@@ -2214,7 +2214,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 pure (referencedMember', gInfo')
               when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
               -- create item in both scopes
-              memberConnectedChatItem gInfo' Nothing referencedMember'
+              memberConnectedChatItem gInfo' Nothing referencedMember' (Just brokerTs)
               let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Just referencedMember'}
                   gEvent = RGEMemberAccepted (groupMemberId' referencedMember') (fromLocalProfile $ memberProfile referencedMember')
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
@@ -2233,7 +2233,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
             let prepared = preparedGroup gInfo'
-            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
+            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo' Nothing
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'
             unless (isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo' m
             createInternalChatItem user cd (CIRcvGroupEvent RGEUserAccepted) Nothing

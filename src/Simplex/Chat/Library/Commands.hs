@@ -1844,7 +1844,7 @@ processChatCommand vr nm = \case
             let cd = CDGroupRcv gInfo Nothing hostMember
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
                 cInfo = GroupChat gInfo Nothing
-            void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
+            void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo Nothing
             aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
             let chat = case aci of
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
@@ -1870,7 +1870,7 @@ processChatCommand vr nm = \case
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = CDGroupRcv gInfo Nothing hostMember
         cInfo = GroupChat gInfo Nothing
-    void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
+    void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo Nothing
     aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
     let chat = case aci of
           Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
@@ -2211,7 +2211,7 @@ processChatCommand vr nm = \case
     let cd = CDGroupSnd gInfo Nothing
     createInternalChatItem user cd CIChatBanner (Just epochStart)
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-    createGroupFeatureItems user cd CISndGroupFeature gInfo
+    createGroupFeatureItems user cd CISndGroupFeature gInfo Nothing
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewGroup userId incognito gProfile
