@@ -2,6 +2,15 @@ packages: .
 -- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
+-- uncomment two sections below to run tests with coverage
+-- package *
+--    coverage: True
+--    library-coverage: True
+
+-- package attoparsec
+--    coverage: False
+--    library-coverage: False
+
 index-state: 2023-12-12T00:00:00Z
 
 package cryptostore

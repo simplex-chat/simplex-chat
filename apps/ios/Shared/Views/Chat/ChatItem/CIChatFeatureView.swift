@@ -5,10 +5,12 @@
 //  Created by Evgeny on 21/11/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIChatFeatureView
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.revealed) var revealed: Bool

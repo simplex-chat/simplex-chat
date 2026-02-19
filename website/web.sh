@@ -3,6 +3,7 @@
 set -e
 
 cp -R docs website/src
+rm -rf website/src/docs/contributing
 rm -rf website/src/docs/rfcs
 rm website/src/docs/lang/*/README.md
 rm -rf website/src/docs/dependencies
