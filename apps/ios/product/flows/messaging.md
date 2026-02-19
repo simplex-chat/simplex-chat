@@ -29,7 +29,7 @@ Complete message lifecycle in SimpleX Chat iOS: composing, sending, receiving, e
        mentions: [:]
    )
    ```
-6. Calls `apiSendMessages(type:id:scope:live:ttl:composedMessages:)`.
+6. Calls `apiSendMessages(type:id:scope:live:ttl:composedMessages:sendAsGroup:)` (where `sendAsGroup` defaults to `false`; set to `true` when a channel owner sends as the channel identity).
 7. Internally dispatches `ChatCommand.apiSendMessages(...)` to the Haskell core.
 8. Core encrypts, queues via SMP, and returns `ChatResponse1.newChatItems(user, aChatItems)`.
 9. `processSendMessageCmd` extracts `[ChatItem]` from response.
@@ -104,7 +104,7 @@ Complete message lifecycle in SimpleX Chat iOS: composing, sending, receiving, e
 2. `ChatItemForwardingView` is presented for destination chat selection.
 3. `apiPlanForwardChatItems(type:id:scope:itemIds:)` validates what can be forwarded, returns `([Int64], ForwardConfirmation?)`.
 4. User confirms and selects destination chat.
-5. Calls `apiForwardChatItems(toChatType:toChatId:toScope:fromChatType:fromChatId:fromScope:itemIds:ttl:)`.
+5. Calls `apiForwardChatItems(toChatType:toChatId:toScope:fromChatType:fromChatId:fromScope:itemIds:ttl:sendAsGroup:)` (where `sendAsGroup` defaults to `false`).
 6. Core returns `ChatResponse1.newChatItems(...)` with the forwarded items in the destination chat.
 
 ### 9. Voice Message
@@ -136,7 +136,7 @@ Complete message lifecycle in SimpleX Chat iOS: composing, sending, receiving, e
 | `MsgContent` | `SimpleXChat/ChatTypes.swift` | Enum: `.text`, `.link`, `.image`, `.video`, `.voice`, `.file` |
 | `CIContent` | `SimpleXChat/ChatTypes.swift` | Chat item content wrapper with sent/received variants |
 | `CIStatus` | `SimpleXChat/ChatTypes.swift` | Delivery status: sndNew, sndSent, sndError, rcvNew, rcvRead |
-| `CIDirection` | `SimpleXChat/ChatTypes.swift` | `.directSnd`, `.directRcv`, `.groupSnd`, `.groupRcv(groupMember)` |
+| `CIDirection` | `SimpleXChat/ChatTypes.swift` | `.directSnd`, `.directRcv`, `.groupSnd`, `.groupRcv(groupMember)`, `.channelRcv` |
 | `ChatItem` | `SimpleXChat/ChatTypes.swift` | Full message model: content, meta, status, direction, quotedItem |
 | `ChatItemDeletion` | `SimpleXChat/ChatTypes.swift` | Deleted item info with old/new item pairs |
 | `CIDeleteMode` | `SimpleXChat/ChatTypes.swift` | `.cidmInternal` (local) or `.cidmBroadcast` (for everyone) |

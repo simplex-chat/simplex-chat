@@ -58,7 +58,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 ### 3. Prepared Contact/Group Flow (Short Links)
 
 1. For short links with embedded profile data, the app uses a two-phase flow.
-2. `apiPrepareContact(connLink:contactShortLinkData:)` or `apiPrepareGroup(connLink:groupShortLinkData:)` creates a local prepared chat.
+2. `apiPrepareContact(connLink:contactShortLinkData:)` or `apiPrepareGroup(connLink:groupShortLinkData:directLink:)` creates a local prepared chat (where `directLink` defaults to `true`; `false` for channel relay links).
 3. Returns `ChatData` with the prepared contact/group shown in UI before connecting.
 4. User can switch profiles or set incognito before committing.
 5. `apiConnectPreparedContact(contactId:incognito:msg:)` finalizes the connection.

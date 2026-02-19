@@ -199,6 +199,8 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | SimpleXChat/FileUtils.swift | spec/services/files.md | product/flows/file-transfer.md |
 | SimpleXChat/Notifications.swift | spec/services/notifications.md | product/flows/messaging.md |
 | SimpleX NSE/NotificationService.swift | spec/services/notifications.md | product/flows/messaging.md |
+| Shared/Views/Chat/ChatItemsMerger.swift | spec/client/chat-view.md | product/views/chat.md |
+| SimpleX SE/ShareAPI.swift | spec/api.md | product/flows/messaging.md |
 
 ### Haskell Core Sources (at `../../src/Simplex/Chat/` relative to `apps/ios/`)
 

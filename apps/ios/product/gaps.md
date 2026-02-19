@@ -59,3 +59,25 @@ While the double-ratchet protocol provides forward secrecy, there is no UI indic
 The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages.hs`, etc.) are referenced by function name but not fully specified with parameter types and return types.
 
 **REC:** Expand database spec with key Store function signatures as the specification matures.
+
+---
+
+## Channels (Relays) — In-Progress Implementation
+
+### GAP: ShareAPI sendAsGroup always false
+**Source:** `SimpleX SE/ShareAPI.swift` L71
+The share extension passes `sendAsGroup: false` with a TODO comment. Channel owners sharing content via the share extension cannot yet send as the channel identity.
+
+**REC:** Implement sendAsGroup logic in the share extension when channel context is available.
+
+### GAP: Server validation warnings not surfaced in UI
+**Source:** `Shared/Views/UserSettings/NetworkAndServers/NetworkAndServers.swift` L368
+`validateServers_` now returns `(errors, warnings)` tuple but the warnings are assigned to `_warns` (unused) with a TODO comment. `UserServersWarning` values (e.g., `noChatRelays`) are silently discarded.
+
+**REC:** Display server validation warnings in the NetworkAndServers UI alongside errors.
+
+### GAP: GroupShortLinkInfo.direct not used in group link plan
+**Source:** `Shared/Views/NewChat/NewChatView.swift` L1335
+`GroupLinkPlan.ok` pattern captures `_groupSLinkInfo_` (unused) with a TODO comment. The `direct` flag and relay hostnames from `GroupShortLinkInfo` are not yet consumed in the join flow UI.
+
+**REC:** Use `GroupShortLinkInfo` to display relay information in the pre-join group link UI.
