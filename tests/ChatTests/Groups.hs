@@ -7305,6 +7305,9 @@ testGroupMemberReports =
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
+      -- broadcast delete produces async forwarding/archiving events; drain all queues
+      let drain cc = timeout 500000 (getTermLine cc) >>= mapM_ (\_ -> drain cc)
+      concurrentlyN_ [drain alice, drain bob, drain cath, drain dan]
 
 testMemberMention :: HasCallStack => TestParams -> IO ()
 testMemberMention =
