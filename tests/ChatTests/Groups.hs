@@ -5904,28 +5904,47 @@ testGroupHistoryQuotes =
       alice <# "#team bob> > bob BOB"
       alice <## "      4"
 
-      alice
-        #$> ( "/_get chat #1 count=6",
-              chat',
-              [ ((1, "ALICE"), Nothing),
-                ((0, "BOB"), Nothing),
-                ((1, "1"), Just (1, "ALICE")),
-                ((1, "2"), Just (0, "BOB")),
-                ((0, "3"), Just (1, "ALICE")),
-                ((0, "4"), Just (0, "BOB"))
-              ]
-            )
-      bob
-        #$> ( "/_get chat #1 count=6",
-              chat',
-              [ ((0, "ALICE"), Nothing),
-                ((1, "BOB"), Nothing),
-                ((0, "1"), Just (0, "ALICE")),
-                ((0, "2"), Just (1, "BOB")),
-                ((1, "3"), Just (0, "ALICE")),
-                ((1, "4"), Just (1, "BOB"))
-              ]
-            )
+      alice ##> "/_get chat #1 count=6"
+      rAlice <- chat' <$> getTermLine alice
+      -- "connected" item_ts may be after "ALICE" brokerTs, shifting the count=6 window
+      rAlice
+        `shouldSatisfy` ( `elem`
+                            [ [ ((1, "ALICE"), Nothing),
+                                ((0, "BOB"), Nothing),
+                                ((1, "1"), Just (1, "ALICE")),
+                                ((1, "2"), Just (0, "BOB")),
+                                ((0, "3"), Just (1, "ALICE")),
+                                ((0, "4"), Just (0, "BOB"))
+                              ],
+                              [ ((0, "connected"), Nothing),
+                                ((0, "BOB"), Nothing),
+                                ((1, "1"), Just (1, "ALICE")),
+                                ((1, "2"), Just (0, "BOB")),
+                                ((0, "3"), Just (1, "ALICE")),
+                                ((0, "4"), Just (0, "BOB"))
+                              ]
+                            ]
+                        )
+      bob ##> "/_get chat #1 count=6"
+      rBob <- chat' <$> getTermLine bob
+      rBob
+        `shouldSatisfy` ( `elem`
+                            [ [ ((0, "ALICE"), Nothing),
+                                ((1, "BOB"), Nothing),
+                                ((0, "1"), Just (0, "ALICE")),
+                                ((0, "2"), Just (1, "BOB")),
+                                ((1, "3"), Just (0, "ALICE")),
+                                ((1, "4"), Just (1, "BOB"))
+                              ],
+                              [ ((0, "connected"), Nothing),
+                                ((1, "BOB"), Nothing),
+                                ((0, "1"), Just (0, "ALICE")),
+                                ((0, "2"), Just (1, "BOB")),
+                                ((1, "3"), Just (0, "ALICE")),
+                                ((1, "4"), Just (1, "BOB"))
+                              ]
+                            ]
+                        )
 
       connectUsers alice cath
       addMember "team" alice cath GRAdmin
