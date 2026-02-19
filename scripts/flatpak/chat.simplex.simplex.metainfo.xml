@@ -38,6 +38,27 @@
   </description>
 
   <releases>
+    <release version="6.4.10" date="2026-01-29">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.10:</p>
+        <ul>
+          <li>improve error handling</li>
+        </ul>
+        <p>New in v6.4-6.4.8:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+          <li>better information about network errors.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.4.8" date="2025-12-11">
       <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
       <description>

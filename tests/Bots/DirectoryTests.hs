@@ -19,7 +19,8 @@ import Directory.Listing
 import Directory.Options
 import Directory.Service
 import Directory.Store
-import GHC.IO.Handle (hClose)
+import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
+import System.IO (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
@@ -70,10 +71,20 @@ directoryServiceTests = do
     it "should list and promote user's groups" $ testListUserGroups True
   describe "member admission" $ do
     it "should ask member to pass captcha screen" testCapthaScreening
+    it "should send voice captcha on /audio command" testVoiceCaptchaScreening
+    it "should retry with voice captcha after switching to audio mode" testVoiceCaptchaRetry
+    it "should send voice captcha when voice disabled but client supports v17" testVoiceCaptchaVoiceDisabled
+    it "should show unavailable message for old client in voice-disabled group" testVoiceCaptchaOldClient
+    it "should reject member after too many captcha attempts" testCaptchaTooManyAttempts
+    it "should respond to unknown command during captcha" testCaptchaUnknownCommand
   describe "store log" $ do
     it "should restore directory service state" testRestoreDirectory
   describe "captcha" $ do
     it "should accept some incorrect spellings" testCaptcha
+    it "should generate captcha of correct length" testGetCaptchaStr
+  describe "help commands" $ do
+    it "should not list audio command" testHelpNoAudio
+    it "should reject audio command in DM" testAudioCommandInDM
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
@@ -102,6 +113,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       nameSpellingFile = Nothing,
       profileNameLimit = maxBound,
       captchaGenerator = Nothing,
+      voiceCaptchaGenerator = Nothing,
       directoryLog = Just $ ps </> "directory_service.log",
       migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
@@ -404,9 +416,11 @@ testJoinGroup ps =
           cath <## "connection request sent!"
           cath <## "#privacy: joining the group..."
           cath <## "#privacy: you joined the group"
-          cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
-          cath <## "use @'SimpleX Directory' <message> to send messages"
-          cath <# ("#privacy 'SimpleX Directory'> " <> welcomeMsg)
+          cath
+            <### [ "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'",
+                   "use @'SimpleX Directory' <message> to send messages",
+                   Predicate (\l -> l == welcomeMsg || dropTime_ l == Just ("#privacy 'SimpleX Directory'> " <> welcomeMsg) || dropTime_ l == Just ("#privacy 'SimpleX Directory_1'> " <> welcomeMsg))
+                 ]
           cath <## "#privacy: member bob (Bob) is connected"
           bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
           bob <## "#privacy: new member cath is connected"
@@ -1225,6 +1239,285 @@ testCapthaScreening ps =
       cath <## "      Correct, you joined the group privacy"
       cath <## "#privacy: you joined the group"
 
+testVoiceCaptchaScreening :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaScreening ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen.py"
+  -- Mock script writes a dummy audio file, prints path and duration
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        -- get group link
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        -- enable captcha
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- cath joins, receives text captcha with /audio hint
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        cath <## "Send /audio to receive a voice captcha."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        -- cath requests audio captcha
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 1"
+        -- cath sends /audio again, already enabled
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath /audio"
+        cath <## "      Audio captcha is already enabled."
+        -- send correct captcha
+        sendCaptcha cath captcha
+        cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+  where
+    sendCaptcha cath captcha = do
+      cath #> ("#privacy (support) " <> captcha)
+      cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+      cath <## "      Correct, you joined the group privacy"
+      cath <## "#privacy: you joined the group"
+
+testVoiceCaptchaRetry :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaRetry ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen_retry.py"
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- cath joins, receives text captcha with /audio hint
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        cath <## "Send /audio to receive a voice captcha."
+        _ <- getTermLine cath -- captcha image/text
+        -- cath requests audio captcha
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 1"
+        -- cath sends WRONG answer after switching to audio mode
+        cath #> "#privacy (support) wrong_answer"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath wrong_answer"
+        cath <## "      Incorrect text, please try again."
+        -- KEY ASSERTION: retry sends BOTH image and voice because captchaMode=CMAudio
+        _ <- getTermLine cath -- captcha image/text
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 2"
+
+testVoiceCaptchaVoiceDisabled :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaVoiceDisabled ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen_vdisabled.py"
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- disable voice messages in the group
+        bob ##> "/set voice #privacy off"
+        bob <## "updated group preferences:"
+        bob <## "Voice messages: off"
+        -- cath (new client, supports v17 exemption) joins, /audio hint shown
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        cath <## "Send /audio to receive a voice captcha."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        -- voice captcha works despite voice being disabled (v17 host approval exemption)
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'> voice message (00:05)"
+        cath <#. "#privacy (support) 'SimpleX Directory'> sends file "
+        cath <##. "use /fr 1"
+        sendCaptcha cath captcha
+        cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+  where
+    sendCaptcha cath captcha = do
+      cath #> ("#privacy (support) " <> captcha)
+      cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+      cath <## "      Correct, you joined the group privacy"
+      cath <## "#privacy: you joined the group"
+
+testVoiceCaptchaOldClient :: HasCallStack => TestParams -> IO ()
+testVoiceCaptchaOldClient ps@TestParams {tmpPath} = do
+  let mockScript = tmpPath </> "mock_voice_gen_oldclient.py"
+  writeFile mockScript $ unlines
+    [ "#!/usr/bin/env python3",
+      "import os, tempfile",
+      "out = os.environ.get('VOICE_CAPTCHA_OUT')",
+      "if not out:",
+      "    fd, out = tempfile.mkstemp(suffix='.m4a')",
+      "    os.close(fd)",
+      "open(out, 'wb').write(b'\\x00' * 100)",
+      "print(out)",
+      "print(5)"
+    ]
+  setPermissions mockScript $ setOwnerExecutable True $ setOwnerReadable True $ setOwnerWritable True emptyPermissions
+  withDirectoryServiceVoiceCaptcha ps mockScript $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps testCfgVPrev "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        -- disable voice messages in the group
+        bob ##> "/set voice #privacy off"
+        bob <## "updated group preferences:"
+        bob <## "Voice messages: off"
+        -- cath (old client, max version < v17) joins, /audio hint NOT shown
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        -- /audio unavailable: old client can't receive voice in voice-disabled group
+        cath #> "#privacy (support) /audio"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath /audio"
+        cath <## "      Voice captcha is not available - please update SimpleX Chat to v6.5+ or use text captcha."
+        -- text captcha still works
+        sendCaptcha cath captcha
+        cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+  where
+    sendCaptcha cath captcha = do
+      cath #> ("#privacy (support) " <> captcha)
+      cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+      cath <## "      Correct, you joined the group privacy"
+      cath <## "#privacy: you joined the group"
+
+withDirectoryServiceVoiceCaptcha :: HasCallStack => TestParams -> FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceVoiceCaptcha ps voiceScript test = do
+  dsLink <-
+    withNewTestChatCfg ps testCfg serviceDbPrefix directoryProfile $ \ds ->
+      withNewTestChatCfg ps testCfg "super_user" aliceProfile $ \superUser -> do
+        connectUsers ds superUser
+        ds ##> "/ad"
+        getContactLink ds True
+  let opts = (mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing) {voiceCaptchaGenerator = Just voiceScript}
+  runDirectory testCfg opts $
+    withTestChatCfg ps testCfg "super_user" $ \superUser -> do
+      superUser <## "subscribed 1 connections on server localhost"
+      test superUser dsLink
+
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
   testListUserGroups False ps
@@ -1538,3 +1831,119 @@ groupNotFound_ suffix u s = do
   u #> ("@'SimpleX Directory" <> suffix <> "' " <> s)
   u <# ("'SimpleX Directory" <> suffix <> "'> > " <> s)
   u <## "      No groups found"
+
+testCaptchaTooManyAttempts :: HasCallStack => TestParams -> IO ()
+testCaptchaTooManyAttempts ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        _ <- getTermLine cath
+        forM_ [1 :: Int .. 4] $ \i -> do
+          cath #> "#privacy (support) wrong"
+          cath <# "#privacy (support) 'SimpleX Directory'!> > cath wrong"
+          if i == 4
+            then cath <## "      Incorrect text, please try again - this is your last attempt."
+            else cath <## "      Incorrect text, please try again."
+          _ <- getTermLine cath
+          pure ()
+        cath #> "#privacy (support) wrong"
+        cath <# "#privacy (support) 'SimpleX Directory'> Too many failed attempts, you can't join group."
+        -- member removal produces multiple messages
+        _ <- getTermLine cath
+        _ <- getTermLine cath
+        _ <- getTermLine cath
+        pure ()
+
+testCaptchaUnknownCommand :: HasCallStack => TestParams -> IO ()
+testCaptchaUnknownCommand ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        bob #> "@'SimpleX Directory' /role 1"
+        bob <# "'SimpleX Directory'> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /'role 1 observer' to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        bob #> "@'SimpleX Directory' /filter 1 captcha"
+        bob <# "'SimpleX Directory'> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        _ <- getTermLine cath
+        cath #> "#privacy (support) /help"
+        cath <# "#privacy (support) 'SimpleX Directory'!> > cath /help"
+        cath <## "      Unknown command, please enter captcha text."
+
+testHelpNoAudio :: HasCallStack => TestParams -> IO ()
+testHelpNoAudio ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      -- commands help should not mention /audio
+      bob #> "@'SimpleX Directory' /help commands"
+      bob <# "'SimpleX Directory'> /'help commands' - receive this help message."
+      bob <## "/help - how to register your group to be added to directory."
+      bob <## "/list - list the groups you registered."
+      bob <## "`/role <ID>` - view and set default member role for your group."
+      bob <## "`/filter <ID>` - view and set spam filter settings for group."
+      bob <## "`/link <ID>` - view and upgrade group link."
+      bob <## "`/delete <ID>:<NAME>` - remove the group you submitted from directory, with ID and name as shown by /list command."
+      bob <## ""
+      bob <## "To search for groups, send the search text."
+
+testAudioCommandInDM :: HasCallStack => TestParams -> IO ()
+testAudioCommandInDM ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      bob #> "@'SimpleX Directory' /audio"
+      bob <# "'SimpleX Directory'> > /audio"
+      bob <## "      Unknown command"
+
+testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
+testGetCaptchaStr _ps = do
+  s0 <- getCaptchaStr 0 ""
+  s0 `shouldBe` ""
+  s7 <- getCaptchaStr 7 ""
+  length s7 `shouldBe` 7
+  all (`elem` ("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" :: String)) s7 `shouldBe` True

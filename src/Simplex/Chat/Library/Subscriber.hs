@@ -703,8 +703,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
-                    currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-                    let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                    let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+                        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
                         groupInv =
                           GroupInvitation
                             { fromMember = MemberIdRole userMemberId userRole,
@@ -986,8 +986,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
           checkSendRcpt :: [AChatMessage] -> CM Bool
           checkSendRcpt aMsgs = do
-            currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-            let GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
+            let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+                GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
             pure $
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
                 && any aChatMsgHasReceipt aMsgs

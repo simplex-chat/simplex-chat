@@ -5,11 +5,13 @@
 //  Created by EP on 01/05/2025.
 //  Copyright © 2025 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/api.md
 
 import SimpleXChat
 import SwiftUI
 
 // some constructors are used in SEChatCommand or NSEChatCommand types as well - they must be syncronised
+// Spec: spec/api.md#ChatCommand
 enum ChatCommand: ChatCmdProtocol {
     case showActiveUser
     case createActiveUser(profile: Profile?, pastTimestamp: Bool)
@@ -648,6 +650,7 @@ enum ChatCommand: ChatCmdProtocol {
 }
 
 // ChatResponse is split to three enums to reduce stack size used when parsing it, parsing large enums is very inefficient.
+// Spec: spec/api.md#ChatResponse0
 enum ChatResponse0: Decodable, ChatAPIResult {
     case activeUser(user: User)
     case usersList(users: [UserInfo])
@@ -769,6 +772,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatResponse1
 enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
@@ -908,6 +912,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatResponse2
 enum ChatResponse2: Decodable, ChatAPIResult {
     // group responses
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
@@ -1054,6 +1059,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatEvent
 enum ChatEvent: Decodable, ChatAPIResult {
     case chatSuspended
     case contactSwitch(user: UserRef, contact: Contact, switchProgress: SwitchProgress)

@@ -5,10 +5,12 @@
 //  Created by JRoberts on 20.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIEventView
 struct CIEventView: View {
     var eventText: Text
 
