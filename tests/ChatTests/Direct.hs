@@ -2358,10 +2358,8 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 2000000
-
-      -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      -- second user messages are deleted (cleanup manager interval = 500ms, ttl = 1s)
+      waitUntilExpired alice "@6" [(1, "chat banner")]
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "subscribed 1 connections on server localhost"
@@ -2377,12 +2375,17 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
-
-      -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      -- second user messages are deleted (cleanup manager interval = 500ms, ttl = 1s)
+      waitUntilExpired alice "@6" [(1, "chat banner")]
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
+    waitUntilExpired cc chatRef expected = do
+      let go 0 = cc #$> ("/_get chat " <> chatRef <> " count=100", chat, expected)
+          go n = do
+            cc ##> ("/_get chat " <> chatRef <> " count=100")
+            r <- chat <$> getTermLine cc
+            if r == expected then pure () else threadDelay 500000 >> go (n - 1)
+      go (10 :: Int)
 
 testUsersTimedMessages :: HasCallStack => TestParams -> IO ()
 testUsersTimedMessages ps' = do
