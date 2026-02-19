@@ -26,16 +26,6 @@ When `ChatModel.chatInitialized` transitions to `true`, the chat list appears fu
 
 ---
 
-## Flows: File Transfer
-
-### GAP: No resume for interrupted XFTP uploads
-**Source:** [spec/services/files.md](../spec/services/files.md)
-If an XFTP upload is interrupted (app killed, network loss), the upload must be restarted from scratch. There is no chunk-level resume.
-
-**REC:** Investigate XFTP protocol support for resumable uploads at the chunk level.
-
----
-
 ## Flows: Group Lifecycle
 
 ### GAP: Bulk member role change — API supports batch but UI uses single-member calls
