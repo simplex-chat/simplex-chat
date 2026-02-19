@@ -68,21 +68,21 @@ struct ActiveTheme: Equatable {
 
 | Method | Purpose | Line |
 |--------|---------|------|
-| [`applyTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L124) | Apply a theme by name, updates `AppTheme.shared` | [L118](../../Shared/Theme/ThemeManager.swift#L124) |
-| [`currentColors(...)`](../../Shared/Theme/ThemeManager.swift#L64) | Resolve full theme from all layers | [L60](../../Shared/Theme/ThemeManager.swift#L64) |
-| [`defaultActiveTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L48) | Get default theme override from app settings | [L45](../../Shared/Theme/ThemeManager.swift#L48) |
-| [`currentThemeOverridesForExport(...)`](../../Shared/Theme/ThemeManager.swift#L105) | Get current overrides for YAML export | [L100](../../Shared/Theme/ThemeManager.swift#L105) |
-| [`adjustWindowStyle()`](../../Shared/Theme/ThemeManager.swift#L136) | Adjust window style after theme change | [L129](../../Shared/Theme/ThemeManager.swift#L136) |
-| [`changeDarkTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L166) | Change the dark theme variant | [L159](../../Shared/Theme/ThemeManager.swift#L166) |
-| [`saveAndApplyThemeColor(...)`](../../Shared/Theme/ThemeManager.swift#L173) | Save and apply a theme color override | [L165](../../Shared/Theme/ThemeManager.swift#L173) |
-| [`applyThemeColor(...)`](../../Shared/Theme/ThemeManager.swift#L186) | Apply a theme color to a binding | [L178](../../Shared/Theme/ThemeManager.swift#L186) |
-| [`saveAndApplyWallpaper(...)`](../../Shared/Theme/ThemeManager.swift#L191) | Save and apply a wallpaper change | [L182](../../Shared/Theme/ThemeManager.swift#L191) |
-| [`copyFromSameThemeOverrides(...)`](../../Shared/Theme/ThemeManager.swift#L213) | Copy overrides from matching theme | [L204](../../Shared/Theme/ThemeManager.swift#L213) |
-| [`applyWallpaper(...)`](../../Shared/Theme/ThemeManager.swift#L256) | Apply wallpaper to a binding | [L247](../../Shared/Theme/ThemeManager.swift#L256) |
-| [`saveAndApplyThemeOverrides(...)`](../../Shared/Theme/ThemeManager.swift#L267) | Save and apply full theme overrides | [L257](../../Shared/Theme/ThemeManager.swift#L267) |
-| [`resetAllThemeColors(_:)`](../../Shared/Theme/ThemeManager.swift#L288) | Reset all color overrides (CodableDefault) | [L277](../../Shared/Theme/ThemeManager.swift#L288) |
-| [`resetAllThemeColors(_:)`](../../Shared/Theme/ThemeManager.swift#L302) | Reset all color overrides (Binding) | [L291](../../Shared/Theme/ThemeManager.swift#L302) |
-| [`removeTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L311) | Remove a saved theme by ID | [L299](../../Shared/Theme/ThemeManager.swift#L311) |
+| [`applyTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L124) | Apply a theme by name, updates `AppTheme.shared` | [L124](../../Shared/Theme/ThemeManager.swift#L124) |
+| [`currentColors(...)`](../../Shared/Theme/ThemeManager.swift#L64) | Resolve full theme from all layers | [L64](../../Shared/Theme/ThemeManager.swift#L64) |
+| [`defaultActiveTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L48) | Get default theme override from app settings | [L48](../../Shared/Theme/ThemeManager.swift#L48) |
+| [`currentThemeOverridesForExport(...)`](../../Shared/Theme/ThemeManager.swift#L105) | Get current overrides for YAML export | [L105](../../Shared/Theme/ThemeManager.swift#L105) |
+| [`adjustWindowStyle()`](../../Shared/Theme/ThemeManager.swift#L136) | Adjust window style after theme change | [L136](../../Shared/Theme/ThemeManager.swift#L136) |
+| [`changeDarkTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L166) | Change the dark theme variant | [L166](../../Shared/Theme/ThemeManager.swift#L166) |
+| [`saveAndApplyThemeColor(...)`](../../Shared/Theme/ThemeManager.swift#L173) | Save and apply a theme color override | [L173](../../Shared/Theme/ThemeManager.swift#L173) |
+| [`applyThemeColor(...)`](../../Shared/Theme/ThemeManager.swift#L186) | Apply a theme color to a binding | [L186](../../Shared/Theme/ThemeManager.swift#L186) |
+| [`saveAndApplyWallpaper(...)`](../../Shared/Theme/ThemeManager.swift#L191) | Save and apply a wallpaper change | [L191](../../Shared/Theme/ThemeManager.swift#L191) |
+| [`copyFromSameThemeOverrides(...)`](../../Shared/Theme/ThemeManager.swift#L213) | Copy overrides from matching theme | [L213](../../Shared/Theme/ThemeManager.swift#L213) |
+| [`applyWallpaper(...)`](../../Shared/Theme/ThemeManager.swift#L256) | Apply wallpaper to a binding | [L256](../../Shared/Theme/ThemeManager.swift#L256) |
+| [`saveAndApplyThemeOverrides(...)`](../../Shared/Theme/ThemeManager.swift#L267) | Save and apply full theme overrides | [L267](../../Shared/Theme/ThemeManager.swift#L267) |
+| [`resetAllThemeColors(_:)`](../../Shared/Theme/ThemeManager.swift#L288) | Reset all color overrides (CodableDefault) | [L288](../../Shared/Theme/ThemeManager.swift#L288) |
+| [`resetAllThemeColors(_:)`](../../Shared/Theme/ThemeManager.swift#L302) | Reset all color overrides (Binding) | [L302](../../Shared/Theme/ThemeManager.swift#L302) |
+| [`removeTheme(_:)`](../../Shared/Theme/ThemeManager.swift#L311) | Remove a saved theme by ID | [L311](../../Shared/Theme/ThemeManager.swift#L311) |
 
 ### Theme Resolution Algorithm
 
@@ -310,7 +310,7 @@ Configurable bubble appearance properties:
 | `chatItemTail` | Whether bubbles have a tail/arrow | App settings |
 | Avatar corner radius | Roundness of profile avatars | App settings |
 
-These are configured in [`Shared/Views/UserSettings/AppearanceSettings.swift`](../../Shared/Views/UserSettings/AppearanceSettings.swift) ([L25](../../Shared/Views/UserSettings/AppearanceSettings.swift#L26)).
+These are configured in [`Shared/Views/UserSettings/AppearanceSettings.swift`](../../Shared/Views/UserSettings/AppearanceSettings.swift) ([L26](../../Shared/Views/UserSettings/AppearanceSettings.swift#L26)).
 
 ---
 
@@ -331,8 +331,8 @@ Users can force light or dark mode regardless of system setting by selecting a s
 [`systemInDarkThemeCurrently`](../../Shared/Theme/Theme.swift#L95):
 
 ```swift
-static var systemInDarkThemeCurrently: Bool {
-    UIScreen.main.traitCollection.userInterfaceStyle == .dark
+var systemInDarkThemeCurrently: Bool {
+    return UITraitCollection.current.userInterfaceStyle == .dark
 }
 ```
 
@@ -356,10 +356,10 @@ Key functions in [`AppearanceSettings.swift`](../../Shared/Views/UserSettings/Ap
 
 | Function | Purpose | Line |
 |----------|---------|------|
-| [`ImportExportThemeSection`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L603) | UI section for import/export controls | [L600](../../Shared/Views/UserSettings/AppearanceSettings.swift#L603) |
-| [`ThemeImporter`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L640) | ViewModifier for YAML file import | [L636](../../Shared/Views/UserSettings/AppearanceSettings.swift#L640) |
-| [`decodeYAML(_:)`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1150) | Parse YAML string into Decodable type | [L1145](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1150) |
-| [`encodeThemeOverrides(_:)`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1160) | Encode ThemeOverrides to YAML string | [L1154](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1160) |
+| [`ImportExportThemeSection`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L603) | UI section for import/export controls | [L603](../../Shared/Views/UserSettings/AppearanceSettings.swift#L603) |
+| [`ThemeImporter`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L640) | ViewModifier for YAML file import | [L640](../../Shared/Views/UserSettings/AppearanceSettings.swift#L640) |
+| [`decodeYAML(_:)`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1150) | Parse YAML string into Decodable type | [L1150](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1150) |
+| [`encodeThemeOverrides(_:)`](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1160) | Encode ThemeOverrides to YAML string | [L1160](../../Shared/Views/UserSettings/AppearanceSettings.swift#L1160) |
 
 ### Toolbar Material
 

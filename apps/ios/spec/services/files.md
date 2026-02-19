@@ -85,9 +85,9 @@ Files below certain size thresholds are automatically accepted and downloaded wi
 
 | Media Type | Auto-Receive Threshold | Constant | Line |
 |------------|----------------------|----------|------|
-| Images | 510 KB | [`MAX_IMAGE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L21) | [L19](../../SimpleXChat/FileUtils.swift#L21) |
-| Voice messages | 510 KB | [`MAX_VOICE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L24) | [L21](../../SimpleXChat/FileUtils.swift#L24) |
-| Video | 1023 KB | [`MAX_VIDEO_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L27) | [L23](../../SimpleXChat/FileUtils.swift#L27) |
+| Images | 510 KB | [`MAX_IMAGE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L21) | [L21](../../SimpleXChat/FileUtils.swift#L21) |
+| Voice messages | 510 KB | [`MAX_VOICE_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L24) | [L24](../../SimpleXChat/FileUtils.swift#L24) |
+| Video | 1023 KB | [`MAX_VIDEO_SIZE_AUTO_RCV`](../../SimpleXChat/FileUtils.swift#L27) | [L27](../../SimpleXChat/FileUtils.swift#L27) |
 | Other files | Not auto-received | Requires manual acceptance | -- |
 
 ### Behavior
@@ -110,14 +110,14 @@ Defined in [`SimpleXChat/FileUtils.swift`](../../SimpleXChat/FileUtils.swift):
 
 | Constant | Value | Line |
 |----------|-------|------|
-| `MAX_IMAGE_SIZE` | 261,120 (255 KB) | [L17](../../SimpleXChat/FileUtils.swift#L18) |
-| `MAX_IMAGE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L19](../../SimpleXChat/FileUtils.swift#L21) |
-| `MAX_VOICE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L21](../../SimpleXChat/FileUtils.swift#L24) |
-| `MAX_VIDEO_SIZE_AUTO_RCV` | 1,047,552 (1023 KB) | [L23](../../SimpleXChat/FileUtils.swift#L27) |
-| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 (1 GB) | [L25](../../SimpleXChat/FileUtils.swift#L30) |
-| `MAX_FILE_SIZE_LOCAL` | Int64.max (no limit) | [L27](../../SimpleXChat/FileUtils.swift#L32) |
-| `MAX_FILE_SIZE_SMP` | 8,000,000 (~7.6 MB) | [L29](../../SimpleXChat/FileUtils.swift#L34) |
-| `MAX_VOICE_MESSAGE_LENGTH` | 300 s (5 min) | [L31](../../SimpleXChat/FileUtils.swift#L36) |
+| `MAX_IMAGE_SIZE` | 261,120 (255 KB) | [L18](../../SimpleXChat/FileUtils.swift#L18) |
+| `MAX_IMAGE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L21](../../SimpleXChat/FileUtils.swift#L21) |
+| `MAX_VOICE_SIZE_AUTO_RCV` | 522,240 (510 KB) | [L24](../../SimpleXChat/FileUtils.swift#L24) |
+| `MAX_VIDEO_SIZE_AUTO_RCV` | 1,047,552 (1023 KB) | [L27](../../SimpleXChat/FileUtils.swift#L27) |
+| `MAX_FILE_SIZE_XFTP` | 1,073,741,824 (1 GB) | [L30](../../SimpleXChat/FileUtils.swift#L30) |
+| `MAX_FILE_SIZE_LOCAL` | Int64.max (no limit) | [L32](../../SimpleXChat/FileUtils.swift#L32) |
+| `MAX_FILE_SIZE_SMP` | 8,000,000 (~7.6 MB) | [L34](../../SimpleXChat/FileUtils.swift#L34) |
+| `MAX_VOICE_MESSAGE_LENGTH` | 300 s (5 min) | [L36](../../SimpleXChat/FileUtils.swift#L36) |
 
 ```swift
 // Image compression target for inline transfer
@@ -206,7 +206,7 @@ struct CryptoFileArgs {
 }
 ```
 
-> Defined in [`ChatTypes.swift` L4238](../../SimpleXChat/ChatTypes.swift#L4241) (`CryptoFile`) and [L4285](../../SimpleXChat/ChatTypes.swift#L4289) (`CryptoFileArgs`).
+> Defined in [`ChatTypes.swift` L4241](../../SimpleXChat/ChatTypes.swift#L4241) (`CryptoFile`) and [L4289](../../SimpleXChat/ChatTypes.swift#L4289) (`CryptoFileArgs`).
 
 ### Encryption Operations (C FFI)
 
@@ -214,10 +214,10 @@ Implemented in [`CryptoFile.swift`](../../SimpleXChat/CryptoFile.swift):
 
 | Function | Purpose | Line |
 |----------|---------|------|
-| [`writeCryptoFile`](../../SimpleXChat/CryptoFile.swift#L18) | Write encrypted file, returns `CryptoFileArgs` | [L17](../../SimpleXChat/CryptoFile.swift#L18) |
-| [`readCryptoFile`](../../SimpleXChat/CryptoFile.swift#L31) | Read and decrypt file, returns `Data` | [L29](../../SimpleXChat/CryptoFile.swift#L31) |
-| [`encryptCryptoFile`](../../SimpleXChat/CryptoFile.swift#L54) | Encrypt existing file to new path | [L51](../../SimpleXChat/CryptoFile.swift#L54) |
-| [`decryptCryptoFile`](../../SimpleXChat/CryptoFile.swift#L66) | Decrypt file to new path | [L62](../../SimpleXChat/CryptoFile.swift#L66) |
+| [`writeCryptoFile`](../../SimpleXChat/CryptoFile.swift#L18) | Write encrypted file, returns `CryptoFileArgs` | [L18](../../SimpleXChat/CryptoFile.swift#L18) |
+| [`readCryptoFile`](../../SimpleXChat/CryptoFile.swift#L31) | Read and decrypt file, returns `Data` | [L31](../../SimpleXChat/CryptoFile.swift#L31) |
+| [`encryptCryptoFile`](../../SimpleXChat/CryptoFile.swift#L54) | Encrypt existing file to new path | [L54](../../SimpleXChat/CryptoFile.swift#L54) |
+| [`decryptCryptoFile`](../../SimpleXChat/CryptoFile.swift#L66) | Decrypt file to new path | [L66](../../SimpleXChat/CryptoFile.swift#L66) |
 
 ### Storage
 
@@ -233,11 +233,11 @@ Implemented in [`CryptoFile.swift`](../../SimpleXChat/CryptoFile.swift):
 
 | Function | Path | Line |
 |----------|------|------|
-| [`getAppFilesDirectory()`](../../SimpleXChat/FileUtils.swift#L208) | `Documents/files/` | [L195](../../SimpleXChat/FileUtils.swift#L208) |
-| [`getTempFilesDirectory()`](../../SimpleXChat/FileUtils.swift#L199) | `Documents/temp_files/` | [L187](../../SimpleXChat/FileUtils.swift#L199) |
-| [`getWallpaperDirectory()`](../../SimpleXChat/FileUtils.swift#L217) | `Documents/wallpapers/` | [L203](../../SimpleXChat/FileUtils.swift#L217) |
-| [`getAppFilePath(_:)`](../../SimpleXChat/FileUtils.swift#L212) | `Documents/files/{filename}` | [L199](../../SimpleXChat/FileUtils.swift#L212) |
-| [`getWallpaperFilePath(_:)`](../../SimpleXChat/FileUtils.swift#L221) | `Documents/wallpapers/{filename}` | [L207](../../SimpleXChat/FileUtils.swift#L221) |
+| [`getAppFilesDirectory()`](../../SimpleXChat/FileUtils.swift#L208) | `Documents/files/` | [L208](../../SimpleXChat/FileUtils.swift#L208) |
+| [`getTempFilesDirectory()`](../../SimpleXChat/FileUtils.swift#L199) | `Documents/temp_files/` | [L199](../../SimpleXChat/FileUtils.swift#L199) |
+| [`getWallpaperDirectory()`](../../SimpleXChat/FileUtils.swift#L217) | `Documents/wallpapers/` | [L217](../../SimpleXChat/FileUtils.swift#L217) |
+| [`getAppFilePath(_:)`](../../SimpleXChat/FileUtils.swift#L212) | `Documents/files/{filename}` | [L212](../../SimpleXChat/FileUtils.swift#L212) |
+| [`getWallpaperFilePath(_:)`](../../SimpleXChat/FileUtils.swift#L221) | `Documents/wallpapers/{filename}` | [L221](../../SimpleXChat/FileUtils.swift#L221) |
 
 ```swift
 func getAppFilesDirectory() -> URL    // Documents/files/
@@ -300,12 +300,12 @@ Cancels an in-progress upload or download. For XFTP transfers, also requests chu
 
 | Function | Purpose | Line |
 |----------|---------|------|
-| [`cleanupFile(_:)`](../../SimpleXChat/FileUtils.swift#L267) | Remove file associated with a chat item | [L249](../../SimpleXChat/FileUtils.swift#L267) |
-| [`cleanupDirectFile(_:)`](../../SimpleXChat/FileUtils.swift#L260) | Remove file only for direct chats | [L243](../../SimpleXChat/FileUtils.swift#L260) |
-| [`removeFile(_:)`](../../SimpleXChat/FileUtils.swift#L243) | Delete file at URL | [L227](../../SimpleXChat/FileUtils.swift#L243) |
-| [`removeFile(_:)`](../../SimpleXChat/FileUtils.swift#L251) | Delete file by name | [L235](../../SimpleXChat/FileUtils.swift#L251) |
-| [`deleteAppFiles()`](../../SimpleXChat/FileUtils.swift#L108) | Remove all app files (preserving databases) | [L97](../../SimpleXChat/FileUtils.swift#L108) |
-| [`deleteAppDatabaseAndFiles()`](../../SimpleXChat/FileUtils.swift#L86) | Remove everything | [L76](../../SimpleXChat/FileUtils.swift#L86) |
+| [`cleanupFile(_:)`](../../SimpleXChat/FileUtils.swift#L267) | Remove file associated with a chat item | [L267](../../SimpleXChat/FileUtils.swift#L267) |
+| [`cleanupDirectFile(_:)`](../../SimpleXChat/FileUtils.swift#L260) | Remove file only for direct chats | [L260](../../SimpleXChat/FileUtils.swift#L260) |
+| [`removeFile(_:)`](../../SimpleXChat/FileUtils.swift#L243) | Delete file at URL | [L243](../../SimpleXChat/FileUtils.swift#L243) |
+| [`removeFile(_:)`](../../SimpleXChat/FileUtils.swift#L251) | Delete file by name | [L251](../../SimpleXChat/FileUtils.swift#L251) |
+| [`deleteAppFiles()`](../../SimpleXChat/FileUtils.swift#L108) | Remove all app files (preserving databases) | [L108](../../SimpleXChat/FileUtils.swift#L108) |
+| [`deleteAppDatabaseAndFiles()`](../../SimpleXChat/FileUtils.swift#L86) | Remove everything | [L86](../../SimpleXChat/FileUtils.swift#L86) |
 
 - When a `ChatItem` is deleted, its associated file is deleted from disk
 - When a timed message expires, its file is deleted
@@ -319,31 +319,31 @@ Cancels an in-progress upload or download. For XFTP transfers, also requests chu
 
 | Command | Parameters | Description | Line |
 |---------|-----------|-------------|------|
-| [`receiveFile`](../../Shared/Model/AppAPITypes.swift#L167) | `fileId, userApprovedRelays, encrypted, inline` | Accept and start downloading a file | [L166](../../Shared/Model/AppAPITypes.swift#L167) |
-| [`setFileToReceive`](../../Shared/Model/AppAPITypes.swift#L168) | `fileId, userApprovedRelays, encrypted` | Mark file for auto-receive (no immediate download) | [L167](../../Shared/Model/AppAPITypes.swift#L168) |
-| [`cancelFile`](../../Shared/Model/AppAPITypes.swift#L169) | `fileId` | Cancel in-progress transfer | [L168](../../Shared/Model/AppAPITypes.swift#L169) |
-| [`apiUploadStandaloneFile`](../../Shared/Model/AppAPITypes.swift#L179) | `userId, file: CryptoFile` | Upload file to XFTP without a chat context | [L178](../../Shared/Model/AppAPITypes.swift#L179) |
-| [`apiDownloadStandaloneFile`](../../Shared/Model/AppAPITypes.swift#L180) | `userId, url, file: CryptoFile` | Download from XFTP URL | [L179](../../Shared/Model/AppAPITypes.swift#L180) |
-| [`apiStandaloneFileInfo`](../../Shared/Model/AppAPITypes.swift#L181) | `url` | Get metadata for an XFTP URL | [L180](../../Shared/Model/AppAPITypes.swift#L181) |
+| [`receiveFile`](../../Shared/Model/AppAPITypes.swift#L167) | `fileId, userApprovedRelays, encrypted, inline` | Accept and start downloading a file | [L167](../../Shared/Model/AppAPITypes.swift#L167) |
+| [`setFileToReceive`](../../Shared/Model/AppAPITypes.swift#L168) | `fileId, userApprovedRelays, encrypted` | Mark file for auto-receive (no immediate download) | [L168](../../Shared/Model/AppAPITypes.swift#L168) |
+| [`cancelFile`](../../Shared/Model/AppAPITypes.swift#L169) | `fileId` | Cancel in-progress transfer | [L169](../../Shared/Model/AppAPITypes.swift#L169) |
+| [`apiUploadStandaloneFile`](../../Shared/Model/AppAPITypes.swift#L179) | `userId, file: CryptoFile` | Upload file to XFTP without a chat context | [L179](../../Shared/Model/AppAPITypes.swift#L179) |
+| [`apiDownloadStandaloneFile`](../../Shared/Model/AppAPITypes.swift#L180) | `userId, url, file: CryptoFile` | Download from XFTP URL | [L180](../../Shared/Model/AppAPITypes.swift#L180) |
+| [`apiStandaloneFileInfo`](../../Shared/Model/AppAPITypes.swift#L181) | `url` | Get metadata for an XFTP URL | [L181](../../Shared/Model/AppAPITypes.swift#L181) |
 
 ### File Transfer Events
 
 | Event | Description | Line |
 |-------|-------------|------|
-| [`rcvFileAccepted`](../../Shared/Model/AppAPITypes.swift#L1095) | Download request accepted | [L1090](../../Shared/Model/AppAPITypes.swift#L1095) |
-| [`rcvFileStart`](../../Shared/Model/AppAPITypes.swift#L1097) | Download started | [L1092](../../Shared/Model/AppAPITypes.swift#L1097) |
-| [`rcvFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1098) | Download progress (receivedSize, totalSize) | [L1093](../../Shared/Model/AppAPITypes.swift#L1098) |
-| [`rcvFileComplete`](../../Shared/Model/AppAPITypes.swift#L1099) | Download complete | [L1094](../../Shared/Model/AppAPITypes.swift#L1099) |
-| [`rcvFileSndCancelled`](../../Shared/Model/AppAPITypes.swift#L1101) | Sender cancelled the transfer | [L1096](../../Shared/Model/AppAPITypes.swift#L1101) |
-| [`rcvFileError`](../../Shared/Model/AppAPITypes.swift#L1102) | Download failed | [L1097](../../Shared/Model/AppAPITypes.swift#L1102) |
-| [`rcvFileWarning`](../../Shared/Model/AppAPITypes.swift#L1103) | Download warning (non-fatal) | [L1098](../../Shared/Model/AppAPITypes.swift#L1103) |
-| [`sndFileStart`](../../Shared/Model/AppAPITypes.swift#L1105) | Upload started | [L1100](../../Shared/Model/AppAPITypes.swift#L1105) |
-| [`sndFileComplete`](../../Shared/Model/AppAPITypes.swift#L1106) | Inline upload complete | [L1101](../../Shared/Model/AppAPITypes.swift#L1106) |
-| [`sndFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1108) | XFTP upload progress (sentSize, totalSize) | [L1103](../../Shared/Model/AppAPITypes.swift#L1108) |
-| [`sndFileCompleteXFTP`](../../Shared/Model/AppAPITypes.swift#L1110) | XFTP upload complete | [L1105](../../Shared/Model/AppAPITypes.swift#L1110) |
-| [`sndFileRcvCancelled`](../../Shared/Model/AppAPITypes.swift#L1107) | Receiver cancelled | [L1102](../../Shared/Model/AppAPITypes.swift#L1107) |
-| [`sndFileError`](../../Shared/Model/AppAPITypes.swift#L1112) | Upload failed | [L1107](../../Shared/Model/AppAPITypes.swift#L1112) |
-| [`sndFileWarning`](../../Shared/Model/AppAPITypes.swift#L1113) | Upload warning (non-fatal) | [L1108](../../Shared/Model/AppAPITypes.swift#L1113) |
+| [`rcvFileAccepted`](../../Shared/Model/AppAPITypes.swift#L1095) | Download request accepted | [L1095](../../Shared/Model/AppAPITypes.swift#L1095) |
+| [`rcvFileStart`](../../Shared/Model/AppAPITypes.swift#L1097) | Download started | [L1097](../../Shared/Model/AppAPITypes.swift#L1097) |
+| [`rcvFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1098) | Download progress (receivedSize, totalSize) | [L1098](../../Shared/Model/AppAPITypes.swift#L1098) |
+| [`rcvFileComplete`](../../Shared/Model/AppAPITypes.swift#L1099) | Download complete | [L1099](../../Shared/Model/AppAPITypes.swift#L1099) |
+| [`rcvFileSndCancelled`](../../Shared/Model/AppAPITypes.swift#L1101) | Sender cancelled the transfer | [L1101](../../Shared/Model/AppAPITypes.swift#L1101) |
+| [`rcvFileError`](../../Shared/Model/AppAPITypes.swift#L1102) | Download failed | [L1102](../../Shared/Model/AppAPITypes.swift#L1102) |
+| [`rcvFileWarning`](../../Shared/Model/AppAPITypes.swift#L1103) | Download warning (non-fatal) | [L1103](../../Shared/Model/AppAPITypes.swift#L1103) |
+| [`sndFileStart`](../../Shared/Model/AppAPITypes.swift#L1105) | Upload started | [L1105](../../Shared/Model/AppAPITypes.swift#L1105) |
+| [`sndFileComplete`](../../Shared/Model/AppAPITypes.swift#L1106) | Inline upload complete | [L1106](../../Shared/Model/AppAPITypes.swift#L1106) |
+| [`sndFileProgressXFTP`](../../Shared/Model/AppAPITypes.swift#L1108) | XFTP upload progress (sentSize, totalSize) | [L1108](../../Shared/Model/AppAPITypes.swift#L1108) |
+| [`sndFileCompleteXFTP`](../../Shared/Model/AppAPITypes.swift#L1110) | XFTP upload complete | [L1110](../../Shared/Model/AppAPITypes.swift#L1110) |
+| [`sndFileRcvCancelled`](../../Shared/Model/AppAPITypes.swift#L1107) | Receiver cancelled | [L1107](../../Shared/Model/AppAPITypes.swift#L1107) |
+| [`sndFileError`](../../Shared/Model/AppAPITypes.swift#L1112) | Upload failed | [L1112](../../Shared/Model/AppAPITypes.swift#L1112) |
+| [`sndFileWarning`](../../Shared/Model/AppAPITypes.swift#L1113) | Upload warning (non-fatal) | [L1113](../../Shared/Model/AppAPITypes.swift#L1113) |
 
 ---
 

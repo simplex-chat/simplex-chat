@@ -31,7 +31,7 @@ struct ContentView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
 
-    // Spec: spec/client/navigation.md#contentViewState
+    // Spec: spec/client/navigation.md#contentAccessAuthenticationExtended
     var contentAccessAuthenticationExtended: Bool
 
     @Environment(\.scenePhase) var scenePhase
