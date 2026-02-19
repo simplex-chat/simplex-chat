@@ -5,12 +5,14 @@
 //  Created by Avently on 30/03/2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import AVKit
 import SimpleXChat
 import Combine
 
+// Spec: spec/client/chat-view.md#CIVideoView
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem
