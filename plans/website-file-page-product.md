@@ -18,7 +18,7 @@
 
 This page is a **conversion point**. Its primary goal is to get people to download the SimpleX app.
 
-The file transfer is a **live demo** — proof that SimpleX's encryption and privacy infrastructure actually works, right in the browser, without installing anything. The user experiences the technology firsthand: they drop a file, it gets encrypted in their browser, uploaded to XFTP servers with no accounts or identifiers, and the recipient downloads it with a link that contains the decryption key in the hash fragment (which browsers never send to any server).
+The file transfer is a **live demo** — proof that SimpleX's encryption and privacy infrastructure actually works, right in the browser, without installing anything. The user experiences the technology firsthand: they drop a file, it gets encrypted in their browser, uploaded to XFTP servers with no accounts or identifiers, and the recipient downloads it with a link that contains the decryption key in the URL fragment (which browsers never send to any server).
 
 After experiencing this, the page makes the case: *what you just used is a tiny fraction of what the SimpleX app does. The app uses the same protocol — and much more — for messaging, calls, groups, and file sharing. No user IDs. No phone numbers. The most private communication platform that exists.*
 
@@ -36,7 +36,7 @@ The file transfer tool by itself is useful — but it exists to showcase the pro
 
 ### Who arrives at this page
 
-**Path 1: Referred by a SimpleX user.** Someone sends them a file link (`simplex.chat/file/#...`). They click it, download a file, and land on a page that explains what just happened and why they should get the app. This is the highest-intent path — they've already interacted with the SimpleX ecosystem.
+**Path 1: Referred by a SimpleX user.** Someone sends them a file link. They click it, download a file, and land on a page that explains what just happened and why they should get the app. This is the highest-intent path — they've already interacted with the SimpleX ecosystem.
 
 **Path 2: Privacy-curious visitors.** People browsing simplex.chat who click "File" in the navbar. They're already interested in SimpleX, and the file transfer demo gives them something to try immediately, without commitment.
 
@@ -65,7 +65,7 @@ This section defines the protocol properties that the page must communicate to u
 
 ### No user identifiers at any level
 
-XFTP has no accounts, no usernames, no email addresses, no phone numbers, no device tokens, no persistent IDs of any kind. Not even random numbers. Each file chunk uses a fresh, random Ed25519 credential that is used once and discarded. The server has no concept of "users" — it only sees isolated, anonymous chunk operations.
+XFTP has no accounts, no usernames, no email addresses, no phone numbers, no device tokens, no persistent IDs of any kind. Not even random numbers. Each file chunk uses a fresh, random credential that is used once and discarded. The server has no concept of "users" — it only sees isolated, anonymous chunk operations.
 
 This is not a feature bolted onto an existing system. The protocol was designed from the ground up to have no identifiers. SimpleX is the first communication platform to achieve this.
 
@@ -73,9 +73,9 @@ This is not a feature bolted onto an existing system. The protocol was designed 
 
 Every file transfer has three independent layers of encryption:
 
-1. **TLS transport** — standard HTTPS/HTTP2 encryption for the network connection
-2. **Per-recipient transit encryption** — each download uses an ephemeral Diffie-Hellman key exchange (NaCl crypto_box / X25519-XSalsa20-Poly1305), so the ciphertext is different for every recipient, even for the same chunk. This means there are no identifiers or ciphertext in common between sent and received traffic inside TLS — even if TLS is compromised, traffic correlation is frustrated.
-3. **File-level E2E encryption** — the entire file is encrypted with a random symmetric key (NaCl secret_box / XSalsa20-Poly1305) before upload. The key is in the URL hash fragment, which browsers never send to any server.
+1. **TLS transport** — standard HTTPS encryption for the network connection
+2. **Per-recipient transit encryption** — each download uses a unique ephemeral key exchange, so the ciphertext is different for every recipient, even for the same chunk. There are no identifiers or ciphertext in common between sent and received traffic — even if TLS is compromised, traffic correlation is frustrated.
+3. **File-level end-to-end encryption** — the entire file is encrypted with a random key before upload. The key is in the URL fragment, which browsers never send to any server.
 
 No other file transfer service has all three layers. Most have only TLS.
 
@@ -83,13 +83,13 @@ No other file transfer service has all three layers. Most have only TLS.
 
 The protocol is designed so that even if TLS is compromised, an attacker monitoring server traffic cannot easily correlate senders and recipients:
 
-- **No shared ciphertext**: each recipient's download is encrypted with a unique DH key. The bytes going in (upload) and coming out (download) are completely different, even for the same chunk.
+- **No shared ciphertext**: each recipient's download is encrypted with a unique key. The bytes going in (upload) and coming out (download) are completely different, even for the same chunk.
 - **No shared identifiers**: sender and recipient IDs are different random values for every chunk.
-- **Fixed chunk sizes**: files are split into fixed-size chunks (64KB, 256KB, 1MB, 4MB). A large file looks indistinguishable from many small files to the server.
+- **Fixed chunk sizes**: files are split into fixed-size chunks. A large file looks indistinguishable from many small files to the server.
 
 ### Multi-operator, zero-trust architecture
 
-File chunks are distributed across servers operated by independent parties (SimpleX and Flux — 12 servers total). No single operator sees all chunks of a file. Even if one operator is compromised, they only see encrypted fragments with no way to reconstruct the file.
+File chunks are distributed across servers operated by independent parties (SimpleX and Flux). No single operator sees all chunks of a file. Even if one operator is compromised, they only see encrypted fragments with no way to reconstruct the file.
 
 Users can also self-host XFTP servers — the protocol is open and the server software is open-source.
 
@@ -139,31 +139,27 @@ Files expire automatically (approximately 48 hours). There is no persistent stor
 
 3. **Transparency without jargon.** Show what's happening (encrypting, uploading, done) and explain the security properties in plain language. Technical users can read the protocol spec linked at the bottom.
 
-4. **Match the website.** Same navbar, dark mode, Tailwind classes, typography. The file page is a natural part of simplex.chat.
+4. **Match the website.** Same navbar, dark mode, typography. The file page is a natural part of simplex.chat.
 
 ### Page layout (top to bottom)
 
-**1. Title**
+**1. Title**: "SimpleX File Transfer"
 
-"SimpleX File Transfer" — centered, `text-active-blue`, same style as other page titles (Directory, etc.).
-
-**2. File transfer tool**
-
-The upload drop zone or download progress — this is the interactive demo. See sections 5 and 6 for detailed flows. After a successful upload or download, an inline app download CTA appears directly below the completion state (same content as the bottom-of-page CTA).
+**2. File transfer tool**: The upload drop zone or download progress — this is the interactive demo. After a successful upload or download, an inline app download CTA appears directly below the completion state.
 
 **3. Protocol section: "Why this is the most private file transfer"**
 
-After the tool, a section explaining the XFTP protocol security properties. This is not a wall of text — it's 4-5 short, scannable blocks with bold titles:
+After the tool, a section explaining the XFTP protocol security properties. Not a wall of text — 4-5 short, scannable blocks with bold titles:
 
 - **No accounts, no identifiers** — one sentence explaining anonymous per-chunk credentials
 - **Encrypted in your browser** — the server stores ciphertext it cannot decrypt; the key is in the link
-- **Triple encryption** — TLS + per-recipient DH transit encryption + file-level E2E
+- **Triple encryption** — TLS + per-recipient transit encryption + file-level E2E
 - **Distributed across independent servers** — chunks split across SimpleX and Flux operators; no single operator sees the complete file
 - **Files expire automatically** — approximately 48 hours, ephemeral by design
 
 Each block is 2-3 sentences. The whole section fits on one screen. No expand/collapse, no "learn more" — just the facts.
 
-A subtle link at the end: "Read the [XFTP protocol specification](/docs/protocol/xftp.html) for the full technical details."
+A subtle link at the end: "Read the XFTP protocol specification for the full technical details."
 
 **4. App download CTA**
 
@@ -171,9 +167,9 @@ The conversion section. Clear, prominent, centered:
 
 - Heading: "Get SimpleX — the most private messenger"
 - Subheading: "The file transfer you just used is built on the same protocol as SimpleX Chat — end-to-end encrypted messaging, voice and video calls, groups, and file sharing. No user IDs. No phone numbers."
-- App store buttons (same pattern as `join_simplex.html`: Apple Store, Google Play, F-Droid, TestFlight, APK)
+- App store buttons (Apple Store, Google Play, F-Droid, TestFlight, APK)
 
-This section appears at the bottom of the page AND is shown inline after a successful upload or download (as part of the completion state).
+This section appears at the bottom of the page AND is shown inline after a successful upload or download.
 
 ---
 
@@ -181,52 +177,44 @@ This section appears at the bottom of the page AND is shown inline after a succe
 
 ### State 1: Ready (drop zone)
 
-The page loads with a centered card containing:
+A centered card with:
 
 - A drop zone with a dashed border — "Drag & drop a file here"
 - The word "or" in muted text
 - A "Choose file" button (for mobile and accessibility)
 - "Max 100 MB" as a hint below
 
-Below the drop zone, a single line of muted text: "End-to-end encrypted — the server never sees your file."
+Below the drop zone: "End-to-end encrypted — the server never sees your file."
 
-The drop zone is the entire focus of the tool area. When the user drags a file over, the border highlights (color change + subtle animation).
+When the user drags a file over, the border highlights.
 
 ### State 2: Encrypting + uploading (progress)
 
-The moment a file is selected, the drop zone disappears and is replaced by:
+The drop zone is replaced by:
 
-- A circular progress ring (canvas-drawn, smooth animation)
-- Status text below: "Encrypting..." then "Uploading..."
+- A circular progress indicator
+- Status text: "Encrypting..." then "Uploading..."
 - A "Cancel" button
 
-The progress ring fills continuously:
-- 0–30%: encryption progress (from `encryptFileForUpload`'s `onProgress` callback)
-- 30–100%: upload progress (from `uploadFile`'s `onProgress` callback)
-
-The split is weighted because encryption is CPU-bound and fast, while upload depends on network speed.
-
-Cancel aborts the operation and returns to the drop zone. No confirmation dialog.
+Cancel returns to the drop zone. No confirmation dialog.
 
 ### State 3: Complete (share link + CTA)
 
-After successful upload:
-
 - "File uploaded" in success styling
 - A text input containing the full share URL, pre-selected for easy copying
-- A "Copy" button next to it — clicking changes text to "Copied!" for 2 seconds
-- On mobile: a "Share" button using the Web Share API (`navigator.share()`) for the native share sheet. Falls back to Copy if unavailable.
-- "Files are typically available for 48 hours." as a subtle hint
+- A "Copy" button — clicking changes text to "Copied!" for 2 seconds
+- On mobile: a "Share" button that opens the native share sheet (WhatsApp, Telegram, AirDrop, etc.). Falls back to Copy if unavailable.
+- "Files are typically available for 48 hours."
 
 Security note (three short lines):
 - "Your file was encrypted in the browser before upload — the server never sees file contents."
-- "The link contains the decryption key in the hash fragment, which the browser never sends to any server."
-- "For maximum security, use the SimpleX app." (linked to app download)
+- "The link contains the decryption key — your browser never sends it to any server."
+- "For maximum security, use the SimpleX app."
 
 **Inline CTA** below the security note — same prominence as the bottom-of-page CTA:
 - Heading: "Get SimpleX — the most private messenger"
-- Subheading: "The file transfer you just used is built on the same protocol as SimpleX Chat — end-to-end encrypted messaging, voice and video calls, groups, and file sharing. No user IDs. No phone numbers."
-- App store buttons (Apple Store, Google Play, F-Droid, TestFlight, APK)
+- Subheading about the app using the same protocol
+- App store buttons
 
 ### State 4: Error
 
@@ -241,9 +229,9 @@ Security note (three short lines):
 
 ### State 1: Downloading (progress)
 
-When the page loads with a hash fragment (`/file/#...`), it immediately starts downloading:
+When the page loads with a file link, it immediately starts downloading:
 
-- A circular progress ring (same visual as upload)
+- A circular progress indicator (same visual as upload)
 - Status text: "Downloading..."
 - A "Cancel" button
 
@@ -251,43 +239,41 @@ No intermediate "click to download" step. The user clicked the link — start im
 
 ### State 2: Complete (save + CTA)
 
-After successful download:
-
-- Trigger the browser's native save dialog with the original filename
-- Show "File downloaded" confirmation
+- The browser's native save dialog with the original filename
+- "File downloaded" confirmation
 - The same security note as the upload page
 
-**Inline CTA** — same as upload completion state. Same heading, subheading, and app store buttons. This is the highest-conversion moment — the user just experienced the technology working and is most receptive.
+**Inline CTA** — same as upload completion. Same heading, subheading, and app store buttons. This is the highest-conversion moment — the user just experienced the technology working and is most receptive.
 
 ### State 3: Error
 
 - "This file is no longer available" — for expired/deleted files (permanent, no retry)
 - "Download failed" with retry — for network errors (retriable)
-- "Invalid link — the file link appears to be incomplete or corrupted." — for malformed hash fragments (permanent, no retry)
+- "Invalid link — the file link appears to be incomplete or corrupted." — for malformed links (permanent, no retry)
 
 ---
 
 ## 7. Edge cases
 
-**File too large (>100 MB):** Error shown immediately after file selection, before any encryption. "File too large (X MB). Maximum is 100 MB."
+**File too large (>100 MB):** Error shown immediately after file selection. "File too large (X MB). Maximum is 100 MB."
 
 **Empty file (0 bytes):** Rejected immediately. "File is empty."
 
-**JavaScript disabled:** The `<noscript>` tag inside `#file-app` shows "JavaScript is required."
+**JavaScript disabled:** A message saying "JavaScript is required."
 
-**Slow connection:** Progress ring provides continuous feedback. Cancel is always available. No silent timeouts.
+**Slow connection:** Progress indicator provides continuous feedback. Cancel is always available. No silent timeouts.
 
-**Browser back/forward:** Hash-based routing — back button works naturally.
+**Browser back/forward:** Back button works naturally — returns to upload mode.
 
 **Mobile:** "Choose file" button triggers native file picker. Drag & drop is desktop-only. Layout is responsive.
 
-**Dark mode:** Follows the website's `.dark` class toggle. Progress ring colors and all text/backgrounds adapt.
+**Dark mode:** Follows the website's existing dark mode toggle.
 
-**Malformed link:** `decodeDescriptionURI` throws → "Invalid link — the file link appears to be incomplete or corrupted." No retry button. Distinct from "file not found" (expired) in wording, so the user knows whether to ask for a new link.
+**Malformed link:** "Invalid link — the file link appears to be incomplete or corrupted." No retry button. Distinct from "file not found" (expired) so the user knows whether to ask for a new link.
 
-**Link truncation:** Long URIs can be truncated by SMS, Twitter/X, some email clients. The library's redirect compression (`uploadFile` uses redirect descriptions when URI exceeds ~400 characters) mitigates this for multi-chunk files. Single-chunk files (small files) have naturally short URIs.
+**Link truncation:** Long URLs can be truncated by SMS, Twitter/X, some email clients. The protocol's redirect compression mitigates this for larger files. Small files have naturally short URLs.
 
-**Internationalization:** All UI strings are hardcoded in English in the JS source. The file page is language-excluded in the navbar (no language selector shown), matching the directory page pattern. i18n can be added later.
+**Internationalization:** All UI strings are in English for v1. The page is excluded from the language selector, matching other single-language pages on the website. i18n can be added later.
 
 ---
 
@@ -300,8 +286,8 @@ Mitigations:
 - **48-hour expiration** — files are automatically deleted. Not suitable for persistent hosting.
 - **Rate limiting** — XFTP servers enforce per-IP upload rate limits and storage quotas.
 - **No directory or discovery** — no public listing, no search. You need the exact link.
-- **Abuse reporting** — can be added later (e.g., "Report abuse" link). Server operators can delete chunks by ID without decrypting.
-- **Legal compliance** — server operators handle takedown requests under their jurisdictions. Chunk deletion by ID is possible without compromising E2E encryption of other files.
+- **Abuse reporting** — can be added later. Server operators can delete specific file chunks without decrypting.
+- **Legal compliance** — server operators handle takedown requests under their jurisdictions without compromising E2E encryption of other files.
 
 Same trade-off as Signal, WhatsApp, iMessage. Ephemeral nature (48h) significantly reduces risk vs. permanent storage.
 
