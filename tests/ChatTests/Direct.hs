@@ -16,7 +16,8 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, void)
+import Control.Monad (forM_, unless, void)
+import System.Timeout (timeout)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -2770,15 +2771,24 @@ testAppSettings ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
         settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
+        -- Long command echo may be split by virtual terminal getDiff;
+        -- skip non-matching lines to find the expected response, then drain artifacts
+        sendFindResponse cmd resp = do
+          alice `send` cmd
+          let go 0 = error $ "expected but not received: " <> resp
+              go n = do
+                line <- getTermLine alice
+                unless (line == resp) $ go (n - 1)
+          go (50 :: Int)
+          let drain = timeout 50000 (getTermLine alice) >>= mapM_ (\_ -> drain)
+          drain
     -- app-provided defaults
-    alice ##> ("/_get app settings " <> settingsApp)
-    alice <## ("app settings: " <> settingsApp)
+    sendFindResponse ("/_get app settings " <> settingsApp) ("app settings: " <> settingsApp)
     -- parser defaults fallback
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settings)
     -- store
-    alice ##> ("/_save app settings " <> settingsApp)
-    alice <## "ok"
+    sendFindResponse ("/_save app settings " <> settingsApp) "ok"
     -- read back
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settingsApp)
