@@ -74,6 +74,7 @@ func showKeepInvitationAlert() {
     ChatModel.shared.showingInvitation = nil
 }
 
+// Spec: spec/client/navigation.md#NewChatView
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -1164,6 +1165,7 @@ private func showOpenKnownGroupAlert(
     )
 }
 
+// Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
     theme: AppTheme,

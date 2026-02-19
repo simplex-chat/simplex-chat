@@ -6,6 +6,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-list.md#UserPicker
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme

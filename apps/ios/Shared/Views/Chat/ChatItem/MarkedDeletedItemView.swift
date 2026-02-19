@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#MarkedDeletedItemView
 struct MarkedDeletedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme

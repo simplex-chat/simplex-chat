@@ -24,6 +24,7 @@ private func typing(_ theme: AppTheme, _ descr: UIFontDescriptor, _ ws: [UIFont.
     return res
 }
 
+// Spec: spec/client/chat-view.md#MsgContentView
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
     @Environment(\.showTimestamp) var showTimestamp: Bool

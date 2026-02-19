@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#IntegrityErrorItemView
 struct IntegrityErrorItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme

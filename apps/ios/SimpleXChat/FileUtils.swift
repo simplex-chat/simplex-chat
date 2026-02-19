@@ -14,14 +14,19 @@ import UIKit
 let logger = Logger()
 
 // image file size for complession
+// Spec: spec/services/files.md#MAX_IMAGE_SIZE
 public let MAX_IMAGE_SIZE: Int64 = 261_120 // 255KB
 
+// Spec: spec/services/files.md#MAX_IMAGE_SIZE_AUTO_RCV
 public let MAX_IMAGE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
+// Spec: spec/services/files.md#MAX_VOICE_SIZE_AUTO_RCV
 public let MAX_VOICE_SIZE_AUTO_RCV: Int64 = MAX_IMAGE_SIZE * 2
 
+// Spec: spec/services/files.md#MAX_VIDEO_SIZE_AUTO_RCV
 public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 
+// Spec: spec/services/files.md#MAX_FILE_SIZE_XFTP
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
 public let MAX_FILE_SIZE_LOCAL: Int64 = Int64.max
@@ -38,10 +43,12 @@ private let CHAT_DB_BAK: String = "_chat.db.bak"
 
 private let AGENT_DB_BAK: String = "_agent.db.bak"
 
+// Spec: spec/database.md#getDocumentsDirectory
 public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
+// Spec: spec/database.md#getGroupContainerDirectory
 public func getGroupContainerDirectory() -> URL {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
@@ -52,12 +59,14 @@ func getAppDirectory() -> URL {
     : getDocumentsDirectory()
 }
 
+// Spec: spec/database.md#DB_FILE_PREFIX
 let DB_FILE_PREFIX = "simplex_v1"
 
 func getLegacyDatabasePath() -> URL {
     getDocumentsDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
 }
 
+// Spec: spec/database.md#getAppDatabasePath
 public func getAppDatabasePath() -> URL {
     dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
@@ -73,6 +82,7 @@ func fileModificationDate(_ path: String) -> Date? {
     }
 }
 
+// Spec: spec/services/files.md#deleteAppDatabaseAndFiles
 public func deleteAppDatabaseAndFiles() {
     let fm = FileManager.default
     let dbPath = getAppDatabasePath().path
@@ -94,6 +104,7 @@ public func deleteAppDatabaseAndFiles() {
     storeDBPassphraseGroupDefault.set(true)
 }
 
+// Spec: spec/services/files.md#deleteAppFiles
 public func deleteAppFiles() {
     let fm = FileManager.default
     do {
@@ -184,6 +195,7 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
     return r1 && r2
 }
 
+// Spec: spec/services/files.md#getTempFilesDirectory
 public func getTempFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("temp_files", isDirectory: true)
 }
@@ -192,6 +204,7 @@ public func getMigrationTempFilesDirectory() -> URL {
     getDocumentsDirectory().appendingPathComponent("migration_temp_files", isDirectory: true)
 }
 
+// Spec: spec/services/files.md#getAppFilesDirectory
 public func getAppFilesDirectory() -> URL {
     getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
@@ -200,6 +213,7 @@ public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
+// Spec: spec/services/files.md#getWallpaperDirectory
 public func getWallpaperDirectory() -> URL {
     getAppDirectory().appendingPathComponent("assets", isDirectory: true).appendingPathComponent("wallpapers", isDirectory: true)
 }
@@ -208,6 +222,7 @@ public func getWallpaperFilePath(_ filename: String) -> URL {
     getWallpaperDirectory().appendingPathComponent(filename)
 }
 
+// Spec: spec/services/files.md#saveFile
 public func saveFile(_ data: Data, _ fileName: String, encrypted: Bool) -> CryptoFile? {
     let filePath = getAppFilePath(fileName)
     do {
@@ -224,6 +239,7 @@ public func saveFile(_ data: Data, _ fileName: String, encrypted: Bool) -> Crypt
     }
 }
 
+// Spec: spec/services/files.md#removeFile
 public func removeFile(_ url: URL) {
     do {
         try FileManager.default.removeItem(atPath: url.path)
@@ -240,12 +256,14 @@ public func removeFile(_ fileName: String) {
     }
 }
 
+// Spec: spec/services/files.md#cleanupDirectFile
 public func cleanupDirectFile(_ aChatItem: AChatItem) {
     if aChatItem.chatInfo.chatType == .direct {
         cleanupFile(aChatItem)
     }
 }
 
+// Spec: spec/services/files.md#cleanupFile
 public func cleanupFile(_ aChatItem: AChatItem) {
     let cItem = aChatItem.chatItem
     let mc = cItem.content.msgContent

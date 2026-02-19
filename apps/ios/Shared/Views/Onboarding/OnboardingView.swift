@@ -9,6 +9,7 @@
 
 import SwiftUI
 
+// Spec: spec/client/navigation.md#OnboardingView
 struct OnboardingView: View {
     var onboarding: OnboardingStage
 
@@ -41,6 +42,7 @@ func onboardingButtonPlaceholder() -> some View {
     Spacer().frame(height: 40)
 }
 
+// Spec: spec/client/navigation.md#onboardingStage
 enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
     case step2_CreateProfile // deprecated

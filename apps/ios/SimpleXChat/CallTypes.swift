@@ -10,6 +10,7 @@
 import Foundation
 import SwiftUI
 
+// Spec: spec/services/calls.md#WebRTCCallOffer
 public struct WebRTCCallOffer: Encodable {
     public init(callType: CallType, rtcSession: WebRTCSession) {
         self.callType = callType
@@ -20,6 +21,7 @@ public struct WebRTCCallOffer: Encodable {
     public var rtcSession: WebRTCSession
 }
 
+// Spec: spec/services/calls.md#WebRTCSession
 public struct WebRTCSession: Codable {
     public init(rtcSession: String, rtcIceCandidates: String) {
         self.rtcSession = rtcSession
@@ -30,6 +32,7 @@ public struct WebRTCSession: Codable {
     public var rtcIceCandidates: String
 }
 
+// Spec: spec/services/calls.md#WebRTCExtraInfo
 public struct WebRTCExtraInfo: Codable {
     public init(rtcIceCandidates: String) {
         self.rtcIceCandidates = rtcIceCandidates
@@ -38,6 +41,7 @@ public struct WebRTCExtraInfo: Codable {
     public var rtcIceCandidates: String
 }
 
+// Spec: spec/services/calls.md#RcvCallInvitation
 public struct RcvCallInvitation: Decodable {
     public var user: User
     public var contact: Contact
@@ -66,6 +70,7 @@ public struct RcvCallInvitation: Decodable {
     )
 }
 
+// Spec: spec/services/calls.md#CallType
 public struct CallType: Codable {
     public init(media: CallMediaType, capabilities: CallCapabilities) {
         self.media = media

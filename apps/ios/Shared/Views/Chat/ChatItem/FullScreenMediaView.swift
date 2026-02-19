@@ -12,6 +12,7 @@ import SimpleXChat
 import SwiftyGif
 import AVKit
 
+// Spec: spec/client/chat-view.md#FullScreenMediaView
 struct FullScreenMediaView: View {
     @EnvironmentObject var m: ChatModel
     @State var chatItem: ChatItem

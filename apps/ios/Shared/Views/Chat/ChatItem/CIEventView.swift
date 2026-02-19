@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIEventView
 struct CIEventView: View {
     var eventText: Text
 

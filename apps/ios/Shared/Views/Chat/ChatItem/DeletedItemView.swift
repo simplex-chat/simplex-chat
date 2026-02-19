@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#DeletedItemView
 struct DeletedItemView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat

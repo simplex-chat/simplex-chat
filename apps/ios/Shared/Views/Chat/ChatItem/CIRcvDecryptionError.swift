@@ -12,6 +12,7 @@ import SimpleXChat
 
 let decryptErrorReason: LocalizedStringKey = "It can happen when you or your connection used the old database backup."
 
+// Spec: spec/client/chat-view.md#CIRcvDecryptionError
 struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme

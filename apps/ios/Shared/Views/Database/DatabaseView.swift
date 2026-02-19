@@ -42,6 +42,7 @@ enum DatabaseAlert: Identifiable {
     }
 }
 
+// Spec: spec/database.md#DatabaseView
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme

@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 
+// Spec: spec/services/theme.md#PresetWallpaper
 public enum PresetWallpaper: CaseIterable {
     case cats
     case flowers
@@ -306,6 +307,7 @@ public enum WallpaperScaleType: String, Codable, CaseIterable {
     }
 }
 
+// Spec: spec/services/theme.md#WallpaperType
 public enum WallpaperType: Equatable {
     public var image: SwiftUI.Image? {
         if let uiImage {

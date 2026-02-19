@@ -23,6 +23,7 @@ public func onOff(_ b: Bool) -> String {
     b ? "on" : "off"
 }
 
+// Spec: spec/api.md#APIResult
 public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     case result(R)
     case error(ChatError)
@@ -60,6 +61,7 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatAPIResult
 public protocol ChatAPIResult: Decodable {
     var responseType: String { get }
     var details: String { get }
@@ -80,6 +82,7 @@ extension ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#decodeAPIResult
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
 //    print("decodeAPIResult \(String(describing: R.self))")
     do {
@@ -692,6 +695,7 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
+// Spec: spec/api.md#ChatError
 public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
@@ -714,6 +718,7 @@ public enum ChatError: Decodable, Hashable, Error {
     }
 }
 
+// Spec: spec/api.md#ChatErrorType
 public enum ChatErrorType: Decodable, Hashable {
     case noActiveUser
     case noConnectionUser(agentConnId: String)

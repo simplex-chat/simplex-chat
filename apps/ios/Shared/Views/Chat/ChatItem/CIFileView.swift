@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIFileView
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme

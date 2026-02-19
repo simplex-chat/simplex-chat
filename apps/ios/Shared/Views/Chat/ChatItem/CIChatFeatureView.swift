@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIChatFeatureView
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.revealed) var revealed: Bool

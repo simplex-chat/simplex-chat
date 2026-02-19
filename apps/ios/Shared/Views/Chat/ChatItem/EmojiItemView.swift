@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#EmojiItemView
 struct EmojiItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme

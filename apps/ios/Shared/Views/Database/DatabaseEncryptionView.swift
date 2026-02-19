@@ -34,6 +34,7 @@ enum DatabaseEncryptionAlert: Identifiable {
     }
 }
 
+// Spec: spec/database.md#DatabaseEncryptionView
 struct DatabaseEncryptionView: View {
     @EnvironmentObject private var m: ChatModel
     @EnvironmentObject private var theme: AppTheme

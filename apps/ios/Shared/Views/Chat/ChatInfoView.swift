@@ -89,6 +89,7 @@ enum SendReceipts: Identifiable, Hashable {
     }
 }
 
+// Spec: spec/client/chat-view.md#ChatInfoView
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme

@@ -7,6 +7,7 @@
 import UIKit
 import SwiftUI
 
+// Spec: spec/client/chat-view.md#AnimatedImageView
 class AnimatedImageView: UIView {
     var image: UIImage? = nil
     var imageView: UIImageView? = nil

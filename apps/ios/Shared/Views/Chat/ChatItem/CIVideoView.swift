@@ -12,6 +12,7 @@ import AVKit
 import SimpleXChat
 import Combine
 
+// Spec: spec/client/chat-view.md#CIVideoView
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem

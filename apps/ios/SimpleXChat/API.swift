@@ -110,6 +110,7 @@ public func resetChatCtrl() {
     migrationResult = nil
 }
 
+// Spec: spec/api.md#sendSimpleXCmd
 @inline(__always)
 public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil, retryNum: Int32 = 0) -> APIResult<R> {
     if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum) {

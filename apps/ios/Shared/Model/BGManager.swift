@@ -26,6 +26,7 @@ private let maxBgRefreshInterval: TimeInterval = 2400 // 40 minutes
 
 private let maxTimerCount = 9
 
+// Spec: spec/services/notifications.md#BGManager
 class BGManager {
     static let shared = BGManager()
     var chatReceiver: ChatReceiver?
@@ -33,6 +34,7 @@ class BGManager {
     var completed = true
     var timerCount = 0
 
+    // Spec: spec/services/notifications.md#register
     func register() {
         logger.debug("BGManager.register")
         BGTaskScheduler.shared.register(forTaskWithIdentifier: receiveTaskId, using: nil) { task in
@@ -40,6 +42,7 @@ class BGManager {
         }
     }
 
+    // Spec: spec/services/notifications.md#schedule
     func schedule(interval: TimeInterval? = nil) {
         if !ChatModel.shared.ntfEnableLocal {
             logger.debug("BGManager.schedule: disabled")
@@ -67,6 +70,7 @@ class BGManager {
         Date.now.timeIntervalSince(chatLastBackgroundRunGroupDefault.get()) > runInterval
     }
 
+    // Spec: spec/services/notifications.md#handleRefresh
     private func handleRefresh(_ task: BGAppRefreshTask) {
         if !ChatModel.shared.ntfEnableLocal {
             logger.debug("BGManager.handleRefresh: disabled")
@@ -104,6 +108,7 @@ class BGManager {
         }
     }
 
+    // Spec: spec/services/notifications.md#receiveMessages-BG
     func receiveMessages(_ completeReceiving: @escaping (String) -> Void) {
         if (!self.completed) {
             logger.debug("BGManager.receiveMessages: in progress, exiting")

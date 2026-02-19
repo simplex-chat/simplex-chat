@@ -38,6 +38,7 @@ extension EnvironmentValues {
     }
 }
 
+// Spec: spec/client/chat-view.md#ChatItemView
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel

@@ -12,6 +12,7 @@ import WebKit
 import SimpleXChat
 import AVFoundation
 
+// Spec: spec/services/calls.md#ActiveCallView
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -283,6 +284,7 @@ struct ActiveCallView: View {
     }
 }
 
+// Spec: spec/services/calls.md#ActiveCallOverlay
 struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var call: Call
@@ -351,6 +353,7 @@ struct ActiveCallOverlay: View {
         }
     }
 
+    // Spec: spec/services/calls.md#audioCallInfoView
     private func audioCallInfoView(_ call: Call) -> some View {
         VStack {
             Text(call.contact.chatViewName)
@@ -400,6 +403,7 @@ struct ActiveCallOverlay: View {
         }
     }
 
+    // Spec: spec/services/calls.md#endCallButton
     private func endCallButton() -> some View {
         let cc = CallController.shared
         return callButton("phone.down.fill", .red, padding: 10) {

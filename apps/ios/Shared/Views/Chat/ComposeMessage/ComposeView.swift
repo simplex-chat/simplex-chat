@@ -7,6 +7,7 @@ import PhotosUI
 
 let MAX_NUMBER_OF_MENTIONS = 3
 
+// Spec: spec/client/compose.md#ComposePreview
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
@@ -15,6 +16,7 @@ enum ComposePreview {
     case filePreview(fileName: String, file: URL)
 }
 
+// Spec: spec/client/compose.md#ComposeContextItem
 enum ComposeContextItem: Equatable {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
@@ -23,12 +25,14 @@ enum ComposeContextItem: Equatable {
     case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
+// Spec: spec/client/compose.md#VoiceMessageRecordingState
 enum VoiceMessageRecordingState {
     case noRecording
     case recording
     case finished
 }
 
+// Spec: spec/client/compose.md#LiveMessage
 struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
@@ -37,6 +41,7 @@ struct LiveMessage {
 
 typealias MentionedMembers = [String: CIMention]
 
+// Spec: spec/client/compose.md#ComposeState
 struct ComposeState {
     var message: String
     var parsedMessage: [FormattedText]
@@ -257,6 +262,7 @@ struct ComposeState {
     }
 }
 
+// Spec: spec/client/compose.md#chatItemPreview
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     switch chatItem.content.msgContent {
     case .text:
@@ -277,6 +283,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     }
 }
 
+// Spec: spec/client/compose.md#UploadContent
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
     case animatedImage(image: UIImage)
@@ -318,6 +325,7 @@ enum UploadContent: Equatable {
     }
 }
 
+// Spec: spec/client/compose.md#ComposeView
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -357,6 +365,7 @@ struct ComposeView: View {
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @State private var updatingCompose = false
 
+    // Spec: spec/client/compose.md#body
     var body: some View {
         VStack(spacing: 0) {
             Divider()
@@ -680,6 +689,7 @@ struct ComposeView: View {
         .padding(.horizontal, 12)
     }
 
+    // Spec: spec/client/compose.md#sendMessageView
     private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
         ZStack(alignment: .leading) {
             SendMessageView(
@@ -879,6 +889,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#addMediaContent
     private func addMediaContent(_ content: UploadContent) async {
         if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
@@ -907,6 +918,7 @@ struct ComposeView: View {
         getMaxFileSize(.xftp)
     }
 
+    // Spec: spec/client/compose.md#sendLiveMessage
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
         let lm = composeState.liveMessage
@@ -924,6 +936,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#updateLiveMessage
     private func updateLiveMessage() async {
         let typedMsg = composeState.message
         if let liveMessage = composeState.liveMessage {
@@ -942,6 +955,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#liveMessageToSend
     private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
         let s = t != lm.typedMsg ? truncateToWords(t) : t
         return s != lm.sentMsg && (lm.sentMsg != nil || !s.isEmpty) ? s : nil
@@ -1088,6 +1102,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#sendMessage
     private func sendMessage(ttl: Int?) {
         logger.debug("ChatView sendMessage")
         Task {
@@ -1096,6 +1111,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#sendMessageAsync
     private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
@@ -1362,6 +1378,7 @@ struct ComposeView: View {
         await MainActor.run { composeState.inProgress = true }
     }
 
+    // Spec: spec/client/compose.md#startVoiceMessageRecording
     private func startVoiceMessageRecording() async {
         startingRecording = true
         let fileName = generateNewFileName("voice", "m4a")
@@ -1402,6 +1419,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#finishVoiceMessageRecording
     private func finishVoiceMessageRecording() {
         audioRecorder?.stop()
         audioRecorder = nil
@@ -1412,6 +1430,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#allowVoiceMessagesToContact
     private func allowVoiceMessagesToContact() {
         if case let .direct(contact) = chat.chatInfo {
             allowFeatureToContact(contact, .voice)
@@ -1437,12 +1456,14 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#cancelVoiceMessageRecording
     private func cancelVoiceMessageRecording(_ fileName: String) {
         stopPlayback.toggle()
         audioRecorder?.stop()
         removeFile(fileName)
     }
 
+    // Spec: spec/client/compose.md#clearState
     private func clearState(live: Bool = false) {
         if live {
             composeState.inProgress = false
@@ -1456,11 +1477,13 @@ struct ComposeView: View {
         startingRecording = false
     }
 
+    // Spec: spec/client/compose.md#saveCurrentDraft
     private func saveCurrentDraft() {
         chatModel.draft = composeState
         chatModel.draftChatId = chat.id
     }
 
+    // Spec: spec/client/compose.md#clearCurrentDraft
     private func clearCurrentDraft() {
         if chatModel.draftChatId == chat.id {
             chatModel.draft = nil
@@ -1468,6 +1491,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#showLinkPreview
     private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
         (linkUrl, hasSimplexLink) = getMessageLinks(parsedMsg)
@@ -1487,6 +1511,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#getMessageLinks
     private func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
         guard let parsedMsg else { return (nil, false) }
         let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
@@ -1513,6 +1538,7 @@ struct ComposeView: View {
         composeState = composeState.copy(preview: .noPreview)
     }
 
+    // Spec: spec/client/compose.md#loadLinkPreview
     private func loadLinkPreview(_ urlStr: String) {
         if pendingLinkUrl == urlStr, let url = URL(string: urlStr) {
             composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))

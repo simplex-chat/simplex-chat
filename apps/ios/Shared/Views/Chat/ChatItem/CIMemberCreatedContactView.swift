@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIMemberCreatedContactView
 struct CIMemberCreatedContactView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme

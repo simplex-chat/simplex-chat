@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIFeaturePreferenceView
 struct CIFeaturePreferenceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme

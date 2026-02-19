@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIInvalidJSONView
 struct CIInvalidJSONView: View {
     @EnvironmentObject var theme: AppTheme
     var json: Data?

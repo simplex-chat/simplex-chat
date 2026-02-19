@@ -10,6 +10,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CILinkView
 struct CILinkView: View {
     @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview

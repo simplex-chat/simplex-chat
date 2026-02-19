@@ -20,15 +20,18 @@ private enum NoticesSheet: Identifiable {
     }
 }
 
+// Spec: spec/client/navigation.md#ContentView
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
+    // Spec: spec/client/navigation.md#AppSheetState
     @ObservedObject var appSheetState = AppSheetState.shared
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
 
+    // Spec: spec/client/navigation.md#contentViewState
     var contentAccessAuthenticationExtended: Bool
 
     @Environment(\.scenePhase) var scenePhase
@@ -162,6 +165,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#contentView
     @ViewBuilder private func contentView() -> some View {
         if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
@@ -177,6 +181,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#callView
     @ViewBuilder private func callView(_ call: Call) -> some View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
@@ -194,6 +199,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#callBanner
     private func activeCallInteractiveArea(_ call: Call) -> some View {
         HStack {
             Text(call.contact.displayName).font(.body).foregroundColor(.white)
@@ -228,6 +234,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#lockButton
     private func lockButton() -> some View {
         Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
@@ -340,6 +347,7 @@ struct ContentView: View {
         }
     }
 
+    // Spec: spec/client/navigation.md#unlockedRecently
     private func unlockedRecently() -> Bool {
         if let lastSuccessfulUnlock = lastSuccessfulUnlock {
             return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
@@ -427,6 +435,7 @@ struct ContentView: View {
         )
     }
 
+    // Spec: spec/client/navigation.md#connectViaUrl
     func connectViaUrl() {
         let m = ChatModel.shared
         if let url = m.appOpenUrl {

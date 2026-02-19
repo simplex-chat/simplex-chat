@@ -15,6 +15,7 @@ import AVFoundation
 import SimpleXChat
 import WebRTC
 
+// Spec: spec/services/calls.md#CallController
 class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, ObservableObject {
     static let shared = CallController()
     static let isInChina = SKStorefront().countryCode == "CHN"
@@ -50,6 +51,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController.providerDidReset")
     }
 
+    // Spec: spec/services/calls.md#CXStartCallAction
     func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
         logger.debug("CallController.provider CXStartCallAction")
         if callManager.startOutgoingCall(callUUID: action.callUUID.uuidString.lowercased()) {
@@ -60,6 +62,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         }
     }
 
+    // Spec: spec/services/calls.md#CXAnswerCallAction
     func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         logger.debug("CallController.provider CXAnswerCallAction")
         Task {
@@ -89,6 +92,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         }
     }
 
+    // Spec: spec/services/calls.md#CXEndCallAction
     func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
         logger.debug("CallController.provider CXEndCallAction")
         // Should be nil here if connection was in connected state
@@ -104,6 +108,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         }
     }
 
+    // Spec: spec/services/calls.md#CXSetMutedCallAction
     func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
         if callManager.enableMedia(source: .mic, enable: !action.isMuted, callUUID:  action.callUUID.uuidString.lowercased()) {
             action.fulfill()
@@ -193,6 +198,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController: didUpdate push credentials for type \(type.rawValue)")
     }
 
+    // Spec: spec/services/calls.md#pushRegistryDidReceive
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
         logger.debug("CallController: did receive push with type \(type.rawValue)")
         if type != .voIP {
@@ -277,6 +283,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         reportExpiredCall(update: update, completion)
     }
 
+    // Spec: spec/services/calls.md#reportNewIncomingCall
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
         logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callUUID))")
         if CallController.useCallKit(), let callUUID = invitation.callUUID, let uuid = UUID(uuidString: callUUID) {
@@ -317,6 +324,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         }
     }
 
+    // Spec: spec/services/calls.md#reportOutgoingCall
     func reportOutgoingCall(call: Call, connectedAt dateConnected: Date?) {
         logger.debug("CallController: reporting outgoing call connected")
         if CallController.useCallKit(), let callUUID = call.callUUID, let uuid = UUID(uuidString: callUUID) {
@@ -423,6 +431,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         provider.configuration = conf
     }
 
+    // Spec: spec/services/calls.md#hasActiveCalls
     func hasActiveCalls() -> Bool {
         controller.callObserver.calls.count > 0
     }

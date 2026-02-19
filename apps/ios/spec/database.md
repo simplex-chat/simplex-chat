@@ -37,7 +37,7 @@ Both databases are initialized and migrated via the C FFI function `chat_migrate
 
 ## 2. Database Files & Paths
 
-### [Path Resolution](../SimpleXChat/FileUtils.swift#L55-L64) (FileUtils.swift)
+### [Path Resolution](../SimpleXChat/FileUtils.swift#L63-L73) (FileUtils.swift)
 
 ```swift
 let DB_FILE_PREFIX = "simplex_v1"
@@ -54,7 +54,7 @@ func getAppDatabasePath() -> URL {
 // Agent: {container}/simplex_v1_agent.db
 ```
 
-### [File Constants](../SimpleXChat/FileUtils.swift#L33-L39)
+### [File Constants](../SimpleXChat/FileUtils.swift#L38-L44)
 
 ```swift
 let CHAT_DB: String = "_chat.db"
@@ -65,7 +65,7 @@ private let AGENT_DB_BAK: String = "_agent.db.bak"
 
 ### Container Locations
 
-See [`getDocumentsDirectory()`](../SimpleXChat/FileUtils.swift#L41) and [`getGroupContainerDirectory()`](../SimpleXChat/FileUtils.swift#L45).
+See [`getDocumentsDirectory()`](../SimpleXChat/FileUtils.swift#L47) and [`getGroupContainerDirectory()`](../SimpleXChat/FileUtils.swift#L52).
 
 | Container | Path | Used When |
 |-----------|------|-----------|
@@ -182,7 +182,7 @@ The encryption key is stored in the iOS Keychain via `kcDatabasePassword`:
 │   └── ...
 ```
 
-### [File Size Constants](../SimpleXChat/FileUtils.swift#L17-L31) (FileUtils.swift)
+### [File Size Constants](../SimpleXChat/FileUtils.swift#L18-L36) (FileUtils.swift)
 
 ```swift
 public let MAX_IMAGE_SIZE: Int64 = 261_120        // 255 KB -- inline image compression target
@@ -203,7 +203,7 @@ When `apiSetEncryptLocalFiles(enable: true)` is set, files stored on device are 
 - Each file gets a unique key and nonce stored alongside the file reference
 - The `CryptoFile` type wraps `(filePath: String, cryptoArgs: CryptoFileArgs?)` where `CryptoFileArgs` contains `(fileKey: String, fileNonce: String)`
 
-### [File Path Helpers](../SimpleXChat/FileUtils.swift#L187-L207)
+### [File Path Helpers](../SimpleXChat/FileUtils.swift#L219-L221)
 
 ```swift
 public func getDocumentsDirectory() -> URL      // Standard documents dir
@@ -213,14 +213,14 @@ func getTempFilesDirectory() -> URL             // {appDir}/temp_files/
 func getWallpaperDirectory() -> URL             // {appDir}/assets/wallpapers/
 ```
 
-See also [`saveFile()`](../SimpleXChat/FileUtils.swift#L211), [`removeFile()`](../SimpleXChat/FileUtils.swift#L227), and [`getMaxFileSize()`](../SimpleXChat/FileUtils.swift#L258).
+See also [`saveFile()`](../SimpleXChat/FileUtils.swift#L226), [`removeFile()`](../SimpleXChat/FileUtils.swift#L243), and [`getMaxFileSize()`](../SimpleXChat/FileUtils.swift#L276).
 
-### [Cleanup](../SimpleXChat/FileUtils.swift#L76-L105)
+### [Cleanup](../SimpleXChat/FileUtils.swift#L86-L116)
 
-- Files are deleted when their associated `ChatItem` is deleted. See [`cleanupFile()`](../SimpleXChat/FileUtils.swift#L249) and [`cleanupDirectFile()`](../SimpleXChat/FileUtils.swift#L243).
+- Files are deleted when their associated `ChatItem` is deleted. See [`cleanupFile()`](../SimpleXChat/FileUtils.swift#L267) and [`cleanupDirectFile()`](../SimpleXChat/FileUtils.swift#L260).
 - Timed message expiry triggers file deletion
-- [`deleteAppDatabaseAndFiles()`](../SimpleXChat/FileUtils.swift#L76) removes all databases, files, temp files, and wallpapers
-- [`deleteAppFiles()`](../SimpleXChat/FileUtils.swift#L97) removes only the files directory (preserving databases)
+- [`deleteAppDatabaseAndFiles()`](../SimpleXChat/FileUtils.swift#L86) removes all databases, files, temp files, and wallpapers
+- [`deleteAppFiles()`](../SimpleXChat/FileUtils.swift#L108) removes only the files directory (preserving databases)
 
 ---
 

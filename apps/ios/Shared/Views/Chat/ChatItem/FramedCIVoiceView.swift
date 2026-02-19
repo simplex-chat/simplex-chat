@@ -12,6 +12,7 @@ import SwiftUI
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#FramedCIVoiceView
 struct FramedCIVoiceView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat

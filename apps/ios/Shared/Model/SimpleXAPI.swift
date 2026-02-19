@@ -50,6 +50,7 @@ enum TerminalItem: Identifiable {
     }
 }
 
+// Spec: spec/architecture.md#beginBGTask
 func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
     var id: UIBackgroundTaskIdentifier!
     var running = true
@@ -87,12 +88,14 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
+// Spec: spec/api.md#chatSendCmdSync
 @inline(__always)
 func chatSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, log: Bool = true) throws -> R {
     let res: APIResult<R> = chatApiSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl: ctrl, log: log)
     return try apiResult(res)
 }
 
+// Spec: spec/api.md#chatApiSendCmdSync
 func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, retryNum: Int32 = 0, log: Bool = true) -> APIResult<R> {
     if log {
         logger.debug("chatSendCmd \(cmd.cmdType)")
@@ -113,12 +116,14 @@ func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = tru
     return resp
 }
 
+// Spec: spec/api.md#chatSendCmd
 @inline(__always)
 func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, log: Bool = true) async throws -> R {
     let res: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl: ctrl, log: log)
     return try apiResult(res)
 }
 
+// Spec: spec/api.md#chatApiSendCmdWithRetry
 func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
     let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
     if inProgress == nil || inProgress?.boxedValue == true,
@@ -211,6 +216,7 @@ func proxyDestinationErrorAlertMessage(proxyServer: String, destServer: String) 
     String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: "alert message"), serverHostname(proxyServer), serverHostname(destServer))
 }
 
+// Spec: spec/api.md#chatApiSendCmd
 @inline(__always)
 func chatApiSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, retryNum: Int32 = 0, log: Bool = true) async -> APIResult<R> {
     await withCheckedContinuation { cont in
@@ -227,6 +233,7 @@ func apiResult<R: ChatAPIResult>(_ res: APIResult<R>) throws -> R {
     }
 }
 
+// Spec: spec/api.md#chatRecvMsg
 func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> APIResult<ChatEvent>? {
     await withCheckedContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> APIResult<ChatEvent>? in
@@ -347,6 +354,7 @@ func apiStopChat() async throws {
     }
 }
 
+// Spec: spec/architecture.md#apiActivateChat
 func apiActivateChat() {
     chatReopenStore()
     do {
@@ -356,6 +364,7 @@ func apiActivateChat() {
     }
 }
 
+// Spec: spec/architecture.md#apiSuspendChat
 func apiSuspendChat(timeoutMicroseconds: Int) {
     do {
         try sendCommandOkRespSync(.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
@@ -364,12 +373,14 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     }
 }
 
+// Spec: spec/services/files.md#apiSetAppFilePaths
 func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, ctrl: chat_ctrl? = nil) throws {
     let r: ChatResponse2 = try chatSendCmdSync(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder), ctrl: ctrl)
     if case .cmdOk = r { return }
     throw r.unexpected
 }
 
+// Spec: spec/services/files.md#apiSetEncryptLocalFiles
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     try sendCommandOkRespSync(.apiSetEncryptLocalFiles(enable: enable))
 }
@@ -1456,6 +1467,7 @@ func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationF
     }
 }
 
+// Spec: spec/services/files.md#receiveFile
 func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = false, auto: Bool = false) async {
     await receiveFiles(
         user: user,
@@ -1574,6 +1586,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
     }
 }
 
+// Spec: spec/services/files.md#cancelFile
 func cancelFile(user: User, fileId: Int64) async {
     if let chatItem = await apiCancelFile(fileId: fileId) {
         await chatItemSimpleUpdate(user, chatItem)
@@ -1596,12 +1609,14 @@ func setLocalDeviceName(_ displayName: String) throws {
     try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
 }
 
+// Spec: spec/architecture.md#connectRemoteCtrl
 func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
     let r: ChatResponse2 = try await chatSendCmd(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
     if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
     throw r.unexpected
 }
 
+// Spec: spec/architecture.md#findKnownRemoteCtrl
 func findKnownRemoteCtrl() async throws {
     try await sendCommandOkResp(.findKnownRemoteCtrl)
 }
@@ -2079,6 +2094,7 @@ private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
     }
 }
 
+// Spec: spec/architecture.md#startChat
 func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
@@ -2200,6 +2216,7 @@ private func getUserChatDataAsync(keepingChatId: String?) async throws {
     }
 }
 
+// Spec: spec/architecture.md#ChatReceiver
 class ChatReceiver {
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
@@ -2245,6 +2262,7 @@ class ChatReceiver {
     }
 }
 
+// Spec: spec/api.md#processReceivedMsg
 func processReceivedMsg(_ res: ChatEvent) async {
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
