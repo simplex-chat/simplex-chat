@@ -2384,7 +2384,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var chatIconName: String {
         if useRelays {
-            "antenna.radiowaves.left.and.right"
+            "antenna.radiowaves.left.and.right.circle.fill"
         } else {
             switch businessChat?.chatType {
             case .none: "person.2.circle.fill"

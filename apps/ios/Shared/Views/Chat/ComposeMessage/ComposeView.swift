@@ -423,7 +423,12 @@ struct ComposeView: View {
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {
-                    connectButtonView("Join group", icon: "person.2.fill", connect: connectPreparedGroup)
+                    let isChannel = chat.chatInfo.groupInfo?.useRelays == true
+                    connectButtonView(
+                        isChannel ? "Join channel" : "Join group",
+                        icon: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.fill",
+                        connect: connectPreparedGroup
+                    )
                 } else {
                     sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
                 }

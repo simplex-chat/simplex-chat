@@ -1074,24 +1074,36 @@ private func showPrepareContactAlert(
 
 private func showPrepareGroupAlert(
     connectionLink: CreatedConnLink,
+    groupShortLinkInfo: GroupShortLinkInfo?,
     groupShortLinkData: GroupShortLinkData,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
+    let isChannel = !(groupShortLinkInfo?.groupRelays ?? []).isEmpty
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
-        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
+        profileImage:
+            ProfileImage(
+                imageStr: groupShortLinkData.groupProfile.image,
+                iconName: isChannel
+                            ? "antenna.radiowaves.left.and.right.circle.fill"
+                            : "person.2.circle.fill",
+                size: alertProfileImageSize
+            ),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
-        confirmTitle: NSLocalizedString("Open new group", comment: "new chat action"),
+        confirmTitle: isChannel
+            ? NSLocalizedString("Open new channel", comment: "new chat action")
+            : NSLocalizedString("Open new group", comment: "new chat action"),
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData)
                     await MainActor.run {
+                        // TODO [relays] store groupShortLinkInfo?.groupRelays in ChatModel for pre-join relay display (no-op when empty)
                         ChatModel.shared.addChat(Chat(chat))
                         openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
                     }
@@ -1332,12 +1344,13 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(_groupSLinkInfo_, groupSLinkData_): // TODO [relays] pass `groupSLinkInfo_.direct` to apiPrepareGroup
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareGroupAlert(
                                     connectionLink: connectionLink,
+                                    groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
                                     theme: theme,
                                     dismiss: dismiss,

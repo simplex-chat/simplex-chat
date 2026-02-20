@@ -1029,12 +1029,12 @@ struct ChatView: View {
                 switch groupInfo.businessChat?.chatType {
                 case .none:
                     if groupInfo.nextConnectPrepared {
-                        "Tap Join group"
+                        groupInfo.useRelays ? "Tap Join channel" : "Tap Join group"
                     } else {
                         switch (groupInfo.membership.memberStatus) {
-                        case .memInvited: "Join group"
-                        case .memCreator: "Your group"
-                        default: "Group"
+                        case .memInvited: groupInfo.useRelays ? "Join channel" : "Join group"
+                        case .memCreator: groupInfo.useRelays ? "Your channel" : "Your group"
+                        default: groupInfo.useRelays ? "Channel" : "Group"
                         }
                     }
                 case .business:
