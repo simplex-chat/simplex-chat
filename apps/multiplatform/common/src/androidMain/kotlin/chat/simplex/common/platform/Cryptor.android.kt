@@ -1,8 +1,8 @@
 package chat.simplex.common.platform
 
 import android.annotation.SuppressLint
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
+import android.os.Build
+import android.security.keystore.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -71,13 +71,24 @@ internal class Cryptor: CryptorInterface {
   private fun createSecretKey(alias: String): SecretKey? {
     if (keyStore.containsAlias(alias)) return getSecretKey(alias)
     val keyGenerator: KeyGenerator = KeyGenerator.getInstance(KEY_ALGORITHM, "AndroidKeyStore")
-    keyGenerator.init(
-      KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-        .setBlockModes(BLOCK_MODE)
-        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-        .build()
-    )
-    return keyGenerator.generateKey()
+    val builder = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+      .setBlockModes(BLOCK_MODE)
+      .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      try {
+        keyGenerator.init(builder.setIsStrongBoxBacked(true).build())
+        val key = keyGenerator.generateKey()
+        Log.w(TAG, "StrongBox support is present")
+        key
+      } catch (e: StrongBoxUnavailableException) {
+        Log.w(TAG, "No StrongBox support")
+        keyGenerator.init(builder.setIsStrongBoxBacked(false).build())
+        keyGenerator.generateKey()
+      }
+    } else {
+      keyGenerator.init(builder.build())
+      keyGenerator.generateKey()
+    }
   }
 
   private fun getSecretKey(alias: String): SecretKey? {
