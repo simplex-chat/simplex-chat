@@ -1,0 +1,338 @@
+---
+layout: layouts/main.html
+title: "SimpleX File Transfer"
+description: "Send files securely with end-to-end encryption"
+templateEngineOverride: njk
+active_file: true
+---
+{% set lang = page.url | getlang %}
+{% from "components/macro.njk" import overlay %}
+
+<link rel="stylesheet" href="/file-assets/index.css">
+<style>
+  /* Reset website .card styles that conflict with xftp bundle */
+  #app .card { cursor: default; }
+  #app .card,
+  #app .card > div { transition: unset; height: auto; }
+  #app .card > div > * { opacity: unset; max-height: unset; transform: unset; transition: unset; }
+
+  /* Align xftp bundle with website design */
+  #app { font-family: inherit; color: #3F484B; max-width: 520px; padding: 0; }
+  #app .card { background: transparent; box-shadow: none; padding: 0; border-radius: 0; }
+  #app h1 { font-size: 38px; line-height: 55px; font-weight: 700; color: #3F484B; margin-bottom: 32px; }
+  .dark #app h1 { color: #fff; }
+  #app .drop-zone { border: 2px dashed #c5d3de; border-radius: 12px; padding: 40px 24px; }
+  #app .drop-zone.drag-over { border-color: #0053D0; background: #DBEEFF; }
+  #app .btn { background: #0053D0; border-radius: 34px; padding: 12px 32px; font-size: .9rem; font-weight: 600; }
+  #app .btn:hover { background: #1661D1; }
+  #app .btn-secondary { background: #6b7280; border-radius: 34px; }
+  #app .hint { color: #6b7280; }
+  #app .link-row input { border-radius: 8px; border-color: #c5d3de; }
+  #app .security-note { background: #f0f7ff; border-radius: 12px; color: #3F484B; }
+  #app .security-note a { color: #0197FF; }
+  #app .success { color: #0053D0; }
+
+  .dark #app { color: #e5e7eb; }
+  .dark #app .card { background: transparent; box-shadow: none; }
+  .dark #app .drop-zone { border-color: #374151; }
+  .dark #app .drop-zone.drag-over { border-color: #70F0F9; background: #1B325C; }
+  .dark #app .btn { background: #70F0F9; color: #000832; }
+  .dark #app .btn:hover { background: #66D9E2; }
+  .dark #app .link-row input { border-color: #374151; background: #071C46; color: #e5e7eb; }
+  .dark #app .security-note { background: #0B2A59; color: #d1d5db; }
+  .dark #app .security-note a { color: #70F0F9; }
+  .dark #app .success { color: #70F0F9; }
+
+  #app #upload-error { border: 2px dashed #c5d3de; border-radius: 12px; padding: 40px 24px; text-align: center; }
+  .dark #app #upload-error { border-color: #374151; }
+
+  #app .stage > .btn { margin-top: 20px; }
+  #app .security-note { margin-top: 20px; }
+  #app .drop-zone .btn { margin: 10px 0 16px; }
+
+  /* Protocol overlay: image fixed, text scrolls natively */
+  /* Push popup below navbar at all widths */
+  #xftp-protocol { padding-top: 70px; }
+  #xftp-protocol .overlay-card {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  @media (min-width: 768px) {
+    #xftp-protocol .overlay-card { max-height: min(660px, 100%); }
+  }
+  #xftp-protocol .overlay-card > h1 {
+    flex-shrink: 0;
+    padding-bottom: 16px;
+    margin-bottom: 0;
+    z-index: 1;
+  }
+  /* .flex is the full-width scroll container */
+  #xftp-protocol .overlay-card > .flex {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #c5d3de transparent;
+  }
+  .dark #xftp-protocol .overlay-card > .flex {
+    scrollbar-color: #374151 transparent;
+  }
+  #xftp-protocol .overlay-card > .flex::-webkit-scrollbar { width: 6px; }
+  #xftp-protocol .overlay-card > .flex::-webkit-scrollbar-track { background: transparent; }
+  #xftp-protocol .overlay-card > .flex::-webkit-scrollbar-thumb { background: #c5d3de; border-radius: 3px; }
+  .dark #xftp-protocol .overlay-card > .flex::-webkit-scrollbar-thumb { background: #374151; }
+  /* Desktop: text stays left, image fixed on right */
+  @media (min-width: 1024px) {
+    #xftp-protocol .overlay-card > .flex > div:first-child {
+      max-width: 50%;
+    }
+    #xftp-protocol .overlay-card > .flex > div:last-child {
+      position: absolute;
+      right: 56px;
+      top: 0;
+      bottom: 0;
+      left: 55%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+  }
+  #xftp-protocol .close-overlay-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    cursor: pointer;
+    z-index: 3;
+    fill: #606C71;
+  }
+  .dark #xftp-protocol .close-overlay-btn { fill: #e5e7eb; }
+  /* Scroll fade: gradient over text area only, hidden at bottom */
+  #xftp-protocol .overlay-card::after {
+    content: '';
+    position: absolute;
+    bottom: 40px;
+    left: 24px;
+    right: 24px;
+    height: 48px;
+    background: linear-gradient(rgba(255,255,255,0), #fff);
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.2s;
+  }
+  .dark #xftp-protocol .overlay-card::after {
+    background: linear-gradient(rgba(7,28,70,0), #071C46);
+  }
+  @media (min-width: 640px) {
+    #xftp-protocol .overlay-card::after { bottom: 56px; left: 56px; right: 56px; }
+  }
+  @media (min-width: 1024px) {
+    #xftp-protocol .overlay-card::after { right: 55%; }
+  }
+  #xftp-protocol.scrolled-bottom .overlay-card::after { opacity: 0; }
+  #xftp-protocol .overlay-card.flex,
+  #xftp-protocol.flex .overlay-card { animation: overlaySlideIn 0.25s ease-out; }
+  @keyframes overlaySlideIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  #xftp-protocol.overlay-closing { animation: overlayFadeOut 0.2s ease-in forwards; }
+  #xftp-protocol.overlay-closing .overlay-card { animation: overlaySlideOut 0.2s ease-in forwards; }
+  @keyframes overlayFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  @keyframes overlaySlideOut {
+    from { opacity: 1; transform: scale(1) translateY(0); }
+    to { opacity: 0; transform: scale(0.95) translateY(10px); }
+  }
+
+  #join-simplex { margin-top: 64px; }
+
+  .learn-more-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: #f0f7ff;
+    border: 1px solid #c5d3de;
+    color: #0053D0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .learn-more-banner:hover {
+    background: #DBEEFF;
+    border-color: #0053D0;
+  }
+  .learn-more-banner .learn-more-arrow {
+    margin-left: auto;
+    transition: transform 0.15s;
+  }
+  .learn-more-banner:hover .learn-more-arrow {
+    transform: translateX(3px);
+  }
+  .dark .learn-more-banner {
+    background: #0B2A59;
+    border-color: #1B325C;
+    color: #70F0F9;
+  }
+  .dark .learn-more-banner:hover {
+    background: #122F5C;
+    border-color: #70F0F9;
+  }
+</style>
+
+<section class="bg-primary-bg-light dark:bg-primary-bg-dark py-10 mt-[66px] px-5">
+  <div class="container flex flex-col items-center max-w-[600px] mx-auto">
+    <noscript>
+      <p class="text-center text-grey-black dark:text-white py-10">
+        {{ "file-noscript" | i18n({}, lang) | safe }}
+      </p>
+    </noscript>
+    <div id="app" data-xftp-app data-no-hashchange class="w-full">
+      <div class="card">
+        <h1>{{ 'file-title' | i18n({}, lang) | safe }}</h1>
+        <div class="drop-zone">
+          <p>{{ 'file-drop-text' | i18n({}, lang) | safe }}</p>
+          <p class="hint">{{ 'file-drop-hint' | i18n({}, lang) | safe }}</p>
+          <span class="btn">{{ 'file-choose' | i18n({}, lang) | safe }}</span>
+          <p class="hint">{{ 'file-max-size' | i18n({}, lang) | safe }}</p>
+        </div>
+      </div>
+    </div>
+    <template id="dl-placeholder">
+      <div class="card">
+        <h1>{{ "file-title" | i18n({}, lang) | safe }}</h1>
+        <div class="stage">
+          <p>File available</p>
+          <button class="btn">{{ "file-download-btn" | i18n({}, lang) | safe }}</button>
+          <div class="security-note">
+            <p>{{ "file-dl-sec-1" | i18n({}, lang) | safe }}</p>
+            <p>{{ "file-dl-sec-2" | i18n({}, lang) | safe }}</p>
+            <p>{{ "file-dl-sec-3" | i18n({}, lang) | safe }}</p>
+          </div>
+        </div>
+      </div>
+    </template>
+    <script>if(location.hash.length>50){var a=document.getElementById("app"),t=document.getElementById("dl-placeholder");if(a&&t)a.replaceChildren(t.content.cloneNode(true))}</script>
+    <script type="module" src="/file-assets/index.js"></script>
+
+    <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
+      {{ "file-e2e-note" | i18n({}, lang) | safe }}
+    </p>
+
+    <a id="learn-more-btn" href="javascript:void(0);" class="learn-more-banner">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 1C7.2 1 5 3.2 5 6v2H4a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2h-1V6c0-2.8-2.2-5-5-5zm-3 5c0-1.7 1.3-3 3-3s3 1.3 3 3v2H7V6zm4 8.7V16H9v-1.3a2 2 0 111.9 0h.1z" fill="currentColor"/>
+      </svg>
+      <span>{{ "file-learn-more" | i18n({}, lang) | safe }}</span>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="learn-more-arrow">
+        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <div id="join-simplex" class="text-center w-full">
+      <h2 class="text-[38px] leading-[36px] md:leading-[55px] text-grey-black dark:text-white font-bold mb-5">
+        {{ "file-cta-heading" | i18n({}, lang) | safe }}
+      </h2>
+      <p class="text-base text-grey-black dark:text-white mb-14 max-w-[600px] mx-auto">
+        {{ "file-cta-subheading" | i18n({}, lang) | safe }}
+      </p>
+      <div class="flex items-center justify-center gap-4 flex-wrap">
+        <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+        <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+        <a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+        <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
+        <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% for section in file_overlays.sections %}
+  {{ overlay(section, lang) }}
+{% endfor %}
+
+<script>
+  window.__XFTP_I18N__ = {
+    "title": {{ 'file-title' | i18n({}, lang) | dump | safe }},
+    "dropZone": {{ 'file-drop-text' | i18n({}, lang) | dump | safe }},
+    "dropZoneHint": {{ 'file-drop-hint' | i18n({}, lang) | dump | safe }},
+    "chooseFile": {{ 'file-choose' | i18n({}, lang) | dump | safe }},
+    "maxSizeHint": {{ 'file-max-size' | i18n({}, lang) | dump | safe }},
+    "encrypting": {{ 'file-encrypting' | i18n({}, lang) | dump | safe }},
+    "uploading": {{ 'file-uploading' | i18n({}, lang) | dump | safe }},
+    "cancel": {{ 'file-cancel' | i18n({}, lang) | dump | safe }},
+    "fileUploaded": {{ 'file-uploaded' | i18n({}, lang) | dump | safe }},
+    "copy": {{ 'file-copy' | i18n({}, lang) | dump | safe }},
+    "copied": {{ 'file-copied' | i18n({}, lang) | dump | safe }},
+    "share": {{ 'file-share' | i18n({}, lang) | dump | safe }},
+    "expiryHint": {{ 'file-expiry' | i18n({}, lang) | dump | safe }},
+    "securityNote1": {{ 'file-sec-1' | i18n({}, lang) | dump | safe }},
+    "securityNote2": {{ 'file-sec-2' | i18n({}, lang) | dump | safe }},
+    "securityNote3": {{ 'file-sec-3' | i18n({}, lang) | dump | safe }},
+    "retry": {{ 'file-retry' | i18n({}, lang) | dump | safe }},
+    "downloading": {{ 'file-downloading' | i18n({}, lang) | dump | safe }},
+    "decrypting": {{ 'file-decrypting' | i18n({}, lang) | dump | safe }},
+    "downloadComplete": {{ 'file-download-complete' | i18n({}, lang) | dump | safe }},
+    "download": {{ 'file-download-btn' | i18n({}, lang) | dump | safe }},
+    "fileTooLarge": {{ 'file-too-large' | i18n({}, lang) | dump | safe }},
+    "fileEmpty": {{ 'file-empty' | i18n({}, lang) | dump | safe }},
+    "invalidLink": {{ 'file-invalid-link' | i18n({}, lang) | dump | safe }},
+    "initError": {{ 'file-init-error' | i18n({}, lang) | dump | safe }},
+    "fileAvailable": {{ 'file-available' | i18n({}, lang) | dump | safe }},
+    "dlSecurityNote1": {{ 'file-dl-sec-1' | i18n({}, lang) | dump | safe }},
+    "dlSecurityNote2": {{ 'file-dl-sec-2' | i18n({}, lang) | dump | safe }},
+    "dlSecurityNote3": {{ 'file-dl-sec-3' | i18n({}, lang) | dump | safe }},
+    "workersRequired": {{ 'file-workers-required' | i18n({}, lang) | dump | safe }}
+  }
+</script>
+
+<script>
+  document.getElementById('learn-more-btn')?.addEventListener('click', function() {
+    var el = document.getElementById('xftp-protocol');
+    if (el) { el.classList.remove('hidden', 'overlay-closing'); el.classList.add('flex'); document.body.classList.add('lock-scroll'); }
+  });
+
+  // Intercept close for #xftp-protocol to add fade-out animation
+  document.getElementById('xftp-protocol')?.addEventListener('click', function(e) {
+    if (e.target.closest('.close-overlay-btn') || (e.target.closest('.overlay') && !e.target.closest('.overlay-card'))) {
+      e.stopPropagation();
+      var el = document.getElementById('xftp-protocol');
+      el.classList.add('overlay-closing');
+      el.addEventListener('animationend', function handler() {
+        el.removeEventListener('animationend', handler);
+        el.classList.remove('flex', 'overlay-closing');
+        el.classList.add('hidden');
+        document.body.classList.remove('lock-scroll');
+        history.replaceState(null, null, ' ');
+      });
+    }
+  }, true);
+
+  // Hide scroll fade gradient when text bottom is visible (works with column-reverse)
+  var scrollArea = document.querySelector('#xftp-protocol .overlay-card > .flex');
+  if (scrollArea) {
+    var textCol = scrollArea.querySelector(':scope > div:first-child > div');
+    function checkScrollBottom() {
+      if (!textCol) return;
+      var scrollRect = scrollArea.getBoundingClientRect();
+      if (scrollRect.height === 0) return; // not laid out yet
+      var textBottom = textCol.getBoundingClientRect().bottom;
+      document.getElementById('xftp-protocol').classList.toggle('scrolled-bottom', textBottom <= scrollRect.bottom + 10);
+    }
+    scrollArea.addEventListener('scroll', checkScrollBottom);
+    new MutationObserver(function() {
+      if (!document.getElementById('xftp-protocol').classList.contains('hidden')) {
+        requestAnimationFrame(checkScrollBottom);
+      }
+    }).observe(document.getElementById('xftp-protocol'), { attributes: true, attributeFilter: ['class'] });
+  }
+</script>
+
