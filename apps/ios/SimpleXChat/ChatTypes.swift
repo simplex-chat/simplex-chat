@@ -2383,10 +2383,14 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var chatIconName: String {
-        switch businessChat?.chatType {
-        case .none: "person.2.circle.fill"
-        case .business: "briefcase.circle.fill"
-        case .customer: "person.crop.circle.fill"
+        if useRelays {
+            "antenna.radiowaves.left.and.right"
+        } else {
+            switch businessChat?.chatType {
+            case .none: "person.2.circle.fill"
+            case .business: "briefcase.circle.fill"
+            case .customer: "person.crop.circle.fill"
+            }
         }
     }
 
@@ -3244,6 +3248,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case let (.group(groupInfo, _), .groupSnd):
             let m = groupInfo.membership
             return m.memberRole >= .moderator ? (groupInfo, nil) : nil
+        case (.group, .channelRcv):
+            return nil
         default: return nil
         }
     }

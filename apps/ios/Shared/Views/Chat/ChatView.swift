@@ -1653,6 +1653,8 @@ struct ChatView: View {
 
             let sameMemberAndDirection = if case .groupRcv(let prevGroupMember) = prevItem.chatDir, case .groupRcv(let groupMember) = chatItem.chatDir {
                 groupMember.groupMemberId == prevGroupMember.groupMemberId
+            } else if case .channelRcv = chatItem.chatDir, case .channelRcv = prevItem.chatDir {
+                true
             } else {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
@@ -1668,15 +1670,20 @@ struct ChatView: View {
         func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
             let oldIsGroupRcv = switch older?.chatDir {
             case .groupRcv: true
+            case .channelRcv: true
             default: false
             }
             let sameMember = switch (older?.chatDir, current.chatDir) {
             case (.groupRcv(let oldMember), .groupRcv(let member)):
                 oldMember.memberId == member.memberId
+            case (.channelRcv, .channelRcv):
+                true
             default:
                 false
             }
             if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+                return true
+            } else if case .channelRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
                 return true
             } else {
                 return false
@@ -1843,7 +1850,74 @@ struct ChatView: View {
             _ itemSeparation: ItemSeparation
         ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
-            if case let .groupRcv(member) = ci.chatDir,
+            if case .channelRcv = ci.chatDir,
+               case let .group(groupInfo, _) = chat.chatInfo {
+                if showAvatar {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if ci.content.showMemberName {
+                            Group {
+                                Group {
+                                    if #available(iOS 16.0, *) {
+                                        MemberLayout(spacing: 16, msgWidth: msgWidth) {
+                                            Text(groupInfo.chatViewName)
+                                                .lineLimit(1)
+                                            Text(NSLocalizedString("channel", comment: "shown as sender role for channel messages"))
+                                                .fontWeight(.semibold)
+                                                .lineLimit(1)
+                                                .padding(.trailing, 8)
+                                        }
+                                    } else {
+                                        HStack(spacing: 16) {
+                                            Text(groupInfo.chatViewName)
+                                                .lineLimit(1)
+                                            Text(NSLocalizedString("channel", comment: "shown as sender role for channel messages"))
+                                                .fontWeight(.semibold)
+                                                .lineLimit(1)
+                                                .layoutPriority(1)
+                                        }
+                                    }
+                                }
+                                .frame(
+                                    maxWidth: maxWidth,
+                                    alignment: chatItem.chatDir.sent ? .trailing : .leading
+                                )
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                            .padding(.top, 3)
+                        }
+                        HStack(alignment: .center, spacing: 0) {
+                            if selectedChatItems != nil && ci.canBeDeletedForSelf {
+                                SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                                    .padding(.trailing, 12)
+                            }
+                            HStack(alignment: .top, spacing: 10) {
+                                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        showChatInfoSheet = true
+                                    })
+                                chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                                    .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
+                            }
+                        }
+                    }
+                    .padding(.bottom, bottomPadding)
+                    .padding(.trailing)
+                    .padding(.leading, 12)
+                } else {
+                    HStack(alignment: .center, spacing: 0) {
+                        if selectedChatItems != nil && ci.canBeDeletedForSelf {
+                            SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                                .padding(.leading, 12)
+                        }
+                        chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                            .padding(.trailing)
+                            .padding(.leading, 10 + memberImageSize + 12)
+                    }
+                    .padding(.bottom, bottomPadding)
+                }
+            } else if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo, _) = chat.chatInfo {
                 if showAvatar {
                     VStack(alignment: .leading, spacing: 4) {
@@ -2043,6 +2117,7 @@ struct ChatView: View {
             switch (prevItem?.chatDir) {
             case .groupSnd: return true
             case let .groupRcv(prevMember): return prevMember.groupMemberId != member.groupMemberId
+            case .channelRcv: return true
             default: return false
             }
         }

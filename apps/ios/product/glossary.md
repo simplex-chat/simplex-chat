@@ -88,7 +88,7 @@ The lifecycle state of a Connection: ConnNew (created, awaiting join), ConnJoine
 The status of a contact record: CSActive (normal), CSDeleted (deleted by contact), CSDeletedByUser (deleted by user). *See: `../../src/Simplex/Chat/Types.hs` (data ContactStatus)*
 
 ### GroupMemberRole
-Hierarchical role assigned to a group member. From most to least privileged: GROwner, GRAdmin, GRModerator, GRMember, GRObserver, GRRelay. Roles determine permissions for sending messages, managing members, and moderating content. The `.relay` role is below `.observer` and is used for relay members in channels. *See: `../../src/Simplex/Chat/Types/Shared.hs` (data GroupMemberRole), `SimpleXChat/ChatTypes.swift` L2746*
+Hierarchical role assigned to a group member. From most to least privileged: GROwner, GRAdmin, GRModerator, GRMember, GRObserver, GRRelay. Roles determine permissions for sending messages, managing members, and moderating content. The `.relay` role is below `.observer` and is used for relay members in channels. *See: `../../src/Simplex/Chat/Types/Shared.hs` (data GroupMemberRole), `SimpleXChat/ChatTypes.swift` L2747*
 
 ### GroupMemberStatus
 The lifecycle state of a group member: GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown, GSMemInvited, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator, GSMemPendingReview, GSMemPendingApproval. *See: `../../src/Simplex/Chat/Types.hs` (data GroupMemberStatus)*
@@ -100,13 +100,13 @@ Represents an in-progress or completed file transfer. Variants: FTSnd (sending, 
 A user-defined label for organizing conversations in the chat list. Each tag has a text label and optional emoji. Chats can have multiple tags, and the chat list can be filtered by tag. *See: `../../src/Simplex/Chat/Types.hs` (data ChatTag), `Shared/Views/ChatList/TagListView.swift`*
 
 ### Channel
-A group that uses relay infrastructure for message delivery (`groupInfo.useRelays == true`). Channels decouple the message sender from direct group membership connections, routing messages through relay members instead. *See: [spec/state.md](../spec/state.md) (Relay-Related Data Model), `SimpleXChat/ChatTypes.swift` (GroupInfo.useRelays)*
+A group that uses relay infrastructure for message delivery (`groupInfo.useRelays == true`). Channels decouple the message sender from direct group membership connections, routing messages through relay members instead. Channels display the `antenna.radiowaves.left.and.right` SF Symbol as their icon and render received messages with the group avatar and "channel" role label. *See: [spec/state.md](../spec/state.md) (Relay-Related Data Model), [spec/client/chat-view.md](../spec/client/chat-view.md) (Channel Message Rendering), `SimpleXChat/ChatTypes.swift` (GroupInfo.useRelays, GroupInfo.chatIconName)*
 
 ### RelayStatus
-The lifecycle state of a relay member in a channel: `.rsNew` (created), `.rsInvited` (invitation sent), `.rsAccepted` (accepted by relay), `.rsActive` (fully operational). *See: `SimpleXChat/ChatTypes.swift` L2500*
+The lifecycle state of a relay member in a channel: `.rsNew` (created), `.rsInvited` (invitation sent), `.rsAccepted` (accepted by relay), `.rsActive` (fully operational). *See: `SimpleXChat/ChatTypes.swift` L2501*
 
 ### GroupRelay
-A struct representing a relay instance for a group. Contains the relay's database ID (`groupRelayId`), associated group member ID, user chat relay ID, relay status, and optional relay link. *See: `SimpleXChat/ChatTypes.swift` L2507*
+A struct representing a relay instance for a group. Contains the relay's database ID (`groupRelayId`), associated group member ID, user chat relay ID, relay status, and optional relay link. *See: `SimpleXChat/ChatTypes.swift` L2508*
 
 ### UserChatRelay
 A struct representing a user's chat relay configuration. Contains the relay's database ID (`chatRelayId`), SMP server address, name, domains, and flags for preset/tested/enabled/deleted status. *See: `Shared/Model/AppAPITypes.swift` L1940*
@@ -115,7 +115,7 @@ A struct representing a user's chat relay configuration. Contains the relay's da
 Information about a group's short link including whether it's a direct link, associated relay hostnames, and shared group identifier. Transient data returned by `APIConnectPreparedGroup` — not persisted on GroupInfo. *See: `Shared/Model/AppAPITypes.swift` L1345*
 
 ### CIDirection.channelRcv
-A chat item direction case for messages received via a channel relay, as opposed to `.groupRcv` for standard group messages. *See: `SimpleXChat/ChatTypes.swift` L3467*
+A chat item direction case for messages received via a channel relay, as opposed to `.groupRcv` for standard group messages. *See: `SimpleXChat/ChatTypes.swift` L3470*
 
 ---
 

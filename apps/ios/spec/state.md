@@ -359,21 +359,21 @@ A **channel** is a group with `groupInfo.useRelays == true`. These types support
 | `User` | `userChatRelay` | `Bool` | Whether user acts as a chat relay | [L46](../SimpleXChat/ChatTypes.swift#L46) |
 | `GroupInfo` | `useRelays` | `Bool` | Whether group uses relay infrastructure (channel mode) | [L2341](../SimpleXChat/ChatTypes.swift#L2341) |
 | `GroupInfo` | `relayOwnStatus` | `RelayStatus?` | Current user's relay status in this group | [L2342](../SimpleXChat/ChatTypes.swift#L2342) |
-| `GroupProfile` | `groupLink` | `String?` | Group's short link | [L2446](../SimpleXChat/ChatTypes.swift#L2446) |
+| `GroupProfile` | `groupLink` | `String?` | Group's short link | [L2447](../SimpleXChat/ChatTypes.swift#L2447) |
 
 #### New Types
 
 | Type | Kind | Description | Line |
 |------|------|-------------|------|
-| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive` | [L2500](../SimpleXChat/ChatTypes.swift#L2500) |
-| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status) | [L2507](../SimpleXChat/ChatTypes.swift#L2507) |
+| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive` | [L2501](../SimpleXChat/ChatTypes.swift#L2501) |
+| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status) | [L2508](../SimpleXChat/ChatTypes.swift#L2508) |
 
 #### New Enum Cases
 
 | Enum | Case | Description | Line |
 |------|------|-------------|------|
-| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L2747](../SimpleXChat/ChatTypes.swift#L2747) |
-| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L3467](../SimpleXChat/ChatTypes.swift#L3467) |
+| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L2748](../SimpleXChat/ChatTypes.swift#L2748) |
+| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L3470](../SimpleXChat/ChatTypes.swift#L3470) |
 
 ---
 

@@ -52,7 +52,7 @@
 | Shared/SimpleXApp.swift | PC1 through PC31 | High | App entry point — initialization affects everything |
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
 | Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
-| Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11 | High | Core conversation UI — most messaging features |
+| Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
 | Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11 | High | Message composition — send path for all messages |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
 | Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20 | Medium | Contact details and verification |
