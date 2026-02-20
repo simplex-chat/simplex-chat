@@ -53,10 +53,12 @@
 | Shared/AppDelegate.swift | PC18 | Medium | Push notification registration |
 | Shared/Views/ChatList/ChatListView.swift | PC1, PC28 | High | Main screen rendering and filtering |
 | Shared/Views/Chat/ChatView.swift | PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC11, PC31 | High | Core conversation UI — most messaging features, channel message rendering |
-| Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11 | High | Message composition — send path for all messages |
+| Shared/Views/Chat/ComposeMessage/ComposeView.swift | PC4, PC6, PC9, PC11, PC31 | High | Message composition — send path for all messages, channel sendAsGroup |
 | Shared/Views/Chat/ChatItem/ | PC2, PC3, PC5, PC7, PC8, PC9, PC10, PC11 | Medium | Individual message rendering components |
 | Shared/Views/Chat/ChatInfoView.swift | PC2, PC13, PC20 | Medium | Contact details and verification |
-| Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30 | High | Group management hub |
+| Shared/Views/Chat/Group/GroupChatInfoView.swift | PC3, PC14, PC15, PC16, PC30, PC31 | High | Group management hub, channel info adaptations |
+| Shared/Views/Chat/Group/ChannelMembersView.swift | PC31 | Medium | Channel owners/subscribers list |
+| Shared/Views/Chat/Group/ChannelRelaysView.swift | PC31 | Medium | Channel relay status list |
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | PC14, PC16 | Medium | Member invitation flow |
 | Shared/Views/Chat/Group/GroupLinkView.swift | PC15 | Low | Group link creation/sharing |
 | Shared/Views/Chat/Group/GroupMemberInfoView.swift | PC3, PC14, PC16, PC30 | Medium | Member details and role management |

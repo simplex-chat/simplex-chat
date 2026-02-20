@@ -5,7 +5,7 @@
 > Related specs: [Compose Module](compose.md) | [State Management](../state.md) | [API Reference](../api.md) | [README](../README.md)
 > Related product: [Chat View](../../product/views/chat.md)
 
-**Source:** [`ChatView.swift`](../../Shared/Views/Chat/ChatView.swift) | [`ChatInfoView.swift`](../../Shared/Views/Chat/ChatInfoView.swift) | [`GroupChatInfoView.swift`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift)
+**Source:** [`ChatView.swift`](../../Shared/Views/Chat/ChatView.swift) | [`ChatInfoView.swift`](../../Shared/Views/Chat/ChatInfoView.swift) | [`GroupChatInfoView.swift`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift) | [`ChannelMembersView.swift`](../../Shared/Views/Chat/Group/ChannelMembersView.swift) | [`ChannelRelaysView.swift`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
 
 ---
 
@@ -314,6 +314,49 @@ Multi-selection mode allows batch operations on messages:
 
 ---
 
+## GroupChatInfoView — Channel Adaptations
+
+When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L16) adapts its sections:
+
+### Section Structure (Channel)
+
+| Section | Owner | Subscriber |
+|---------|-------|-----------|
+| 1. Links & Members | Channel link (manage via GroupLinkView), Owners & subscribers | Channel link (read-only QR from `groupProfile.groupLink`), Owners |
+| 2. Profile & Welcome | Edit channel profile, Welcome message | Welcome message (if exists) |
+| 3. Theme & TTL | Chat theme, Delete messages after | Chat theme, Delete messages after |
+| 4. Actions | Chat relays, Clear chat, Delete channel | Chat relays, Clear chat, Leave channel |
+
+**Hidden for channels:** Member support, group reports, user support chat, send receipts, inline members list, group preferences.
+
+### Label Replacements
+
+All "group" labels are replaced with "channel" equivalents via `groupInfo.useRelays ? "Channel..." :` ternary prepended before existing `businessChat` ternary. Affected: delete/leave buttons, delete/leave alerts, remove member alert, edit profile button, group link button/nav title.
+
+### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L611) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
+
+Navigates to a dedicated members view with two sections:
+- **Owners**: current user (if owner) + members with `memberRole >= .owner`
+- **Subscribers** (admin+ only): members with `memberRole < .owner`
+
+Member rows show profile image, display name (with verified shield), connection status, and role badge. Non-user rows link to `GroupMemberInfoView`.
+
+### Channel Link
+
+Owner sees `groupLinkButton()` (navigates to `GroupLinkView` for full link management via `apiGetGroupLink`). Non-owner sees read-only `channelLinkButton()` displaying `groupProfile.groupLink` as QR code via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
+
+### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L625) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
+
+Navigates to relay list view with role-based branches:
+- **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1838) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`).
+- **Member**: filters `chatModel.groupMembers` by `.memberRole == .relay`. Shows relay member display names only (no status data).
+
+### Leave Button Logic
+
+Sole channel owner cannot leave (only delete). Guard: `members.filter({ $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }).count > 0`.
+
+---
+
 ## Source Files
 
 | File | Path | Line |
@@ -342,3 +385,5 @@ Multi-selection mode allows batch operations on messages:
 | Animated image | [`Shared/Views/Chat/ChatItem/AnimatedImageView.swift`](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift) | [L10](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift#L11) |
 | Framed voice | [`Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift) | [L15](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift#L16) |
 | Member contact | [`Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift`](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift#L14) |
+| Channel members | [`Shared/Views/Chat/Group/ChannelMembersView.swift`](../../Shared/Views/Chat/Group/ChannelMembersView.swift) | [L13](../../Shared/Views/Chat/Group/ChannelMembersView.swift#L13) |
+| Channel relays | [`Shared/Views/Chat/Group/ChannelRelaysView.swift`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift) | [L13](../../Shared/Views/Chat/Group/ChannelRelaysView.swift#L13) |

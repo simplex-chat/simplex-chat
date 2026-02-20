@@ -1578,6 +1578,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if groupInfo.membership.memberActive {
                     switch(groupChatScope) {
                     case .none:
+                        if groupInfo.useRelays && groupInfo.membership.memberRole < .admin { return ("you are subscriber", nil) }
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
                         if groupInfo.membership.memberRole == .observer { return ("you are observer", "Please contact group admin.") }
                         return nil
@@ -2515,6 +2516,17 @@ public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
     public var relayStatus: RelayStatus
     public var relayLink: String?
     public var id: Int64 { groupRelayId }
+}
+
+extension RelayStatus {
+    public var text: LocalizedStringKey {
+        switch self {
+        case .rsNew: "New"
+        case .rsInvited: "Connecting"
+        case .rsAccepted: "Accepted"
+        case .rsActive: "Active"
+        }
+    }
 }
 
 public struct BusinessChatInfo: Decodable, Hashable {

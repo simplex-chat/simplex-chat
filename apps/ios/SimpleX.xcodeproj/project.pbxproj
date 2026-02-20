@@ -165,6 +165,8 @@
 		647F090E288EA27B00644C40 /* GroupMemberInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647F090D288EA27B00644C40 /* GroupMemberInfoView.swift */; };
 		648010AB281ADD15009009B9 /* CIFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648010AA281ADD15009009B9 /* CIFileView.swift */; };
 		648679AB2BC96A74006456E7 /* ChatItemForwardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648679AA2BC96A74006456E7 /* ChatItemForwardingView.swift */; };
+		6495D7042F48CFC50060512B /* ChannelMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6495D7032F48CFC50060512B /* ChannelMembersView.swift */; };
+		6495D7062F48CFFD0060512B /* ChannelRelaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6495D7052F48CFFD0060512B /* ChannelRelaysView.swift */; };
 		649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCD9F280460FD00C3A862 /* ComposeImageView.swift */; };
 		649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCDA12805D6EF00C3A862 /* CIImageView.swift */; };
 		64A779F62DBFB9F200FDEF2F /* MemberAdmissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779F52DBFB9F200FDEF2F /* MemberAdmissionView.swift */; };
@@ -532,6 +534,8 @@
 		648010AA281ADD15009009B9 /* CIFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIFileView.swift; sourceTree = "<group>"; };
 		648679AA2BC96A74006456E7 /* ChatItemForwardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemForwardingView.swift; sourceTree = "<group>"; };
 		6493D667280ED77F007A76FB /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		6495D7032F48CFC50060512B /* ChannelMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelMembersView.swift; sourceTree = "<group>"; };
+		6495D7052F48CFFD0060512B /* ChannelRelaysView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelRelaysView.swift; sourceTree = "<group>"; };
 		649BCD9F280460FD00C3A862 /* ComposeImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeImageView.swift; sourceTree = "<group>"; };
 		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
 		64A779F52DBFB9F200FDEF2F /* MemberAdmissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberAdmissionView.swift; sourceTree = "<group>"; };
@@ -1141,6 +1145,8 @@
 				64A779F72DBFDBF200FDEF2F /* MemberSupportView.swift */,
 				64A779FB2DC1040000FDEF2F /* SecondaryChatView.swift */,
 				64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */,
+				6495D7032F48CFC50060512B /* ChannelMembersView.swift */,
+				6495D7052F48CFFD0060512B /* ChannelRelaysView.swift */,
 			);
 			path = Group;
 			sourceTree = "<group>";
@@ -1572,6 +1578,7 @@
 				6448BBB628FA9D56000D2AB9 /* GroupLinkView.swift in Sources */,
 				E5DDBE6E2DC4106800A0EFF0 /* AppAPITypes.swift in Sources */,
 				8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */,
+				6495D7062F48CFFD0060512B /* ChannelRelaysView.swift in Sources */,
 				5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */,
 				5C55A91F283AD0E400C4E99E /* CallManager.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
@@ -1611,6 +1618,7 @@
 				5C9C2DA7289957AE00CC63B1 /* AdvancedNetworkSettings.swift in Sources */,
 				5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */,
 				644EFFE42937BE9700525D5B /* MarkedDeletedItemView.swift in Sources */,
+				6495D7042F48CFC50060512B /* ChannelMembersView.swift in Sources */,
 				1841594C978674A7B42EF0C0 /* AnimatedImageView.swift in Sources */,
 				5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */,
 				1841538E296606C74533367C /* UserPicker.swift in Sources */,

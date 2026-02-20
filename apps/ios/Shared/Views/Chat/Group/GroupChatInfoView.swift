@@ -91,46 +91,66 @@ struct GroupChatInfoView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                     Section {
-                        if groupInfo.canAddMembers && groupInfo.businessChat == nil {
-                            groupLinkButton()
-                        }
-                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
-                            memberSupportButton()
-                        }
-                        if groupInfo.canModerate {
-                            GroupReportsChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
-                        }
-                        if groupInfo.membership.memberActive
-                            && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
-                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                        if groupInfo.useRelays {
+                            if groupInfo.isOwner {
+                                groupLinkButton()
+                            } else if let link = groupInfo.groupProfile.groupLink {
+                                channelLinkButton(link)
+                            }
+                            channelMembersButton()
+                        } else {
+                            if groupInfo.canAddMembers && groupInfo.businessChat == nil {
+                                groupLinkButton()
+                            }
+                            if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                                memberSupportButton()
+                            }
+                            if groupInfo.canModerate {
+                                GroupReportsChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
+                            if groupInfo.membership.memberActive
+                                && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
+                                UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
                         }
                     } header: {
                         Text("")
                     }
 
                     Section {
-                        if groupInfo.isOwner && groupInfo.businessChat == nil {
-                            editGroupButton()
+                        if groupInfo.useRelays {
+                            if groupInfo.isOwner { editGroupButton() }
+                            if groupInfo.groupProfile.description != nil || groupInfo.isOwner {
+                                addOrEditWelcomeMessage()
+                            }
+                        } else {
+                            if groupInfo.isOwner && groupInfo.businessChat == nil {
+                                editGroupButton()
+                            }
+                            if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
+                                addOrEditWelcomeMessage()
+                            }
+                            GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                         }
-                        if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
-                            addOrEditWelcomeMessage()
-                        }
-                        GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                     } footer: {
-                        let label: LocalizedStringKey = (
-                            groupInfo.businessChat == nil
-                            ? "Only group owners can change group preferences."
-                            : "Only chat owners can change preferences."
-                        )
-                        Text(label)
-                            .foregroundColor(theme.colors.secondary)
+                        if !groupInfo.useRelays {
+                            let label: LocalizedStringKey = (
+                                groupInfo.businessChat == nil
+                                ? "Only group owners can change group preferences."
+                                : "Only chat owners can change preferences."
+                            )
+                            Text(label)
+                                .foregroundColor(theme.colors.secondary)
+                        }
                     }
 
                     Section {
-                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
-                            sendReceiptsOption()
-                        } else {
-                            sendReceiptsOptionDisabled()
+                        if !groupInfo.useRelays {
+                            if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                                sendReceiptsOption()
+                            } else {
+                                sendReceiptsOptionDisabled()
+                            }
                         }
                         NavigationLink {
                             ChatWallpaperEditorSheet(chat: chat)
@@ -142,7 +162,7 @@ struct GroupChatInfoView: View {
                         Text("Delete chat messages from your device.")
                     }
 
-                    if !groupInfo.nextConnectPrepared {
+                    if !groupInfo.nextConnectPrepared && !groupInfo.useRelays {
                         Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                             if groupInfo.canAddMembers {
                                 if (chat.chatInfo.incognito) {
@@ -174,12 +194,18 @@ struct GroupChatInfoView: View {
                     }
 
                     Section {
+                        if groupInfo.useRelays {
+                            channelRelaysButton()
+                        }
                         clearChatButton()
                         if groupInfo.canDelete {
                             deleteGroupButton()
                         }
                         if groupInfo.membership.memberCurrentOrPending {
-                            leaveGroupButton()
+                            if !groupInfo.useRelays || !groupInfo.isOwner
+                                || members.filter({ $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }).count > 0 {
+                                leaveGroupButton()
+                            }
                         }
                     }
 
@@ -220,13 +246,15 @@ struct GroupChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsSmallGroups
             }
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
-            do {
-                if let gLink = try apiGetGroupLink(groupInfo.groupId) {
-                    groupLink = gLink
-                    groupLinkMemberRole = gLink.acceptMemberRole
+            if !groupInfo.useRelays || groupInfo.isOwner {
+                do {
+                    if let gLink = try apiGetGroupLink(groupInfo.groupId) {
+                        groupLink = gLink
+                        groupLinkMemberRole = gLink.acceptMemberRole
+                    }
+                } catch let error {
+                    logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
                 }
-            } catch let error {
-                logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
     }
@@ -538,9 +566,9 @@ struct GroupChatInfoView: View {
             groupLinkDestinationView()
         } label: {
             if groupLink == nil {
-                Label("Create group link", systemImage: "link.badge.plus")
+                Label(groupInfo.useRelays ? "Create channel link" : "Create group link", systemImage: "link.badge.plus")
             } else {
-                Label("Group link", systemImage: "link")
+                Label(groupInfo.useRelays ? "Channel link" : "Group link", systemImage: "link")
             }
         }
     }
@@ -551,11 +579,63 @@ struct GroupChatInfoView: View {
             groupLink: $groupLink,
             groupLinkMemberRole: $groupLinkMemberRole,
             showTitle: false,
-            creatingGroup: false
+            creatingGroup: false,
+            isChannel: groupInfo.useRelays
         )
-        .navigationBarTitle("Group link")
+        .navigationBarTitle(groupInfo.useRelays ? "Channel link" : "Group link")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func channelLinkButton(_ link: String) -> some View {
+        NavigationLink {
+            List {
+                Section {
+                    SimpleXLinkQRCode(uri: link)
+                    Button {
+                        showShareSheet(items: [simplexChatLink(link)])
+                    } label: {
+                        Label("Share link", systemImage: "square.and.arrow.up")
+                    }
+                } header: {
+                    Text("Channel link")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("Share this link to invite subscribers to the channel.")
+                        .foregroundColor(theme.colors.secondary)
+                }
+            }
+            .navigationBarTitle("Channel link")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Channel link", systemImage: "link")
+        }
+    }
+
+    private func channelMembersButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.membership.memberRole >= .admin
+            ? "Owners & subscribers"
+            : "Owners"
+        return NavigationLink {
+            ChannelMembersView(chat: chat, groupInfo: groupInfo)
+                .navigationTitle(label)
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label(label, systemImage: "person.2")
+        }
+    }
+
+    private func channelRelaysButton() -> some View {
+        NavigationLink {
+            ChannelRelaysView(chat: chat, groupInfo: groupInfo)
+                .navigationTitle("Chat relays")
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Chat relays", systemImage: "server.rack")
+        }
     }
 
     struct UserSupportChatNavLink: View {
@@ -652,7 +732,7 @@ struct GroupChatInfoView: View {
                 groupProfile: groupInfo.groupProfile
             )
         } label: {
-            Label("Edit group profile", systemImage: "pencil")
+            Label(groupInfo.useRelays ? "Edit channel profile" : "Edit group profile", systemImage: "pencil")
         }
     }
 
@@ -674,7 +754,7 @@ struct GroupChatInfoView: View {
     }
 
     @ViewBuilder private func deleteGroupButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel" : groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
         Button(role: .destructive) {
             alert = .deleteGroupAlert
         } label: {
@@ -693,7 +773,7 @@ struct GroupChatInfoView: View {
     }
 
     private func leaveGroupButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Leave channel" : groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
         return Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
@@ -704,7 +784,7 @@ struct GroupChatInfoView: View {
 
     // TODO reuse this and clearChatAlert with ChatInfoView
     private func deleteGroupAlert() -> Alert {
-        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+        let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel?" : groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
             title: Text(label),
             message: deleteGroupAlertMessage(groupInfo),
@@ -741,9 +821,11 @@ struct GroupChatInfoView: View {
     }
 
     private func leaveGroupAlert() -> Alert {
-        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let titleLabel: LocalizedStringKey = groupInfo.useRelays ? "Leave channel?" : groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
         let messageLabel: LocalizedStringKey = (
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? "You will stop receiving messages from this channel. Chat history will be preserved."
+            : groupInfo.businessChat == nil
             ? "You will stop receiving messages from this group. Chat history will be preserved."
             : "You will stop receiving messages from this chat. Chat history will be preserved."
         )
@@ -796,7 +878,9 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
     showAlert(
         NSLocalizedString("Remove member?", comment: "alert title"),
         message:
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? NSLocalizedString("Member will be removed from channel - this cannot be undone!", comment: "alert message")
+            : groupInfo.businessChat == nil
             ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
             : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
         actions: {[
@@ -838,10 +922,18 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool
 }
 
 func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
-    groupInfo.businessChat == nil ? (
-        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
+    groupInfo.useRelays ? (
+        groupInfo.membership.memberCurrent
+            ? Text("Channel will be deleted for all subscribers - this cannot be undone!")
+            : Text("Channel will be deleted for you - this cannot be undone!")
+    ) : groupInfo.businessChat == nil ? (
+        groupInfo.membership.memberCurrent
+            ? Text("Group will be deleted for all members - this cannot be undone!")
+            : Text("Group will be deleted for you - this cannot be undone!")
     ) : (
-        groupInfo.membership.memberCurrent ? Text("Chat will be deleted for all members - this cannot be undone!") : Text("Chat will be deleted for you - this cannot be undone!")
+        groupInfo.membership.memberCurrent
+            ? Text("Chat will be deleted for all members - this cannot be undone!")
+            : Text("Chat will be deleted for you - this cannot be undone!")
     )
 }
 

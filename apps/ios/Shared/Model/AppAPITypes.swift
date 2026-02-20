@@ -71,6 +71,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq])
     case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiNewPublicGroup(userId: Int64, incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile)
+    case apiGetGroupRelays(groupId: Int64)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
@@ -267,6 +268,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiGetConnNtfMessages(connMsgReqs): return "/_ntf conn messages \(connMsgReqs.map { $0.cmdString }.joined(separator: ","))"
             case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile): return "/_public group \(userId) incognito=\(onOff(incognito)) \(relayIds.map(String.init).joined(separator: ",")) \(encodeJSON(groupProfile))"
+            case let .apiGetGroupRelays(groupId): return "/_get relays #\(groupId)"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
@@ -454,6 +456,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGetConnNtfMessages: return "apiGetConnNtfMessages"
             case .apiNewGroup: return "apiNewGroup"
             case .apiNewPublicGroup: return "apiNewPublicGroup"
+            case .apiGetGroupRelays: return "apiGetGroupRelays"
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
             case .apiAcceptMember: return "apiAcceptMember"
@@ -917,6 +920,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     // group responses
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
     case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+    case groupRelays(user: UserRef, groupInfo: GroupInfo, groupRelays: [GroupRelay])
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
     case userDeletedMembers(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], withMessages: Bool)
@@ -968,6 +972,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         switch self {
         case .groupCreated: "groupCreated"
         case .publicGroupCreated: "publicGroupCreated"
+        case .groupRelays: "groupRelays"
         case .sentGroupInvitation: "sentGroupInvitation"
         case .userAcceptedGroupSent: "userAcceptedGroupSent"
         case .userDeletedMembers: "userDeletedMembers"
@@ -1015,6 +1020,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         switch self {
         case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
         case let .publicGroupCreated(u, groupInfo, groupLink, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)")
+        case let .groupRelays(u, groupInfo, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupRelays: \(groupRelays)")
         case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
         case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
         case let .userDeletedMembers(u, groupInfo, members, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\nwithMessages: \(withMessages)")

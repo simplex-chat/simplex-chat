@@ -68,7 +68,7 @@ func apiSendMessages(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
             scope: chatInfo.groupChatScope(),
-            sendAsGroup: false, // TODO [relays] pass sendAsGroup=true for channel owner
+            sendAsGroup: chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .admin } ?? false,
             live: false,
             ttl: nil,
             composedMessages: composedMessages

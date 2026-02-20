@@ -179,6 +179,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
+  CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
@@ -1161,6 +1162,15 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
+showRelay :: GroupRelay -> StyledString
+showRelay GroupRelay {groupRelayId, relayStatus} =
+  "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus)
+
+viewGroupRelays :: GroupInfo -> [GroupRelay] -> [StyledString]
+viewGroupRelays g relays =
+  [ttyFullGroup g <> ": group relays:"]
+    <> map showRelay relays
+
 viewGroupLinkRelaysUpdated :: GroupInfo -> GroupLink -> [GroupRelay] -> [StyledString]
 viewGroupLinkRelaysUpdated g groupLink relays =
   [ttyFullGroup g <> ": group link relays updated, current relays:"]
@@ -1170,8 +1180,6 @@ viewGroupLinkRelaysUpdated g groupLink relays =
         plain $ maybe cReqStr strEncode shortLink
       ]
   where
-    showRelay GroupRelay {groupRelayId, relayStatus} =
-      "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus)
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
     cReqStr = strEncode $ simplexChatContact cReq
 

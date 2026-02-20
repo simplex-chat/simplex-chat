@@ -460,7 +460,14 @@ struct ComposeView: View {
             } else {
                 HStack (alignment: .center) {
                     attachmentAndCommandsButtons()
-                    sendMessageView(disableSendButton)
+                    sendMessageView(
+                        disableSendButton,
+                        placeholder: chat.chatInfo.groupInfo.map { gi in
+                            gi.useRelays && gi.membership.memberRole >= .admin
+                                ? NSLocalizedString("Broadcast", comment: "compose placeholder for channel owner")
+                                : nil
+                        } ?? nil
+                    )
                 }
                 .padding(.horizontal, 12)
             }
@@ -1327,6 +1334,7 @@ struct ComposeView: View {
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
                     scope: chat.chatInfo.groupChatScope(),
+                    sendAsGroup: chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .admin } ?? false,
                     live: live,
                     ttl: ttl,
                     composedMessages: msgs
@@ -1352,6 +1360,7 @@ struct ComposeView: View {
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
                 toScope: chat.chatInfo.groupChatScope(),
+                sendAsGroup: chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .admin } ?? false,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
                 fromScope: fromChatInfo.groupChatScope(),

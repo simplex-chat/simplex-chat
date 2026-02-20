@@ -1835,6 +1835,12 @@ func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupPr
     throw r.unexpected
 }
 
+func apiGetGroupRelays(_ groupId: Int64) async -> [GroupRelay] {
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiGetGroupRelays(groupId: groupId))
+    if case let .result(.groupRelays(_, _, relays)) = r { return relays }
+    return []
+}
+
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r: ChatResponse2 = try await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
     if case let .sentGroupInvitation(_, _, _, member) = r { return member }

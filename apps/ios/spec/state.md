@@ -365,8 +365,9 @@ A **channel** is a group with `groupInfo.useRelays == true`. These types support
 
 | Type | Kind | Description | Line |
 |------|------|-------------|------|
-| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive` | [L2501](../SimpleXChat/ChatTypes.swift#L2501) |
-| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status) | [L2508](../SimpleXChat/ChatTypes.swift#L2508) |
+| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive` | [L2505](../SimpleXChat/ChatTypes.swift#L2505) |
+| `RelayStatus.text` | `extension` | Localized display text: New/Connecting/Accepted/Active | [L2521](../SimpleXChat/ChatTypes.swift#L2521) |
+| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2512](../SimpleXChat/ChatTypes.swift#L2512) |
 
 #### New Enum Cases
 

@@ -89,13 +89,15 @@ struct GroupMemberInfoView: View {
                     .listRowSeparator(.hidden)
                     .padding(.bottom, 18)
 
-                infoActionButtons(member)
-                    .padding(.horizontal)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: infoViewActionButtonHeight)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                if !groupInfo.useRelays {
+                    infoActionButtons(member)
+                        .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: infoViewActionButtonHeight)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                }
 
                 if connectionLoaded {
 
@@ -106,7 +108,10 @@ struct GroupMemberInfoView: View {
                                 && (member.memberRole < .moderator || member.supportChat != nil) {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
-                            if let code = connectionCode { verifyCodeButton(code) }
+                            if let code = connectionCode,
+                               !(groupInfo.useRelays && member.memberRole == .relay) {
+                                verifyCodeButton(code)
+                            }
                             if let connStats = connectionStats,
                                connStats.ratchetSyncAllowed {
                                 synchronizeConnectionButton()
@@ -191,7 +196,7 @@ struct GroupMemberInfoView: View {
 
                     if groupInfo.membership.memberRole >= .moderator {
                         adminDestructiveSection(member)
-                    } else {
+                    } else if !groupInfo.useRelays {
                         nonAdminBlockSection(member)
                     }
 
@@ -203,16 +208,18 @@ struct GroupMemberInfoView: View {
                                 let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
                                 infoRow("Connection", connLevelDesc)
                             }
-                            Button ("Debug delivery") {
-                                Task {
-                                    do {
-                                        if let info = try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId) {
-                                            await MainActor.run { alert = .queueInfo(info: queueInfoText(info)) }
+                            if !groupInfo.useRelays || member.memberRole == .relay {
+                                Button ("Debug delivery") {
+                                    Task {
+                                        do {
+                                            if let info = try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId) {
+                                                await MainActor.run { alert = .queueInfo(info: queueInfoText(info)) }
+                                            }
+                                        } catch let e {
+                                            logger.error("apiContactQueueInfo error: \(responseError(e))")
+                                            let a = getErrorAlert(e, "Error")
+                                            await MainActor.run { alert = .error(title: a.title, error: a.message) }
                                         }
-                                    } catch let e {
-                                        logger.error("apiContactQueueInfo error: \(responseError(e))")
-                                        let a = getErrorAlert(e, "Error")
-                                        await MainActor.run { alert = .error(title: a.title, error: a.message) }
                                     }
                                 }
                             }

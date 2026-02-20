@@ -17,6 +17,7 @@ struct GroupLinkView: View {
     @Binding var groupLinkMemberRole: GroupMemberRole
     var showTitle: Bool = false
     var creatingGroup: Bool = false
+    var isChannel: Bool = false
     var linkCreatedCb: (() -> Void)? = nil
     @State private var showShortLink = true
     @State private var creatingLink = false
@@ -98,7 +99,8 @@ struct GroupLinkView: View {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
 
-                    if !creatingGroup {
+                    // TODO [relays] channel link deletion should only be possible together with deleting the channel
+                    if !creatingGroup && !isChannel {
                         Button(role: .destructive) { alert = .deleteLink } label: {
                             Label("Delete link", systemImage: "trash")
                         }
