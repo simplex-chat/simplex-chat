@@ -133,7 +133,7 @@ Files expire automatically (approximately 48 hours). There is no persistent stor
 
 ### Design principles
 
-1. **Demo first, educate second, convert third.** The file transfer tool is at the top. The protocol explanation is below. The app download CTA is at the bottom (and repeated after upload/download completes). The user experiences before they learn, and learns before they're asked to act.
+1. **Demo first, educate second, convert third.** The file transfer tool is at the top. The protocol explanation is available via a "Learn more" popup. The app download CTA is at the bottom (and repeated after upload/download completes). The user experiences before they learn, and learns before they're asked to act.
 
 2. **Zero decisions.** The upload/download tool has no settings, no options, no configuration. Drop a file, get a link. Click a link, get a file.
 
@@ -147,9 +147,16 @@ Files expire automatically (approximately 48 hours). There is no persistent stor
 
 **2. File transfer tool**: The upload drop zone or download progress — this is the interactive demo. After a successful upload or download, an inline app download CTA appears directly below the completion state.
 
-**3. Protocol section: "Why this is the most private file transfer"**
+**3. "Learn more" link → protocol popup**
 
-After the tool, a section explaining the XFTP protocol security properties. Not a wall of text — 4-5 short, scannable blocks with bold titles:
+Below the file transfer tool, a "Learn more about XFTP protocol" link. Clicking it opens a modal/popup overlay explaining the XFTP protocol security properties. The popup contains:
+
+**A protocol diagram** showing the XFTP file transfer flow:
+- Sender encrypts file in browser → splits into chunks → uploads to multiple independent XFTP servers (SimpleX + Flux)
+- Recipient clicks link → downloads chunks from servers → decrypts in browser
+- Key visual points: the encryption key travels in the URL fragment (never sent to servers), each chunk uses unique anonymous credentials, each recipient download is re-encrypted with a unique key
+
+**Below the diagram**, 4-5 short scannable blocks with bold titles:
 
 - **No accounts, no identifiers** — one sentence explaining anonymous per-chunk credentials
 - **Encrypted in your browser** — the server stores ciphertext it cannot decrypt; the key is in the link
@@ -157,9 +164,11 @@ After the tool, a section explaining the XFTP protocol security properties. Not 
 - **Distributed across independent servers** — chunks split across SimpleX and Flux operators; no single operator sees the complete file
 - **Files expire automatically** — approximately 48 hours, ephemeral by design
 
-Each block is 2-3 sentences. The whole section fits on one screen. No expand/collapse, no "learn more" — just the facts.
+Each block is 2-3 sentences.
 
-A subtle link at the end: "Read the XFTP protocol specification for the full technical details."
+A link at the bottom of the popup: "Read the XFTP protocol specification for the full technical details."
+
+The popup uses the same overlay pattern as existing website popups (the "Why user IDs are bad for privacy?" and "How does SimpleX work?" overlays on the homepage).
 
 **4. App download CTA**
 
@@ -182,7 +191,7 @@ A centered card with:
 - A drop zone with a dashed border — "Drag & drop a file here"
 - The word "or" in muted text
 - A "Choose file" button (for mobile and accessibility)
-- "Max 100 MB" as a hint below
+- "Max 100 MB — the SimpleX app supports up to 1 GB" as a hint below, where "SimpleX app" links to the app download section
 
 Below the drop zone: "End-to-end encrypted — the server never sees your file."
 
@@ -255,7 +264,7 @@ No intermediate "click to download" step. The user clicked the link — start im
 
 ## 7. Edge cases
 
-**File too large (>100 MB):** Error shown immediately after file selection. "File too large (X MB). Maximum is 100 MB."
+**File too large (>100 MB):** Error shown immediately after file selection. "File too large (X MB). Maximum is 100 MB. The SimpleX app supports files up to 1 GB." — where "SimpleX app" links to the app download section. This is also a conversion opportunity.
 
 **Empty file (0 bytes):** Rejected immediately. "File is empty."
 
@@ -273,7 +282,7 @@ No intermediate "click to download" step. The user clicked the link — start im
 
 **Link truncation:** Long URLs can be truncated by SMS, Twitter/X, some email clients. The protocol's redirect compression mitigates this for larger files. Small files have naturally short URLs.
 
-**Internationalization:** All UI strings are in English for v1. The page is excluded from the language selector, matching other single-language pages on the website. i18n can be added later.
+**Internationalization:** All UI strings go through the website's existing i18n system (translation keys in language JSON files). The page supports all languages the website supports.
 
 ---
 
