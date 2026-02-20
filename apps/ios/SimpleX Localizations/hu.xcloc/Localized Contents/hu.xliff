@@ -1396,9 +1396,9 @@ swipe action</note>
 - tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Call already ended!" xml:space="preserve">
+      <trans-unit id="Call already ended!" xml:space="preserve" approved="no">
         <source>Call already ended!</source>
-        <target>A hívás már befejeződött!</target>
+        <target state="translated">A hívás már véget ért!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Calls" xml:space="preserve">
@@ -10039,14 +10039,14 @@ pref value</note>
         <target>a titkosítás újraegyeztetése szükséges %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="ended" xml:space="preserve">
+      <trans-unit id="ended" xml:space="preserve" approved="no">
         <source>ended</source>
-        <target>befejeződött</target>
+        <target state="translated">hívás vége</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="ended call %@" xml:space="preserve">
+      <trans-unit id="ended call %@" xml:space="preserve" approved="no">
         <source>ended call %@</source>
-        <target>%@ hívása befejeződött</target>
+        <target state="translated">%@ hívása véget ért</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="error" xml:space="preserve">
@@ -10352,14 +10352,14 @@ time to disappear</note>
         <target>végpontok közötti kvantumbiztos titkosítás</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="received answer…" xml:space="preserve">
+      <trans-unit id="received answer…" xml:space="preserve" approved="no">
         <source>received answer…</source>
-        <target>válasz fogadása…</target>
+        <target state="translated">válasz érkezett…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="received confirmation…" xml:space="preserve">
+      <trans-unit id="received confirmation…" xml:space="preserve" approved="no">
         <source>received confirmation…</source>
-        <target>visszaigazolás fogadása…</target>
+        <target state="translated">visszaigazolás érkezett…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
@@ -10496,9 +10496,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>szabványos végpontok közötti titkosítás</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="starting…" xml:space="preserve">
+      <trans-unit id="starting…" xml:space="preserve" approved="no">
         <source>starting…</source>
-        <target>indítás…</target>
+        <target state="translated">hívás indítása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve">
