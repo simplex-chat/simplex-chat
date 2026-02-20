@@ -29,6 +29,7 @@
     "tailwindcss": "3.3.1"
   },
   "dependencies": {
+    "@shhhum/xftp-web": "^0.18.0",
     "eleventy-plugin-i18n": "^0.1.3",
     "fs": "^0.0.1-security",
     "gray-matter": "^4.0.3",

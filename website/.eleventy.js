@@ -53,7 +53,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", "why", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", "why", "file", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {
@@ -305,6 +305,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/images")
   ty.addPassthroughCopy("src/CNAME")
   ty.addPassthroughCopy("src/.well-known")
+  ty.addPassthroughCopy("src/file-assets")
 
   ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
