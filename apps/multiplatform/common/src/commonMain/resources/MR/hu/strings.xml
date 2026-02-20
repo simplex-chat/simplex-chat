@@ -70,7 +70,7 @@
     <string name="both_you_and_your_contacts_can_delete">Mindkét fél véglegesen törölheti az elküldött üzeneteket. (24 óra)</string>
     <string name="v5_4_better_groups">Továbbfejlesztett csoportok</string>
     <string name="clear_chat_warning">Az összes üzenet törölve lesz – ez a művelet nem vonható vissza! Az üzenetek CSAK az Ön számára törlődnek.</string>
-    <string name="icon_descr_call_ended">Hívás befejeződött</string>
+    <string name="icon_descr_call_ended">A hívás véget ért</string>
     <string name="settings_section_title_calls">HÍVÁSOK</string>
     <string name="rcv_group_and_other_events">és további %d esemény</string>
     <string name="address_section_title">Cím</string>
@@ -116,7 +116,7 @@
     <string name="allow_voice_messages_question">Engedélyezi a hangüzeneteket?</string>
     <string name="always_use_relay">Mindig legyen használva továbbítókiszolgáló</string>
     <string name="chat_preferences_always">mindig</string>
-    <string name="call_already_ended">A hívás már befejeződött!</string>
+    <string name="call_already_ended">A hívás már véget ért!</string>
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
     <string name="all_your_contacts_will_remain_connected">Az összes partnerével továbbra is kapcsolatban marad.</string>
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
@@ -130,7 +130,7 @@
     <string name="appearance_settings">Megjelenés</string>
     <string name="turning_off_service_and_periodic">Az akkumulátor-optimalizálás aktív, ez kikapcsolja a háttérszolgáltatást és az új üzenetek időszakos lekérdezését. Ezt a beállításokban újraengedélyezheti.</string>
     <string name="block_member_question">Letiltja a tagot?</string>
-    <string name="callstatus_ended">%1$s hívása befejeződött</string>
+    <string name="callstatus_ended">%1$s hívása véget ért</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. Az alkalmazás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.]]></string>
     <string name="group_member_role_author">szerző</string>
     <string name="allow_your_contacts_irreversibly_delete">Az elküldött üzenetek végleges törlése engedélyezve van a partnerei számára. (24 óra)</string>
@@ -566,7 +566,7 @@
     <string name="error_saving_xftp_servers">Hiba történt az XFTP-kiszolgálók mentésekor</string>
     <string name="group_members_can_send_dms">A tagok küldhetnek egymásnak közvetlen üzeneteket.</string>
     <string name="error_removing_member">Hiba történt a tag eltávolításakor</string>
-    <string name="callstate_ended">befejeződött</string>
+    <string name="callstate_ended">hívás vége</string>
     <string name="v4_6_group_welcome_message">A csoport üdvözlőüzenete</string>
     <string name="group_display_name_field">Adja meg a csoport nevét:</string>
     <string name="error_sending_message_contact_invitation">Hiba történt a meghívó elküldésekor</string>
@@ -940,7 +940,7 @@
     <string name="only_your_contact_can_send_voice">Csak a partnere küldhet hangüzeneteket.</string>
     <string name="icon_descr_settings">Beállítások</string>
     <string name="scan_qr_to_connect_to_contact">A kapcsolódáshoz a partnere beolvashatja a QR-kódot, vagy használhatja az alkalmazásban található hivatkozást.</string>
-    <string name="callstate_received_confirmation">visszaigazolás fogadása…</string>
+    <string name="callstate_received_confirmation">visszaigazolás érkezett…</string>
     <string name="scan_code_from_contacts_app">Biztonsági kód beolvasása a partnere alkalmazásából.</string>
     <string name="observer_cant_send_message_desc">Lépjen kapcsolatba a csoport adminisztrátorával.</string>
     <string name="icon_descr_video_on">Videó bekapcsolva</string>
@@ -1123,7 +1123,7 @@
     <string name="rcv_group_event_user_deleted">eltávolította Önt</string>
     <string name="simplex_address">SimpleX-cím</string>
     <string name="show_dev_options">Megjelenítve:</string>
-    <string name="callstate_received_answer">válasz fogadása…</string>
+    <string name="callstate_received_answer">válasz érkezett…</string>
     <string name="restore_database_alert_title">Visszaállítja az adatbázismentést?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
     <string name="rcv_group_event_2_members_connected">%s és %s kapcsolódott</string>
@@ -1170,7 +1170,7 @@
     <string name="paste_the_link_you_received_to_connect_with_your_contact">A kapott hivatkozás beillesztése a partnerhez való kapcsolódáshoz…</string>
     <string name="scan_code">Beolvasás</string>
     <string name="open_port_in_firewall_title">Port nyitása a tűzfalban</string>
-    <string name="callstate_starting">indítás…</string>
+    <string name="callstate_starting">hívás indítása…</string>
     <string name="settings_shutdown">Leállítás</string>
     <string name="icon_descr_sent_msg_status_sent">elküldve</string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKS proxy használata</string>
@@ -1586,7 +1586,7 @@
     <string name="welcome_message_is_too_long">Az üdvözlőüzenet túl hosszú</string>
     <string name="database_migration_in_progress">Az adatbázis átköltöztetése folyamatban van.\nEz eltarthat néhány percig.</string>
     <string name="call_service_notification_audio_call">Hanghívás</string>
-    <string name="call_service_notification_end_call">A hívás befejeződött</string>
+    <string name="call_service_notification_end_call">Hívás vége</string>
     <string name="call_service_notification_video_call">Videóhívás</string>
     <string name="unable_to_open_browser_title">Hiba történt a böngésző megnyitásakor</string>
     <string name="unable_to_open_browser_desc">A hívásokhoz egy alapértelmezett webböngésző szükséges. Állítson be egy alapértelmezett webböngészőt az eszközön, és osszon meg további információkat a SimpleX Chat fejlesztőivel.</string>
