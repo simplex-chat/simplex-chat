@@ -29,19 +29,20 @@ struct AdvancedNetworkSettings: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
-    @State private var netCfg = NetCfg.defaults
-    @State private var currentNetCfg = NetCfg.defaults
     @State private var cfgLoaded = false
     @State private var enableKeepAlive = true
     @State private var keepAliveOpts = KeepAliveOpts.defaults
     @State private var showSettingsAlert: NetworkSettingsAlert?
     @State private var onionHosts: OnionHosts = .no
     @State private var showSaveDialog = false
-    @State private var netProxy = networkProxyDefault.get()
-    @State private var currentNetProxy = networkProxyDefault.get()
     @State private var useNetProxy = false
     @State private var netProxyAuth = false
-
+    @Binding public var currentNetCfg: NetCfg
+    @Binding public var netCfg: NetCfg
+    @Binding public var currentNetProxy: NetworkProxy
+    @Binding public var netProxy: NetworkProxy
+    let saveNetCfg: () -> Bool
+    
     var body: some View {
         VStack {
             List {
@@ -326,22 +327,6 @@ struct AdvancedNetworkSettings: View {
         }
     }
 
-    private func saveNetCfg() -> Bool {
-        do {
-            try setNetworkConfig(netCfg)
-            currentNetCfg = netCfg
-            setNetCfg(netCfg, networkProxy: useNetProxy ? netProxy : nil)
-            currentNetProxy = netProxy
-            networkProxyDefault.set(netProxy)
-            return true
-        } catch let error {
-            let err = responseError(error)
-            showSettingsAlert = .error(err: err)
-            logger.error("\(err)")
-            return false
-        }
-    }
-
     private func intSettingPicker(_ title: LocalizedStringKey, selection: Binding<Int>, values: [Int], label: String) -> some View {
         Picker(title, selection: selection) {
             ForEach(values, id: \.self) { value in
@@ -399,6 +384,13 @@ struct AdvancedNetworkSettings: View {
 
 struct AdvancedNetworkSettings_Previews: PreviewProvider {
     static var previews: some View {
-        AdvancedNetworkSettings()
+        let defaultSettings = NetworkSettings.defaults
+        AdvancedNetworkSettings(
+            currentNetCfg: Binding.constant(defaultSettings.currentNetCfg),
+            netCfg: Binding.constant(defaultSettings.netCfg),
+            currentNetProxy: Binding.constant(defaultSettings.currentNetProxy),
+            netProxy: Binding.constant(defaultSettings.netProxy),
+            saveNetCfg: { true }
+        )
     }
 }
