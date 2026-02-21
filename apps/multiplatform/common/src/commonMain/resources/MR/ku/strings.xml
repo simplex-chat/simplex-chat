@@ -735,7 +735,7 @@
     <string name="group_members_can_send_files">Endam karin dosya û medya bişînin.</string>
     <string name="files_are_prohibited_in_group">Dosya û medya memnû in.</string>
     <string name="group_members_can_send_simplex_links">Endam karin lînkên SimpleXê bişînin.</string>
-    <string name="ttl_sec">%s san</string>
+    <string name="ttl_sec">%d san</string>
     <string name="ttl_week">%d heftî</string>
     <string name="v5_8_persian_ui">UIa farisî</string>
     <string name="v6_0_new_media_options">Eyarên nû yên medyayê</string>

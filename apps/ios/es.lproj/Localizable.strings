@@ -384,7 +384,7 @@ swipe action */
 "accepted invitation" = "invitación aceptada";
 
 /* rcv group event chat item */
-"accepted you" = "te ha aceptado";
+"accepted you" = "te ha admitido";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Confirmaciones";
@@ -1733,7 +1733,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "¿Eliminar mensaje?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Activar";
 
 /* No comment provided by engineer. */
@@ -3308,10 +3309,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "El rol del miembro cambiará a \"%@\" y recibirá una invitación nueva.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "El miembro será eliminado del chat. ¡No puede deshacerse!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "El miembro será expulsado del grupo. ¡No puede deshacerse!";
 
 /* alert message */
@@ -3654,7 +3655,7 @@ snd error text */
 "No device token!" = "¡Sin dispositivo token!";
 
 /* item status description */
-"No direct connection yet, message is forwarded by admin." = "Aún no hay conexión directa con este miembro, el mensaje es reenviado por el administrador.";
+"No direct connection yet, message is forwarded by admin." = "Aún no hay conexión directa, los mensajes son reenviados por el administrador.";
 
 /* No comment provided by engineer. */
 "no e2e encryption" = "sin cifrar";
@@ -4380,7 +4381,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "El servidor de retransmisión protege tu IP pero puede ver la duración de la llamada.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Eliminar";
 
 /* No comment provided by engineer. */
@@ -4395,7 +4396,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Expulsar miembro";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "¿Expulsar miembro?";
 
 /* No comment provided by engineer. */
@@ -6052,7 +6053,7 @@ report reason */
 "You accepted connection" = "Has aceptado la conexión";
 
 /* snd group event chat item */
-"you accepted this member" = "has aceptado al miembro";
+"you accepted this member" = "has admitido al miembro";
 
 /* No comment provided by engineer. */
 "You allow" = "Permites";

@@ -375,7 +375,16 @@ swipe action */
 "Acknowledged" = "了承済み";
 
 /* No comment provided by engineer. */
+"Active connections" = "アクティブな接続";
+
+/* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。";
+
+/* No comment provided by engineer. */
+"Add friends" = "友達を追加";
+
+/* No comment provided by engineer. */
+"Add list" = "リストを追加";
 
 /* No comment provided by engineer. */
 "Add profile" = "プロフィールを追加";
@@ -387,7 +396,13 @@ swipe action */
 "Add servers by scanning QR codes." = "QRコードでサーバを追加する。";
 
 /* No comment provided by engineer. */
+"Add team members" = "チームメンバーを追加";
+
+/* No comment provided by engineer. */
 "Add to another device" = "別の端末に追加";
+
+/* No comment provided by engineer. */
+"Add to list" = "リストに追加";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "ウェルカムメッセージを追加";
@@ -403,6 +418,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Address change will be aborted. Old receiving address will be used." = "アドレス変更は中止されます。古い受信アドレスが使用されます。";
+
+/* No comment provided by engineer. */
+"Address settings" = "アドレス設定";
 
 /* member role */
 "admin" = "管理者";
@@ -423,6 +441,9 @@ swipe action */
 "agreeing encryption…" = "暗号化に同意しています…";
 
 /* No comment provided by engineer. */
+"All" = "すべて";
+
+/* No comment provided by engineer. */
 "All app data is deleted." = "すべてのアプリデータが削除されます。";
 
 /* No comment provided by engineer. */
@@ -433,6 +454,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "グループ全員の接続が継続します。";
+
+/* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone!" = "すべてのメッセージが削除されます。この操作は元に戻せません！";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "全てのメッセージが削除されます(※注意：元に戻せません！※)。削除されるのは片方あなたのメッセージのみ。";
@@ -456,7 +480,13 @@ swipe action */
 "Allow calls only if your contact allows them." = "連絡先が通話を許可している場合のみ通話を許可する。";
 
 /* No comment provided by engineer. */
+"Allow calls?" = "通話を許可しますか？";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "連絡先が許可している場合のみ消えるメッセージを許可する。";
+
+/* No comment provided by engineer. */
+"Allow downgrade" = "ダウングレードを許可する";
 
 /* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "送信相手も永久メッセージ削除を許可する時のみに許可する。(24時間)";
@@ -530,6 +560,9 @@ swipe action */
 /* No comment provided by engineer. */
 "An empty chat profile with the provided name is created, and the app opens as usual." = "指定された名前の空のチャット プロファイルが作成され、アプリが通常どおり開きます。";
 
+/* report reason */
+"Another reason" = "他の理由";
+
 /* No comment provided by engineer. */
 "Answer call" = "通話に応答";
 
@@ -570,7 +603,13 @@ swipe action */
 "Apply to" = "に適用する";
 
 /* No comment provided by engineer. */
+"Archive" = "アーカイブ";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "アーカイブとアップロード";
+
+/* No comment provided by engineer. */
+"Archived contacts" = "アーカイブされた連絡先";
 
 /* No comment provided by engineer. */
 "Attach" = "添付する";
@@ -668,6 +707,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Calls" = "通話";
 
+/* alert title */
+"Can't change profile" = "プロフィールを変更できません";
+
 /* No comment provided by engineer. */
 "Can't invite contact!" = "連絡先を招待できません！";
 
@@ -679,11 +721,17 @@ alert button
 new chat action */
 "Cancel" = "中止";
 
+/* No comment provided by engineer. */
+"Cancel migration" = "移行を中止する";
+
 /* feature offered item */
 "cancelled %@" = "キャンセルされました %@";
 
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "データベースのパスワードを保存するためのキーチェーンにアクセスできません";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "メッセージを転送できません";
 
 /* alert title */
 "Cannot receive file" = "ファイル受信ができません";
@@ -735,6 +783,9 @@ set passcode view */
 "changing address…" = "アドレスを変更しています…";
 
 /* No comment provided by engineer. */
+"Chat" = "チャット";
+
+/* No comment provided by engineer. */
 "Chat console" = "チャットのコンソール";
 
 /* No comment provided by engineer. */
@@ -753,6 +804,9 @@ set passcode view */
 "Chat is stopped" = "チャットが停止してます";
 
 /* No comment provided by engineer. */
+"Chat list" = "チャット一覧";
+
+/* No comment provided by engineer. */
 "Chat preferences" = "チャット設定";
 
 /* No comment provided by engineer. */
@@ -763,6 +817,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Chats" = "チャット";
+
+/* No comment provided by engineer. */
+"Check messages every 20 min." = "20分おきにメッセージを確認する。";
 
 /* alert title */
 "Check server address and try again." = "サーバのアドレスを確認してから再度試してください。";
@@ -1168,7 +1225,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "メッセージを削除しますか？";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "メッセージを削除";
 
 /* No comment provided by engineer. */
@@ -2103,7 +2161,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "メンバーの役割が \"%@\" に変更されます。 メンバーは新たな招待を受け取ります。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "メンバーをグループから除名する (※元に戻せません※)！";
 
 /* No comment provided by engineer. */
@@ -2644,13 +2702,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "削除";
 
 /* No comment provided by engineer. */
 "Remove member" = "メンバーを除名する";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "メンバーを除名しますか？";
 
 /* No comment provided by engineer. */

@@ -2288,9 +2288,9 @@
     <string name="content_filter_files">Pliki</string>
     <string name="files_prohibited_in_this_chat">Pliki i media są zabronione na tym czacie.</string>
     <string name="content_filter_menu_item">Filtr</string>
-    <string name="proxy_destination_error_unknown_ca">Odcisk palca w docelowym serwerze nie pasuje do certyfikatu: % 1$s.</string>
-    <string name="smp_proxy_error_unknown_ca">Odcisk palca w adresie serwera nie pasuje do certyfikatu: % 1$s.</string>
-    <string name="network_error_unknown_ca">Odcisk palca w adresie serwera nie pasuje do certyfikatu: % 1$s.</string>
+    <string name="proxy_destination_error_unknown_ca">Odcisk palca w docelowym serwerze nie pasuje do certyfikatu: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">Odcisk palca w adresie serwera nie pasuje do certyfikatu: %1$s.</string>
+    <string name="network_error_unknown_ca">Odcisk palca w adresie serwera nie pasuje do certyfikatu: %1$s.</string>
     <string name="sync_connection_confirm">Napraw</string>
     <string name="sync_connection_question">Naprawić połączenie?</string>
     <string name="report_archive_for_all_moderators">Dla wszystkich moderatorów</string>
