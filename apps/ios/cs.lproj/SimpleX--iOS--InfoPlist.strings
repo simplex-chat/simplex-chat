@@ -7,9 +7,6 @@
 /* Privacy - Face ID Usage Description */
 "NSFaceIDUsageDescription" = "SimpleX používá Face ID pro místní ověřování";
 
-/* Privacy - Local Network Usage Description */
-"NSLocalNetworkUsageDescription" = "SimpleX používá přístup k místní síti, aby umožnil použití profilu chatu přes desktopovou aplikaci ve stejné síti.";
-
 /* Privacy - Microphone Usage Description */
 "NSMicrophoneUsageDescription" = "SimpleX potřebuje přístup k mikrofonu pro audio a video hovory a pro nahrávání hlasových zpráv.";
 
