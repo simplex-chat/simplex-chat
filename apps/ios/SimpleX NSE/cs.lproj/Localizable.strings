@@ -1,15 +1,7 @@
-/* notification body */
-"%d new events" = "Hlasové zprávy";
+/* 
+  Localizable.strings
+  SimpleX
 
-/* notification body */
-"From %d chat(s)" = "Z %d chatu(ů)";
-
-/* notification body */
-"From: %@" = "Od: %@";
-
-/* notification */
-"New events" = "Nové události";
-
-/* notification */
-"New messages" = "Nové zprávy";
-
+  Created by EP on 30/07/2024.
+  Copyright © 2024 SimpleX Chat. All rights reserved.
+*/
