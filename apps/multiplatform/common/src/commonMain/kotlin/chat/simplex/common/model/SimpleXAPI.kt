@@ -490,17 +490,26 @@ class AppPreferences {
 private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
-  var ctrl: ChatCtrl? = -1
+  private var chatCtrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
   val messagesChannel: Channel<API> = Channel()
 
   val chatModel = ChatModel
-  private var receiverStarted = false
+  private var receiverJob: Job? = null
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
-  fun hasChatCtrl() = ctrl != -1L && ctrl != null
+  fun hasChatCtrl() = chatCtrl != -1L && chatCtrl != null
+
+  fun getChatCtrl(): ChatCtrl? = chatCtrl
+
+  fun setChatCtrl(ctrl: ChatCtrl?) {
+    val wasRunning = receiverJob != null
+    stopReceiver()
+    chatCtrl = ctrl
+    if (wasRunning && ctrl != null) startReceiver()
+  }
 
   suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
     val userId = currentUserId("getAgentSubsTotal")
@@ -647,17 +656,16 @@ object ChatController {
 
   private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
-    if (receiverStarted) return
-    receiverStarted = true
-    CoroutineScope(Dispatchers.IO).launch {
+    if (receiverJob != null || chatCtrl == null) return
+    receiverJob = CoroutineScope(Dispatchers.IO).launch {
       var releaseLock: (() -> Unit) = {}
-      while (true) {
+      while (isActive) {
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
          * to change it everywhere in code after changing a database.
          * Since it can be changed in background thread, making this check to prevent NullPointerException */
-        val ctrl = ctrl
+        val ctrl = chatCtrl
         if (ctrl == null) {
-          receiverStarted = false
+          stopReceiver()
           break
         }
         try {
@@ -694,6 +702,15 @@ object ChatController {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
         }
       }
+    }
+  }
+
+  private fun stopReceiver() {
+    Log.d(TAG, "ChatController stopReceiver")
+    val job = receiverJob
+    if (job != null) {
+      receiverJob = null
+      job.cancel()
     }
   }
 
@@ -781,7 +798,7 @@ object ChatController {
   }
 
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
-    val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
+    val ctrl = otherCtrl ?: chatCtrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
@@ -1016,6 +1033,14 @@ object ChatController {
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     }
+    return null
+  }
+
+  suspend fun apiGetChatContentTypes(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?): List<MsgContentTag>? {
+    val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
+    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
+    Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
   }
 
@@ -2118,7 +2143,7 @@ object ChatController {
     return null
   }
 
-  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean = false): Pair<GroupInfo, List<GroupMember>>? {
+  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean): Pair<GroupInfo, List<GroupMember>>? {
     val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages))
     if (r is API.Result && r.res is CR.UserDeletedMembers) return r.res.groupInfo to r.res.members
     if (!(networkErrorAlert(r))) {
@@ -2599,7 +2624,7 @@ object ChatController {
               if (chatModel.chatsContext.hasChat(rhId, r.chat_.id)) {
                 chatModel.chatsContext.updateChatInfo(rhId, r.chat_.chatInfo)
               } else {
-                chatModel.chatsContext.addChat(r.chat_)
+                chatModel.chatsContext.addChat(r.chat_.copy(remoteHostId = rhId))
               }
             } else {
               val cInfo = ChatInfo.ContactRequest(contactRequest)
@@ -3525,6 +3550,7 @@ sealed class CC {
   class ApiGetChatTags(val userId: Long): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val scope: GroupChatScope?, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
+  class ApiGetChatContentTypes(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val scope: GroupChatScope?, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
@@ -3709,6 +3735,7 @@ sealed class CC {
       }
       "/_get chat ${chatRef(type, id, scope)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
+    is ApiGetChatContentTypes -> "/_get content types ${chatRef(type, id, scope)}"
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id, scope)} $itemId"
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
@@ -3895,6 +3922,7 @@ sealed class CC {
     is ApiGetChatTags -> "apiGetChatTags"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
+    is ApiGetChatContentTypes -> "apiGetChatContentTypes"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessages -> "apiSendMessages"
     is ApiCreateChatTag -> "apiCreateChatTag"
@@ -6080,6 +6108,7 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val navInfo: NavigationInfo = NavigationInfo()): CR()
+  @Serializable @SerialName("chatContentTypes") class ChatContentTypes(val contentTypes: List<MsgContentTag>): CR()
   @Serializable @SerialName("chatTags") class ChatTags(val user: UserRef, val userTags: List<ChatTag>): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
@@ -6261,6 +6290,7 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is ChatContentTypes -> "chatContentTypes"
     is ChatTags -> "chatTags"
     is ApiChatItemInfo -> "chatItemInfo"
     is ServerTestResult -> "serverTestResult"
@@ -6434,6 +6464,7 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, "remoteHostId: ${chat.remoteHostId}\nchatInfo: ${chat.chatInfo}\nchatStats: ${chat.chatStats}\nnavInfo: ${navInfo}\nchatItems: ${chat.chatItems}")
+    is ChatContentTypes -> "content types: ${json.encodeToString(contentTypes)}"
     is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")

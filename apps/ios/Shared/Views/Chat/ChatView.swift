@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 27/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
@@ -13,6 +14,7 @@ import Combine
 
 private let memberImageSize: CGFloat = 34
 
+// Spec: spec/client/chat-view.md#ChatView
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
@@ -44,6 +46,8 @@ struct ChatView: View {
     @State private var showSearch = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+    @State private var contentFilter: ContentFilter? = nil
+    @State private var availableContent: [ContentFilter] = [.images, .files, .links]
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
@@ -68,6 +72,7 @@ struct ChatView: View {
 
     let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
+    // Spec: spec/client/chat-view.md#body
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody
@@ -528,22 +533,28 @@ struct ChatView: View {
             case let .direct(contact):
                 HStack {
                     let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
-                    if callsPrefEnabled {
-                        if chatModel.activeCall == nil {
-                            callButton(contact, .audio, imageName: "phone")
-                                .disabled(!contact.ready || !contact.active)
-                        } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                            endCallButton(call)
-                        }
+                    if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                        endCallButton(call)
+                    } else {
+                        contentFilterMenu(withLabel: false)
                     }
                     Menu {
                         if callsPrefEnabled && chatModel.activeCall == nil {
+                            Button {
+                                CallController.shared.startCall(contact, .audio)
+                            } label: {
+                                Label("Audio call", systemImage: "phone")
+                            }
+                            .disabled(!contact.ready || !contact.active)
                             Button {
                                 CallController.shared.startCall(contact, .video)
                             } label: {
                                 Label("Video call", systemImage: "video")
                             }
                             .disabled(!contact.ready || !contact.active)
+                        }
+                        if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                            contentFilterMenu(withLabel: true)
                         }
                         searchButton()
                         ToggleNtfsButton(chat: chat)
@@ -554,23 +565,24 @@ struct ChatView: View {
                 }
             case let .group(groupInfo, _):
                 HStack {
-                    if groupInfo.canAddMembers {
-                        if (chat.chatInfo.incognito) {
-                            groupLinkButton()
-                                .appSheet(isPresented: $showGroupLinkSheet) {
-                                    GroupLinkView(
-                                        groupId: groupInfo.groupId,
-                                        groupLink: $groupLink,
-                                        groupLinkMemberRole: $groupLinkMemberRole,
-                                        showTitle: true,
-                                        creatingGroup: false
-                                    )
-                                }
-                        } else {
-                            addMembersButton()
-                        }
-                    }
+                    contentFilterMenu(withLabel: false)
                     Menu {
+                        if groupInfo.canAddMembers {
+                            if (chat.chatInfo.incognito) {
+                                groupLinkButton()
+                                    .appSheet(isPresented: $showGroupLinkSheet) {
+                                        GroupLinkView(
+                                            groupId: groupInfo.groupId,
+                                            groupLink: $groupLink,
+                                            groupLinkMemberRole: $groupLinkMemberRole,
+                                            showTitle: true,
+                                            creatingGroup: false
+                                        )
+                                    }
+                            } else {
+                                addMembersButton()
+                            }
+                        }
                         searchButton()
                         ToggleNtfsButton(chat: chat)
                     } label: {
@@ -578,7 +590,10 @@ struct ChatView: View {
                     }
                 }
             case .local:
-                searchButton()
+                HStack {
+                    contentFilterMenu(withLabel: false)
+                    searchButton()
+                }
             default:
                 EmptyView()
             }
@@ -656,6 +671,7 @@ struct ChatView: View {
         .frame(width: 220)
     }
 
+    // Spec: spec/client/chat-view.md#initChatView
     private func initChatView() {
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
@@ -685,6 +701,7 @@ struct ChatView: View {
                     }
                 }
             }
+            updateAvailableContent()
         }
         if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
            let draft = chatModel.draft {
@@ -698,6 +715,23 @@ struct ChatView: View {
         floatingButtonModel.updateOnListChange(scrollView.listState)
     }
 
+    private func updateAvailableContent() {
+        Task {
+            let content: [ContentFilter]
+            do {
+                let contentTags = Set(try await apiGetChatContentTypes(chatId: chat.chatInfo.id)).union(ContentFilter.alwaysShow)
+                content = ContentFilter.allCases.filter { contentTags.contains($0.contentTag) }
+            } catch let error {
+                logger.error("apiGetChatContentTypes error: \(responseError(error))")
+                content = ContentFilter.allCases
+            }
+            await MainActor.run {
+                availableContent = content
+            }
+        }
+    }
+    
+    // Spec: spec/client/chat-view.md#scrollToItem
     private func scrollToItem(_ itemId: ChatItem.ID) {
         Task {
             do {
@@ -731,11 +765,16 @@ struct ChatView: View {
         }
     }
 
+    // Spec: spec/client/chat-view.md#searchToolbar
     private func searchToolbar() -> some View {
-        HStack(spacing: 12) {
+        let placeholder: LocalizedStringKey = contentFilter?.searchPlaceholder ?? "Search"
+        return HStack(spacing: 12) {
             HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
-                TextField("Search", text: $searchText)
+                if let contentFilter {
+                    Image(systemName: contentFilter.icon)
+                }
+                TextField(placeholder, text: $searchText)
                     .focused($searchFocussed)
                     .foregroundColor(theme.colors.onBackground)
                     .frame(maxWidth: .infinity)
@@ -764,6 +803,7 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
+    // Spec: spec/client/chat-view.md#filtered
     private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
         reversedChatItems
             .enumerated()
@@ -777,6 +817,7 @@ struct ChatView: View {
             .map { $0.element }
     }
 
+    // Spec: spec/client/chat-view.md#chatItemsList
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
@@ -1050,9 +1091,10 @@ struct ChatView: View {
         }
     }
 
+    // Spec: spec/client/chat-view.md#searchTextChanged
     private func searchTextChanged(_ s: String) {
         Task {
-            await loadChat(chat: chat, im: im, search: s)
+            await loadChat(chat: chat, im: im, contentTag: contentFilter?.contentTag, search: s)
             mergedItems.boxedValue = MergedItems.create(im, revealedItems)
             await MainActor.run {
                 scrollView.updateItems(mergedItems.boxedValue.items)
@@ -1227,6 +1269,7 @@ struct ChatView: View {
         }
     }
 
+    // Spec: spec/client/chat-view.md#callButton
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
             CallController.shared.startCall(contact, media)
@@ -1255,16 +1298,52 @@ struct ChatView: View {
         }
     }
 
+    private func contentFilterMenu(withLabel: Bool) -> some View {
+        Menu {
+            ForEach(availableContent, id: \.self) { type in
+                Button {
+                    setContentFilter(type)
+                } label: {
+                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                }
+            }
+            if contentFilter != nil {
+                Button {
+                    closeSearch()
+                } label: {
+                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                }
+            }
+        } label: {
+            let icon = contentFilter == nil ? "photo.on.rectangle" : "photo.on.rectangle.fill"
+            if withLabel {
+                Label("Filter", systemImage: icon)
+            } else {
+                Image(systemName: icon)
+            }
+        }
+    }
+
     private func focusSearch() {
         showSearch = true
         searchFocussed = true
         searchText = ""
     }
 
+    private func setContentFilter(_ type: ContentFilter) {
+        if (contentFilter == type) { return }
+        contentFilter = type
+        showSearch = true
+        searchText = ""
+        searchTextChanged("")
+    }
+
     private func closeSearch() {
         showSearch = false
         searchText = ""
         searchFocussed = false
+        contentFilter = nil
+        updateAvailableContent()
     }
 
     private func closeKeyboardAndRun(_ action: @escaping () -> Void) {
@@ -1285,7 +1364,7 @@ struct ChatView: View {
                 Task { await chatModel.loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
-            Image(systemName: "person.crop.circle.badge.plus")
+            Label("Invite member", systemImage: "person.crop.circle.badge.plus")
         }
     }
 
@@ -1305,7 +1384,7 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Image(systemName: "link.badge.plus")
+            Label("Group link", systemImage: "link.badge.plus")
         }
     }
 
@@ -1328,6 +1407,7 @@ struct ChatView: View {
         ))
     }
 
+    // Spec: spec/client/chat-view.md#deletedSelectedMessages
     private func deletedSelectedMessages() async {
         await MainActor.run {
             withAnimation {
@@ -1336,6 +1416,7 @@ struct ChatView: View {
         }
     }
 
+    // Spec: spec/client/chat-view.md#forwardSelectedMessages
     private func forwardSelectedMessages() {
         Task {
             do {
@@ -1446,6 +1527,7 @@ struct ChatView: View {
         }
     }
 
+    // Spec: spec/client/chat-view.md#loadChatItems
     private func loadChatItems(_ chat: Chat, _ pagination: ChatPagination) async -> Bool {
         if loadingMoreItems { return false }
         await MainActor.run {
@@ -1473,6 +1555,7 @@ struct ChatView: View {
             chat.chatInfo.id,
             im,
             pagination,
+            contentFilter?.contentTag,
             searchText,
             nil,
             { visibleItemIndexesNonReversed(im, scrollView.listState, mergedItems.boxedValue) }
@@ -1485,6 +1568,7 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
+    // Spec: spec/client/chat-view.md#onChatItemsUpdated
     func onChatItemsUpdated() {
         if !mergedItems.boxedValue.isActualState() {
             //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(im.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(im.reversedChatItems.count)")
@@ -1512,6 +1596,7 @@ struct ChatView: View {
         )
     }
 
+    // Spec: spec/client/chat-view.md#ChatItemWithMenu
     private struct ChatItemWithMenu: View {
         @ObservedObject var im: ItemsModel
         @EnvironmentObject var m: ChatModel
@@ -2623,6 +2708,7 @@ struct ChatView: View {
     }
 }
 
+// Spec: spec/client/chat-view.md#FloatingButtonModel
 class FloatingButtonModel: ObservableObject {
     @ObservedObject var im: ItemsModel
 
@@ -2705,6 +2791,7 @@ private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {
     chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
 }
 
+// Spec: spec/client/chat-view.md#deleteMessages
 private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDeleteMode = .cidmInternal, moderate: Bool, _ onSuccess: @escaping () async -> Void = {}) {
     let itemIds = deletingItems
     if itemIds.count > 0 {
@@ -2808,6 +2895,7 @@ private func buildTheme() -> AppTheme {
     }
 }
 
+// Spec: spec/client/chat-view.md#ReactionContextMenu
 struct ReactionContextMenu: View {
     @EnvironmentObject var m: ChatModel
     let groupInfo: GroupInfo
@@ -2953,6 +3041,67 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")
+        }
+    }
+}
+
+// Spec: spec/client/chat-view.md#ContentFilter
+enum ContentFilter: CaseIterable {
+    case images
+    case videos
+    case voice
+    case files
+    case links
+
+    static let alwaysShow: Set<MsgContentTag> = [.image, .link]
+
+    var contentTag: MsgContentTag {
+        switch self {
+        case .images: .image
+        case .videos: .video
+        case .voice: .voice
+        case .files: .file
+        case .links: .link
+        }
+    }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .images: "Images"
+        case .videos: "Videos"
+        case .voice: "Voice messages"
+        case .files: "Files"
+        case .links: "Links"
+        }
+    }
+
+    var searchPlaceholder: LocalizedStringKey {
+        switch self {
+        case .images: "Search images"
+        case .videos: "Search videos"
+        case .voice: "Search voice messages"
+        case .files: "Search files"
+        case .links: "Search links"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .images: "photo"
+        case .videos: "video"
+        case .voice: "mic"
+        case .files: "doc"
+        case .links: "link"
+        }
+    }
+
+    var iconFilled: String {
+        switch self {
+        case .images: "photo.fill"
+        case .videos: "video.fill"
+        case .voice: "mic.fill"
+        case .files: "doc.fill"
+        case .links: "link.circle.fill"
         }
     }
 }

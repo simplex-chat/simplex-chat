@@ -778,6 +778,7 @@ export interface CIMeta {
   itemTimed?: CITimed
   itemLive?: boolean
   userMention: boolean
+  hasLink: boolean
   deletable: boolean
   editable: boolean
   forwardedByMember?: number // int64
@@ -1552,7 +1553,7 @@ export interface ChatRef {
 
 export namespace ChatRef {
   export function cmdString(self: ChatRef): string {
-    return self.chatType.toString() + self.chatId + (self.chatScope ? self.chatScope.toString() : '')
+    return ChatType.cmdString(self.chatType) + self.chatId + (self.chatScope ? GroupChatScope.cmdString(self.chatScope) : '')
   }
 }
 
@@ -2487,6 +2488,7 @@ export namespace GroupLinkPlan {
 export interface GroupMember {
   groupMemberId: number // int64
   groupId: number // int64
+  indexInGroup: number // int64
   memberId: string
   memberRole: GroupMemberRole
   memberCategory: GroupMemberCategory
@@ -3734,9 +3736,12 @@ export type StoreError =
   | StoreError.GroupNotFoundByName
   | StoreError.GroupMemberNameNotFound
   | StoreError.GroupMemberNotFound
+  | StoreError.GroupMemberNotFoundByIndex
+  | StoreError.MemberRelationsVectorNotFound
   | StoreError.GroupHostMemberNotFound
   | StoreError.GroupMemberNotFoundByMemberId
   | StoreError.MemberContactGroupMemberNotFound
+  | StoreError.InvalidMemberRelationUpdate
   | StoreError.GroupWithoutUser
   | StoreError.DuplicateGroupMember
   | StoreError.GroupAlreadyJoined
@@ -3760,7 +3765,6 @@ export type StoreError =
   | StoreError.ConnectionNotFoundById
   | StoreError.ConnectionNotFoundByMemberId
   | StoreError.PendingConnectionNotFound
-  | StoreError.IntroNotFound
   | StoreError.UniqueID
   | StoreError.LargeMsg
   | StoreError.InternalError
@@ -3819,9 +3823,12 @@ export namespace StoreError {
     | "groupNotFoundByName"
     | "groupMemberNameNotFound"
     | "groupMemberNotFound"
+    | "groupMemberNotFoundByIndex"
+    | "memberRelationsVectorNotFound"
     | "groupHostMemberNotFound"
     | "groupMemberNotFoundByMemberId"
     | "memberContactGroupMemberNotFound"
+    | "invalidMemberRelationUpdate"
     | "groupWithoutUser"
     | "duplicateGroupMember"
     | "groupAlreadyJoined"
@@ -3845,7 +3852,6 @@ export namespace StoreError {
     | "connectionNotFoundById"
     | "connectionNotFoundByMemberId"
     | "pendingConnectionNotFound"
-    | "introNotFound"
     | "uniqueID"
     | "largeMsg"
     | "internalError"
@@ -3987,6 +3993,16 @@ export namespace StoreError {
     groupMemberId: number // int64
   }
 
+  export interface GroupMemberNotFoundByIndex extends Interface {
+    type: "groupMemberNotFoundByIndex"
+    groupMemberIndex: number // int64
+  }
+
+  export interface MemberRelationsVectorNotFound extends Interface {
+    type: "memberRelationsVectorNotFound"
+    groupMemberId: number // int64
+  }
+
   export interface GroupHostMemberNotFound extends Interface {
     type: "groupHostMemberNotFound"
     groupId: number // int64
@@ -4000,6 +4016,10 @@ export namespace StoreError {
   export interface MemberContactGroupMemberNotFound extends Interface {
     type: "memberContactGroupMemberNotFound"
     contactId: number // int64
+  }
+
+  export interface InvalidMemberRelationUpdate extends Interface {
+    type: "invalidMemberRelationUpdate"
   }
 
   export interface GroupWithoutUser extends Interface {
@@ -4109,10 +4129,6 @@ export namespace StoreError {
   export interface PendingConnectionNotFound extends Interface {
     type: "pendingConnectionNotFound"
     connId: number // int64
-  }
-
-  export interface IntroNotFound extends Interface {
-    type: "introNotFound"
   }
 
   export interface UniqueID extends Interface {
@@ -4281,6 +4297,37 @@ export namespace StoreError {
   export interface WorkItemError extends Interface {
     type: "workItemError"
     errContext: string
+  }
+}
+
+export type SubscriptionStatus = 
+  | SubscriptionStatus.Active
+  | SubscriptionStatus.Pending
+  | SubscriptionStatus.Removed
+  | SubscriptionStatus.NoSub
+
+export namespace SubscriptionStatus {
+  export type Tag = "active" | "pending" | "removed" | "noSub"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Active extends Interface {
+    type: "active"
+  }
+
+  export interface Pending extends Interface {
+    type: "pending"
+  }
+
+  export interface Removed extends Interface {
+    type: "removed"
+    subError: string
+  }
+
+  export interface NoSub extends Interface {
+    type: "noSub"
   }
 }
 

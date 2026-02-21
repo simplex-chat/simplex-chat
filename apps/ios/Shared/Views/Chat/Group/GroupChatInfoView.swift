@@ -5,12 +5,14 @@
 //  Created by JRoberts on 14.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
 let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
+// Spec: spec/client/chat-view.md#GroupChatInfoView
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -46,7 +48,6 @@ struct GroupChatInfoView: View {
         case unblockMemberAlert(mem: GroupMember)
         case blockForAllAlert(mem: GroupMember)
         case unblockForAllAlert(mem: GroupMember)
-        case removeMemberAlert(mem: GroupMember)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
@@ -60,7 +61,6 @@ struct GroupChatInfoView: View {
             case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
             case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
             case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
-            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -212,7 +212,6 @@ struct GroupChatInfoView: View {
             case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
             case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
             case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
-            case let .removeMemberAlert(mem): return removeMemberAlert(mem)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -517,7 +516,7 @@ struct GroupChatInfoView: View {
         private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
             v.swipeActions(edge: .trailing) {
                 Button(role: .destructive) {
-                    alert = .removeMemberAlert(mem: member)
+                    showRemoveMemberAlert(groupInfo, member)
                 } label: {
                     Label("Remove member", systemImage: "trash")
                         .foregroundColor(Color.red)
@@ -791,32 +790,38 @@ struct GroupChatInfoView: View {
             alert = .largeGroupReceiptsDisabled
         }
     }
-
-    private func removeMemberAlert(_ mem: GroupMember) -> Alert {
-        let messageLabel: LocalizedStringKey = (
-            groupInfo.businessChat == nil
-            ? "Member will be removed from group - this cannot be undone!"
-            : "Member will be removed from chat - this cannot be undone!"
-        )
-        return Alert(
-            title: Text("Remove member?"),
-            message: Text(messageLabel),
-            primaryButton: .destructive(Text("Remove")) {
-                removeMember(groupInfo, mem)
-            },
-            secondaryButton: .cancel()
-        )
-    }
 }
 
-func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+    showAlert(
+        NSLocalizedString("Remove member?", comment: "alert title"),
+        message:
+            groupInfo.businessChat == nil
+            ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
+            : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
+        actions: {[
+            UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+            },
+            UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
+                removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+            },
+            cancelAlertAction
+        ]}
+    )
+}
+
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) {
     Task {
         do {
-            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId], withMessages)
             await MainActor.run {
                 ChatModel.shared.updateGroup(updatedGroupInfo)
                 updatedMembers.forEach { updatedMember in
                     _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
+                    if withMessages {
+                        ChatModel.shared.removeMemberItems(updatedMember, byMember: groupInfo.membership, groupInfo)
+                    }
                 }
                 dismiss?()
             }

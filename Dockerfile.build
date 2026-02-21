@@ -6,10 +6,16 @@ FROM ubuntu:${TAG} AS build
 
 ARG GHC=9.6.3
 ARG CABAL=3.10.2.0
-ARG JAVA=17
+ARG JAVA_VER=17.0.17.10.1
+ARG JAVA_HASH_AMD64=e3e11daa5c22a45153bbeff1a0c21bf08631791e4e8d8ed14deba31c7cf9af1a
+ARG JAVA_HASH_ARM64=2b460859b681757b33a7591b6238ecaf51569d05d2684984e5f0a89c6514acbc
 
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
+
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG USER_NAME=builder
 
 # Install curl, git and and simplex-chat dependencies
 RUN apt-get update && \
@@ -36,6 +42,11 @@ RUN apt-get update && \
                        file \
                        appstream \
                        gpg \
+                       zipalign \
+                       apksigner \
+                       python3 \
+                       python3-venv \
+                       xz-utils \
                        unzip &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
 
@@ -44,10 +55,32 @@ RUN apt-get update && \
 # depends on libjpeg.so.8 and liblcms2.so.2 which are NOT copied into final
 # /usr/lib/runtime/lib directory and I do not have time to figure out gradle.kotlin
 # to fix this :(
-RUN curl --proto '=https' --tlsv1.2 -sSf 'https://apt.corretto.aws/corretto.key' | gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg &&\
-    echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" > /etc/apt/sources.list.d/corretto.list &&\
-    apt update &&\
-    apt install -y java-${JAVA}-amazon-corretto-jdk
+RUN export JAVA_FILENAME='java-corretto.deb' \
+           JAVA_VER_MAJOR=$(printf "${JAVA_VER}" | awk -F. '{print $1}') \
+           JAVA_VER_DEB=$(printf "${JAVA_VER}" | sed 's/\.1$/-1/') && \
+    case "$(uname -m)" in \
+        x86_64)  export JAVA_ARCH='amd64' JAVA_HASH="$JAVA_HASH_AMD64" ;; \
+        aarch64) export JAVA_ARCH='arm64' JAVA_HASH="$JAVA_HASH_ARM64" ;; \
+        *) echo "unknown arch $(uname -m)" && exit 1 ;; \
+    esac && \
+    curl --proto '=https' --tlsv1.2 -sSf \
+         "https://corretto.aws/downloads/resources/${JAVA_VER}/java-${JAVA_VER_MAJOR}-amazon-corretto-jdk_${JAVA_VER_DEB}_${JAVA_ARCH}.deb" \
+         -o "${JAVA_FILENAME}" && \
+    if echo "${JAVA_HASH}  ${JAVA_FILENAME}" | sha256sum -c -; then \
+        if apt install -y ./"${JAVA_FILENAME}"; then \
+            rm ./"${JAVA_FILENAME}"; \
+        else \
+            echo "Failed to install Java Corretto" && exit 1; \
+        fi \
+    else \
+        echo "Checksum mismatch" && exit 1; \
+    fi
+
+RUN userdel -r ubuntu || :
+RUN groupadd -g ${USER_GID} ${USER_NAME} || :; useradd -u ${USER_UID} -g ${USER_GID} --create-home --shell /bin/bash ${USER_NAME} || :
+RUN mkdir /nix /out && chown ${USER_NAME}:${USER_NAME} /nix /out
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
 
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
@@ -60,8 +93,10 @@ ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 # Install ghcup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
 
+# Setup basic env variables (required)
+ENV HOME="/home/${USER_NAME}" USER="${USER_NAME}"
 # Adjust PATH
-ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
+ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
 # Set both as default
 RUN ghcup set ghc "${GHC}" && \
@@ -72,8 +107,8 @@ RUN ghcup set ghc "${GHC}" && \
 #=====================
 ARG SDK_VERSION=13114758
 
-ENV SDK_VERSION=$SDK_VERSION \
-    ANDROID_HOME=/root
+ENV SDK_VERSION="$SDK_VERSION" \
+    ANDROID_HOME="$HOME"
 
 RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VERSION}_latest.zip" && \
     unzip tools.zip && rm tools.zip && \
@@ -83,11 +118,17 @@ RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlineto
 ENV PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/tools/bin"
 
 # https://askubuntu.com/questions/885658/android-sdk-repositories-cfg-could-not-be-loaded
-RUN mkdir -p ~/.android ~/.gradle && \
-    touch ~/.android/repositories.cfg && \
-    echo 'org.gradle.console=plain' > ~/.gradle/gradle.properties &&\
+RUN mkdir -p "$HOME/.android" "$HOME/.gradle" && \
+    touch "$HOME/.android/repositories.cfg" && \
+    echo 'org.gradle.console=plain' > "$HOME/.gradle/gradle.properties" &&\
     yes | sdkmanager --licenses >/dev/null
 
-ENV PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+ENV PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools"
+
+# Android reproducibility scripts
+RUN python3 -m venv "$HOME/.venv"
+RUN "$HOME/.venv/bin/pip" install apksigcopier repro-apk
+
+ENV PATH="$HOME/.venv/bin:$PATH"
 
 WORKDIR /project

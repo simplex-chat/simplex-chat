@@ -5,6 +5,7 @@
 //  Created by Evgeny on 26/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/state.md | spec/api.md
 
 import Foundation
 import SwiftUI
@@ -1367,6 +1368,7 @@ public enum GroupFeatureEnabled: String, Codable, Identifiable, Hashable {
     }
 }
 
+// Spec: spec/state.md#ChatInfo
 public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo, groupChatScope: GroupChatScopeInfo?)
@@ -1871,6 +1873,7 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
     }
 }
 
+// Spec: spec/state.md#ChatStats
 public struct ChatStats: Decodable, Hashable {
     public init(
         unreadCount: Int = 0,
@@ -2635,19 +2638,18 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
+        return userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
-        if !canBeRemoved(groupInfo: groupInfo) || memberPending { return nil }
+        if !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
         let userRole = groupInfo.membership.memberRole
         return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .moderator
+        return memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
             && !memberPending
     }
@@ -3071,33 +3073,33 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var mergeCategory: CIMergeCategory? {
-        switch content {
-        case .rcvChatFeature: .chatFeature
-        case .sndChatFeature: .chatFeature
-        case .rcvGroupFeature: .chatFeature
-        case .sndGroupFeature: .chatFeature
-        case let.rcvGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userDeleted: nil
-            case .groupDeleted: nil
-            case .memberCreatedContact: nil
-            case .newMemberPendingReview: nil
-            default: .rcvGroupEvent
-            }
-        case let .sndGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userLeft: nil
-            case .memberAccepted: nil
-            case .userPendingReview: nil
-            default: .sndGroupEvent
-            }
-        default:
-            if meta.itemDeleted == nil {
+        if meta.itemDeleted != nil {
+            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+        } else {
+            switch content {
+            case .rcvChatFeature: .chatFeature
+            case .sndChatFeature: .chatFeature
+            case .rcvGroupFeature: .chatFeature
+            case .sndGroupFeature: .chatFeature
+            case let.rcvGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userDeleted: nil
+                case .groupDeleted: nil
+                case .memberCreatedContact: nil
+                case .newMemberPendingReview: nil
+                default: .rcvGroupEvent
+                }
+            case let .sndGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userLeft: nil
+                case .memberAccepted: nil
+                case .userPendingReview: nil
+                default: .sndGroupEvent
+                }
+            default:
                 nil
-            } else {
-                chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
             }
         }
     }
@@ -4235,6 +4237,7 @@ public struct CIFile: Decodable, Hashable {
     }
 }
 
+// Spec: spec/services/files.md#CryptoFile
 public struct CryptoFile: Codable, Hashable {
     public var filePath: String // the name of the file, not a full path
     public var cryptoArgs: CryptoFileArgs?
@@ -4282,6 +4285,7 @@ public struct CryptoFile: Codable, Hashable {
     static var decryptedUrls = Dictionary<String, URL>()
 }
 
+// Spec: spec/services/files.md#CryptoFileArgs
 public struct CryptoFileArgs: Codable, Hashable {
     public var fileKey: String
     public var fileNonce: String
@@ -4602,7 +4606,7 @@ extension MsgContent: Encodable {
     }
 }
 
-public enum MsgContentTag: String {
+public enum MsgContentTag: String, Decodable {
     case text
     case link
     case image

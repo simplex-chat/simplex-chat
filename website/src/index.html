@@ -31,7 +31,7 @@ active_home: true
     <meta property="og:type" content="website"/>
     <meta property="og:title" content="{{ title }}"/>
     <meta property="og:description" content="{{ description }}"/>
-    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg"/>
     <meta name="twitter:card" content="summary"/>
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
 
@@ -88,7 +88,7 @@ active_home: true
                         <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="/img/new/google_play.svg"></a>
                         <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid.svg"></a>
                         <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" title="{{ 'index-testflight-title' | i18n({}, lang) }}"></a>
-                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img src="/img/design_3/android-dark.png"></a>
+                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="/img/design_3/android-dark.png"></a>
                     </div>
                     <div class="security-btns">
                         <a title="{{ 'index-security-assessment-title' | i18n({}, lang) }}" href="https://www.trailofbits.com/about" target="_blank">
@@ -155,7 +155,7 @@ active_home: true
                         <h2>{{ "index-token-h2" | i18n({}, lang) }}</h2>
                         <p>{{ "index-token-p1" | i18n({}, lang) }}</p>
                         <p>{{ "index-token-p2" | i18n({}, lang) }}</p>
-                        <a class="gradient-text" href="/token">{{ "index-token-cta" | i18n({}, lang) | safe }}</a>
+                        <a class="gradient-text" href="/vouchers">{{ "index-token-cta" | i18n({}, lang) | safe }}</a>
                     </div>
                 </div>
             </section>
@@ -166,17 +166,17 @@ active_home: true
                         <h2>{{ "index-roadmap-h2" | i18n({}, lang) }}</h2>
                         <div class="roadmap">
                             <p>{{ "index-roadmap-2025" | i18n({}, lang) }} </p>
-                            <p class="title"><span>: </span>{{ "index-roadmap-2025-title" | i18n({}, lang) }}</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>{{ "index-roadmap-2025-title" | i18n({}, lang) }}</p>
                             <p>{{ "index-roadmap-2025-desc" | i18n({}, lang) }}</p>
                         </div>
                         <div class="roadmap">
                             <p>{{ "index-roadmap-2026" | i18n({}, lang) }} </p>
-                            <p class="title"><span>: </span>{{ "index-roadmap-2026-title" | i18n({}, lang) }}</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>{{ "index-roadmap-2026-title" | i18n({}, lang) }}</p>
                             <p>{{ "index-roadmap-2026-desc" | i18n({}, lang) }}</p>
                         </div>
                         <div class="roadmap">
                             <p>{{ "index-roadmap-2027" | i18n({}, lang) }} </p>
-                            <p class="title"><span>: </span>{{ "index-roadmap-2027-title" | i18n({}, lang) }}</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>{{ "index-roadmap-2027-title" | i18n({}, lang) }}</p>
                             <p>{{ "index-roadmap-2027-desc" | i18n({}, lang) }}</p>
                         </div>
                     </div>
@@ -235,19 +235,19 @@ active_home: true
     (function navColorOnScroll(){
         const header = document.querySelector('header#navbar');
         const cover = document.querySelector('.page-1.cover');
-        if (!header || !cover || !('IntersectionObserver' in window)) {
+        const footer = document.querySelector('.footer.page');
+        if (!header || !cover || !footer || !('IntersectionObserver' in window)) {
             window.addEventListener('load', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             window.addEventListener('scroll', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             return;
         }
         const io = new IntersectionObserver((entries) => {
-            for (const e of entries) {
-            // if cover is mostly visible, keep white nav; else switch to #001796
-            const onCover = e.isIntersecting && e.intersectionRatio >= 0.02;
-            document.body.classList.toggle('change-nav-color', !onCover);
-            }
+            // if cover or footer is mostly visible, keep white nav; else switch to #001796
+            const onObserved = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.02);
+            document.body.classList.toggle('change-nav-color', !onObserved);
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
+        io.observe(footer);
     })();
     </script>
     <script>

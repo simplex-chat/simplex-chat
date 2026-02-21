@@ -36,6 +36,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -57,7 +58,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -870,27 +871,26 @@ data MemberRestrictionStatus
   | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberRestrictionStatus where fromField = blobFieldDecoder strDecode
+instance FromField MemberRestrictionStatus where fromField = fromTextField_ textDecode
 
-instance ToField MemberRestrictionStatus where toField = toField . strEncode
+instance ToField MemberRestrictionStatus where toField = toField . textEncode
 
-instance StrEncoding MemberRestrictionStatus where
-  strEncode = \case
+instance TextEncoding MemberRestrictionStatus where
+  textEncode = \case
     MRSBlocked -> "blocked"
     MRSUnrestricted -> "unrestricted"
-    MRSUnknown tag -> encodeUtf8 tag
-  strDecode s = Right $ case s of
+    MRSUnknown tag -> tag
+  textDecode s = Just $ case s of
     "blocked" -> MRSBlocked
     "unrestricted" -> MRSUnrestricted
-    tag -> MRSUnknown $ safeDecodeUtf8 tag
-  strP = strDecode <$?> A.takeByteString
+    tag -> MRSUnknown tag
 
 instance FromJSON MemberRestrictionStatus where
-  parseJSON = strParseJSON "MemberRestrictionStatus"
+  parseJSON = textParseJSON "MemberRestrictionStatus"
 
 instance ToJSON MemberRestrictionStatus where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+  toJSON = textToJSON
+  toEncoding = textToEncoding
 
 mrsBlocked :: MemberRestrictionStatus -> Bool
 mrsBlocked = \case
@@ -921,6 +921,7 @@ type GroupMemberId = Int64
 data GroupMember = GroupMember
   { groupMemberId :: GroupMemberId,
     groupId :: GroupId,
+    indexInGroup :: Int64,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
@@ -1410,7 +1411,7 @@ instance ToField AgentConnId where toField (AgentConnId m) = toField $ Binary m
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
   strDecode s = AgentConnId <$> strDecode s
-  strP = AgentConnId <$> strP
+  strP = AgentConnId <$> (strP <|> pure B.empty)
 
 instance FromJSON AgentConnId where
   parseJSON = strParseJSON "AgentConnId"
@@ -1744,49 +1745,6 @@ instance TextEncoding ConnType where
     ConnContact -> "contact"
     ConnMember -> "member"
     ConnUserContact -> "user_contact"
-
-data GroupMemberIntro = GroupMemberIntro
-  { introId :: Int64,
-    reMember :: GroupMember,
-    toMember :: GroupMember,
-    introStatus :: GroupMemberIntroStatus
-  }
-  deriving (Show)
-
-data GroupMemberIntroStatus
-  = GMIntroPending
-  | GMIntroSent
-  | GMIntroInvReceived
-  | GMIntroInvForwarded
-  | GMIntroReConnected
-  | GMIntroToConnected
-  | GMIntroConnected
-  deriving (Eq, Show)
-
-instance FromField GroupMemberIntroStatus where fromField = fromTextField_ introStatusT
-
-instance ToField GroupMemberIntroStatus where toField = toField . serializeIntroStatus
-
-introStatusT :: Text -> Maybe GroupMemberIntroStatus
-introStatusT = \case
-  "new" -> Just GMIntroPending
-  "sent" -> Just GMIntroSent
-  "rcv" -> Just GMIntroInvReceived
-  "fwd" -> Just GMIntroInvForwarded
-  "re-con" -> Just GMIntroReConnected
-  "to-con" -> Just GMIntroToConnected
-  "con" -> Just GMIntroConnected
-  _ -> Nothing
-
-serializeIntroStatus :: GroupMemberIntroStatus -> Text
-serializeIntroStatus = \case
-  GMIntroPending -> "new"
-  GMIntroSent -> "sent"
-  GMIntroInvReceived -> "rcv"
-  GMIntroInvForwarded -> "fwd"
-  GMIntroReConnected -> "re-con"
-  GMIntroToConnected -> "to-con"
-  GMIntroConnected -> "con"
 
 type CommandId = Int64
 

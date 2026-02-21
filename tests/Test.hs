@@ -13,6 +13,7 @@ import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
 import MarkdownTests
+import MemberRelationsTests
 import MessageBatching
 import ProtocolTests
 import OperatorTests
@@ -54,11 +55,14 @@ main = do
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
 #else
       describe "Schema dump" schemaDumpTest
+#if MIN_VERSION_base(4,18,0)
       describe "Bot API docs" apiDocsTest
+#endif
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
+      describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests

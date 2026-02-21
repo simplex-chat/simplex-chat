@@ -24,7 +24,6 @@ import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
@@ -123,6 +122,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRChatContentTypes cts -> [plain $ "Chat content types: " <> T.intercalate ", " (map (safeDecodeUtf8 . strEncode) cts)]
   CRChatTags u tags -> ttyUser u $ [viewJSON tags]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
@@ -260,11 +260,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| _, ctrlPort} ->
-    [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
-      "Remote session invitation:",
-      plain invitation
-    ]
+  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| addrs, ctrlPort} ->
+    [plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_]
+      <> [plain $ "other addresses: " <> intercalate " " (map (\RCCtrlAddress {address = a} -> B.unpack (strEncode a)) addrs) | not (null addrs)]
+      <> ["Remote session invitation:", plain invitation]
     where
       started = " started on " <> B.unpack (strEncode address) <> ":" <> ctrlPort
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
@@ -275,8 +274,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
         <> viewRemoteCtrl ctrlAppInfo appVersion True
     ]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
-    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} compression ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName <> " (" <> compressStr <> " compression)"]
+    where
+      compressStr = if compression then "with" else "no"
   CRSQLResult rows -> map plain rows
 #if !defined(dbPostgres)
   CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
@@ -488,7 +489,9 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
       plain sessionCode
     ]
   CEvtNewRemoteHost RemoteHostInfo {remoteHostId = rhId, hostDeviceName} -> ["new remote host " <> sShow rhId <> " added: " <> plain hostDeviceName]
-  CEvtRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
+  CEvtRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} compression -> ["remote host " <> sShow rhId <> " connected (" <> compressStr <> " compression)"]
+    where
+      compressStr = if compression then "with" else "no"
   CEvtRemoteHostStopped {remoteHostId_} ->
     [ maybe "new remote host" (mappend "remote host " . sShow) remoteHostId_ <> " stopped"
     ]
@@ -1229,7 +1232,7 @@ viewConnectedToGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, m
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =
-  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role)
+  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> showRole role
     : case incognitoMembershipProfile g of
       Just mp -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile mp)]
       Nothing -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to accept"]
@@ -1268,15 +1271,15 @@ viewMembersBlockedForAllUser g members blocked = case members of
   mems' -> [ttyGroup' g <> ": you " <> (if blocked then "blocked" else "unblocked") <> " " <> sShow (length mems') <> " members"]
 
 showRole :: GroupMemberRole -> StyledString
-showRole = plain . strEncode
+showRole = plain . textEncode
 
 viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRejected || s == GSMemRemoved || s == GSMemLeft
-    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
-    role :: GroupMember -> String
-    role GroupMember {memberRole} = B.unpack $ strEncode memberRole
+    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (T.intercalate ", " $ [role m] <> category m <> status m <> muted m)
+    role :: GroupMember -> Text
+    role GroupMember {memberRole} = textEncode memberRole
     category m = case memberCategory m of
       GCUserMember -> ["you"]
       GCInviteeMember -> ["invited"]
@@ -2453,8 +2456,8 @@ viewChatError isCmd logLevel testView = \case
     CEGroupUserRole g role ->
       (: []) . (ttyGroup' g <>) $ case role of
         GRAuthor -> ": you don't have permission to send messages"
-        _ -> ": you have insufficient permissions for this action, the required role is " <> plain (strEncode role)
-    CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> plain (strEncode role) <> ", use member or observer"]
+        _ -> ": you have insufficient permissions for this action, the required role is " <> showRole role
+    CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> showRole role <> ", use member or observer"]
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
     CEGroupIncognitoCantInvite -> ["you are using an incognito profile for this group - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]

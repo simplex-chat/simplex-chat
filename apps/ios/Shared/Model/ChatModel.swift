@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 22/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/state.md
 
 import Foundation
 import Combine
@@ -53,6 +54,7 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
 }
 
 // analogue for SecondaryContextFilter in Kotlin
+// Spec: spec/state.md#SecondaryItemsModelFilter
 enum SecondaryItemsModelFilter {
     case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
     case msgContentTagContext(contentTag: MsgContentTag)
@@ -68,6 +70,7 @@ enum SecondaryItemsModelFilter {
 }
 
 // analogue for ChatsContext in Kotlin
+// Spec: spec/state.md#ItemsModel
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel(secondaryIMFilter: nil)
     public var secondaryIMFilter: SecondaryItemsModelFilter?
@@ -103,12 +106,14 @@ class ItemsModel: ObservableObject {
             .store(in: &bag)
     }
 
+    // Spec: spec/state.md#loadSecondaryChat
     static func loadSecondaryChat(_ chatId: ChatId, chatFilter: SecondaryItemsModelFilter, willNavigate: @escaping () -> Void = {}) {
         let im = ItemsModel(secondaryIMFilter: chatFilter)
         ChatModel.shared.secondaryIM = im
         im.loadOpenChat(chatId, willNavigate: willNavigate)
     }
 
+    // Spec: spec/state.md#loadOpenChat
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
         navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
@@ -134,6 +139,7 @@ class ItemsModel: ObservableObject {
         }
     }
 
+    // Spec: spec/state.md#loadOpenChatNoWait
     func loadOpenChatNoWait(_ chatId: ChatId, _ openAroundItemId: ChatItem.ID? = nil) {
         navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
@@ -179,6 +185,7 @@ class PreloadState {
     }
 }
 
+// Spec: spec/state.md#ChatTagsModel
 class ChatTagsModel: ObservableObject {
     static let shared = ChatTagsModel()
 
@@ -326,6 +333,7 @@ class ConnectProgressManager: ObservableObject {
     }
 }
 
+// Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -383,6 +391,7 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     @Published var activeCallViewIsCollapsed = false
     // remote desktop
+    // Spec: spec/architecture.md#remoteCtrlSession
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation
     @Published var showingInvitation: ShowingInvitation?
@@ -423,6 +432,7 @@ final class ChatModel: ObservableObject {
         userAddress?.shortLinkDataSet ?? true
     }
 
+    // Spec: spec/state.md#getUser
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
         ? currentUser
@@ -433,6 +443,7 @@ final class ChatModel: ObservableObject {
         users.firstIndex { $0.user.userId == user.userId }
     }
 
+    // Spec: spec/state.md#updateUser
     func updateUser(_ user: User) {
         if let i = getUserIndex(user) {
             users[i].user = user
@@ -442,6 +453,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    // Spec: spec/state.md#removeUser
     func removeUser(_ user: User) {
         if let i = getUserIndex(user) {
             users.remove(at: i)
@@ -452,6 +464,7 @@ final class ChatModel: ObservableObject {
         chats.first(where: { $0.id == id }) != nil
     }
 
+    // Spec: spec/state.md#getChat
     func getChat(_ id: String) -> Chat? {
         chats.first(where: { $0.id == id })
     }
@@ -506,6 +519,7 @@ final class ChatModel: ObservableObject {
         chats.firstIndex(where: { $0.id == id })
     }
 
+    // Spec: spec/state.md#addChat
     func addChat(_ chat: Chat) {
         if chatId == nil {
             withAnimation { addChat_(chat, at: 0) }
@@ -519,6 +533,7 @@ final class ChatModel: ObservableObject {
         chats.insert(chat, at: position)
     }
 
+    // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
@@ -570,6 +585,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    // Spec: spec/state.md#replaceChat
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
             chats[i] = chat
@@ -766,11 +782,6 @@ final class ChatModel: ObservableObject {
     }
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
-        // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-        if byMember.groupMemberId == groupInfo.membership.groupMemberId {
-            logger.debug("exiting removeMemberItems")
-            return
-        }
         if chatId == groupInfo.id {
             for i in 0..<im.reversedChatItems.count {
                 if let updatedItem = removedUpdatedItem(im.reversedChatItems[i]) {
@@ -1059,6 +1070,7 @@ final class ChatModel: ObservableObject {
         NtfManager.shared.changeNtfBadgeCount(by: by)
     }
 
+    // Spec: spec/state.md#totalUnreadCountForAllUsers
     func totalUnreadCountForAllUsers() -> Int {
         var unread: Int = 0
         for chat in chats {
@@ -1158,6 +1170,7 @@ final class ChatModel: ObservableObject {
         return (prevMember, memberIds.count)
     }
 
+    // Spec: spec/state.md#popChat
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
             // no animation here, for it not to look like it just moved when leaving the chat
@@ -1181,6 +1194,7 @@ final class ChatModel: ObservableObject {
         showingInvitation?.connChatUsed = true
     }
 
+    // Spec: spec/state.md#removeChat
     func removeChat(_ id: String) {
         withAnimation {
             if let i = getChatIndex(id) {
@@ -1253,6 +1267,7 @@ struct NTFContactRequest {
     var chatId: String
 }
 
+// Spec: spec/state.md#Chat
 final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]

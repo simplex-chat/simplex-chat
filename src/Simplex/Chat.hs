@@ -110,6 +110,7 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       deviceNameForRemote = "",
+      remoteCompression = True,
       chatHooks = defaultChatHooks
     }
 
@@ -118,8 +119,8 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 createChatDatabase :: ChatDbOpts -> MigrationConfig -> IO (Either MigrationError ChatDatabase)
 createChatDatabase chatDbOpts migrationConfig = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False) migrationConfig
-  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False) migrationConfig
+  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False chatDBFunctions) migrationConfig
+  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False []) migrationConfig
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController

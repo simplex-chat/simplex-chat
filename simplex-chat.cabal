@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.5.0.4
+version:        6.5.0.9
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -84,6 +84,7 @@ library
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Types
+      Simplex.Chat.Types.MemberRelations
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
@@ -121,6 +122,11 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_unused_connections
           Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
+          Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
+          Simplex.Chat.Store.Postgres.Migrations.M20251128_migrate_member_relations
+          Simplex.Chat.Store.Postgres.Migrations.M20251230_strict_tables
+          Simplex.Chat.Store.Postgres.Migrations.M20260108_chat_indices
+          Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -266,6 +272,11 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections
           Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
+          Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
+          Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations
+          Simplex.Chat.Store.SQLite.Migrations.M20251230_strict_tables
+          Simplex.Chat.Store.SQLite.Migrations.M20260108_chat_indices
+          Simplex.Chat.Store.SQLite.Migrations.M20260122_has_link
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -542,6 +553,7 @@ test-suite simplex-chat-test
       JSONFixtures
       JSONTests
       MarkdownTests
+      MemberRelationsTests
       MessageBatching
       OperatorTests
       ProtocolTests
@@ -588,6 +600,7 @@ test-suite simplex-chat-test
       apps/simplex-directory-service/src
   default-extensions:
       StrictData
+  -- add -fhpc to ghc-options below to run tests with coverage
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
       QuickCheck ==2.14.*

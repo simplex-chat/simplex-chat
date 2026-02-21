@@ -153,6 +153,7 @@ This file is generated automatically.
 - [SndGroupEvent](#sndgroupevent)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
+- [SubscriptionStatus](#subscriptionstatus)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -765,6 +766,7 @@ Group:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- hasLink: bool
 - deletable: bool
 - editable: bool
 - forwardedByMember: int64?
@@ -1309,7 +1311,7 @@ Used in API commands. Chat scope can only be passed with groups.
 ```
 
 ```javascript
-chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaScript
+ChatType.cmdString(chatType) + chatId + (chatScope ? GroupChatScope.cmdString(chatScope) : '') // JavaScript
 ```
 
 ```python
@@ -2198,6 +2200,7 @@ Known:
 **Record type**:
 - groupMemberId: int64
 - groupId: int64
+- indexInGroup: int64
 - memberId: string
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
@@ -3348,6 +3351,14 @@ GroupMemberNotFound:
 - type: "groupMemberNotFound"
 - groupMemberId: int64
 
+GroupMemberNotFoundByIndex:
+- type: "groupMemberNotFoundByIndex"
+- groupMemberIndex: int64
+
+MemberRelationsVectorNotFound:
+- type: "memberRelationsVectorNotFound"
+- groupMemberId: int64
+
 GroupHostMemberNotFound:
 - type: "groupHostMemberNotFound"
 - groupId: int64
@@ -3359,6 +3370,9 @@ GroupMemberNotFoundByMemberId:
 MemberContactGroupMemberNotFound:
 - type: "memberContactGroupMemberNotFound"
 - contactId: int64
+
+InvalidMemberRelationUpdate:
+- type: "invalidMemberRelationUpdate"
 
 GroupWithoutUser:
 - type: "groupWithoutUser"
@@ -3445,9 +3459,6 @@ ConnectionNotFoundByMemberId:
 PendingConnectionNotFound:
 - type: "pendingConnectionNotFound"
 - connId: int64
-
-IntroNotFound:
-- type: "introNotFound"
 
 UniqueID:
 - type: "uniqueID"
@@ -3582,6 +3593,26 @@ DeliveryJobNotFound:
 WorkItemError:
 - type: "workItemError"
 - errContext: string
+
+
+---
+
+## SubscriptionStatus
+
+**Discriminated union type**:
+
+Active:
+- type: "active"
+
+Pending:
+- type: "pending"
+
+Removed:
+- type: "removed"
+- subError: string
+
+NoSub:
+- type: "noSub"
 
 
 ---
