@@ -273,7 +273,7 @@
     "index-publications-heise-title": "Pubblicazioni di Heise Online",
     "index-publications-kuketz-title": "Recensione di Mike Kuketz",
     "index-publications-optout-title": "Intervista podcast di OptOut",
-    "worlds-most-secure-messaging": "La messaggistica più sicuro del mondo",
+    "worlds-most-secure-messaging": "La messaggistica più sicura del mondo",
     "index-messaging-p1": "SimpleX usa una crittografia end-to-end all'avanguardia.",
     "index-messaging-p2": "Per la tua sicurezza e privacy, i server non possono vedere i messaggi <span>e con chi parli</span>.",
     "index-messaging-cta": "Scopri di più sui messaggi di SimpleX",
@@ -311,5 +311,7 @@
     "messengers-comparison-section-list-point-3": "Sembra che l'uso di firme crittografiche comprometta il ripudio (negabilità), ma occorrono chiarimenti.",
     "messengers-comparison-section-list-point-4": "L'implementazione multi-dispositivo compromette la sicurezza post-compromissione di Double Ratchet",
     "messengers-comparison-section-list-point-5": "Lo scambio di chiavi a 2 fattori è facoltativo tramite la verifica del codice di sicurezza.",
-    "messengers-comparison-section-list-point-6": "L'accordo sulle chiavi post-quantistico è “scarno” &mdash; protegge solo alcuni dei passaggi del ratchet."
+    "messengers-comparison-section-list-point-6": "L'accordo sulle chiavi post-quantistico è “scarno” &mdash; protegge solo alcuni dei passaggi del ratchet.",
+    "navbar-token": "Token",
+    "navbar-old-site": "Sito vecchio"
 }

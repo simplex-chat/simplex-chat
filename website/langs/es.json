@@ -311,5 +311,7 @@
     "messengers-comparison-section-list-point-3": "Parece que el uso de firmas criptográficas compromete el repudio (negabilidad) pero es necesario aclararlo.",
     "messengers-comparison-section-list-point-4": "La implementación multi‑dispositivo compromete la seguridad posterior a ser comprometida del Double Ratchet",
     "messengers-comparison-section-list-point-5": "El intercambio de clave de doble factor es opcional mediante la verificación del código de seguridad.",
-    "messengers-comparison-section-list-point-6": "El acuerdo de claves postcuántico es \"parcial\", solo protege determinados pasos del ratchet."
+    "messengers-comparison-section-list-point-6": "El acuerdo de claves postcuántico es \"parcial\", solo protege determinados pasos del ratchet.",
+    "navbar-token": "Token",
+    "navbar-old-site": "Web antigua"
 }
