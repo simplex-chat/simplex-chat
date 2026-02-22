@@ -38,7 +38,11 @@ git -C "${tempdir}" clone "${repo}.git" &&\
     cd "${tempdir}/${repo_name}" &&\
     git checkout "${TAG}"
 
-for os in '22.04' '24.04'; do
+oses="22.04@sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5 24.04@sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237"
+
+for os_pair in ${oses}; do
+    os="${os_pair%@*}"
+    hash="${os_pair#*@}"
     os_url="$(printf '%s' "${os}" | tr '.' '_')"
 
     cli_name="simplex-chat-ubuntu-${os_url}-x86_64"
@@ -49,6 +53,7 @@ for os in '22.04' '24.04'; do
     docker build \
         --no-cache \
         --build-arg TAG="${os}" \
+        --build-arg HASH="${hash}" \
         --build-arg GHC="${ghc}" \
         --build-arg=USER_UID="$(id -u)" \
         --build-arg=USER_GID="$(id -g)" \

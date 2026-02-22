@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7.0-labs
 ARG TAG=24.04
-FROM ubuntu:${TAG} AS build
+ARG HASH=sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237
+FROM ubuntu:${TAG}@{HASH} AS build
 
 ### Build stage
 
