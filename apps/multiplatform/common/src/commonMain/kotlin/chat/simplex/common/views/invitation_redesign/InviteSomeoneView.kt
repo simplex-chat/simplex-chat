@@ -46,6 +46,13 @@ fun InviteSomeoneContent() {
     titleIcon = painterResource(MR.images.ic_add_link),
     title = stringResource(MR.strings.create_private_1_time_link),
     description = stringResource(MR.strings.contact_can_use_link_or_scan_qr),
+    bulletPoints = listOf(
+      stringResource(MR.strings.one_time_link_only_one_person),
+      stringResource(MR.strings.one_time_link_once_connected_removed),
+      stringResource(MR.strings.one_time_link_secure_to_pass)
+    ),
+    buttonText = stringResource(MR.strings.create_1_time_link),
+    onDismiss = {},
     onClick = {
       ModalManager.start.showModalCloseable { close ->
         OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
@@ -60,6 +67,13 @@ fun InviteSomeoneContent() {
     titleIcon = painterResource(MR.images.ic_qr_code),
     title = stringResource(MR.strings.create_public_simplex_address),
     description = stringResource(MR.strings.public_link_for_social_media_email_or_website),
+    bulletPoints = listOf(
+      stringResource(MR.strings.address_many_people_can_connect),
+      stringResource(MR.strings.address_removed_without_losing_contacts),
+      stringResource(MR.strings.address_servers_cant_see_profile)
+    ),
+    buttonText = stringResource(MR.strings.create_simplex_address),
+    onDismiss = {},
     onClick = {
       ModalManager.start.showModalCloseable { close ->
         OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)

@@ -469,8 +469,14 @@
   <string name="contact_can_use_link_or_scan_qr">Your contact can use link or scan QR code</string>
   <string name="send_1_time_link_description">Send 1-time link to your contact via any messenger, it is secure. Ask to use it in the app.</string>
   <string name="or_show_qr_code_in_person_or_video_call">Or show this QR code in person or in a video call.</string>
+  <string name="one_time_link_only_one_person">Only one person can connect</string>
+  <string name="one_time_link_once_connected_removed">Once connected, the link is removed</string>
+  <string name="one_time_link_secure_to_pass">It is secure to pass via less secure channel</string>
   <string name="create_public_simplex_address">Create public SimpleX address</string>
   <string name="public_link_for_social_media_email_or_website">Public link for social media, email or website</string>
+  <string name="address_many_people_can_connect">Many people can connect</string>
+  <string name="address_removed_without_losing_contacts">Can be removed without losing contacts</string>
+  <string name="address_servers_cant_see_profile">Servers can\'t see profile in the address without having link</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="no_chats_in_list">No chats in list %s.</string>
