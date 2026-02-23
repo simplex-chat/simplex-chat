@@ -28,7 +28,7 @@ import chat.simplex.res.MR
 fun InviteSomeoneView(close: () -> Unit) {
   ModalView(close) {
     ColumnWithScrollBar(
-      Modifier.fillMaxSize().background(Color.White),
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
@@ -87,7 +87,7 @@ fun InviteSomeoneContent() {
 fun PreviewInviteSomeoneView() {
   SimpleXTheme {
     ColumnWithScrollBar(
-      Modifier.fillMaxSize().background(Color.White),
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)

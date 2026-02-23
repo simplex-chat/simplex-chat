@@ -42,7 +42,7 @@ fun ModalData.ConnectViewLinkOrQrModal(rhId: Long?, close: () -> Unit) {
 
   ModalView(close) {
     ColumnWithScrollBar(
-      Modifier.fillMaxWidth().background(Color(0xfff5f5f6)),
+      Modifier.fillMaxWidth().background(MaterialTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Spacer(Modifier.height(24.dp))
@@ -114,7 +114,7 @@ private fun ConnectPasteLinkView(rhId: Long?, pastedLink: MutableState<String>, 
       Box(
         Modifier
           .weight(1f)
-          .background(Color(0xFFF2F2F7)) // light gray outer background
+          .background(MaterialTheme.colors.background)
           .padding(8.dp),
         contentAlignment = Alignment.Center
       ) {
@@ -122,13 +122,13 @@ private fun ConnectPasteLinkView(rhId: Long?, pastedLink: MutableState<String>, 
           Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White),
+            .background(MaterialTheme.colors.surface),
           contentAlignment = Alignment.Center
         ) {
           Text(
             stringResource(MR.strings.tap_to_paste_link),
             modifier = Modifier.padding(vertical = 16.dp),
-            color = Color.Black.copy(alpha = 0.3f),
+            color = MaterialTheme.colors.secondary,
             fontSize = 18.sp
           )
           if (connectProgressManager.showConnectProgress != null) {

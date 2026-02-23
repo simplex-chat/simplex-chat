@@ -11,7 +11,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
@@ -27,7 +26,7 @@ import chat.simplex.res.MR
 fun InviteSomeoneView(close: () -> Unit) {
   ModalView(close) {
     ColumnWithScrollBar(
-      Modifier.fillMaxSize().background(Color.White),
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
@@ -44,7 +43,7 @@ fun InviteSomeoneContent() {
     shape = RoundedCornerShape(18.dp),
     color = MaterialTheme.appColors.sentMessage,
     modifier = Modifier
-      .fillMaxSize().background(Color.White)
+      .fillMaxSize().background(MaterialTheme.colors.background)
       .padding(horizontal = DEFAULT_PADDING)
       .clickable {
         ModalManager.start.showModalCloseable { close ->
@@ -148,7 +147,7 @@ fun InviteSomeoneContent() {
 fun PreviewInviteSomeoneView() {
   SimpleXTheme {
     ColumnWithScrollBar(
-      Modifier.fillMaxSize().background(Color.White),
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)

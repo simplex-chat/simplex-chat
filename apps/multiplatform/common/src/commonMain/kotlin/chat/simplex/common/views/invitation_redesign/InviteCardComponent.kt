@@ -29,7 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -49,7 +49,7 @@ fun InviteCardComponent(
 ) {
   Card(
     shape = RoundedCornerShape(24.dp),
-    backgroundColor = Color(0xfff5f5f6),
+    backgroundColor = MaterialTheme.appColors.sentMessage,
     elevation = 0.dp,
     modifier = Modifier
       .fillMaxWidth()
@@ -92,7 +92,7 @@ fun InviteCardComponent(
               fontSize = 18.sp,
               fontWeight = FontWeight.Medium
             ),
-            color = Color.Black
+            color = MaterialTheme.colors.onBackground
           )
         }
 
@@ -101,7 +101,7 @@ fun InviteCardComponent(
           Text(
             description,
             style = MaterialTheme.typography.body2.copy(fontSize = 14.sp),
-            color = Color.Gray
+            color = MaterialTheme.colors.secondary
           )
         }
 
@@ -117,12 +117,12 @@ fun InviteCardComponent(
                 Text(
                   "\u2022 ",
                   style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold),
-                  color = Color.Black
+                  color = MaterialTheme.colors.onBackground
                 )
                 Text(
                   point,
                   style = MaterialTheme.typography.body1,
-                  color = Color.Black
+                  color = MaterialTheme.colors.onBackground
                 )
               }
             }
