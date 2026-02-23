@@ -66,7 +66,11 @@ struct GroupLinkView: View {
                         .bold()
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
+                if isChannel {
+                    Text("You can share a link or a QR code - anybody will be able to join the channel.")
+                } else {
+                    Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
+                }
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
@@ -74,15 +78,17 @@ struct GroupLinkView: View {
 
             Section {
                 if let groupLink = groupLink {
-                    Picker("Initial role", selection: $groupLinkMemberRole) {
-                        ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
-                            Text(role.text)
+                    if !isChannel {
+                        Picker("Initial role", selection: $groupLinkMemberRole) {
+                            ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
+                                Text(role.text)
+                            }
                         }
+                        .frame(height: 36)
                     }
-                    .frame(height: 36)
                     SimpleXCreatedLinkQRCode(link: groupLink.connLinkContact, short: $showShortLink)
                         .id("simplex-qrcode-view-for-\(groupLink.connLinkContact.simplexChatUri(short: showShortLink))")
-                    if groupLink.shouldBeUpgraded {
+                    if !isChannel && groupLink.shouldBeUpgraded {
                         Button {
                             upgradeAndShareLinkAlert()
                         } label: {
@@ -90,7 +96,7 @@ struct GroupLinkView: View {
                         }
                     }
                     Button {
-                        if groupLink.shouldBeUpgraded {
+                        if !isChannel && groupLink.shouldBeUpgraded {
                             upgradeAndShareLinkAlert(groupLink: groupLink)
                         } else {
                             groupLink.shareAddress(short: showShortLink)
@@ -112,7 +118,7 @@ struct GroupLinkView: View {
                     .disabled(creatingLink)
                 }
             } header: {
-                if let groupLink, groupLink.connLinkContact.connShortLink != nil {
+                if !isChannel, let groupLink, groupLink.connLinkContact.connShortLink != nil {
                     ToggleShortLinkHeader(text: Text(""), link: groupLink.connLinkContact, short: $showShortLink)
                 }
             }
@@ -170,7 +176,7 @@ struct GroupLinkView: View {
                 logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
                 await MainActor.run {
                     creatingLink = false
-                    let a = getErrorAlert(error, "Error creating group link")
+                    let a = getErrorAlert(error, isChannel ? "Error creating channel link" : "Error creating group link")
                     alert = .error(title: a.title, error: a.message)
                 }
             }
@@ -179,7 +185,7 @@ struct GroupLinkView: View {
 
     private func upgradeAndShareLinkAlert(groupLink: GroupLink? = nil) {
         showAlert(
-            NSLocalizedString("Upgrade group link?", comment: "alert message"),
+            NSLocalizedString(isChannel ? "Upgrade channel link?" : "Upgrade group link?", comment: "alert message"),
             message: NSLocalizedString("The link will be short, and group profile will be shared via the link.", comment: "alert message"),
             actions: {
                 var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in

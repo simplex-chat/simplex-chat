@@ -327,7 +327,9 @@ struct GroupChatInfoView: View {
             let buttonWidth = g.size.width / 4
             HStack(alignment: .center, spacing: 8) {
                 searchButton(width: buttonWidth)
-                if groupInfo.canAddMembers {
+                if groupInfo.useRelays {
+                    channelLinkActionButton(width: buttonWidth)
+                } else if groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
                 if let nextNtfMode = chat.chatInfo.nextNtfMode {
@@ -384,6 +386,23 @@ struct GroupChatInfoView: View {
             width: width
         ) {
             toggleNotifications(chat, enableNtfs: nextNtfMode)
+        }
+        .disabled(!groupInfo.ready)
+    }
+
+    private func channelLinkActionButton(width: CGFloat) -> some View {
+        ZStack {
+            InfoViewButton(image: "link", title: "link", width: width) {
+                groupLinkNavLinkActive = true
+            }
+
+            NavigationLink(isActive: $groupLinkNavLinkActive) {
+                groupLinkDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
         .disabled(!groupInfo.ready)
     }
@@ -634,7 +653,7 @@ struct GroupChatInfoView: View {
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label("Chat relays", systemImage: "server.rack")
+            Label("Chat relays", systemImage: "externaldrive.connected.to.line.below")
         }
     }
 

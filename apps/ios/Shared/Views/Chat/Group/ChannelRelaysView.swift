@@ -27,26 +27,35 @@ struct ChannelRelaysView: View {
             }
         }
         .onAppear {
-            if isOwner {
-                Task { groupRelays = await apiGetGroupRelays(groupInfo.groupId) }
+            Task {
+                await chatModel.loadGroupMembers(groupInfo)
+                if isOwner {
+                    groupRelays = await apiGetGroupRelays(groupInfo.groupId)
+                }
             }
         }
     }
 
     @ViewBuilder private func ownerRelaysList() -> some View {
         let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay }
-        if groupRelays.isEmpty && relayMembers.isEmpty {
+        if relayMembers.isEmpty {
             Section {
                 Text("No chat relays")
                     .foregroundColor(theme.colors.secondary)
             }
         } else {
             Section {
-                ForEach(groupRelays) { relay in
-                    HStack {
-                        Text(ownerRelayDisplayName(relay))
-                        Spacer()
-                        relayStatusIndicator(relay.relayStatus)
+                ForEach(relayMembers) { member in
+                    NavigationLink {
+                        GroupMemberInfoView(
+                            groupInfo: groupInfo,
+                            chat: chat,
+                            groupMember: member,
+                            scrollToItemId: $scrollToItemId
+                        )
+                        .navigationBarHidden(false)
+                    } label: {
+                        relayMemberRow(member.wrapped, relayStatus: relayStatusForMember(member.wrapped))
                     }
                 }
             } footer: {
@@ -74,7 +83,7 @@ struct ChannelRelaysView: View {
                         )
                         .navigationBarHidden(false)
                     } label: {
-                        relayMemberRow(member.wrapped)
+                        relayMemberRow(member.wrapped, relayStatus: nil)
                     }
                 }
             } footer: {
@@ -83,28 +92,11 @@ struct ChannelRelaysView: View {
         }
     }
 
-    private func ownerRelayDisplayName(_ relay: GroupRelay) -> String {
-        if let member = chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId }) {
-            return member.wrapped.chatViewName
-        }
-        if let link = relay.relayLink {
-            return hostFromRelayLink(link)
-        }
-        return "relay\(relay.groupRelayId)"
+    private func relayStatusForMember(_ member: GroupMember) -> RelayStatus? {
+        groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus
     }
 
-    private func relayStatusIndicator(_ status: RelayStatus) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(relayStatusColor(status))
-                .frame(width: 8, height: 8)
-            Text(status.text)
-                .font(.caption)
-                .foregroundColor(theme.colors.secondary)
-        }
-    }
-
-    private func relayMemberRow(_ member: GroupMember) -> some View {
+    private func relayMemberRow(_ member: GroupMember, relayStatus: RelayStatus?) -> some View {
         HStack {
             MemberProfileImage(member, size: 38)
                 .padding(.trailing, 2)
@@ -112,7 +104,7 @@ struct ChannelRelaysView: View {
                 Text(member.chatViewName)
                     .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
-                Text(relayConnStatus(member))
+                Text(relayStatus?.text ?? relayConnStatus(member))
                     .lineLimit(1)
                     .font(.caption)
                     .foregroundColor(theme.colors.secondary)
@@ -132,13 +124,6 @@ struct ChannelRelaysView: View {
         }
     }
 
-    private func relayStatusColor(_ status: RelayStatus) -> Color {
-        switch status {
-        case .rsActive: .green
-        case .rsNew: .red
-        case .rsInvited, .rsAccepted: .orange
-        }
-    }
 }
 
 func hostFromRelayLink(_ link: String) -> String {

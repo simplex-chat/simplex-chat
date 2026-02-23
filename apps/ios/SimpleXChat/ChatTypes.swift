@@ -2682,14 +2682,14 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     }
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
-        if !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
+        if memberRole == .relay || !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
         let userRole = groupInfo.membership.memberRole
         return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberRole < .moderator
+        return memberRole != .relay && memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
             && !memberPending
     }

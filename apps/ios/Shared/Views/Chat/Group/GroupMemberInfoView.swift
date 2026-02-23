@@ -105,6 +105,7 @@ struct GroupMemberInfoView: View {
                         Section {
                             if !openedFromSupportChat
                                 && groupInfo.membership.memberRole >= .moderator
+                                && member.memberRole != .relay
                                 && (member.memberRole < .moderator || member.supportChat != nil) {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
@@ -583,7 +584,8 @@ struct GroupMemberInfoView: View {
                         blockForAllButton(mem)
                     }
                 }
-                if canRemove {
+                // TODO [relays] removing relay should also remove its link from group link data
+                if canRemove && mem.memberRole != .relay {
                     if mem.memberStatus == .memRemoved || mem.memberStatus == .memLeft {
                         deleteMemberMessagesButton(mem)
                     } else {

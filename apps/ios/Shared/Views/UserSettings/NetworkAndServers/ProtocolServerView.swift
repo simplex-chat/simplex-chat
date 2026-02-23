@@ -15,6 +15,7 @@ struct ProtocolServerView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     @Binding var server: UserServer
     @State var serverToEdit: UserServer
     var backLabel: LocalizedStringKey
@@ -50,7 +51,7 @@ struct ProtocolServerView: View {
                     )
                 } else {
                     server = serverToEdit
-                    validateServers_($userServers, $serverErrors)
+                    validateServers_($userServers, $serverErrors, $serverWarnings)
                     dismiss()
                 }
             } else {
@@ -177,6 +178,14 @@ struct BackButton: ViewModifier {
     }
 }
 
+@ViewBuilder func showRelayTestStatus(relay: UserChatRelay) -> some View {
+    switch relay.tested {
+    case .some(true): Image(systemName: "checkmark").foregroundColor(.green)
+    case .some(false): Image(systemName: "multiply").foregroundColor(.red)
+    case .none: Color.clear
+    }
+}
+
 func testServerConnection(server: Binding<UserServer>) async -> ProtocolTestFailure? {
     do {
         let r = try await testProtoServer(server: server.wrappedValue.server)
@@ -202,6 +211,7 @@ struct ProtocolServerView_Previews: PreviewProvider {
         ProtocolServerView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
+            serverWarnings: Binding.constant([]),
             server: Binding.constant(UserServer.sampleData.custom),
             serverToEdit: UserServer.sampleData.custom,
             backLabel: "Your SMP servers"

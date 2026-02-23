@@ -2576,6 +2576,13 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateGroup(toGroup)
             }
         }
+    case let .groupLinkRelaysUpdated(user, groupInfo, groupLink, groupRelays):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                ChannelRelaysModel.shared.update(groupId: groupInfo.groupId, groupLink: groupLink, groupRelays: groupRelays)
+            }
+        }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
         if active(user) {
             await MainActor.run {

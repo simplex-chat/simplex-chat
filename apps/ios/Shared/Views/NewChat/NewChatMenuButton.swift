@@ -125,6 +125,14 @@ struct NewChatSheet: View {
                     } label: {
                         Label("Create group", systemImage: "person.2.circle.fill")
                     }
+                    NavigationLink {
+                        AddChannelView()
+                            .navigationTitle("Create channel")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
+                    } label: {
+                        Label("Create channel (BETA)", systemImage: "antenna.radiowaves.left.and.right")
+                    }
                 }
                 
                 if (showArchive) {

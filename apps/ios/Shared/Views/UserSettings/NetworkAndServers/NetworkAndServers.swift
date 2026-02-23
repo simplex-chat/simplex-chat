@@ -78,6 +78,7 @@ struct NetworkAndServers: View {
                             YourServersView(
                                 userServers: $ss.servers.userServers,
                                 serverErrors: $ss.servers.serverErrors,
+                                serverWarnings: $ss.servers.serverWarnings,
                                 operatorIndex: idx
                             )
                             .navigationTitle("Your servers")
@@ -115,6 +116,9 @@ struct NetworkAndServers: View {
                     } else if !ss.servers.serverErrors.isEmpty {
                         ServersErrorView(errStr: NSLocalizedString("Errors in servers configuration.", comment: "servers error"))
                     }
+                    if let warnStr = globalServersWarning(ss.servers.serverWarnings) {
+                        ServersWarningView(warnStr: warnStr)
+                    }
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
@@ -143,6 +147,8 @@ struct NetworkAndServers: View {
                     ss.servers.currUserServers = try await getUserServers()
                     ss.servers.userServers = ss.servers.currUserServers
                     ss.servers.serverErrors = []
+                    ss.servers.serverWarnings = []
+                    validateServers_($ss.servers.userServers, $ss.servers.serverErrors, $ss.servers.serverWarnings)
                 } catch let error {
                     await MainActor.run {
                         showAlert(
@@ -186,6 +192,7 @@ struct NetworkAndServers: View {
                 currUserServers: $ss.servers.currUserServers,
                 userServers: $ss.servers.userServers,
                 serverErrors: $ss.servers.serverErrors,
+                serverWarnings: $ss.servers.serverWarnings,
                 operatorIndex: operatorIndex,
                 useOperator: serverOperator.enabled
             )
@@ -360,14 +367,18 @@ struct SimpleConditionsView: View {
     }
 }
 
-func validateServers_(_ userServers: Binding<[UserOperatorServers]>, _ serverErrors: Binding<[UserServersError]>) {
+func validateServers_(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ serverErrors: Binding<[UserServersError]>,
+    _ serverWarnings: Binding<[UserServersWarning]>? = nil
+) {
     let userServersToValidate = userServers.wrappedValue
     Task {
         do {
-            // TODO [relays] process warnings (e.g. noChatRelays)
-            let (errs, _warns) = try await validateServers(userServers: userServersToValidate)
+            let (errs, warns) = try await validateServers(userServers: userServersToValidate)
             await MainActor.run {
                 serverErrors.wrappedValue = errs
+                serverWarnings?.wrappedValue = warns
             }
         } catch let error {
             logger.error("validateServers error: \(responseError(error))")
@@ -397,6 +408,20 @@ struct ServersErrorView: View {
     }
 }
 
+struct ServersWarningView: View {
+    @EnvironmentObject var theme: AppTheme
+    var warnStr: String
+
+    var body: some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundColor(.orange)
+            Text(warnStr)
+                .foregroundColor(theme.colors.secondary)
+        }
+    }
+}
+
 func globalServersError(_ serverErrors: [UserServersError]) -> String? {
     for err in serverErrors {
         if let errStr = err.globalError {
@@ -404,6 +429,29 @@ func globalServersError(_ serverErrors: [UserServersError]) -> String? {
         }
     }
     return nil
+}
+
+func globalServersWarning(_ serverWarnings: [UserServersWarning]) -> String? {
+    for warn in serverWarnings {
+        switch warn {
+        case let .noChatRelays(user):
+            let text = NSLocalizedString("No chat relays enabled.", comment: "servers warning")
+            if let user = user {
+                return String.localizedStringWithFormat(
+                    NSLocalizedString("For chat profile %@:", comment: "servers warning"),
+                    user.localDisplayName
+                ) + " " + text
+            } else { return text }
+        }
+    }
+    return nil
+}
+
+func bindingForChatRelays(_ userServers: Binding<[UserOperatorServers]>, _ opIndex: Int) -> Binding<[UserChatRelay]> {
+    Binding(
+        get: { userServers[opIndex].wrappedValue.chatRelays ?? [] },
+        set: { userServers[opIndex].wrappedValue.chatRelays = $0 }
+    )
 }
 
 func globalSMPServersError(_ serverErrors: [UserServersError]) -> String? {

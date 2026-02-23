@@ -333,6 +333,25 @@ class ConnectProgressManager: ObservableObject {
     }
 }
 
+class ChannelRelaysModel: ObservableObject {
+    static let shared = ChannelRelaysModel()
+    @Published var groupId: Int64? = nil
+    @Published var groupLink: GroupLink? = nil
+    @Published var groupRelays: [GroupRelay] = []
+
+    func update(groupId: Int64, groupLink: GroupLink, groupRelays: [GroupRelay]) {
+        self.groupId = groupId
+        self.groupLink = groupLink
+        self.groupRelays = groupRelays
+    }
+
+    func reset() {
+        groupId = nil
+        groupLink = nil
+        groupRelays = []
+    }
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?

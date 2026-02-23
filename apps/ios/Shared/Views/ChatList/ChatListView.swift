@@ -71,6 +71,7 @@ struct ServerSettings {
     public var currUserServers: [UserOperatorServers]
     public var userServers: [UserOperatorServers]
     public var serverErrors: [UserServersError]
+    public var serverWarnings: [UserServersWarning] = []
 }
 
 struct UserPickerSheetView: View {
