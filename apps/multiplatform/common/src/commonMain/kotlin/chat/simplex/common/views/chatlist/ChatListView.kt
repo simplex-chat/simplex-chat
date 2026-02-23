@@ -292,7 +292,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   if (!chatModel.desktopNoUserNoRemote) {
     ChatList(searchText = searchText, listState)
   }
-  EmptyChatListView()
+  NowYouCanView()
 
   if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
     if (chatModel.chatRunning.value == null) {
@@ -302,7 +302,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
         color = MaterialTheme.colors.secondary
       )
     } else {
-      EmptyChatListView()
+      NowYouCanView()
     }
   }
 }

@@ -1,11 +1,9 @@
-package chat.simplex.common.views.invitation_redesign
+package chat.simplex.app.views.invitation_redesign
 
 import SectionBottomSpacer
 import SectionItemView
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -14,11 +12,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
@@ -42,21 +37,21 @@ fun ModalData.ConnectViewLinkOrQrModal(rhId: Long?, close: () -> Unit) {
 
   ModalView(close) {
     ColumnWithScrollBar(
-      Modifier.fillMaxWidth().background(Color(0xfff5f5f6)),
+      Modifier.fillMaxWidth(),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Spacer(Modifier.height(24.dp))
+      AppBarTitle(stringResource(MR.strings.connect_via_link), withPadding = false)
 
-      Image(
-        painterResource(MR.images.ic_invitation_connect_link),
+      Spacer(Modifier.height(DEFAULT_PADDING))
+
+      Icon(
+        painterResource(MR.images.ic_add_link),
         contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier
-          .size(200.dp)
-          .padding(horizontal = DEFAULT_PADDING)
+        modifier = Modifier.size(80.dp),
+        tint = MaterialTheme.colors.primary
       )
 
-      Spacer(Modifier.height(24.dp))
+      Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
 
       SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
         ConnectPasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
@@ -66,12 +61,7 @@ fun ModalData.ConnectViewLinkOrQrModal(rhId: Long?, close: () -> Unit) {
         Spacer(Modifier.height(10.dp))
 
         SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
-          Box(
-            Modifier
-              .fillMaxWidth()
-              .padding(horizontal = DEFAULT_PADDING)
-              .clip(RoundedCornerShape(24.dp))
-          ) {
+          Box(Modifier.clip(RoundedCornerShape(DEFAULT_PADDING))) {
             QRCodeScanner(showQRCodeScanner) { text ->
               val linkVerified = strIsSimplexLink(text)
               if (!linkVerified) {
@@ -111,30 +101,11 @@ private fun ConnectPasteLinkView(rhId: Long?, pastedLink: MutableState<String>, 
         )
       }
     }) {
-      Box(
-        Modifier
-          .weight(1f)
-          .background(Color(0xFFF2F2F7)) // light gray outer background
-          .padding(8.dp),
-        contentAlignment = Alignment.Center
-      ) {
-        Box(
-          Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White),
-          contentAlignment = Alignment.Center
-        ) {
-          Text(
-            stringResource(MR.strings.tap_to_paste_link),
-            modifier = Modifier.padding(vertical = 16.dp),
-            color = Color.Black.copy(alpha = 0.3f),
-            fontSize = 18.sp
-          )
-          if (connectProgressManager.showConnectProgress != null) {
-            CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
-          }
-        }
+      Box(Modifier.weight(1f)) {
+        Text(stringResource(MR.strings.tap_to_paste_link))
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
       }
     }
   } else {

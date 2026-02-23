@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -452,6 +453,16 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
   val showShortLink = remember { mutableStateOf(true) }
   Spacer(Modifier.height(10.dp))
 
+  Image(
+    painterResource(MR.images.ic_invitation_one_time_link),
+    contentDescription = null,
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = DEFAULT_PADDING * 3)
+  )
+
+  Spacer(Modifier.height(DEFAULT_PADDING))
+
   SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
     LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
   }
@@ -584,6 +595,16 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     }
   }
 
+  Image(
+    painterResource(MR.images.ic_invitation_connect_link),
+    contentDescription = null,
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = DEFAULT_PADDING * 3)
+  )
+
+  Spacer(Modifier.height(DEFAULT_PADDING))
+
   SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
@@ -681,6 +702,13 @@ fun LinkTextView(link: String, share: Boolean) {
     // So using BasicTextField + manual ...
     Text("…", fontSize = 16.sp)
     if (share) {
+      Spacer(Modifier.width(DEFAULT_PADDING))
+      IconButton({
+        chatModel.markShowingInvitationUsed()
+        clipboard.setText(AnnotatedString(simplexChatLink(link)))
+      }, Modifier.size(20.dp)) {
+        Icon(painterResource(MR.images.ic_content_copy), stringResource(MR.strings.copy_verb), tint = MaterialTheme.colors.primary)
+      }
       Spacer(Modifier.width(DEFAULT_PADDING))
       IconButton({
         chatModel.markShowingInvitationUsed()
