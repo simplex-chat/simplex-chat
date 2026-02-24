@@ -95,9 +95,19 @@ struct GroupChatInfoView: View {
                             if groupInfo.isOwner {
                                 groupLinkButton()
                             } else if let link = groupInfo.groupProfile.groupLink {
-                                channelLinkButton(link)
+                                SimpleXLinkQRCode(uri: link)
+                                Button {
+                                    showShareSheet(items: [simplexChatLink(link)])
+                                } label: {
+                                    Label("Share link", systemImage: "square.and.arrow.up")
+                                }
                             }
                             channelMembersButton(members)
+                        } footer: {
+                            if !groupInfo.isOwner && groupInfo.groupProfile.groupLink != nil {
+                                Text("You can share a link or a QR code - anybody will be able to join the channel.")
+                                    .foregroundColor(theme.colors.secondary)
+                            }
                         }
                     } else {
                         Section {
@@ -329,9 +339,9 @@ struct GroupChatInfoView: View {
             let buttonWidth = g.size.width / 4
             HStack(alignment: .center, spacing: 8) {
                 searchButton(width: buttonWidth)
-                if groupInfo.useRelays {
+                if groupInfo.useRelays && groupInfo.isOwner {
                     channelLinkActionButton(width: buttonWidth)
-                } else if groupInfo.canAddMembers {
+                } else if !groupInfo.useRelays && groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
                 if let nextNtfMode = chat.chatInfo.nextNtfMode {
@@ -399,11 +409,7 @@ struct GroupChatInfoView: View {
             }
 
             NavigationLink(isActive: $groupLinkNavLinkActive) {
-                if groupInfo.isOwner {
-                    groupLinkDestinationView()
-                } else if let link = groupInfo.groupProfile.groupLink {
-                    channelLinkDestinationView(link)
-                }
+                groupLinkDestinationView()
             } label: {
                 EmptyView()
             }
@@ -608,36 +614,6 @@ struct GroupChatInfoView: View {
             isChannel: groupInfo.useRelays
         )
         .navigationBarTitle(groupInfo.useRelays ? "Channel link" : "Group link")
-        .modifier(ThemedBackground(grouped: true))
-        .navigationBarTitleDisplayMode(.large)
-    }
-
-    private func channelLinkButton(_ link: String) -> some View {
-        NavigationLink {
-            channelLinkDestinationView(link)
-        } label: {
-            Label("Channel link", systemImage: "link")
-        }
-    }
-
-    private func channelLinkDestinationView(_ link: String) -> some View {
-        List {
-            Section {
-                SimpleXLinkQRCode(uri: link)
-                Button {
-                    showShareSheet(items: [simplexChatLink(link)])
-                } label: {
-                    Label("Share link", systemImage: "square.and.arrow.up")
-                }
-            } header: {
-                Text("Channel link")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                Text("Share this link to invite subscribers to the channel.")
-                    .foregroundColor(theme.colors.secondary)
-            }
-        }
-        .navigationBarTitle("Channel link")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
     }
