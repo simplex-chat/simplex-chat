@@ -21,7 +21,8 @@
             "label": "cs",
             "name": "Čeština",
             "flag": "/img/flags/cs.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "de",
@@ -47,7 +48,8 @@
             "label": "fr",
             "name": "Français",
             "flag": "/img/flags/fr.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "he",
@@ -81,7 +83,8 @@
             "label": "ja",
             "name": "日本語",
             "flag": "/img/flags/jp.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "nl",
@@ -93,13 +96,15 @@
             "label": "pl",
             "name": "Polski",
             "flag": "/img/flags/pl.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "pt_BR",
             "name": "Português",
             "flag": "/img/flags/br.svg",
-            "enabled": true
+            "enabled": true,
+            "home": true
         },
         {
             "label": "uk",
