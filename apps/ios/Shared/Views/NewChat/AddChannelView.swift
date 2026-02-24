@@ -128,9 +128,6 @@ struct AddChannelView: View {
                 }
             }
         }
-        .task {
-            hasRelays = await checkHasRelays()
-        }
         .onAppear {
             Task { hasRelays = await checkHasRelays() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -204,6 +201,13 @@ struct AddChannelView: View {
             do {
                 let enabledRelays = try await getEnabledRelays()
                 let relayIds = enabledRelays.compactMap { $0.chatRelayId }
+                guard !relayIds.isEmpty else {
+                    await MainActor.run {
+                        creationInProgress = false
+                        hasRelays = false
+                    }
+                    return
+                }
                 let (gInfo, gLink, gRelays) = try await apiNewPublicGroup(
                     incognito: false, relayIds: relayIds, groupProfile: profile
                 )
@@ -239,7 +243,7 @@ struct AddChannelView: View {
     private func checkHasRelays() async -> Bool {
         guard let servers = try? await getUserServers() else { return false }
         return servers.contains { op in
-            (op.chatRelays ?? []).contains { $0.enabled && !$0.deleted }
+            (op.chatRelays ?? []).contains { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
         }
     }
 

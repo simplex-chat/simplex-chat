@@ -131,7 +131,7 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create channel (BETA)", systemImage: "antenna.radiowaves.left.and.right")
+                        Label("Create channel (BETA)", systemImage: "antenna.radiowaves.left.and.right.circle.fill")
                     }
                 }
                 

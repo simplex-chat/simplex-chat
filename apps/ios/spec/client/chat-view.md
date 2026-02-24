@@ -160,7 +160,7 @@ Key differences from `.groupRcv`:
 - [`shouldShowAvatar()`](../../Shared/Views/Chat/ChatView.swift#L1670) treats consecutive `.channelRcv` items as same sender
 - [`getItemSeparation()`](../../Shared/Views/Chat/ChatView.swift#L1649) treats consecutive `.channelRcv` items as `sameMemberAndDirection`
 - [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2116) returns `true` when previous item is `.channelRcv` (different sender type)
-- [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3238) returns `nil` for `.channelRcv` (no per-member moderation)
+- [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3253) returns `nil` for `.channelRcv` (no per-member moderation)
 
 ---
 
@@ -333,7 +333,7 @@ When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Cha
 
 All "group" labels are replaced with "channel" equivalents via `groupInfo.useRelays ? "Channel..." :` ternary prepended before existing `businessChat` ternary. Affected: delete/leave buttons, delete/leave alerts, remove member alert, edit profile button, group link button/nav title.
 
-### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L611) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
+### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L635) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
 
 Navigates to a dedicated members view with two sections:
 - **Owners**: current user (if owner) + members with `memberRole >= .owner`
@@ -345,7 +345,7 @@ Member rows show profile image, display name (with verified shield), connection 
 
 Owner sees `groupLinkButton()` (navigates to `GroupLinkView` for full link management via `apiGetGroupLink`). Non-owner sees read-only `channelLinkButton()` displaying `groupProfile.groupLink` as QR code via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
 
-### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L625) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
+### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L649) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
 
 Navigates to relay list view with role-based branches:
 - **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1838) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`).
@@ -385,5 +385,5 @@ Sole channel owner cannot leave (only delete). Guard: `members.filter({ $0.wrapp
 | Animated image | [`Shared/Views/Chat/ChatItem/AnimatedImageView.swift`](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift) | [L10](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift#L11) |
 | Framed voice | [`Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift) | [L15](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift#L16) |
 | Member contact | [`Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift`](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift#L14) |
-| Channel members | [`Shared/Views/Chat/Group/ChannelMembersView.swift`](../../Shared/Views/Chat/Group/ChannelMembersView.swift) | [L13](../../Shared/Views/Chat/Group/ChannelMembersView.swift#L13) |
-| Channel relays | [`Shared/Views/Chat/Group/ChannelRelaysView.swift`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift) | [L13](../../Shared/Views/Chat/Group/ChannelRelaysView.swift#L13) |
+| Channel members | [`Shared/Views/Chat/Group/ChannelMembersView.swift`](../../Shared/Views/Chat/Group/ChannelMembersView.swift) | [L12](../../Shared/Views/Chat/Group/ChannelMembersView.swift#L12) |
+| Channel relays | [`Shared/Views/Chat/Group/ChannelRelaysView.swift`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift) | [L12](../../Shared/Views/Chat/Group/ChannelRelaysView.swift#L12) |

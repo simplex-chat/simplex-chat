@@ -20,11 +20,7 @@ struct ChannelRelaysView: View {
     var body: some View {
         let isOwner = groupInfo.isOwner
         List {
-            if isOwner {
-                ownerRelaysList()
-            } else {
-                memberRelaysList()
-            }
+            relaysList(showRelayStatus: isOwner)
         }
         .onAppear {
             Task {
@@ -36,7 +32,7 @@ struct ChannelRelaysView: View {
         }
     }
 
-    @ViewBuilder private func ownerRelaysList() -> some View {
+    @ViewBuilder private func relaysList(showRelayStatus: Bool) -> some View {
         let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay }
         if relayMembers.isEmpty {
             Section {
@@ -55,35 +51,7 @@ struct ChannelRelaysView: View {
                         )
                         .navigationBarHidden(false)
                     } label: {
-                        relayMemberRow(member.wrapped, relayStatus: relayStatusForMember(member.wrapped))
-                    }
-                }
-            } footer: {
-                Text("Chat relays forward messages to channel subscribers.")
-            }
-        }
-    }
-
-    @ViewBuilder private func memberRelaysList() -> some View {
-        let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay }
-        if relayMembers.isEmpty {
-            Section {
-                Text("No chat relays")
-                    .foregroundColor(theme.colors.secondary)
-            }
-        } else {
-            Section {
-                ForEach(relayMembers) { member in
-                    NavigationLink {
-                        GroupMemberInfoView(
-                            groupInfo: groupInfo,
-                            chat: chat,
-                            groupMember: member,
-                            scrollToItemId: $scrollToItemId
-                        )
-                        .navigationBarHidden(false)
-                    } label: {
-                        relayMemberRow(member.wrapped, relayStatus: nil)
+                        relayMemberRow(member.wrapped, relayStatus: showRelayStatus ? relayStatusForMember(member.wrapped) : nil)
                     }
                 }
             } footer: {
