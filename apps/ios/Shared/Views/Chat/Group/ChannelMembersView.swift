@@ -36,8 +36,13 @@ struct ChannelMembersView: View {
             }
             if groupInfo.membership.memberRole >= .admin {
                 Section(header: Text("\(subscribers.count) subscribers").foregroundColor(theme.colors.secondary)) {
-                    ForEach(subscribers) { member in
-                        memberRow(member, user: false)
+                    if subscribers.isEmpty {
+                        Text("No subscribers")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        ForEach(subscribers) { member in
+                            memberRow(member, user: false)
+                        }
                     }
                 }
             }
@@ -59,12 +64,6 @@ struct ChannelMembersView: View {
             displayName
                 .lineLimit(1)
             Spacer()
-            let role = member.memberRole
-            if role != .member {
-                Text(role.text)
-                    .font(.caption)
-                    .foregroundColor(theme.colors.secondary)
-            }
         }
         if user {
             row

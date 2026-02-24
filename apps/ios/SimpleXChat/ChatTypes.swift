@@ -2522,7 +2522,7 @@ extension RelayStatus {
     public var text: LocalizedStringKey {
         switch self {
         case .rsNew: "New"
-        case .rsInvited: "Connecting"
+        case .rsInvited: "Invited"
         case .rsAccepted: "Accepted"
         case .rsActive: "Active"
         }

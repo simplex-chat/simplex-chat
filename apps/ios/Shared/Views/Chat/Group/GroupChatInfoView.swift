@@ -90,15 +90,17 @@ struct GroupChatInfoView: View {
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
-                    Section {
-                        if groupInfo.useRelays {
+                    if groupInfo.useRelays {
+                        Section {
                             if groupInfo.isOwner {
                                 groupLinkButton()
                             } else if let link = groupInfo.groupProfile.groupLink {
                                 channelLinkButton(link)
                             }
-                            channelMembersButton()
-                        } else {
+                            channelMembersButton(members)
+                        }
+                    } else {
+                        Section {
                             if groupInfo.canAddMembers && groupInfo.businessChat == nil {
                                 groupLinkButton()
                             }
@@ -112,9 +114,9 @@ struct GroupChatInfoView: View {
                                 && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
                                 UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                             }
+                        } header: {
+                            Text("")
                         }
-                    } header: {
-                        Text("")
                     }
 
                     Section {
@@ -195,7 +197,7 @@ struct GroupChatInfoView: View {
 
                     Section {
                         if groupInfo.useRelays {
-                            channelRelaysButton()
+                            channelRelaysButton(members)
                         }
                         clearChatButton()
                         if groupInfo.canDelete {
@@ -397,7 +399,11 @@ struct GroupChatInfoView: View {
             }
 
             NavigationLink(isActive: $groupLinkNavLinkActive) {
-                groupLinkDestinationView()
+                if groupInfo.isOwner {
+                    groupLinkDestinationView()
+                } else if let link = groupInfo.groupProfile.groupLink {
+                    channelLinkDestinationView(link)
+                }
             } label: {
                 EmptyView()
             }
@@ -608,52 +614,61 @@ struct GroupChatInfoView: View {
 
     private func channelLinkButton(_ link: String) -> some View {
         NavigationLink {
-            List {
-                Section {
-                    SimpleXLinkQRCode(uri: link)
-                    Button {
-                        showShareSheet(items: [simplexChatLink(link)])
-                    } label: {
-                        Label("Share link", systemImage: "square.and.arrow.up")
-                    }
-                } header: {
-                    Text("Channel link")
-                        .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    Text("Share this link to invite subscribers to the channel.")
-                        .foregroundColor(theme.colors.secondary)
-                }
-            }
-            .navigationBarTitle("Channel link")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
+            channelLinkDestinationView(link)
         } label: {
             Label("Channel link", systemImage: "link")
         }
     }
 
-    private func channelMembersButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.membership.memberRole >= .admin
-            ? "Owners & subscribers"
-            : "Owners"
-        return NavigationLink {
-            ChannelMembersView(chat: chat, groupInfo: groupInfo)
-                .navigationTitle(label)
-                .modifier(ThemedBackground(grouped: true))
-                .navigationBarTitleDisplayMode(.large)
-        } label: {
-            Label(label, systemImage: "person.2")
+    private func channelLinkDestinationView(_ link: String) -> some View {
+        List {
+            Section {
+                SimpleXLinkQRCode(uri: link)
+                Button {
+                    showShareSheet(items: [simplexChatLink(link)])
+                } label: {
+                    Label("Share link", systemImage: "square.and.arrow.up")
+                }
+            } header: {
+                Text("Channel link")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                Text("Share this link to invite subscribers to the channel.")
+                    .foregroundColor(theme.colors.secondary)
+            }
+        }
+        .navigationBarTitle("Channel link")
+        .modifier(ThemedBackground(grouped: true))
+        .navigationBarTitleDisplayMode(.large)
+    }
+
+    @ViewBuilder private func channelMembersButton(_ members: [GMember]) -> some View {
+        let isAdmin = groupInfo.membership.memberRole >= .admin
+        let hasOwners = isAdmin || members.contains { $0.wrapped.memberRole >= .owner }
+        if isAdmin || hasOwners {
+            let label: LocalizedStringKey = isAdmin ? "Owners & subscribers" : "Owners"
+            NavigationLink {
+                ChannelMembersView(chat: chat, groupInfo: groupInfo)
+                    .navigationTitle(label)
+                    .modifier(ThemedBackground(grouped: true))
+                    .navigationBarTitleDisplayMode(.large)
+            } label: {
+                Label(label, systemImage: "person.2")
+            }
         }
     }
 
-    private func channelRelaysButton() -> some View {
-        NavigationLink {
-            ChannelRelaysView(chat: chat, groupInfo: groupInfo)
-                .navigationTitle("Chat relays")
-                .modifier(ThemedBackground(grouped: true))
-                .navigationBarTitleDisplayMode(.large)
-        } label: {
-            Label("Chat relays", systemImage: "externaldrive.connected.to.line.below")
+    @ViewBuilder private func channelRelaysButton(_ members: [GMember]) -> some View {
+        let hasRelays = groupInfo.isOwner || members.contains { $0.wrapped.memberRole == .relay }
+        if hasRelays {
+            NavigationLink {
+                ChannelRelaysView(chat: chat, groupInfo: groupInfo)
+                    .navigationTitle("Chat relays")
+                    .modifier(ThemedBackground(grouped: true))
+                    .navigationBarTitleDisplayMode(.large)
+            } label: {
+                Label("Chat relays", systemImage: "externaldrive.connected.to.line.below")
+            }
         }
     }
 

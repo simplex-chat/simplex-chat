@@ -1301,6 +1301,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
 struct NewUser: Encodable {
     var profile: Profile?
     var pastTimestamp: Bool
+    var userChatRelay: Bool = false
 }
 
 enum ChatPagination {
