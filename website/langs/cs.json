@@ -259,7 +259,7 @@
     "directory": "Složka",
     "about-and-contact-us": "O nás & Kontakt",
     "navbar-token": "Token",
-    "index-hero-h1": "Žijte<br>svobodně",
+    "index-hero-h1": "<div class=\"small\">Žijte<br>svobodně</dev>",
     "index-hero-h2": "Ve Své Síti",
     "index-hero-p1": "Soukromé a bezpečné zasílání zpráv.<br>První síť, kde vaše kontakty a skupiny patří vám.",
     "index-hero-download-desktop-btn-title": "Stáhněte si desktopovou aplikaci SimpleX",

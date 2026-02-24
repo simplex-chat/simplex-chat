@@ -408,10 +408,13 @@ section.cover div.content h1 {
 section.cover div.content h1 .small {
     font-size: calc(var(--sec-vwu) * 8);
     line-height: 1;
+    margin-bottom: -10px;
 }
 
 section.cover div.content h1 .medium {
     font-size: calc(var(--sec-vwu) * 10);
+    line-height: 1;
+    margin-bottom: -10px;
 }
 
 section.cover div.content h2 {
@@ -915,7 +918,7 @@ main .section-bg {
     section.cover div.content p {
         font-weight: 400;
         font-size: calc(var(--sec-vwu) * 5.5);
-        max-width: calc(var(--sec-vwu) * 85);
+        max-width: calc(var(--sec-vwu) * 93);
     }
 
 
