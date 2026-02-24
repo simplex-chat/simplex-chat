@@ -407,6 +407,7 @@ section.cover div.content h1 {
 
 section.cover div.content h1 .small {
     font-size: calc(var(--sec-vwu) * 8);
+    line-height: 1;
 }
 
 section.cover div.content h1 .medium {
@@ -427,7 +428,7 @@ section.cover div.content p {
     font-size: calc(var(--sec-vwu) * 2.4);
     align-items: center;
     color: #ffffff;
-    max-width: calc(var(--sec-vwu) * 35);
+    max-width: calc(var(--sec-vwu) * 53);
 }
 
 .publications-btns {

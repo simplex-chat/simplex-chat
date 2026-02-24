@@ -258,7 +258,7 @@
     "simplex-unique-overlay-card-4-p-3": "Jika Anda mempertimbangkan pengembangan untuk jaringan SimpleX, misalnya, bot obrolan untuk pengguna aplikasi SimpleX, atau integrasi pustaka Obrolan SimpleX ke dalam aplikasi seluler Anda, silakan <a href='https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D' target='_blank'>hubungi kami</a> untuk saran dan dukungan apa pun.",
     "simplex-unique-card-1-p-1": "SimpleX melindungi privasi profil, kontak, dan metadata Anda, menyembunyikannya dari server jaringan SimpleX dan pengamat mana pun.",
     "get-simplex": "Dapatkan <a href=\"/downloads\">aplikasi desktop</a> SimpleX",
-    "index-hero-h1": "Bebaslah",
+    "index-hero-h1": "<div class=\"small\">Bebaslah</div>",
     "index-hero-h2": "Di Jaringan Anda",
     "index-hero-p1": "Pesan yang privat dan aman.<br>Jaringan pertama tempat Anda memiliki kontak dan grup Anda.",
     "index-hero-download-desktop-btn-title": "Unduh Aplikasi Desktop SimpleX",
