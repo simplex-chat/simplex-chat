@@ -157,6 +157,7 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
+    channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
@@ -509,7 +510,7 @@ data ChatCommand
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
   | NewGroup IncognitoEnabled GroupProfile
-  -- TODO [relays] owner: TBC group link's default member role for APINewPublicGroup
+  -- TODO [relays] starting role should be communicated in protocol from owner to relays (see channelSubscriberRole config)
   | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
   | APIGetGroupRelays {groupId :: GroupId}
   | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile

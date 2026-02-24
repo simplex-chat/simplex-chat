@@ -38,6 +38,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
@@ -209,6 +210,7 @@ testCfg =
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
       tbqSize = 16,
+      channelSubscriberRole = GRMember,
       confirmMigrations = MCYesUp
     }
 

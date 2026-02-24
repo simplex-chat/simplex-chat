@@ -587,8 +587,8 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
-createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays = do
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
   (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing currentTs
@@ -600,7 +600,7 @@ createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile bu
     if useRelays
       then liftIO $ MemberId <$> encodedRandomBytes gVar 12
       else pure $ MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id"
-  let userMember = MemberIdRole userMemberId GRMember
+  let userMember = MemberIdRole userMemberId userMemberRole
   -- TODO [member keys] user key must be included here. Should key be added when group is prepared?
   membership <- createContactMemberInv_ db user groupId hostMemberId_ user userMember GCUserMember GSMemUnknown IBUnknown Nothing Nothing currentTs vr
   hostMember_ <- forM hostMemberId_ $ getGroupMember db vr user groupId
@@ -1084,13 +1084,13 @@ getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (groupId, memberId)
 
-getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Maybe ContactName -> ExceptT StoreError IO (GroupMember, Bool)
-getCreateUnknownGMByMemberId db vr user gInfo memberId memberName = do
+getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Maybe ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
+getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole = do
   liftIO (runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
     Right m -> pure (m, False)
     Left (SEGroupMemberNotFoundByMemberId _) -> do
       let name = fromMaybe (nameFromMemberId memberId) memberName
-      m <- createNewUnknownGroupMember db vr user gInfo memberId name
+      m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
       pure (m, True)
     Left e -> throwError e
 
@@ -2766,8 +2766,8 @@ setXGrpLinkMemReceived db mId xGrpLinkMemReceived = do
     "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
     (BI xGrpLinkMemReceived, currentTs, mId)
 
-createNewUnknownGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Text -> ExceptT StoreError IO GroupMember
-createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId memberName = do
+createNewUnknownGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Text -> GroupMemberRole -> ExceptT StoreError IO GroupMember
+createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId memberName unknownMemberRole = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName memberName
   (localDisplayName, profileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2782,7 +2782,7 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
             peer_chat_min_version, peer_chat_max_version)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (groupId, indexInGroup, memberId, GRAuthor, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
+      ( (groupId, indexInGroup, memberId, unknownMemberRole, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
           :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           :. (minV, maxV)
       )

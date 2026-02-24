@@ -1880,7 +1880,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False GRMember
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -1909,8 +1909,9 @@ processChatCommand vr nm = \case
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     let useRelays = not direct
+    subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays subRole
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2362,7 +2363,9 @@ processChatCommand vr nm = \case
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
         let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
             setupLink gInfo = do
-              gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+              -- TODO [relays] starting role should be communicated in protocol from owner to relays
+              subRole <- asks $ channelSubscriberRole . config
+              gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId subRole subMode
               relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
               groupRelays <- addRelays user gInfo sLnk relays
               pure (gLink, groupRelays)
