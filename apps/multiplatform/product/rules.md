@@ -85,7 +85,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Enforcement:** The Haskell core tracks message sequence numbers per connection. When a gap or integrity error is detected, a `CIContent.RcvIntegrityError(msgError: MsgErrorType)` chat item is inserted into the conversation. The UI renders these as system messages indicating the integrity issue.
 
-**Location:** `ChatModel.kt:3560` -- `CIContent.RcvIntegrityError`
+**Location:** `ChatModel.kt:3565` -- `CIContent.RcvIntegrityError`
 
 ---
 
@@ -95,7 +95,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Enforcement:** The Haskell core emits `CIContent.RcvDecryptionError(msgDecryptError, msgCount)` which the UI renders with an explanation and count. Ratchet re-synchronization can be triggered via `APISyncContactRatchet` / `APISyncGroupMemberRatchet`.
 
-**Location:** `ChatModel.kt:3561` -- `CIContent.RcvDecryptionError`
+**Location:** `ChatModel.kt:3566` -- `CIContent.RcvDecryptionError`
 
 ---
 
@@ -133,7 +133,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 
 **Enforcement:** The Haskell core validates role permissions server-side. The Kotlin UI layer uses `GroupMemberRole` comparisons (the enum is ordered: Observer < Author < Member < Moderator < Admin < Owner) to show/hide action buttons.
 
-**Location:** `ChatModel.kt:2364` -- `enum class GroupMemberRole`; various group management views
+**Location:** `ChatModel.kt:2369` -- `enum class GroupMemberRole`; various group management views
 
 ---
 
@@ -206,7 +206,7 @@ This document specifies invariants enforced by the Android and Desktop (Kotlin/C
 **Location:**
 - `android/src/main/java/chat/simplex/app/SimplexService.kt`
 - `android/src/main/java/chat/simplex/app/MessagesFetcherWorker.kt`
-- `SimpleXAPI.kt:7725` -- `enum class NotificationsMode`
+- `SimpleXAPI.kt:7739` -- `enum class NotificationsMode`
 
 ---
 

@@ -186,7 +186,7 @@ The Kotlin client communicates with the Haskell core via a text-based command pr
 
 ### Affected Locations
 
-- `SimpleXAPI.kt:6966` -- `ChatErrorStore(storeError: StoreError)`
+- `SimpleXAPI.kt:6986` -- `ChatErrorStore(storeError: StoreError)`
 - `SimpleXAPI.kt` -- `StoreError` sealed class (deserialized from Haskell responses)
 - `SimpleXAPI.kt` -- `ChatErrorDatabase(databaseError: DatabaseError)` for migration errors
 

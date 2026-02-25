@@ -55,12 +55,12 @@ Each type has a dedicated composable in `views/chat/item/`:
 
 | Type | Composable | Description |
 |---|---|---|
-| Text | `MsgContentView` | Rendered with markdown (bold, italic, code, links, `@mentions`) |
-| Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `FullScreenMediaView` |
+| Text | `FramedItemView` | Rendered with markdown (bold, italic, code, links, `@mentions`) via `CIMarkdownText` |
+| Image | `CIImageView` | Thumbnail with tap-to-fullscreen via `ImageFullScreenView` |
 | Video | `CIVideoView` | Video thumbnail with play button; inline playback via `VideoPlayerHolder` |
 | Voice | `CIVoiceView` | Waveform visualization with playback controls and duration |
 | File | `CIFileView` | File icon, name, size; download/open actions with progress indicator |
-| Link preview | `CILinkView` | URL preview card with title, description, image |
+| Link preview | `ChatItemLinkView` | URL preview card with title, description, image (defined in `LinkPreviews.kt`) |
 | Emoji-only | `EmojiItemView` | Large emoji rendering without message bubble |
 | Call event | `CICallItemView` | Call status (missed, ended, duration) |
 | Group event | `CIEventView` | Member joined/left, role changes, group updates |

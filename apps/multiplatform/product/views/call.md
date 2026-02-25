@@ -85,8 +85,11 @@ Sound: `SoundPlayer.start()` plays ringtone while banner is visible (unless call
 |---|---|
 | `WaitCapabilities` | Waiting for WebRTC capabilities |
 | `InvitationSent` | Call invitation sent to remote party |
+| `InvitationAccepted` | Callee accepted, starting WebRTC |
 | `OfferSent` | SDP offer sent |
-| `Negotiated` | SDP answer received, negotiation complete |
+| `OfferReceived` | Callee received SDP offer |
+| `AnswerReceived` | Caller received SDP answer |
+| `Negotiated` | ICE negotiation complete |
 | `Connected` | WebRTC media flowing; `connectedAt` timestamp set |
 | `Ended` | Call terminated |
 

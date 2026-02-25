@@ -183,7 +183,7 @@ initChatController(useKey, confirmMigrations, startChat)
 
 ### Android
 
-Entry: [`SimplexApp.onCreate()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L48)
+Entry: [`SimplexApp.onCreate()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L47)
 
 ```
 SimplexApp.onCreate()
@@ -317,7 +317,7 @@ Examples from platform files:
 
 [`PlatformInterface`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L15) is an interface with default no-op implementations. It is assigned at runtime by each platform entry point:
 
-- **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L203) (line 201)
+- **Android**: assigned in [`SimplexApp.initMultiplatform()`](../android/src/main/java/chat/simplex/app/SimplexApp.kt#L187) (line 187)
 - **Desktop**: assigned in [`Main.kt initHaskell()`](../desktop/src/jvmMain/kotlin/chat/simplex/desktop/Main.kt#L50) (line 50)
 
 The global variable is declared at [`Platform.kt line 50`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Platform.kt#L50):

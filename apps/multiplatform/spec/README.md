@@ -85,27 +85,31 @@ Common Module (commonMain)
 |---|---|---|
 | Architecture | [spec/architecture.md](architecture.md) | System layers, module structure, JNI bridge, app lifecycle, event streaming, platform abstraction |
 | State Management | [spec/state.md](state.md) | ChatModel singleton, ChatsContext, Chat data class, AppPreferences, ActiveChatState |
+| API | [spec/api.md](api.md) | ChatController command dispatch, ~150 API functions in 11 categories, CC/CR/API types |
+| Database | [spec/database.md](database.md) | SQLite database files, migrations, encryption, backup/restore |
+| Impact | [spec/impact.md](impact.md) | Source file → product concept mapping for change impact analysis |
+| Chat View | [spec/client/chat-view.md](client/chat-view.md) | ChatView, ChatItemView, message rendering, item interactions |
+| Chat List | [spec/client/chat-list.md](client/chat-list.md) | ChatListView, ChatPreviewView, filtering, search, tags |
+| Compose | [spec/client/compose.md](client/compose.md) | ComposeView, SendMsgView, ComposeState, attachments, mentions |
+| Navigation | [spec/client/navigation.md](client/navigation.md) | App screen routing, onboarding, settings, new chat flows |
+| Calls | [spec/services/calls.md](services/calls.md) | WebRTC call lifecycle, signaling, platform-specific call views |
+| Files | [spec/services/files.md](services/files.md) | File transfer (SMP inline / XFTP), CryptoFile encryption, platform file paths |
+| Notifications | [spec/services/notifications.md](services/notifications.md) | NtfManager, SimplexService, notification channels, background delivery |
+| Theme | [spec/services/theme.md](services/theme.md) | ThemeManager, color system, wallpapers, per-user overrides |
 
 ---
 
 ## Product Documents
 
-Product documents are not yet created for the Kotlin Multiplatform project. The equivalent iOS product documents (for reference structure) reside in `apps/ios/product/`:
-
-| Category | iOS Equivalent Path | Topic |
+| Category | Path | Topic |
 |---|---|---|
-| Overview | `apps/ios/product/README.md` | Product overview |
-| Concepts | `apps/ios/product/concepts.md` | Core domain concepts |
-| Glossary | `apps/ios/product/glossary.md` | Term definitions |
-| Rules | `apps/ios/product/rules.md` | Product rules |
-| Gaps | `apps/ios/product/gaps.md` | Known gaps |
-| Flows | `apps/ios/product/flows/` | onboarding, messaging, connection, calling, file-transfer, group-lifecycle |
-| Views | `apps/ios/product/views/` | chat-list, chat, settings, onboarding, call, new-chat, contact-info, group-info, user-profiles |
-
-Planned directories for Kotlin Multiplatform product docs:
-
-- `apps/multiplatform/product/flows/` -- user interaction flows
-- `apps/multiplatform/product/views/` -- view-level product specs
+| Overview | [product/README.md](../product/README.md) | Product overview, capability map, navigation map |
+| Concepts | [product/concepts.md](../product/concepts.md) | 30 product concepts (PC1-PC30) mapped to docs + source |
+| Glossary | [product/glossary.md](../product/glossary.md) | Domain term definitions (9 sections) |
+| Rules | [product/rules.md](../product/rules.md) | 18 business rules in 6 categories |
+| Gaps | [product/gaps.md](../product/gaps.md) | 8 known gaps with recommendations |
+| Flows | [product/flows/](../product/flows/) | onboarding, messaging, connection, calling, file-transfer, group-lifecycle |
+| Views | [product/views/](../product/views/) | chat-list, chat, settings, onboarding, call, new-chat, contact-info, group-info, user-profiles |
 
 ---
 

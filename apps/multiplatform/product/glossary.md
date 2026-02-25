@@ -60,7 +60,7 @@ Controls how TCP sessions to SMP relays are multiplexed. Options: `User` (one se
 ### ChatItem
 A single item in a conversation -- a sent or received message, call event, group event, connection event, feature change, or moderation action. Contains direction (`CIDirection`), metadata (`CIMeta`), content (`CIContent`), optional formatted text, mentions, quoted item, reactions, and file attachment.
 
-*See:* `ChatModel.kt:2715` -- `data class ChatItem`
+*See:* `ChatModel.kt:2720` -- `data class ChatItem`
 
 ### ChatInfo
 The top-level discriminated union representing a conversation. Variants:
@@ -71,7 +71,7 @@ The top-level discriminated union representing a conversation. Variants:
 - `ChatInfo.ContactConnection` -- wraps a `PendingContactConnection`
 - `ChatInfo.InvalidJSON` -- fallback for unrecognized data
 
-*See:* `ChatModel.kt:1386` -- `sealed class ChatInfo`
+*See:* `ChatModel.kt:1391` -- `sealed class ChatInfo`
 
 ### CIContent (Chat Item Content)
 The content payload of a `ChatItem`. Over 30 variants including:
@@ -85,7 +85,7 @@ The content payload of a `ChatItem`. Over 30 variants including:
 - `SndModerated` / `RcvModerated` / `RcvBlocked` -- moderation events
 - `RcvDirectEventContent` -- direct chat lifecycle events
 
-*See:* `ChatModel.kt:3549` -- `sealed class CIContent`
+*See:* `ChatModel.kt:3554` -- `sealed class CIContent`
 
 ### MsgContent
 The wire-format message body. Variants: `MCText`, `MCLink`, `MCImage`, `MCVideo`, `MCVoice`, `MCFile`, `MCReport`, `MCUnknown`. Each carries text plus optional media/file metadata.
@@ -95,32 +95,32 @@ The wire-format message body. Variants: `MCText`, `MCLink`, `MCImage`, `MCVideo`
 ### User
 The local user profile. Fields: `userId`, `userContactId`, `localDisplayName`, `profile` (LocalProfile), `fullPreferences` (FullChatPreferences), `activeUser`, `activeOrder`, `showNtfs`, `sendRcptsContacts`, `sendRcptsSmallGroups`, `viewPwdHash` (for hidden profiles), `uiThemes`.
 
-*See:* `ChatModel.kt:1206` -- `data class User`
+*See:* `ChatModel.kt:1208` -- `data class User`
 
 ### Contact
 A remote contact. Fields: `contactId`, `localDisplayName`, `profile` (LocalProfile), `activeConn` (Connection?), `viaGroup`, `contactUsed`, `contactStatus`, `chatSettings`, `userPreferences`, `mergedPreferences`, `preparedContact`, `contactRequestId`, `contactGroupMemberId`, `chatTags`, `chatItemTTL`.
 
-*See:* `ChatModel.kt:1706` -- `data class Contact`
+*See:* `ChatModel.kt:1711` -- `data class Contact`
 
 ### GroupInfo
 Metadata for a group conversation. Fields: `groupId`, `localDisplayName`, `groupProfile` (GroupProfile), `businessChat` (BusinessChatInfo?), `fullGroupPreferences`, `membership` (GroupMember -- the local user's membership), `chatSettings`, `preparedGroup`, `membersRequireAttention`, `chatTags`, `chatItemTTL`.
 
-*See:* `ChatModel.kt:1999` -- `data class GroupInfo`
+*See:* `ChatModel.kt:2004` -- `data class GroupInfo`
 
 ### GroupMember
 A member of a group. Fields: `groupMemberId`, `groupId`, `memberId`, `memberRole` (GroupMemberRole), `memberCategory` (GroupMemberCategory), `memberStatus` (GroupMemberStatus), `memberSettings` (GroupMemberSettings), `blockedByAdmin`, `invitedBy`, `localDisplayName`, `memberProfile`, `memberContactId`, `memberContactProfileId`, `activeConn` (Connection?), `supportChat` (GroupSupportChat?).
 
-*See:* `ChatModel.kt:2172` -- `data class GroupMember`
+*See:* `ChatModel.kt:2177` -- `data class GroupMember`
 
 ### GroupMemberRole
 Enumeration of group roles, ordered for comparison: `Observer` < `Author` < `Member` < `Moderator` < `Admin` < `Owner`. Selectable roles for assignment: Observer, Member, Moderator, Admin, Owner.
 
-*See:* `ChatModel.kt:2364` -- `enum class GroupMemberRole`
+*See:* `ChatModel.kt:2369` -- `enum class GroupMemberRole`
 
 ### Connection
 An active or pending cryptographic connection to a peer. Fields: `connId`, `agentConnId`, `peerChatVRange` (VersionRange), `connStatus` (ConnStatus), `connLevel`, `viaGroupLink`, `customUserProfileId`, `connectionCode` (SecurityCode?), `pqSupport`, `pqEncryption`, `pqSndEnabled`, `pqRcvEnabled`, `connectionStats`, `authErrCounter`, `quotaErrCounter`.
 
-*See:* `ChatModel.kt:1877` -- `data class Connection`
+*See:* `ChatModel.kt:1882` -- `data class Connection`
 
 ### Chat
 A composite type holding `chatInfo` (ChatInfo), `chatItems` (list of ChatItem), and `chatStats` (ChatStats -- unread count, min unread item ID, etc.). Represents a full conversation for the chat list.
@@ -180,7 +180,7 @@ The sealed class representing all commands the app can send to the Haskell core 
 
 Each command variant has a `cmdString` property that serializes it to the text protocol consumed by the Haskell FFI.
 
-*See:* `SimpleXAPI.kt:3522` -- `sealed class CC`
+*See:* `SimpleXAPI.kt:3529` -- `sealed class CC`
 
 ### CR (Chat Response)
 The sealed class representing all responses / events received from the Haskell core. Over 130 response types. Examples:
@@ -195,7 +195,7 @@ The sealed class representing all responses / events received from the Haskell c
 - `CallInvitation`, `CallOffer`, `CallAnswer`, `CallExtraInfo`, `CallEnded` -- call signaling
 - `ChatError` -- error wrapper
 
-*See:* `SimpleXAPI.kt:6103` -- `sealed class CR`
+*See:* `SimpleXAPI.kt:6114` -- `sealed class CR`
 
 ### API
 The top-level response wrapper. Two variants:
@@ -204,7 +204,7 @@ The top-level response wrapper. Two variants:
 
 Properties: `ok` (Boolean -- true if `CR.CmdOk`), `result` (CR?), `rhId` (Long? -- remote host ID).
 
-*See:* `SimpleXAPI.kt:5965` -- `sealed class API`
+*See:* `SimpleXAPI.kt:5975` -- `sealed class API`
 
 ### ChatError
 The error hierarchy returned from the Haskell core:
@@ -216,7 +216,7 @@ The error hierarchy returned from the Haskell core:
 - `ChatErrorRemoteCtrl(remoteCtrlError)` -- remote controller errors
 - `ChatErrorInvalidJSON(json)` -- parse failure
 
-*See:* `SimpleXAPI.kt:6962` -- `sealed class ChatError`
+*See:* `SimpleXAPI.kt:6974` -- `sealed class ChatError`
 
 ### sendCmd / recvMsg
 The core FFI bridge. `sendCmd(rhId, cmd)` serializes a `CC` command and sends it to the Haskell backend via `chatSendCmd`. `recvMsg(ctrl)` blocks on `chatRecvMsg` to receive the next `API` response/event. The receiver loop runs in `ChatController.startReceiver()` on `Dispatchers.IO`.
@@ -318,7 +318,7 @@ The command/response protocol between the Kotlin app and the WebRTC JavaScript l
 - **Commands:** `Capabilities`, `Permission`, `Start`, `Offer`, `Answer`, `Ice`, `Media`, `Camera`, `Description`, `Layout`, `End`
 - **Responses:** `Capabilities`, `Offer`, `Answer`, `Ice`, `Connection`, `Connected`, `PeerMedia`, `End`, `Ended`, `Ok`, `Error`
 
-*See:* `WebRTC.kt:87` -- `sealed class WCallCommand`; `WebRTC.kt:102` -- `sealed class WCallResponse`
+*See:* `WebRTC.kt:88` -- `sealed class WCallCommand`; `WebRTC.kt:103` -- `sealed class WCallResponse`
 
 ### CallManager
 Manages incoming call invitations and the active call lifecycle. Handles reporting new incoming calls, accepting calls, switching between calls, and ending calls. Interacts with `ChatModel.callInvitations`, `ChatModel.activeCall`, and the platform notification manager.
@@ -371,7 +371,7 @@ Enum controlling background message fetching:
 - `PERIODIC` -- uses `MessagesFetcherWorker` for periodic fetches
 - `SERVICE` -- uses `SimplexService` foreground service (default)
 
-*See:* `SimpleXAPI.kt:7725` -- `enum class NotificationsMode`
+*See:* `SimpleXAPI.kt:7739` -- `enum class NotificationsMode`
 
 ### Android: Notification Channels
 Android notification channels registered by the app:
@@ -396,7 +396,7 @@ Controls what information appears in notifications:
 - `CONTACT` -- shows sender name only
 - `MESSAGE` -- shows sender name and message preview (default)
 
-*See:* `ChatModel.kt:4818` -- `enum class NotificationPreviewMode`
+*See:* `ChatModel.kt:4823` -- `enum class NotificationPreviewMode`
 
 ### Wake Lock Management
 In `ChatController.startReceiver()`, each received message acquires a wake lock (via `getWakeLock(timeout=60000)`) that is released after 30 seconds. This ensures the device stays awake long enough to process incoming messages and display notifications, particularly for incoming calls.
@@ -414,7 +414,7 @@ The singleton controller that bridges the Kotlin UI layer and the Haskell core l
 - Provides the `messagesChannel` (Kotlin coroutine `Channel<API>`) for consumers to observe events
 - Manages retry logic for transient network errors (`sendCmdWithRetry`)
 
-*See:* `SimpleXAPI.kt:492` -- `object ChatController`
+*See:* `SimpleXAPI.kt:493` -- `object ChatController`
 
 ### ChatModel
 The singleton reactive state container for the entire app. Uses Compose `mutableStateOf` and `mutableStateListOf` for reactive UI updates. Key state:
@@ -431,17 +431,17 @@ The singleton reactive state container for the entire app. Uses Compose `mutable
 - `terminalItems` -- debug terminal log items
 - Various UI state flags (`showCallView`, `switchingUsersAndHosts`, `clearOverlays`, etc.)
 
-*See:* `ChatModel.kt:85` -- `object ChatModel`
+*See:* `ChatModel.kt:86` -- `object ChatModel`
 
 ### AppPreferences
 A class wrapping platform-specific key-value storage (`Settings` from `com.russhwolf.settings`). On Android, backed by `SharedPreferences`. On Desktop, backed by Java `Properties` files. Provides type-safe accessors for all user preferences.
 
-*See:* `SimpleXAPI.kt:93` -- `class AppPreferences`
+*See:* `SimpleXAPI.kt:94` -- `class AppPreferences`
 
 ### ComposeState
 Data class holding the state of the message composition area. Fields: `message` (ComposeMessage), `parsedMessage` (formatted text), `liveMessage`, `preview` (ComposePreview), `contextItem` (ComposeContextItem -- reply/edit context), `inProgress`, `progressByTimeout`, `useLinkPreviews`, `mentions`.
 
-*See:* `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt:96`
+*See:* `common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt:98`
 
 ### ModalManager
 Manages the modal/sheet presentation stack. Supports multiple placements (default, center, fullscreen, end). Holds an ordered list of `ModalViewHolder` items and exposes `showModal`, `showCustomModal`, `showModalCloseable`, `closeModal`. Uses Compose state (`modalCount`) to trigger recomposition.
@@ -558,4 +558,4 @@ A generic wrapper providing `get()` and `set(value)` for a single preference. Al
 - `onboardingStage` -- current onboarding step
 - `lastMigratedVersionCode` -- last app version that ran migrations
 
-*See:* `SimpleXAPI.kt:93-488` -- `class AppPreferences` with all `SHARED_PREFS_*` constants
+*See:* `SimpleXAPI.kt:94-489` -- `class AppPreferences` with all `SHARED_PREFS_*` constants
