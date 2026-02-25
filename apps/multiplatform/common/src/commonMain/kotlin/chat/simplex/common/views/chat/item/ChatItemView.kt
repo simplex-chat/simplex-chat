@@ -61,6 +61,7 @@ data class ChatItemReactionMenuItem (
   val onClick: (() -> Unit)?
 )
 
+// Spec: spec/client/chat-view.md#ChatItemView
 @Composable
 fun ChatItemView(
   chatsCtx: ChatModel.ChatsContext,

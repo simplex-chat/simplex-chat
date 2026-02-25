@@ -53,6 +53,7 @@ object ThemeManager {
       ?: ThemeWallpaper.from(PresetWallpaper.SCHOOL.toType(CurrentColors.value.base), null, null))
   }
 
+  // Spec: spec/services/theme.md#currentColors
   fun currentColors(themeOverridesForType: WallpaperType?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ActiveTheme {
     val themeName = appPrefs.currentTheme.get()!!
     val nonSystemThemeName = nonSystemThemeName()

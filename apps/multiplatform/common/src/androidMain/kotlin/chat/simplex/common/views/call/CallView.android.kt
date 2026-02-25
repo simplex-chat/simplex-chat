@@ -108,6 +108,7 @@ class ActiveCallState: Closeable {
 }
 
 
+// Spec: spec/services/calls.md#ActiveCallView
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {

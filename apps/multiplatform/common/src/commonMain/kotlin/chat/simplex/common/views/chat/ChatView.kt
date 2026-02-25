@@ -93,6 +93,7 @@ fun ConnectInProgressView(s: String) {
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
+// Spec: spec/client/chat-view.md#ChatView
 fun ChatView(
   chatsCtx: ChatModel.ChatsContext,
   staleChatId: State<String?>,

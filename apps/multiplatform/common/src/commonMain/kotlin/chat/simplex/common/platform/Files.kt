@@ -14,6 +14,7 @@ import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
+// Spec: spec/services/files.md#dataDir
 expect val dataDir: File
 expect val tmpDir: File
 expect val filesDir: File

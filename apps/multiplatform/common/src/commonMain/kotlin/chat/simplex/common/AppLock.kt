@@ -13,6 +13,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
+// Spec: spec/client/navigation.md#AppLock
 object AppLock {
   /**
    * We don't want these values to be bound to Activity lifecycle since activities are changed often, for example, when a user
