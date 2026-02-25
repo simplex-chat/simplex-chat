@@ -786,7 +786,7 @@ struct ComposeView: View {
                 }
             }
         }
-        .frame(height: 60)
+        .frame(height: 57)
         .disabled(composeState.inProgress)
     }
 
