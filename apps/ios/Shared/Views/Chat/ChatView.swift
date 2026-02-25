@@ -1049,10 +1049,14 @@ struct ChatView: View {
                 nil
             }
         case let .group(groupInfo, _):
-            switch (groupInfo.membership.memberStatus) {
-            case .memUnknown: groupInfo.preparedGroup?.connLinkStartedConnection == true ? "connecting…" : nil
-            case .memAccepted: "connecting…"
-            default: nil
+            if groupInfo.useRelays {
+                nil
+            } else {
+                switch (groupInfo.membership.memberStatus) {
+                case .memUnknown: groupInfo.preparedGroup?.connLinkStartedConnection == true ? "connecting…" : nil
+                case .memAccepted: "connecting…"
+                default: nil
+                }
             }
         default: nil
         }
