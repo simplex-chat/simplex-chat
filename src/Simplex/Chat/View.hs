@@ -205,7 +205,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRSentConfirmation u _ _customUserProfile -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRStartedConnectionToContact u c customUserProfile -> ttyUser u $ viewStartedConnectionToContact c customUserProfile testView
-  CRStartedConnectionToGroup u g customUserProfile -> ttyUser u $ viewStartedConnectionToGroup g customUserProfile testView
+  CRStartedConnectionToGroup u g customUserProfile _relayResults -> ttyUser u $ viewStartedConnectionToGroup g customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRItemsReadForChat u _chatId -> ttyUser u ["items read for chat"]
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]

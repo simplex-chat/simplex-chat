@@ -2022,11 +2022,11 @@ processChatCommand vr nm = \case
             -- Async retry failed relays with temporary errors
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
-            -- TODO [relays] member: TBC response type for UI to display state of relays connection
-            -- TODO   - differentiate success, temporary failure, permanent failure
-            -- TODO   - possibly, additional status on relay member record
-            pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
+            let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+            pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile relayResults
         where
+          leftToMaybe (Left e) = Just e
+          leftToMaybe _ = Nothing
           isTempErr = \case
             (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
             _ -> False
@@ -2076,7 +2076,7 @@ processChatCommand vr nm = \case
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]
-            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
+            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of
     ACCL SCMInvitation ccLink -> do

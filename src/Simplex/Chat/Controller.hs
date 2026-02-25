@@ -640,6 +640,12 @@ allowRemoteCommand = \case
   ExecAgentStoreSQL _ -> False
   _ -> True
 
+data RelayConnectionResult = RelayConnectionResult
+  { relayMember :: GroupMember,
+    relayError :: Maybe ChatError
+  }
+  deriving (Show)
+
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
@@ -718,7 +724,7 @@ data ChatResponse
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRStartedConnectionToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
-  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile, relayResults :: [RelayConnectionResult]}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}
@@ -1666,6 +1672,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
+
+$(JQ.deriveJSON defaultJSON ''RelayConnectionResult)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
