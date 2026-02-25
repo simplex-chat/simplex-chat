@@ -5,7 +5,8 @@
             "name": "English",
             "flag": "/img/flags/en.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "ar",

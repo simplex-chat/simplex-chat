@@ -314,5 +314,13 @@
     "messengers-comparison-section-list-point-4": "Multi-device implementation compromises post-compromise security of Double Ratchet",
     "messengers-comparison-section-list-point-5": "2-factor key exchange is optional via security code verification.",
     "messengers-comparison-section-list-point-6": "Post-quantum key agreement is \"sparse\" &mdash; it protects only some of the ratchet steps.",
-    "navbar-old-site": "Old site"
+    "navbar-old-site": "Old site",
+    "why-p1": "You were born without an account.",
+    "why-p2": "Nobody tracked your conversations. No one drew a map of where you&apos;d been. Privacy was never a feature &mdash; it was the way of life.",
+    "why-p3": "Then we moved online, and every platform asked for a piece of you &mdash; your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way &mdash; telephone, email, messengers, social media. It seemed the only way possible.",
+    "why-p4": "There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.",
+    "why-p5": "Not a better lock on someone else&apos;s door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. Your conversations belong to you, like it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public.",
+    "why-p6": "The oldest human freedom &mdash; to speak to another person without being watched &mdash; built on infrastructure that cannot betray it.",
+    "why-p7": "Because we destroyed the power to know who you are. So that your power can never be taken.",
+    "why-tagline": "Be free in your network."
 }

@@ -1,0 +1,47 @@
+---
+layout: layouts/main.html
+title: "SimpleX Network - Philosophy"
+description: "The philosophy behind SimpleX: a network with no accounts, no identities, and no way to know who you are."
+templateEngineOverride: njk
+noGlossary: true
+---
+
+{% set lang = page.url | getlang %}
+
+<section class="min-h-screen px-5 py-24 md:py-32 lg:py-40">
+  <div class="max-w-[680px] mx-auto">
+
+    <h1 class="text-grey-black dark:text-white text-[28px] md:text-[36px] lg:text-[42px] font-bold leading-[1.2] tracking-[-0.01em] mb-12 md:mb-16">
+      {{ "why-p1" | i18n({}, lang) | safe }}
+    </h1>
+
+    <p class="text-grey-black dark:text-white text-[18px] md:text-[20px] lg:text-[22px] font-normal leading-[1.6] mb-10 md:mb-14">
+      {{ "why-p2" | i18n({}, lang) | safe }}
+    </p>
+
+    <p class="text-grey-black dark:text-white text-[18px] md:text-[20px] lg:text-[22px] font-normal leading-[1.6] mb-10 md:mb-14">
+      {{ "why-p3" | i18n({}, lang) | safe }}
+    </p>
+
+    <p class="text-grey-black dark:text-white text-[20px] md:text-[24px] lg:text-[26px] font-medium leading-[1.5] mb-10 md:mb-14">
+      {{ "why-p4" | i18n({}, lang) | safe }}
+    </p>
+
+    <p class="text-grey-black dark:text-white text-[18px] md:text-[20px] lg:text-[22px] font-normal leading-[1.6] mb-10 md:mb-14">
+      {{ "why-p5" | i18n({}, lang) | safe }}
+    </p>
+
+    <p class="text-grey-black dark:text-white text-[18px] md:text-[20px] lg:text-[22px] font-normal leading-[1.6] mb-10 md:mb-14">
+      {{ "why-p6" | i18n({}, lang) | safe }}
+    </p>
+
+    <p class="text-grey-black dark:text-white text-[20px] md:text-[24px] lg:text-[26px] font-medium leading-[1.5] mb-16 md:mb-20">
+      {{ "why-p7" | i18n({}, lang) | safe }}
+    </p>
+
+    <p class="text-[32px] md:text-[40px] lg:text-[48px] font-bold leading-[1.15] gradient-text">
+      {{ "why-tagline" | i18n({}, lang) | safe }}
+    </p>
+
+  </div>
+</section>
