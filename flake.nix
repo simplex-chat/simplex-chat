@@ -102,6 +102,8 @@
 
         sha256sum $out/_pkg/*.a
 
+        find "$out/_pkg" -type f -name "*simplex-chat*.a" -exec ${pkgs.stdenv.cc.targetPrefix}strip -x {} +
+
         (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${bundleName}.zip *)
         rm -fR $out/_pkg
         mkdir -p $out/nix-support
@@ -114,7 +116,7 @@
         # we need threaded here, otherwise all the queing logic doesn't work properly.
         # for iOS we also use -staticlib, to get one rolled up library.
         # still needs mac2ios patching of the archives.
-        ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
+        ghcOptions = [ "-staticlib" "-threaded" "-DIOS" "-j1" ];
         postInstall = iosPostInstall bundleName;
       }; in
       rec {
