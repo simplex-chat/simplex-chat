@@ -385,6 +385,9 @@ final class ChatModel: ObservableObject {
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
+    // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
+    // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
+    @Published var channelRelayHostnames: [Int64: [String]] = [:]
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -1221,6 +1224,12 @@ final class ChatModel: ObservableObject {
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
                 removeWallpaperFilesFromChat(removed)
             }
+        }
+        if chatId == id {
+            groupMembers = []
+            groupMembersIndexes.removeAll()
+            channelRelayHostnames.removeAll()
+            membersLoaded = false
         }
     }
 

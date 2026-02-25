@@ -787,7 +787,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case startedConnectionToContact(user: UserRef, contact: Contact)
-    case startedConnectionToGroup(user: UserRef, groupInfo: GroupInfo)
+    case startedConnectionToGroup(user: UserRef, groupInfo: GroupInfo, relayResults: [RelayConnectionResult])
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
@@ -908,7 +908,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
         case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
         case let .startedConnectionToContact(u, contact): return withUser(u, String(describing: contact))
-        case let .startedConnectionToGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .startedConnectionToGroup(u, groupInfo, relayResults): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nrelayResults: \(String(describing: relayResults))")
         case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
         case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
         }
@@ -1100,7 +1100,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case deletedMember(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember, withMessages: Bool)
     case leftMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case groupDeleted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
-    case userJoinedGroup(user: UserRef, groupInfo: GroupInfo)
+    case userJoinedGroup(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
     case joinedGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
@@ -1258,7 +1258,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .deletedMember(u, groupInfo, byMember, deletedMember, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)\nwithMessages: \(withMessages)")
         case let .leftMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .groupDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-        case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .userJoinedGroup(u, groupInfo, _): return withUser(u, String(describing: groupInfo))
         case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
@@ -1976,6 +1976,11 @@ struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
         case enabled
         case deleted
     }
+}
+
+struct RelayConnectionResult: Decodable {
+    var relayMember: GroupMember
+    var relayError: ChatError?
 }
 
 enum ProtocolTestStep: String, Decodable, Equatable {

@@ -65,7 +65,6 @@ struct ChatView: View {
     @State private var showUserSupportChatSheet = false
     @State private var showCommandsMenu = false
     @State private var supportChatMemberInfoLinkActive = false
-
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -135,12 +134,6 @@ struct ChatView: View {
                         .padding(.top)
                 }
                 if selectedChatItems == nil {
-                    let reason = chat.chatInfo.userCantSendReason
-                    let composeEnabled = (
-                        chat.chatInfo.sendMsgEnabled ||
-                        (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) || // allow to join prepared group without message
-                        (chat.chatInfo.contact?.nextAcceptContactRequest ?? false) // allow to accept or reject contact request
-                    )
                     ComposeView(
                         chat: chat,
                         im: im,
@@ -149,17 +142,8 @@ struct ChatView: View {
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
                         selectedRange: $selectedRange,
-                        disabledText: reason?.composeLabel
+                        disabledText: chat.chatInfo.userCantSendReason?.composeLabel
                     )
-                    .disabled(!composeEnabled)
-                    .if(!composeEnabled) { v in
-                        v.disabled(true).onTapGesture {
-                            AlertManager.shared.showAlertMsg(
-                                title: "You can't send messages!",
-                                message: reason?.alertMessage
-                            )
-                        }
-                    }
                 } else {
                     SelectedItemsBottomToolbar(
                         im: im,
@@ -700,6 +684,9 @@ struct ChatView: View {
                         chatModel.chatSubStatus = nil
                     }
                 }
+            }
+            if case let .group(groupInfo, _) = cInfo, groupInfo.useRelays {
+                Task { await chatModel.loadGroupMembers(groupInfo) }
             }
             updateAvailableContent()
         }

@@ -2557,6 +2557,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var activeConn: Connection?
     public var supportChat: GroupSupportChat?
     public var memberChatVRange: VersionRange
+    public var relayLink: String?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }

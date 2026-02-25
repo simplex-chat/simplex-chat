@@ -1103,7 +1103,10 @@ private func showPrepareGroupAlert(
                 do {
                     let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData)
                     await MainActor.run {
-                        // TODO [relays] store groupShortLinkInfo?.groupRelays in ChatModel for pre-join relay display (no-op when empty)
+                        if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
+                           case let .group(gInfo, _) = chat.chatInfo {
+                            ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
+                        }
                         ChatModel.shared.addChat(Chat(chat))
                         openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
                     }

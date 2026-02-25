@@ -95,12 +95,15 @@ struct ChannelRelaysView: View {
 }
 
 func hostFromRelayLink(_ link: String) -> String {
-    guard let atIdx = link.firstIndex(of: "@") else { return link }
-    let afterAt = link[link.index(after: atIdx)...]
-    if let colonIdx = afterAt.firstIndex(of: ":") {
-        return String(afterAt[afterAt.startIndex..<colonIdx])
+    if let ft = parseSimpleXMarkdown(link) {
+        for f in ft {
+            if case let .simplexLink(_, _, _, smpHosts) = f.format,
+               let host = smpHosts.first {
+                return host
+            }
+        }
     }
-    return String(afterAt)
+    return link
 }
 
 #Preview {

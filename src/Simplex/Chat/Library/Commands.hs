@@ -2018,12 +2018,14 @@ processChatCommand vr nm = \case
               Just (_, _, Left e) -> throwError e
               _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
           else do
-            withFastStore' $ \db -> setPreparedGroupStartedConnection db groupId
+            gInfo'' <- withFastStore $ \db -> do
+              liftIO $ setPreparedGroupStartedConnection db groupId
+              getGroupInfo db vr user groupId
             -- Async retry failed relays with temporary errors
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
             let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
-            pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile relayResults
+            pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
           leftToMaybe (Left e) = Just e
           leftToMaybe _ = Nothing

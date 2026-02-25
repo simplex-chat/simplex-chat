@@ -2534,6 +2534,7 @@ export interface GroupMember {
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
   memberPubKey?: string
+  relayLink?: string
 }
 
 export interface GroupMemberAdmission {

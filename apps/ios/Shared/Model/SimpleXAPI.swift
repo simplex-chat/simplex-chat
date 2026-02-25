@@ -1147,9 +1147,9 @@ func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgConten
     return nil
 }
 
-func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> GroupInfo? {
+func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> (GroupInfo, [RelayConnectionResult])? {
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
-    if case let .result(.startedConnectionToGroup(_, groupInfo)) = r { return groupInfo }
+    if case let .result(.startedConnectionToGroup(_, groupInfo, relayResults)) = r { return (groupInfo, relayResults) }
     if let r { AlertManager.shared.showAlert(apiConnectResponseAlert(r)) }
     return nil
 }
@@ -2476,9 +2476,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
         if !active(user) { return }
-
         await MainActor.run {
             m.updateGroup(groupInfo)
+            _ = m.upsertGroupMember(groupInfo, hostMember)
             if let hostConn = hostMember.activeConn {
                 m.dismissConnReqView(hostConn.id)
                 m.removeChat(hostConn.id)
@@ -2541,10 +2541,11 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateGroup(groupInfo)
             }
         }
-    case let .userJoinedGroup(user, groupInfo):
+    case let .userJoinedGroup(user, groupInfo, hostMember):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, hostMember)
             }
             if m.chatId == groupInfo.id {
                 if groupInfo.membership.memberPending {

@@ -162,6 +162,9 @@ struct GroupMemberInfoView: View {
                         } else {
                             infoRow("Role", member.memberRole.text)
                         }
+                        if let link = member.relayLink {
+                            infoRow("Relay link", "via \(hostFromRelayLink(link))")
+                        }
                     }
 
                     if let connStats = connectionStats {
