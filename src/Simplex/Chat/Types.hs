@@ -988,7 +988,8 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    memberPubKey :: Maybe C.PublicKeyEd25519
+    memberPubKey :: Maybe C.PublicKeyEd25519,
+    relayLink :: Maybe ShortLinkContact
   }
   deriving (Eq, Show)
 

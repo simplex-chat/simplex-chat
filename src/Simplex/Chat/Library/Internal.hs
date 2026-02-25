@@ -1313,7 +1313,7 @@ setGroupLinkDataAsync user gInfo gLink = do
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
 groupLinkData gInfo@GroupInfo {groupProfile} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo
-      relays = mapMaybe relayLink groupRelays
+      relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
       userData = encodeShortLinkData $ GroupShortLinkData groupProfile
       userLinkData = UserContactLinkData UserContactData {direct, owners = [], relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
