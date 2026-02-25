@@ -144,7 +144,7 @@ fun FramedItemView(
           Box(Modifier.fillMaxWidth().weight(1f)) {
             ciQuotedMsgView(qi)
           }
-          val imageBitmap = base64ToBitmap(qi.content.image)
+          val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
           Image(
             imageBitmap,
             contentDescription = stringResource(MR.strings.image_descr),
@@ -156,7 +156,7 @@ fun FramedItemView(
           Box(Modifier.fillMaxWidth().weight(1f)) {
             ciQuotedMsgView(qi)
           }
-          val imageBitmap = base64ToBitmap(qi.content.image)
+          val imageBitmap = remember(qi.content.image) { base64ToBitmap(qi.content.image) }
           Image(
             imageBitmap,
             contentDescription = stringResource(MR.strings.video_descr),
