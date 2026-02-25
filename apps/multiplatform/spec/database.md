@@ -153,6 +153,8 @@ The full initialization sequence is in [Core.kt#L62](common/src/commonMain/kotli
 6. If `OK`, store the `ChatCtrl` handle, set `chatDbEncrypted`, and proceed to start the chat.
 7. If not `OK`, handle special case: if the database was only partially initialized (single DB file exists), remove both files and retry once.
 
+<a id="DBMigrationResult"></a>
+
 ### DBMigrationResult
 
 Defined in [DatabaseUtils.kt#L79](common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DatabaseUtils.kt#L79):
@@ -205,6 +207,8 @@ Two API functions manage database encryption, both in [SimpleXAPI.kt](common/src
 | `testStorageEncryption` | `key: String, ctrl: ChatCtrl?` | Test whether a given key can decrypt the database | [L1006](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1006) |
 
 Both delegate to the Haskell core via `CC.ApiStorageEncryption(DBEncryptionConfig)` and `CC.TestStorageEncryption(key)` respectively.
+
+<a id="DBEncryptionConfig"></a>
 
 `DBEncryptionConfig` ([SimpleXAPI.kt#L4166](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4166)):
 
@@ -346,6 +350,8 @@ class ArchiveConfig(
 4. The core extracts and replaces both databases.
 5. Returns `CR.ArchiveImported` with a list of `ArchiveError` (non-fatal issues during import).
 6. UI triggers re-initialization via `initChatController`.
+
+<a id="ArchiveError"></a>
 
 ### ArchiveError
 

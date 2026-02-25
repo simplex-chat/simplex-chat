@@ -55,6 +55,8 @@ AppScreen (line 46)
 
 ---
 
+<a id="AppScreen"></a>
+
 ## 2. AppScreen Composable
 
 **Location:** [`App.kt#L47`](App.kt#L47)
@@ -72,6 +74,8 @@ fun AppScreen()
 4. **Delegates to `MainScreen()`.**
 
 ---
+
+<a id="MainScreen"></a>
 
 ## 3. MainScreen
 
@@ -119,6 +123,8 @@ When onboarding is complete:
 
 ---
 
+<a id="AndroidScreen"></a>
+
 ## 4. Android Layout
 
 **Location:** [`App.kt#L296`](App.kt#L296)
@@ -155,6 +161,8 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 `AndroidWrapInCallLayout` (line ~279) adds a 40dp top padding when an active call is in progress (not in `WaitCapabilities` or `InvitationAccepted` state), with an `ActiveCallInteractiveArea` banner above.
 
 ---
+
+<a id="DesktopScreen"></a>
 
 ## 5. Desktop Layout
 
@@ -261,6 +269,8 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 | Passcode entry, Call view, Migration | `ModalManager.fullscreen` |
 
 ---
+
+<a id="AppLock"></a>
 
 ## 7. Authentication Gate
 

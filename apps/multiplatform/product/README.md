@@ -367,8 +367,27 @@ Android has no equivalent to iOS NSE (Notification Service Extension). Instead, 
 
 ## Related Specifications
 
+### Product Layer (this directory)
+
 - [concepts.md](concepts.md) -- Feature concept index with bidirectional code links
+- [glossary.md](glossary.md) -- Terminology definitions
+- [rules.md](rules.md) -- Business rules and constraints
+- [gaps.md](gaps.md) -- Known documentation gaps
+- Views: [chat-list](views/chat-list.md), [chat](views/chat.md), [new-chat](views/new-chat.md), [settings](views/settings.md), [call](views/call.md), [contact-info](views/contact-info.md), [group-info](views/group-info.md), [onboarding](views/onboarding.md), [user-profiles](views/user-profiles.md)
+- Flows: [messaging](flows/messaging.md), [calling](flows/calling.md), [onboarding](flows/onboarding.md), [group-lifecycle](flows/group-lifecycle.md), [connection](flows/connection.md), [file-transfer](flows/file-transfer.md)
+
+### Spec Layer
+
 - [spec/README.md](../spec/README.md) -- Technical specification overview
+- [spec/architecture.md](../spec/architecture.md) -- JNI bridge, startup, lifecycle
+- [spec/state.md](../spec/state.md) -- ChatModel, ChatsContext, Chat, AppPreferences
+- [spec/api.md](../spec/api.md) -- Command/response protocol (CC, CR, ChatError)
+- [spec/database.md](../spec/database.md) -- Migration, encryption, export/import
+- Client: [navigation](../spec/client/navigation.md), [chat-list](../spec/client/chat-list.md), [chat-view](../spec/client/chat-view.md), [compose](../spec/client/compose.md)
+- Services: [calls](../spec/services/calls.md), [theme](../spec/services/theme.md), [files](../spec/services/files.md), [notifications](../spec/services/notifications.md)
+
+### Source Entry Points
+
 - Haskell core: `../../src/Simplex/Chat/Controller.hs`, `../../src/Simplex/Chat/Types.hs`
 - Kotlin model: `common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt`
 - Kotlin API bridge: `common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`

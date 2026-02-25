@@ -110,3 +110,6 @@ Sound: `SoundPlayer.start()` plays ringtone while banner is visible (unless call
 | `CallView.android.kt` | `androidMain/.../views/call/CallView.android.kt` |
 | `CallView.desktop.kt` | `desktopMain/.../views/call/CallView.desktop.kt` |
 | `IncomingCallAlertView.kt` | `views/call/IncomingCallAlertView.kt` |
+| `CallManager.kt` | `views/call/CallManager.kt` |
+| `WebRTC.kt` | `views/call/WebRTC.kt` |
+| `CallAudioDeviceManager.kt` | `androidMain/.../views/call/CallAudioDeviceManager.kt` |

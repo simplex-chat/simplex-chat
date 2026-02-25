@@ -27,6 +27,8 @@ Both platforms share the [`CallManager`](../../common/src/commonMain/kotlin/chat
 
 ---
 
+<a id="CallState"></a>
+
 ## 2. Call State Machine
 
 Defined in [`WebRTC.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/WebRTC.kt#L50):
@@ -52,6 +54,8 @@ enum class CallState {
 State transitions are driven by `WCallResponse` messages from the WebRTC layer. Each transition typically triggers a corresponding API command (e.g., `apiSendCallInvitation`, `apiSendCallOffer`).
 
 ---
+
+<a id="ActiveCallView"></a>
 
 ## 3. Android Implementation
 
@@ -141,6 +145,8 @@ Defined in [`SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/com
 All functions send commands via `sendCmd()` to the chat core and return `Boolean` success status (except `apiGetCallInvitations` which returns `List<RcvCallInvitation>`).
 
 ---
+
+<a id="IncomingCallAlertView"></a>
 
 ## 6. IncomingCallAlertView
 

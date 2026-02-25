@@ -27,6 +27,8 @@ The `receiveFile` / `receiveFiles` API commands handle both protocols transparen
 
 ---
 
+<a id="MAX_IMAGE_SIZE"></a>
+
 ## 2. File Size Constants
 
 Defined in [`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L118):
@@ -70,6 +72,8 @@ sealed class WriteFileResult {
 
 `CryptoFileArgs` contains `fileKey` and `fileNonce` -- the symmetric encryption key and nonce for AES-GCM encryption.
 
+<a id="writeCryptoFile"></a>
+
 ### Functions
 
 | Function | Line | Signature | Description |
@@ -82,6 +86,8 @@ sealed class WriteFileResult {
 All functions delegate to native C library functions through the chat core JNI bridge.
 
 ---
+
+<a id="dataDir"></a>
 
 ## 4. File Storage Paths
 

@@ -23,6 +23,8 @@ Message composition in SimpleX Chat is managed by `ComposeView` (line ~345 in `C
 
 ---
 
+<a id="ComposeView"></a>
+
 ## 1. Overview
 
 ```
@@ -53,6 +55,8 @@ ComposeView
 ```
 
 ---
+
+<a id="ComposeState"></a>
 
 ## 2. ComposeState Data Class
 
@@ -134,6 +138,8 @@ Tracks a live (streaming) message: the associated `ChatItem`, the currently type
 
 ---
 
+<a id="ComposePreview"></a>
+
 ## 3. ComposePreview Sealed Class
 
 **Location:** [`ComposeView.kt#L52`](ComposeView.kt#L52)
@@ -197,6 +203,8 @@ sealed class ComposeContextItem {
 - Close button: resets `contextItem` to `NoContextItem` (or `clearState()` for editing)
 
 ---
+
+<a id="SendMsgView"></a>
 
 ## 5. SendMsgView
 
@@ -271,6 +279,8 @@ When `sendMsgEnabled` is false (e.g., contact not ready, group permissions), an 
 ---
 
 ## 6. Attachment Handling
+
+<a id="AttachmentSelection"></a>
 
 ### Attachment Selection
 

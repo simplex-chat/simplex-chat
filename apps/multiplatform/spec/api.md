@@ -59,6 +59,8 @@ external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 ```
 
+<a id="sendCmd"></a>
+
 **`sendCmd` flow** ([SimpleXAPI.kt#L804](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L804)):
 
 1. Obtains the `ChatCtrl` handle (or uses the provided `otherCtrl`).
@@ -67,11 +69,17 @@ external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 4. Decodes the returned JSON string into `API`.
 5. Logs the result to the terminal item list.
 
+<a id="startReceiver"></a>
+<a id="recvMsg"></a>
+<a id="processReceivedMsg"></a>
+
 **Asynchronous event receiver** (`startReceiver`, [SimpleXAPI.kt#L660](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L660)):
 
 A long-running coroutine on `Dispatchers.IO` repeatedly calls `chatRecvMsgWait` (blocking JNI). Each received `API` message is dispatched to `processReceivedMsg` ([SimpleXAPI.kt#L2568](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L2568)), which pattern-matches on `CR` subclasses to update `ChatModel` state and trigger notifications.
 
 ---
+
+<a id="CC"></a>
 
 ## 2. Command Categories
 
@@ -268,6 +276,8 @@ All functions below are `suspend fun` members of `ChatController` ([SimpleXAPI.k
 | `apiImportArchive` | `config: ArchiveConfig` | Import chat database from a ZIP archive | [L987](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L987) |
 | `apiDeleteStorage` | _(none)_ | Delete all chat database storage | [L993](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L993) |
 
+<a id="ArchiveConfig"></a>
+
 `ArchiveConfig` ([SimpleXAPI.kt#L4162](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4162)):
 
 ```kotlin
@@ -280,6 +290,8 @@ class ArchiveConfig(
 
 ---
 
+<a id="API"></a>
+
 ## 3. Response Types
 
 All command responses are deserialized into the `API` sealed class ([SimpleXAPI.kt#L5975](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L5975)):
@@ -290,6 +302,8 @@ sealed class API {
   class Error(val remoteHostId: Long?, val err: ChatError) : API()
 }
 ```
+
+<a id="CR"></a>
 
 The `CR` sealed class ([SimpleXAPI.kt#L6114](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6114)) contains approximately 180 response variants. Key categories:
 
@@ -350,6 +364,8 @@ Events handled in `processReceivedMsg` include:
 Each event triggers updates to `ChatModel` (reactive Compose state) and optionally fires platform notifications via `ntfManager`.
 
 ---
+
+<a id="ChatError"></a>
 
 ## 5. Error Types
 

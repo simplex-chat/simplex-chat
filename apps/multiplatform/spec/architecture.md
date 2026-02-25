@@ -119,6 +119,9 @@ Contains:
 
 All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt).
 
+<a id="initHS"></a>
+<a id="chatMigrateInit"></a>
+
 ### External Native Functions
 
 | # | Function | Signature | Line | Purpose |
@@ -144,6 +147,10 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 
 **Total: 18 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
 
+<a id="initChatControllerOnStart"></a>
+<a id="chatInitTemporaryDatabase"></a>
+<a id="chatInitControllerRemovingDatabases"></a>
+
 ### Key Kotlin Functions in Core.kt
 
 | Function | Line | Purpose |
@@ -151,8 +158,10 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 | [`initChatControllerOnStart()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L51) | 48 | Entry point called during app startup; launches `initChatController` in a long-running coroutine |
 | [`initChatController()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L62) | 58 | Main initialization: DB migration via `chatMigrateInit`, error recovery (incomplete DB removal), sets file paths, loads active user, starts chat |
 | [`chatInitTemporaryDatabase()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L190) | 185 | Creates a temporary database for migration scenarios |
-| [`chatInitControllerRemovingDatabases()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L202) | 196 | Removes existing DBs and creates fresh controller (used during re-initialization) |
-| [`showStartChatAfterRestartAlert()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L222) | 216 | Shows confirmation dialog when chat was stopped and DB passphrase is stored |
+| [`chatInitControllerRemovingDatabases()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L202) | 202 | Removes existing DBs and creates fresh controller (used during re-initialization) |
+| [`showStartChatAfterRestartAlert()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L222) | 222 | Shows confirmation dialog when chat was stopped and DB passphrase is stored |
+
+<a id="initChatController"></a>
 
 ### initChatController Flow
 

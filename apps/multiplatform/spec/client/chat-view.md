@@ -52,6 +52,8 @@ ChatView
 
 ---
 
+<a id="ChatView"></a>
+
 ## 2. ChatView Composable
 
 **Location:** [`ChatView.kt#L97`](ChatView.kt#L97)
@@ -127,6 +129,8 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 - **Direct messages:** Symmetric padding (76dp opposite side).
 
 ---
+
+<a id="ChatItemView"></a>
 
 ## 4. ChatItemView
 

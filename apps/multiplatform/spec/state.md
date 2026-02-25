@@ -38,6 +38,8 @@ State mutations originate from two sources:
 
 ---
 
+<a id="ChatModel"></a>
+
 ## 2. ChatModel
 
 Defined at [`ChatModel.kt line 86`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L86) as `@Stable object ChatModel`.
@@ -165,6 +167,8 @@ Defined at [`ChatModel.kt line 86`](../common/src/commonMain/kotlin/chat/simplex
 
 ---
 
+<a id="ChatsContext"></a>
+
 ## 3. ChatsContext
 
 Defined as inner class at [`ChatModel.kt line 339`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L339):
@@ -231,6 +235,8 @@ This tracks the scroll position and unread item accounting for the lazy-loaded c
 
 ---
 
+<a id="Chat"></a>
+
 ## 4. Chat
 
 Defined at [`ChatModel.kt line 1328`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1328):
@@ -253,6 +259,8 @@ data class Chat(
 | `chatInfo` | `ChatInfo` | Sealed class: `Direct`, `Group`, `Local`, `ContactRequest`, `ContactConnection`, `InvalidJSON` |
 | `chatItems` | `List<ChatItem>` | Latest chat items (summary; full list is in `ChatsContext.chatItems`) |
 | `chatStats` | `ChatStats` | Unread counts and stats |
+
+<a id="ChatStats"></a>
 
 ### ChatStats
 
@@ -277,6 +285,8 @@ data class ChatStats(
 | `supportUnreadCount` | 1348 | Unread count in support/moderation context |
 | `nextSendGrpInv` | 1334 | Whether next message should send group invitation |
 
+<a id="ChatInfo"></a>
+
 ### ChatInfo Variants
 
 `ChatInfo` is a sealed class at [`ChatModel.kt line 1391`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt#L1391):
@@ -291,6 +301,9 @@ data class ChatStats(
 | `ChatInfo.InvalidJSON` | `"invalidJSON"` | `json: String` |
 
 ---
+
+<a id="AppPreferences"></a>
+<a id="appPrefs"></a>
 
 ## 5. AppPreferences
 
@@ -467,7 +480,7 @@ Factory methods: `mkBoolPreference`, `mkIntPreference`, `mkLongPreference`, `mkF
 | File | Path | Key Contents |
 |---|---|---|
 | ChatModel.kt | [`common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt) | `ChatModel` singleton (line 85), `ChatsContext` (line 337), `Chat` (line 1325), `ChatInfo` (line 1386), `ChatStats` (line 1366), helper methods |
-| SimpleXAPI.kt | [`common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | `AppPreferences` (line 93), `ChatController` (line 492), `startReceiver` (line 657), `sendCmd` (line 800), `recvMsg` (line 824), `processReceivedMsg` (line 2562) |
+| SimpleXAPI.kt | [`common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | `AppPreferences` (line 93), `ChatController` (line 492), `startReceiver` (line 657), `sendCmd` (line 800), `recvMsg` (line 824), `processReceivedMsg` (line 2568) |
 | ChatItemsMerger.kt | [`common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatItemsMerger.kt`](../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatItemsMerger.kt) | `ActiveChatState` (line 196), chat item merge/diff logic |
 | Core.kt | [`common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt) | `initChatController` (line 58), state initialization flow |
 | App.kt | [`common/src/commonMain/kotlin/chat/simplex/common/App.kt`](../common/src/commonMain/kotlin/chat/simplex/common/App.kt) | `AppScreen` (line 46), `MainScreen` (line 82), top-level UI state reads |

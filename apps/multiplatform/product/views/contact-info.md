@@ -101,3 +101,4 @@ Shown when `developerTools` preference is enabled:
 |---|---|
 | `ChatInfoView.kt` | `views/chat/ChatInfoView.kt` |
 | `ContactPreferences.kt` | `views/chat/ContactPreferences.kt` |
+| `VerifyCodeView.kt` | `views/chat/VerifyCodeView.kt` |

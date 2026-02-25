@@ -28,6 +28,9 @@ The architecture uses an abstract `NtfManager` in common code with platform-spec
 
 ---
 
+<a id="NtfManager"></a>
+<a id="ntfManager"></a>
+
 ## 2. NtfManager Abstract Class
 
 [`NtfManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt) (139 lines, commonMain)
@@ -204,6 +207,8 @@ A `CoroutineWorker` used in `PERIODIC` notification mode as an alternative to th
 - `scheduleWork()` ([line 18](../../android/src/main/java/chat/simplex/app/MessagesFetcherWorker.kt#L18)): Schedules a `OneTimeWorkRequest` with a default 600-second (10 minute) initial delay and 60-second duration. Requires `NetworkType.CONNECTED` constraint.
 - `doWork()` ([line 53](../../android/src/main/java/chat/simplex/app/MessagesFetcherWorker.kt#L53)): Skips if `SimplexService` is already running. Initializes chat controller if needed (self-destruct mode). Waits for DB migration. Runs for up to `durationSec` seconds, polling every 5 seconds until no messages have been received for 10 seconds (`WAIT_AFTER_LAST_MESSAGE`).
 - Self-rescheduling: Always calls `reschedule()` at the end (creating a chain of one-time tasks that simulate periodic execution).
+
+<a id="NotificationsMode"></a>
 
 ### 5.3 Notification modes
 

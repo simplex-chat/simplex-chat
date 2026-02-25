@@ -40,6 +40,8 @@ A singleton `object` that manages theme state, persistence, and resolution.
 
 ### Core resolution
 
+<a id="currentColors"></a>
+
 **`currentColors()`** ([line 57](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt#L57)):
 
 ```kotlin
@@ -132,6 +134,8 @@ Converts `Color` to `#AARRGGBB` hex string with intelligent alpha handling.
 
 ---
 
+<a id="DefaultTheme"></a>
+
 ## 3. Default Themes
 
 [`Theme.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L26):
@@ -161,6 +165,8 @@ enum class DefaultTheme {
 
 ## 4. Theme Types
 
+<a id="AppColors"></a>
+
 ### AppColors (line 51)
 
 [`Theme.kt` L53](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L53):
@@ -179,6 +185,8 @@ class AppColors(
 
 Mutable state properties (for efficient recomposition) representing chat-specific colors not covered by Material's `Colors`.
 
+<a id="AppWallpaper"></a>
+
 ### AppWallpaper (line 103)
 
 [`Theme.kt` L106](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L106):
@@ -194,6 +202,8 @@ class AppWallpaper(
 
 Represents the active wallpaper state with optional background color, tint overlay, and wallpaper type (Empty, Preset, or Image).
 
+<a id="ThemeColor"></a>
+
 ### ThemeColor (line 136)
 
 Enum of all customizable color slots:
@@ -202,13 +212,17 @@ Enum of all customizable color slots:
 
 Each has a `fromColors()` method to extract the current value and a `text` property for UI display.
 
+<a id="ThemeColors"></a>
+
 ### ThemeColors (line 178)
 
 [`Theme.kt` L183](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L183):
 
 Serializable data class with optional hex color strings for each slot. Uses `@SerialName` annotations for YAML compatibility (`accent` for `primary`, `accentVariant` for `primaryVariant`, `menus` for `surface`, etc.).
 
-### ThemeWallpaper (line 218)
+<a id="ThemeWallpaper"></a>
+
+### ThemeWallpaper (line 224)
 
 [`Theme.kt` L224](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L224):
 
@@ -231,7 +245,9 @@ Key methods:
 - `importFromString()`: Saves a base64 image to disk and returns a copy with `imageFile` set.
 - `from(type, background, tint)`: Factory from `WallpaperType`.
 
-### ThemeOverrides (line 297)
+<a id="ThemeOverrides"></a>
+
+### ThemeOverrides (line 304)
 
 [`Theme.kt` L304](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L304):
 
@@ -250,7 +266,9 @@ A complete theme override entry. Multiple can coexist (one per wallpaper type pe
 - `withUpdatedColor(name, color)`: Returns a copy with one color changed.
 - `toColors()`, `toAppColors()`, `toAppWallpaper()`: Merge with base theme and per-user/per-chat overrides.
 
-### ThemeModeOverrides (line 467)
+<a id="ThemeModeOverrides"></a>
+
+### ThemeModeOverrides (line 475)
 
 [`Theme.kt` L475](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L475):
 
@@ -264,7 +282,9 @@ data class ThemeModeOverrides(
 
 Container for per-user or per-chat overrides, with separate light and dark mode variants. Stored on the `User` model as `uiThemes`.
 
-### ThemeModeOverride (line 478)
+<a id="ThemeModeOverride"></a>
+
+### ThemeModeOverride (line 487)
 
 [`Theme.kt` L487](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L487):
 
@@ -325,6 +345,8 @@ Four built-in color palettes, each consisting of a Material `Colors` and an `App
 
 ---
 
+<a id="SimpleXTheme"></a>
+
 ## 6. SimpleXTheme Composable
 
 [`Theme.kt` line 773](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L773):
@@ -356,6 +378,8 @@ val MaterialTheme.wallpaper: AppWallpaper // via LocalAppWallpaper
 ```
 
 ### Global state
+
+<a id="CurrentColors"></a>
 
 `CurrentColors` ([line 727](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L727)): A `MutableStateFlow<ActiveTheme>` that holds the current resolved theme. Updated by `ThemeManager.applyTheme()` and collected by `SimpleXTheme`.
 

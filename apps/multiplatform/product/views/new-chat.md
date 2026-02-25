@@ -89,3 +89,7 @@ Group creation flow:
 | `NewChatView.kt` | `views/newchat/NewChatView.kt` |
 | `AddGroupView.kt` | `views/newchat/AddGroupView.kt` |
 | `QRCode.kt` | `views/newchat/QRCode.kt` |
+| `NewChatSheet.kt` | `views/newchat/NewChatSheet.kt` |
+| `ConnectPlan.kt` | `views/newchat/ConnectPlan.kt` |
+| `QRCodeScanner.kt` | `views/newchat/QRCodeScanner.kt` (expect/actual) |
+| `ContactConnectionInfoView.kt` | `views/newchat/ContactConnectionInfoView.kt` |

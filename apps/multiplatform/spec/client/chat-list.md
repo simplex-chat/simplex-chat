@@ -49,6 +49,8 @@ ChatListView
 
 ---
 
+<a id="ChatListView"></a>
+
 ## 2. ChatListView Composable
 
 **Location:** [`ChatListView.kt#L127`](ChatListView.kt#L127)
@@ -152,6 +154,8 @@ The `filteredChats` function (line ~1188) applies filters in this order:
 
 ---
 
+<a id="ChatPreviewView"></a>
+
 ## 5. Chat Preview
 
 **Location:** [`ChatPreviewView.kt#L40`](ChatPreviewView.kt#L40)
@@ -192,6 +196,8 @@ When `chatModelDraftChatId` matches the chat ID, the preview shows a draft indic
 - Left/removed/deleted groups: cancel icon overlay.
 
 ---
+
+<a id="ChatListNavLinkView"></a>
 
 ## 6. ChatListNavLinkView
 
@@ -234,6 +240,8 @@ Layout logic:
 - **Long press / right-click (user tags):** Opens dropdown menu with edit/delete/reorder options.
 - **Unread dot:** Shown on tags that have chats with unread messages.
 
+<a id="TagListView"></a>
+
 ### TagListView
 
 **Location:** [`TagListView.kt#L48`](TagListView.kt#L48)
@@ -250,6 +258,8 @@ fun TagListView(rhId: Long?, chat: Chat?, close: () -> Unit, reorderMode: Boolea
 - "Create list" button opens `TagListEditor` modal.
 
 ---
+
+<a id="UserPicker"></a>
 
 ## 8. UserPicker
 

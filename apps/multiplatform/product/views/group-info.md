@@ -137,3 +137,8 @@ Business chats use alternative labels: "Delete chat" instead of "Delete group".
 | `GroupMemberInfoView.kt` | `views/chat/group/GroupMemberInfoView.kt` |
 | `AddGroupMembersView.kt` | `views/chat/group/AddGroupMembersView.kt` |
 | `GroupLinkView.kt` | `views/chat/group/GroupLinkView.kt` |
+| `GroupProfileView.kt` | `views/chat/group/GroupProfileView.kt` |
+| `GroupPreferences.kt` | `views/chat/group/GroupPreferences.kt` |
+| `WelcomeMessageView.kt` | `views/chat/group/WelcomeMessageView.kt` |
+| `MemberAdmission.kt` | `views/chat/group/MemberAdmission.kt` |
+| `MemberSupportView.kt` | `views/chat/group/MemberSupportView.kt` |
