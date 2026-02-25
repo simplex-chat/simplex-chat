@@ -977,11 +977,8 @@ struct ComposeView: View {
                 await MainActor.run {
                     self.chatModel.updateGroup(groupInfo)
                     self.chatModel.channelRelayHostnames.removeValue(forKey: groupInfo.groupId)
-                    self.chatModel.groupMembers = []
-                    self.chatModel.groupMembersIndexes.removeAll()
-                    for result in relayResults {
-                        _ = self.chatModel.upsertGroupMember(groupInfo, result.relayMember)
-                    }
+                    self.chatModel.groupMembers = relayResults.map { GMember($0.relayMember) }
+                    self.chatModel.populateGroupMembersIndexes()
                     clearState()
                 }
             } else {
