@@ -94,6 +94,28 @@ struct ChannelRelaysView: View {
 
 }
 
+struct RelayProgressIndicator: View {
+    var active: Int
+    var total: Int
+
+    var body: some View {
+        if active == 0 {
+            ProgressView()
+                .frame(width: 20, height: 20)
+        } else {
+            ZStack {
+                Circle()
+                    .stroke(Color(uiColor: .tertiaryLabel), style: StrokeStyle(lineWidth: 2.5))
+                Circle()
+                    .trim(from: 0, to: Double(active) / Double(max(total, 1)))
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
+            .frame(width: 20, height: 20)
+        }
+    }
+}
+
 func hostFromRelayLink(_ link: String) -> String {
     if let ft = parseSimpleXMarkdown(link) {
         for f in ft {

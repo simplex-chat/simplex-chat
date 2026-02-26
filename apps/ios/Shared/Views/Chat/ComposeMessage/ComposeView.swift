@@ -714,14 +714,13 @@ struct ComposeView: View {
         showProgress: Bool
     ) -> some View {
         VStack(spacing: 0) {
-            ProgressView(value: Double(connectedCount), total: Double(max(total, 1)))
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .opacity(showProgress ? 1 : 0)
             Button {
                 withAnimation(nil) { relayListExpanded.toggle() }
             } label: {
-                HStack {
+                HStack(spacing: 8) {
+                    if showProgress && connectedCount < total {
+                        RelayProgressIndicator(active: connectedCount, total: total)
+                    }
                     if showProgress {
                         Text("\(connectedCount)/\(total) \(total == 1 ? "relay" : "relays") connected")
                     } else {
@@ -735,7 +734,7 @@ struct ComposeView: View {
                 }
                 .font(.callout)
                 .foregroundColor(theme.colors.secondary)
-                .padding(.top, 4)
+                .padding(.top, 8)
                 .padding(.bottom, relayListExpanded ? 4 : 8)
                 .padding(.horizontal, 12)
             }
@@ -780,7 +779,7 @@ struct ComposeView: View {
             ZStack(alignment: .trailing) {
                 Label(label, systemImage: icon)
                     .frame(maxWidth: .infinity)
-                if composeState.progressByTimeout {
+                if composeState.progressByTimeout && chat.chatInfo.groupInfo?.useRelays != true {
                     ProgressView()
                         .padding()
                 }

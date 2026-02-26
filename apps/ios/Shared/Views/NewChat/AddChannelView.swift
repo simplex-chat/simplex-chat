@@ -270,13 +270,14 @@ struct AddChannelView: View {
             }
 
             Section {
-                ProgressView(value: Double(activeCount), total: Double(max(total, 1)))
-
                 Button {
                     withAnimation { relayListExpanded.toggle() }
                 } label: {
-                    HStack {
-                        Text("\(activeCount) of \(total) relays connected")
+                    HStack(spacing: 8) {
+                        if activeCount < total {
+                            RelayProgressIndicator(active: activeCount, total: total)
+                        }
+                        Text("\(activeCount)/\(total) relays connected")
                         Spacer()
                         Image(systemName: relayListExpanded ? "chevron.up" : "chevron.down")
                             .foregroundColor(theme.colors.secondary)
