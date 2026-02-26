@@ -47,6 +47,7 @@ import kotlin.math.min
 
 const val MAX_NUMBER_OF_MENTIONS = 3
 
+// Spec: spec/client/compose.md#ComposePreview
 @Serializable
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
@@ -92,6 +93,7 @@ object ComposeMessageSerializer : KSerializer<TextRange> {
     decoder.decodeLong().let { value ->  TextRange(unpackInt1(value), unpackInt2(value)) }
 }
 
+// Spec: spec/client/compose.md#ComposeState
 @Serializable
 data class ComposeState(
   val message: ComposeMessage = ComposeMessage(),
@@ -259,6 +261,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   }
 }
 
+// Spec: spec/client/compose.md#AttachmentSelection
 @Composable
 expect fun AttachmentSelection(
   composeState: MutableState<ComposeState>,
@@ -341,6 +344,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
   }
 }
 
+// Spec: spec/client/compose.md#ComposeView
 @Composable
 fun ComposeView(
   rhId: Long?,
