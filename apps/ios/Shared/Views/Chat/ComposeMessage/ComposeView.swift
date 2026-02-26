@@ -736,7 +736,8 @@ struct ComposeView: View {
                 .foregroundColor(theme.colors.secondary)
                 .padding(.top, 8)
                 .padding(.bottom, relayListExpanded ? 4 : 8)
-                .padding(.horizontal, 12)
+                .padding(.leading, 12)
+                .padding(.trailing)
             }
             if relayListExpanded {
                 if relayMembers.isEmpty {

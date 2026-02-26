@@ -218,7 +218,7 @@ struct AddChannelView: View {
                     })
                     groupInfo = gInfo
                     groupLink = gLink
-                    groupRelays = gRelays
+                    groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
                     creationInProgress = false
                 }
             } catch {
@@ -233,11 +233,13 @@ struct AddChannelView: View {
         }
     }
 
+    // TODO [relays] move random relay selection to backend; prefer selecting relays from different operators
     private func getEnabledRelays() async throws -> [UserChatRelay] {
         let servers = try await getUserServers()
-        return servers.flatMap { op in
+        let all = servers.flatMap { op in
             (op.chatRelays ?? []).filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
         }
+        return Array(all.shuffled().prefix(3))
     }
 
     private func checkHasRelays() async -> Bool {
@@ -316,7 +318,7 @@ struct AddChannelView: View {
         }
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
-            groupRelays = relays
+            groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
             if let link = channelRelaysModel.groupLink {
                 groupLink = link
             }
