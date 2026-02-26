@@ -34,7 +34,7 @@ struct ChannelMembersView: View {
                     memberRow(member, user: false)
                 }
             }
-            if groupInfo.membership.memberRole >= .admin {
+            if groupInfo.isOwner {
                 Section(header: Text("\(subscribers.count) subscribers").foregroundColor(theme.colors.secondary)) {
                     if subscribers.isEmpty {
                         Text("No subscribers")

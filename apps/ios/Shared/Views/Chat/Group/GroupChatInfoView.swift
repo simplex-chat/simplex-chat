@@ -130,18 +130,13 @@ struct GroupChatInfoView: View {
                     }
 
                     Section {
-                        if groupInfo.useRelays {
-                            if groupInfo.isOwner { editGroupButton() }
-                            if groupInfo.groupProfile.description != nil || groupInfo.isOwner {
-                                addOrEditWelcomeMessage()
-                            }
-                        } else {
-                            if groupInfo.isOwner && groupInfo.businessChat == nil {
-                                editGroupButton()
-                            }
-                            if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
-                                addOrEditWelcomeMessage()
-                            }
+                        if groupInfo.isOwner && groupInfo.businessChat == nil {
+                            editGroupButton()
+                        }
+                        if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
+                            addOrEditWelcomeMessage()
+                        }
+                        if !groupInfo.useRelays {
                             GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                         }
                     } footer: {
@@ -215,7 +210,7 @@ struct GroupChatInfoView: View {
                         }
                         if groupInfo.membership.memberCurrentOrPending {
                             if !groupInfo.useRelays || !groupInfo.isOwner
-                                || members.filter({ $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }).count > 0 {
+                                || members.contains(where: { $0.wrapped.memberRole == .owner && $0.wrapped.groupMemberId != groupInfo.membership.groupMemberId }) {
                                 leaveGroupButton()
                             }
                         }
@@ -619,10 +614,9 @@ struct GroupChatInfoView: View {
     }
 
     @ViewBuilder private func channelMembersButton(_ members: [GMember]) -> some View {
-        let isAdmin = groupInfo.membership.memberRole >= .admin
-        let hasOwners = isAdmin || members.contains { $0.wrapped.memberRole >= .owner }
-        if isAdmin || hasOwners {
-            let label: LocalizedStringKey = isAdmin ? "Owners & subscribers" : "Owners"
+        let hasOwners = groupInfo.isOwner || members.contains { $0.wrapped.memberRole >= .owner }
+        if groupInfo.isOwner || hasOwners {
+            let label: LocalizedStringKey = groupInfo.isOwner ? "Owners & subscribers" : "Owners"
             NavigationLink {
                 ChannelMembersView(chat: chat, groupInfo: groupInfo)
                     .navigationTitle(label)
