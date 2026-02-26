@@ -61,7 +61,7 @@ struct GroupLinkView: View {
         List {
             Group {
                 if showTitle {
-                    Text("Group link")
+                    Text(isChannel ? "Channel link" : "Group link")
                         .font(.largeTitle)
                         .bold()
                         .fixedSize(horizontal: false, vertical: true)
@@ -176,7 +176,7 @@ struct GroupLinkView: View {
                 logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
                 await MainActor.run {
                     creatingLink = false
-                    let a = getErrorAlert(error, isChannel ? "Error creating channel link" : "Error creating group link")
+                    let a = getErrorAlert(error, "Error creating group link")
                     alert = .error(title: a.title, error: a.message)
                 }
             }
@@ -185,7 +185,7 @@ struct GroupLinkView: View {
 
     private func upgradeAndShareLinkAlert(groupLink: GroupLink? = nil) {
         showAlert(
-            NSLocalizedString(isChannel ? "Upgrade channel link?" : "Upgrade group link?", comment: "alert message"),
+            NSLocalizedString("Upgrade group link?", comment: "alert message"),
             message: NSLocalizedString("The link will be short, and group profile will be shared via the link.", comment: "alert message"),
             actions: {
                 var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in

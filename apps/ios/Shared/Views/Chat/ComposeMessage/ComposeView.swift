@@ -722,9 +722,9 @@ struct ComposeView: View {
                         RelayProgressIndicator(active: connectedCount, total: total)
                     }
                     if showProgress {
-                        Text("\(connectedCount)/\(total) \(total == 1 ? "relay" : "relays") connected")
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel relay bar progress"), connectedCount, total))
                     } else {
-                        Text("\(total) \(total == 1 ? "relay" : "relays")")
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
                     }
                     Spacer()
                     Image(systemName: relayListExpanded ? "chevron.down" : "chevron.up")
@@ -741,14 +741,14 @@ struct ComposeView: View {
             if relayListExpanded {
                 if relayMembers.isEmpty {
                     ForEach(hostnames, id: \.self) { relay in
-                        channelRelayRow("via \(hostFromRelayLink(relay))")
+                        channelRelayRow(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(relay)))
                     }
                 } else {
                     ForEach(relayMembers) { member in
                         let m = member.wrapped
                         let host = m.relayLink.map { hostFromRelayLink($0) }
                         channelRelayRow(
-                            "via \(host ?? m.chatViewName)",
+                            String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName),
                             status: m.memberStatus == .memConnected ? "connected" : "connecting"
                         )
                     }

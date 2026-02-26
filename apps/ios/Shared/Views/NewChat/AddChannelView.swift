@@ -65,7 +65,7 @@ struct AddChannelView: View {
             case let .proceedWithPartialRelays(connected, total):
                 Alert(
                     title: Text("Not all relays connected"),
-                    message: Text("Channel will start working with \(connected) of \(total) relays. Proceed?"),
+                    message: Text(String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), connected, total)),
                     primaryButton: .default(Text("Proceed")) { showLinkStep = true },
                     secondaryButton: .cancel(Text("Wait"))
                 )
@@ -277,7 +277,7 @@ struct AddChannelView: View {
                         if activeCount < total {
                             RelayProgressIndicator(active: activeCount, total: total)
                         }
-                        Text("\(activeCount)/\(total) relays connected")
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel creation progress"), activeCount, total))
                         Spacer()
                         Image(systemName: relayListExpanded ? "chevron.up" : "chevron.down")
                             .foregroundColor(theme.colors.secondary)

@@ -163,7 +163,7 @@ struct GroupMemberInfoView: View {
                             infoRow("Role", member.memberRole.text)
                         }
                         if let link = member.relayLink {
-                            infoRow("Relay link", "via \(hostFromRelayLink(link))")
+                            infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
                         }
                     }
 
