@@ -1649,6 +1649,15 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: 
+          UPDATE chat_relays
+          SET name = ?, domains = ?,
+              preset = ?, tested = ?, enabled = ?, deleted = 0, updated_at = ?
+          WHERE chat_relay_id = ?
+        
+Plan:
+SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
           UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
           WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
             SELECT contact_id
@@ -6482,6 +6491,10 @@ Query: SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING INDEX idx_settings_user_id (user_id=?)
 
+Query: SELECT chat_relay_id FROM chat_relays WHERE user_id = ? AND address = ? AND deleted = 1 LIMIT 1
+Plan:
+SEARCH chat_relays USING INDEX idx_chat_relays_user_id_address (user_id=? AND address=?)
+
 Query: SELECT chat_tag_id FROM chat_tags_chats WHERE contact_id = ?
 Plan:
 SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_contact_id (contact_id=?)
@@ -6693,6 +6706,10 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE chat_items SET via_proxy = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_relays SET deleted = 1, updated_at = ? WHERE chat_relay_id = ?
+Plan:
+SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?
 Plan:
