@@ -10,6 +10,7 @@ rm -rf website/src/docs/dependencies
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
+rm -rf website/src/blog/new
 cp PRIVACY.md website/src/privacy.md
 cd website
 
@@ -40,6 +41,7 @@ for lang in "${langs[@]}"; do
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang
   cp src/fdroid.html src/$lang
+  cp src/why.html src/$lang
   echo "{\"lang\":\"$lang\"}" > src/$lang/$lang.json
   echo "done $lang copying"
 done

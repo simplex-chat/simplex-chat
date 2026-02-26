@@ -145,6 +145,7 @@ active_home: true
                         <h2>{{ "index-nextweb-h2" | i18n({}, lang) | safe }}</h2>
                         <p>{{ "index-nextweb-p1" | i18n({}, lang) | safe }}</p>
                         <p>{{ "index-nextweb-p2" | i18n({}, lang) }}</p>
+                        <a class="gradient-text" href="{{ '' if lang == 'en' else '/' ~ lang }}/why">{{ "why-footer-link" | i18n({}, lang) | safe }}</a>
                     </div>
                 </div>
             </section>
