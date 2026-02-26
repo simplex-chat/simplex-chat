@@ -10,7 +10,6 @@ rm -rf website/src/docs/dependencies
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md
-rm website/src/blog/CLAUDE.md
 rm -rf website/src/blog/new
 cp PRIVACY.md website/src/privacy.md
 cd website
