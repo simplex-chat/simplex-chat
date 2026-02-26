@@ -59,7 +59,7 @@ AppScreen (line 46)
 
 ## 2. AppScreen Composable
 
-**Location:** [`App.kt#L47`](App.kt#L47)
+**Location:** [`App.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L47)
 
 ```kotlin
 @Composable
@@ -79,7 +79,7 @@ fun AppScreen()
 
 ## 3. MainScreen
 
-**Location:** [`App.kt#L84`](App.kt#L84)
+**Location:** [`App.kt#L84`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L84)
 
 ```kotlin
 @Composable
@@ -127,7 +127,7 @@ When onboarding is complete:
 
 ## 4. Android Layout
 
-**Location:** [`App.kt#L296`](App.kt#L296)
+**Location:** [`App.kt#L296`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L296)
 
 ```kotlin
 @Composable
@@ -166,7 +166,7 @@ If the device has a display cutout on horizontal sides (detected via `WindowInse
 
 ## 5. Desktop Layout
 
-**Location:** [`App.kt#L410`](App.kt#L410)
+**Location:** [`App.kt#L410`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L410)
 
 ```kotlin
 @Composable
@@ -193,7 +193,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### CenterPartOfScreen
 
-**Location:** [`App.kt#L373`](App.kt#L373)
+**Location:** [`App.kt#L373`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L373)
 
 - When `chatId` is null and no center modals: shows "No selected chat" placeholder.
 - When `chatId` is null and center modals open: shows `ModalManager.center`.
@@ -202,7 +202,7 @@ When the UserPicker is visible or a start modal is open (but no center modal), a
 
 ### StartPartOfScreen
 
-**Location:** [`App.kt#L352`](App.kt#L352)
+**Location:** [`App.kt#L352`](../../common/src/commonMain/kotlin/chat/simplex/common/App.kt#L352)
 
 Routes between:
 - `SetDeliveryReceiptsView` (if `chatModel.setDeliveryReceipts` is true)
@@ -274,7 +274,7 @@ Each `ModalManager` maintains a stack of `ModalViewHolder` objects with:
 
 ## 7. Authentication Gate
 
-**Location:** [`AppLock.kt#L17`](../../../common/src/commonMain/kotlin/chat/simplex/common/AppLock.kt#L17)
+**Location:** [`AppLock.kt#L17`](../../common/src/commonMain/kotlin/chat/simplex/common/AppLock.kt#L17)
 
 ```kotlin
 object AppLock {

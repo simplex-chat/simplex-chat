@@ -15,7 +15,7 @@
 
 ## 1. Overview
 
-SimpleX Chat uses **two SQLite databases** managed entirely by the Haskell core. Kotlin code **never reads or writes the databases directly** -- all data access goes through the JNI command/response protocol defined in [SimpleXAPI.kt](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt).
+SimpleX Chat uses **two SQLite databases** managed entirely by the Haskell core. Kotlin code **never reads or writes the databases directly** -- all data access goes through the JNI command/response protocol defined in [SimpleXAPI.kt](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt).
 
 The two databases are:
 
@@ -36,7 +36,7 @@ Both databases are created and migrated by the `chatMigrateInit` JNI function. T
 
 ### Expect Declarations
 
-The common module declares platform-dependent paths as `expect` values in [Files.kt](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt):
+The common module declares platform-dependent paths as `expect` values in [Files.kt](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt):
 
 ```kotlin
 expect val dataDir: File              // L18
@@ -58,7 +58,7 @@ expect val remoteHostsDir: File       // L37
 
 ### Android Actual Values
 
-From [Files.android.kt](common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt):
+From [Files.android.kt](../common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt):
 
 | Variable | Value | Notes |
 |----------|-------|-------|
@@ -77,7 +77,7 @@ From [Files.android.kt](common/src/androidMain/kotlin/chat/simplex/common/platfo
 
 ### Desktop Actual Values
 
-From [Files.desktop.kt](common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt):
+From [Files.desktop.kt](../common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt):
 
 | Variable | Value | Notes |
 |----------|-------|-------|
@@ -126,7 +126,7 @@ All store operations execute within SQLite transactions managed by the Haskell c
 
 ### JNI Entry Point
 
-Database migration is triggered by the `chatMigrateInit` external function ([Core.kt#L25](common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L25)):
+Database migration is triggered by the `chatMigrateInit` external function ([Core.kt#L25](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L25)):
 
 ```kotlin
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
@@ -143,7 +143,7 @@ external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Ar
 
 ### Migration Flow in `initChatController`
 
-The full initialization sequence is in [Core.kt#L62](common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L62):
+The full initialization sequence is in [Core.kt#L62](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L62):
 
 1. Obtain the DB encryption key from `DatabaseUtils.useDatabaseKey()`.
 2. Determine the confirmation mode (default: `YesUp`; developer mode with confirm upgrades: `Error`).
@@ -157,7 +157,7 @@ The full initialization sequence is in [Core.kt#L62](common/src/commonMain/kotli
 
 ### DBMigrationResult
 
-Defined in [DatabaseUtils.kt#L79](common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DatabaseUtils.kt#L79):
+Defined in [DatabaseUtils.kt#L79](../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DatabaseUtils.kt#L79):
 
 ```kotlin
 sealed class DBMigrationResult {
@@ -199,18 +199,18 @@ enum class MigrationConfirmation(val value: String) {
 
 ### Encryption API
 
-Two API functions manage database encryption, both in [SimpleXAPI.kt](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt):
+Two API functions manage database encryption, both in [SimpleXAPI.kt](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt):
 
 | Function | Parameters | Description | Line |
 |----------|-----------|-------------|------|
-| `apiStorageEncryption` | `currentKey: String, newKey: String` | Change or set the database encryption passphrase | [L999](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L999) |
-| `testStorageEncryption` | `key: String, ctrl: ChatCtrl?` | Test whether a given key can decrypt the database | [L1006](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1006) |
+| `apiStorageEncryption` | `currentKey: String, newKey: String` | Change or set the database encryption passphrase | [L999](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L999) |
+| `testStorageEncryption` | `key: String, ctrl: ChatCtrl?` | Test whether a given key can decrypt the database | [L1006](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L1006) |
 
 Both delegate to the Haskell core via `CC.ApiStorageEncryption(DBEncryptionConfig)` and `CC.TestStorageEncryption(key)` respectively.
 
 <a id="DBEncryptionConfig"></a>
 
-`DBEncryptionConfig` ([SimpleXAPI.kt#L4166](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4166)):
+`DBEncryptionConfig` ([SimpleXAPI.kt#L4166](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4166)):
 
 ```kotlin
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
@@ -218,7 +218,7 @@ class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 ### Passphrase Storage -- CryptorInterface
 
-The `CryptorInterface` ([Cryptor.kt](common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt)) provides platform-specific key encryption for storing the DB passphrase at rest:
+The `CryptorInterface` ([Cryptor.kt](../common/src/commonMain/kotlin/chat/simplex/common/platform/Cryptor.kt)) provides platform-specific key encryption for storing the DB passphrase at rest:
 
 ```kotlin
 interface CryptorInterface {
@@ -232,7 +232,7 @@ expect val cryptor: CryptorInterface
 
 ### Android Implementation
 
-[Cryptor.android.kt](common/src/androidMain/kotlin/chat/simplex/common/platform/Cryptor.android.kt):
+[Cryptor.android.kt](../common/src/androidMain/kotlin/chat/simplex/common/platform/Cryptor.android.kt):
 
 - Uses **Android KeyStore** (`"AndroidKeyStore"` provider)
 - Algorithm: **AES/GCM/NoPadding** (128-bit authentication tag)
@@ -249,7 +249,7 @@ internal class Cryptor: CryptorInterface {
 
 ### Desktop Implementation
 
-[Cryptor.desktop.kt](common/src/desktopMain/kotlin/chat/simplex/common/platform/Cryptor.desktop.kt):
+[Cryptor.desktop.kt](../common/src/desktopMain/kotlin/chat/simplex/common/platform/Cryptor.desktop.kt):
 
 - **Placeholder/no-op implementation** -- data is returned as-is
 - No actual encryption of the stored passphrase on desktop
@@ -266,7 +266,7 @@ actual val cryptor: CryptorInterface = object : CryptorInterface {
 
 ### Passphrase Management
 
-`DatabaseUtils` ([DatabaseUtils.kt](common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DatabaseUtils.kt)) provides:
+`DatabaseUtils` ([DatabaseUtils.kt](../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/DatabaseUtils.kt)) provides:
 
 - `ksDatabasePassword` -- encrypted passphrase stored in platform preferences (SharedPreferences on Android, file-based on desktop)
 - `useDatabaseKey()` -- retrieves the passphrase, decrypting it via `CryptorInterface`
@@ -285,7 +285,7 @@ The flow:
 
 ### Directory Layout
 
-Declared in [Files.kt](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) with platform-specific implementations:
+Declared in [Files.kt](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) with platform-specific implementations:
 
 | Directory | Variable | Android Path | Desktop Path | Purpose |
 |-----------|----------|-------------|--------------|---------|
@@ -300,15 +300,15 @@ Declared in [Files.kt](common/src/commonMain/kotlin/chat/simplex/common/platform
 
 ### File Path Resolution
 
-Files referenced by chat items use `CryptoFile` (optional encryption metadata + relative path). Path resolution is handled by helper functions in [Files.kt](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt):
+Files referenced by chat items use `CryptoFile` (optional encryption metadata + relative path). Path resolution is handled by helper functions in [Files.kt](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt):
 
-- `getAppFilePath(fileName)` ([L81](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L81)) -- resolves to `appFilesDir/fileName` for local, or `remoteHostsDir/<storePath>/simplex_v1_files/fileName` for remote hosts
-- `getWallpaperFilePath(fileName)` ([L91](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L91)) -- resolves wallpaper paths similarly
-- `getLoadedFilePath(file)` ([L105](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L105)) -- returns the full path if the file is downloaded and ready
+- `getAppFilePath(fileName)` ([L81](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L81)) -- resolves to `appFilesDir/fileName` for local, or `remoteHostsDir/<storePath>/simplex_v1_files/fileName` for remote hosts
+- `getWallpaperFilePath(fileName)` ([L91](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L91)) -- resolves wallpaper paths similarly
+- `getLoadedFilePath(file)` ([L105](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L105)) -- returns the full path if the file is downloaded and ready
 
 ### Local File Encryption
 
-The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L967](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L967)) tells the Haskell core to encrypt files stored in `appFilesDir`. When enabled, files are written as `CryptoFile` with a random AES key and nonce. The JNI functions `chatEncryptFile` and `chatDecryptFile` ([Core.kt#L39-L40](common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39)) handle the actual crypto operations.
+The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L967](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L967)) tells the Haskell core to encrypt files stored in `appFilesDir`. When enabled, files are written as `CryptoFile` with a random AES key and nonce. The JNI functions `chatEncryptFile` and `chatDecryptFile` ([Core.kt#L39-L40](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39)) handle the actual crypto operations.
 
 ---
 
@@ -318,13 +318,13 @@ The `apiSetEncryptLocalFiles(enable)` command ([SimpleXAPI.kt#L967](common/src/c
 
 | Function | CC Command | CR Response | Line |
 |----------|-----------|-------------|------|
-| `apiExportArchive(config)` | `CC.ApiExportArchive(config)` | `CR.ArchiveExported(archiveErrors)` | [SimpleXAPI.kt#L981](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L981) |
-| `apiImportArchive(config)` | `CC.ApiImportArchive(config)` | `CR.ArchiveImported(archiveErrors)` | [SimpleXAPI.kt#L987](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L987) |
-| `apiDeleteStorage()` | `CC.ApiDeleteStorage()` | `CR.CmdOk` | [SimpleXAPI.kt#L993](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L993) |
+| `apiExportArchive(config)` | `CC.ApiExportArchive(config)` | `CR.ArchiveExported(archiveErrors)` | [SimpleXAPI.kt#L981](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L981) |
+| `apiImportArchive(config)` | `CC.ApiImportArchive(config)` | `CR.ArchiveImported(archiveErrors)` | [SimpleXAPI.kt#L987](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L987) |
+| `apiDeleteStorage()` | `CC.ApiDeleteStorage()` | `CR.CmdOk` | [SimpleXAPI.kt#L993](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L993) |
 
 ### ArchiveConfig
 
-Defined at [SimpleXAPI.kt#L4162](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4162):
+Defined at [SimpleXAPI.kt#L4162](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L4162):
 
 ```kotlin
 class ArchiveConfig(
@@ -355,7 +355,7 @@ class ArchiveConfig(
 
 ### ArchiveError
 
-Defined at [SimpleXAPI.kt#L7658](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7658):
+Defined at [SimpleXAPI.kt#L7658](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L7658):
 
 ```kotlin
 sealed class ArchiveError {

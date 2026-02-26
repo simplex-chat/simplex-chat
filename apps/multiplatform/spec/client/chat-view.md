@@ -56,7 +56,7 @@ ChatView
 
 ## 2. ChatView Composable
 
-**Location:** [`ChatView.kt#L97`](ChatView.kt#L97)
+**Location:** [`ChatView.kt#L97`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L97)
 
 ```kotlin
 fun ChatView(
@@ -107,7 +107,7 @@ The outer `when (chatInfo)` (line ~229) branches:
 
 ## 3. Message List
 
-**Location:** [`ChatView.kt#L1592`](ChatView.kt#L1592) (`ChatItemsList` composable)
+**Location:** [`ChatView.kt#L1592`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatView.kt#L1592) (`ChatItemsList` composable)
 
 The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, meaning index 0 is the newest message at the bottom of the screen.
 
@@ -134,7 +134,7 @@ The message list is a `LazyColumnWithScrollBar` with `reverseLayout = true`, mea
 
 ## 4. ChatItemView
 
-**Location:** [`item/ChatItemView.kt#L66`](item/ChatItemView.kt#L66)
+**Location:** [`item/ChatItemView.kt#L66`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/item/ChatItemView.kt#L66)
 
 ```kotlin
 fun ChatItemView(
@@ -229,7 +229,7 @@ Context menu actions are built dynamically in `ChatItemView` based on message ty
 
 ## 7. ChatInfoView
 
-**Location:** [`ChatInfoView.kt`](ChatInfoView.kt)
+**Location:** [`ChatInfoView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ChatInfoView.kt)
 
 Opened via the `info` callback when the user taps the toolbar title in a direct chat. Displayed in `ModalManager.end`.
 
@@ -241,7 +241,7 @@ Key sections: contact profile, local alias, connection stats, shared media, disa
 
 ## 8. GroupChatInfoView
 
-**Location:** [`group/GroupChatInfoView.kt`](group/GroupChatInfoView.kt)
+**Location:** [`group/GroupChatInfoView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/group/GroupChatInfoView.kt)
 
 Opened via the `info` callback for group chats. Displayed in `ModalManager.end`.
 

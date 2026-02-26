@@ -60,7 +60,7 @@ ComposeView
 
 ## 2. ComposeState Data Class
 
-**Location:** [`ComposeView.kt#L98`](ComposeView.kt#L98)
+**Location:** [`ComposeView.kt#L98`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L98)
 
 ```kotlin
 @Serializable
@@ -142,7 +142,7 @@ Tracks a live (streaming) message: the associated `ChatItem`, the currently type
 
 ## 3. ComposePreview Sealed Class
 
-**Location:** [`ComposeView.kt#L52`](ComposeView.kt#L52)
+**Location:** [`ComposeView.kt#L52`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L52)
 
 ```kotlin
 sealed class ComposePreview {
@@ -174,7 +174,7 @@ Used within `MediaPreview` to track the source type:
 
 ## 4. ComposeContextItem Sealed Class
 
-**Location:** [`ComposeView.kt#L61`](ComposeView.kt#L61)
+**Location:** [`ComposeView.kt#L61`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L61)
 
 ```kotlin
 sealed class ComposeContextItem {
@@ -208,7 +208,7 @@ sealed class ComposeContextItem {
 
 ## 5. SendMsgView
 
-**Location:** [`SendMsgView.kt#L36`](SendMsgView.kt#L36)
+**Location:** [`SendMsgView.kt#L36`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/SendMsgView.kt#L36)
 
 ```kotlin
 fun SendMsgView(
@@ -348,7 +348,7 @@ When `privacyLinkPreviews` is enabled and the message contains a URL:
 
 ## 7. Draft Persistence
 
-**Location:** [`ComposeView.kt#L1230`](ComposeView.kt#L1230) (`KeyChangeEffect(chatModel.chatId.value)`)
+**Location:** [`ComposeView.kt#L1230`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chat/ComposeView.kt#L1230) (`KeyChangeEffect(chatModel.chatId.value)`)
 
 Controlled by the `privacySaveLastDraft` preference.
 

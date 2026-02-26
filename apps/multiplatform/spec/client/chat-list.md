@@ -53,7 +53,7 @@ ChatListView
 
 ## 2. ChatListView Composable
 
-**Location:** [`ChatListView.kt#L127`](ChatListView.kt#L127)
+**Location:** [`ChatListView.kt#L127`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L127)
 
 ```kotlin
 fun ChatListView(
@@ -158,7 +158,7 @@ The `filteredChats` function (line ~1188) applies filters in this order:
 
 ## 5. Chat Preview
 
-**Location:** [`ChatPreviewView.kt#L40`](ChatPreviewView.kt#L40)
+**Location:** [`ChatPreviewView.kt#L40`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt#L40)
 
 ```kotlin
 fun ChatPreviewView(
@@ -201,7 +201,7 @@ When `chatModelDraftChatId` matches the chat ID, the preview shows a draft indic
 
 ## 6. ChatListNavLinkView
 
-**Location:** [`ChatListNavLinkView.kt#L37`](ChatListNavLinkView.kt#L37)
+**Location:** [`ChatListNavLinkView.kt#L37`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListNavLinkView.kt#L37)
 
 Routes each chat to the appropriate click action and context menu based on `chat.chatInfo`:
 
@@ -224,7 +224,7 @@ On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) re
 
 ### TagsView
 
-**Location:** [`ChatListView.kt#L929`](ChatListView.kt#L929)
+**Location:** [`ChatListView.kt#L929`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L929)
 
 Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
 
@@ -244,7 +244,7 @@ Layout logic:
 
 ### TagListView
 
-**Location:** [`TagListView.kt#L48`](TagListView.kt#L48)
+**Location:** [`TagListView.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L48)
 
 Full-screen tag management view opened from the "+" button or long-press menu.
 
@@ -263,7 +263,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
 
 ## 8. UserPicker
 
-**Location:** [`UserPicker.kt#L46`](UserPicker.kt#L46)
+**Location:** [`UserPicker.kt#L46`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/UserPicker.kt#L46)
 
 ```kotlin
 fun UserPicker(
