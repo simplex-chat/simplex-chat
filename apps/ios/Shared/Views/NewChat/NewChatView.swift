@@ -990,14 +990,19 @@ private func showOwnGroupLinkConfirmConnectSheet(
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
+    let isChannel = groupInfo.useRelays
     showSheet(
         String.localizedStringWithFormat(
-            NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
+            isChannel
+            ? NSLocalizedString("Join your channel?\nThis is your link for channel %@!", comment: "new chat action")
+            : NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
             groupInfo.displayName
         ),
         actions: {[
             UIAlertAction(
-                title: NSLocalizedString("Open group", comment: "new chat action"),
+                title: isChannel
+                    ? NSLocalizedString("Open channel", comment: "new chat action")
+                    : NSLocalizedString("Open group", comment: "new chat action"),
                 style: .default,
                 handler: { _ in
                     openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
@@ -1165,7 +1170,12 @@ private func showOpenKnownGroupAlert(
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new channel", comment: "new chat action")
+                : NSLocalizedString("Open channel", comment: "new chat action")
+              )
+            : groupInfo.businessChat == nil
             ? ( groupInfo.nextConnectPrepared
                 ? NSLocalizedString("Open new group", comment: "new chat action")
                 : NSLocalizedString("Open group", comment: "new chat action")
