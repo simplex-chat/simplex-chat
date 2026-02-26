@@ -22,6 +22,7 @@ import chat.simplex.common.views.usersettings.ProfilePreview
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
+// Spec: spec/services/calls.md#IncomingCallAlertView
 @Composable
 fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager

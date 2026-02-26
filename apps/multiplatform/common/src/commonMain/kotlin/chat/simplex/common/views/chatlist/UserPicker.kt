@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.*
 
 private val USER_PICKER_SECTION_SPACING = 32.dp
 
+// Spec: spec/client/chat-list.md#UserPicker
 @Composable
 fun UserPicker(
   chatModel: ChatModel,

@@ -407,16 +407,20 @@ section.cover div.content h1 {
 
 section.cover div.content h1 .small {
     font-size: calc(var(--sec-vwu) * 8);
+    line-height: 1;
+    margin-bottom: -10px;
 }
 
 section.cover div.content h1 .medium {
     font-size: calc(var(--sec-vwu) * 10);
+    line-height: 1;
+    margin-bottom: -10px;
 }
 
 section.cover div.content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
-    font-weight: 300;
-    font-size: calc(var(--sec-vwu) * 2.7);
+    font-weight: 400;
+    font-size: calc(var(--sec-vwu) * 5);
     letter-spacing: -0.025em;
     line-height: 1.2;
 }
@@ -424,10 +428,10 @@ section.cover div.content h2 {
 section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: calc(var(--sec-vwu) * 1.6);
+    font-size: calc(var(--sec-vwu) * 2.4);
     align-items: center;
     color: #ffffff;
-    max-width: calc(var(--sec-vwu) * 25);
+    max-width: calc(var(--sec-vwu) * 53);
 }
 
 .publications-btns {
@@ -812,6 +816,10 @@ main .section-bg {
     max-width: calc(var(--sec-vwu)*31) !important;
 }
 
+.page-3 .text-container a {
+    max-width: calc(var(--sec-vwu)*31) !important;
+}
+
 .page-3 .text-container,
 .page-4 .text-container {
     margin-left: auto;
@@ -907,16 +915,15 @@ main .section-bg {
     }
 
     section.cover div.content h2 {
-        font-weight: 400;
-        font-size: calc(var(--sec-vwu) * 7);
+        font-weight: 500;
+        font-size: calc(var(--sec-vwu) * 11.5);
     }
 
     section.cover div.content p {
         font-weight: 400;
-        font-size: calc(var(--sec-vwu) * 4.3);
-        max-width: calc(var(--sec-vwu) * 65);
+        font-size: calc(var(--sec-vwu) * 5.5);
+        max-width: calc(var(--sec-vwu) * 93);
     }
-
 
     /* --- MAIN SECTIONS --- */
     .page .text-container {

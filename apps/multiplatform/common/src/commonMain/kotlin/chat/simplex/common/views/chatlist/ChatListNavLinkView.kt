@@ -32,6 +32,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
+// Spec: spec/client/chat-list.md#ChatListNavLinkView
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
