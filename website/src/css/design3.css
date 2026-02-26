@@ -434,6 +434,13 @@ section.cover div.content p {
     max-width: calc(var(--sec-vwu) * 53);
 }
 
+section.cover div.content a.why-link {
+    margin-top: calc(var(--sec-vhu) * -2);
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-size: calc(var(--sec-vwu) * 2.8);
+    font-weight: 400;
+}
+
 .publications-btns {
     position: absolute;
     bottom: 24px;
@@ -921,6 +928,10 @@ main .section-bg {
         max-width: calc(var(--sec-vwu) * 93);
     }
 
+    section.cover div.content a.why-link {
+        margin-top: calc(var(--sec-vhu) * -1);
+        font-size: calc(var(--sec-vwu) * 6);
+    }
 
     /* --- MAIN SECTIONS --- */
     .page .text-container {

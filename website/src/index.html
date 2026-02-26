@@ -72,7 +72,7 @@ active_home: true
                     <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
                     <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }}</h2>
                     <p>{{ "index-hero-p1" | i18n({}, lang) | safe }}</p>
-                    <a class="gradient-text" href="/{{ '' if lang == 'en' else lang ~ '/' }}why">{{ "why-footer-link" | i18n({}, lang) | safe }}</a>
+                    <a class="gradient-text why-link" href="/{{ '' if lang == 'en' else lang ~ '/' }}why">{{ "why-footer-link" | i18n({}, lang) | safe }}</a>
 
                     <div class="socials">
                         <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
