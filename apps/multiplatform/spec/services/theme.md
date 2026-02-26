@@ -76,6 +76,7 @@ fun applyTheme(theme: String) {
   }
   CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
   platform.androidSetNightModeIfSupported()
+  val c = CurrentColors.value.colors
   platform.androidSetStatusAndNavigationBarAppearance(c.isLight, c.isLight)
 }
 ```
@@ -208,7 +209,7 @@ Represents the active wallpaper state with optional background color, tint overl
 
 Enum of all customizable color slots:
 
-`PRIMARY`, `PRIMARY_VARIANT`, `SECONDARY`, `SECONDARY_VARIANT`, `BACKGROUND`, `SURFACE`, `TITLE`, `PRIMARY_VARIANT2`, `SENT_MESSAGE`, `SENT_QUOTE`, `RECEIVED_MESSAGE`, `RECEIVED_QUOTE`, `WALLPAPER_BACKGROUND`, `WALLPAPER_TINT`
+`PRIMARY`, `PRIMARY_VARIANT`, `SECONDARY`, `SECONDARY_VARIANT`, `BACKGROUND`, `SURFACE`, `TITLE`, `SENT_MESSAGE`, `SENT_QUOTE`, `RECEIVED_MESSAGE`, `RECEIVED_QUOTE`, `PRIMARY_VARIANT2`, `WALLPAPER_BACKGROUND`, `WALLPAPER_TINT`
 
 Each has a `fromColors()` method to extract the current value and a `text` property for UI display.
 

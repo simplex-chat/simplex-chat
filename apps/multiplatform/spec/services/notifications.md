@@ -72,7 +72,7 @@ The global `ntfManager` instance is declared at [line 17](../../common/src/commo
 
 ## 3. Android Notification Manager
 
-[`NtfManager.android.kt`](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt) (332 lines)
+[`NtfManager.android.kt`](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt) (331 lines)
 
 Implemented as a Kotlin `object` (singleton) in the Android module.
 
@@ -125,7 +125,7 @@ Channel creation happens in `createNtfChannelsMaybeShowAlert()` ([line 298](../.
 
 ## 4. Desktop Notification Manager
 
-[`NtfManager.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt) (194 lines)
+[`NtfManager.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt) (193 lines)
 
 Implemented as a Kotlin `object` using the [TwoSlices](https://github.com/sshtools/two-slices) library (`Toast` builder API) for cross-platform desktop notifications.
 
@@ -165,7 +165,7 @@ Previous notifications are tracked in `prevNtfs: ArrayList<Pair<Pair<Long, ChatI
 
 ## 5. Android Background Messaging
 
-### 5.1 SimplexService.kt (735 lines)
+### 5.1 SimplexService.kt (734 lines)
 
 [`SimplexService.kt`](../../android/src/main/java/chat/simplex/app/SimplexService.kt)
 
@@ -198,7 +198,7 @@ A foreground `Service` that keeps the app process alive for continuous message r
 - `showBackgroundServiceNoticeIfNeeded()` ([line 430](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L430)): Shows alerts guiding users to disable battery optimization or background restriction. Includes Xiaomi-specific guidance.
 - `disableNotifications()` ([line 722](../../android/src/main/java/chat/simplex/app/SimplexService.kt#L722)): Switches mode to OFF, disables receivers, cancels workers.
 
-### 5.2 MessagesFetcherWorker.kt (101 lines)
+### 5.2 MessagesFetcherWorker.kt (100 lines)
 
 [`MessagesFetcherWorker.kt`](../../android/src/main/java/chat/simplex/app/MessagesFetcherWorker.kt)
 
@@ -222,7 +222,7 @@ enum class NotificationsMode {
 }
 ```
 
-Default is `SERVICE`. The `requiresIgnoringBattery` property is `true` for both `SERVICE` and `PERIODIC` modes.
+Default is `SERVICE`. The `requiresIgnoringBattery` property is an Android extension property (defined in `Extensions.kt`, not on the enum itself) whose value depends on the SDK version: `SERVICE` requires ignoring battery optimizations since SDK S (API 31), `PERIODIC` since SDK M (API 23).
 
 ---
 
@@ -253,9 +253,9 @@ Both Android and Desktop implementations check `appPreferences.notificationPrevi
 | File | Path | Lines | Description |
 |---|---|---|---|
 | `NtfManager.kt` | [`common/src/commonMain/.../platform/NtfManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/NtfManager.kt) | 139 | Abstract notification manager with shared logic |
-| `NtfManager.android.kt` | [`android/src/main/java/.../model/NtfManager.android.kt`](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt) | 332 | Android notification channels, groups, call intents |
-| `NtfManager.desktop.kt` | [`common/src/desktopMain/.../model/NtfManager.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt) | 194 | Desktop notifications via TwoSlices/OS-native |
-| `SimplexService.kt` | [`android/src/main/java/.../SimplexService.kt`](../../android/src/main/java/chat/simplex/app/SimplexService.kt) | 735 | Android foreground service for background messaging |
-| `MessagesFetcherWorker.kt` | [`android/src/main/java/.../MessagesFetcherWorker.kt`](../../android/src/main/java/chat/simplex/app/MessagesFetcherWorker.kt) | 101 | WorkManager periodic message fetcher |
-| `ChatModel.kt` | [`common/src/commonMain/.../model/ChatModel.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt) | -- | `NotificationPreviewMode` enum (L4818) |
-| `SimpleXAPI.kt` | [`common/src/commonMain/.../model/SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | -- | `NotificationsMode` enum (L7725) |
+| `NtfManager.android.kt` | [`android/src/main/java/.../model/NtfManager.android.kt`](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt) | 331 | Android notification channels, groups, call intents |
+| `NtfManager.desktop.kt` | [`common/src/desktopMain/.../model/NtfManager.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/model/NtfManager.desktop.kt) | 193 | Desktop notifications via TwoSlices/OS-native |
+| `SimplexService.kt` | [`android/src/main/java/.../SimplexService.kt`](../../android/src/main/java/chat/simplex/app/SimplexService.kt) | 734 | Android foreground service for background messaging |
+| `MessagesFetcherWorker.kt` | [`android/src/main/java/.../MessagesFetcherWorker.kt`](../../android/src/main/java/chat/simplex/app/MessagesFetcherWorker.kt) | 100 | WorkManager periodic message fetcher |
+| `ChatModel.kt` | [`common/src/commonMain/.../model/ChatModel.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt) | -- | `NotificationPreviewMode` enum (L4823) |
+| `SimpleXAPI.kt` | [`common/src/commonMain/.../model/SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | -- | `NotificationsMode` enum (L7739) |

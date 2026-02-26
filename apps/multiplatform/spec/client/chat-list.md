@@ -249,7 +249,7 @@ Layout logic:
 Full-screen tag management view opened from the "+" button or long-press menu.
 
 ```kotlin
-fun TagListView(rhId: Long?, chat: Chat?, close: () -> Unit, reorderMode: Boolean)
+fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean)
 ```
 
 - Displays all user tags in a `LazyColumnWithScrollBar`.

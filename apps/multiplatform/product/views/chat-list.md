@@ -94,7 +94,7 @@ Chat types handled by `ChatListNavLinkView`:
 - `ChatInfo.Group` -- group chat (with in-progress indicator for joining)
 - `ChatInfo.Local` -- note-to-self folder
 - `ChatInfo.ContactRequest` -- incoming contact request (tap shows accept/reject alert)
-- `ChatInfo.ContactConnection` -- pending connection (tap opens `ContactConnectionInfoView`)
+- `ChatInfo.ContactConnection` -- pending connection (tap opens `ContactConnectionView`)
 
 ### Context Menu (Long Press / Right Click)
 
@@ -103,8 +103,8 @@ Each chat type provides specific dropdown menu items:
 | Chat Type | Menu Items |
 |---|---|
 | Direct contact | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, delete contact |
-| Group | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, leave group, delete group |
-| Note folder | Mark read/unread, clear notes, delete notes |
+| Group | Mark read/unread, toggle favorite, toggle notify, tag list, clear chat, archive all reports (moderator, when reports exist), leave group, delete group |
+| Note folder | Mark read/unread, clear notes |
 | Contact request | Accept, reject |
 | Contact connection | Set name/alias, delete |
 

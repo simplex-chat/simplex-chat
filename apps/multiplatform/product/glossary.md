@@ -93,7 +93,7 @@ The wire-format message body. Variants: `MCText`, `MCLink`, `MCImage`, `MCVideo`
 *See:* `ChatModel.kt` -- `sealed class MsgContent`
 
 ### User
-The local user profile. Fields: `userId`, `userContactId`, `localDisplayName`, `profile` (LocalProfile), `fullPreferences` (FullChatPreferences), `activeUser`, `activeOrder`, `showNtfs`, `sendRcptsContacts`, `sendRcptsSmallGroups`, `viewPwdHash` (for hidden profiles), `uiThemes`.
+The local user profile. Fields: `userId`, `userContactId`, `localDisplayName`, `profile` (LocalProfile), `fullPreferences` (FullChatPreferences), `activeUser`, `activeOrder`, `showNtfs`, `sendRcptsContacts`, `sendRcptsSmallGroups`, `viewPwdHash` (for hidden profiles), `uiThemes`, `remoteHostId` (Long?), `autoAcceptMemberContacts` (Boolean).
 
 *See:* `ChatModel.kt:1208` -- `data class User`
 

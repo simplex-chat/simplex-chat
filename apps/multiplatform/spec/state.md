@@ -213,12 +213,12 @@ Defined at [`ChatItemsMerger.kt line 196`](../common/src/commonMain/kotlin/chat/
 
 ```kotlin
 data class ActiveChatState(
-    val splits: MutableStateFlow<List<Long>>,
-    val unreadAfterItemId: MutableStateFlow<Long>,
-    val totalAfter: MutableStateFlow<Int>,
-    val unreadTotal: MutableStateFlow<Int>,
-    val unreadAfter: MutableStateFlow<Int>,
-    val unreadAfterNewestLoaded: MutableStateFlow<Int>
+    val splits: MutableStateFlow<List<Long>> = MutableStateFlow(emptyList()),
+    val unreadAfterItemId: MutableStateFlow<Long> = MutableStateFlow(-1L),
+    val totalAfter: MutableStateFlow<Int> = MutableStateFlow(0),
+    val unreadTotal: MutableStateFlow<Int> = MutableStateFlow(0),
+    val unreadAfter: MutableStateFlow<Int> = MutableStateFlow(0),
+    val unreadAfterNewestLoaded: MutableStateFlow<Int> = MutableStateFlow(0)
 )
 ```
 
@@ -294,7 +294,7 @@ data class ChatStats(
 | Variant | SerialName | Key Data |
 |---|---|---|
 | `ChatInfo.Direct` | `"direct"` | `contact: Contact` |
-| `ChatInfo.Group` | `"group"` | `groupInfo: GroupInfo` |
+| `ChatInfo.Group` | `"group"` | `groupInfo: GroupInfo, groupChatScope: GroupChatScopeInfo?` |
 | `ChatInfo.Local` | `"local"` | `noteFolder: NoteFolder` |
 | `ChatInfo.ContactRequest` | `"contactRequest"` | `contactRequest: UserContactRequest` |
 | `ChatInfo.ContactConnection` | `"contactConnection"` | `contactConnection: PendingContactConnection` |

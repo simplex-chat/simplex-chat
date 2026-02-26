@@ -97,9 +97,8 @@ Both platforms share a common signaling flow through the Haskell core API.
 ## 3. Call State Machine
 
 ```
-WaitCapabilities -> InvitationSent -> OfferSent -> Negotiated -> Connected -> Ended
-                                                                      ^
-InvitationAccepted -> OfferReceived -> AnswerReceived -> Negotiated --+
+Outgoing: WaitCapabilities -> InvitationSent -> OfferSent -> AnswerReceived -> Negotiated -> Connected -> Ended
+Incoming: InvitationAccepted -> OfferReceived -> Negotiated -> Connected -> Ended
 ```
 
 | State | Description |

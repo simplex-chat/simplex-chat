@@ -42,7 +42,7 @@ Kotlin suspend fun api*()
 
 | Type | Role | Location |
 |------|------|----------|
-| `CC` (sealed class) | Command definitions (~130 subclasses) | [SimpleXAPI.kt#L3529](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L3529) |
+| `CC` (sealed class) | Command definitions (~165 subclasses) | [SimpleXAPI.kt#L3529](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L3529) |
 | `API` (sealed class) | Top-level response wrapper (`Result` / `Error`) | [SimpleXAPI.kt#L5975](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L5975) |
 | `CR` (sealed class) | Chat response variants (~180 subclasses) | [SimpleXAPI.kt#L6114](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6114) |
 | `ChatError` (sealed class) | Error hierarchy | [SimpleXAPI.kt#L6974](common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L6974) |

@@ -8,12 +8,11 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 
 1. [UI: Error Feedback](#gap-01-ui-error-feedback)
 2. [UI: Loading States](#gap-02-ui-loading-states)
-3. [Flows: Group Lifecycle -- Batch Role Change](#gap-03-flows-group-lifecycle--batch-role-change)
-4. [Security: Database Passphrase Not Enforced](#gap-04-security-database-passphrase-not-enforced)
-5. [Security: No Forward Secrecy Indicator](#gap-05-security-no-forward-secrecy-indicator)
-6. [Documentation: Haskell Store Layer Not Fully Specified](#gap-06-documentation-haskell-store-layer-not-fully-specified)
-7. [Desktop: Recording Not Implemented](#gap-07-desktop-recording-not-implemented)
-8. [Desktop: Cryptor Not Implemented](#gap-08-desktop-cryptor-not-implemented)
+3. [Security: Database Passphrase Not Enforced](#gap-03-security-database-passphrase-not-enforced)
+4. [Security: No Forward Secrecy Indicator](#gap-04-security-no-forward-secrecy-indicator)
+5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
+6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
+7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
 
 ---
 
@@ -86,34 +85,7 @@ Users may tap actions multiple times, causing duplicate requests, or assume the 
 
 ---
 
-## GAP-03: Flows: Group Lifecycle -- Batch Role Change
-
-**Severity:** Low
-**Category:** Feature / Flow
-**Platforms:** Android, Desktop
-
-### Description
-
-The `CC.ApiMembersRole(groupId, memberIds, memberRole)` command supports changing the role of multiple members in a single call. However, the UI currently exposes role changes only for individual members. There is no batch selection UI for changing multiple members' roles simultaneously.
-
-### Affected Locations
-
-- `SimpleXAPI.kt` -- `CC.ApiMembersRole` accepts `memberIds: List<Long>`
-- Group member list views
-
-### Impact
-
-Group owners/admins managing large groups must change roles one member at a time, which is tedious and error-prone. Each individual role change generates a separate network round-trip.
-
-### Recommendation
-
-1. Add a multi-select mode to the group member list view.
-2. When multiple members are selected, show a role-picker that calls `ApiMembersRole` with all selected member IDs.
-3. Similarly, `ApiBlockMembersForAll` and `ApiRemoveMembers` already support batch operations -- expose these through multi-select UI.
-
----
-
-## GAP-04: Security: Database Passphrase Not Enforced
+## GAP-03: Security: Database Passphrase Not Enforced
 
 **Severity:** High
 **Category:** Security
@@ -123,7 +95,7 @@ Group owners/admins managing large groups must change roles one member at a time
 
 When the app is first installed, a random database passphrase is generated and stored in encrypted preferences. The user is never required to set a custom passphrase. The `initialRandomDBPassphrase` flag tracks this state, and a setup prompt exists in onboarding (`SetupDatabasePassphrase`), but the user can skip it.
 
-On Android, the encrypted passphrase is stored via the Android Keystore, which provides hardware-backed security. On Desktop, the `Cryptor` is a **placeholder** (see GAP-08), meaning the passphrase is stored in plaintext.
+On Android, the encrypted passphrase is stored via the Android Keystore, which provides hardware-backed security. On Desktop, the `Cryptor` is a **placeholder** (see GAP-07), meaning the passphrase is stored in plaintext.
 
 ### Affected Locations
 
@@ -134,17 +106,17 @@ On Android, the encrypted passphrase is stored via the Android Keystore, which p
 ### Impact
 
 - Users who skip passphrase setup rely entirely on device security. If the device is compromised, the database can be decrypted using the stored passphrase.
-- On Desktop, the passphrase is effectively stored in plaintext (see GAP-08), meaning anyone with filesystem access can read the database.
+- On Desktop, the passphrase is effectively stored in plaintext (see GAP-07), meaning anyone with filesystem access can read the database.
 
 ### Recommendation
 
 1. Consider making passphrase setup mandatory during onboarding (or at least prominently warn users who skip it).
-2. On Desktop, implement proper key storage (GAP-08) before any passphrase enforcement is meaningful.
+2. On Desktop, implement proper key storage (GAP-07) before any passphrase enforcement is meaningful.
 3. Add a periodic reminder for users who still have `initialRandomDBPassphrase == true`.
 
 ---
 
-## GAP-05: Security: No Forward Secrecy Indicator
+## GAP-04: Security: No Forward Secrecy Indicator
 
 **Severity:** Medium
 **Category:** Security / UI
@@ -174,7 +146,7 @@ Users cannot easily verify whether their conversations are using PQ-enhanced enc
 
 ---
 
-## GAP-06: Documentation: Haskell Store Layer Not Fully Specified
+## GAP-05: Documentation: Haskell Store Layer Not Fully Specified
 
 **Severity:** Medium
 **Category:** Documentation / Architecture
@@ -204,7 +176,7 @@ The Kotlin client communicates with the Haskell core via a text-based command pr
 
 ---
 
-## GAP-07: Desktop: Recording Not Implemented
+## GAP-06: Desktop: Recording Not Implemented
 
 **Severity:** High
 **Category:** Feature / Platform
@@ -256,7 +228,7 @@ Several other Desktop features are also marked with `LALAL` placeholders:
 
 ---
 
-## GAP-08: Desktop: Cryptor Not Implemented
+## GAP-07: Desktop: Cryptor Not Implemented
 
 **Severity:** Critical
 **Category:** Security / Platform
@@ -314,5 +286,5 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 ### Related
 
-- GAP-04 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
+- GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.

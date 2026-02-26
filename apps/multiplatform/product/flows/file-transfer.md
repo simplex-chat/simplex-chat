@@ -43,7 +43,7 @@ When `privacyEncryptLocalFiles` is enabled (default: `true`), files stored on de
 ### 2.2 Key Types
 
 ```kotlin
-// model/CryptoFile.kt and model/SimpleXAPI.kt
+// model/ChatModel.kt
 @Serializable
 data class CryptoFileArgs(
   val fileKey: String,   // AES-256 key (base64)
@@ -51,7 +51,7 @@ data class CryptoFileArgs(
 )
 
 @Serializable
-sealed class CryptoFile {
+data class CryptoFile {
   val filePath: String
   val cryptoArgs: CryptoFileArgs?  // null for unencrypted files
 }
@@ -242,11 +242,11 @@ Before sending, user can cancel the file attachment:
 
 | Type | Location | Purpose |
 |------|----------|---------|
-| `CryptoFile` | `model/SimpleXAPI.kt` | File reference with path and optional encryption args |
-| `CryptoFileArgs` | `model/SimpleXAPI.kt` | AES key + nonce for encrypted files |
+| `CryptoFile` | `model/ChatModel.kt` | File reference with path and optional encryption args |
+| `CryptoFileArgs` | `model/ChatModel.kt` | AES key + nonce for encrypted files |
 | `WriteFileResult` | `model/CryptoFile.kt` | Result of `writeCryptoFile`: success with args or error |
 | `CIFile` | `model/ChatModel.kt` | Chat item file metadata: fileId, fileName, fileSize, fileStatus, fileProtocol |
 | `CIFileStatus` | `model/ChatModel.kt` | File transfer status: SndStored, SndTransfer, SndComplete, RcvInvitation, RcvAccepted, RcvTransfer, RcvComplete, etc. |
 | `FileProtocol` | `model/ChatModel.kt` | Transfer protocol: XFTP, SMP, LOCAL |
-| `FileTransferMeta` | `model/SimpleXAPI.kt` | Metadata for standalone XFTP uploads |
+| `FileTransferMeta` | `model/ChatModel.kt` | Metadata for standalone XFTP uploads |
 | `ComposePreview.FilePreview` | `views/chat/ComposeView.kt` | Compose state for file attachment |

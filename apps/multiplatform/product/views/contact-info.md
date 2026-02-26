@@ -57,7 +57,7 @@ Shown only when `customUserProfile` is set (connected via incognito profile):
 |---|---|
 | Send receipts | Per-contact delivery receipt setting (`SendReceipts` tristate: default/on/off) |
 | Chat item TTL | Per-contact message retention setting (`ChatItemTTL` with alert confirmation) |
-| Contact preferences | Opens `ContactPreferencesView` for feature toggles (disappearing messages, voice, calls, full delete) |
+| Contact preferences | Opens `ContactPreferencesView` for feature toggles (timed messages, full delete, reactions, voice, calls) |
 
 ### Connection Details
 

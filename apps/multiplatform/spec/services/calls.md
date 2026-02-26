@@ -59,7 +59,7 @@ State transitions are driven by `WCallResponse` messages from the WebRTC layer. 
 
 ## 3. Android Implementation
 
-### 3.1 CallActivity.kt (465 lines)
+### 3.1 CallActivity.kt (464 lines)
 
 [`CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt)
 
@@ -72,7 +72,7 @@ A dedicated `ComponentActivity` that hosts the call UI. Key responsibilities:
 - **Service binding** ([line 181](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L181)): Binds to `CallService` as a workaround for Android 12 background activity launch restrictions.
 - **CallActivityView composable** ([line 208](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L208)): Renders `ActiveCallView()` when permissions are granted and a call is active. Shows `CallPermissionsView` when permissions are needed. Shows `IncomingCallLockScreenAlert` for incoming calls on the lock screen.
 
-### 3.2 CallService.kt (208 lines)
+### 3.2 CallService.kt (207 lines)
 
 [`CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt)
 
@@ -167,8 +167,8 @@ An in-app notification banner shown when a call invitation arrives while the app
 | `CallView.kt` | [`common/src/commonMain/.../views/call/CallView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallView.kt) | 28 | `expect fun ActiveCallView()`, delivery receipt waiting |
 | `CallView.android.kt` | [`common/src/androidMain/.../views/call/CallView.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt) | 891 | Android WebView WebRTC, overlay, permissions |
 | `CallView.desktop.kt` | [`common/src/desktopMain/.../views/call/CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) | 263 | Desktop browser WebRTC via NanoWSD |
-| `CallActivity.kt` | [`android/src/main/java/.../views/call/CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt) | 465 | Android call Activity, PiP, lock screen |
-| `CallService.kt` | [`android/src/main/java/.../CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt) | 208 | Android foreground service for calls |
+| `CallActivity.kt` | [`android/src/main/java/.../views/call/CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt) | 464 | Android call Activity, PiP, lock screen |
+| `CallService.kt` | [`android/src/main/java/.../CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt) | 207 | Android foreground service for calls |
 | `CallManager.kt` | [`common/src/commonMain/.../views/call/CallManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallManager.kt) | 119 | Call lifecycle management |
 | `WebRTC.kt` | [`common/src/commonMain/.../views/call/WebRTC.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/WebRTC.kt) | -- | `CallState` enum, `WCallCommand`, `WCallResponse` types |
 | `IncomingCallAlertView.kt` | [`common/src/commonMain/.../views/call/IncomingCallAlertView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/IncomingCallAlertView.kt) | 128 | In-app incoming call notification banner |

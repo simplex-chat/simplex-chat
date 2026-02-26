@@ -44,7 +44,7 @@ Defined in [`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/v
 | `MAX_FILE_SIZE_XFTP` | 1,073,741,824 | 1 GB | [L127](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L127) | Maximum XFTP transfer size |
 | `MAX_FILE_SIZE_LOCAL` | `Long.MAX_VALUE` | Unlimited | [L129](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L129) | Local file protocol (no size limit) |
 
-The `getMaxFileSize()` function ([`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L444)) selects the limit based on `FileProtocol`:
+The `getMaxFileSize()` function ([`Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt#L442)) selects the limit based on `FileProtocol`:
 
 ```kotlin
 FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
@@ -110,7 +110,7 @@ All functions delegate to native C library functions through the chat core JNI b
 
 ### Android implementation
 
-[`Files.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt) (80 lines)
+[`Files.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt) (79 lines)
 
 | Property | Value |
 |---|---|
@@ -127,7 +127,7 @@ All functions delegate to native C library functions through the chat core JNI b
 
 ### Desktop implementation
 
-[`Files.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt) (117 lines)
+[`Files.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt) (116 lines)
 
 | Property | Value |
 |---|---|
@@ -207,7 +207,7 @@ When `auto = true`, relay approval alerts are suppressed (the file is silently r
 |---|---|---|---|
 | `CryptoFile.kt` | [`common/src/commonMain/.../model/CryptoFile.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/CryptoFile.kt) | 62 | Encrypted file read/write via native crypto |
 | `Files.kt` | [`common/src/commonMain/.../platform/Files.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) | 191 | Common file path declarations, theme I/O, file helpers |
-| `Files.android.kt` | [`common/src/androidMain/.../platform/Files.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt) | 80 | Android file path implementations |
-| `Files.desktop.kt` | [`common/src/desktopMain/.../platform/Files.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt) | 117 | Desktop file path implementations |
-| `Utils.kt` | [`common/src/commonMain/.../views/helpers/Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt) | -- | File size constants (L117--L128), `getMaxFileSize()` (L443) |
+| `Files.android.kt` | [`common/src/androidMain/.../platform/Files.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/platform/Files.android.kt) | 79 | Android file path implementations |
+| `Files.desktop.kt` | [`common/src/desktopMain/.../platform/Files.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/platform/Files.desktop.kt) | 116 | Desktop file path implementations |
+| `Utils.kt` | [`common/src/commonMain/.../views/helpers/Utils.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/helpers/Utils.kt) | -- | File size constants (L117--L128), `getMaxFileSize()` (L442) |
 | `SimpleXAPI.kt` | [`common/src/commonMain/.../model/SimpleXAPI.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt) | -- | File transfer API commands (L1911--L2085), auto-receive (L2690) |

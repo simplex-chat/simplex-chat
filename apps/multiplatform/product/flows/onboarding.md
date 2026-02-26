@@ -199,7 +199,7 @@ After the user is created and onboarding progresses, `ChatController.startChat(u
 | `Main.kt` | `desktop/.../Main.kt` | Desktop entry point |
 | `ChatController` | `model/SimpleXAPI.kt` | Core API controller, manages chat lifecycle |
 | `ChatModel` | `model/ChatModel.kt` | Global observable state |
-| `DBMigrationResult` | `model/SimpleXAPI.kt` | Database migration outcome |
+| `DBMigrationResult` | `views/helpers/DatabaseUtils.kt` | Database migration outcome |
 | `chatMigrateInit` | `platform/Core.kt` | JNI function: initialize DB and run migrations |
 | `initChatController` | `platform/Core.kt` | High-level initialization orchestrator |
 | `AppPreferences` | `model/SimpleXAPI.kt` | Persistent user preferences |

@@ -77,6 +77,7 @@ sealed class ConnectionPlan {
    - `ConnectingConfirmReconnect`: Was connecting, offer to retry.
    - `ConnectingProhibit(contact)`: Connection in progress, cannot duplicate.
    - `Known(contact)`: Already a contact.
+   - `ContactViaAddress(contact)`: Contact already exists via this address.
 
 6. For `GroupLinkPlan`:
    - `Ok`: Fresh group link, safe to join.

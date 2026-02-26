@@ -278,6 +278,6 @@ Groups support scoped conversations for member support:
 | `GroupMemberRole` | `model/ChatModel.kt` | Enum: Observer, Author, Member, Moderator, Admin, Owner |
 | `GroupMemberAdmission` | `model/ChatModel.kt` | Admission settings: review criteria |
 | `MemberCriteria` | `model/ChatModel.kt` | Enum: All (require review for all) |
-| `GroupLink` | `model/SimpleXAPI.kt` | Group link: connLinkContact, memberRole |
-| `GroupChatScope` | `model/SimpleXAPI.kt` | Scoped conversation within a group |
+| `GroupLink` | `model/SimpleXAPI.kt` | Group link: connLinkContact, acceptMemberRole, userContactLinkId, shortLinkDataSet, shortLinkLargeDataSet, groupLinkId |
+| `GroupChatScope` | `model/ChatModel.kt` | Scoped conversation within a group |
 | `ConnectionPlan.GroupLink` | `model/SimpleXAPI.kt` | Plan result when connecting via a group link |

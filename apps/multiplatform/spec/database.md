@@ -151,7 +151,7 @@ The full initialization sequence is in [Core.kt#L62](common/src/commonMain/kotli
 4. Parse the result as `DBMigrationResult`.
 5. If the result is `ErrorMigration` with an `Upgrade` error and confirmation allows it, re-run `chatMigrateInit` with the appropriate confirmation (`"yesUp"`).
 6. If `OK`, store the `ChatCtrl` handle, set `chatDbEncrypted`, and proceed to start the chat.
-7. If not `OK`, handle special case: if the database was only partially initialized (single DB file exists), remove both files and retry once.
+7. If not `OK`, handle special case: if the `newDatabaseInitialized` preference is not set AND the database was only partially initialized (single DB file exists), remove both files and retry once.
 
 <a id="DBMigrationResult"></a>
 

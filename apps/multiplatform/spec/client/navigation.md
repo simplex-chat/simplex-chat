@@ -1,6 +1,6 @@
 # Navigation Specification
 
-Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (467 lines)
+Source: `common/src/commonMain/kotlin/chat/simplex/common/App.kt` (470 lines)
 
 ---
 
@@ -365,15 +365,15 @@ The stage value is stored in `appPrefs.onboardingStage` and persisted across app
 | `views/helpers/ModalView.kt` | ModalManager class, ModalPlacement enum, modal stack management |
 | `views/onboarding/OnboardingView.kt` | OnboardingStage enum |
 | `views/onboarding/SimpleXInfo.kt` | Step 1: App introduction |
-| `views/CreateFirstProfile.kt` | Step 2: Profile creation |
-| `views/onboarding/LinkAMobile.kt` | Desktop: Link a mobile device |
+| `views/WelcomeView.kt` | Step 2: Profile creation (CreateFirstProfile) |
+| `views/onboarding/LinkAMobileView.kt` | Desktop: Link a mobile device |
 | `views/onboarding/SetupDatabasePassphrase.kt` | Step 2.5: Database passphrase |
-| `views/onboarding/OnboardingConditionsView.kt` | Step 3: Server operators and conditions |
+| `views/onboarding/ChooseServerOperators.kt` | Step 3: Server operators and conditions |
 | `views/onboarding/SetNotificationsMode.kt` | Step 4: Notification setup |
 | `views/chatlist/ChatListView.kt` | Chat list (StartPartOfScreen content) |
 | `views/chatlist/UserPicker.kt` | User switching panel |
 | `views/chat/ChatView.kt` | Chat view (CenterPartOfScreen content) |
 | `views/database/DatabaseErrorView.kt` | Database error recovery |
 | `views/SplashView.kt` | Splash / loading screen |
-| `views/call/ActiveCallView.kt` | In-call fullscreen view |
-| `views/localauth/VerticalDivider.kt` | Column divider utility |
+| `views/call/CallView.kt` | In-call fullscreen view (ActiveCallView) |
+| `views/localauth/PasswordEntry.kt` | Column divider utility (contains VerticalDivider) |

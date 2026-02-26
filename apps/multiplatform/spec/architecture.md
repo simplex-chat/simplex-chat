@@ -250,15 +250,30 @@ main()
 ```kotlin
 // SimpleXAPI.kt line 660
 private fun startReceiver() {
+    if (receiverJob != null || chatCtrl == null) return  // guard against double-start
     receiverJob = CoroutineScope(Dispatchers.IO).launch {
+        var releaseLock: (() -> Unit) = {}
         while (isActive) {
-            val ctrl = chatCtrl ?: break
-            val msg = recvMsg(ctrl)         // calls chatRecvMsgWait with 300s timeout
-            if (msg != null) {
-                withTimeoutOrNull(60_000L) {
-                    processReceivedMsg(msg)  // dispatch to ChatModel state updates
-                    messagesChannel.trySend(msg)
+            val ctrl = chatCtrl
+            if (ctrl == null) { stopReceiver(); break }  // chatCtrl became null
+            try {
+                val release = releaseLock
+                launch { delay(30000); release() }       // release previous wake lock after 30s
+                val msg = recvMsg(ctrl)                   // calls chatRecvMsgWait with 300s timeout
+                releaseLock = getWakeLock(timeout = 60000) // acquire wake lock (60s timeout)
+                if (msg != null) {
+                    val finished = withTimeoutOrNull(60_000L) {
+                        processReceivedMsg(msg)
+                        messagesChannel.trySend(msg)
+                    }
+                    if (finished == null) {
+                        Log.e(TAG, "Timeout processing: " + msg.responseType)
+                    }
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "recvMsg/processReceivedMsg exception: " + e.stackTraceToString())
+            } catch (e: Throwable) {
+                Log.e(TAG, "recvMsg/processReceivedMsg throwable: " + e.stackTraceToString())
             }
         }
     }
@@ -286,7 +301,7 @@ private fun startReceiver() {
 
 ### Wake Lock
 
-On Android, the receiver acquires a wake lock via [`getWakeLock(timeout)`](../common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt#L3) (expect function) for each received message, releasing it after 30 seconds (or the timeout) to ensure processing completes before the CPU sleeps.
+On Android, the receiver acquires a wake lock via [`getWakeLock(timeout)`](../common/src/commonMain/kotlin/chat/simplex/common/platform/SimplexService.kt#L3) (expect function) after each received message with a 60-second timeout. The previous iteration's wake lock is released after a 30-second delay, ensuring overlap so the CPU does not sleep between messages.
 
 ---
 

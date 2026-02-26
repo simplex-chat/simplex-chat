@@ -44,6 +44,7 @@ Horizontal row of action buttons:
 |---|---|
 | Search | Triggers `onSearchClicked` callback to search messages in chat |
 | Mute/Unmute | Toggle notification mode |
+| Add members | Opens `AddGroupMembersView` (shown when user has admin+ role and `groupInfo.canAddMembers`) |
 
 ### Group Management Section
 
@@ -55,8 +56,8 @@ Available actions depend on role (`GroupMemberRole`):
 | Add members | Admin | Opens `AddGroupMembersView` to invite contacts |
 | Manage group link | Admin | Opens `GroupLinkView` to create/share/delete group link |
 | Member support | Moderator | Opens `MemberSupportView` to manage member support chats |
-| Edit welcome message | Admin | Opens `GroupWelcomeView` to set the auto-sent welcome text |
-| Group preferences | Owner | Opens `GroupPreferencesView` for feature toggles |
+| Edit welcome message | Owner | Opens `GroupWelcomeView` to set the auto-sent welcome text |
+| Group preferences | Any | Opens `GroupPreferencesView` (read-only; only owners can change settings) |
 
 ### Chat Preferences
 

@@ -10,12 +10,13 @@ Create new contacts, groups, or connect with others via one-time invitation link
 
 - **Entry point**: Tap the new chat button (pencil icon) in `ChatListView` toolbar or FAB
 - **Presented by**: `NewChatSheet` modal from `ChatListView` via `showNewChatSheet()`; wraps `NewChatView` and group creation in `ModalManager.start`
-- **Internal navigation**: `NewChatSheet` provides options:
-  - "New chat" -- opens `NewChatView` (1-time link / connect tabs)
+- **Internal navigation**: `NewChatSheet` provides 3 action buttons:
+  - "Create 1-time link" -- opens `NewChatView` with `INVITE` tab (generate and share a one-time invitation link)
+  - "Scan / paste link" -- opens `NewChatView` with `CONNECT` tab (scan QR code or paste a received link)
   - "Create group" -- opens `AddGroupView`
 - **Tabs within NewChatView**: `HorizontalPager` with `TabRow` toggles between `NewChatOption.INVITE` (1-time link) and `NewChatOption.CONNECT` (connect via link)
 - **Swipe gesture**: Left/right swipe switches between tabs (Android only; `userScrollEnabled = appPlatform.isAndroid`)
-- **Dismiss behavior**: On dispose, `showKeepInvitationAlert()` asks whether to keep an unused invitation link or delete it via `controller.deleteChat()`
+- **Dismiss behavior**: On dispose, a `DisposableEffect` shows an alert dialog (via `AlertManager.shared.showAlertDialog`) asking whether to keep an unused invitation link or delete it via `controller.deleteChat()`
 
 ## Page Sections
 

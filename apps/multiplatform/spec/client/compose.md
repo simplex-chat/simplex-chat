@@ -270,7 +270,7 @@ sealed class RecordingState {
 }
 ```
 
-Voice recording below 300ms is auto-cancelled.
+Voice recording of 300ms or less is auto-cancelled.
 
 ### Disabled State
 

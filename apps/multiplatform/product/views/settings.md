@@ -79,6 +79,16 @@ Organized in sections:
 | Send link previews | `privacyLinkPreviews` | Auto-generate link preview cards |
 | Sanitize links | `privacySanitizeLinks` | Strip tracking parameters from URLs |
 | Show last messages | `privacyShowChatPreviews` | Show message previews in chat list |
+| Message draft | `privacySaveLastDraft` | Save unsent message draft for each chat |
+
+**Files Section**:
+
+| Setting | Preference Key | Description |
+|---|---|---|
+| Encrypt local files | `privacyEncryptLocalFiles` | Encrypt files stored on device |
+| Auto-accept images | `privacyAcceptImages` | Automatically download received images |
+| Blur media radius | `privacyMediaBlurRadius` | Blur radius for media previews |
+| Protect IP address | `privacyAskToApproveRelays` | Prompt before connecting to unknown file relays to protect IP address |
 
 #### Appearance (`AppearanceView`)
 

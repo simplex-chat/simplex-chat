@@ -28,9 +28,8 @@ Custom toolbar with themed background:
 | Back button | Returns to chat list; stops audio/video playback |
 | Contact/Group avatar | Small profile image in toolbar |
 | Chat name | Display name; tappable to open info view |
-| Encryption badge | Shows PQ (post-quantum) or standard E2E encryption status |
-| Call buttons | Audio and video call icons (direct chats only); triggers `CallManager` |
-| Search button | Toggles in-chat message search (`showSearch`) |
+| Verified shield | Shows verified contact checkmark (direct chats with verified contacts only) |
+| More menu button | Opens overflow menu containing search and audio/video call buttons (call buttons shown in direct chats only) |
 | Info button | Opens `ChatInfoView` (direct) or `GroupChatInfoView` (group) |
 | Reports count | Badge for group reports count; taps open reports view |
 | Support chats | Badge for member support; taps open support chat view |
@@ -95,7 +94,7 @@ Bottom input area for composing messages:
 | Element | Description |
 |---|---|
 | Text field | `PlatformTextField` with markdown support, `@mention` autocomplete, file paste support |
-| Attachment button | Opens `ModalBottomSheetLayout` with options: camera, gallery, file, voice |
+| Attachment button | Opens `ModalBottomSheetLayout` with options: camera, gallery (image/video), file |
 | Send button | Sends message; changes to checkmark for reports; animated size/alpha |
 | Voice record button | Shown when text is empty and voice allowed; hold to record, release to preview |
 | Live message button | Start/update live typing message (if `liveMessageAlertShown`) |
@@ -118,10 +117,9 @@ Shown when `selectedChatItems != null`:
 
 | Button | Description |
 |---|---|
-| Delete | Delete selected messages (for self, or for everyone if allowed by `fullDeleteAllowed`) |
+| Delete / Archive | Delete selected messages (for self, or for everyone if allowed by `fullDeleteAllowed`); shown as Archive for report items (group moderators only) |
 | Forward | Forward selected messages to another chat |
 | Moderate | Delete selected messages for all members (group moderators only) |
-| Archive | Archive selected reports (group moderators only) |
 
 ### Timed/Disappearing Messages
 

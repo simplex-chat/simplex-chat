@@ -62,16 +62,21 @@ Each row rendered by `UserView` -> `UserProfilePickerItem`:
 | Muted indicator | `ic_notifications_off` icon when profile notifications are muted |
 | Hidden indicator | `ic_lock` icon for hidden profiles (only shown when revealed via password) |
 
+#### Profile Row Tap Action
+
+| Action | Description |
+|---|---|
+| Switch active | Tapping a profile row calls `changeActiveUser()` to activate the selected profile; all chats switch context |
+
 #### Profile Actions (Context Menu)
 
 Available via long-press / right-click on a profile row (`DefaultDropdownMenu`):
 
 | Action | Condition | Description |
 |---|---|---|
-| Switch active | Different from current | `changeActiveUser()` activates the selected profile; all chats switch context |
 | Mute | Visible, notifications on | `apiMuteUser()` mutes notifications; shows `showMuteProfileAlert` on first use |
 | Unmute | Visible, notifications off | `apiUnmuteUser()` restores notifications |
-| Hide | Visible, not active, multiple visible users | Opens `HiddenProfileView` to set password |
+| Hide | Visible, multiple visible users | Opens `HiddenProfileView` to set password |
 | Unhide | Hidden profile | `apiUnhideUser()` with password entry (`ProfileActionView` with `UserProfileAction.UNHIDE`) |
 | Delete | Any non-sole profile | Delete with confirmation dialog; options: "Delete with connections" (removes SMP queues) or "Delete data only" |
 

@@ -64,7 +64,7 @@ All message operations flow through the Haskell core via `ChatController.apiSend
 1. User picks or records a video.
 2. A thumbnail image is extracted and resized.
 3. The video file is saved and optionally encrypted.
-4. On send, `msgContent` is `MsgContent.MCVideo(text, thumbnailBase64, durationSeconds)`.
+4. On send, `msgContent` is `MsgContent.MCVideo(text, image, duration)`.
 
 ### 2.3 Voice Message
 
@@ -87,7 +87,7 @@ All message operations flow through the Haskell core via `ChatController.apiSend
 
 ## 4. Receiving Messages
 
-1. The `ChatController` receiver loop calls `chatRecvMsg` / `chatRecvMsgWait` on the Haskell core.
+1. The `ChatController` receiver loop calls `chatRecvMsgWait` on the Haskell core.
 2. Incoming messages arrive as `CR.NewChatItems` events.
 3. `ChatModel` chat items list is updated, triggering recomposition.
 4. For media messages, images below `MAX_IMAGE_SIZE_AUTO_RCV` (510 KB), videos below `MAX_VIDEO_SIZE_AUTO_RCV` (1023 KB), and voice notes below `MAX_VOICE_SIZE_AUTO_RCV` (510 KB) are auto-received if `privacyAcceptImages` is enabled.
@@ -110,7 +110,7 @@ All message operations flow through the Haskell core via `ChatController.apiSend
 ## 6. Deleting a Message
 
 1. User long-presses a message and selects "Delete".
-2. A delete mode is chosen: `CIDeleteMode.cidmBroadcast` (delete for everyone) or `CIDeleteMode.cidmInternal` (delete for self).
+2. A delete mode is chosen: `CIDeleteMode.cidmBroadcast` (delete for everyone), `CIDeleteMode.cidmInternal` (delete for self), or `CIDeleteMode.cidmInternalMark` (mark as deleted internally).
 3. `ChatController.apiDeleteChatItems(rh, type, id, scope, itemIds, mode)` is called.
 4. The core responds with `CR.ChatItemsDeleted`, returning a list of `ChatItemDeletion`.
 5. For group chats by moderators, `apiDeleteMemberChatItems(rh, groupId, itemIds)` is used.
@@ -192,4 +192,4 @@ All message operations flow through the Haskell core via `ChatController.apiSend
 | `MsgContent` | `model/ChatModel.kt` | Sealed class: MCText, MCLink, MCImage, MCVideo, MCVoice, MCFile, MCReport, MCChat, MCUnknown |
 | `LiveMessage` | `views/chat/ComposeView.kt` | Tracks live message state |
 | `MsgReaction` | `model/ChatModel.kt` | Emoji reaction type |
-| `ChatItemDeletion` | `model/SimpleXAPI.kt` | Deletion result with old/new item |
+| `ChatItemDeletion` | `model/ChatModel.kt` | Deletion result with old/new item |
