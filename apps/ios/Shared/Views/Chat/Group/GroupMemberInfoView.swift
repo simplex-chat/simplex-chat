@@ -148,7 +148,7 @@ struct GroupMemberInfoView: View {
                     }
 
                     Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
-                        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Group" : "Chat"
+                        let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
                         // TODO [relays] role changing is not supported for channels currently
@@ -651,7 +651,7 @@ struct GroupMemberInfoView: View {
         Button(role: .destructive) {
             showRemoveMemberAlert(groupInfo, mem, dismiss: dismiss)
         } label: {
-            Label("Remove member", systemImage: "trash")
+            Label(groupInfo.useRelays ? "Remove subscriber" : "Remove member", systemImage: "trash")
                 .foregroundColor(.red)
         }
     }
@@ -831,7 +831,7 @@ func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSet
 
 func blockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
     Alert(
-        title: Text("Block member for all?"),
+        title: Text(gInfo.useRelays ? "Block subscriber for all?" : "Block member for all?"),
         message: Text("All new messages from \(mem.chatViewName) will be hidden!"),
         primaryButton: .destructive(Text("Block for all")) {
             blockMemberForAll(gInfo, mem, true)
@@ -842,7 +842,7 @@ func blockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
 
 func unblockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
     Alert(
-        title: Text("Unblock member for all?"),
+        title: Text(gInfo.useRelays ? "Unblock subscriber for all?" : "Unblock member for all?"),
         message: Text("Messages from \(mem.chatViewName) will be shown!"),
         primaryButton: .default(Text("Unblock for all")) {
             blockMemberForAll(gInfo, mem, false)

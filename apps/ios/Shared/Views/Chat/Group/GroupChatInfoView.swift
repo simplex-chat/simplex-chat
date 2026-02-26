@@ -876,10 +876,12 @@ struct GroupChatInfoView: View {
 
 func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
     showAlert(
-        NSLocalizedString("Remove member?", comment: "alert title"),
+        groupInfo.useRelays
+        ? NSLocalizedString("Remove subscriber?", comment: "alert title")
+        : NSLocalizedString("Remove member?", comment: "alert title"),
         message:
             groupInfo.useRelays
-            ? NSLocalizedString("Member will be removed from channel - this cannot be undone!", comment: "alert message")
+            ? NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message")
             : groupInfo.businessChat == nil
             ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
             : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
