@@ -102,7 +102,9 @@ struct GroupChatInfoView: View {
                                     Label("Share link", systemImage: "square.and.arrow.up")
                                 }
                             }
-                            channelMembersButton(members)
+                            if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
+                                channelMembersButton()
+                            }
                         } footer: {
                             if !groupInfo.isOwner && groupInfo.groupProfile.groupLink != nil {
                                 Text("You can share a link or a QR code - anybody will be able to join the channel.")
@@ -201,8 +203,8 @@ struct GroupChatInfoView: View {
                     }
 
                     Section {
-                        if groupInfo.useRelays {
-                            channelRelaysButton(members)
+                        if groupInfo.useRelays && (groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole == .relay })) {
+                            channelRelaysButton()
                         }
                         clearChatButton()
                         if groupInfo.canDelete {
@@ -613,32 +615,26 @@ struct GroupChatInfoView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 
-    @ViewBuilder private func channelMembersButton(_ members: [GMember]) -> some View {
-        let hasOwners = groupInfo.isOwner || members.contains { $0.wrapped.memberRole >= .owner }
-        if groupInfo.isOwner || hasOwners {
-            let label: LocalizedStringKey = groupInfo.isOwner ? "Owners & subscribers" : "Owners"
-            NavigationLink {
-                ChannelMembersView(chat: chat, groupInfo: groupInfo)
-                    .navigationTitle(label)
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.large)
-            } label: {
-                Label(label, systemImage: "person.2")
-            }
+    private func channelMembersButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.isOwner ? "Owners & subscribers" : "Owners"
+        return NavigationLink {
+            ChannelMembersView(chat: chat, groupInfo: groupInfo)
+                .navigationTitle(label)
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label(label, systemImage: "person.2")
         }
     }
 
-    @ViewBuilder private func channelRelaysButton(_ members: [GMember]) -> some View {
-        let hasRelays = groupInfo.isOwner || members.contains { $0.wrapped.memberRole == .relay }
-        if hasRelays {
-            NavigationLink {
-                ChannelRelaysView(chat: chat, groupInfo: groupInfo)
-                    .navigationTitle("Chat relays")
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.large)
-            } label: {
-                Label("Chat relays", systemImage: "externaldrive.connected.to.line.below")
-            }
+    private func channelRelaysButton() -> some View {
+        NavigationLink {
+            ChannelRelaysView(chat: chat, groupInfo: groupInfo)
+                .navigationTitle("Chat relays")
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Chat relays", systemImage: "externaldrive.connected.to.line.below")
         }
     }
 
