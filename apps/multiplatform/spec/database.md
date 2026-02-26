@@ -39,21 +39,21 @@ Both databases are created and migrated by the `chatMigrateInit` JNI function. T
 The common module declares platform-dependent paths as `expect` values in [Files.kt](common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt):
 
 ```kotlin
-expect val dataDir: File              // L17
-expect val tmpDir: File               // L18
-expect val filesDir: File             // L19
-expect val appFilesDir: File          // L20
-expect val wallpapersDir: File        // L21
-expect val coreTmpDir: File           // L22
-expect val dbAbsolutePrefixPath: String  // L23
-expect val preferencesDir: File       // L24
-expect val preferencesTmpDir: File    // L25
+expect val dataDir: File              // L18
+expect val tmpDir: File               // L19
+expect val filesDir: File             // L20
+expect val appFilesDir: File          // L21
+expect val wallpapersDir: File        // L22
+expect val coreTmpDir: File           // L23
+expect val dbAbsolutePrefixPath: String  // L24
+expect val preferencesDir: File       // L25
+expect val preferencesTmpDir: File    // L26
 
-expect val chatDatabaseFileName: String  // L27
-expect val agentDatabaseFileName: String // L28
+expect val chatDatabaseFileName: String  // L28
+expect val agentDatabaseFileName: String // L29
 
-expect val databaseExportDir: File    // L34
-expect val remoteHostsDir: File       // L36
+expect val databaseExportDir: File    // L35
+expect val remoteHostsDir: File       // L37
 ```
 
 ### Android Actual Values

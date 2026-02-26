@@ -167,7 +167,7 @@ enum class DefaultTheme {
 
 <a id="AppColors"></a>
 
-### AppColors (line 51)
+### AppColors (line 53)
 
 [`Theme.kt` L53](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L53):
 
@@ -187,7 +187,7 @@ Mutable state properties (for efficient recomposition) representing chat-specifi
 
 <a id="AppWallpaper"></a>
 
-### AppWallpaper (line 103)
+### AppWallpaper (line 106)
 
 [`Theme.kt` L106](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L106):
 
@@ -204,7 +204,7 @@ Represents the active wallpaper state with optional background color, tint overl
 
 <a id="ThemeColor"></a>
 
-### ThemeColor (line 136)
+### ThemeColor (line 140)
 
 Enum of all customizable color slots:
 
@@ -214,7 +214,7 @@ Each has a `fromColors()` method to extract the current value and a `text` prope
 
 <a id="ThemeColors"></a>
 
-### ThemeColors (line 178)
+### ThemeColors (line 183)
 
 [`Theme.kt` L183](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt#L183):
 
@@ -491,7 +491,7 @@ Uses the [kaml](https://github.com/charleskorn/kaml) YAML library for serializat
 | File | Path | Lines | Description |
 |---|---|---|---|
 | `ThemeManager.kt` | [`common/src/commonMain/.../ui/theme/ThemeManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/ThemeManager.kt) | 241 | Theme resolution, persistence, color/wallpaper management |
-| `Theme.kt` | [`common/src/commonMain/.../ui/theme/Theme.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt) | 838 | Type definitions, color palettes, `SimpleXTheme` composable |
-| `Theme.android.kt` | [`common/src/androidMain/.../ui/theme/Theme.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/ui/theme/Theme.android.kt) | 7 | Android `isSystemInDarkTheme` |
-| `Theme.desktop.kt` | [`common/src/desktopMain/.../ui/theme/Theme.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/ui/theme/Theme.desktop.kt) | 26 | Desktop `isSystemInDarkTheme` via OsThemeDetector |
-| `Files.kt` | [`common/src/commonMain/.../platform/Files.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) | 191 | `readThemeOverrides()` (L124), `writeThemeOverrides()` (L150) |
+| `Theme.kt` | [`common/src/commonMain/.../ui/theme/Theme.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/ui/theme/Theme.kt) | 848 | Type definitions, color palettes, `SimpleXTheme` composable |
+| `Theme.android.kt` | [`common/src/androidMain/.../ui/theme/Theme.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/ui/theme/Theme.android.kt) | 6 | Android `isSystemInDarkTheme` |
+| `Theme.desktop.kt` | [`common/src/desktopMain/.../ui/theme/Theme.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/ui/theme/Theme.desktop.kt) | 25 | Desktop `isSystemInDarkTheme` via OsThemeDetector |
+| `Files.kt` | [`common/src/commonMain/.../platform/Files.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt) | 191 | `readThemeOverrides()` (L125), `writeThemeOverrides()` (L151) |

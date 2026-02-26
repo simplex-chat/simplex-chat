@@ -126,24 +126,24 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 
 | # | Function | Signature | Line | Purpose |
 |---|---|---|---|---|
-| 1 | [`initHS()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L18) | `external fun initHS()` | 17 | Initialize GHC runtime system |
-| 2 | [`pipeStdOutToSocket()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L20) | `external fun pipeStdOutToSocket(socketName: String): Int` | 19 | Redirect Haskell stdout to Android local socket for logging |
-| 3 | [`chatMigrateInit()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L25) | `external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>` | 23 | Initialize database with migration; returns `[jsonResult, chatCtrl]` |
-| 4 | [`chatCloseStore()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L26) | `external fun chatCloseStore(ctrl: ChatCtrl): String` | 24 | Close database store |
-| 5 | [`chatSendCmdRetry()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L27) | `external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String` | 25 | Send command to core with retry count |
-| 6 | [`chatSendRemoteCmdRetry()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L28) | `external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String` | 26 | Send command to remote host |
-| 7 | [`chatRecvMsg()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L29) | `external fun chatRecvMsg(ctrl: ChatCtrl): String` | 27 | Receive message (non-blocking) |
-| 8 | [`chatRecvMsgWait()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L30) | `external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String` | 28 | Receive message with timeout (blocking up to `timeout` microseconds) |
-| 9 | [`chatParseMarkdown()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L31) | `external fun chatParseMarkdown(str: String): String` | 29 | Parse markdown formatting |
-| 10 | [`chatParseServer()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L32) | `external fun chatParseServer(str: String): String` | 30 | Parse SMP/XFTP server address |
-| 11 | [`chatParseUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L33) | `external fun chatParseUri(str: String, safe: Int): String` | 31 | Parse SimpleX connection URI |
-| 12 | [`chatPasswordHash()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L34) | `external fun chatPasswordHash(pwd: String, salt: String): String` | 32 | Hash password with salt |
-| 13 | [`chatValidName()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L35) | `external fun chatValidName(name: String): String` | 33 | Validate/sanitize display name |
-| 14 | [`chatJsonLength()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L36) | `external fun chatJsonLength(str: String): Int` | 34 | Get JSON-encoded string length |
-| 15 | [`chatWriteFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L37) | `external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String` | 35 | Write encrypted file via core |
-| 16 | [`chatReadFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L38) | `external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>` | 36 | Read and decrypt file |
-| 17 | [`chatEncryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39) | `external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String` | 37 | Encrypt file on disk |
-| 18 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L40) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 38 | Decrypt file on disk |
+| 1 | [`initHS()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L18) | `external fun initHS()` | 18 | Initialize GHC runtime system |
+| 2 | [`pipeStdOutToSocket()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L20) | `external fun pipeStdOutToSocket(socketName: String): Int` | 20 | Redirect Haskell stdout to Android local socket for logging |
+| 3 | [`chatMigrateInit()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L25) | `external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>` | 25 | Initialize database with migration; returns `[jsonResult, chatCtrl]` |
+| 4 | [`chatCloseStore()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L26) | `external fun chatCloseStore(ctrl: ChatCtrl): String` | 26 | Close database store |
+| 5 | [`chatSendCmdRetry()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L27) | `external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String` | 27 | Send command to core with retry count |
+| 6 | [`chatSendRemoteCmdRetry()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L28) | `external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String` | 28 | Send command to remote host |
+| 7 | [`chatRecvMsg()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L29) | `external fun chatRecvMsg(ctrl: ChatCtrl): String` | 29 | Receive message (non-blocking) |
+| 8 | [`chatRecvMsgWait()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L30) | `external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String` | 30 | Receive message with timeout (blocking up to `timeout` microseconds) |
+| 9 | [`chatParseMarkdown()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L31) | `external fun chatParseMarkdown(str: String): String` | 31 | Parse markdown formatting |
+| 10 | [`chatParseServer()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L32) | `external fun chatParseServer(str: String): String` | 32 | Parse SMP/XFTP server address |
+| 11 | [`chatParseUri()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L33) | `external fun chatParseUri(str: String, safe: Int): String` | 33 | Parse SimpleX connection URI |
+| 12 | [`chatPasswordHash()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L34) | `external fun chatPasswordHash(pwd: String, salt: String): String` | 34 | Hash password with salt |
+| 13 | [`chatValidName()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L35) | `external fun chatValidName(name: String): String` | 35 | Validate/sanitize display name |
+| 14 | [`chatJsonLength()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L36) | `external fun chatJsonLength(str: String): Int` | 36 | Get JSON-encoded string length |
+| 15 | [`chatWriteFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L37) | `external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String` | 37 | Write encrypted file via core |
+| 16 | [`chatReadFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L38) | `external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>` | 38 | Read and decrypt file |
+| 17 | [`chatEncryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L39) | `external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String` | 39 | Encrypt file on disk |
+| 18 | [`chatDecryptFile()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L40) | `external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String` | 40 | Decrypt file on disk |
 
 **Total: 18 external native functions** (the `ChatCtrl` type alias at [line 23](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L23) is `Long`, representing the Haskell-side controller pointer).
 
@@ -155,9 +155,9 @@ All JNI declarations reside in [`Core.kt`](../common/src/commonMain/kotlin/chat/
 
 | Function | Line | Purpose |
 |---|---|---|
-| [`initChatControllerOnStart()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L51) | 48 | Entry point called during app startup; launches `initChatController` in a long-running coroutine |
-| [`initChatController()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L62) | 58 | Main initialization: DB migration via `chatMigrateInit`, error recovery (incomplete DB removal), sets file paths, loads active user, starts chat |
-| [`chatInitTemporaryDatabase()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L190) | 185 | Creates a temporary database for migration scenarios |
+| [`initChatControllerOnStart()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L51) | 51 | Entry point called during app startup; launches `initChatController` in a long-running coroutine |
+| [`initChatController()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L62) | 62 | Main initialization: DB migration via `chatMigrateInit`, error recovery (incomplete DB removal), sets file paths, loads active user, starts chat |
+| [`chatInitTemporaryDatabase()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L190) | 190 | Creates a temporary database for migration scenarios |
 | [`chatInitControllerRemovingDatabases()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L202) | 202 | Removes existing DBs and creates fresh controller (used during re-initialization) |
 | [`showStartChatAfterRestartAlert()`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Core.kt#L222) | 222 | Shows confirmation dialog when chat was stopped and DB passphrase is stored |
 
@@ -248,7 +248,7 @@ main()
 [`ChatController.startReceiver()`](../common/src/commonMain/kotlin/chat/simplex/common/model/SimpleXAPI.kt#L660) launches a coroutine on `Dispatchers.IO` that continuously polls for events from the Haskell core:
 
 ```kotlin
-// SimpleXAPI.kt line 657
+// SimpleXAPI.kt line 660
 private fun startReceiver() {
     receiverJob = CoroutineScope(Dispatchers.IO).launch {
         while (isActive) {
@@ -303,11 +303,11 @@ Examples from platform files:
 | `expect val appPlatform: AppPlatform` | [`AppCommon.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/AppCommon.kt#L20) | 20 |
 | `expect val deviceName: String` | [`AppCommon.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/AppCommon.kt#L22) | 22 |
 | `expect fun isAppVisibleAndFocused(): Boolean` | [`AppCommon.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/AppCommon.kt#L24) | 24 |
-| `expect val dataDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L18) | 17 |
-| `expect val tmpDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L19) | 18 |
-| `expect val filesDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L20) | 19 |
-| `expect val appFilesDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L21) | 20 |
-| `expect val dbAbsolutePrefixPath: String` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L24) | 23 |
+| `expect val dataDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L18) | 18 |
+| `expect val tmpDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L19) | 19 |
+| `expect val filesDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L20) | 20 |
+| `expect val appFilesDir: File` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L21) | 21 |
+| `expect val dbAbsolutePrefixPath: String` | [`Files.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/Files.kt#L24) | 24 |
 | `expect fun showToast(text: String, timeout: Long)` | [`UI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/UI.kt#L6) | 6 |
 | `expect fun hideKeyboard(view: Any?, clearFocus: Boolean)` | [`UI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/UI.kt#L16) | 16 |
 | `expect fun getKeyboardState(): State<KeyboardState>` | [`UI.kt`](../common/src/commonMain/kotlin/chat/simplex/common/platform/UI.kt#L15) | 15 |
