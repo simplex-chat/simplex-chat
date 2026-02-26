@@ -1826,13 +1826,14 @@ func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInf
     throw r.unexpected
 }
 
-func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay]) {
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay])? {
     let userId = try currentUserId("apiNewPublicGroup")
-    let r: ChatResponse2 = try await chatSendCmd(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
-    if case let .publicGroupCreated(_, groupInfo, groupLink, groupRelays) = r {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
+    switch r {
+    case let .result(.publicGroupCreated(_, groupInfo, groupLink, groupRelays)):
         return (groupInfo, groupLink, groupRelays)
+    default: if let r { throw r.unexpected } else { return nil }
     }
-    throw r.unexpected
 }
 
 func apiGetGroupRelays(_ groupId: Int64) async -> [GroupRelay] {

@@ -20,7 +20,6 @@ struct AddChannelView: View {
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
-    @State private var showInvalidNameAlert = false
     @State private var hasRelays = true
     @State private var groupInfo: GroupInfo? = nil
     @State private var groupLink: GroupLink? = nil
@@ -30,19 +29,6 @@ struct AddChannelView: View {
     @State private var creationInProgress = false
     @State private var showLinkStep = false
     @State private var relayListExpanded = false
-    @State private var alert: AddChannelAlert? = nil
-
-    enum AddChannelAlert: Identifiable {
-        case retryableError(title: String, message: String)
-        case proceedWithPartialRelays(connectedCount: Int, totalCount: Int)
-
-        var id: String {
-            switch self {
-            case .retryableError: "retryableError"
-            case .proceedWithPartialRelays: "proceedPartial"
-            }
-        }
-    }
 
     var body: some View {
         Group {
@@ -52,23 +38,6 @@ struct AddChannelView: View {
                 progressStepView(gInfo)
             } else {
                 profileStepView()
-            }
-        }
-        .alert(item: $alert) { alertItem in
-            switch alertItem {
-            case let .retryableError(title, message):
-                Alert(
-                    title: Text(title), message: Text(message),
-                    primaryButton: .default(Text("Retry")) { createChannel() },
-                    secondaryButton: .cancel()
-                )
-            case let .proceedWithPartialRelays(connected, total):
-                Alert(
-                    title: Text("Not all relays connected"),
-                    message: Text(String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), connected, total)),
-                    primaryButton: .default(Text("Proceed")) { showLinkStep = true },
-                    secondaryButton: .cancel(Text("Wait"))
-                )
             }
         }
     }
@@ -149,9 +118,6 @@ struct AddChannelView: View {
                 await MainActor.run { showImagePicker = false }
             }
         }
-        .alert(isPresented: $showInvalidNameAlert) {
-            createInvalidNameAlert(mkValidName(profile.displayName), $profile.displayName)
-        }
         .onChange(of: chosenImage) { image in
             Task {
                 let resized: String? = if let image {
@@ -170,7 +136,7 @@ struct AddChannelView: View {
             let name = profile.displayName.trimmingCharacters(in: .whitespaces)
             if name != mkValidName(name) {
                 Button {
-                    showInvalidNameAlert = true
+                    showInvalidChannelNameAlert()
                 } label: {
                     Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                 }
@@ -208,9 +174,12 @@ struct AddChannelView: View {
                     }
                     return
                 }
-                let (gInfo, gLink, gRelays) = try await apiNewPublicGroup(
+                guard let (gInfo, gLink, gRelays) = try await apiNewPublicGroup(
                     incognito: false, relayIds: relayIds, groupProfile: profile
-                )
+                ) else {
+                    await MainActor.run { creationInProgress = false }
+                    return
+                }
                 await MainActor.run {
                     m.updateGroup(gInfo)
                     configuredRelays = Dictionary(uniqueKeysWithValues: enabledRelays.compactMap { r in
@@ -224,8 +193,8 @@ struct AddChannelView: View {
             } catch {
                 await MainActor.run {
                     creationInProgress = false
-                    alert = .retryableError(
-                        title: NSLocalizedString("Error creating channel", comment: "alert title"),
+                    showAlert(
+                        NSLocalizedString("Error creating channel", comment: "alert title"),
                         message: responseError(error)
                     )
                 }
@@ -303,7 +272,14 @@ struct AddChannelView: View {
                     if activeCount >= total {
                         showLinkStep = true
                     } else if activeCount > 0 {
-                        alert = .proceedWithPartialRelays(connectedCount: activeCount, totalCount: total)
+                        showAlert(
+                            NSLocalizedString("Not all relays connected", comment: "alert title"),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
+                            actions: {[
+                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
+                            ]}
+                        )
                     }
                 }
                 .disabled(activeCount == 0)
@@ -361,6 +337,24 @@ struct AddChannelView: View {
     }
 
     // MARK: - Helpers
+
+    private func showInvalidChannelNameAlert() {
+        let validName = mkValidName(profile.displayName)
+        if validName == "" {
+            showAlert(NSLocalizedString("Invalid name!", comment: "alert title"))
+        } else {
+            showAlert(
+                NSLocalizedString("Invalid name!", comment: "alert title"),
+                message: String.localizedStringWithFormat(NSLocalizedString("Correct name to %@?", comment: "alert message"), validName),
+                actions: {[
+                    UIAlertAction(title: NSLocalizedString("Ok", comment: "alert action"), style: .default) { _ in
+                        profile.displayName = validName
+                    },
+                    cancelAlertAction
+                ]}
+            )
+        }
+    }
 
     private func relayDisplayName(_ relay: GroupRelay) -> String {
         if let cfg = configuredRelays[relay.userChatRelayId] {

@@ -19,7 +19,6 @@ struct ChatRelayView: View {
     @Binding var relay: UserChatRelay
     @State var relayToEdit: UserChatRelay
     var backLabel: LocalizedStringKey
-    @State private var showNotImplemented = false
 
     var body: some View {
         ZStack {
@@ -34,11 +33,6 @@ struct ChatRelayView: View {
             validateServers_($userServers, $serverErrors, $serverWarnings)
             dismiss()
         })
-        .alert("Not implemented", isPresented: $showNotImplemented) {
-            Button("OK") {}
-        } message: {
-            Text("Relay testing is not yet available.")
-        }
     }
 
     private func presetRelay() -> some View {
@@ -92,7 +86,10 @@ struct ChatRelayView: View {
         Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
             HStack {
                 Button("Test relay") {
-                    showNotImplemented = true
+                    showAlert(
+                        NSLocalizedString("Not implemented", comment: "alert title"),
+                        message: NSLocalizedString("Relay testing is not yet available.", comment: "alert message")
+                    )
                 }
                 Spacer()
                 showRelayTestStatus(relay: relayToEdit)
@@ -159,7 +156,6 @@ struct NewChatRelayView: View {
         chatRelayId: nil, address: "", name: "", domains: [],
         preset: false, tested: nil, enabled: true, deleted: false
     )
-    @State private var showNotImplemented = false
 
     var body: some View {
         List {
@@ -180,7 +176,10 @@ struct NewChatRelayView: View {
             Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
                 HStack {
                     Button("Test relay") {
-                        showNotImplemented = true
+                        showAlert(
+                            NSLocalizedString("Not implemented", comment: "alert title"),
+                            message: NSLocalizedString("Relay testing is not yet available.", comment: "alert message")
+                        )
                     }
                     Spacer()
                     showRelayTestStatus(relay: relayToEdit)
@@ -191,10 +190,5 @@ struct NewChatRelayView: View {
         .modifier(BackButton(disabled: Binding.constant(false)) {
             addChatRelay(relayToEdit, $userServers, $serverErrors, $serverWarnings, operatorIndex, dismiss)
         })
-        .alert("Not implemented", isPresented: $showNotImplemented) {
-            Button("OK") {}
-        } message: {
-            Text("Relay testing is not yet available.")
-        }
     }
 }
