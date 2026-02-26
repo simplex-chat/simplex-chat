@@ -22,6 +22,7 @@ import chat.simplex.res.MR
 import kotlinx.serialization.Transient
 import java.util.UUID
 
+// Spec: spec/services/theme.md#DefaultTheme
 enum class DefaultTheme {
   LIGHT, DARK, SIMPLEX, BLACK;
 
@@ -47,6 +48,7 @@ enum class DefaultThemeMode {
   @SerialName("dark") DARK
 }
 
+// Spec: spec/services/theme.md#AppColors
 @Stable
 class AppColors(
   title: Color,
@@ -99,6 +101,7 @@ class AppColors(
   }
 }
 
+// Spec: spec/services/theme.md#AppWallpaper
 @Stable
 class AppWallpaper(
   background: Color? = null,
@@ -133,6 +136,7 @@ class AppWallpaper(
   }
 }
 
+// Spec: spec/services/theme.md#ThemeColor
 enum class ThemeColor {
   PRIMARY, PRIMARY_VARIANT, SECONDARY, SECONDARY_VARIANT, BACKGROUND, SURFACE, TITLE, SENT_MESSAGE, SENT_QUOTE, RECEIVED_MESSAGE, RECEIVED_QUOTE, PRIMARY_VARIANT2, WALLPAPER_BACKGROUND, WALLPAPER_TINT;
 
@@ -174,6 +178,7 @@ enum class ThemeColor {
     }
 }
 
+// Spec: spec/services/theme.md#ThemeColors
 @Serializable
 data class ThemeColors(
   @SerialName("accent")
@@ -214,6 +219,7 @@ data class ThemeColors(
   }
 }
 
+// Spec: spec/services/theme.md#ThemeWallpaper
 @Serializable
 data class ThemeWallpaper (
   val preset: String? = null,
@@ -293,6 +299,7 @@ data class ThemesFile(
   val themes: List<ThemeOverrides> = emptyList()
 )
 
+// Spec: spec/services/theme.md#ThemeOverrides
 @Serializable
 data class ThemeOverrides (
   val themeId: String = UUID.randomUUID().toString(),
@@ -463,6 +470,7 @@ fun List<ThemeOverrides>.skipDuplicates(): List<ThemeOverrides> {
   return res
 }
 
+// Spec: spec/services/theme.md#ThemeModeOverrides
 @Serializable
 data class ThemeModeOverrides (
   val light: ThemeModeOverride? = null,
@@ -474,6 +482,7 @@ data class ThemeModeOverrides (
   }
 }
 
+// Spec: spec/services/theme.md#ThemeModeOverride
 @Serializable
 data class ThemeModeOverride (
   val mode: DefaultThemeMode = CurrentColors.value.base.mode,
@@ -714,6 +723,7 @@ val BlackColorPaletteApp = AppColors(
 
 var systemInDarkThemeCurrently: Boolean = isInNightMode()
 
+// Spec: spec/services/theme.md#CurrentColors
 val CurrentColors: MutableStateFlow<ThemeManager.ActiveTheme> = MutableStateFlow(ThemeManager.currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPreferences.themeOverrides.get()))
 
 @Composable
@@ -758,6 +768,7 @@ fun reactOnDarkThemeChanges(isDark: Boolean) {
   }
 }
 
+// Spec: spec/services/theme.md#SimpleXTheme
 @Composable
 fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
 // TODO: Fix preview working with dark/light theme

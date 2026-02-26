@@ -122,6 +122,7 @@ fun ToggleChatListCard() {
   }
 }
 
+// Spec: spec/client/chat-list.md#ChatListView
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
