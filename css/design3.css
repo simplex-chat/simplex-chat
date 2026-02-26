@@ -816,6 +816,10 @@ main .section-bg {
     max-width: calc(var(--sec-vwu)*31) !important;
 }
 
+.page-3 .text-container a {
+    max-width: calc(var(--sec-vwu)*31) !important;
+}
+
 .page-3 .text-container,
 .page-4 .text-container {
     margin-left: auto;
@@ -920,7 +924,6 @@ main .section-bg {
         font-size: calc(var(--sec-vwu) * 5.5);
         max-width: calc(var(--sec-vwu) * 93);
     }
-
 
     /* --- MAIN SECTIONS --- */
     .page .text-container {

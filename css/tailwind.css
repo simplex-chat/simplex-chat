@@ -672,6 +672,11 @@ video {
   margin-right: 1.25rem;
 }
 
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .my-10 {
   margin-top: 2.5rem;
   margin-bottom: 2.5rem;
@@ -1057,6 +1062,10 @@ video {
   min-height: inherit;
 }
 
+.min-h-screen {
+  min-height: 100vh;
+}
+
 .w-4 {
   width: 1rem;
 }
@@ -1167,6 +1176,10 @@ video {
 
 .max-w-\[617px\] {
   max-width: 617px;
+}
+
+.max-w-\[680px\] {
+  max-width: 680px;
 }
 
 .max-w-\[900px\] {
@@ -1623,6 +1636,11 @@ video {
   padding-bottom: 0.5rem;
 }
 
+.py-24 {
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+}
+
 .py-3 {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
@@ -1781,6 +1799,10 @@ video {
   font-size: 35px;
 }
 
+.text-\[36px\] {
+  font-size: 36px;
+}
+
 .text-\[38px\] {
   font-size: 38px;
 }
@@ -1833,6 +1855,22 @@ video {
   line-height: 1.5rem;
 }
 
+.leading-\[1\.15\] {
+  line-height: 1.15;
+}
+
+.leading-\[1\.2\] {
+  line-height: 1.2;
+}
+
+.leading-\[1\.5\] {
+  line-height: 1.5;
+}
+
+.leading-\[1\.6\] {
+  line-height: 1.6;
+}
+
 .leading-\[19px\] {
   line-height: 19px;
 }
@@ -1871,6 +1909,10 @@ video {
 
 .leading-\[46px\] {
   line-height: 46px;
+}
+
+.tracking-\[-0\.01em\] {
+  letter-spacing: -0.01em;
 }
 
 .tracking-\[0\.01em\] {
@@ -2369,6 +2411,10 @@ video {
     margin-bottom: 0px;
   }
 
+  .md\:mb-14 {
+    margin-bottom: 3.5rem;
+  }
+
   .md\:mb-16 {
     margin-bottom: 4rem;
   }
@@ -2507,6 +2553,11 @@ video {
     padding-bottom: 4rem;
   }
 
+  .md\:py-32 {
+    padding-top: 8rem;
+    padding-bottom: 8rem;
+  }
+
   .md\:py-7 {
     padding-top: 1.75rem;
     padding-bottom: 1.75rem;
@@ -2530,12 +2581,24 @@ video {
     font-size: 20px;
   }
 
+  .md\:text-\[24px\] {
+    font-size: 24px;
+  }
+
   .md\:text-\[35px\] {
     font-size: 35px;
   }
 
+  .md\:text-\[36px\] {
+    font-size: 36px;
+  }
+
   .md\:text-\[38px\] {
     font-size: 38px;
+  }
+
+  .md\:text-\[40px\] {
+    font-size: 40px;
   }
 
   .md\:text-\[55px\] {
@@ -2703,6 +2766,11 @@ video {
     padding-right: 50px;
   }
 
+  .lg\:py-40 {
+    padding-top: 10rem;
+    padding-bottom: 10rem;
+  }
+
   .lg\:py-\[50px\] {
     padding-top: 50px;
     padding-bottom: 50px;
@@ -2714,6 +2782,14 @@ video {
 
   .lg\:text-center {
     text-align: center;
+  }
+
+  .lg\:text-\[22px\] {
+    font-size: 22px;
+  }
+
+  .lg\:text-\[26px\] {
+    font-size: 26px;
   }
 
   .lg\:text-\[32px\] {
@@ -2728,8 +2804,16 @@ video {
     font-size: 38px;
   }
 
+  .lg\:text-\[40px\] {
+    font-size: 40px;
+  }
+
   .lg\:text-\[45px\] {
     font-size: 45px;
+  }
+
+  .lg\:text-\[46px\] {
+    font-size: 46px;
   }
 
   .lg\:text-\[65px\] {
