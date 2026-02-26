@@ -279,6 +279,7 @@ p {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
+    text-decoration: none;
 }
 
 .dark .gradient-text,
@@ -428,7 +429,7 @@ section.cover div.content h2 {
 section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: calc(var(--sec-vwu) * 2.4);
+    font-size: calc(var(--sec-vwu) * 2.14);
     align-items: center;
     color: #ffffff;
     max-width: calc(var(--sec-vwu) * 53);
@@ -916,7 +917,7 @@ main .section-bg {
 
     section.cover div.content h2 {
         font-weight: 500;
-        font-size: calc(var(--sec-vwu) * 11.5);
+        font-size: calc(var(--sec-vwu) * 12.85);
     }
 
     section.cover div.content p {
