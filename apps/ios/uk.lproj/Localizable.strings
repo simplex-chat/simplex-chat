@@ -1718,7 +1718,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Видалити повідомлення?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Видалити повідомлення";
 
 /* No comment provided by engineer. */
@@ -3263,10 +3264,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Роль учасника буде змінено на \"%@\". Учасник отримає нове запрошення.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Учасника буде видалено з чату – це неможливо скасувати!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Учасник буде видалений з групи - це неможливо скасувати!";
 
 /* alert message */
@@ -4317,7 +4318,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Сервер ретрансляції захищає вашу IP-адресу, але він може спостерігати за тривалістю дзвінка.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Видалити";
 
 /* No comment provided by engineer. */
@@ -4329,7 +4330,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Видалити учасника";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Видалити учасника?";
 
 /* No comment provided by engineer. */

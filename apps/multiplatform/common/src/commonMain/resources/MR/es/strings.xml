@@ -1732,7 +1732,7 @@
     <string name="download_file">Descargar</string>
     <string name="forward_chat_item">Reenviar</string>
     <string name="forwarded_chat_item_info_tab">Reenviado</string>
-    <string name="forward_message">Mensaje reenviado…</string>
+    <string name="forward_message">Reenviando mensaje…</string>
     <string name="recipients_can_not_see_who_message_from">Los destinatarios no ven de quién procede este mensaje.</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="network_option_rcv_concurrency">Concurrencia en la recepción</string>
@@ -1906,7 +1906,7 @@
     <string name="servers_info_reset_stats_alert_message">Las estadísticas de los servidores serán restablecidas. ¡No puede deshacerse!</string>
     <string name="servers_info_downloaded">Descargado</string>
     <string name="smp_server">Servidor SMP</string>
-    <string name="message_forwarded_desc">Aún no hay conexión directa, el mensaje es reenviado por el administrador.</string>
+    <string name="message_forwarded_desc">Aún no hay conexión directa, los mensajes son reenviados por el administrador.</string>
     <string name="smp_servers_other">Otros servidores SMP</string>
     <string name="xftp_servers_other">Otros servidores XFTP</string>
     <string name="scan_paste_link">Escanear / Pegar enlace</string>
@@ -2391,7 +2391,7 @@
     <string name="error_accepting_member">Error al aceptar el miembro</string>
     <string name="save_admission_question">¿Guardar configuración?</string>
     <string name="snd_group_event_user_pending_review">Por favor, espera a que tu solicitud sea revisada por los moderadores del grupo.</string>
-    <string name="snd_group_event_member_accepted">has aceptado al miembro</string>
+    <string name="snd_group_event_member_accepted">has admitido al miembro</string>
     <string name="group_member_status_pending_review">pendiente de revisión</string>
     <string name="group_member_status_pending_review_short">por revisar</string>
     <string name="button_support_chat">Chat con administradores</string>
@@ -2419,7 +2419,7 @@
     <string name="cant_send_message_alert_title">¡No puedes enviar mensajes!</string>
     <string name="report_sent_alert_msg_view_in_support_chat">Puedes ver tus informes en Chat con administradores</string>
     <string name="cant_send_message_you_left">has salido</string>
-    <string name="rcv_group_event_user_accepted">te ha aceptado</string>
+    <string name="rcv_group_event_user_accepted">te ha admitido</string>
     <string name="rcv_group_event_new_member_pending_review">Un miembro nuevo desea unirse al grupo.</string>
     <string name="member_criteria_all">todos</string>
     <string name="member_support">Chat con miembros</string>
@@ -2537,4 +2537,21 @@
     <string name="smp_proxy_error_unknown_ca">La huella en la dirección del servidor de reenvío no coincide con el certificado: %1$s.</string>
     <string name="server_no_sub">Sin suscripciones</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</string>
+    <string name="button_delete_member_messages">Eliminar mensajes del miembro</string>
+    <string name="button_delete_member_messages_question">¿Eliminar mensajes del miembro?</string>
+    <string name="delete_member_messages_confirmation">Eliminar mensajes</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Los mensajes del miembro serán eliminados. ¡No puede deshacerse!</string>
+    <string name="remove_member_delete_messages_confirmation">Eliminar miembro y sus mensajes</string>
+    <string name="content_filter_all_messages">Todos los mensajes</string>
+    <string name="content_filter_files">Archivos</string>
+    <string name="content_filter_menu_item">Filtro</string>
+    <string name="content_filter_images">Imágenes</string>
+    <string name="content_filter_links">Enlaces</string>
+    <string name="placeholder_search_files">Buscar archivos</string>
+    <string name="placeholder_search_images">Buscar imágenes</string>
+    <string name="placeholder_search_links">Buscar enlaces</string>
+    <string name="placeholder_search_videos">Buscar vídeos</string>
+    <string name="placeholder_search_voice_messages">Buscar mensajes de voz</string>
+    <string name="content_filter_videos">Vídeos</string>
+    <string name="content_filter_voice_messages">Mensajes de voz</string>
 </resources>

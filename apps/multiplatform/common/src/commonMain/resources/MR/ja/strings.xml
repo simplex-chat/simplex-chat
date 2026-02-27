@@ -347,7 +347,7 @@
     <string name="database_passphrase">データベースパスフレーズ</string>
     <string name="export_database">データベースをエクスポート</string>
     <string name="delete_database">データベースを削除</string>
-    <string name="import_database">データベースを読み込みますか？</string>
+    <string name="import_database">データベースのインポート</string>
     <string name="new_database_archive">新しいデータベースのアーカイブ</string>
     <string name="old_database_archive">過去のデータベースアーカイブ</string>
     <string name="delete_files_and_media_all">ファイルを全て削除</string>
@@ -2042,4 +2042,17 @@
     <string name="no_message_servers_configured_for_private_routing">プライベートメッセージルーティング用のサーバーがありません。</string>
     <string name="no_media_servers_configured">メディアおよびファイルサーバーは存在しません。</string>
     <string name="no_media_servers_configured_for_sending">ファイルを送信するサーバーがありません。</string>
+    <string name="for_social_media">ソーシャルメディア向け</string>
+    <string name="operator_use_operator_toggle_description">サーバを利用する</string>
+    <string name="your_servers">あなたのサーバ</string>
+    <string name="content_filter_videos">ビデオ</string>
+    <string name="content_filter_files">ファイル</string>
+    <string name="content_filter_images">画像</string>
+    <string name="content_filter_links">リンク</string>
+    <string name="content_filter_all_messages">すべて</string>
+    <string name="content_filter_voice_messages">音声メッセージ</string>
+    <string name="content_filter_menu_item">フィルター</string>
+    <string name="accept_pending_member_alert_confirmation_as_member">メンバーとして承認する</string>
+    <string name="accept_pending_member_alert_confirmation_as_observer">オブザーバーとして承認する</string>
+    <string name="blocking_reason_spam">スパム</string>
 </resources>

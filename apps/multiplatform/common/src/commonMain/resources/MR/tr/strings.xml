@@ -836,7 +836,7 @@
     <string name="message_reactions">Mesaj tepkileri</string>
     <string name="your_preferences">Tercihleriniz</string>
     <string name="message_reactions_are_prohibited">Mesaj tepkileri yasaklıdır.</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Bu kişiden mesaj almak için kullanılan sunucuya bağlısınız.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Bu bağlantıdan gelen mesajları almak için kullanılan sunucuya bağlısınız.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Zaten %1$s e bağlısınız</string>
     <string name="la_could_not_be_verified">Doğrulanamadınız; lütfen tekrar deneyin.</string>
     <string name="you_can_turn_on_lock">SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</string>
@@ -938,7 +938,7 @@
     <string name="feature_off">kapalı</string>
     <string name="chat_preferences_on">açık</string>
     <string name="change_lock_mode">Kilit modunu değiştir</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Bu bağlantıdan gelen mesajları almak için kullanılan sunucuya bağlanmayı dene.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Lütfen doğru bağlantıyı kullandığınızı kontrol edin veya irtibat kişinizden size başka bir bağlantı göndermesini isteyin.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Gizliliğinizi korumak için anlık bildirimler kullanmak yerine, <b>SimpleX arka planda çalışır</b>.]]></string>
     <string name="periodic_notifications">Periyodik bildirimler</string>
@@ -2509,4 +2509,7 @@
     <string name="cant_send_commands_alert_text">Komutlar gönderebilmek için bağlanmanış olmanız gereklidir.</string>
     <string name="member_is_deleted_cant_accept_request">Üye silinmiş - isteği kabul edemeyecek</string>
     <string name="upgrade_group_link">Grup linkini güncelle</string>
+    <string name="server_no_sub">Abonelik yok</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Bu bağlantıdan mesaj almak için kullanılan sunucuya bağlı değilsiniz (abonelik yok).</string>
+    <string name="simplex_link_relay">SimpleX Relay Linki</string>
 </resources>

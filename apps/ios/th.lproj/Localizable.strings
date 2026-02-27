@@ -910,7 +910,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "ลบข้อความ?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "ลบข้อความ";
 
 /* No comment provided by engineer. */
@@ -1815,7 +1816,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกจะได้รับคำเชิญใหม่";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";
 
 /* No comment provided by engineer. */
@@ -2332,13 +2333,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "เซิร์ฟเวอร์รีเลย์ปกป้องที่อยู่ IP ของคุณ แต่สามารถสังเกตระยะเวลาของการโทรได้";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "ลบ";
 
 /* No comment provided by engineer. */
 "Remove member" = "ลบสมาชิกออก";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "ลบสมาชิกออก?";
 
 /* No comment provided by engineer. */

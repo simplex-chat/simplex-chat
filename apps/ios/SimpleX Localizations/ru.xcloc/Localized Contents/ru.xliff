@@ -167,7 +167,7 @@
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
         <source>%d hours</source>
-        <target>%d час.</target>
+        <target>%d ч.</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d messages not forwarded" xml:space="preserve">
@@ -792,6 +792,10 @@ swipe action</note>
         <target>Все члены группы останутся соединены.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All messages" xml:space="preserve">
+        <source>All messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
         <source>All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.</source>
         <target>Все сообщения и файлы отправляются с **end-to-end шифрованием**, с постквантовой безопасностью в прямых разговорах.</target>
@@ -1134,12 +1138,16 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Audio &amp; video calls" xml:space="preserve">
         <source>Audio &amp; video calls</source>
-        <target>Аудио- и видеозвонки</target>
+        <target>Аудио и видеозвонки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
         <source>Audio and video calls</source>
         <target>Аудио и видео звонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Audio call" xml:space="preserve">
+        <source>Audio call</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio/video calls" xml:space="preserve">
@@ -2579,6 +2587,14 @@ swipe action</note>
         <target>Удалить сообщение участника?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete member messages" xml:space="preserve">
+        <source>Delete member messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete member messages?" xml:space="preserve">
+        <source>Delete member messages?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
         <source>Delete message?</source>
         <target>Удалить сообщение?</target>
@@ -2587,7 +2603,8 @@ swipe action</note>
       <trans-unit id="Delete messages" xml:space="preserve">
         <source>Delete messages</source>
         <target>Удалить сообщения</target>
-        <note>alert button</note>
+        <note>alert action
+alert button</note>
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve">
         <source>Delete messages after</source>
@@ -3312,6 +3329,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
         <source>Error connecting to the server used to receive messages from this connection: %@</source>
+        <target>Ошибка подключения к серверу, используемому для получения сообщений от этого соединения: %@</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -3850,6 +3868,10 @@ snd error text</note>
         <target>Файлы и медиа запрещены!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Filter" xml:space="preserve">
+        <source>Filter</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
         <source>Filter unread and favorite chats.</source>
         <target>Фильтровать непрочитанные и избранные чаты.</target>
@@ -4334,6 +4356,10 @@ Error: %2$@</source>
         <target>Изображение будет принято, когда Ваш контакт будет в сети, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Images" xml:space="preserve">
+        <source>Images</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
         <source>Immediately</source>
         <target>Сразу</target>
@@ -4592,6 +4618,10 @@ More improvements are coming soon!</source>
         <target>Пригласить друзей</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite member" xml:space="preserve">
+        <source>Invite member</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
         <source>Invite members</source>
         <target>Пригласить членов группы</target>
@@ -4815,6 +4845,10 @@ This is your link for group %@!</source>
         <target>Связанные компьютеры</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Links" xml:space="preserve">
+        <source>Links</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="List" xml:space="preserve">
         <source>List</source>
         <target>Список</target>
@@ -4940,6 +4974,10 @@ This is your link for group %@!</source>
         <target>Член группы удалён - невозможно принять запрос</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
+        <source>Member messages will be deleted - this cannot be undone!</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
         <source>Member reports</source>
         <target>Сообщения о нарушениях</target>
@@ -4963,12 +5001,12 @@ This is your link for group %@!</source>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
         <target>Член будет удален из разговора - это действие нельзя отменить!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
         <target>Член группы будет удален - это действие нельзя отменить!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
         <source>Member will join the group, accept member?</source>
@@ -6593,7 +6631,11 @@ swipe action</note>
       <trans-unit id="Remove" xml:space="preserve">
         <source>Remove</source>
         <target>Удалить</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
+      </trans-unit>
+      <trans-unit id="Remove and delete messages" xml:space="preserve">
+        <source>Remove and delete messages</source>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Remove archive?" xml:space="preserve">
         <source>Remove archive?</source>
@@ -6618,7 +6660,7 @@ swipe action</note>
       <trans-unit id="Remove member?" xml:space="preserve">
         <source>Remove member?</source>
         <target>Удалить члена группы?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
         <source>Remove passphrase from keychain?</source>
@@ -7036,9 +7078,29 @@ chat item action</note>
         <target>Поле поиска поддерживает ссылки-приглашения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Search files" xml:space="preserve">
+        <source>Search files</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search images" xml:space="preserve">
+        <source>Search images</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search links" xml:space="preserve">
+        <source>Search links</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
         <source>Search or paste SimpleX link</source>
         <target>Искать или вставьте ссылку SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search videos" xml:space="preserve">
+        <source>Search videos</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search voice messages" xml:space="preserve">
+        <source>Search voice messages</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -8411,7 +8473,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="To send" xml:space="preserve">
         <source>To send</source>
-        <target>Для оправки</target>
+        <target>Для отправки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To send commands you must be connected." xml:space="preserve">
@@ -8476,6 +8538,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this connection.</source>
+        <target>Попытка подключиться к серверу, используемому для получения сообщений от этого соединения.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
@@ -8915,6 +8978,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Видео будет получено, когда Ваш контакт будет онлайн, пожалуйста, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Videos" xml:space="preserve">
+        <source>Videos</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
         <source>Videos and files up to 1gb</source>
         <target>Видео и файлы до 1гб</target>
@@ -9189,6 +9256,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this connection.</source>
+        <target>Вы подключены к серверу, используемому для приема сообщений от этого соединения.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -9198,6 +9266,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
+        <target>Вы не подключены к серверу, используемому для получения сообщений по этому соединению (нет подписки).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10261,6 +10330,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="no subscription" xml:space="preserve">
         <source>no subscription</source>
+        <target>нет подписки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
