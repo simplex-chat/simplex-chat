@@ -2246,7 +2246,7 @@
   <string name="direct_messages_are_prohibited">Direct messages between members are prohibited.</string>
   <string name="direct_messages_are_prohibited_in_group">Direct messages between members are prohibited in this group.</string>
   <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this chat.</string>
-  <string name="group_members_can_delete">Members can irreversibly delete sent messages. (24 hours)</string>
+  <string name="group_members_can_delete">Members can irreversibly delete sent messages. (24 hours)\nAlso affects if moderated messages will be truly deleted or only marked as moderated.</string>
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited.</string>
   <string name="group_members_can_send_voice">Members can send voice messages.</string>
   <string name="voice_messages_are_prohibited">Voice messages are prohibited.</string>
