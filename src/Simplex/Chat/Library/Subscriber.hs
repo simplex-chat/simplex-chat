@@ -62,6 +62,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.RelayRequests
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Operators
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences

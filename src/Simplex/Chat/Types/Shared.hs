@@ -74,3 +74,34 @@ instance FromJSON GroupAcceptance where
 instance ToJSON GroupAcceptance where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+data RelayStatus
+  = RSNew -- only for owner
+  | RSInvited
+  | RSAccepted
+  | RSActive
+  deriving (Eq, Show)
+
+relayStatusText :: RelayStatus -> Text
+relayStatusText = \case
+  RSNew -> "new"
+  RSInvited -> "invited"
+  RSAccepted -> "accepted"
+  RSActive -> "active"
+
+instance TextEncoding RelayStatus where
+  textEncode = \case
+    RSNew -> "new"
+    RSInvited -> "invited"
+    RSAccepted -> "accepted"
+    RSActive -> "active"
+  textDecode = \case
+    "new" -> Just RSNew
+    "invited" -> Just RSInvited
+    "accepted" -> Just RSAccepted
+    "active" -> Just RSActive
+    _ -> Nothing
+
+instance FromField RelayStatus where fromField = fromTextField_ textDecode
+
+instance ToField RelayStatus where toField = toField . textEncode

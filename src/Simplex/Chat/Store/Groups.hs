@@ -193,6 +193,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
@@ -1270,7 +1271,7 @@ getGroupRelayById db relayId =
   ExceptT . firstRow toGroupRelay (SEGroupRelayNotFound relayId) $
     DB.query
       db
-      (groupRelayQuery <> " WHERE group_relay_id = ?")
+      (groupRelayQuery <> " WHERE gr.group_relay_id = ?")
       (Only relayId)
 
 getGroupRelayByGMId :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO GroupRelay
@@ -1278,7 +1279,7 @@ getGroupRelayByGMId db groupMemberId =
   ExceptT . firstRow toGroupRelay (SEGroupRelayNotFoundByMemberId groupMemberId) $
     DB.query
       db
-      (groupRelayQuery <> " WHERE group_member_id = ?")
+      (groupRelayQuery <> " WHERE gr.group_member_id = ?")
       (Only groupMemberId)
 
 getGroupRelays :: DB.Connection -> GroupInfo -> IO [GroupRelay]
@@ -1286,19 +1287,23 @@ getGroupRelays db GroupInfo {groupId} =
   map toGroupRelay
     <$> DB.query
       db
-      (groupRelayQuery <> " WHERE group_id = ?")
+      (groupRelayQuery <> " WHERE gr.group_id = ?")
       (Only groupId)
 
 groupRelayQuery :: Query
 groupRelayQuery =
   [sql|
-    SELECT group_relay_id, group_member_id, chat_relay_id, relay_status, relay_link
-    FROM group_relays
+    SELECT gr.group_relay_id, gr.group_member_id,
+           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           gr.relay_status, gr.relay_link
+    FROM group_relays gr
+    JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
   |]
 
-toGroupRelay :: (Int64, GroupMemberId, Int64, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
-toGroupRelay (groupRelayId, groupMemberId, userChatRelayId, relayStatus, relayLink) =
-  GroupRelay {groupRelayId, groupMemberId, userChatRelayId, relayStatus, relayLink}
+toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
+toGroupRelay (groupRelayId, groupMemberId, chatRelayId, address, name, domains, BI preset, tested, BI enabled, BI deleted, relayStatus, relayLink) =
+  let userChatRelay = UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
+   in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
 createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {name} = do
