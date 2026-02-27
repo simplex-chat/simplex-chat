@@ -69,6 +69,7 @@ chatResponsesDocsData =
     ("CRGroupLinkDeleted", ""),
     ("CRGroupCreated", ""),
     ("CRPublicGroupCreated", ""),
+    ("CRGroupRelays", ""),
     ("CRGroupMembers", ""),
     ("CRGroupUpdated", ""),
     ("CRGroupsList", "Groups"),

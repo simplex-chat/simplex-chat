@@ -988,24 +988,9 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    memberPubKey :: Maybe C.PublicKeyEd25519
-  }
-  deriving (Eq, Show)
-
-data GroupRelay = GroupRelay
-  { groupRelayId :: Int64,
-    groupMemberId :: GroupMemberId,
-    userChatRelayId :: Int64, -- ID of configured UserChatRelay
-    relayStatus :: RelayStatus,
+    memberPubKey :: Maybe C.PublicKeyEd25519,
     relayLink :: Maybe ShortLinkContact
   }
-  deriving (Eq, Show)
-
-data RelayStatus
-  = RSNew -- only for owner
-  | RSInvited
-  | RSAccepted
-  | RSActive
   deriving (Eq, Show)
 
 data RelayRequestData = RelayRequestData
@@ -1014,30 +999,6 @@ data RelayRequestData = RelayRequestData
     reqChatVRange :: VersionRangeChat
   }
   deriving (Eq, Show)
-
-relayStatusText :: RelayStatus -> Text
-relayStatusText = \case
-  RSNew -> "new"
-  RSInvited -> "invited"
-  RSAccepted -> "accepted"
-  RSActive -> "active"
-
-instance TextEncoding RelayStatus where
-  textEncode = \case
-    RSNew -> "new"
-    RSInvited -> "invited"
-    RSAccepted -> "accepted"
-    RSActive -> "active"
-  textDecode = \case
-    "new" -> Just RSNew
-    "invited" -> Just RSInvited
-    "accepted" -> Just RSAccepted
-    "active" -> Just RSActive
-    _ -> Nothing
-
-instance FromField RelayStatus where fromField = fromTextField_ textDecode
-
-instance ToField RelayStatus where toField = toField . textEncode
 
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
@@ -2043,8 +2004,6 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
-
-$(JQ.deriveJSON defaultJSON ''GroupRelay)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 

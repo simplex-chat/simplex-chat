@@ -2243,6 +2243,7 @@ Known:
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - memberPubKey: string?
+- relayLink: string?
 
 
 ---

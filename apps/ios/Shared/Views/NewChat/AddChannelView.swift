@@ -1,0 +1,373 @@
+//
+//  AddChannelView.swift
+//  SimpleX (iOS)
+//
+//  Created by spaced4ndy on 23.02.2026.
+//  Copyright © 2026 SimpleX Chat. All rights reserved.
+//
+
+import SwiftUI
+import SimpleXChat
+
+struct AddChannelView: View {
+    @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
+    @StateObject private var ss = SaveableSettings()
+    @State private var profile = GroupProfile(displayName: "", fullName: "")
+    @FocusState private var focusDisplayName: Bool
+    @State private var showChooseSource = false
+    @State private var showImagePicker = false
+    @State private var showTakePhoto = false
+    @State private var chosenImage: UIImage? = nil
+    @State private var hasRelays = true
+    @State private var groupInfo: GroupInfo? = nil
+    @State private var groupLink: GroupLink? = nil
+    @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var groupRelays: [GroupRelay] = []
+    @State private var creationInProgress = false
+    @State private var showLinkStep = false
+    @State private var relayListExpanded = false
+
+    var body: some View {
+        Group {
+            if showLinkStep, let gInfo = groupInfo {
+                linkStepView(gInfo)
+            } else if let gInfo = groupInfo {
+                progressStepView(gInfo)
+            } else {
+                profileStepView()
+            }
+        }
+    }
+
+    // MARK: - Step 1: Profile
+
+    private func profileStepView() -> some View {
+        List {
+            Group {
+                ZStack(alignment: .center) {
+                    ZStack(alignment: .topTrailing) {
+                        ProfileImage(imageStr: profile.image, size: 128)
+                        if profile.image != nil {
+                            Button {
+                                profile.image = nil
+                            } label: {
+                                Image(systemName: "multiply")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 12)
+                            }
+                        }
+                    }
+                    editImageButton { showChooseSource = true }
+                        .buttonStyle(BorderlessButtonStyle())
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+
+            Section {
+                channelNameTextField()
+                NavigationLink {
+                    NetworkAndServers()
+                        .navigationTitle("Network & servers")
+                        .modifier(ThemedBackground(grouped: true))
+                        .environmentObject(ss)
+                } label: {
+                    let color: Color = hasRelays ? .accentColor : .orange
+                    settingsRow("externaldrive.connected.to.line.below", color: color) {
+                        Text("Configure relays").foregroundColor(color)
+                    }
+                }
+                let canCreate = canCreateProfile() && hasRelays && !creationInProgress
+                Button(action: createChannel) {
+                    settingsRow("checkmark", color: canCreate ? theme.colors.primary : theme.colors.secondary) { Text("Create channel") }
+                }
+                .disabled(!canCreate)
+            } footer: {
+                if !hasRelays {
+                    ServersWarningView(warnStr: NSLocalizedString("Enable at least one chat relay in Network & Servers.", comment: "channel creation warning"))
+                } else {
+                    Text("Your profile will be shared with chat relays and subscribers.")
+                        .foregroundColor(theme.colors.secondary)
+                }
+            }
+        }
+        .onAppear {
+            Task { hasRelays = await checkHasRelays() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                focusDisplayName = true
+            }
+        }
+        .confirmationDialog("Channel image", isPresented: $showChooseSource, titleVisibility: .visible) {
+            Button("Take picture") { showTakePhoto = true }
+            Button("Choose from library") { showImagePicker = true }
+        }
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run { showImagePicker = false }
+            }
+        }
+        .onChange(of: chosenImage) { image in
+            Task {
+                let resized: String? = if let image {
+                    await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                } else {
+                    nil
+                }
+                await MainActor.run { profile.image = resized }
+            }
+        }
+        .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func channelNameTextField() -> some View {
+        ZStack(alignment: .leading) {
+            let name = profile.displayName.trimmingCharacters(in: .whitespaces)
+            if name != mkValidName(name) {
+                Button {
+                    showInvalidChannelNameAlert()
+                } label: {
+                    Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                }
+            } else {
+                Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+            }
+            TextField("Enter channel name…", text: $profile.displayName)
+                .padding(.leading, 36)
+                .focused($focusDisplayName)
+                .submitLabel(.continue)
+                .onSubmit {
+                    if canCreateProfile() && hasRelays { createChannel() }
+                }
+        }
+    }
+
+    private func canCreateProfile() -> Bool {
+        let name = profile.displayName.trimmingCharacters(in: .whitespaces)
+        return name != "" && validDisplayName(name)
+    }
+
+    private func createChannel() {
+        focusDisplayName = false
+        profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+        profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
+        creationInProgress = true
+        Task {
+            do {
+                let enabledRelays = try await getEnabledRelays()
+                let relayIds = enabledRelays.compactMap { $0.chatRelayId }
+                guard !relayIds.isEmpty else {
+                    await MainActor.run {
+                        creationInProgress = false
+                        hasRelays = false
+                    }
+                    return
+                }
+                guard let (gInfo, gLink, gRelays) = try await apiNewPublicGroup(
+                    incognito: false, relayIds: relayIds, groupProfile: profile
+                ) else {
+                    await MainActor.run { creationInProgress = false }
+                    return
+                }
+                await MainActor.run {
+                    m.updateGroup(gInfo)
+                    groupInfo = gInfo
+                    groupLink = gLink
+                    groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
+                    creationInProgress = false
+                }
+            } catch {
+                await MainActor.run {
+                    creationInProgress = false
+                    showAlert(
+                        NSLocalizedString("Error creating channel", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+            }
+        }
+    }
+
+    // TODO [relays] move random relay selection to backend; prefer selecting relays from different operators
+    private func getEnabledRelays() async throws -> [UserChatRelay] {
+        let servers = try await getUserServers()
+        let all = servers.flatMap { op in
+            (op.chatRelays ?? []).filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
+        }
+        return Array(all.shuffled().prefix(3))
+    }
+
+    private func checkHasRelays() async -> Bool {
+        guard let servers = try? await getUserServers() else { return false }
+        return servers.contains { op in
+            (op.chatRelays ?? []).contains { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
+        }
+    }
+
+    // MARK: - Step 2: Progress
+
+    private func progressStepView(_ gInfo: GroupInfo) -> some View {
+        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive }.count
+        let total = groupRelays.count
+        return List {
+            Section {
+                HStack {
+                    Spacer()
+                    ProfileImage(imageStr: gInfo.groupProfile.image, size: 96)
+                    Spacer()
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
+                Text(gInfo.groupProfile.displayName)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+
+            Section {
+                Button {
+                    withAnimation { relayListExpanded.toggle() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if activeCount < total {
+                            RelayProgressIndicator(active: activeCount, total: total)
+                        }
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel creation progress"), activeCount, total))
+                        Spacer()
+                        Image(systemName: relayListExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+                .foregroundColor(theme.colors.onBackground)
+
+                if relayListExpanded {
+                    ForEach(groupRelays) { relay in
+                        HStack {
+                            Text(relayDisplayName(relay))
+                            Spacer()
+                            relayStatusIndicator(relay.relayStatus)
+                        }
+                    }
+                }
+            }
+
+            Section {
+                Button("Channel link") {
+                    if activeCount >= total {
+                        showLinkStep = true
+                    } else if activeCount > 0 {
+                        showAlert(
+                            NSLocalizedString("Not all relays connected", comment: "alert title"),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
+                            actions: {[
+                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
+                            ]}
+                        )
+                    }
+                }
+                .disabled(activeCount == 0)
+            }
+        }
+        .navigationTitle("Creating channel")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Cancel") { cancelChannelCreation(gInfo) }
+            }
+        }
+        .onChange(of: channelRelaysModel.groupRelays) { relays in
+            guard channelRelaysModel.groupId == gInfo.groupId else { return }
+            groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
+            if relays.allSatisfy({ $0.relayStatus == .rsActive }) {
+                showLinkStep = true
+            }
+        }
+    }
+
+    // MARK: - Step 3: Link
+
+    private func linkStepView(_ gInfo: GroupInfo) -> some View {
+        GroupLinkView(
+            groupId: gInfo.groupId,
+            groupLink: $groupLink,
+            groupLinkMemberRole: $groupLinkMemberRole,
+            showTitle: false,
+            creatingGroup: true,
+            isChannel: true
+        ) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                dismissAllSheets(animated: true) {
+                    ItemsModel.shared.loadOpenChat(gInfo.id)
+                }
+            }
+        }
+        .navigationBarTitle("Channel link")
+    }
+
+    private func cancelChannelCreation(_ gInfo: GroupInfo) {
+        dismissAllSheets(animated: true)
+        Task {
+            do {
+                try await apiDeleteChat(type: .group, id: gInfo.apiId)
+                await MainActor.run { m.removeChat(gInfo.id) }
+            } catch {
+                logger.error("cancelChannelCreation error: \(responseError(error))")
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func showInvalidChannelNameAlert() {
+        let validName = mkValidName(profile.displayName)
+        if validName == "" {
+            showAlert(NSLocalizedString("Invalid name!", comment: "alert title"))
+        } else {
+            showAlert(
+                NSLocalizedString("Invalid name!", comment: "alert title"),
+                message: String.localizedStringWithFormat(NSLocalizedString("Correct name to %@?", comment: "alert message"), validName),
+                actions: {[
+                    UIAlertAction(title: NSLocalizedString("Ok", comment: "alert action"), style: .default) { _ in
+                        profile.displayName = validName
+                    },
+                    cancelAlertAction
+                ]}
+            )
+        }
+    }
+
+    private func relayDisplayName(_ relay: GroupRelay) -> String {
+        if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
+        if let domain = relay.userChatRelay.domains.first { return domain }
+        if let link = relay.relayLink { return hostFromRelayLink(link) }
+        return "relay\(relay.groupRelayId)"
+    }
+
+    private func relayStatusIndicator(_ status: RelayStatus) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(status == .rsActive ? .green : status == .rsNew ? .red : .orange)
+                .frame(width: 8, height: 8)
+            Text(status.text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+#Preview {
+    AddChannelView()
+}

@@ -921,10 +921,22 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
     upsertOrDeleteCRelay :: AUserChatRelay -> IO (Maybe UserChatRelay)
-    upsertOrDeleteCRelay (AUCR _ relay@UserChatRelay {chatRelayId, deleted}) = case chatRelayId of
+    upsertOrDeleteCRelay (AUCR _ relay@UserChatRelay {chatRelayId, address, deleted}) = case chatRelayId of
       DBNewEntity
         | deleted -> pure Nothing
-        | otherwise -> Just <$> insertChatRelay db user ts relay
+        | otherwise -> do
+            -- When a relay referenced in group_relays is deleted, it's soft-deleted (deleted=1).
+            -- On re-add with the same address, un-delete the existing row to preserve group_relays FK.
+            -- Only address is matched — it's the relay's identity. Name and other settings are updated.
+            -- Re-adding with same name but different address is a different relay and will fail on UNIQUE constraint.
+            existing <- maybeFirstRow fromOnly $ DB.query db
+              "SELECT chat_relay_id FROM chat_relays WHERE user_id = ? AND address = ? AND deleted = 1 LIMIT 1"
+              (userId, address)
+            case existing of
+              Just existingId -> do
+                undeleteRelay existingId relay
+                pure $ Just (relay :: NewUserChatRelay) {chatRelayId = DBEntityId existingId}
+              Nothing -> Just <$> insertChatRelay db user ts relay
       DBEntityId relayId
         | deleted -> do
             -- If relay is referenced in group_relays, mark it as deleted instead of deleting
@@ -934,6 +946,17 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
               else DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, relayId, BI False)
             pure Nothing
         | otherwise -> Just relay <$ updateChatRelay db ts relay
+    -- Un-delete soft-deleted relay, updating name and settings but keeping the address unchanged.
+    undeleteRelay :: Int64 -> NewUserChatRelay -> IO ()
+    undeleteRelay existingId UserChatRelay {name = nm, domains, preset, tested, enabled} =
+      DB.execute db
+        [sql|
+          UPDATE chat_relays
+          SET name = ?, domains = ?,
+              preset = ?, tested = ?, enabled = ?, deleted = 0, updated_at = ?
+          WHERE chat_relay_id = ?
+        |]
+        (nm, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, ts, existingId)
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do

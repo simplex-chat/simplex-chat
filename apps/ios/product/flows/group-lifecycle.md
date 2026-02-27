@@ -29,6 +29,18 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 8. User is navigated to `AddGroupMembersView` to optionally invite contacts.
 9. User can also create a group link at this stage.
 
+### 1a. Create Public Group (Channel)
+
+1. Alternative to standard group creation for relay-backed channels.
+2. Calls `apiNewPublicGroup(incognito:relayIds:groupProfile:)`:
+   ```swift
+   func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay])
+   ```
+3. Sends `ChatCommand.apiNewPublicGroup(userId:incognito:relayIds:groupProfile:)` to core.
+4. Core returns `ChatResponse2.publicGroupCreated(user, groupInfo, groupLink, groupRelays)`.
+5. The resulting `GroupInfo` has `useRelays == true` and includes a group link.
+6. Channel relay members (with role `.relay`) are managed by the core.
+
 ### 2. Invite Members
 
 1. From `GroupChatInfoView`, user taps "Add members" -> `AddGroupMembersView`.
@@ -46,7 +58,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 
 1. User receives a group link (scanned or pasted).
 2. `apiConnectPlan` validates the link and identifies it as a group link.
-3. For prepared groups (short links): `apiPrepareGroup(connLink:groupShortLinkData:)` shows group info before joining.
+3. For prepared groups (short links): `apiPrepareGroup(connLink:groupShortLinkData:directLink:)` shows group info before joining (where `directLink` defaults to `true`; `false` for channel relay links).
 4. `apiConnectPreparedGroup(groupId:incognito:msg:)` or `apiConnect(incognito:connLink:)` initiates joining.
 5. Core processes the join request. Depending on group admission settings:
    - **Auto-join**: Member is added immediately.
@@ -173,7 +185,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 | `GroupInfo` | `SimpleXChat/ChatTypes.swift` | Full group model: ID, profile, membership, preferences, business chat info |
 | `GroupProfile` | `SimpleXChat/ChatTypes.swift` | Name, full name, image, description, preferences |
 | `GroupMember` | `SimpleXChat/ChatTypes.swift` | Member model: role, status, profile, connection info |
-| `GroupMemberRole` | `SimpleXChat/ChatTypes.swift` | `.owner`, `.admin`, `.moderator`, `.member`, `.observer` |
+| `GroupMemberRole` | `SimpleXChat/ChatTypes.swift` | `.owner`, `.admin`, `.moderator`, `.member`, `.observer`, `.relay` |
 | `GroupMemberStatus` | `SimpleXChat/ChatTypes.swift` | Member lifecycle: `.invited`, `.accepted`, `.connected`, `.complete`, etc. |
 | `GroupLink` | `Shared/Model/AppAPITypes.swift` | Group link with URI, member role, and short link data |
 | `BusinessChatInfo` | `SimpleXChat/ChatTypes.swift` | Business chat metadata for commercial group chats |

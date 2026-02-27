@@ -1880,7 +1880,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False GRMember
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -1909,8 +1909,9 @@ processChatCommand vr nm = \case
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     let useRelays = not direct
+    subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays subRole
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2017,15 +2018,17 @@ processChatCommand vr nm = \case
               Just (_, _, Left e) -> throwError e
               _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
           else do
-            withFastStore' $ \db -> setPreparedGroupStartedConnection db groupId
+            gInfo'' <- withFastStore $ \db -> do
+              liftIO $ setPreparedGroupStartedConnection db groupId
+              getGroupInfo db vr user groupId
             -- Async retry failed relays with temporary errors
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
-            -- TODO [relays] member: TBC response type for UI to display state of relays connection
-            -- TODO   - differentiate success, temporary failure, permanent failure
-            -- TODO   - possibly, additional status on relay member record
-            pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
+            let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+            pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
+          leftToMaybe (Left e) = Just e
+          leftToMaybe _ = Nothing
           isTempErr = \case
             (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
             _ -> False
@@ -2075,7 +2078,7 @@ processChatCommand vr nm = \case
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]
-            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
+            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of
     ACCL SCMInvitation ccLink -> do
@@ -2348,7 +2351,7 @@ processChatCommand vr nm = \case
         let crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with sharedGroupId as linkEntityId (no server request)
         ((_, rootPrivKey), ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) (Just sharedGroupId) True (Just crClientData)
-        ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+        ccLink' <- createdChannelLink <$> shortenCreatedLink ccLink
         sLnk <- case toShortLinkContact ccLink' of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
@@ -2362,13 +2365,21 @@ processChatCommand vr nm = \case
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
         let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
             setupLink gInfo = do
-              gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+              -- TODO [relays] starting role should be communicated in protocol from owner to relays
+              subRole <- asks $ channelSubscriberRole . config
+              gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId subRole subMode
               relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
               groupRelays <- addRelays user gInfo sLnk relays
               pure (gLink, groupRelays)
         pure (groupProfile', memberId, groupKeys, setupLink)
   NewPublicGroup incognito relayIds gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewPublicGroup userId incognito relayIds gProfile
+  APIGetGroupRelays groupId -> withUser $ \user -> do
+    (gInfo, relays) <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user groupId
+      relays <- liftIO $ getGroupRelays db gInfo
+      pure (gInfo, relays)
+    pure $ CRGroupRelays user gInfo relays
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -3801,10 +3812,7 @@ processChatCommand vr nm = \case
       CLFull cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
-      CLShort l@(CSLContact _ ct _ _) -> do
-        let l' = serverShortLink l
-            con cReq = ACCL SCMContact $ CCLink cReq (Just l')
-            gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
+      CLShort l@(CSLContact _ ct _ _) ->
         case ct of
           CCTContact ->
             knownLinkPlans >>= \case
@@ -3825,7 +3833,14 @@ processChatCommand vr nm = \case
                     getContactViaShortLinkToConnect db vr user l' >>= \case
                       Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (con cReq, CPContactAddress (CAPKnown ct'))
                       Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-          CCTGroup ->
+          CCTGroup -> groupShortLinkPlan
+          CCTChannel -> groupShortLinkPlan
+          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
+        where
+          l' = serverShortLink l
+          con cReq = ACCL SCMContact $ CCLink cReq (Just l')
+          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
+          groupShortLinkPlan =
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
@@ -3840,8 +3855,6 @@ processChatCommand vr nm = \case
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-          CCTChannel -> throwCmdError "channel links are not supported in this version"
-          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
@@ -4762,6 +4775,7 @@ chatCommandP =
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/public group" <|> "/pg") *> (NewPublicGroup <$> incognitoP <* " relays=" <*> strP <* A.space <* char_ '#' <*> groupProfile),
       "/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP),
+      "/_get relays #" *> (APIGetGroupRelays <$> A.decimal),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
       "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),

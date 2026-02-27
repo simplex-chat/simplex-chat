@@ -17,6 +17,7 @@ struct GroupLinkView: View {
     @Binding var groupLinkMemberRole: GroupMemberRole
     var showTitle: Bool = false
     var creatingGroup: Bool = false
+    var isChannel: Bool = false
     var linkCreatedCb: (() -> Void)? = nil
     @State private var showShortLink = true
     @State private var creatingLink = false
@@ -60,12 +61,16 @@ struct GroupLinkView: View {
         List {
             Group {
                 if showTitle {
-                    Text("Group link")
+                    Text(isChannel ? "Channel link" : "Group link")
                         .font(.largeTitle)
                         .bold()
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
+                if isChannel {
+                    Text("You can share a link or a QR code - anybody will be able to join the channel.")
+                } else {
+                    Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
+                }
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
@@ -73,15 +78,17 @@ struct GroupLinkView: View {
 
             Section {
                 if let groupLink = groupLink {
-                    Picker("Initial role", selection: $groupLinkMemberRole) {
-                        ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
-                            Text(role.text)
+                    if !isChannel {
+                        Picker("Initial role", selection: $groupLinkMemberRole) {
+                            ForEach([GroupMemberRole.member, GroupMemberRole.observer]) { role in
+                                Text(role.text)
+                            }
                         }
+                        .frame(height: 36)
                     }
-                    .frame(height: 36)
                     SimpleXCreatedLinkQRCode(link: groupLink.connLinkContact, short: $showShortLink)
                         .id("simplex-qrcode-view-for-\(groupLink.connLinkContact.simplexChatUri(short: showShortLink))")
-                    if groupLink.shouldBeUpgraded {
+                    if !isChannel && groupLink.shouldBeUpgraded {
                         Button {
                             upgradeAndShareLinkAlert()
                         } label: {
@@ -89,7 +96,7 @@ struct GroupLinkView: View {
                         }
                     }
                     Button {
-                        if groupLink.shouldBeUpgraded {
+                        if !isChannel && groupLink.shouldBeUpgraded {
                             upgradeAndShareLinkAlert(groupLink: groupLink)
                         } else {
                             groupLink.shareAddress(short: showShortLink)
@@ -98,7 +105,8 @@ struct GroupLinkView: View {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
 
-                    if !creatingGroup {
+                    // TODO [relays] channel link deletion should only be possible together with deleting the channel
+                    if !creatingGroup && !isChannel {
                         Button(role: .destructive) { alert = .deleteLink } label: {
                             Label("Delete link", systemImage: "trash")
                         }
@@ -110,7 +118,7 @@ struct GroupLinkView: View {
                     .disabled(creatingLink)
                 }
             } header: {
-                if let groupLink, groupLink.connLinkContact.connShortLink != nil {
+                if !isChannel, let groupLink, groupLink.connLinkContact.connShortLink != nil {
                     ToggleShortLinkHeader(text: Text(""), link: groupLink.connLinkContact, short: $showShortLink)
                 }
             }

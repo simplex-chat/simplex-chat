@@ -62,6 +62,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.RelayRequests
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Operators
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
@@ -2892,7 +2893,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       brokerTs
         | membershipMemId == memId = pure Nothing -- ignore - XGrpMemRestrict can be sent to restricted member for efficiency
         | otherwise = do
-            (bm, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memId Nothing
+            unknownRole <- unknownMemberRole gInfo
+            (bm, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memId Nothing unknownRole
             let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp} = bm
             if
               | blockedByAdmin == mrsBlocked restriction -> pure Nothing
@@ -2989,6 +2991,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     isMemberGrpFwdRelay gInfo m
       | useRelays' gInfo = isRelay m
       | otherwise = memberRole' m >= GRAdmin
+
+    unknownMemberRole :: GroupInfo -> CM GroupMemberRole
+    unknownMemberRole gInfo
+      | useRelays' gInfo = asks $ channelSubscriberRole . config
+      | otherwise = pure GRAuthor
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpLeave gInfo m msg brokerTs = do
@@ -3138,7 +3145,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       case memberId_ of
         Just memberId -> do
-          (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_
+          unknownRole <- unknownMemberRole gInfo
+          (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_ unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
           processForwardedMsg (Just author)
         Nothing -> processForwardedMsg Nothing
@@ -3553,9 +3561,10 @@ runRelayRequestWorker a Worker {doWork} = do
                 createRelayLink gi@GroupInfo {groupProfile} = do
                   -- TODO [relays] relay: set relay link data
                   -- TODO   - link data: relay key for group, relay identity (profile, certificate, relay identity key)
-                  -- TODO   - TBC link's member role - owner to communicate in invitation?
+                  -- TODO   - starting role should be communicated in protocol from owner to relays
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
+                  subRole <- asks $ channelSubscriberRole . config
                   let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
                       userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
                       crClientData = encodeJSON $ CRDataGroup groupLinkId
@@ -3565,7 +3574,7 @@ runRelayRequestWorker a Worker {doWork} = do
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
                   gVar <- asks random
-                  void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId GRMember subMode
+                  void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode
                   pure sLnk
             acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
             acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink = do

@@ -19,10 +19,12 @@ struct YourServersView: View {
     @Environment(\.editMode) private var editMode
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     var operatorIndex: Int
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var newServerNavLinkActive = false
+    @State private var newChatRelayNavLinkActive = false
     @State private var showScanProtoServer = false
     @State private var testing = false
 
@@ -42,6 +44,32 @@ struct YourServersView: View {
     private func yourServersView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
         return List {
+            if let chatRelays = userServers[operatorIndex].chatRelays,
+               !chatRelays.filter({ !$0.deleted }).isEmpty {
+                Section {
+                    ForEach(bindingForChatRelays($userServers, operatorIndex)) { relay in
+                        if !relay.wrappedValue.deleted {
+                            ChatRelayViewLink(
+                                userServers: $userServers,
+                                serverErrors: $serverErrors,
+                                serverWarnings: $serverWarnings,
+                                relay: relay,
+                                backLabel: "Your servers",
+                                selectedServer: $selectedServer
+                            )
+                        } else { EmptyView() }
+                    }
+                    .onDelete { indexSet in
+                        deleteChatRelay($userServers, operatorIndex, indexSet)
+                        validateServers_($userServers, $serverErrors, $serverWarnings)
+                    }
+                } header: {
+                    Text("Chat relays").foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("Chat relays forward messages in channels you create.").foregroundColor(theme.colors.secondary)
+                }
+            }
+
             if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
                     ForEach($userServers[operatorIndex].smpServers) { srv in
@@ -49,6 +77,7 @@ struct YourServersView: View {
                             ProtocolServerViewLink(
                                 userServers: $userServers,
                                 serverErrors: $serverErrors,
+                                serverWarnings: $serverWarnings,
                                 duplicateHosts: duplicateHosts,
                                 server: srv,
                                 serverProtocol: .smp,
@@ -61,7 +90,7 @@ struct YourServersView: View {
                     }
                     .onDelete { indexSet in
                         deleteSMPServer($userServers, operatorIndex, indexSet)
-                        validateServers_($userServers, $serverErrors)
+                        validateServers_($userServers, $serverErrors, $serverWarnings)
                     }
                 } header: {
                     Text("Message servers")
@@ -84,6 +113,7 @@ struct YourServersView: View {
                             ProtocolServerViewLink(
                                 userServers: $userServers,
                                 serverErrors: $serverErrors,
+                                serverWarnings: $serverWarnings,
                                 duplicateHosts: duplicateHosts,
                                 server: srv,
                                 serverProtocol: .xftp,
@@ -96,7 +126,7 @@ struct YourServersView: View {
                     }
                     .onDelete { indexSet in
                         deleteXFTPServer($userServers, operatorIndex, indexSet)
-                        validateServers_($userServers, $serverErrors)
+                        validateServers_($userServers, $serverErrors, $serverWarnings)
                     }
                 } header: {
                     Text("Media & file servers")
@@ -125,10 +155,23 @@ struct YourServersView: View {
                     }
                     .frame(width: 1, height: 1)
                     .hidden()
+
+                    NavigationLink(isActive: $newChatRelayNavLinkActive) {
+                        NewChatRelayView(userServers: $userServers, serverErrors: $serverErrors, serverWarnings: $serverWarnings, operatorIndex: operatorIndex)
+                            .navigationTitle("New chat relay")
+                            .navigationBarTitleDisplayMode(.large)
+                            .modifier(ThemedBackground(grouped: true))
+                    } label: {
+                        EmptyView()
+                    }
+                    .frame(width: 1, height: 1)
+                    .hidden()
                 }
             } footer: {
                 if let errStr = globalServersError(serverErrors) {
                     ServersErrorView(errStr: errStr)
+                } else if let warnStr = globalServersWarning(serverWarnings) {
+                    ServersWarningView(warnStr: warnStr)
                 }
             }
 
@@ -144,7 +187,8 @@ struct YourServersView: View {
         .toolbar {
             if (
                 !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty ||
-                !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty
+                !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty ||
+                !(userServers[operatorIndex].chatRelays?.filter({ !$0.deleted }).isEmpty ?? true)
             ) {
                 EditButton()
             }
@@ -152,11 +196,13 @@ struct YourServersView: View {
         .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Enter server manually") { newServerNavLinkActive = true }
             Button("Scan server QR code") { showScanProtoServer = true }
+            Button("Chat relay") { newChatRelayNavLinkActive = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(
                 userServers: $userServers,
-                serverErrors: $serverErrors
+                serverErrors: $serverErrors,
+                serverWarnings: $serverWarnings
             )
             .modifier(ThemedBackground(grouped: true))
         }
@@ -165,7 +211,8 @@ struct YourServersView: View {
     private func newServerDestinationView() -> some View {
         NewServerView(
             userServers: $userServers,
-            serverErrors: $serverErrors
+            serverErrors: $serverErrors,
+            serverWarnings: $serverWarnings
         )
         .navigationTitle("New server")
         .navigationBarTitleDisplayMode(.large)
@@ -190,6 +237,7 @@ struct ProtocolServerViewLink: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     var duplicateHosts: Set<String>
     @Binding var server: UserServer
     var serverProtocol: ServerProtocol
@@ -203,6 +251,7 @@ struct ProtocolServerViewLink: View {
             ProtocolServerView(
                 userServers: $userServers,
                 serverErrors: $serverErrors,
+                serverWarnings: $serverWarnings,
                 server: $server,
                 serverToEdit: server,
                 backLabel: backLabel
@@ -276,6 +325,49 @@ func deleteXFTPServer(
             var updatedServer = server
             updatedServer.deleted = true
             userServers[operatorServersIndex].wrappedValue.xftpServers[idx] = updatedServer
+        }
+    }
+}
+
+func addChatRelay(
+    _ relay: UserChatRelay,
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ serverErrors: Binding<[UserServersError]>,
+    _ serverWarnings: Binding<[UserServersWarning]>? = nil,
+    _ operatorIndex: Int,
+    _ dismiss: DismissAction
+) {
+    let trimmed = relay.address.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else {
+        dismiss()
+        return
+    }
+    var relayToAdd = relay
+    relayToAdd.address = trimmed
+    relayToAdd.name = relay.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    if userServers[operatorIndex].wrappedValue.chatRelays == nil {
+        userServers[operatorIndex].wrappedValue.chatRelays = [relayToAdd]
+    } else {
+        userServers[operatorIndex].wrappedValue.chatRelays?.append(relayToAdd)
+    }
+    validateServers_(userServers, serverErrors, serverWarnings)
+    dismiss()
+}
+
+func deleteChatRelay(
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ operatorServersIndex: Int,
+    _ serverIndexSet: IndexSet
+) {
+    if let idx = serverIndexSet.first {
+        if let relay = userServers[operatorServersIndex].wrappedValue.chatRelays?[idx] {
+            if relay.chatRelayId == nil {
+                userServers[operatorServersIndex].wrappedValue.chatRelays?.remove(at: idx)
+            } else {
+                var updatedRelay = relay
+                updatedRelay.deleted = true
+                userServers[operatorServersIndex].wrappedValue.chatRelays?[idx] = updatedRelay
+            }
         }
     }
 }
@@ -354,6 +446,7 @@ struct YourServersView_Previews: PreviewProvider {
         YourServersView(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
             serverErrors: Binding.constant([]),
+            serverWarnings: Binding.constant([]),
             operatorIndex: 1
         )
     }

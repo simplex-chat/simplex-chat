@@ -174,6 +174,8 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | Shared/Views/Chat/Group/AddGroupMembersView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/Chat/Group/GroupLinkView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/Chat/Group/GroupMemberInfoView.swift | spec/client/chat-view.md | product/views/group-info.md |
+| Shared/Views/Chat/Group/ChannelMembersView.swift | spec/client/chat-view.md | product/views/group-info.md |
+| Shared/Views/Chat/Group/ChannelRelaysView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/NewChat/NewChatView.swift | spec/client/navigation.md | product/views/new-chat.md |
 | Shared/Views/NewChat/QRCode.swift | spec/client/navigation.md | product/views/new-chat.md |
 | Shared/Views/Call/ActiveCallView.swift | spec/services/calls.md | product/views/call.md |
@@ -199,6 +201,8 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | SimpleXChat/FileUtils.swift | spec/services/files.md | product/flows/file-transfer.md |
 | SimpleXChat/Notifications.swift | spec/services/notifications.md | product/flows/messaging.md |
 | SimpleX NSE/NotificationService.swift | spec/services/notifications.md | product/flows/messaging.md |
+| Shared/Views/Chat/ChatItemsMerger.swift | spec/client/chat-view.md | product/views/chat.md |
+| SimpleX SE/ShareAPI.swift | spec/api.md | product/flows/messaging.md |
 
 ### Haskell Core Sources (at `../../src/Simplex/Chat/` relative to `apps/ios/`)
 

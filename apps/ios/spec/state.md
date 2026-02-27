@@ -1,6 +1,6 @@
 # SimpleX Chat iOS -- State Management
 
-**Source:** [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1375) | [`ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1-L5284)
+**Source:** [`ChatModel.swift`](../Shared/Model/ChatModel.swift#L1-L1393) | [`ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1-L5333)
 
 > Technical specification for the app's state architecture: ChatModel, ItemsModel, Chat, ChatInfo, and preference storage.
 >
@@ -15,10 +15,11 @@
 2. [ChatModel -- Primary App State](#2-chatmodel)
 3. [ItemsModel -- Per-Chat Message State](#3-itemsmodel)
 4. [ChatTagsModel -- Tag Filtering State](#4-chattagsmodel)
-5. [Chat -- Single Conversation State](#5-chat)
-6. [ChatInfo -- Conversation Metadata](#6-chatinfo)
-7. [State Flow](#7-state-flow)
-8. [Preference Storage](#8-preference-storage)
+5. [ChannelRelaysModel -- Channel Relay State](#5-channelrelaysmodel)
+6. [Chat -- Single Conversation State](#6-chat)
+7. [ChatInfo -- Conversation Metadata](#7-chatinfo)
+8. [State Flow](#8-state-flow)
+9. [Preference Storage](#9-preference-storage)
 
 ---
 
@@ -62,122 +63,122 @@ ChatTagsModel (singleton -- filter state)
 
 ---
 
-## 2. [ChatModel](../Shared/Model/ChatModel.swift#L337-L1260)
+## 2. [ChatModel](../Shared/Model/ChatModel.swift#L356-L1278)
 
 **Class**: `final class ChatModel: ObservableObject`
 **Singleton**: `ChatModel.shared`
-**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L337)
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L356)
 
 ### Key Published Properties
 
 #### App Lifecycle
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `onboardingStage` | `OnboardingStage?` | Current onboarding step | [L331](../Shared/Model/ChatModel.swift#L338) |
-| `chatInitialized` | `Bool` | Whether chat has been initialized | [L340](../Shared/Model/ChatModel.swift#L347) |
-| `chatRunning` | `Bool?` | Whether chat engine is running | [L341](../Shared/Model/ChatModel.swift#L348) |
-| `chatDbChanged` | `Bool` | Whether DB was changed externally | [L342](../Shared/Model/ChatModel.swift#L349) |
-| `chatDbEncrypted` | `Bool?` | Whether DB is encrypted | [L343](../Shared/Model/ChatModel.swift#L350) |
-| `chatDbStatus` | `DBMigrationResult?` | DB migration status | [L344](../Shared/Model/ChatModel.swift#L351) |
-| `ctrlInitInProgress` | `Bool` | Whether controller is initializing | [L345](../Shared/Model/ChatModel.swift#L352) |
-| `migrationState` | `MigrationToState?` | Device migration state | [L390](../Shared/Model/ChatModel.swift#L398) |
+| `onboardingStage` | `OnboardingStage?` | Current onboarding step | [L357](../Shared/Model/ChatModel.swift#L357) |
+| `chatInitialized` | `Bool` | Whether chat has been initialized | [L366](../Shared/Model/ChatModel.swift#L366) |
+| `chatRunning` | `Bool?` | Whether chat engine is running | [L367](../Shared/Model/ChatModel.swift#L367) |
+| `chatDbChanged` | `Bool` | Whether DB was changed externally | [L368](../Shared/Model/ChatModel.swift#L368) |
+| `chatDbEncrypted` | `Bool?` | Whether DB is encrypted | [L369](../Shared/Model/ChatModel.swift#L369) |
+| `chatDbStatus` | `DBMigrationResult?` | DB migration status | [L370](../Shared/Model/ChatModel.swift#L370) |
+| `ctrlInitInProgress` | `Bool` | Whether controller is initializing | [L371](../Shared/Model/ChatModel.swift#L371) |
+| `migrationState` | `MigrationToState?` | Device migration state | [L417](../Shared/Model/ChatModel.swift#L417) |
 
 #### User State
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `currentUser` | `User?` | Active user profile (triggers theme reapply on change) | [L334](../Shared/Model/ChatModel.swift#L341) |
-| `users` | `[UserInfo]` | All user profiles | [L339](../Shared/Model/ChatModel.swift#L346) |
-| `v3DBMigration` | `V3DBMigrationState` | Legacy DB migration state | [L333](../Shared/Model/ChatModel.swift#L340) |
+| `currentUser` | `User?` | Active user profile (triggers theme reapply on change) | [L360](../Shared/Model/ChatModel.swift#L360) |
+| `users` | `[UserInfo]` | All user profiles | [L365](../Shared/Model/ChatModel.swift#L365) |
+| `v3DBMigration` | `V3DBMigrationState` | Legacy DB migration state | [L359](../Shared/Model/ChatModel.swift#L359) |
 
 #### Chat List
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `chats` | `[Chat]` (private set) | All conversations for current user | [L351](../Shared/Model/ChatModel.swift#L358) |
-| `deletedChats` | `Set<String>` | Chat IDs pending deletion animation | [L352](../Shared/Model/ChatModel.swift#L359) |
+| `chats` | `[Chat]` (private set) | All conversations for current user | [L377](../Shared/Model/ChatModel.swift#L377) |
+| `deletedChats` | `Set<String>` | Chat IDs pending deletion animation | [L378](../Shared/Model/ChatModel.swift#L378) |
 
 #### Active Chat
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `chatId` | `String?` | Currently open chat ID | [L354](../Shared/Model/ChatModel.swift#L361) |
-| `chatAgentConnId` | `String?` | Agent connection ID for active chat | [L355](../Shared/Model/ChatModel.swift#L362) |
-| `chatSubStatus` | `SubscriptionStatus?` | Active chat subscription status | [L356](../Shared/Model/ChatModel.swift#L363) |
-| `openAroundItemId` | `ChatItem.ID?` | Item to scroll to when opening | [L357](../Shared/Model/ChatModel.swift#L364) |
-| `chatToTop` | `String?` | Chat to scroll to top | [L358](../Shared/Model/ChatModel.swift#L365) |
-| `groupMembers` | `[GMember]` | Members of active group | [L359](../Shared/Model/ChatModel.swift#L366) |
-| `groupMembersIndexes` | `[Int64: Int]` | Member ID to index mapping | [L360](../Shared/Model/ChatModel.swift#L367) |
-| `membersLoaded` | `Bool` | Whether members have been loaded | [L361](../Shared/Model/ChatModel.swift#L368) |
-| `secondaryIM` | `ItemsModel?` | Secondary items model (e.g. support chat scope) | [L408](../Shared/Model/ChatModel.swift#L416) |
+| `chatId` | `String?` | Currently open chat ID | [L380](../Shared/Model/ChatModel.swift#L380) |
+| `chatAgentConnId` | `String?` | Agent connection ID for active chat | [L381](../Shared/Model/ChatModel.swift#L381) |
+| `chatSubStatus` | `SubscriptionStatus?` | Active chat subscription status | [L382](../Shared/Model/ChatModel.swift#L382) |
+| `openAroundItemId` | `ChatItem.ID?` | Item to scroll to when opening | [L383](../Shared/Model/ChatModel.swift#L383) |
+| `chatToTop` | `String?` | Chat to scroll to top | [L384](../Shared/Model/ChatModel.swift#L384) |
+| `groupMembers` | `[GMember]` | Members of active group | [L385](../Shared/Model/ChatModel.swift#L385) |
+| `groupMembersIndexes` | `[Int64: Int]` | Member ID to index mapping | [L386](../Shared/Model/ChatModel.swift#L386) |
+| `membersLoaded` | `Bool` | Whether members have been loaded | [L387](../Shared/Model/ChatModel.swift#L387) |
+| `secondaryIM` | `ItemsModel?` | Secondary items model (e.g. support chat scope) | [L435](../Shared/Model/ChatModel.swift#L435) |
 
 #### Authentication
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `contentViewAccessAuthenticated` | `Bool` | Whether user has passed authentication | [L348](../Shared/Model/ChatModel.swift#L355) |
-| `laRequest` | `LocalAuthRequest?` | Pending authentication request | [L349](../Shared/Model/ChatModel.swift#L356) |
+| `contentViewAccessAuthenticated` | `Bool` | Whether user has passed authentication | [L374](../Shared/Model/ChatModel.swift#L374) |
+| `laRequest` | `LocalAuthRequest?` | Pending authentication request | [L375](../Shared/Model/ChatModel.swift#L375) |
 
 #### Notifications
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `deviceToken` | `DeviceToken?` | Current APNs device token | [L369](../Shared/Model/ChatModel.swift#L376) |
-| `savedToken` | `DeviceToken?` | Previously saved token | [L370](../Shared/Model/ChatModel.swift#L377) |
-| `tokenRegistered` | `Bool` | Whether token is registered with server | [L371](../Shared/Model/ChatModel.swift#L378) |
-| `tokenStatus` | `NtfTknStatus?` | Token registration status | [L373](../Shared/Model/ChatModel.swift#L380) |
-| `notificationMode` | `NotificationsMode` | Current notification mode (.off/.periodic/.instant) | [L374](../Shared/Model/ChatModel.swift#L381) |
-| `notificationServer` | `String?` | Notification server URL | [L375](../Shared/Model/ChatModel.swift#L382) |
-| `notificationPreview` | `NotificationPreviewMode` | What to show in notifications | [L376](../Shared/Model/ChatModel.swift#L383) |
-| `notificationResponse` | `UNNotificationResponse?` | Pending notification action | [L346](../Shared/Model/ChatModel.swift#L353) |
-| `ntfContactRequest` | `NTFContactRequest?` | Pending contact request from notification | [L378](../Shared/Model/ChatModel.swift#L385) |
-| `ntfCallInvitationAction` | `(ChatId, NtfCallAction)?` | Pending call action from notification | [L379](../Shared/Model/ChatModel.swift#L386) |
+| `deviceToken` | `DeviceToken?` | Current APNs device token | [L395](../Shared/Model/ChatModel.swift#L395) |
+| `savedToken` | `DeviceToken?` | Previously saved token | [L396](../Shared/Model/ChatModel.swift#L396) |
+| `tokenRegistered` | `Bool` | Whether token is registered with server | [L397](../Shared/Model/ChatModel.swift#L397) |
+| `tokenStatus` | `NtfTknStatus?` | Token registration status | [L399](../Shared/Model/ChatModel.swift#L399) |
+| `notificationMode` | `NotificationsMode` | Current notification mode (.off/.periodic/.instant) | [L400](../Shared/Model/ChatModel.swift#L400) |
+| `notificationServer` | `String?` | Notification server URL | [L401](../Shared/Model/ChatModel.swift#L401) |
+| `notificationPreview` | `NotificationPreviewMode` | What to show in notifications | [L402](../Shared/Model/ChatModel.swift#L402) |
+| `notificationResponse` | `UNNotificationResponse?` | Pending notification action | [L372](../Shared/Model/ChatModel.swift#L372) |
+| `ntfContactRequest` | `NTFContactRequest?` | Pending contact request from notification | [L404](../Shared/Model/ChatModel.swift#L404) |
+| `ntfCallInvitationAction` | `(ChatId, NtfCallAction)?` | Pending call action from notification | [L405](../Shared/Model/ChatModel.swift#L405) |
 
 #### Calls
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `callInvitations` | `[ChatId: RcvCallInvitation]` | Pending incoming call invitations | [L381](../Shared/Model/ChatModel.swift#L388) |
-| `activeCall` | `Call?` | Currently active call | [L382](../Shared/Model/ChatModel.swift#L389) |
-| `callCommand` | `WebRTCCommandProcessor` | WebRTC command queue | [L383](../Shared/Model/ChatModel.swift#L390) |
-| `showCallView` | `Bool` | Whether to show full-screen call UI | [L384](../Shared/Model/ChatModel.swift#L391) |
-| `activeCallViewIsCollapsed` | `Bool` | Whether call view is in PiP mode | [L385](../Shared/Model/ChatModel.swift#L392) |
+| `callInvitations` | `[ChatId: RcvCallInvitation]` | Pending incoming call invitations | [L407](../Shared/Model/ChatModel.swift#L407) |
+| `activeCall` | `Call?` | Currently active call | [L408](../Shared/Model/ChatModel.swift#L408) |
+| `callCommand` | `WebRTCCommandProcessor` | WebRTC command queue | [L409](../Shared/Model/ChatModel.swift#L409) |
+| `showCallView` | `Bool` | Whether to show full-screen call UI | [L410](../Shared/Model/ChatModel.swift#L410) |
+| `activeCallViewIsCollapsed` | `Bool` | Whether call view is in PiP mode | [L411](../Shared/Model/ChatModel.swift#L411) |
 
 #### Remote Desktop
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `remoteCtrlSession` | `RemoteCtrlSession?` | Active remote desktop session | [L387](../Shared/Model/ChatModel.swift#L395) |
+| `remoteCtrlSession` | `RemoteCtrlSession?` | Active remote desktop session | [L414](../Shared/Model/ChatModel.swift#L414) |
 
 #### Misc
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `userAddress` | `UserContactLink?` | User's SimpleX address | [L365](../Shared/Model/ChatModel.swift#L372) |
-| `chatItemTTL` | `ChatItemTTL` | Global message TTL | [L366](../Shared/Model/ChatModel.swift#L373) |
-| `appOpenUrl` | `URL?` | URL opened while app active | [L367](../Shared/Model/ChatModel.swift#L374) |
-| `appOpenUrlLater` | `URL?` | URL opened while app inactive | [L368](../Shared/Model/ChatModel.swift#L375) |
-| `showingInvitation` | `ShowingInvitation?` | Currently displayed invitation | [L389](../Shared/Model/ChatModel.swift#L397) |
-| `draft` | `ComposeState?` | Saved compose draft | [L393](../Shared/Model/ChatModel.swift#L401) |
-| `draftChatId` | `String?` | Chat ID for saved draft | [L394](../Shared/Model/ChatModel.swift#L402) |
-| `networkInfo` | `UserNetworkInfo` | Current network type and status | [L395](../Shared/Model/ChatModel.swift#L403) |
-| `conditions` | `ServerOperatorConditions` | Server usage conditions | [L397](../Shared/Model/ChatModel.swift#L405) |
-| `stopPreviousRecPlay` | `URL?` | Currently playing audio source | [L392](../Shared/Model/ChatModel.swift#L400) |
+| `userAddress` | `UserContactLink?` | User's SimpleX address | [L391](../Shared/Model/ChatModel.swift#L391) |
+| `chatItemTTL` | `ChatItemTTL` | Global message TTL | [L392](../Shared/Model/ChatModel.swift#L392) |
+| `appOpenUrl` | `URL?` | URL opened while app active | [L393](../Shared/Model/ChatModel.swift#L393) |
+| `appOpenUrlLater` | `URL?` | URL opened while app inactive | [L394](../Shared/Model/ChatModel.swift#L394) |
+| `showingInvitation` | `ShowingInvitation?` | Currently displayed invitation | [L416](../Shared/Model/ChatModel.swift#L416) |
+| `draft` | `ComposeState?` | Saved compose draft | [L420](../Shared/Model/ChatModel.swift#L420) |
+| `draftChatId` | `String?` | Chat ID for saved draft | [L421](../Shared/Model/ChatModel.swift#L421) |
+| `networkInfo` | `UserNetworkInfo` | Current network type and status | [L422](../Shared/Model/ChatModel.swift#L422) |
+| `conditions` | `ServerOperatorConditions` | Server usage conditions | [L424](../Shared/Model/ChatModel.swift#L424) |
+| `stopPreviousRecPlay` | `URL?` | Currently playing audio source | [L419](../Shared/Model/ChatModel.swift#L419) |
 
 ### Non-Published Properties
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `messageDelivery` | `[Int64: () -> Void]` | Pending delivery confirmation callbacks | [L399](../Shared/Model/ChatModel.swift#L407) |
-| `filesToDelete` | `Set<URL>` | Files queued for deletion | [L401](../Shared/Model/ChatModel.swift#L409) |
-| `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L405](../Shared/Model/ChatModel.swift#L413) |
+| `messageDelivery` | `[Int64: () -> Void]` | Pending delivery confirmation callbacks | [L426](../Shared/Model/ChatModel.swift#L426) |
+| `filesToDelete` | `Set<URL>` | Files queued for deletion | [L428](../Shared/Model/ChatModel.swift#L428) |
+| `im` | `ItemsModel` | Reference to `ItemsModel.shared` | [L432](../Shared/Model/ChatModel.swift#L432) |
 
 ### Key Methods
 
 | Method | Description | Line |
 |--------|-------------|------|
-| `getUser(_ userId:)` | Find user by ID | [L427](../Shared/Model/ChatModel.swift#L436) |
-| `updateUser(_ user:)` | Update user in list and current | [L437](../Shared/Model/ChatModel.swift#L447) |
-| `removeUser(_ user:)` | Remove user from list | [L446](../Shared/Model/ChatModel.swift#L457) |
-| `getChat(_ id:)` | Find chat by ID | [L456](../Shared/Model/ChatModel.swift#L468) |
-| `addChat(_ chat:)` | Add chat to list | [L510](../Shared/Model/ChatModel.swift#L523) |
-| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L523](../Shared/Model/ChatModel.swift#L537) |
-| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L574](../Shared/Model/ChatModel.swift#L589) |
-| `removeChat(_ id:)` | Remove chat from list | [L1180](../Shared/Model/ChatModel.swift#L1198) |
-| `popChat(_ id:, _ ts:)` | Move chat to top of list | [L1157](../Shared/Model/ChatModel.swift#L1174) |
-| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1058](../Shared/Model/ChatModel.swift#L1074) |
+| `getUser(_ userId:)` | Find user by ID | [L455](../Shared/Model/ChatModel.swift#L455) |
+| `updateUser(_ user:)` | Update user in list and current | [L466](../Shared/Model/ChatModel.swift#L466) |
+| `removeUser(_ user:)` | Remove user from list | [L476](../Shared/Model/ChatModel.swift#L476) |
+| `getChat(_ id:)` | Find chat by ID | [L487](../Shared/Model/ChatModel.swift#L487) |
+| `addChat(_ chat:)` | Add chat to list | [L542](../Shared/Model/ChatModel.swift#L542) |
+| `updateChatInfo(_ cInfo:)` | Update chat metadata | [L556](../Shared/Model/ChatModel.swift#L556) |
+| `replaceChat(_ id:, _ chat:)` | Replace chat in list | [L608](../Shared/Model/ChatModel.swift#L608) |
+| `removeChat(_ id:)` | Remove chat from list | [L1217](../Shared/Model/ChatModel.swift#L1217) |
+| `popChat(_ id:, _ ts:)` | Move chat to top of list | [L1193](../Shared/Model/ChatModel.swift#L1193) |
+| `totalUnreadCountForAllUsers()` | Sum unread across all users | [L1093](../Shared/Model/ChatModel.swift#L1093) |
 
 ---
 
@@ -269,10 +270,35 @@ enum ActiveFilter {
 
 ---
 
-## 5. [Chat](../Shared/Model/ChatModel.swift#L1311-L1323)
+## 5. [ChannelRelaysModel](../Shared/Model/ChatModel.swift#L336-L353)
+
+**Class**: `class ChannelRelaysModel: ObservableObject`
+**Singleton**: `ChannelRelaysModel.shared`
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L336)
+
+Holds runtime relay state for the currently viewed channel. Used by `ChannelRelaysView` to display and manage relays. Reset when the view is dismissed.
+
+### Properties
+
+| Property | Type | Description | Line |
+|----------|------|-------------|------|
+| `groupId` | `Int64?` | Group ID of the channel whose relays are loaded | [L338](../Shared/Model/ChatModel.swift#L338) |
+| `groupLink` | `GroupLink?` | Channel's group link (for relay invitation) | [L339](../Shared/Model/ChatModel.swift#L339) |
+| `groupRelays` | `[GroupRelay]` | Current relay instances for the channel | [L340](../Shared/Model/ChatModel.swift#L340) |
+
+### Methods
+
+| Method | Description | Line |
+|--------|-------------|------|
+| `update(groupId:groupLink:groupRelays:)` | Populate all properties at once | [L342](../Shared/Model/ChatModel.swift#L342) |
+| `reset()` | Clear all properties to nil/empty | [L348](../Shared/Model/ChatModel.swift#L348) |
+
+---
+
+## 6. [Chat](../Shared/Model/ChatModel.swift#L1290-L1342)
 
 **Class**: `final class Chat: ObservableObject, Identifiable, ChatLike`
-**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L1271)
+**Source**: [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift#L1290)
 
 Represents a single conversation in the chat list. Each `Chat` is an independent observable object.
 
@@ -280,12 +306,12 @@ Represents a single conversation in the chat list. Each `Chat` is an independent
 
 | Property | Type | Description | Line |
 |----------|------|-------------|------|
-| `chatInfo` | `ChatInfo` | Conversation type and metadata | [L1253](../Shared/Model/ChatModel.swift#L1272) |
-| `chatItems` | `[ChatItem]` | Preview items (typically last message) | [L1254](../Shared/Model/ChatModel.swift#L1273) |
-| `chatStats` | `ChatStats` | Unread counts and min unread item ID | [L1255](../Shared/Model/ChatModel.swift#L1274) |
-| `created` | `Date` | Creation timestamp | [L1256](../Shared/Model/ChatModel.swift#L1275) |
+| `chatInfo` | `ChatInfo` | Conversation type and metadata | [L1291](../Shared/Model/ChatModel.swift#L1291) |
+| `chatItems` | `[ChatItem]` | Preview items (typically last message) | [L1292](../Shared/Model/ChatModel.swift#L1292) |
+| `chatStats` | `ChatStats` | Unread counts and min unread item ID | [L1293](../Shared/Model/ChatModel.swift#L1293) |
+| `created` | `Date` | Creation timestamp | [L1294](../Shared/Model/ChatModel.swift#L1294) |
 
-### [ChatStats](../SimpleXChat/ChatTypes.swift#L1877-L1899)
+### [ChatStats](../SimpleXChat/ChatTypes.swift#L1880-L1902)
 
 ```swift
 struct ChatStats: Decodable, Hashable {
@@ -301,17 +327,17 @@ struct ChatStats: Decodable, Hashable {
 
 | Property | Description | Line |
 |----------|-------------|------|
-| `id` | Chat ID from `chatInfo.id` | [L1287](../Shared/Model/ChatModel.swift#L1306) |
-| `viewId` | Unique view identity including creation time | [L1289](../Shared/Model/ChatModel.swift#L1308) |
-| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1279](../Shared/Model/ChatModel.swift#L1298) |
-| `supportUnreadCount` | Unread count for group support scope | [L1291](../Shared/Model/ChatModel.swift#L1310) |
+| `id` | Chat ID from `chatInfo.id` | [L1325](../Shared/Model/ChatModel.swift#L1325) |
+| `viewId` | Unique view identity including creation time | [L1327](../Shared/Model/ChatModel.swift#L1327) |
+| `unreadTag` | Whether chat counts as "unread" based on notification settings | [L1317](../Shared/Model/ChatModel.swift#L1317) |
+| `supportUnreadCount` | Unread count for group support scope | [L1329](../Shared/Model/ChatModel.swift#L1329) |
 
 ---
 
-## 6. [ChatInfo](../SimpleXChat/ChatTypes.swift#L1372-L1852)
+## 7. [ChatInfo](../SimpleXChat/ChatTypes.swift#L1374-L1855)
 
 **Enum**: `public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable`
-**Source**: [`SimpleXChat/ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1372)
+**Source**: [`SimpleXChat/ChatTypes.swift`](../SimpleXChat/ChatTypes.swift#L1374)
 
 Represents the type and metadata of a conversation:
 
@@ -348,9 +374,37 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 | `chatSettings` | `ChatSettings?` | Notification/favorite settings |
 | `chatTags` | `[Int64]?` | Assigned tag IDs |
 
+### Relay-Related Data Model (Channels)
+
+A **channel** is a group with `groupInfo.useRelays == true`. These types support the relay/channel infrastructure:
+
+#### New Fields on Existing Types
+
+| Type | Field | Type | Description | Line |
+|------|-------|------|-------------|------|
+| `User` | `userChatRelay` | `Bool` | Whether user acts as a chat relay | [L46](../SimpleXChat/ChatTypes.swift#L46) |
+| `GroupInfo` | `useRelays` | `Bool` | Whether group uses relay infrastructure (channel mode) | [L2342](../SimpleXChat/ChatTypes.swift#L2342) |
+| `GroupInfo` | `relayOwnStatus` | `RelayStatus?` | Current user's relay status in this group | [L2343](../SimpleXChat/ChatTypes.swift#L2343) |
+| `GroupProfile` | `groupLink` | `String?` | Group's short link | [L2451](../SimpleXChat/ChatTypes.swift#L2451) |
+
+#### New Types
+
+| Type | Kind | Description | Line |
+|------|------|-------------|------|
+| `RelayStatus` | `enum` | Relay lifecycle: `.rsNew`, `.rsInvited`, `.rsAccepted`, `.rsActive` | [L2505](../SimpleXChat/ChatTypes.swift#L2505) |
+| `RelayStatus.text` | `extension` | Localized display text: New/Connecting/Accepted/Active | [L2521](../SimpleXChat/ChatTypes.swift#L2521) |
+| `GroupRelay` | `struct` | Relay instance for a group (ID, member ID, relay status). Fetched at runtime via `apiGetGroupRelays` (owner only) | [L2512](../SimpleXChat/ChatTypes.swift#L2512) |
+
+#### New Enum Cases
+
+| Enum | Case | Description | Line |
+|------|------|-------------|------|
+| `GroupMemberRole` | `.relay` | Role for relay members (below `.observer`) | [L2763](../SimpleXChat/ChatTypes.swift#L2763) |
+| `CIDirection` | `.channelRcv` | Message direction for channel-received messages (via relay) | [L3485](../SimpleXChat/ChatTypes.swift#L3485) |
+
 ---
 
-## 7. State Flow
+## 8. State Flow
 
 ### App Start
 ```
@@ -400,7 +454,7 @@ User taps send in ComposeView
 
 ---
 
-## 8. Preference Storage
+## 9. Preference Storage
 
 ### UserDefaults (via @AppStorage)
 
@@ -457,7 +511,7 @@ Chat-level preferences stored in the SQLite database (managed by Haskell core):
 
 | File | Path |
 |------|------|
-| ChatModel, ItemsModel, Chat, ChatTagsModel | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift) |
+| ChatModel, ItemsModel, Chat, ChatTagsModel, ChannelRelaysModel | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift) |
 | ChatInfo, User, Contact, GroupInfo, ChatItem | [`SimpleXChat/ChatTypes.swift`](../SimpleXChat/ChatTypes.swift) |
 | ActiveFilter | [`Shared/Views/ChatList/ChatListView.swift`](../Shared/Views/ChatList/ChatListView.swift#L52) |
 | Preference defaults | [`Shared/Model/ChatModel.swift`](../Shared/Model/ChatModel.swift), [`SimpleXChat/FileUtils.swift`](../SimpleXChat/FileUtils.swift) |
