@@ -1199,6 +1199,14 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
+    if case let .simplexLink(_, .relay, _, _) = strHasSingleSimplexLink(shortOrFullLink)?.format {
+        showAlert(
+            NSLocalizedString("Relay address", comment: "alert title"),
+            message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+        )
+        cleanup?()
+        return
+    }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)
     connectTask(inProgress)
