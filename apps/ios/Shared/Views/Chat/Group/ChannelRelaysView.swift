@@ -47,7 +47,8 @@ struct ChannelRelaysView: View {
                             groupInfo: groupInfo,
                             chat: chat,
                             groupMember: member,
-                            scrollToItemId: $scrollToItemId
+                            scrollToItemId: $scrollToItemId,
+                            groupRelay: groupRelays.first(where: { $0.groupMemberId == member.wrapped.groupMemberId })
                         )
                         .navigationBarHidden(false)
                     } label: {

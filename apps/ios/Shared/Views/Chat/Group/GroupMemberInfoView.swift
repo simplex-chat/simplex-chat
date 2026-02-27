@@ -20,6 +20,7 @@ struct GroupMemberInfoView: View {
     @Binding var scrollToItemId: ChatItem.ID?
     var navigation: Bool = false
     var openedFromSupportChat: Bool = false
+    var groupRelay: GroupRelay? = nil
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
@@ -31,6 +32,26 @@ struct GroupMemberInfoView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
     @State private var progressIndicator = false
+
+    private var channelMemberSectionHeader: LocalizedStringKey {
+        if groupInfo.useRelays {
+            switch groupMember.wrapped.memberRole {
+            case .relay: "Relay"
+            case .owner: "Owner"
+            default: "Subscriber"
+            }
+        } else {
+            "Member"
+        }
+    }
+
+    private var relaySectionFooter: LocalizedStringKey {
+        if groupInfo.isOwner {
+            "Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel."
+        } else {
+            "You connected to the channel via this relay link."
+        }
+    }
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case blockMemberAlert(mem: GroupMember)
@@ -147,7 +168,7 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
+                    Section {
                         let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
@@ -164,6 +185,20 @@ struct GroupMemberInfoView: View {
                         }
                         if let link = member.relayLink {
                             infoRow("Relay link", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(link)))
+                        }
+                        if let address = groupRelay?.userChatRelay.address {
+                            infoRow("Relay address", String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(address)))
+                            Button {
+                                showShareSheet(items: [simplexChatLink(address)])
+                            } label: {
+                                Label("Share relay address", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                    } header: {
+                        Text(channelMemberSectionHeader).foregroundColor(theme.colors.secondary)
+                    } footer: {
+                        if groupInfo.useRelays && member.memberRole == .relay {
+                            Text(relaySectionFooter).foregroundColor(theme.colors.secondary)
                         }
                     }
 
