@@ -2351,7 +2351,7 @@ processChatCommand vr nm = \case
         let crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with sharedGroupId as linkEntityId (no server request)
         ((_, rootPrivKey), ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) (Just sharedGroupId) True (Just crClientData)
-        ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+        ccLink' <- createdChannelLink <$> shortenCreatedLink ccLink
         sLnk <- case toShortLinkContact ccLink' of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
@@ -3812,10 +3812,7 @@ processChatCommand vr nm = \case
       CLFull cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
-      CLShort l@(CSLContact _ ct _ _) -> do
-        let l' = serverShortLink l
-            con cReq = ACCL SCMContact $ CCLink cReq (Just l')
-            gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
+      CLShort l@(CSLContact _ ct _ _) ->
         case ct of
           CCTContact ->
             knownLinkPlans >>= \case
@@ -3836,7 +3833,14 @@ processChatCommand vr nm = \case
                     getContactViaShortLinkToConnect db vr user l' >>= \case
                       Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (con cReq, CPContactAddress (CAPKnown ct'))
                       Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-          CCTGroup ->
+          CCTGroup -> groupShortLinkPlan
+          CCTChannel -> groupShortLinkPlan
+          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
+        where
+          l' = serverShortLink l
+          con cReq = ACCL SCMContact $ CCLink cReq (Just l')
+          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
+          groupShortLinkPlan =
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
@@ -3851,8 +3855,6 @@ processChatCommand vr nm = \case
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-          CCTChannel -> throwCmdError "channel links are not supported in this version"
-          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do

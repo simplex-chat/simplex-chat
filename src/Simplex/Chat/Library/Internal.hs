@@ -1370,6 +1370,12 @@ createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> sho
 toShortGroupLink :: ShortLinkContact -> ShortLinkContact
 toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
 
+createdChannelLink :: CreatedLinkContact -> CreatedLinkContact
+createdChannelLink (CCLink cReq shortLink) = CCLink cReq (toShortChannelLink <$> shortLink)
+
+toShortChannelLink :: ShortLinkContact -> ShortLinkContact
+toShortChannelLink (CSLContact sch _ srv k) = CSLContact sch CCTChannel srv k
+
 createdRelayLink :: CreatedLinkContact -> CreatedLinkContact
 createdRelayLink (CCLink cReq shortLink) = CCLink cReq (toShortRelayLink <$> shortLink)
 
