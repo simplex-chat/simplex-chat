@@ -2509,10 +2509,52 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case rsActive = "active"
 }
 
+public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
+    public var chatRelayId: Int64?
+    public var address: String
+    public var name: String
+    public var domains: [String]
+    public var preset: Bool
+    public var tested: Bool?
+    public var enabled: Bool
+    public var deleted: Bool
+    public var createdAt = Date()
+
+    public init(chatRelayId: Int64? = nil, address: String, name: String, domains: [String], preset: Bool, tested: Bool? = nil, enabled: Bool, deleted: Bool, createdAt: Date = Date()) {
+        self.chatRelayId = chatRelayId
+        self.address = address
+        self.name = name
+        self.domains = domains
+        self.preset = preset
+        self.tested = tested
+        self.enabled = enabled
+        self.deleted = deleted
+        self.createdAt = createdAt
+    }
+
+    public static func == (l: UserChatRelay, r: UserChatRelay) -> Bool {
+        l.chatRelayId == r.chatRelayId && l.address == r.address && l.name == r.name && l.domains == r.domains &&
+        l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled && l.deleted == r.deleted
+    }
+
+    public var id: String { "\(address) \(createdAt)" }
+
+    public enum CodingKeys: CodingKey {
+        case chatRelayId
+        case address
+        case name
+        case domains
+        case preset
+        case tested
+        case enabled
+        case deleted
+    }
+}
+
 public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
     public var groupRelayId: Int64
     public var groupMemberId: Int64
-    public var userChatRelayId: Int64
+    public var userChatRelay: UserChatRelay
     public var relayStatus: RelayStatus
     public var relayLink: String?
     public var id: Int64 { groupRelayId }

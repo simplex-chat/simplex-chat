@@ -1948,36 +1948,6 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
     }
 }
 
-struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
-    var chatRelayId: Int64?
-    var address: String
-    var name: String
-    var domains: [String]
-    var preset: Bool
-    var tested: Bool?
-    var enabled: Bool
-    var deleted: Bool
-    var createdAt = Date()
-
-    static func == (l: UserChatRelay, r: UserChatRelay) -> Bool {
-        l.chatRelayId == r.chatRelayId && l.address == r.address && l.name == r.name && l.domains == r.domains &&
-        l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled && l.deleted == r.deleted
-    }
-
-    var id: String { "\(address) \(createdAt)" }
-
-    enum CodingKeys: CodingKey {
-        case chatRelayId
-        case address
-        case name
-        case domains
-        case preset
-        case tested
-        case enabled
-        case deleted
-    }
-}
-
 struct RelayConnectionResult: Decodable {
     var relayMember: GroupMember
     var relayError: ChatError?

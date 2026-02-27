@@ -365,6 +365,7 @@ struct ComposeView: View {
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @State private var updatingCompose = false
     @State private var relayListExpanded = false
+    @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
 
     // Spec: spec/client/compose.md#body
     var body: some View {
@@ -382,21 +383,30 @@ struct ComposeView: View {
             }
 
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays {
-                let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
-                let relayMembers = chatModel.groupMembers
-                    .filter { $0.wrapped.memberRole == .relay }
-                    .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
-                let connectedCount = relayMembers.filter { $0.wrapped.memberStatus == .memConnected }.count
-                let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
-                let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                if total > 0, !showProgress || connectedCount < total {
-                    channelRelayBar(
-                        hostnames: hostnames,
-                        relayMembers: relayMembers,
-                        connectedCount: connectedCount,
-                        total: total,
-                        showProgress: showProgress
-                    )
+                if gInfo.membership.memberRole == .owner {
+                    let relays = channelRelaysModel.groupId == gInfo.groupId
+                        ? channelRelaysModel.groupRelays : []
+                    let activeCount = relays.filter { $0.relayStatus == .rsActive }.count
+                    if !relays.isEmpty && activeCount < relays.count {
+                        ownerChannelRelayBar(relays: relays, activeCount: activeCount)
+                    }
+                } else {
+                    let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
+                    let relayMembers = chatModel.groupMembers
+                        .filter { $0.wrapped.memberRole == .relay }
+                        .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+                    let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
+                    let connectedCount = relayMembers.filter { $0.wrapped.memberStatus == .memConnected }.count
+                    let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+                    if total > 0, !showProgress || connectedCount < total {
+                        subscriberChannelRelayBar(
+                            hostnames: hostnames,
+                            relayMembers: relayMembers,
+                            connectedCount: connectedCount,
+                            total: total,
+                            showProgress: showProgress
+                        )
+                    }
                 }
             }
 
@@ -703,55 +713,36 @@ struct ComposeView: View {
             if case let .voicePreview(_, duration) = composeState.preview {
                 voiceMessageRecordingTime = TimeInterval(duration)
             }
+            if let gInfo = chat.chatInfo.groupInfo,
+               gInfo.useRelays,
+               gInfo.membership.memberRole == .owner,
+               channelRelaysModel.groupId != gInfo.groupId {
+                Task {
+                    let relays = await apiGetGroupRelays(gInfo.groupId)
+                    await MainActor.run {
+                        channelRelaysModel.update(groupId: gInfo.groupId, groupRelays: relays)
+                    }
+                }
+            }
         }
     }
 
-    private func channelRelayBar(
-        hostnames: [String],
-        relayMembers: [GMember],
-        connectedCount: Int,
-        total: Int,
-        showProgress: Bool
-    ) -> some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation(nil) { relayListExpanded.toggle() }
-            } label: {
-                HStack(spacing: 8) {
-                    if showProgress && connectedCount < total {
-                        RelayProgressIndicator(active: connectedCount, total: total)
-                    }
-                    if showProgress {
-                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel relay bar progress"), connectedCount, total))
-                    } else {
-                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
-                    }
-                    Spacer()
-                    Image(systemName: relayListExpanded ? "chevron.down" : "chevron.up")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(theme.colors.secondary)
-                        .opacity(0.7)
+    private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int) -> some View {
+        let total = relays.count
+        let sorted = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
+        return VStack(spacing: 0) {
+            relayBarHeader {
+                if activeCount < total {
+                    RelayProgressIndicator(active: activeCount, total: total)
                 }
-                .font(.callout)
-                .foregroundColor(theme.colors.secondary)
-                .padding(.top, 8)
-                .padding(.bottom, relayListExpanded ? 4 : 8)
-                .padding(.leading, 12)
-                .padding(.trailing)
+                Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel relay bar progress"), activeCount, total))
             }
             if relayListExpanded {
-                if relayMembers.isEmpty {
-                    ForEach(hostnames, id: \.self) { relay in
-                        channelRelayRow(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(relay)))
-                    }
-                } else {
-                    ForEach(relayMembers) { member in
-                        let m = member.wrapped
-                        let host = m.relayLink.map { hostFromRelayLink($0) }
-                        channelRelayRow(
-                            String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName),
-                            status: m.memberStatus == .memConnected ? "connected" : "connecting"
-                        )
+                ForEach(sorted) { relay in
+                    relayBarDetailRow {
+                        Text(relayDisplayName(relay)).foregroundColor(theme.colors.secondary)
+                        Spacer()
+                        relayStatusIndicator(relay.relayStatus)
                     }
                 }
             }
@@ -760,19 +751,102 @@ struct ComposeView: View {
         .animation(nil, value: relayListExpanded)
     }
 
-    private func channelRelayRow(_ host: String, status: LocalizedStringKey? = nil) -> some View {
-        HStack {
-            Text(host).foregroundColor(theme.colors.secondary)
-            Spacer()
-            if let status {
-                Text(status)
-                    .foregroundColor(theme.colors.secondary)
+    private func subscriberChannelRelayBar(
+        hostnames: [String],
+        relayMembers: [GMember],
+        connectedCount: Int,
+        total: Int,
+        showProgress: Bool
+    ) -> some View {
+        VStack(spacing: 0) {
+            relayBarHeader {
+                if showProgress && connectedCount < total {
+                    RelayProgressIndicator(active: connectedCount, total: total)
+                }
+                if showProgress {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
+                } else {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
+                }
             }
+            if relayListExpanded {
+                if relayMembers.isEmpty {
+                    ForEach(hostnames, id: \.self) { relay in
+                        relayBarDetailRow {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(relay)))
+                                .foregroundColor(theme.colors.secondary)
+                            Spacer()
+                        }
+                    }
+                } else {
+                    ForEach(relayMembers) { member in
+                        let m = member.wrapped
+                        let host = m.relayLink.map { hostFromRelayLink($0) }
+                        relayBarDetailRow {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName))
+                                .foregroundColor(theme.colors.secondary)
+                            Spacer()
+                            Circle()
+                                .fill(m.memberStatus == .memConnected ? .green : .yellow)
+                                .frame(width: 8, height: 8)
+                            Text(m.memberStatus == .memConnected ? "connected" : "connecting")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.bottom, relayListExpanded ? 4 : 0)
+        .animation(nil, value: relayListExpanded)
+    }
+
+    private func relayBarHeader<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        Button {
+            withAnimation(nil) { relayListExpanded.toggle() }
+        } label: {
+            HStack(spacing: 8) {
+                content()
+                Spacer()
+                Image(systemName: relayListExpanded ? "chevron.down" : "chevron.up")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(theme.colors.secondary)
+                    .opacity(0.7)
+            }
+            .font(.callout)
+            .foregroundColor(theme.colors.secondary)
+            .padding(.top, 8)
+            .padding(.bottom, relayListExpanded ? 4 : 8)
+            .padding(.leading, 12)
+            .padding(.trailing)
+        }
+    }
+
+    private func relayBarDetailRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            content()
         }
         .font(.caption)
         .padding(.leading, 12)
         .padding(.trailing)
         .padding(.vertical, 2)
+    }
+
+    private func relayDisplayName(_ relay: GroupRelay) -> String {
+        if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
+        if let domain = relay.userChatRelay.domains.first { return domain }
+        if let link = relay.relayLink { return hostFromRelayLink(link) }
+        return "relay\(relay.groupRelayId)"
+    }
+
+    private func relayStatusIndicator(_ status: RelayStatus) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(status == .rsActive ? .green : status == .rsNew ? .red : .orange)
+                .frame(width: 8, height: 8)
+            Text(status.text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func connectButtonView(_ label: LocalizedStringKey, icon: String, connect: @escaping () -> Void) -> some View {

@@ -25,7 +25,6 @@ struct AddChannelView: View {
     @State private var groupLink: GroupLink? = nil
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var groupRelays: [GroupRelay] = []
-    @State private var configuredRelays: [Int64: UserChatRelay] = [:]
     @State private var creationInProgress = false
     @State private var showLinkStep = false
     @State private var relayListExpanded = false
@@ -182,9 +181,6 @@ struct AddChannelView: View {
                 }
                 await MainActor.run {
                     m.updateGroup(gInfo)
-                    configuredRelays = Dictionary(uniqueKeysWithValues: enabledRelays.compactMap { r in
-                        r.chatRelayId.map { ($0, r) }
-                    })
                     groupInfo = gInfo
                     groupLink = gLink
                     groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
@@ -248,7 +244,7 @@ struct AddChannelView: View {
                         if activeCount < total {
                             RelayProgressIndicator(active: activeCount, total: total)
                         }
-                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel creation progress"), activeCount, total))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel creation progress"), activeCount, total))
                         Spacer()
                         Image(systemName: relayListExpanded ? "chevron.up" : "chevron.down")
                             .foregroundColor(theme.colors.secondary)
@@ -295,9 +291,6 @@ struct AddChannelView: View {
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
-            if let link = channelRelaysModel.groupLink {
-                groupLink = link
-            }
             if relays.allSatisfy({ $0.relayStatus == .rsActive }) {
                 showLinkStep = true
             }
@@ -357,10 +350,8 @@ struct AddChannelView: View {
     }
 
     private func relayDisplayName(_ relay: GroupRelay) -> String {
-        if let cfg = configuredRelays[relay.userChatRelayId] {
-            if !cfg.name.isEmpty { return cfg.name }
-            if let domain = cfg.domains.first { return domain }
-        }
+        if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
+        if let domain = relay.userChatRelay.domains.first { return domain }
         if let link = relay.relayLink { return hostFromRelayLink(link) }
         return "relay\(relay.groupRelayId)"
     }
