@@ -976,10 +976,10 @@ p a{
     height: 100%;
   }
 
-  h1{
+  .hero-section-1 h1{
     font-size: 48px !important;
   }
-  h2{
+  .hero-section-1 h2{
     font-size: 36px !important;
   }
 }
