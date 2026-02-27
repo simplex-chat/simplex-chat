@@ -68,6 +68,11 @@ active_file: true
     margin-bottom: 0;
     z-index: 1;
   }
+  @media (min-width: 1024px) and (max-height: 750px) {
+    #xftp-protocol .overlay-card > h1 {
+      font-size: 22px;
+    }
+  }
   /* .flex is the full-width scroll container */
   #xftp-protocol .overlay-card > .flex {
     flex: 1;
@@ -84,7 +89,7 @@ active_file: true
   #xftp-protocol .overlay-card > .flex::-webkit-scrollbar-thumb { background: #c5d3de; border-radius: 3px; }
   .dark #xftp-protocol .overlay-card > .flex::-webkit-scrollbar-thumb { background: #374151; }
   /* Desktop: text stays left, image fixed on right */
-  @media (min-width: 1024px) {
+  @media (min-width: 1024px) and (min-height: 600px) {
     #xftp-protocol .overlay-card > .flex > div:first-child {
       max-width: 50%;
     }
@@ -98,6 +103,14 @@ active_file: true
       align-items: center;
       justify-content: center;
       pointer-events: none;
+    }
+    #xftp-protocol .overlay-card > .flex > div:last-child > div {
+      height: 100%;
+      padding: 40px 0;
+      box-sizing: border-box;
+    }
+    #xftp-protocol .overlay-card > .flex > div:last-child img {
+      height: 100%;
     }
   }
   #xftp-protocol .close-overlay-btn {
@@ -128,7 +141,7 @@ active_file: true
   @media (min-width: 640px) {
     #xftp-protocol .overlay-card::after { bottom: 56px; left: 56px; right: 56px; }
   }
-  @media (min-width: 1024px) {
+  @media (min-width: 1024px) and (min-height: 600px) {
     #xftp-protocol .overlay-card::after { right: 55%; }
   }
   #xftp-protocol.scrolled-bottom .overlay-card::after { opacity: 0; }
