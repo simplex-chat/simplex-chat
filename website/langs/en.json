@@ -326,6 +326,7 @@
     "why-tagline": "Be free in your network.",
     "why-footer-link": "Why we are building it",
     "file": "File",
+    "file-desc": "Send files securely with end-to-end encryption — no accounts, no tracking.",
     "file-noscript": "JavaScript is required for file transfer.",
     "file-e2e-note": "End-to-end encrypted — the server never sees your file.",
     "file-learn-more": "Learn more about XFTP protocol",

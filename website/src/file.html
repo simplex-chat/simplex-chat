@@ -17,9 +17,9 @@ active_file: true
   #app .card > div > * { opacity: unset; max-height: unset; transform: unset; transition: unset; }
 
   /* Align xftp bundle with website design */
-  #app { font-family: inherit; color: #3F484B; max-width: 520px; padding: 0; }
+  #app { font-family: inherit; color: #3F484B; max-width: 600px; width: 100%; margin: 0 auto; padding: 0; }
   #app .card { background: transparent; box-shadow: none; padding: 0; border-radius: 0; }
-  #app h1 { font-size: 38px; line-height: 55px; font-weight: 700; color: #3F484B; margin-bottom: 32px; }
+  #app .card > h1 { display: none; }
   .dark #app h1 { color: #fff; }
   #app .drop-zone { border: 2px dashed #c5d3de; border-radius: 12px; padding: 40px 24px; }
   #app .drop-zone.drag-over { border-color: #0053D0; background: #DBEEFF; }
@@ -28,7 +28,7 @@ active_file: true
   #app .btn-secondary { background: #6b7280; border-radius: 34px; }
   #app .hint { color: #6b7280; }
   #app .link-row input { border-radius: 8px; border-color: #c5d3de; }
-  #app .security-note { background: #f0f7ff; border-radius: 12px; color: #3F484B; }
+  #app .security-note { background: #ffffff; border-radius: 12px; color: #3F484B; }
   #app .security-note a { color: #0197FF; }
   #app .success { color: #0053D0; }
 
@@ -149,55 +149,34 @@ active_file: true
     to { opacity: 0; transform: scale(0.95) translateY(10px); }
   }
 
-  #join-simplex { margin-top: 64px; }
-
-  .learn-more-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 20px;
-    padding: 12px 20px;
-    border-radius: 12px;
-    background: #f0f7ff;
-    border: 1px solid #c5d3de;
-    color: #0053D0;
+  .file-proto-link {
+    font-size: 1.25rem;
     font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
+    background: linear-gradient(90deg, #001aa7 0%, #0095e7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     text-decoration: none;
   }
-  .learn-more-banner:hover {
-    background: #DBEEFF;
-    border-color: #0053D0;
+  .dark .file-proto-link {
+    background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-  .learn-more-banner .learn-more-arrow {
-    margin-left: auto;
-    transition: transform 0.15s;
-  }
-  .learn-more-banner:hover .learn-more-arrow {
-    transform: translateX(3px);
-  }
-  .dark .learn-more-banner {
-    background: #0B2A59;
-    border-color: #1B325C;
-    color: #70F0F9;
-  }
-  .dark .learn-more-banner:hover {
-    background: #122F5C;
-    border-color: #70F0F9;
-  }
+
 </style>
 
-<section class="bg-primary-bg-light dark:bg-primary-bg-dark py-10 mt-[66px] px-5">
-  <div class="container flex flex-col items-center max-w-[600px] mx-auto">
+<section class="bg-secondary-bg-light dark:bg-primary-bg-dark py-10 lg:py-16 mt-[66px] px-5">
+  <div class="container flex flex-col items-center mx-auto">
     <noscript>
       <p class="text-center text-grey-black dark:text-white py-10">
         {{ "file-noscript" | i18n({}, lang) | safe }}
       </p>
     </noscript>
+    <h1 class="text-[38px] text-center font-bold text-active-blue mb-8">{{ 'file-title' | i18n({}, lang) | safe }}</h1>
     <div id="app" data-xftp-app data-no-hashchange class="w-full">
       <div class="card">
-        <h1>{{ 'file-title' | i18n({}, lang) | safe }}</h1>
         <div class="drop-zone">
           <p>{{ 'file-drop-text' | i18n({}, lang) | safe }}</p>
           <p class="hint">{{ 'file-drop-hint' | i18n({}, lang) | safe }}</p>
@@ -223,34 +202,25 @@ active_file: true
     <script>if(location.hash.length>50){var a=document.getElementById("app"),t=document.getElementById("dl-placeholder");if(a&&t)a.replaceChildren(t.content.cloneNode(true))}</script>
     <script type="module" src="/file-assets/index.js"></script>
 
-    <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
-      {{ "file-e2e-note" | i18n({}, lang) | safe }}
+    <p class="text-base text-center text-grey-black dark:text-white mt-10 max-w-[600px]">{{ 'file-desc' | i18n({}, lang) | safe }}</p>
+    <a href="javascript:void(0)" data-show-overlay="xftp-protocol" class="open-overlay-btn file-proto-link mt-3 block text-center">{{ "file-learn-more" | i18n({}, lang) | safe }}</a>
+  </div>
+</section>
+
+<section class="bg-primary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5">
+  <div class="container flex flex-col items-center mx-auto text-center">
+    <h2 class="text-[35px] leading-[45px] md:text-[45px] md:leading-[55px] text-grey-black dark:text-white font-bold mb-5">
+      {{ "file-cta-heading" | i18n({}, lang) | safe }}
+    </h2>
+    <p class="text-base text-grey-black dark:text-white mb-14 max-w-[600px]">
+      {{ "file-cta-subheading" | i18n({}, lang) | safe }}
     </p>
-
-    <a id="learn-more-btn" href="javascript:void(0);" class="learn-more-banner">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 1C7.2 1 5 3.2 5 6v2H4a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2h-1V6c0-2.8-2.2-5-5-5zm-3 5c0-1.7 1.3-3 3-3s3 1.3 3 3v2H7V6zm4 8.7V16H9v-1.3a2 2 0 111.9 0h.1z" fill="currentColor"/>
-      </svg>
-      <span>{{ "file-learn-more" | i18n({}, lang) | safe }}</span>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="learn-more-arrow">
-        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </a>
-
-    <div id="join-simplex" class="text-center w-full">
-      <h2 class="text-[38px] leading-[36px] md:leading-[55px] text-grey-black dark:text-white font-bold mb-5">
-        {{ "file-cta-heading" | i18n({}, lang) | safe }}
-      </h2>
-      <p class="text-base text-grey-black dark:text-white mb-14 max-w-[600px] mx-auto">
-        {{ "file-cta-subheading" | i18n({}, lang) | safe }}
-      </p>
-      <div class="flex items-center justify-center gap-4 flex-wrap">
-        <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
-        <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
-        <a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
-        <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
-        <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
-      </div>
+    <div class="flex items-center justify-center gap-4 flex-wrap">
+      <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg" /></a>
+      <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img class="h-[40px] w-auto" src="/img/new/google_play.svg" /></a>
+      <a href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid"><img class="h-[40px] w-auto" src="/img/new/f_droid.svg" /></a>
+      <a href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="h-[40px] w-auto" src="/img/new/testflight.png" /></a>
+      <a href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apk_icon.png" /></a>
     </div>
   </div>
 </section>
@@ -295,11 +265,6 @@ active_file: true
 </script>
 
 <script>
-  document.getElementById('learn-more-btn')?.addEventListener('click', function() {
-    var el = document.getElementById('xftp-protocol');
-    if (el) { el.classList.remove('hidden', 'overlay-closing'); el.classList.add('flex'); document.body.classList.add('lock-scroll'); }
-  });
-
   // Intercept close for #xftp-protocol to add fade-out animation
   document.getElementById('xftp-protocol')?.addEventListener('click', function(e) {
     if (e.target.closest('.close-overlay-btn') || (e.target.closest('.overlay') && !e.target.closest('.overlay-card'))) {
