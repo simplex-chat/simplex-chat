@@ -117,6 +117,7 @@ chatCommandsDocsData =
         ("APILeaveGroup", [], "Leave group.", ["CRLeftMemberUser", "CRChatCmdError"], [], Just UNBackground, "/_leave #" <> Param "groupId"),
         ("APIListMembers", [], "Get group members.", ["CRGroupMembers", "CRChatCmdError"], [], Nothing, "/_members #" <> Param "groupId"),
         ("APINewGroup", [], "Create group.", ["CRGroupCreated", "CRChatCmdError"], [], Nothing, "/_group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Json "groupProfile"),
+        ("APINewPublicGroup", [], "Create public group.", ["CRPublicGroupCreated", "CRChatCmdError"], [], Just UNInteractive, "/_public group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Join ',' "relayIds" <> " " <> Json "groupProfile"),
         ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
       ]
     ),
@@ -240,6 +241,7 @@ cliCommands =
     "MemberRole",
     "MuteUser",
     "NewGroup",
+    "NewPublicGroup",
     "QuitChat",
     "ReactToMessage",
     "RejectContact",
@@ -440,6 +442,7 @@ undocumentedCommands =
     "GetChatItemTTL",
     "GetRemoteFile",
     "GetUserProtoServers",
+    "GetUserChatRelays",
     "ListRemoteCtrls",
     "ListRemoteHosts",
     "ReconnectAllServers",
@@ -457,6 +460,7 @@ undocumentedCommands =
     "SetServerOperators",
     "SetTempFolder",
     "SetUserProtoServers",
+    "SetUserChatRelays",
     "SlowSQLQueries",
     "StartRemoteHost",
     "StopRemoteCtrl",

@@ -90,6 +90,7 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
+- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -102,7 +103,10 @@ This file is generated automatically.
 - [GroupPreference](#grouppreference)
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
+- [GroupRelay](#grouprelay)
+- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
+- [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
 - [HandshakeError](#handshakeerror)
@@ -140,6 +144,7 @@ This file is generated automatically.
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
+- [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -601,6 +606,9 @@ GroupRcv:
 - type: "groupRcv"
 - groupMember: [GroupMember](#groupmember)
 
+ChannelRcv:
+- type: "channelRcv"
+
 LocalSnd:
 - type: "localSnd"
 
@@ -959,6 +967,9 @@ ActiveUserExists:
 UserExists:
 - type: "userExists"
 - contactName: string
+
+ChatRelayExists:
+- type: "chatRelayExists"
 
 DifferentActiveUser:
 - type: "differentActiveUser"
@@ -2133,6 +2144,7 @@ MemberSupport:
 **Record type**:
 - groupId: int64
 - useRelays: bool
+- relayOwnStatus: [RelayStatus](#relaystatus)?
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2152,6 +2164,17 @@ MemberSupport:
 - groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
+- groupKeys: [GroupKeys](#groupkeys)?
+
+
+---
+
+## GroupKeys
+
+**Record type**:
+- sharedGroupId: string
+- groupRootKey: [GroupRootKey](#grouprootkey)
+- memberPrivKey: string
 
 
 ---
@@ -2175,6 +2198,7 @@ MemberSupport:
 
 Ok:
 - type: "ok"
+- groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 OwnLink:
@@ -2218,6 +2242,7 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
+- memberPubKey: string?
 
 
 ---
@@ -2254,6 +2279,7 @@ Known:
 ## GroupMemberRole
 
 **Enum type**:
+- "relay"
 - "observer"
 - "author"
 - "member"
@@ -2328,8 +2354,36 @@ Known:
 - shortDescr: string?
 - description: string?
 - image: string?
+- groupLink: string?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+
+
+---
+
+## GroupRelay
+
+**Record type**:
+- groupRelayId: int64
+- groupMemberId: int64
+- userChatRelayId: int64
+- relayStatus: [RelayStatus](#relaystatus)
+- relayLink: string?
+
+
+---
+
+## GroupRootKey
+
+**Discriminated union type**:
+
+Private:
+- type: "private"
+- rootPrivKey: string
+
+Public:
+- type: "public"
+- rootPubKey: string
 
 
 ---
@@ -2338,6 +2392,16 @@ Known:
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
+
+
+---
+
+## GroupShortLinkInfo
+
+**Record type**:
+- direct: bool
+- groupRelays: [string]
+- sharedGroupId: string?
 
 
 ---
@@ -2667,6 +2731,7 @@ SubscribeError:
 **Record type**:
 - profile: [Profile](#profile)?
 - pastTimestamp: bool
+- userChatRelay: bool
 
 
 ---
@@ -3041,6 +3106,17 @@ NewMemberPendingReview:
 
 ---
 
+## RelayStatus
+
+**Enum type**:
+- "new"
+- "invited"
+- "accepted"
+- "active"
+
+
+---
+
 ## ReportReason
 
 **Enum type**:
@@ -3277,6 +3353,9 @@ UserNotFound:
 - type: "userNotFound"
 - userId: int64
 
+RelayUserNotFound:
+- type: "relayUserNotFound"
+
 UserNotFoundByName:
 - type: "userNotFoundByName"
 - contactName: string
@@ -3379,6 +3458,9 @@ GroupWithoutUser:
 
 DuplicateGroupMember:
 - type: "duplicateGroupMember"
+
+DuplicateMemberId:
+- type: "duplicateMemberId"
 
 GroupAlreadyJoined:
 - type: "groupAlreadyJoined"
@@ -3568,6 +3650,18 @@ OperatorNotFound:
 UsageConditionsNotFound:
 - type: "usageConditionsNotFound"
 
+UserChatRelayNotFound:
+- type: "userChatRelayNotFound"
+- chatRelayId: int64
+
+GroupRelayNotFound:
+- type: "groupRelayNotFound"
+- groupRelayId: int64
+
+GroupRelayNotFoundByMemberId:
+- type: "groupRelayNotFoundByMemberId"
+- groupMemberId: int64
+
 InvalidQuote:
 - type: "invalidQuote"
 
@@ -3746,6 +3840,7 @@ Handshake:
 - autoAcceptMemberContacts: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- userChatRelay: bool
 
 
 ---

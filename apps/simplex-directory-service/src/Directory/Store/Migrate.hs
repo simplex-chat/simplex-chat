@@ -22,8 +22,9 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store.Groups (getGroupInfo, getHostMember)
+import Simplex.Chat.Store.Groups (getHostMember)
 import Simplex.Chat.Store.Profiles (getUsers)
+import Simplex.Chat.Store.Shared (getGroupInfo)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common
 import qualified Simplex.Messaging.Agent.Store.DB as DB

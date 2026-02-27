@@ -97,7 +97,8 @@ chatEventsDocsData =
       [ ("CEvtConnectedToGroupMember", "Connected to another group member."),
         ("CEvtMemberAcceptedByOther", "Another group owner, admin or moderator accepted member to the group after review (\"knocking\")."),
         ("CEvtMemberBlockedForAll", "Another member blocked for all members."),
-        ("CEvtGroupMemberUpdated", "Another group member profile updated.")
+        ("CEvtGroupMemberUpdated", "Another group member profile updated."),
+        ("CEvtGroupLinkRelaysUpdated", "Group link relays updated.")
       ]
     ),
     ( "File events",

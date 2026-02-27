@@ -38,7 +38,8 @@ CREATE TABLE users(
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
   active_order INTEGER NOT NULL DEFAULT 0,
-  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
+  is_user_chat_relay INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -121,7 +122,8 @@ CREATE TABLE group_profiles(
   preferences TEXT,
   description TEXT NULL,
   member_admission TEXT,
-  short_descr TEXT
+  short_descr TEXT,
+  group_link BLOB
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -156,7 +158,20 @@ CREATE TABLE groups(
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
   summary_current_members_count INTEGER NOT NULL DEFAULT 0,
-  member_index INTEGER NOT NULL DEFAULT 0, -- received
+  member_index INTEGER NOT NULL DEFAULT 0,
+  use_relays INTEGER NOT NULL DEFAULT 0,
+  creating_in_progress INTEGER NOT NULL DEFAULT 0,
+  relay_own_status TEXT,
+  relay_request_inv_id BLOB,
+  relay_request_group_link BLOB,
+  relay_request_peer_chat_min_version INTEGER,
+  relay_request_peer_chat_max_version INTEGER,
+  relay_request_failed INTEGER DEFAULT 0,
+  relay_request_err_reason TEXT,
+  shared_group_id BLOB,
+  root_priv_key BLOB,
+  root_pub_key BLOB,
+  member_priv_key BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -198,6 +213,8 @@ CREATE TABLE group_members(
   member_welcome_shared_msg_id BLOB,
   index_in_group INTEGER NOT NULL DEFAULT 0,
   member_relations_vector BLOB,
+  relay_link BLOB,
+  member_pub_key BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -524,7 +541,7 @@ CREATE TABLE chat_item_versions(
 ) STRICT;
 CREATE TABLE chat_item_reactions(
   chat_item_reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  item_member_id BLOB, -- member that created item, NULL for items in direct chats
+  item_member_id BLOB,
   shared_msg_id BLOB NOT NULL,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
@@ -723,6 +740,29 @@ CREATE TABLE connections_sync(
   connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
   should_sync INTEGER NOT NULL DEFAULT 0,
   last_sync_ts TEXT
+) STRICT;
+CREATE TABLE chat_relays(
+  chat_relay_id INTEGER PRIMARY KEY,
+  address BLOB NOT NULL,
+  name TEXT NOT NULL,
+  domains TEXT NOT NULL,
+  preset INTEGER NOT NULL DEFAULT 0,
+  tested INTEGER,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  deleted INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE TABLE group_relays(
+  group_relay_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  chat_relay_id INTEGER NOT NULL REFERENCES chat_relays ON DELETE CASCADE,
+  relay_status TEXT NOT NULL,
+  relay_link BLOB,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1218,6 +1258,17 @@ CREATE INDEX idx_chat_items_note_folder_has_link_created_at ON chat_items(
   has_link,
   created_at
 );
+CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(
+  user_id,
+  address
+);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
+CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
+CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(
+  group_member_id
+);
+CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
