@@ -5502,25 +5502,37 @@ SEARCH i USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (us
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
-    SELECT group_relay_id, group_member_id, chat_relay_id, relay_status, relay_link
-    FROM group_relays
-   WHERE group_id = ?
+    SELECT gr.group_relay_id, gr.group_member_id,
+           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           gr.relay_status, gr.relay_link
+    FROM group_relays gr
+    JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
+   WHERE gr.group_id = ?
 Plan:
-SEARCH group_relays USING INDEX idx_group_relays_group_id (group_id=?)
+SEARCH gr USING INDEX idx_group_relays_group_id (group_id=?)
+SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT group_relay_id, group_member_id, chat_relay_id, relay_status, relay_link
-    FROM group_relays
-   WHERE group_member_id = ?
+    SELECT gr.group_relay_id, gr.group_member_id,
+           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           gr.relay_status, gr.relay_link
+    FROM group_relays gr
+    JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
+   WHERE gr.group_member_id = ?
 Plan:
-SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
+SEARCH gr USING INDEX idx_group_relays_group_member_id (group_member_id=?)
+SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-    SELECT group_relay_id, group_member_id, chat_relay_id, relay_status, relay_link
-    FROM group_relays
-   WHERE group_relay_id = ?
+    SELECT gr.group_relay_id, gr.group_member_id,
+           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           gr.relay_status, gr.relay_link
+    FROM group_relays gr
+    JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
+   WHERE gr.group_relay_id = ?
 Plan:
-SEARCH group_relays USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gr USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT m.group_member_id, m.member_id, m.member_role, p.display_name, p.local_alias
