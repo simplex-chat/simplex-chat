@@ -2085,7 +2085,10 @@ processChatCommand vr nm = \case
       (conn, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
       let pcc = mkPendingContactConnection conn $ Just ccLink
       pure $ CRSentConfirmation user pcc incognitoProfile
-    ACCL SCMContact ccLink ->
+    ACCL SCMContact ccLink@(CCLink _ sLnk) -> do
+      case sLnk of
+        Just (CSLContact _ CCTChannel _ _) -> throwChatError $ CECommandError "channel links must be connected via APIConnectPreparedGroup"
+        _ -> pure ()
       connectViaContact user Nothing incognito ccLink Nothing Nothing >>= \case
         CVRConnectedContact ct -> pure $ CRContactAlreadyExists user ct
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
