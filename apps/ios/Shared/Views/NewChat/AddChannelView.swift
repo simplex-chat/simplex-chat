@@ -67,7 +67,7 @@ struct AddChannelView: View {
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
 
             Section {
                 channelNameTextField()
@@ -95,6 +95,7 @@ struct AddChannelView: View {
                         .foregroundColor(theme.colors.secondary)
                 }
             }
+            .compactSectionSpacing()
         }
         .onAppear {
             Task { hasRelays = await checkHasRelays() }
@@ -220,21 +221,17 @@ struct AddChannelView: View {
         let activeCount = groupRelays.filter { $0.relayStatus == .rsActive }.count
         let total = groupRelays.count
         return List {
-            Section {
-                HStack {
-                    Spacer()
-                    ProfileImage(imageStr: gInfo.groupProfile.image, size: 96)
-                    Spacer()
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+            Group {
+                ProfileImage(imageStr: gInfo.groupProfile.image, size: 128)
+                    .frame(maxWidth: .infinity, alignment: .center)
 
                 Text(gInfo.groupProfile.displayName)
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
             }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
 
             Section {
                 Button {
@@ -262,6 +259,7 @@ struct AddChannelView: View {
                     }
                 }
             }
+            .compactSectionSpacing()
 
             Section {
                 Button("Channel link") {
