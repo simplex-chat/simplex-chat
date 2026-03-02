@@ -73,7 +73,7 @@ struct ChannelRelaysView: View {
                 Text(member.chatViewName)
                     .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
-                Text(relayStatus?.text ?? relayConnStatus(member))
+                Text(relayStatus?.text ?? relayConnStatusText(member))
                     .lineLimit(1)
                     .font(.caption)
                     .foregroundColor(theme.colors.secondary)
@@ -82,17 +82,15 @@ struct ChannelRelaysView: View {
         }
     }
 
-    // TODO [relays] review connection status display once relay join statuses are finalized
-    private func relayConnStatus(_ member: GroupMember) -> LocalizedStringKey {
+    private func relayConnStatusText(_ member: GroupMember) -> LocalizedStringKey {
         if member.activeConn?.connDisabled ?? false {
-            return "disabled"
+            "disabled"
         } else if member.activeConn?.connInactive ?? false {
-            return "inactive"
+            "inactive"
         } else {
-            return member.sndReady ? "connected" : "connecting"
+            relayConnStatus(member).text
         }
     }
-
 }
 
 struct RelayProgressIndicator: View {
@@ -114,6 +112,14 @@ struct RelayProgressIndicator: View {
             }
             .frame(width: 20, height: 20)
         }
+    }
+}
+
+func relayConnStatus(_ member: GroupMember) -> (text: LocalizedStringKey, color: Color) {
+    switch member.activeConn?.connStatus {
+    case .ready: ("connected", .green)
+    case .deleted: ("deleted", .red)
+    default: ("connecting", .yellow)
     }
 }
 

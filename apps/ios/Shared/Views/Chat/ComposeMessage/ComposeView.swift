@@ -396,13 +396,16 @@ struct ComposeView: View {
                         .filter { $0.wrapped.memberRole == .relay }
                         .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
-                    let connectedCount = relayMembers.filter { $0.wrapped.memberStatus == .memConnected }.count
+                    let connectedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .ready }.count
+                    let deletedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .deleted }.count
+                    let resolvedCount = connectedCount + deletedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total > 0, !showProgress || connectedCount < total {
+                    if total > 0, !showProgress || resolvedCount < total {
                         subscriberChannelRelayBar(
                             hostnames: hostnames,
                             relayMembers: relayMembers,
                             connectedCount: connectedCount,
+                            deletedCount: deletedCount,
                             total: total,
                             showProgress: showProgress
                         )
@@ -755,16 +758,22 @@ struct ComposeView: View {
         hostnames: [String],
         relayMembers: [GMember],
         connectedCount: Int,
+        deletedCount: Int,
         total: Int,
         showProgress: Bool
     ) -> some View {
         VStack(spacing: 0) {
             relayBarHeader {
-                if showProgress && connectedCount < total {
-                    RelayProgressIndicator(active: connectedCount, total: total)
+                let activeTotal = total - deletedCount
+                if showProgress && connectedCount < activeTotal {
+                    RelayProgressIndicator(active: connectedCount, total: activeTotal)
                 }
                 if showProgress {
-                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
+                    if deletedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d deleted", comment: "channel subscriber relay bar progress with deleted"), connectedCount, activeTotal, deletedCount))
+                    } else {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, activeTotal))
+                    }
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
                 }
@@ -786,10 +795,11 @@ struct ComposeView: View {
                             Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName))
                                 .foregroundColor(theme.colors.secondary)
                             Spacer()
+                            let status = relayConnStatus(m)
                             Circle()
-                                .fill(m.memberStatus == .memConnected ? .green : .yellow)
+                                .fill(status.color)
                                 .frame(width: 8, height: 8)
-                            Text(m.memberStatus == .memConnected ? "connected" : "connecting")
+                            Text(status.text)
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
