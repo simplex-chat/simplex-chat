@@ -1393,23 +1393,26 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               -- TODO [short links] deduplicate request by xContactId?
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-              acceptMember_ <- asks $ acceptMember . chatHooks . config
-              maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
-                Right (acceptance, useRole)
-                  | v < groupFastLinkJoinVersion ->
-                      messageError "processContactConnMessage: chat version range incompatible for accepting group join request"
-                  | otherwise -> do
-                      let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode
-                      (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
-                      createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                      toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
-                Left rjctReason
-                  | v < groupJoinRejectVersion ->
-                      messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
-                  | otherwise -> do
-                      mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
-                      toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
+              if useRelays' gInfo
+                then messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): ignored direct join request from " <> displayName <> " (group uses relays)"
+                else do
+                  acceptMember_ <- asks $ acceptMember . chatHooks . config
+                  maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                    Right (acceptance, useRole)
+                      | v < groupFastLinkJoinVersion ->
+                          messageError "processContactConnMessage: chat version range incompatible for accepting group join request"
+                      | otherwise -> do
+                          let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                          mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode
+                          (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+                          createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                          toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+                    Left rjctReason
+                      | v < groupJoinRejectVersion ->
+                          messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
+                      | otherwise -> do
+                          mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
+                          toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         xGrpRelayInv :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         xGrpRelayInv invId chatVRange groupRelayInv = do
           (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
