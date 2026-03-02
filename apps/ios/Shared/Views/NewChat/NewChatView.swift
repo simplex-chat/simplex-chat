@@ -990,47 +990,67 @@ private func showOwnGroupLinkConfirmConnectSheet(
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
-    let isChannel = groupInfo.useRelays
-    showSheet(
-        String.localizedStringWithFormat(
-            isChannel
-            ? NSLocalizedString("Join your channel?\nThis is your link for channel %@!", comment: "new chat action")
-            : NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
-            groupInfo.displayName
-        ),
-        actions: {[
-            UIAlertAction(
-                title: isChannel
-                    ? NSLocalizedString("Open channel", comment: "new chat action")
-                    : NSLocalizedString("Open group", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
-                }
+    if groupInfo.useRelays {
+        showSheet(
+            String.localizedStringWithFormat(
+                NSLocalizedString("This is your link for channel %@!", comment: "new chat action"),
+                groupInfo.displayName
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Use current profile", comment: "new chat action"),
-                style: .destructive,
-                handler: { _ in
-                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
-                }
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Open channel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        cleanup?()
+                    }
+                )
+            ]}
+        )
+    } else {
+        showSheet(
+            String.localizedStringWithFormat(
+                NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
+                groupInfo.displayName
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
-                style: .destructive,
-                handler: { _ in
-                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
-                }
-            ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    cleanup?()
-                }
-            )
-        ]}
-    )
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Open group", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Use current profile", comment: "new chat action"),
+                    style: .destructive,
+                    handler: { _ in
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
+                    style: .destructive,
+                    handler: { _ in
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        cleanup?()
+                    }
+                )
+            ]}
+        )
+    }
 }
 
 private func showPrepareContactAlert(
