@@ -2528,4 +2528,23 @@
     <string name="chat_banner_your_contact">Váš kontakt</string>
     <string name="chat_banner_your_group">Vaše skupina</string>
     <string name="context_user_picker_your_profile">Váš profil</string>
+    <string name="content_filter_all_messages">Všechny zprávy</string>
+    <string name="button_delete_member_messages">Smazat zprávy člena</string>
+    <string name="button_delete_member_messages_question">Smazat zprávy člena?</string>
+    <string name="delete_member_messages_confirmation">Smazat zprávy</string>
+    <string name="content_filter_files">Soubory</string>
+    <string name="content_filter_menu_item">Filtr</string>
+    <string name="content_filter_images">Obrázky</string>
+    <string name="content_filter_links">Odkazy</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Zprávy člena budou smazány - nemůže být zrušeno!</string>
+    <string name="server_no_sub">bez předplatného</string>
+    <string name="remove_member_delete_messages_confirmation">Odebrat a smazat zprávy</string>
+    <string name="placeholder_search_files">Hledat soubory</string>
+    <string name="placeholder_search_images">Hledat obrázky</string>
+    <string name="placeholder_search_links">Hledat odkazy</string>
+    <string name="placeholder_search_videos">Hledat videa</string>
+    <string name="placeholder_search_voice_messages">Hledat hlasové zprávy</string>
+    <string name="content_filter_videos">Videa</string>
+    <string name="content_filter_voice_messages">Hlasové zprávy</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Nejste připojen k serveru, který se používá k přijímání zpráv z tohoto připojení (bez předplatného).</string>
 </resources>
