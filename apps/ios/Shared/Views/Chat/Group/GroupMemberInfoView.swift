@@ -172,7 +172,7 @@ struct GroupMemberInfoView: View {
                         let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
-                        // TODO [relays] role changing is not supported for channels currently
+                        // [channels] role changing is not supported for channels currently
                         if !groupInfo.useRelays, let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in

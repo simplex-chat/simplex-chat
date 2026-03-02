@@ -105,7 +105,7 @@ struct GroupLinkView: View {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
 
-                    // TODO [relays] channel link deletion should only be possible together with deleting the channel
+                    // [channels] channel link deletion should only be possible together with deleting the channel
                     if !creatingGroup && !isChannel {
                         Button(role: .destructive) { alert = .deleteLink } label: {
                             Label("Delete link", systemImage: "trash")
