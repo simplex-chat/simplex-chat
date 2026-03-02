@@ -792,8 +792,9 @@ swipe action</note>
         <target>Tutti i membri del gruppo resteranno connessi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages" xml:space="preserve">
+      <trans-unit id="All messages" xml:space="preserve" approved="no">
         <source>All messages</source>
+        <target state="translated">Tutti i messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
@@ -1146,8 +1147,9 @@ swipe action</note>
         <target>Chiamate audio e video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio call" xml:space="preserve">
+      <trans-unit id="Audio call" xml:space="preserve" approved="no">
         <source>Audio call</source>
+        <target state="translated">Chiamata audio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio/video calls" xml:space="preserve">
@@ -2587,12 +2589,14 @@ swipe action</note>
         <target>Eliminare il messaggio del membro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member messages" xml:space="preserve">
+      <trans-unit id="Delete member messages" xml:space="preserve" approved="no">
         <source>Delete member messages</source>
+        <target state="translated">Elimina i messaggi del membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member messages?" xml:space="preserve">
+      <trans-unit id="Delete member messages?" xml:space="preserve" approved="no">
         <source>Delete member messages?</source>
+        <target state="translated">Eliminare i messaggi del membro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -3868,8 +3872,9 @@ snd error text</note>
         <target>File e contenuti multimediali vietati!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Filter" xml:space="preserve">
+      <trans-unit id="Filter" xml:space="preserve" approved="no">
         <source>Filter</source>
+        <target state="translated">Filtro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
@@ -4356,8 +4361,9 @@ Errore: %2$@</target>
         <target>L'immagine verrà ricevuta quando il tuo contatto sarà in linea, aspetta o controlla più tardi!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Images" xml:space="preserve">
+      <trans-unit id="Images" xml:space="preserve" approved="no">
         <source>Images</source>
+        <target state="translated">Immagini</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
@@ -4619,8 +4625,9 @@ Altri miglioramenti sono in arrivo!</target>
         <target>Invita amici</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite member" xml:space="preserve">
+      <trans-unit id="Invite member" xml:space="preserve" approved="no">
         <source>Invite member</source>
+        <target state="translated">Invita membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
@@ -4846,8 +4853,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Desktop collegati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Links" xml:space="preserve">
+      <trans-unit id="Links" xml:space="preserve" approved="no">
         <source>Links</source>
+        <target state="translated">Link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="List" xml:space="preserve">
@@ -4975,8 +4983,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Il membro è eliminato - impossibile accettare la richiesta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member messages will be deleted - this cannot be undone!</source>
+        <target state="translated">I messaggi del membro verranno eliminati. Non è reversibile!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -6634,8 +6643,9 @@ swipe action</note>
         <target>Rimuovi</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Remove and delete messages" xml:space="preserve">
+      <trans-unit id="Remove and delete messages" xml:space="preserve" approved="no">
         <source>Remove and delete messages</source>
+        <target state="translated">Rimuovi ed elimina i messaggi</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Remove archive?" xml:space="preserve">
@@ -7079,16 +7089,19 @@ chat item action</note>
         <target>La barra di ricerca accetta i link di invito.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search files" xml:space="preserve">
+      <trans-unit id="Search files" xml:space="preserve" approved="no">
         <source>Search files</source>
+        <target state="translated">Cerca file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search images" xml:space="preserve">
+      <trans-unit id="Search images" xml:space="preserve" approved="no">
         <source>Search images</source>
+        <target state="translated">Cerca immagini</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search links" xml:space="preserve">
+      <trans-unit id="Search links" xml:space="preserve" approved="no">
         <source>Search links</source>
+        <target state="translated">Cerca link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -7096,12 +7109,14 @@ chat item action</note>
         <target>Cerca o incolla un link SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search videos" xml:space="preserve">
+      <trans-unit id="Search videos" xml:space="preserve" approved="no">
         <source>Search videos</source>
+        <target state="translated">Cerca video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search voice messages" xml:space="preserve">
+      <trans-unit id="Search voice messages" xml:space="preserve" approved="no">
         <source>Search voice messages</source>
+        <target state="translated">Cerca messaggi vocali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -8979,8 +8994,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos" xml:space="preserve">
+      <trans-unit id="Videos" xml:space="preserve" approved="no">
         <source>Videos</source>
+        <target state="translated">Video</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
