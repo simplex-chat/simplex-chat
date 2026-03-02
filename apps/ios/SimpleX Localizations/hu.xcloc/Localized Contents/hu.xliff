@@ -792,8 +792,9 @@ swipe action</note>
         <target>Az összes csoporttag továbbra is kapcsolatban marad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages" xml:space="preserve">
+      <trans-unit id="All messages" xml:space="preserve" approved="no">
         <source>All messages</source>
+        <target state="translated">Összes üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
@@ -1146,8 +1147,9 @@ swipe action</note>
         <target>Hang- és videóhívások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio call" xml:space="preserve">
+      <trans-unit id="Audio call" xml:space="preserve" approved="no">
         <source>Audio call</source>
+        <target state="translated">Hanghívás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio/video calls" xml:space="preserve">
@@ -2587,12 +2589,14 @@ swipe action</note>
         <target>Törli a tag üzenetét?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member messages" xml:space="preserve">
+      <trans-unit id="Delete member messages" xml:space="preserve" approved="no">
         <source>Delete member messages</source>
+        <target state="translated">Tag üzeneteinek törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member messages?" xml:space="preserve">
+      <trans-unit id="Delete member messages?" xml:space="preserve" approved="no">
         <source>Delete member messages?</source>
+        <target state="translated">Törli a tag üzeneteit?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -3868,8 +3872,9 @@ snd error text</note>
         <target>A fájlok és a médiatartalmak küldése le van tiltva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Filter" xml:space="preserve">
+      <trans-unit id="Filter" xml:space="preserve" approved="no">
         <source>Filter</source>
+        <target state="translated">Szűrő</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
@@ -4301,9 +4306,9 @@ Hiba: %2$@</target>
         <target>Használati útmutató</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use your servers" xml:space="preserve">
+      <trans-unit id="How to use your servers" xml:space="preserve" approved="no">
         <source>How to use your servers</source>
-        <target>Hogyan használja a saját kiszolgálóit</target>
+        <target state="translated">Útmutató a saját kiszolgálók beállításához és használatához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hungarian interface" xml:space="preserve">
@@ -4356,8 +4361,9 @@ Hiba: %2$@</target>
         <target>A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Images" xml:space="preserve">
+      <trans-unit id="Images" xml:space="preserve" approved="no">
         <source>Images</source>
+        <target state="translated">Képek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
@@ -4619,8 +4625,9 @@ További fejlesztések hamarosan!</target>
         <target>Barátok meghívása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite member" xml:space="preserve">
+      <trans-unit id="Invite member" xml:space="preserve" approved="no">
         <source>Invite member</source>
+        <target state="translated">Tag meghívása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
@@ -4846,8 +4853,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Társított számítógépek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Links" xml:space="preserve">
+      <trans-unit id="Links" xml:space="preserve" approved="no">
         <source>Links</source>
+        <target state="translated">Hivatkozások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="List" xml:space="preserve">
@@ -4975,8 +4983,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>A tag törölve lett – nem lehet elfogadni a kérést</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member messages will be deleted - this cannot be undone!</source>
+        <target state="translated">A tag üzenetei törölve lesznek – ez a művelet nem vonható vissza!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -5244,9 +5253,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Adatbázis-archívum átköltöztetése…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration complete" xml:space="preserve">
+      <trans-unit id="Migration complete" xml:space="preserve" approved="no">
         <source>Migration complete</source>
-        <target>Átköltöztetés befejezve</target>
+        <target state="translated">Átköltöztetés kész</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migration error:" xml:space="preserve">
@@ -5259,9 +5268,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Sikertelen átköltöztetés. Koppintson a **Kihagyás** beállításra a jelenlegi adatbázis használatának folytatásához. Jelentse a problémát az alkalmazás fejlesztőinek csevegésben vagy e-mailben [chat@simplex.chat](mailto:chat@simplex.chat).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migration is completed" xml:space="preserve">
+      <trans-unit id="Migration is completed" xml:space="preserve" approved="no">
         <source>Migration is completed</source>
-        <target>Az átköltöztetés befejeződött</target>
+        <target state="translated">Az átköltöztetés elkészült</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrations:" xml:space="preserve">
@@ -6160,9 +6169,9 @@ Hiba: %@</target>
         <target>Várja meg, amíg a csoport moderátorai áttekintik a csoporthoz való csatlakozási kérését.</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
+      <trans-unit id="Please wait for token activation to complete." xml:space="preserve" approved="no">
         <source>Please wait for token activation to complete.</source>
-        <target>Várjon, amíg a token aktiválása befejeződik.</target>
+        <target state="translated">Várjon, amíg a token aktiválása elkészül.</target>
         <note>token info</note>
       </trans-unit>
       <trans-unit id="Please wait for token to be registered." xml:space="preserve">
@@ -6634,8 +6643,9 @@ swipe action</note>
         <target>Eltávolítás</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Remove and delete messages" xml:space="preserve">
+      <trans-unit id="Remove and delete messages" xml:space="preserve" approved="no">
         <source>Remove and delete messages</source>
+        <target state="translated">Eltávolítás és az üzeneteinek törlése</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Remove archive?" xml:space="preserve">
@@ -7079,16 +7089,19 @@ chat item action</note>
         <target>A keresősáv elfogadja a meghívási hivatkozásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search files" xml:space="preserve">
+      <trans-unit id="Search files" xml:space="preserve" approved="no">
         <source>Search files</source>
+        <target state="translated">Fájlok keresése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search images" xml:space="preserve">
+      <trans-unit id="Search images" xml:space="preserve" approved="no">
         <source>Search images</source>
+        <target state="translated">Képek keresése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search links" xml:space="preserve">
+      <trans-unit id="Search links" xml:space="preserve" approved="no">
         <source>Search links</source>
+        <target state="translated">Hivatkozások keresése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -7096,12 +7109,14 @@ chat item action</note>
         <target>Keresés vagy SimpleX-hivatkozás beillesztése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search videos" xml:space="preserve">
+      <trans-unit id="Search videos" xml:space="preserve" approved="no">
         <source>Search videos</source>
+        <target state="translated">Videók keresése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search voice messages" xml:space="preserve">
+      <trans-unit id="Search voice messages" xml:space="preserve" approved="no">
         <source>Search voice messages</source>
+        <target state="translated">Hangüzenetek keresése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -8979,8 +8994,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>A videó akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos" xml:space="preserve">
+      <trans-unit id="Videos" xml:space="preserve" approved="no">
         <source>Videos</source>
+        <target state="translated">Videók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
@@ -9868,9 +9884,9 @@ marked deleted chat item preview text</note>
         <target>színezett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="complete" xml:space="preserve">
+      <trans-unit id="complete" xml:space="preserve" approved="no">
         <source>complete</source>
-        <target>befejezett</target>
+        <target state="translated">kész</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
