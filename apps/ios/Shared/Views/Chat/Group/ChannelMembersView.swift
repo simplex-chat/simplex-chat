@@ -14,7 +14,6 @@ struct ChannelMembersView: View {
     var groupInfo: GroupInfo
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @State private var scrollToItemId: ChatItem.ID? = nil
 
     var body: some View {
         let allMembers = chatModel.groupMembers
@@ -73,7 +72,7 @@ struct ChannelMembersView: View {
                     groupInfo: groupInfo,
                     chat: chat,
                     groupMember: gMember,
-                    scrollToItemId: $scrollToItemId
+                    scrollToItemId: Binding.constant(nil)
                 )
                 .navigationBarHidden(false)
             } label: {

@@ -15,7 +15,6 @@ struct ChannelRelaysView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var groupRelays: [GroupRelay] = []
-    @State private var scrollToItemId: ChatItem.ID? = nil
 
     var body: some View {
         let isOwner = groupInfo.isOwner
@@ -47,7 +46,7 @@ struct ChannelRelaysView: View {
                             groupInfo: groupInfo,
                             chat: chat,
                             groupMember: member,
-                            scrollToItemId: $scrollToItemId,
+                            scrollToItemId: Binding.constant(nil),
                             groupRelay: groupRelays.first(where: { $0.groupMemberId == member.wrapped.groupMemberId })
                         )
                         .navigationBarHidden(false)

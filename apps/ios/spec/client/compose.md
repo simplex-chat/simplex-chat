@@ -347,7 +347,7 @@ In group chats, typing `@` triggers member name autocomplete:
 When `chat.chatInfo.groupInfo?.useRelays == true` (channel mode), compose behaves differently:
 
 ### Owner/Admin Compose
-- [`send()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1330) passes `sendAsGroup: true` to `apiSendMessages` when `useRelays && memberRole >= .admin`
+- [`send()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1330) passes `sendAsGroup: true` to `apiSendMessages` when `useRelays && memberRole >= .owner`
 - [`forwardItems()`](../../Shared/Views/Chat/ComposeMessage/ComposeView.swift#L1358) passes `sendAsGroup: true` to `apiForwardChatItems` under same condition
 - Placeholder text shows "Broadcast" instead of "Message" (via `sendMessageView()` `placeholder:` parameter)
 - Share Extension ([`ShareAPI.swift`](../../SimpleX%20SE/ShareAPI.swift#L71)) uses the same `sendAsGroup` expression
