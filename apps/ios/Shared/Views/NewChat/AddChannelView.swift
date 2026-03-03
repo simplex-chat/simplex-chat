@@ -347,22 +347,23 @@ struct AddChannelView: View {
         }
     }
 
-    private func relayDisplayName(_ relay: GroupRelay) -> String {
-        if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
-        if let domain = relay.userChatRelay.domains.first { return domain }
-        if let link = relay.relayLink { return hostFromRelayLink(link) }
-        return "relay\(relay.groupRelayId)"
-    }
+}
 
-    private func relayStatusIndicator(_ status: RelayStatus) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(status == .rsActive ? .green : status == .rsNew ? .red : .orange)
-                .frame(width: 8, height: 8)
-            Text(status.text)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
+func relayDisplayName(_ relay: GroupRelay) -> String {
+    if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
+    if let domain = relay.userChatRelay.domains.first { return domain }
+    if let link = relay.relayLink { return hostFromRelayLink(link) }
+    return "relay\(relay.groupRelayId)"
+}
+
+func relayStatusIndicator(_ status: RelayStatus) -> some View {
+    HStack(spacing: 4) {
+        Circle()
+            .fill(status == .rsActive ? .green : status == .rsNew ? .red : .orange)
+            .frame(width: 8, height: 8)
+        Text(status.text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 }
 
