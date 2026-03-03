@@ -1578,9 +1578,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if groupInfo.membership.memberActive {
                     switch(groupChatScope) {
                     case .none:
-                        if groupInfo.useRelays && groupInfo.membership.memberRole < .owner { return ("you are subscriber", nil) }
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
-                        if groupInfo.membership.memberRole == .observer { return ("you are observer", "Please contact group admin.") }
+                        if groupInfo.membership.memberRole == .observer {
+                            return groupInfo.useRelays ? ("you are subscriber", nil) : ("you are observer", "Please contact group admin.")
+                        }
                         return nil
                     case let .some(.memberSupport(groupMember_: .some(supportMember))):
                         if supportMember.versionRange.maxVersion < GROUP_KNOCKING_VERSION && !supportMember.memberPending {
