@@ -10,6 +10,38 @@
 import SwiftUI
 import SimpleXChat
 
+func validRelayLink(_ address: String) -> Bool {
+    if case .simplexLink(_, .relay, _, _) = strHasSingleSimplexLink(address)?.format { return true }
+    return false
+}
+
+func addChatRelay(
+    _ relay: UserChatRelay,
+    _ userServers: Binding<[UserOperatorServers]>,
+    _ serverErrors: Binding<[UserServersError]>,
+    _ serverWarnings: Binding<[UserServersWarning]>? = nil,
+    _ operatorIndex: Int,
+    _ dismiss: DismissAction
+) {
+    if validRelayLink(relay.address) {
+        if userServers[operatorIndex].wrappedValue.chatRelays == nil {
+            userServers[operatorIndex].wrappedValue.chatRelays = [relay]
+        } else {
+            userServers[operatorIndex].wrappedValue.chatRelays?.append(relay)
+        }
+        validateServers_(userServers, serverErrors, serverWarnings)
+        dismiss()
+    } else {
+        dismiss()
+        if relay.address.trimmingCharacters(in: .whitespaces) != "" {
+            showAlert(
+                NSLocalizedString("Invalid relay link!", comment: "alert title"),
+                message: NSLocalizedString("Check relay address and try again.", comment: "alert message")
+            )
+        }
+    }
+}
+
 struct ChatRelayView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
@@ -21,17 +53,26 @@ struct ChatRelayView: View {
     var backLabel: LocalizedStringKey
 
     var body: some View {
+        let valid = relay.preset || validRelayLink(relayToEdit.address)
         ZStack {
             if relay.preset {
                 presetRelay()
             } else {
-                customRelay()
+                customRelay(valid: valid)
             }
         }
         .modifier(BackButton(label: backLabel, disabled: Binding.constant(false)) {
-            relay = relayToEdit
-            validateServers_($userServers, $serverErrors, $serverWarnings)
-            dismiss()
+            if relay.preset || validRelayLink(relayToEdit.address) {
+                relay = relayToEdit
+                validateServers_($userServers, $serverErrors, $serverWarnings)
+                dismiss()
+            } else {
+                dismiss()
+                showAlert(
+                    NSLocalizedString("Invalid relay link!", comment: "alert title"),
+                    message: NSLocalizedString("Check relay address and try again.", comment: "alert message")
+                )
+            }
         })
     }
 
@@ -49,7 +90,7 @@ struct ChatRelayView: View {
         }
     }
 
-    private func customRelay() -> some View {
+    private func customRelay(valid: Bool) -> some View {
         List {
             Section(header: Text("Relay name").foregroundColor(theme.colors.secondary)) {
                 TextField("Enter relay name…", text: $relayToEdit.name)
@@ -65,10 +106,16 @@ struct ChatRelayView: View {
                     .frame(height: 144)
                     .padding(-6)
             } header: {
-                Text("Your relay address")
-                    .foregroundColor(theme.colors.secondary)
+                HStack {
+                    Text("Your relay address")
+                        .foregroundColor(theme.colors.secondary)
+                    if !valid {
+                        Spacer()
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                    }
+                }
             }
-            useRelaySection()
+            useRelaySection(valid: valid)
             Section {
                 Button(role: .destructive) {
                     relay.deleted = true
@@ -82,7 +129,7 @@ struct ChatRelayView: View {
         }
     }
 
-    private func useRelaySection() -> some View {
+    private func useRelaySection(valid: Bool = true) -> some View {
         Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
             HStack {
                 Button("Test relay") {
@@ -91,6 +138,7 @@ struct ChatRelayView: View {
                         message: NSLocalizedString("Relay testing is not yet available.", comment: "alert message")
                     )
                 }
+                .disabled(!valid)
                 Spacer()
                 showRelayTestStatus(relay: relayToEdit)
             }
@@ -158,12 +206,13 @@ struct NewChatRelayView: View {
     )
 
     var body: some View {
+        let valid = validRelayLink(relayToEdit.address)
         List {
             Section(header: Text("Relay name").foregroundColor(theme.colors.secondary)) {
                 TextField("Enter relay name…", text: $relayToEdit.name)
                     .autocorrectionDisabled(true)
             }
-            Section(header: Text("Your relay address").foregroundColor(theme.colors.secondary)) {
+            Section {
                 TextEditor(text: $relayToEdit.address)
                     .multilineTextAlignment(.leading)
                     .autocorrectionDisabled(true)
@@ -172,6 +221,15 @@ struct NewChatRelayView: View {
                     .lineLimit(10)
                     .frame(height: 144)
                     .padding(-6)
+            } header: {
+                HStack {
+                    Text("Your relay address")
+                        .foregroundColor(theme.colors.secondary)
+                    if !valid {
+                        Spacer()
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                    }
+                }
             }
             Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
                 HStack {
@@ -181,6 +239,7 @@ struct NewChatRelayView: View {
                             message: NSLocalizedString("Relay testing is not yet available.", comment: "alert message")
                         )
                     }
+                    .disabled(!valid)
                     Spacer()
                     showRelayTestStatus(relay: relayToEdit)
                 }

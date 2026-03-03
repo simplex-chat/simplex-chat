@@ -329,31 +329,6 @@ func deleteXFTPServer(
     }
 }
 
-func addChatRelay(
-    _ relay: UserChatRelay,
-    _ userServers: Binding<[UserOperatorServers]>,
-    _ serverErrors: Binding<[UserServersError]>,
-    _ serverWarnings: Binding<[UserServersWarning]>? = nil,
-    _ operatorIndex: Int,
-    _ dismiss: DismissAction
-) {
-    let trimmed = relay.address.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else {
-        dismiss()
-        return
-    }
-    var relayToAdd = relay
-    relayToAdd.address = trimmed
-    relayToAdd.name = relay.name.trimmingCharacters(in: .whitespacesAndNewlines)
-    if userServers[operatorIndex].wrappedValue.chatRelays == nil {
-        userServers[operatorIndex].wrappedValue.chatRelays = [relayToAdd]
-    } else {
-        userServers[operatorIndex].wrappedValue.chatRelays?.append(relayToAdd)
-    }
-    validateServers_(userServers, serverErrors, serverWarnings)
-    dismiss()
-}
-
 func deleteChatRelay(
     _ userServers: Binding<[UserOperatorServers]>,
     _ operatorServersIndex: Int,
