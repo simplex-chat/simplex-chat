@@ -127,7 +127,7 @@ struct ChatRelayView: View {
 
     private func relayNameHeader(validName: Bool) -> some View {
         HStack {
-            Text("Relay name").foregroundColor(theme.colors.secondary)
+            Text("Your relay name").foregroundColor(theme.colors.secondary)
             if !validName {
                 Spacer()
                 Image(systemName: "exclamationmark.circle").foregroundColor(.red)
@@ -138,6 +138,9 @@ struct ChatRelayView: View {
 
     private func presetRelay() -> some View {
         List {
+            Section(header: Text("Preset relay name").foregroundColor(theme.colors.secondary)) {
+                Text(relayToEdit.name)
+            }
             Section(header: Text("Preset relay address").foregroundColor(theme.colors.secondary)) {
                 Text(relayToEdit.address)
                     .textSelection(.enabled)
@@ -271,7 +274,7 @@ struct NewChatRelayView: View {
                     .autocorrectionDisabled(true)
             } header: {
                 HStack {
-                    Text("Relay name").foregroundColor(theme.colors.secondary)
+                    Text("Your relay name").foregroundColor(theme.colors.secondary)
                     if !validName {
                         Spacer()
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
