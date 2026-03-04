@@ -1215,9 +1215,11 @@ final class ChatModel: ObservableObject {
 
     // Spec: spec/state.md#removeChat
     func removeChat(_ id: String) {
+        var groupId: Int64?
         withAnimation {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
+                groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
                 removeWallpaperFilesFromChat(removed)
             }
@@ -1225,7 +1227,10 @@ final class ChatModel: ObservableObject {
         if chatId == id {
             groupMembers = []
             groupMembersIndexes.removeAll()
-            channelRelayHostnames.removeAll()
+            // Remove channelRelayHostnames for this channel only, preserving other prepared channels
+            if let gId = groupId {
+                channelRelayHostnames.removeValue(forKey: gId)
+            }
             membersLoaded = false
         }
     }
