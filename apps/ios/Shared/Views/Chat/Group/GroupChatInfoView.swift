@@ -92,8 +92,9 @@ struct GroupChatInfoView: View {
 
                     if groupInfo.useRelays {
                         Section {
-                            if groupInfo.isOwner {
-                                groupLinkButton()
+                            // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
+                            if groupInfo.isOwner && groupLink != nil {
+                                channelLinkButton()
                             } else if let link = groupInfo.groupProfile.groupLink {
                                 SimpleXLinkQRCode(uri: link)
                                 Button {
@@ -594,10 +595,18 @@ struct GroupChatInfoView: View {
             groupLinkDestinationView()
         } label: {
             if groupLink == nil {
-                Label(groupInfo.useRelays ? "Create channel link" : "Create group link", systemImage: "link.badge.plus")
+                Label("Create group link", systemImage: "link.badge.plus")
             } else {
-                Label(groupInfo.useRelays ? "Channel link" : "Group link", systemImage: "link")
+                Label("Group link", systemImage: "link")
             }
+        }
+    }
+
+    private func channelLinkButton() -> some View {
+        NavigationLink {
+            groupLinkDestinationView()
+        } label: {
+            Label("Channel link", systemImage: "link")
         }
     }
 
