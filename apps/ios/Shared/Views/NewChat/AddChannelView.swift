@@ -185,6 +185,7 @@ struct AddChannelView: View {
                     groupInfo = gInfo
                     groupLink = gLink
                     groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
+                    channelRelaysModel.set(groupId: gInfo.groupId, groupRelays: gRelays)
                     creationInProgress = false
                 }
             } catch {
@@ -291,6 +292,7 @@ struct AddChannelView: View {
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
             if relays.allSatisfy({ $0.relayStatus == .rsActive }) {
                 showLinkStep = true
+                channelRelaysModel.reset()
             }
         }
     }
@@ -316,6 +318,7 @@ struct AddChannelView: View {
     }
 
     private func cancelChannelCreation(_ gInfo: GroupInfo) {
+        channelRelaysModel.reset()
         dismissAllSheets(animated: true)
         Task {
             do {

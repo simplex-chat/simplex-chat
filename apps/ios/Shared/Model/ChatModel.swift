@@ -338,7 +338,7 @@ class ChannelRelaysModel: ObservableObject {
     @Published var groupId: Int64? = nil
     @Published var groupRelays: [GroupRelay] = []
 
-    func update(groupId: Int64, groupRelays: [GroupRelay]) {
+    func set(groupId: Int64, groupRelays: [GroupRelay]) {
         self.groupId = groupId
         self.groupRelays = groupRelays
     }

@@ -389,6 +389,7 @@ struct ChatView: View {
                         chatModel.groupMembers = []
                         chatModel.groupMembersIndexes.removeAll()
                         chatModel.membersLoaded = false
+                        ChannelRelaysModel.shared.reset()
                     }
                 }
             }
@@ -687,6 +688,14 @@ struct ChatView: View {
             }
             if case let .group(groupInfo, _) = cInfo, groupInfo.useRelays {
                 Task { await chatModel.loadGroupMembers(groupInfo) }
+                if groupInfo.membership.memberRole == .owner {
+                    Task {
+                        let relays = await apiGetGroupRelays(groupInfo.groupId)
+                        await MainActor.run {
+                            ChannelRelaysModel.shared.set(groupId: groupInfo.groupId, groupRelays: relays)
+                        }
+                    }
+                }
             }
             updateAvailableContent()
         }

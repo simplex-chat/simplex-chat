@@ -716,17 +716,6 @@ struct ComposeView: View {
             if case let .voicePreview(_, duration) = composeState.preview {
                 voiceMessageRecordingTime = TimeInterval(duration)
             }
-            if let gInfo = chat.chatInfo.groupInfo,
-               gInfo.useRelays,
-               gInfo.membership.memberRole == .owner,
-               channelRelaysModel.groupId != gInfo.groupId {
-                Task {
-                    let relays = await apiGetGroupRelays(gInfo.groupId)
-                    await MainActor.run {
-                        channelRelaysModel.update(groupId: gInfo.groupId, groupRelays: relays)
-                    }
-                }
-            }
         }
     }
 

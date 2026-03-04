@@ -2578,11 +2578,14 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateGroup(toGroup)
             }
         }
-    case let .groupLinkRelaysUpdated(user, groupInfo, groupLink, groupRelays):
+    case let .groupLinkRelaysUpdated(user, groupInfo, _, groupRelays):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
-                ChannelRelaysModel.shared.update(groupId: groupInfo.groupId, groupRelays: groupRelays)
+                let relaysModel = ChannelRelaysModel.shared
+                if relaysModel.groupId == groupInfo.groupId {
+                    relaysModel.set(groupId: groupInfo.groupId, groupRelays: groupRelays)
+                }
             }
         }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
