@@ -1121,7 +1121,7 @@ func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactS
     throw r.unexpected
 }
 
-func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool = true, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
+func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareGroup")
     let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, directLink: directLink, groupShortLinkData: groupShortLinkData))
     if case let .newPreparedChat(_, chat) = r { return chat }
