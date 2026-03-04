@@ -64,14 +64,14 @@ enum ActiveFilter: Identifiable, Equatable {
 }
 
 class SaveableSettings: ObservableObject {
-    @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
+    @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [], serverWarnings: [])
 }
 
 struct ServerSettings {
     public var currUserServers: [UserOperatorServers]
     public var userServers: [UserOperatorServers]
     public var serverErrors: [UserServersError]
-    public var serverWarnings: [UserServersWarning] = []
+    public var serverWarnings: [UserServersWarning]
 }
 
 struct UserPickerSheetView: View {
