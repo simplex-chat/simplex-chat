@@ -204,7 +204,7 @@ struct AddChannelView: View {
     private func getEnabledRelays() async throws -> [UserChatRelay] {
         let servers = try await getUserServers()
         let all = servers.flatMap { op in
-            (op.chatRelays ?? []).filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
+            op.chatRelays.filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
         }
         return Array(all.shuffled().prefix(3))
     }
@@ -212,7 +212,7 @@ struct AddChannelView: View {
     private func checkHasRelays() async -> Bool {
         guard let servers = try? await getUserServers() else { return false }
         return servers.contains { op in
-            (op.chatRelays ?? []).contains { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
+            op.chatRelays.contains { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
         }
     }
 

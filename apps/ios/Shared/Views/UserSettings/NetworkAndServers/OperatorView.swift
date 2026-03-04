@@ -72,8 +72,7 @@ struct OperatorView: View {
                 }
 
                 if userServers[operatorIndex].operator_.enabled {
-                    if let chatRelays = userServers[operatorIndex].chatRelays,
-                       !chatRelays.filter({ !$0.deleted }).isEmpty {
+                    if !userServers[operatorIndex].chatRelays.filter({ !$0.deleted }).isEmpty {
                         Section {
                             ForEach(bindingForChatRelays($userServers, operatorIndex)) { relay in
                                 if !relay.wrappedValue.deleted {

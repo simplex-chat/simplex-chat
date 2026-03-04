@@ -1736,7 +1736,7 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
     var `operator`: ServerOperator?
     var smpServers: [UserServer]
     var xftpServers: [UserServer]
-    var chatRelays: [UserChatRelay]? = nil
+    var chatRelays: [UserChatRelay]
 
     var id: String {
         if let op = self.operator {
@@ -1766,13 +1766,15 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
     static var sampleData1 = UserOperatorServers(
         operator: ServerOperator.sampleData1,
         smpServers: [UserServer.sampleData.preset],
-        xftpServers: [UserServer.sampleData.xftpPreset]
+        xftpServers: [UserServer.sampleData.xftpPreset],
+        chatRelays: []
     )
 
     static var sampleDataNilOperator = UserOperatorServers(
         operator: nil,
         smpServers: [UserServer.sampleData.preset],
-        xftpServers: [UserServer.sampleData.xftpPreset]
+        xftpServers: [UserServer.sampleData.xftpPreset],
+        chatRelays: []
     )
 }
 

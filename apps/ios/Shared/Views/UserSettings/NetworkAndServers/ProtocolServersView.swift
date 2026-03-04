@@ -44,8 +44,7 @@ struct YourServersView: View {
     private func yourServersView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
         return List {
-            if let chatRelays = userServers[operatorIndex].chatRelays,
-               !chatRelays.filter({ !$0.deleted }).isEmpty {
+            if !userServers[operatorIndex].chatRelays.filter({ !$0.deleted }).isEmpty {
                 Section {
                     ForEach(bindingForChatRelays($userServers, operatorIndex)) { relay in
                         if !relay.wrappedValue.deleted {
@@ -157,7 +156,7 @@ struct YourServersView: View {
                     .hidden()
 
                     NavigationLink(isActive: $newChatRelayNavLinkActive) {
-                        NewChatRelayView(userServers: $userServers, serverErrors: $serverErrors, serverWarnings: $serverWarnings, operatorIndex: operatorIndex)
+                        NewChatRelayView(userServers: $userServers, serverErrors: $serverErrors, serverWarnings: $serverWarnings)
                             .navigationTitle("New chat relay")
                             .navigationBarTitleDisplayMode(.large)
                             .modifier(ThemedBackground(grouped: true))
@@ -188,7 +187,7 @@ struct YourServersView: View {
             if (
                 !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty ||
                 !userServers[operatorIndex].xftpServers.filter({ !$0.deleted }).isEmpty ||
-                !(userServers[operatorIndex].chatRelays?.filter({ !$0.deleted }).isEmpty ?? true)
+                !userServers[operatorIndex].chatRelays.filter({ !$0.deleted }).isEmpty
             ) {
                 EditButton()
             }
@@ -335,14 +334,13 @@ func deleteChatRelay(
     _ serverIndexSet: IndexSet
 ) {
     if let idx = serverIndexSet.first {
-        if let relay = userServers[operatorServersIndex].wrappedValue.chatRelays?[idx] {
-            if relay.chatRelayId == nil {
-                userServers[operatorServersIndex].wrappedValue.chatRelays?.remove(at: idx)
-            } else {
-                var updatedRelay = relay
-                updatedRelay.deleted = true
-                userServers[operatorServersIndex].wrappedValue.chatRelays?[idx] = updatedRelay
-            }
+        let relay = userServers[operatorServersIndex].wrappedValue.chatRelays[idx]
+        if relay.chatRelayId == nil {
+            userServers[operatorServersIndex].wrappedValue.chatRelays.remove(at: idx)
+        } else {
+            var updatedRelay = relay
+            updatedRelay.deleted = true
+            userServers[operatorServersIndex].wrappedValue.chatRelays[idx] = updatedRelay
         }
     }
 }

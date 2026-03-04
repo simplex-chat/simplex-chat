@@ -449,7 +449,7 @@ func globalServersWarning(_ serverWarnings: [UserServersWarning]) -> String? {
 
 func bindingForChatRelays(_ userServers: Binding<[UserOperatorServers]>, _ opIndex: Int) -> Binding<[UserChatRelay]> {
     Binding(
-        get: { userServers[opIndex].wrappedValue.chatRelays ?? [] },
+        get: { userServers[opIndex].wrappedValue.chatRelays },
         set: { userServers[opIndex].wrappedValue.chatRelays = $0 }
     )
 }

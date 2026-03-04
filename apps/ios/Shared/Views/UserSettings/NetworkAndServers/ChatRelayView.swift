@@ -32,17 +32,26 @@ func showInvalidRelayNameAlert(_ name: Binding<String>) {
     }
 }
 
-func validRelayLink(_ address: String) -> Bool {
-    if case .simplexLink(_, .relay, _, _) = strHasSingleSimplexLink(address)?.format { return true }
-    return false
+func parseRelayLink(_ address: String) -> (simplexUri: String, smpHosts: [String])? {
+    if let parsedMd = parseSimpleXMarkdown(address),
+       parsedMd.count == 1,
+       case let .simplexLink(_, .relay, simplexUri, smpHosts) = parsedMd.first?.format {
+        (simplexUri, smpHosts)
+    } else {
+        nil
+    }
 }
 
+func validRelayLink(_ address: String) -> Bool {
+    parseRelayLink(address) != nil
+}
+
+// TODO [relays] TBC matching relay to operator by domain (relay link can be hosted on operator server)
 func addChatRelay(
     _ relay: UserChatRelay,
     _ userServers: Binding<[UserOperatorServers]>,
     _ serverErrors: Binding<[UserServersError]>,
     _ serverWarnings: Binding<[UserServersWarning]>? = nil,
-    _ operatorIndex: Int,
     _ dismiss: DismissAction
 ) {
     let nameEmpty = relay.name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -61,15 +70,13 @@ func addChatRelay(
             NSLocalizedString("Invalid relay link!", comment: "alert title"),
             message: NSLocalizedString("Check relay address and try again.", comment: "alert message")
         )
-    } else {
-        // TODO [relays] match relay to operator by host and add to correct operator's list, like addServer does via serverProtocolAndOperator
-        if userServers[operatorIndex].wrappedValue.chatRelays == nil {
-            userServers[operatorIndex].wrappedValue.chatRelays = [relay]
-        } else {
-            userServers[operatorIndex].wrappedValue.chatRelays?.append(relay)
-        }
+    } else if let i = userServers.wrappedValue.firstIndex(where: { $0.operator == nil }) {
+        userServers[i].wrappedValue.chatRelays.append(relay)
         validateServers_(userServers, serverErrors, serverWarnings)
         dismiss()
+    } else { // Shouldn't happen
+        dismiss()
+        showAlert(NSLocalizedString("Error adding relay", comment: "alert title"))
     }
 }
 
@@ -252,7 +259,6 @@ struct NewChatRelayView: View {
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
-    var operatorIndex: Int
     @State private var relayToEdit = UserChatRelay(
         chatRelayId: nil, address: "", name: "", domains: [],
         preset: false, tested: nil, enabled: true, deleted: false
@@ -310,7 +316,7 @@ struct NewChatRelayView: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            addChatRelay(relayToEdit, $userServers, $serverErrors, $serverWarnings, operatorIndex, dismiss)
+            addChatRelay(relayToEdit, $userServers, $serverErrors, $serverWarnings, dismiss)
         })
     }
 }

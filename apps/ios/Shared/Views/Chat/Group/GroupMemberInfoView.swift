@@ -623,7 +623,8 @@ struct GroupMemberInfoView: View {
                         blockForAllButton(mem)
                     }
                 }
-                // TODO [relays] removing relay should also remove its link from group link data
+                // TODO [relays] removing relay should also remove its link from group link data;
+                // removing last relay should be prohibited or show warning
                 if canRemove && mem.memberRole != .relay {
                     if mem.memberStatus == .memRemoved || mem.memberStatus == .memLeft {
                         deleteMemberMessagesButton(mem)
