@@ -355,7 +355,7 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
     if let domain = relay.userChatRelay.domains.first { return domain }
     if let link = relay.relayLink { return hostFromRelayLink(link) }
-    return "relay\(relay.groupRelayId)"
+    return "relay \(relay.groupRelayId)"
 }
 
 func relayStatusIndicator(_ status: RelayStatus) -> some View {
