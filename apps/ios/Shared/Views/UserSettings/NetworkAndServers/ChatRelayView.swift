@@ -10,6 +10,14 @@
 import SwiftUI
 import SimpleXChat
 
+@ViewBuilder func showRelayTestStatus(relay: UserChatRelay) -> some View {
+    switch relay.tested {
+    case .some(true): Image(systemName: "checkmark").foregroundColor(.green)
+    case .some(false): Image(systemName: "multiply").foregroundColor(.red)
+    case .none: Color.clear
+    }
+}
+
 func validRelayName(_ name: String) -> Bool {
     name != "" && validDisplayName(name)
 }

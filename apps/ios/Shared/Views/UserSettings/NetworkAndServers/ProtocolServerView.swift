@@ -178,14 +178,6 @@ struct BackButton: ViewModifier {
     }
 }
 
-@ViewBuilder func showRelayTestStatus(relay: UserChatRelay) -> some View {
-    switch relay.tested {
-    case .some(true): Image(systemName: "checkmark").foregroundColor(.green)
-    case .some(false): Image(systemName: "multiply").foregroundColor(.red)
-    case .none: Color.clear
-    }
-}
-
 func testServerConnection(server: Binding<UserServer>) async -> ProtocolTestFailure? {
     do {
         let r = try await testProtoServer(server: server.wrappedValue.server)
