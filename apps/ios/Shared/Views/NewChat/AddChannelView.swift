@@ -23,7 +23,6 @@ struct AddChannelView: View {
     @State private var hasRelays = true
     @State private var groupInfo: GroupInfo? = nil
     @State private var groupLink: GroupLink? = nil
-    @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var groupRelays: [GroupRelay] = []
     @State private var creationInProgress = false
     @State private var showLinkStep = false
@@ -303,7 +302,7 @@ struct AddChannelView: View {
         GroupLinkView(
             groupId: gInfo.groupId,
             groupLink: $groupLink,
-            groupLinkMemberRole: $groupLinkMemberRole,
+            groupLinkMemberRole: Binding.constant(.observer), // TODO [relays] starting role should be communicated in protocol from owner to relays
             showTitle: false,
             creatingGroup: true,
             isChannel: true
