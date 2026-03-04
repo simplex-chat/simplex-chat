@@ -96,25 +96,25 @@ struct ChatRelayView: View {
 
     var body: some View {
         let validName = validRelayName(relayToEdit.name)
-        let validAddress = relay.preset || validRelayAddress(relayToEdit.address)
+        let validAddress = validRelayAddress(relayToEdit.address)
         ZStack {
             if relay.preset {
-                presetRelay(validName: validName)
+                presetRelay()
             } else {
                 customRelay(validName: validName, validAddress: validAddress)
             }
         }
         .modifier(BackButton(label: backLabel, disabled: Binding.constant(false)) {
-            if !validRelayName(relayToEdit.name) {
+            if validName && validAddress {
+                relay = relayToEdit
+                validateServers_($userServers, $serverErrors, $serverWarnings)
+                dismiss()
+            } else if !validName {
                 dismiss()
                 showAlert(
                     NSLocalizedString("Invalid relay name!", comment: "alert title"),
                     message: NSLocalizedString("Check relay name and try again.", comment: "alert message")
                 )
-            } else if validAddress {
-                relay = relayToEdit
-                validateServers_($userServers, $serverErrors, $serverWarnings)
-                dismiss()
             } else {
                 dismiss()
                 showAlert(
@@ -136,14 +136,8 @@ struct ChatRelayView: View {
         }
     }
 
-    private func presetRelay(validName: Bool) -> some View {
+    private func presetRelay() -> some View {
         List {
-            Section {
-                TextField("Enter relay name…", text: $relayToEdit.name)
-                    .autocorrectionDisabled(true)
-            } header: {
-                relayNameHeader(validName: validName)
-            }
             Section(header: Text("Preset relay address").foregroundColor(theme.colors.secondary)) {
                 Text(relayToEdit.address)
                     .textSelection(.enabled)
