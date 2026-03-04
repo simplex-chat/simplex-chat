@@ -40,18 +40,14 @@ func showInvalidRelayNameAlert(_ name: Binding<String>) {
     }
 }
 
-func parseRelayAddress(_ address: String) -> (simplexUri: String, smpHosts: [String])? {
+func validRelayAddress(_ address: String) -> Bool {
     if let parsedMd = parseSimpleXMarkdown(address),
        parsedMd.count == 1,
-       case let .simplexLink(_, .relay, simplexUri, smpHosts) = parsedMd.first?.format {
-        (simplexUri, smpHosts)
+       case .simplexLink(_, .relay, _, _) = parsedMd.first?.format {
+        true
     } else {
-        nil
+        false
     }
-}
-
-func validRelayAddress(_ address: String) -> Bool {
-    parseRelayAddress(address) != nil
 }
 
 // TODO [relays] TBC matching relay to operator by domain (relay address can be hosted on operator server)
