@@ -1105,7 +1105,7 @@ private func showPrepareGroupAlert(
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
-    let isChannel = !(groupShortLinkInfo?.groupRelays ?? []).isEmpty
+    let isChannel = !(groupShortLinkInfo?.direct ?? true)
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
