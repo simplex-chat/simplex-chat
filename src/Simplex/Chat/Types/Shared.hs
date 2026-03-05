@@ -1,15 +1,18 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Types.Shared where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole
@@ -105,3 +108,5 @@ instance TextEncoding RelayStatus where
 instance FromField RelayStatus where fromField = fromTextField_ textDecode
 
 instance ToField RelayStatus where toField = toField . textEncode
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)

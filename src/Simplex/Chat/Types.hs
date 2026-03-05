@@ -2016,8 +2016,6 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
-
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
