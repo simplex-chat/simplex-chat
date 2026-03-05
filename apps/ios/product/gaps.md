@@ -62,18 +62,3 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ---
 
-## Channels (Relays) — In-Progress Implementation
-
-### ~~GAP: ShareAPI sendAsGroup always false~~ RESOLVED
-**Source:** `SimpleX SE/ShareAPI.swift` L71
-The share extension now correctly passes `sendAsGroup: chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false`, matching the main app's compose behavior.
-
-### ~~GAP: Server validation warnings not surfaced in UI~~ RESOLVED
-**Source:** `Shared/Views/UserSettings/NetworkAndServers/NetworkAndServers.swift` L370
-`validateServers_` now accepts an optional `serverWarnings` binding (L373) and propagates warnings via `serverWarnings?.wrappedValue = warns` (L381). `globalServersWarning()` (L434) surfaces `UserServersWarning` values (e.g., `noChatRelays`) in the UI via `ServersWarningView`.
-
-### GAP: GroupShortLinkInfo.direct partially used — relay hostnames not shown pre-join
-**Source:** `Shared/Views/NewChat/NewChatView.swift` L1108
-`GroupShortLinkInfo.direct` is now used to determine `isChannel` (controls group vs channel labels and icons in the pre-join UI). However, `groupRelays` (relay hostnames) are still not displayed in the pre-join flow.
-
-**REC:** Display relay hostname information in the pre-join channel link UI.
