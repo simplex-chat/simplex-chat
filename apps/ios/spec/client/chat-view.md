@@ -84,14 +84,14 @@ The main conversation view. Key responsibilities:
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`body`](../../Shared/Views/Chat/ChatView.swift#L76) | L76 | Main view body |
-| [`initChatView()`](../../Shared/Views/Chat/ChatView.swift#L675) | L675 | Initializes chat view state on appear |
-| [`chatItemsList()`](../../Shared/Views/Chat/ChatView.swift#L821) | L821 | Builds the scrollable message list |
-| [`scrollToItem(_:)`](../../Shared/Views/Chat/ChatView.swift#L735) | L735 | Scrolls to a specific message by ID |
-| [`searchToolbar()`](../../Shared/Views/Chat/ChatView.swift#L769) | L769 | In-chat search toolbar UI |
+| [`body`](../../Shared/Views/Chat/ChatView.swift#L75) | L75 | Main view body |
+| [`initChatView()`](../../Shared/Views/Chat/ChatView.swift#L660) | L660 | Initializes chat view state on appear |
+| [`chatItemsList()`](../../Shared/Views/Chat/ChatView.swift#L817) | L817 | Builds the scrollable message list |
+| [`scrollToItem(_:)`](../../Shared/Views/Chat/ChatView.swift#L731) | L731 | Scrolls to a specific message by ID |
+| [`searchToolbar()`](../../Shared/Views/Chat/ChatView.swift#L765) | L765 | In-chat search toolbar UI |
 | [`searchTextChanged(_:)`](../../Shared/Views/Chat/ChatView.swift#L1095) | L1095 | Handles search query changes |
 | [`loadChatItems(_:_:)`](../../Shared/Views/Chat/ChatView.swift#L1531) | L1531 | Loads chat items with pagination |
-| [`filtered(_:)`](../../Shared/Views/Chat/ChatView.swift#L807) | L807 | Filters items by content type |
+| [`filtered(_:)`](../../Shared/Views/Chat/ChatView.swift#L803) | L803 | Filters items by content type |
 | [`callButton(_:_:imageName:)`](../../Shared/Views/Chat/ChatView.swift#L1273) | L1273 | Audio/video call toolbar button |
 | [`searchButton()`](../../Shared/Views/Chat/ChatView.swift#L1293) | L1293 | Search toggle toolbar button |
 | [`addMembersButton()`](../../Shared/Views/Chat/ChatView.swift#L1361) | L1361 | Group add-members toolbar button |
@@ -124,17 +124,17 @@ Routes each `ChatItem` to the appropriate renderer based on its `CIContent` type
 
 | Content Type | Renderer | Line | Description |
 |-------------|----------|------|-------------|
-| `sndMsgContent` / `rcvMsgContent` | [`FramedItemView`](../../Shared/Views/Chat/ChatItem/FramedItemView.swift#L14) | L13 | Standard sent/received text+media message |
-| `sndDeleted` / `rcvDeleted` | [`DeletedItemView`](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift#L14) | L13 | Locally deleted message placeholder |
+| `sndMsgContent` / `rcvMsgContent` | [`FramedItemView`](../../Shared/Views/Chat/ChatItem/FramedItemView.swift#L14) | L14 | Standard sent/received text+media message |
+| `sndDeleted` / `rcvDeleted` | [`DeletedItemView`](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift#L14) | L14 | Locally deleted message placeholder |
 | `sndCall` / `rcvCall` | [`CICallItemView`](../../Shared/Views/Chat/ChatItem/CICallItemView.swift#L13) | L13 | Call event (missed, ended, duration) |
-| `rcvIntegrityError` | [`IntegrityErrorItemView`](../../Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift#L14) | L13 | Message integrity error |
-| `rcvDecryptionError` | [`CIRcvDecryptionError`](../../Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift#L16) | L15 | Decryption failure |
-| `sndGroupInvitation` / `rcvGroupInvitation` | [`CIGroupInvitationView`](../../Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift#L14) | L13 | Group invite |
-| `sndGroupEvent` / `rcvGroupEvent` | [`CIEventView`](../../Shared/Views/Chat/ChatItem/CIEventView.swift#L14) | L13 | Group system event |
-| `rcvConnEvent` / `sndConnEvent` | [`CIEventView`](../../Shared/Views/Chat/ChatItem/CIEventView.swift#L14) | L13 | Connection event |
-| `rcvChatFeature` / `sndChatFeature` | [`CIChatFeatureView`](../../Shared/Views/Chat/ChatItem/CIChatFeatureView.swift#L14) | L13 | Feature toggle event |
-| `rcvChatPreference` / `sndChatPreference` | [`CIFeaturePreferenceView`](../../Shared/Views/Chat/ChatItem/CIFeaturePreferenceView.swift#L14) | L13 | Preference change |
-| `invalidJSON` | [`CIInvalidJSONView`](../../Shared/Views/Chat/ChatItem/CIInvalidJSONView.swift#L14) | L13 | Failed to decode |
+| `rcvIntegrityError` | [`IntegrityErrorItemView`](../../Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift#L14) | L14 | Message integrity error |
+| `rcvDecryptionError` | [`CIRcvDecryptionError`](../../Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift#L16) | L16 | Decryption failure |
+| `sndGroupInvitation` / `rcvGroupInvitation` | [`CIGroupInvitationView`](../../Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift#L14) | L14 | Group invite |
+| `sndGroupEvent` / `rcvGroupEvent` | [`CIEventView`](../../Shared/Views/Chat/ChatItem/CIEventView.swift#L14) | L14 | Group system event |
+| `rcvConnEvent` / `sndConnEvent` | [`CIEventView`](../../Shared/Views/Chat/ChatItem/CIEventView.swift#L14) | L14 | Connection event |
+| `rcvChatFeature` / `sndChatFeature` | [`CIChatFeatureView`](../../Shared/Views/Chat/ChatItem/CIChatFeatureView.swift#L14) | L14 | Feature toggle event |
+| `rcvChatPreference` / `sndChatPreference` | [`CIFeaturePreferenceView`](../../Shared/Views/Chat/ChatItem/CIFeaturePreferenceView.swift#L14) | L14 | Preference change |
+| `invalidJSON` | [`CIInvalidJSONView`](../../Shared/Views/Chat/ChatItem/CIInvalidJSONView.swift#L14) | L14 | Failed to decode |
 
 ### Bubble Direction
 - Sent messages: aligned right, sender-colored bubble
@@ -160,7 +160,7 @@ Key differences from `.groupRcv`:
 - [`shouldShowAvatar()`](../../Shared/Views/Chat/ChatView.swift#L1670) treats consecutive `.channelRcv` items as same sender
 - [`getItemSeparation()`](../../Shared/Views/Chat/ChatView.swift#L1649) treats consecutive `.channelRcv` items as `sameMemberAndDirection`
 - [`showMemberImage()`](../../Shared/Views/Chat/ChatView.swift#L2116) returns `true` when previous item is `.channelRcv` (different sender type)
-- [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3253) returns `nil` for `.channelRcv` (no per-member moderation)
+- [`memberToModerate()`](../../SimpleXChat/ChatTypes.swift#L3297) returns `nil` for `.channelRcv` (no per-member moderation)
 
 ---
 
@@ -331,9 +331,9 @@ When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Cha
 
 ### Label Replacements
 
-All "group" labels are replaced with "channel" equivalents via `groupInfo.useRelays ? "Channel..." :` ternary prepended before existing `businessChat` ternary. Affected: delete/leave buttons, delete/leave alerts, remove member alert, edit profile button, group link button/nav title.
+All "group" labels are replaced with "channel" equivalents via `groupInfo.useRelays ? "Channel..." :` ternary prepended before existing `businessChat` ternary. Affected: delete/leave buttons, delete/leave alerts, remove member alert, edit profile button, group link nav title. Channel link button uses a separate `channelLinkButton()` with hardcoded "Channel link" label.
 
-### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L635) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
+### [`channelMembersButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L627) → [`ChannelMembersView`](../../Shared/Views/Chat/Group/ChannelMembersView.swift)
 
 Navigates to a dedicated members view with two sections:
 - **Owners**: current user (if owner) + members with `memberRole >= .owner`
@@ -343,12 +343,14 @@ Member rows show profile image, display name (with verified shield), connection 
 
 ### Channel Link
 
-Owner sees `groupLinkButton()` (navigates to `GroupLinkView` for full link management via `apiGetGroupLink`). Non-owner sees read-only `channelLinkButton()` displaying `groupProfile.groupLink` as QR code via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
+Owner sees [`channelLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L605) (navigates to `GroupLinkView` for full link management), guarded by `groupInfo.isOwner && groupLink != nil` — channel links can only be created during channel creation, not from the info view. A TODO marks the need for protocol changes to allow other owners to manage the same channel link. Non-owner sees read-only QR code displaying `groupProfile.groupLink` via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
 
-### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L649) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
+Groups use separate [`groupLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L593) which supports both "Create group link" and "Group link" labels.
+
+### [`channelRelaysButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L639) → [`ChannelRelaysView`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift)
 
 Navigates to relay list view with role-based branches:
-- **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1838) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`).
+- **Owner**: loads `[GroupRelay]` via [`apiGetGroupRelays`](../../Shared/Model/SimpleXAPI.swift#L1839) (owner-only API, guarded by `assertUserGroupRole GROwner` on backend). Joins with `chatModel.groupMembers` by `groupMemberId` for display names. Shows status indicators (colored circle + `RelayStatus.text`).
 - **Member**: filters `chatModel.groupMembers` by `.memberRole == .relay`. Shows relay member display names only (no status data).
 
 ### Leave Button Logic
@@ -361,29 +363,29 @@ Sole channel owner cannot leave (only delete). Guard: `members.filter({ $0.wrapp
 
 | File | Path | Line |
 |------|------|------|
-| Chat view | [`Shared/Views/Chat/ChatView.swift`](../../Shared/Views/Chat/ChatView.swift) | [L17](../../Shared/Views/Chat/ChatView.swift#L18) |
-| Item router | [`Shared/Views/Chat/ChatItemView.swift`](../../Shared/Views/Chat/ChatItemView.swift) | [L41](../../Shared/Views/Chat/ChatItemView.swift#L42) |
-| Framed bubble | [`Shared/Views/Chat/ChatItem/FramedItemView.swift`](../../Shared/Views/Chat/ChatItem/FramedItemView.swift) | [L13](../../Shared/Views/Chat/ChatItem/FramedItemView.swift#L14) |
-| Emoji message | [`Shared/Views/Chat/ChatItem/EmojiItemView.swift`](../../Shared/Views/Chat/ChatItem/EmojiItemView.swift) | [L13](../../Shared/Views/Chat/ChatItem/EmojiItemView.swift#L14) |
-| Image view | [`Shared/Views/Chat/ChatItem/CIImageView.swift`](../../Shared/Views/Chat/ChatItem/CIImageView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIImageView.swift#L14) |
-| Video view | [`Shared/Views/Chat/ChatItem/CIVideoView.swift`](../../Shared/Views/Chat/ChatItem/CIVideoView.swift) | [L15](../../Shared/Views/Chat/ChatItem/CIVideoView.swift#L16) |
-| Voice view | [`Shared/Views/Chat/ChatItem/CIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/CIVoiceView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIVoiceView.swift#L14) |
-| File view | [`Shared/Views/Chat/ChatItem/CIFileView.swift`](../../Shared/Views/Chat/ChatItem/CIFileView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIFileView.swift#L14) |
-| Link preview | [`Shared/Views/Chat/ChatItem/CILinkView.swift`](../../Shared/Views/Chat/ChatItem/CILinkView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CILinkView.swift#L14) |
+| Chat view | [`Shared/Views/Chat/ChatView.swift`](../../Shared/Views/Chat/ChatView.swift) | [L18](../../Shared/Views/Chat/ChatView.swift#L18) |
+| Item router | [`Shared/Views/Chat/ChatItemView.swift`](../../Shared/Views/Chat/ChatItemView.swift) | [L42](../../Shared/Views/Chat/ChatItemView.swift#L42) |
+| Framed bubble | [`Shared/Views/Chat/ChatItem/FramedItemView.swift`](../../Shared/Views/Chat/ChatItem/FramedItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/FramedItemView.swift#L14) |
+| Emoji message | [`Shared/Views/Chat/ChatItem/EmojiItemView.swift`](../../Shared/Views/Chat/ChatItem/EmojiItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/EmojiItemView.swift#L14) |
+| Image view | [`Shared/Views/Chat/ChatItem/CIImageView.swift`](../../Shared/Views/Chat/ChatItem/CIImageView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIImageView.swift#L14) |
+| Video view | [`Shared/Views/Chat/ChatItem/CIVideoView.swift`](../../Shared/Views/Chat/ChatItem/CIVideoView.swift) | [L16](../../Shared/Views/Chat/ChatItem/CIVideoView.swift#L16) |
+| Voice view | [`Shared/Views/Chat/ChatItem/CIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/CIVoiceView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIVoiceView.swift#L14) |
+| File view | [`Shared/Views/Chat/ChatItem/CIFileView.swift`](../../Shared/Views/Chat/ChatItem/CIFileView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIFileView.swift#L14) |
+| Link preview | [`Shared/Views/Chat/ChatItem/CILinkView.swift`](../../Shared/Views/Chat/ChatItem/CILinkView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CILinkView.swift#L14) |
 | Call event | [`Shared/Views/Chat/ChatItem/CICallItemView.swift`](../../Shared/Views/Chat/ChatItem/CICallItemView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CICallItemView.swift#L13) |
-| Metadata | [`Shared/Views/Chat/ChatItem/CIMetaView.swift`](../../Shared/Views/Chat/ChatItem/CIMetaView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIMetaView.swift#L14) |
-| Message info | [`Shared/Views/Chat/ChatItemInfoView.swift`](../../Shared/Views/Chat/ChatItemInfoView.swift) | [L12](../../Shared/Views/Chat/ChatItemInfoView.swift#L13) |
-| System event | [`Shared/Views/Chat/ChatItem/CIEventView.swift`](../../Shared/Views/Chat/ChatItem/CIEventView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIEventView.swift#L14) |
-| Deleted placeholder | [`Shared/Views/Chat/ChatItem/DeletedItemView.swift`](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift) | [L13](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift#L14) |
-| Moderated placeholder | [`Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift`](../../Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift) | [L13](../../Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift#L14) |
-| Text content | [`Shared/Views/Chat/ChatItem/MsgContentView.swift`](../../Shared/Views/Chat/ChatItem/MsgContentView.swift) | [L27](../../Shared/Views/Chat/ChatItem/MsgContentView.swift#L28) |
-| Group invitation | [`Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift`](../../Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift#L14) |
-| Feature event | [`Shared/Views/Chat/ChatItem/CIChatFeatureView.swift`](../../Shared/Views/Chat/ChatItem/CIChatFeatureView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIChatFeatureView.swift#L14) |
-| Decryption error | [`Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift`](../../Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift) | [L15](../../Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift#L16) |
-| Integrity error | [`Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift`](../../Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift) | [L13](../../Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift#L14) |
-| Full-screen media | [`Shared/Views/Chat/ChatItem/FullScreenMediaView.swift`](../../Shared/Views/Chat/ChatItem/FullScreenMediaView.swift) | [L15](../../Shared/Views/Chat/ChatItem/FullScreenMediaView.swift#L16) |
-| Animated image | [`Shared/Views/Chat/ChatItem/AnimatedImageView.swift`](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift) | [L10](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift#L11) |
-| Framed voice | [`Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift) | [L15](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift#L16) |
-| Member contact | [`Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift`](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift) | [L13](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift#L14) |
+| Metadata | [`Shared/Views/Chat/ChatItem/CIMetaView.swift`](../../Shared/Views/Chat/ChatItem/CIMetaView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIMetaView.swift#L14) |
+| Message info | [`Shared/Views/Chat/ChatItemInfoView.swift`](../../Shared/Views/Chat/ChatItemInfoView.swift) | [L13](../../Shared/Views/Chat/ChatItemInfoView.swift#L13) |
+| System event | [`Shared/Views/Chat/ChatItem/CIEventView.swift`](../../Shared/Views/Chat/ChatItem/CIEventView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIEventView.swift#L14) |
+| Deleted placeholder | [`Shared/Views/Chat/ChatItem/DeletedItemView.swift`](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/DeletedItemView.swift#L14) |
+| Moderated placeholder | [`Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift`](../../Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/MarkedDeletedItemView.swift#L14) |
+| Text content | [`Shared/Views/Chat/ChatItem/MsgContentView.swift`](../../Shared/Views/Chat/ChatItem/MsgContentView.swift) | [L28](../../Shared/Views/Chat/ChatItem/MsgContentView.swift#L28) |
+| Group invitation | [`Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift`](../../Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIGroupInvitationView.swift#L14) |
+| Feature event | [`Shared/Views/Chat/ChatItem/CIChatFeatureView.swift`](../../Shared/Views/Chat/ChatItem/CIChatFeatureView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIChatFeatureView.swift#L14) |
+| Decryption error | [`Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift`](../../Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift) | [L16](../../Shared/Views/Chat/ChatItem/CIRcvDecryptionError.swift#L16) |
+| Integrity error | [`Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift`](../../Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift) | [L14](../../Shared/Views/Chat/ChatItem/IntegrityErrorItemView.swift#L14) |
+| Full-screen media | [`Shared/Views/Chat/ChatItem/FullScreenMediaView.swift`](../../Shared/Views/Chat/ChatItem/FullScreenMediaView.swift) | [L16](../../Shared/Views/Chat/ChatItem/FullScreenMediaView.swift#L16) |
+| Animated image | [`Shared/Views/Chat/ChatItem/AnimatedImageView.swift`](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift) | [L11](../../Shared/Views/Chat/ChatItem/AnimatedImageView.swift#L11) |
+| Framed voice | [`Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift`](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift) | [L16](../../Shared/Views/Chat/ChatItem/FramedCIVoiceView.swift#L16) |
+| Member contact | [`Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift`](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift) | [L14](../../Shared/Views/Chat/ChatItem/CIMemberCreatedContactView.swift#L14) |
 | Channel members | [`Shared/Views/Chat/Group/ChannelMembersView.swift`](../../Shared/Views/Chat/Group/ChannelMembersView.swift) | [L12](../../Shared/Views/Chat/Group/ChannelMembersView.swift#L12) |
 | Channel relays | [`Shared/Views/Chat/Group/ChannelRelaysView.swift`](../../Shared/Views/Chat/Group/ChannelRelaysView.swift) | [L12](../../Shared/Views/Chat/Group/ChannelRelaysView.swift#L12) |

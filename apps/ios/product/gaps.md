@@ -64,20 +64,16 @@ The Haskell Store modules (`Store/Direct.hs`, `Store/Groups.hs`, `Store/Messages
 
 ## Channels (Relays) — In-Progress Implementation
 
-### GAP: ShareAPI sendAsGroup always false
+### ~~GAP: ShareAPI sendAsGroup always false~~ RESOLVED
 **Source:** `SimpleX SE/ShareAPI.swift` L71
-The share extension passes `sendAsGroup: false` with a TODO comment. Channel owners sharing content via the share extension cannot yet send as the channel identity.
+The share extension now correctly passes `sendAsGroup: chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false`, matching the main app's compose behavior.
 
-**REC:** Implement sendAsGroup logic in the share extension when channel context is available.
+### ~~GAP: Server validation warnings not surfaced in UI~~ RESOLVED
+**Source:** `Shared/Views/UserSettings/NetworkAndServers/NetworkAndServers.swift` L370
+`validateServers_` now accepts an optional `serverWarnings` binding (L373) and propagates warnings via `serverWarnings?.wrappedValue = warns` (L381). `globalServersWarning()` (L434) surfaces `UserServersWarning` values (e.g., `noChatRelays`) in the UI via `ServersWarningView`.
 
-### GAP: Server validation warnings not surfaced in UI
-**Source:** `Shared/Views/UserSettings/NetworkAndServers/NetworkAndServers.swift` L368
-`validateServers_` now returns `(errors, warnings)` tuple but the warnings are assigned to `_warns` (unused) with a TODO comment. `UserServersWarning` values (e.g., `noChatRelays`) are silently discarded.
+### GAP: GroupShortLinkInfo.direct partially used — relay hostnames not shown pre-join
+**Source:** `Shared/Views/NewChat/NewChatView.swift` L1108
+`GroupShortLinkInfo.direct` is now used to determine `isChannel` (controls group vs channel labels and icons in the pre-join UI). However, `groupRelays` (relay hostnames) are still not displayed in the pre-join flow.
 
-**REC:** Display server validation warnings in the NetworkAndServers UI alongside errors.
-
-### GAP: GroupShortLinkInfo.direct not used in group link plan
-**Source:** `Shared/Views/NewChat/NewChatView.swift` L1335
-`GroupLinkPlan.ok` pattern captures `_groupSLinkInfo_` (unused) with a TODO comment. The `direct` flag and relay hostnames from `GroupShortLinkInfo` are not yet consumed in the join flow UI.
-
-**REC:** Use `GroupShortLinkInfo` to display relay information in the pre-join group link UI.
+**REC:** Display relay hostname information in the pre-join channel link UI.

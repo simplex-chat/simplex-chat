@@ -58,7 +58,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 ### 3. Prepared Contact/Group Flow (Short Links)
 
 1. For short links with embedded profile data, the app uses a two-phase flow.
-2. `apiPrepareContact(connLink:contactShortLinkData:)` or `apiPrepareGroup(connLink:groupShortLinkData:directLink:)` creates a local prepared chat (where `directLink` defaults to `true`; `false` for channel relay links).
+2. `apiPrepareContact(connLink:contactShortLinkData:)` or `apiPrepareGroup(connLink:directLink:groupShortLinkData:)` creates a local prepared chat. `directLink` is `true` for standard group links, `false` for channel relay links.
 3. Returns `ChatData` with the prepared contact/group shown in UI before connecting.
 4. User can switch profiles or set incognito before committing.
 5. `apiConnectPreparedContact(contactId:incognito:msg:)` finalizes the connection.
@@ -101,6 +101,23 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 6. User must accept each incoming contact request individually.
 7. To delete: `apiDeleteUserAddress()` removes the address and associated SMP queues.
 
+### 7a. Relay Link Rejection
+
+1. User scans, pastes, or opens a relay address link (URL path `/r` or `SimplexLinkType.relay`).
+2. In `ContentView.connectViaUrl_()`: early return with alert "Relay address" / "This is a chat relay address, it cannot be used to connect."
+3. In `NewChatView.planAndConnect()`: `.simplexLink(_, .relay, _, _)` pattern triggers the same alert.
+4. The link is NOT processed further. No connection is attempted.
+
+### 7b. Channel Prepared Group Flow
+
+1. When connecting to a channel link (`GroupShortLinkInfo.direct == false`):
+2. `apiPrepareGroup(connLink:directLink:groupShortLinkData:)` is called with `directLink: false`, preparing the channel locally.
+3. `groupShortLinkInfo.groupRelays` (hostnames) stored in `ChatModel.shared.channelRelayHostnames[groupId]`.
+4. Pre-join UI shows channel icon and "Open new channel" (not "Open new group").
+5. `apiConnectPreparedGroup(groupId:incognito:msg:)` returns `(GroupInfo, [RelayConnectionResult])`.
+6. `RelayConnectionResult` contains `relayMember: GroupMember` and optional `relayError: ChatError?` per relay.
+7. Relay members are upserted to `chatModel.groupMembers`; `channelRelayHostnames` entry is cleared.
+
 ### 7. Incognito Connection
 
 1. Before connecting, user toggles "Incognito" in the connection UI.
@@ -121,6 +138,8 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 | `Contact` | `SimpleXChat/ChatTypes.swift` | Full contact model with profile, connection status, preferences |
 | `UserContactRequest` | `SimpleXChat/ChatTypes.swift` | Incoming contact request awaiting acceptance |
 | `ChatType` | `SimpleXChat/ChatTypes.swift` | `.direct`, `.group`, `.local`, `.contactRequest`, `.contactConnection` |
+| `GroupShortLinkInfo` | `Shared/Model/AppAPITypes.swift` | Contains `direct: Bool`, `groupRelays: [String]`, `sharedGroupId: String?`; transient data returned by prepare |
+| `RelayConnectionResult` | `Shared/Model/AppAPITypes.swift` | Contains `relayMember: GroupMember`, `relayError: ChatError?`; per-relay join outcome |
 
 ## Error Cases
 

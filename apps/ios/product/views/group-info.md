@@ -128,6 +128,101 @@ Shown when `developerTools` is enabled:
 | `blockMemberAlert` / `unblockMemberAlert` | Block/unblock member actions |
 | `blockForAllAlert` / `unblockForAllAlert` | Moderator block/unblock for all members |
 
+## Channel Adaptations
+
+When `groupInfo.useRelays == true`, the group info view adapts to channel semantics. All sections below describe differences from the standard group behavior above.
+
+### Channel Info Layout
+
+The top section splits into a channel-specific branch:
+
+| Element | Owner | Non-owner |
+|---|---|---|
+| Channel link | NavigationLink "Channel link" to `GroupLinkView` | Inline QR code (`SimpleXLinkQRCode`) + "Share link" button (if `groupProfile.groupLink` exists) |
+| Members | NavigationLink "Owners & subscribers" to `ChannelMembersView` | NavigationLink "Owners" to `ChannelMembersView` |
+| Relays | NavigationLink "Chat relays" to `ChannelRelaysView` | NavigationLink "Chat relays" to `ChannelRelaysView` |
+
+### Channel Action Bar
+
+| Button | Channel behavior |
+|---|---|
+| Link button | Replaces "Add members" for channel owners; navigates to `GroupLinkView` |
+| Add members | Hidden for channels |
+
+### Hidden Sections for Channels
+
+The following are hidden when `groupInfo.useRelays == true`:
+
+- Group preferences button and footer
+- Send receipts toggle
+- Member list section (replaced by ChannelMembersView navigation)
+- Non-admin block section (in GroupMemberInfoView)
+
+### Channel Leave/Delete Rules
+
+- Sole channel owner cannot leave (button hidden when `isOwner && no other owners`)
+- "Leave group" -> "Leave channel"; "Delete group" -> "Delete channel"; "Edit group profile" -> "Edit channel profile"
+- `deleteGroupAlert`: "Delete channel?" / "Channel will be deleted for all subscribers - this cannot be undone!" (current member) or "Channel will be deleted for you - this cannot be undone!" (non-current member)
+- `leaveGroupAlert`: "Leave channel?" / "You will stop receiving messages from this channel. Chat history will be preserved."
+- `showRemoveMemberAlert`: "Remove subscriber?" / "Subscriber will be removed from channel - this cannot be undone!"
+
+### Channel Members View (`ChannelMembersView`)
+
+New view accessible from channel info, showing:
+
+| Section | Content | Visibility |
+|---|---|---|
+| Owners | Members with role >= `.owner`, plus current user if owner | Always |
+| Subscribers | Members with role < `.owner` and != `.relay` | Owner only |
+
+- Excludes `memLeft`, `memRemoved`, and current user from member list
+- Each row: profile image, verified badge, name; taps navigate to `GroupMemberInfoView`
+- Empty state: "No subscribers" when subscriber list is empty
+
+### Channel Relays View (`ChannelRelaysView`)
+
+New view accessible from channel info, showing relay members (role == `.relay`):
+
+| Element | Description |
+|---|---|
+| Relay list | Filtered from `chatModel.groupMembers` by `.relay` role |
+| Relay row | Profile image, relay display name, status text (`RelayStatus` or connection status) |
+| Relay tap | NavigationLink to `GroupMemberInfoView` with `groupRelay:` parameter |
+| Empty state | "No chat relays" |
+| Footer | "Chat relays forward messages to channel subscribers." |
+
+Owner sees relay status from `apiGetGroupRelays`; non-owner sees connection status only.
+
+### Channel Link View (`GroupLinkView` with `isChannel: true`)
+
+| Change | Channel behavior |
+|---|---|
+| Title | "Channel link" (not "Group link") |
+| Description | "Anybody will be able to join the channel" (omits "You won't lose members...") |
+| Initial role picker | Hidden |
+| Upgrade link button | Hidden |
+| Delete link button | Hidden (channel link deletion only via channel deletion) |
+| Short/full link toggle | Hidden |
+| Share button | Shares directly (no upgrade-and-share alert) |
+
+### Channel Member Info (`GroupMemberInfoView` adaptations)
+
+| Change | Channel behavior |
+|---|---|
+| Section header | "Relay" / "Owner" / "Subscriber" (based on member role) instead of "Member" |
+| Group label | "Channel" instead of "Group" / "Chat" |
+| Action buttons | Hidden (message/audio/video/search) |
+| Role change picker | Hidden |
+| Verify code button | Hidden for relay members |
+| Block section | Hidden for non-moderator users |
+| Remove button | Hidden for relay members |
+| "Remove member" label | "Remove subscriber" |
+| "Block for all?" alert | "Block subscriber for all?" |
+| "Unblock for all?" alert | "Unblock subscriber for all?" |
+| Relay link info row | Shown when `member.relayLink` exists, displays `hostFromRelayLink(link)` |
+| Relay address info row | Shown when `groupRelay?.userChatRelay.address` exists, with "Share relay address" button |
+| Relay footer | Owner: "Subscribers use relay link to connect to the channel. Relay address was used to set up this relay for the channel." Non-owner: "You connected to the channel via this relay link." |
+
 ## Related Specs
 
 - `spec/api.md` -- Group API commands (create, update, add/remove members, roles, links)
@@ -145,3 +240,5 @@ Shown when `developerTools` is enabled:
 - `Shared/Views/Chat/Group/MemberAdmissionView.swift` -- Member admission policy settings
 - `Shared/Views/Chat/Group/GroupMemberInfoView.swift` -- Individual member info and actions
 - `Shared/Views/Chat/Group/GroupMentions.swift` -- @mention support in groups
+- `Shared/Views/Chat/Group/ChannelMembersView.swift` -- Channel owners/subscribers list
+- `Shared/Views/Chat/Group/ChannelRelaysView.swift` -- Channel relay status list

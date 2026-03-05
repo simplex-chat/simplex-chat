@@ -58,7 +58,7 @@ Complete group management in SimpleX Chat iOS: creating groups, inviting members
 
 1. User receives a group link (scanned or pasted).
 2. `apiConnectPlan` validates the link and identifies it as a group link.
-3. For prepared groups (short links): `apiPrepareGroup(connLink:groupShortLinkData:directLink:)` shows group info before joining (where `directLink` defaults to `true`; `false` for channel relay links).
+3. For prepared groups (short links): `apiPrepareGroup(connLink:directLink:groupShortLinkData:)` shows group info before joining. `directLink` is `true` for standard group links, `false` for channel relay links.
 4. `apiConnectPreparedGroup(groupId:incognito:msg:)` or `apiConnect(incognito:connLink:)` initiates joining.
 5. Core processes the join request. Depending on group admission settings:
    - **Auto-join**: Member is added immediately.
