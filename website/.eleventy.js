@@ -53,7 +53,7 @@ const globalConfig = {
 }
 
 const translationsDirectoryPath = './langs'
-const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", ""]
+const supportedRoutes = ["blog", "contact", "invitation", "messaging", "docs", "fdroid", "why", ""]
 let supportedLangs = []
 fs.readdir(translationsDirectoryPath, (err, files) => {
   if (err) {

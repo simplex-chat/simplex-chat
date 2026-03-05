@@ -338,13 +338,22 @@ quoteContent mc qmc ciFile_
     qTextOrFile = if T.null qText then qFileName else qText
 
 prohibitedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature
-prohibitedGroupContent gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
-  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
+prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
+  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
   | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
+    hostApprovalVoice
+      | sent = userRole >= GRAdmin && sendApprovalPhase
+      | otherwise = memberCategory m == GCHostMember && hostApprovalPhase
+    hostApprovalPhase = case scopeInfo of
+      Just (GCSIMemberSupport Nothing) -> memberStatus mem == GSMemPendingApproval
+      _ -> False
+    sendApprovalPhase = case scopeInfo of
+      Just (GCSIMemberSupport (Just scopeMem)) -> memberStatus scopeMem == GSMemPendingApproval
+      _ -> False
     -- admins cannot send reports, non-admins cannot receive reports
     badReportUser
       | sent = userRole >= GRModerator
@@ -929,11 +938,9 @@ acceptGroupJoinRequestAsync
   incognitoProfile = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    ((groupMemberId, memberId), currentMemCount) <- withStore $ \db ->
-      liftM2
-        (,)
-        (createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus)
-        (liftIO $ getGroupCurrentMembersCount db user gInfo)
+    (groupMemberId, memberId) <- withStore $ \db ->
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus
+    let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
@@ -1307,7 +1314,7 @@ setGroupLinkDataAsync user gInfo gLink = do
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
 groupLinkData gInfo@GroupInfo {groupProfile} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo
-      relays = mapMaybe relayLink groupRelays
+      relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
       userData = encodeShortLinkData $ GroupShortLinkData groupProfile
       userLinkData = UserContactLinkData UserContactData {direct, owners = [], relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
@@ -1363,6 +1370,12 @@ createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> sho
 
 toShortGroupLink :: ShortLinkContact -> ShortLinkContact
 toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
+
+createdChannelLink :: CreatedLinkContact -> CreatedLinkContact
+createdChannelLink (CCLink cReq shortLink) = CCLink cReq (toShortChannelLink <$> shortLink)
+
+toShortChannelLink :: ShortLinkContact -> ShortLinkContact
+toShortChannelLink (CSLContact sch _ srv k) = CSLContact sch CCTChannel srv k
 
 createdRelayLink :: CreatedLinkContact -> CreatedLinkContact
 createdRelayLink (CCLink cReq shortLink) = CCLink cReq (toShortRelayLink <$> shortLink)

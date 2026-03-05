@@ -10,11 +10,13 @@
 module Directory.Events
   ( DirectoryEvent (..),
     DirectoryCmd (..),
+    DirectoryCmdTag (..),
     ADirectoryCmd (..),
     DirectoryHelpSection (..),
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
+    directoryCmdP,
     directoryCmdTag,
   )
 where

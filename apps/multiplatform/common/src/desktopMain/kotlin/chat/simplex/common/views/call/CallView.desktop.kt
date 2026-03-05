@@ -23,6 +23,7 @@ private const val SERVER_HOST = "localhost"
 private const val SERVER_PORT = 50395
 val connections = ArrayList<WebSocket>()
 
+// Spec: spec/services/calls.md#ActiveCallView
 @Composable
 actual fun ActiveCallView() {
   val scope = rememberCoroutineScope()

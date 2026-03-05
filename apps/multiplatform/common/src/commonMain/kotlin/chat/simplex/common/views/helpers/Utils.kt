@@ -114,6 +114,7 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
 expect fun SetupClipboardListener()
 
 // maximum image file size to be auto-accepted
+// Spec: spec/services/files.md#MAX_IMAGE_SIZE
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
 const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2

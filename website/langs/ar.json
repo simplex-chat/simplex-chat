@@ -31,7 +31,7 @@
     "simplex-explained-tab-2-p-1": "لكل اتصال، تستخدم قائمتي انتظار منفصلتين للمُراسلة لإرسال واستلام الرسائل عبر خوادم مختلفة.",
     "simplex-explained-tab-2-p-2": "تمرّر الخوادم الرسائل في اتجاه واحد فقط، دون الحصول على الصورة الكاملة لمُحادثات المستخدم أو اتصالاته.",
     "simplex-explained-tab-3-p-1": "تحتوي الخوادم على بيانات اعتماد مجهولة منفصلة لكل قائمة انتظار، ولا تعرف المستخدمين الذين ينتمون إليهم.",
-    "copyright-label": "مشروع مفتوح المصدر © SimpleX 2020-2025",
+    "copyright-label": "مشروع مفتوح المصدر © © 2020-2025 SimpleX Chat | مشروع مفتوح المصدرSimpleX 2020-2025",
     "simplex-chat-protocol": "بروتوكول دردشة SimpleX",
     "developers": "المطورين",
     "hero-subheader": "أول نظام مُراسلة<br> دون معرّفات مُستخدم",
@@ -259,8 +259,8 @@
     "directory": "دليل",
     "about-and-contact-us": "عن واتصل بنا",
     "index-hero-h1": "كن<br>حراً",
-    "index-hero-h2": "حرية وأمن<br>اتصالاتك",
-    "index-hero-p1": "الشبكة الأولى التي تمتلك فيها هويتك وجهات اتصالك ومجموعاتك.",
+    "index-hero-h2": "في شبكتك",
+    "index-hero-p1": "مراسلة خاصة وآمنة.<br>الشبكة الأولى التي تمتلك فيها جهات اتصالك ومجموعاتك.",
     "index-hero-download-desktop-btn-title": "نزّل تطبيق سطح مكتب SimpleX",
     "index-testflight-title": "إصدار SimpleX التجريبي ل iOS على TestFlight",
     "index-f-droid-title": "تطبيق SimpleX من خلال F-Droid",
@@ -310,5 +310,8 @@
     "messengers-comparison-section-list-point-5": "تبادل المفاتيح الثنائي اختياري عبر التحقق من رمز الأمان.",
     "messengers-comparison-section-list-point-6": "اتفاقية مفتاح ما بعد الكم \"متفرقة\" &mdash; فهي تحمي بعض خطوات ratchet فقط.",
     "index-roadmap-2026": "2026",
-    "index-roadmap-2027": "2027"
+    "index-roadmap-2027": "2027",
+    "navbar-token": "رمز",
+    "index-token-cta": "تعرف على المزيد و<strong>احصل على NFT مجاني</strong><br>للاختبار المبكر.",
+    "navbar-old-site": "الموقع القديم"
 }

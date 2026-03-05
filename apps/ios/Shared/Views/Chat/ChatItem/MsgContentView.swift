@@ -5,6 +5,7 @@
 //  Created by Evgeny on 13/03/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
@@ -23,6 +24,7 @@ private func typing(_ theme: AppTheme, _ descr: UIFontDescriptor, _ ws: [UIFont.
     return res
 }
 
+// Spec: spec/client/chat-view.md#MsgContentView
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
     @Environment(\.showTimestamp) var showTimestamp: Bool

@@ -5,10 +5,12 @@
 //  Created by Evgeny Poberezkin on 11/02/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIMetaView
 struct CIMetaView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme

@@ -81,6 +81,7 @@ val connectProgressManager = ConnectProgressManager
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
+// Spec: spec/state.md#ChatModel
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
@@ -334,6 +335,7 @@ object ChatModel {
     }
   }
 
+  // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItems], [removeAllAndNotify], [clearAndNotify] and so on.
@@ -1321,6 +1323,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
+// Spec: spec/state.md#Chat
 @Serializable @Stable
 data class Chat(
   val remoteHostId: Long?,
@@ -1362,6 +1365,7 @@ data class Chat(
       true
     }
 
+  // Spec: spec/state.md#ChatStats
   @Serializable
   data class ChatStats(
     val unreadCount: Int = 0,
@@ -1382,6 +1386,7 @@ data class Chat(
   }
 }
 
+// Spec: spec/state.md#ChatInfo
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
 

@@ -5,6 +5,7 @@
 //  Created by spaced4ndy on 28.11.2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -73,6 +74,7 @@ func showKeepInvitationAlert() {
     ChatModel.shared.showingInvitation = nil
 }
 
+// Spec: spec/client/navigation.md#NewChatView
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -988,42 +990,67 @@ private func showOwnGroupLinkConfirmConnectSheet(
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
-    showSheet(
-        String.localizedStringWithFormat(
-            NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
-            groupInfo.displayName
-        ),
-        actions: {[
-            UIAlertAction(
-                title: NSLocalizedString("Open group", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
-                }
+    if groupInfo.useRelays {
+        showSheet(
+            String.localizedStringWithFormat(
+                NSLocalizedString("This is your link for channel %@!", comment: "new chat action"),
+                groupInfo.displayName
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Use current profile", comment: "new chat action"),
-                style: .destructive,
-                handler: { _ in
-                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
-                }
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Open channel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        cleanup?()
+                    }
+                )
+            ]}
+        )
+    } else {
+        showSheet(
+            String.localizedStringWithFormat(
+                NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
+                groupInfo.displayName
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
-                style: .destructive,
-                handler: { _ in
-                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
-                }
-            ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    cleanup?()
-                }
-            )
-        ]}
-    )
+            actions: {[
+                UIAlertAction(
+                    title: NSLocalizedString("Open group", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Use current profile", comment: "new chat action"),
+                    style: .destructive,
+                    handler: { _ in
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
+                    style: .destructive,
+                    handler: { _ in
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
+                    }
+                ),
+                UIAlertAction(
+                    title: NSLocalizedString("Cancel", comment: "new chat action"),
+                    style: .default,
+                    handler: { _ in
+                        cleanup?()
+                    }
+                )
+            ]}
+        )
+    }
 }
 
 private func showPrepareContactAlert(
@@ -1072,30 +1099,45 @@ private func showPrepareContactAlert(
 
 private func showPrepareGroupAlert(
     connectionLink: CreatedConnLink,
+    groupShortLinkInfo: GroupShortLinkInfo?,
     groupShortLinkData: GroupShortLinkData,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
+    let isChannel = !(groupShortLinkInfo?.direct ?? true)
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
-        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
+        profileImage:
+            ProfileImage(
+                imageStr: groupShortLinkData.groupProfile.image,
+                iconName: isChannel
+                            ? "antenna.radiowaves.left.and.right.circle.fill"
+                            : "person.2.circle.fill",
+                size: alertProfileImageSize
+            ),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
-        confirmTitle: NSLocalizedString("Open new group", comment: "new chat action"),
+        confirmTitle: isChannel
+            ? NSLocalizedString("Open new channel", comment: "new chat action")
+            : NSLocalizedString("Open new group", comment: "new chat action"),
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData)
                     await MainActor.run {
+                        if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
+                           case let .group(gInfo, _) = chat.chatInfo {
+                            ChatModel.shared.channelRelayHostnames[gInfo.groupId] = relays
+                        }
                         ChatModel.shared.addChat(Chat(chat))
                         openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
                     }
                 } catch let error {
                     logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString("Error opening group", comment: ""), message: responseError(error))
+                    showAlert(NSLocalizedString(isChannel ? "Error opening channel" : "Error opening group", comment: "alert title"), message: responseError(error))
                     await MainActor.run {
                         cleanup?()
                     }
@@ -1148,7 +1190,12 @@ private func showOpenKnownGroupAlert(
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
-            groupInfo.businessChat == nil
+            groupInfo.useRelays
+            ? ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new channel", comment: "new chat action")
+                : NSLocalizedString("Open channel", comment: "new chat action")
+              )
+            : groupInfo.businessChat == nil
             ? ( groupInfo.nextConnectPrepared
                 ? NSLocalizedString("Open new group", comment: "new chat action")
                 : NSLocalizedString("Open group", comment: "new chat action")
@@ -1163,6 +1210,7 @@ private func showOpenKnownGroupAlert(
     )
 }
 
+// Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
     theme: AppTheme,
@@ -1171,6 +1219,14 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
+    if case .simplexLink(_, .relay, _, _) = strHasSingleSimplexLink(shortOrFullLink)?.format {
+        showAlert(
+            NSLocalizedString("Relay address", comment: "alert title"),
+            message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
+        )
+        cleanup?()
+        return
+    }
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)
     connectTask(inProgress)
@@ -1329,12 +1385,13 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupSLinkData_):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareGroupAlert(
                                     connectionLink: connectionLink,
+                                    groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
                                     theme: theme,
                                     dismiss: dismiss,

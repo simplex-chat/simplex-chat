@@ -38,7 +38,7 @@
     <body class="bg-[#F3FAFF] dark:bg-[#000832]">
         {% include "navbar.html" %}
 
-        {{ content | applyGlossary | safe }}
+        {% if noGlossary %}{{ content | safe }}{% else %}{{ content | applyGlossary | safe }}{% endif %}
 
         {% include "footer.html" %}
 

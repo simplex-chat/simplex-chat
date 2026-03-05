@@ -118,6 +118,7 @@ chatCommandsDocsData =
         ("APIListMembers", [], "Get group members.", ["CRGroupMembers", "CRChatCmdError"], [], Nothing, "/_members #" <> Param "groupId"),
         ("APINewGroup", [], "Create group.", ["CRGroupCreated", "CRChatCmdError"], [], Nothing, "/_group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Json "groupProfile"),
         ("APINewPublicGroup", [], "Create public group.", ["CRPublicGroupCreated", "CRChatCmdError"], [], Just UNInteractive, "/_public group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Join ',' "relayIds" <> " " <> Json "groupProfile"),
+        ("APIGetGroupRelays", [], "Get group relays.", ["CRGroupRelays", "CRChatCmdError"], [], Nothing, "/_get relays #" <> Param "groupId"),
         ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
       ]
     ),

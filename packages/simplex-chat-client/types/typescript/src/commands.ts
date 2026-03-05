@@ -358,6 +358,20 @@ export namespace APINewPublicGroup {
   }
 }
 
+// Get group relays.
+// Network usage: no.
+export interface APIGetGroupRelays {
+  groupId: number // int64
+}
+
+export namespace APIGetGroupRelays {
+  export type Response = CR.GroupRelays | CR.ChatCmdError
+
+  export function cmdString(self: APIGetGroupRelays): string {
+    return '/_get relays #' + self.groupId
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {

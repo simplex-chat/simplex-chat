@@ -71,7 +71,7 @@ active_home: true
                 <div class="content">
                     <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
                     <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }}</h2>
-                    <p>{{ "index-hero-p1" | i18n({}, lang) }}</p>
+                    <p>{{ "index-hero-p1" | i18n({}, lang) | safe }}</p>
 
                     <div class="socials">
                         <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
@@ -145,6 +145,7 @@ active_home: true
                         <h2>{{ "index-nextweb-h2" | i18n({}, lang) | safe }}</h2>
                         <p>{{ "index-nextweb-p1" | i18n({}, lang) | safe }}</p>
                         <p>{{ "index-nextweb-p2" | i18n({}, lang) }}</p>
+                        <a class="gradient-text" href="{{ '' if lang == 'en' else '/' ~ lang }}/why">{{ "why-footer-link" | i18n({}, lang) | safe }}</a>
                     </div>
                 </div>
             </section>

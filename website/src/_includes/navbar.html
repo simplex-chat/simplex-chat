@@ -162,7 +162,7 @@
                     {% endfor %}
                 {% else %}
                     {% for language in languages.languages %}
-                        {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) %}
+                        {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) and (language.why or ('why' not in page.url)) %}
                             <li>
                                 <a href="{% completeRoute {url: page.url, lang: language.label} %}">
                                     <p>{{ language.name }}</p>
