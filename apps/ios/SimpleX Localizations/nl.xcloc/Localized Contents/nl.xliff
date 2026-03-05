@@ -790,6 +790,10 @@ swipe action</note>
         <target>Alle groepsleden blijven verbonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All messages" xml:space="preserve">
+        <source>All messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
         <source>All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.</source>
         <target>Alle berichten en bestanden worden **end-to-end versleuteld** verzonden, met post-quantumbeveiliging in directe berichten.</target>
@@ -1136,6 +1140,10 @@ swipe action</note>
       <trans-unit id="Audio and video calls" xml:space="preserve">
         <source>Audio and video calls</source>
         <target>Audio en video oproepen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Audio call" xml:space="preserve">
+        <source>Audio call</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio/video calls" xml:space="preserve">
@@ -2565,6 +2573,14 @@ swipe action</note>
         <target>Bericht van lid verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete member messages" xml:space="preserve">
+        <source>Delete member messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete member messages?" xml:space="preserve">
+        <source>Delete member messages?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
         <source>Delete message?</source>
         <target>Verwijder bericht?</target>
@@ -2573,7 +2589,8 @@ swipe action</note>
       <trans-unit id="Delete messages" xml:space="preserve">
         <source>Delete messages</source>
         <target>Verwijder berichten</target>
-        <note>alert button</note>
+        <note>alert action
+alert button</note>
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve">
         <source>Delete messages after</source>
@@ -3825,6 +3842,10 @@ snd error text</note>
         <target>Bestanden en media niet toegestaan!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Filter" xml:space="preserve">
+        <source>Filter</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
         <source>Filter unread and favorite chats.</source>
         <target>Filter ongelezen en favoriete chats.</target>
@@ -4305,6 +4326,10 @@ Fout: %2$@</target>
         <target>De afbeelding wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Images" xml:space="preserve">
+        <source>Images</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
         <source>Immediately</source>
         <target>Onmiddellijk</target>
@@ -4564,6 +4589,10 @@ Binnenkort meer verbeteringen!</target>
         <target>Nodig vrienden uit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite member" xml:space="preserve">
+        <source>Invite member</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
         <source>Invite members</source>
         <target>Nodig leden uit</target>
@@ -4785,6 +4814,10 @@ Dit is jouw link voor groep %@!</target>
         <target>Gelinkte desktops</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Links" xml:space="preserve">
+        <source>Links</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="List" xml:space="preserve">
         <source>List</source>
         <target>Lijst</target>
@@ -4907,6 +4940,10 @@ Dit is jouw link voor groep %@!</target>
         <source>Member is deleted - can't accept request</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
+        <source>Member messages will be deleted - this cannot be undone!</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
         <source>Member reports</source>
         <target>Ledenrapporten</target>
@@ -4930,12 +4967,12 @@ Dit is jouw link voor groep %@!</target>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
         <target>Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
         <target>Lid wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
         <source>Member will join the group, accept member?</source>
@@ -6544,7 +6581,11 @@ swipe action</note>
       <trans-unit id="Remove" xml:space="preserve">
         <source>Remove</source>
         <target>Verwijderen</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
+      </trans-unit>
+      <trans-unit id="Remove and delete messages" xml:space="preserve">
+        <source>Remove and delete messages</source>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Remove archive?" xml:space="preserve">
         <source>Remove archive?</source>
@@ -6568,7 +6609,7 @@ swipe action</note>
       <trans-unit id="Remove member?" xml:space="preserve">
         <source>Remove member?</source>
         <target>Lid verwijderen?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
         <source>Remove passphrase from keychain?</source>
@@ -6982,9 +7023,29 @@ chat item action</note>
         <target>Zoekbalk accepteert uitnodigingslinks.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Search files" xml:space="preserve">
+        <source>Search files</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search images" xml:space="preserve">
+        <source>Search images</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search links" xml:space="preserve">
+        <source>Search links</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
         <source>Search or paste SimpleX link</source>
         <target>Zoeken of plak een SimpleX link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search videos" xml:space="preserve">
+        <source>Search videos</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search voice messages" xml:space="preserve">
+        <source>Search voice messages</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -8830,6 +8891,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Video will be received when your contact is online, please wait or check later!</source>
         <target>De video wordt ontvangen wanneer uw contact online is, even geduld a.u.b. of kijk later!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Videos" xml:space="preserve">
+        <source>Videos</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">

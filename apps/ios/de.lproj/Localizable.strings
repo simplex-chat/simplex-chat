@@ -1733,7 +1733,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Die Nachricht löschen?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Nachrichten löschen";
 
 /* No comment provided by engineer. */
@@ -3308,10 +3309,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Die Mitgliederrolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Das Mitglied wird aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!";
 
 /* alert message */
@@ -4380,7 +4381,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Relais-Server schützen Ihre IP-Adresse, aber sie können die Anrufdauer erfassen.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Entfernen";
 
 /* No comment provided by engineer. */
@@ -4395,7 +4396,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Mitglied entfernen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Das Mitglied entfernen?";
 
 /* No comment provided by engineer. */

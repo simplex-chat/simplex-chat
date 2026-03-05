@@ -2532,4 +2532,5 @@
     <string name="proxy_destination_error_unknown_ca">اثر انگشت در نشانی سرور مقصد با گواهی مطابقت ندارد: ‎%1$s.</string>
     <string name="smp_proxy_error_unknown_ca">اثر انگشت در نشانی سرور انتقال با گواهی مطابقت ندارد: ‎%1$s.</string>
     <string name="network_error_unknown_ca">اثر انگشت در نشانی سرور با گواهی مطابقت ندارد: ‎%1$s.</string>
+    <string name="button_delete_member_messages">پاک کردن پیام کاربر</string>
 </resources>
