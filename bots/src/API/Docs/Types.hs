@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
@@ -31,6 +32,8 @@ import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Operators
+import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -349,6 +352,7 @@ chatTypesDocsData =
     (sti @UIThemeEntityOverrides, STRecord, "", [], "", ""),
     (sti @UpdatedMessage, STRecord, "", [], "", ""),
     (sti @User, STRecord, "", [], "", ""),
+    ((sti @UserChatRelay) {typeName = "UserChatRelay"}, STRecord, "", [], "", ""),
     (sti @UserContact, STRecord, "", [], "", ""),
     (sti @UserContactLink, STRecord, "", [], "", ""),
     (sti @UserContactRequest, STRecord, "", [], "", ""),
@@ -545,6 +549,7 @@ deriving instance Generic UIThemeEntityOverride
 deriving instance Generic UIThemeEntityOverrides
 deriving instance Generic UpdatedMessage
 deriving instance Generic User
+deriving instance Generic (UserChatRelay' 'DBStored)
 deriving instance Generic UserContact
 deriving instance Generic UserContactLink
 deriving instance Generic UserContactRequest

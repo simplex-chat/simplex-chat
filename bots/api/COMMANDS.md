@@ -31,6 +31,7 @@ This file is generated automatically.
 - [APIListMembers](#apilistmembers)
 - [APINewGroup](#apinewgroup)
 - [APINewPublicGroup](#apinewpublicgroup)
+- [APIGetGroupRelays](#apigetgrouprelays)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -974,6 +975,44 @@ PublicGroupCreated: Public group created.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetGroupRelays
+
+Get group relays.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_get relays #<groupId>
+```
+
+```javascript
+'/_get relays #' + groupId // JavaScript
+```
+
+```python
+'/_get relays #' + str(groupId) # Python
+```
+
+**Responses**:
+
+GroupRelays: Group relays.
+- type: "groupRelays"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 
 ChatCmdError: Command error (only used in WebSockets API).

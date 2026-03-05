@@ -47,6 +47,7 @@ import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types (ShortLinkContact, User)
+import Simplex.Chat.Types.Shared (RelayStatus)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol (sameShortLinkContact)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
@@ -270,6 +271,17 @@ data UserChatRelay' s = UserChatRelay
     deleted :: Bool
   }
   deriving (Show)
+
+deriving instance Eq UserChatRelay
+
+data GroupRelay = GroupRelay
+  { groupRelayId :: Int64,
+    groupMemberId :: Int64,
+    userChatRelay :: UserChatRelay,
+    relayStatus :: RelayStatus,
+    relayLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
 
 -- for setting chat relays via CLI API
 data CLINewRelay = CLINewRelay
@@ -585,3 +597,5 @@ instance FromJSON UpdatedUserOperatorServers where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USW") ''UserServersWarning)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelay)

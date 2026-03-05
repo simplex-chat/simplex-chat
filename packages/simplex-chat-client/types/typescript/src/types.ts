@@ -2534,6 +2534,7 @@ export interface GroupMember {
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
   memberPubKey?: string
+  relayLink?: string
 }
 
 export interface GroupMemberAdmission {
@@ -2617,7 +2618,7 @@ export interface GroupProfile {
 export interface GroupRelay {
   groupRelayId: number // int64
   groupMemberId: number // int64
-  userChatRelayId: number // int64
+  userChatRelay: UserChatRelay
   relayStatus: RelayStatus
   relayLink?: string
 }
@@ -4547,6 +4548,17 @@ export interface User {
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   uiThemes?: UIThemeEntityOverrides
   userChatRelay: boolean
+}
+
+export interface UserChatRelay {
+  chatRelayId: number // int64
+  address: string
+  name: string
+  domains: string[]
+  preset: boolean
+  tested?: boolean
+  enabled: boolean
+  deleted: boolean
 }
 
 export interface UserContact {

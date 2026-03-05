@@ -169,6 +169,7 @@ This file is generated automatically.
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
+- [UserChatRelay](#userchatrelay)
 - [UserContact](#usercontact)
 - [UserContactLink](#usercontactlink)
 - [UserContactRequest](#usercontactrequest)
@@ -2243,6 +2244,7 @@ Known:
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - memberPubKey: string?
+- relayLink: string?
 
 
 ---
@@ -2366,7 +2368,7 @@ Known:
 **Record type**:
 - groupRelayId: int64
 - groupMemberId: int64
-- userChatRelayId: int64
+- userChatRelay: [UserChatRelay](#userchatrelay)
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
 
@@ -3841,6 +3843,21 @@ Handshake:
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - userChatRelay: bool
+
+
+---
+
+## UserChatRelay
+
+**Record type**:
+- chatRelayId: int64
+- address: string
+- name: string
+- domains: [string]
+- preset: bool
+- tested: bool?
+- enabled: bool
+- deleted: bool
 
 
 ---
