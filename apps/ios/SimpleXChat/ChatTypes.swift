@@ -2113,8 +2113,8 @@ public struct Connection: Decodable, Hashable {
 
     public var id: ChatId { get { ":\(connId)" } }
 
-    public var connError: String? {
-        if case let .error(err) = connStatus { return err }
+    public var connFailedErr: String? {
+        if case let .failed(err) = connStatus { return err }
         return nil
     }
 
@@ -2312,7 +2312,7 @@ public enum ConnStatus: Decodable, Hashable {
     case sndReady
     case ready
     case deleted
-    case error(connError: String)
+    case failed(connError: String)
 
     var initiated: Bool? {
         get {
@@ -2325,7 +2325,7 @@ public enum ConnStatus: Decodable, Hashable {
             case .sndReady: return nil
             case .ready: return nil
             case .deleted: return nil
-            case .error: return nil
+            case .failed: return nil
             }
         }
     }

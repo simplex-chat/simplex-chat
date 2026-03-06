@@ -1688,7 +1688,7 @@ data ConnStatus
   | -- | connection deleted
     ConnDeleted
   | -- | connection had a permanent error during handshake
-    ConnError {connError :: Text}
+    ConnFailed {connError :: Text}
   deriving (Eq, Show, Read)
 
 instance FromField ConnStatus where fromField = fromTextField_ textDecode
@@ -1705,7 +1705,7 @@ instance TextEncoding ConnStatus where
     "snd-ready" -> Just ConnSndReady
     "ready" -> Just ConnReady
     "deleted" -> Just ConnDeleted
-    s | Just err <- T.stripPrefix "error " s -> Just (ConnError err)
+    s | Just err <- T.stripPrefix "error " s -> Just (ConnFailed err)
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
@@ -1716,11 +1716,11 @@ instance TextEncoding ConnStatus where
     ConnSndReady -> "snd-ready"
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
-    ConnError err -> "error " <> err
+    ConnFailed err -> "error " <> err
 
-isConnError :: ConnStatus -> Bool
-isConnError = \case
-  ConnError {} -> True
+isConnFailed :: ConnStatus -> Bool
+isConnFailed = \case
+  ConnFailed {} -> True
   _ -> False
 
 data ConnType = ConnContact | ConnMember | ConnUserContact

@@ -2038,7 +2038,7 @@ memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember 
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted || isConnError connStatus || memberStatus == GSMemRejected -> Nothing
+        | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Nothing
         | connInactive conn -> Just MSAPending
         | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
         | otherwise -> pendingOrForwarded

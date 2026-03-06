@@ -189,9 +189,9 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    if let connError = member.activeConn?.connError {
+                    if let connFailedErr = member.activeConn?.connFailedErr {
                         Section {
-                            infoRow("Connection error", connError)
+                            infoRow("Connection failed", connFailedErr)
                         }
                     }
 

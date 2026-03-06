@@ -455,8 +455,8 @@ struct GroupChatInfoView: View {
         }
 
         private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
-            if case .error = member.activeConn?.connStatus {
-                return "error"
+            if case .failed = member.activeConn?.connStatus {
+                return "failed"
             } else if member.activeConn?.connDisabled ?? false {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {

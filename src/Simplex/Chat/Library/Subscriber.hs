@@ -379,7 +379,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
-      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnError (tshow err)
+      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnFailed (tshow err)
       _ -> Nothing
 
     processCONFpqSupport :: Connection -> PQSupport -> CM Connection
@@ -1055,7 +1055,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ERR err -> do
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        when (isConnError $ connStatus conn) $
+        when (isConnFailed $ connStatus conn) $
           toView $ CEvtGroupMemberUpdated user gInfo m m
       -- TODO add debugging output
       _ -> pure ()
