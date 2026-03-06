@@ -71,7 +71,9 @@ getChatLockEntity db agentConnId = do
       ExceptT . firstRow fromOnly (SEInternalError "group member connection group_id not found") $
         DB.query db "SELECT group_id FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
--- TODO consider whether ConnError connections should be excluded
+-- TODO consider whether ConnError connections should be excluded:
+-- - from receiving: getConnectionEntity, getContactConnEntityByConnReqHash
+-- - from subscribing: getContactConnsToSub, getUCLConnsToSub, getMemberConnsToSub, getPendingConnsToSub
 getConnectionEntity :: DB.Connection -> VersionRangeChat -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
@@ -213,7 +215,6 @@ getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap either
       (Just cReq, connId) -> Right (cReq, connId)
       _ -> Left $ SEInternalError "no connection request"
 
--- TODO consider whether ConnError connections should be excluded
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;
 -- this function searches for latest connection with contact so that "known contact" plan would be chosen;
@@ -238,7 +239,6 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
         (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
--- TODO consider whether ConnError connections should be subscribable
 getContactConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getContactConnsToSub db User {userId} filterToSubscribe =
   map fromOnly <$> DB.query db query (userId, ConnDeleted, CSActive)
@@ -259,7 +259,6 @@ getContactConnsToSub db User {userId} filterToSubscribe =
         AND ct.contact_status = ? AND ct.deleted = 0
       |]
 
--- TODO consider whether ConnError connections should be subscribable
 getUCLConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getUCLConnsToSub db User {userId} filterToSubscribe =
   map fromOnly <$> DB.query db query (userId, ConnDeleted)
@@ -276,7 +275,6 @@ getUCLConnsToSub db User {userId} filterToSubscribe =
       |]
     cond = " AND c.conn_status != ?"
 
--- TODO consider whether ConnError connections should be subscribable
 getMemberConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
   map fromOnly <$>
@@ -308,7 +306,6 @@ getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
           AND m.member_status NOT IN (?,?,?)
       |]
 
--- TODO consider whether ConnError connections should be subscribable
 getPendingConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getPendingConnsToSub db User {userId} filterToSubscribe =
   map fromOnly <$> DB.query db query (userId, ConnContact, ConnDeleted)
