@@ -1705,7 +1705,7 @@ instance TextEncoding ConnStatus where
     "snd-ready" -> Just ConnSndReady
     "ready" -> Just ConnReady
     "deleted" -> Just ConnDeleted
-    s | Just err <- T.stripPrefix "error " s -> Just (ConnFailed err)
+    s | Just err <- T.stripPrefix "failed " s -> Just (ConnFailed err)
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
@@ -1716,7 +1716,7 @@ instance TextEncoding ConnStatus where
     ConnSndReady -> "snd-ready"
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
-    ConnFailed err -> "error " <> err
+    ConnFailed err -> "failed " <> err
 
 isConnFailed :: ConnStatus -> Bool
 isConnFailed = \case
