@@ -2522,4 +2522,6 @@
     <string name="placeholder_search_voice_messages">Hangüzenetek keresése</string>
     <string name="content_filter_videos">Videók</string>
     <string name="content_filter_voice_messages">Hangüzenetek</string>
+    <string name="info_row_connection_failed">Nem sikerült létrehozni a kapcsolatot</string>
+    <string name="member_info_member_failed">sikertelen</string>
 </resources>
