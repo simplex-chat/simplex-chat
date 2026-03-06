@@ -1499,8 +1499,8 @@ Ready:
 Deleted:
 - type: "deleted"
 
-Error:
-- type: "error"
+Failed:
+- type: "failed"
 - connError: string
 
 

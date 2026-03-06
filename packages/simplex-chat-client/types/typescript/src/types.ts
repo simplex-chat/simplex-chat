@@ -1704,7 +1704,7 @@ export type ConnStatus =
   | ConnStatus.SndReady
   | ConnStatus.Ready
   | ConnStatus.Deleted
-  | ConnStatus.Error
+  | ConnStatus.Failed
 
 export namespace ConnStatus {
   export type Tag = 
@@ -1716,7 +1716,7 @@ export namespace ConnStatus {
     | "sndReady"
     | "ready"
     | "deleted"
-    | "error"
+    | "failed"
 
   interface Interface {
     type: Tag
@@ -1754,8 +1754,8 @@ export namespace ConnStatus {
     type: "deleted"
   }
 
-  export interface Error extends Interface {
-    type: "error"
+  export interface Failed extends Interface {
+    type: "failed"
     connError: string
   }
 }
