@@ -137,7 +137,7 @@
     <string name="error_creating_link_for_group">グループリンク発行にエラー発生</string>
     <string name="error_changing_role">役割変更にエラー発生</string>
     <string name="error_exporting_chat_database">チャットデータベースの書き出しでエラー発生</string>
-    <string name="error_saving_smp_servers">SMPサーバ保存でエラー発生</string>
+    <string name="error_saving_smp_servers">Packetサーバ保存でエラー発生</string>
     <string name="error_saving_ICE_servers">ICEサーバ保存でエラー発生</string>
     <string name="error_setting_network_config">ネットワーク設定の更新にエラー発生</string>
     <string name="icon_descr_file">ファイル</string>
@@ -151,7 +151,7 @@
     <string name="snd_group_event_group_profile_updated">グループのプロフィールが更新されました。</string>
     <string name="notification_display_mode_hidden_desc">連絡先とメッセージ内容をプライベートにする。</string>
     <string name="icon_descr_instant_notifications">通知の常時受信</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Packetサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
@@ -652,7 +652,7 @@
     <string name="to_connect_via_link_title">リンク経由で接続</string>
     <string name="security_code">セキュリティコード</string>
     <string name="is_verified">%s は認証済み</string>
-    <string name="smp_servers">SMPサーバ</string>
+    <string name="smp_servers">Packetサーバ</string>
     <string name="save_servers_button">保存</string>
     <string name="update_network_session_mode_question">トランスポート隔離モードを更新しますか？</string>
     <string name="save_preferences_question">この設定でよろしいですか？</string>
@@ -901,7 +901,7 @@
     <string name="alert_title_cant_invite_contacts_descr">シークレットモードのプロフィールでこのグループに参加しています。メインのプロフィールを守るために、招待することができません。</string>
     <string name="description_you_shared_one_time_link">使い捨てリンクを送りました</string>
     <string name="profile_will_be_sent_to_contact_sending_link">リンクを送ってくれた連絡先にあなたのプロフィールを送ります。</string>
-    <string name="your_SMP_servers">あなたのSMPサーバ</string>
+    <string name="your_SMP_servers">あなたのPacketサーバ</string>
     <string name="your_simplex_contact_address">あなたのSimpleXアドレス</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">連絡先が繋がりリクエストを承認したら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="switch_receiving_address">受信アドレスを変える</string>
@@ -917,7 +917,7 @@
     <string name="select_contacts">連絡先を選択</string>
     <string name="skip_inviting_button">今はメンバーを招待しません</string>
     <string name="group_info_section_title_num_members">%1$sメンバー</string>
-    <string name="xftp_servers">XFTPサーバ</string>
+    <string name="xftp_servers">Dataサーバ</string>
     <string name="save_welcome_message_question">ウェルカムメッセージを保存しますか？</string>
     <string name="dont_show_again">次から表示しない</string>
     <string name="la_change_app_passcode">パスコードを変更</string>
@@ -965,7 +965,7 @@
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
     <string name="feature_received_prohibited">受信拒絶</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Dataサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
     <string name="smp_server_test_delete_file">ファイルの削除</string>
     <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
     <string name="waiting_for_video">ビデオを待機中</string>
@@ -977,7 +977,7 @@
     <string name="gallery_video_button">ビデオ</string>
     <string name="above_then_preposition_continuation">← から：</string>
     <string name="network_socks_proxy_settings">SOCKSプロキシー設定</string>
-    <string name="your_XFTP_servers">あなたのXFTPサーバ</string>
+    <string name="your_XFTP_servers">あなたのDataサーバ</string>
     <string name="add_address_to_your_profile">プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。</string>
     <string name="auto_accept_contact">自動承認</string>
     <string name="enable_lock">ロックモード</string>
@@ -1007,7 +1007,7 @@
     <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
     <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
     <string name="language_system">システム</string>
-    <string name="error_saving_xftp_servers">XFTP サーバーの保存中にエラーが発生しました</string>
+    <string name="error_saving_xftp_servers">Data サーバーの保存中にエラーが発生しました</string>
     <string name="smp_server_test_create_file">ファイルを作成</string>
     <string name="moderate_message_will_be_deleted_warning">メッセージはすべてのメンバーに対して削除されます。</string>
     <string name="la_could_not_be_verified">確認できませんでした。 もう一度お試しください。</string>
@@ -1043,9 +1043,9 @@
     <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d メッセージの復号化に失敗しました。</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d メッセージをスキップしました</string>
-    <string name="error_loading_smp_servers">SMPサーバーのロード中にエラーが発生しました</string>
+    <string name="error_loading_smp_servers">Packetサーバーのロード中にエラーが発生しました</string>
     <string name="error_saving_user_password">ユーザーパスワードの保存中にエラー発生</string>
-    <string name="error_loading_xftp_servers">XFTPサーバーのロード中にエラーが発生しました</string>
+    <string name="error_loading_xftp_servers">Dataサーバーのロード中にエラーが発生しました</string>
     <string name="export_theme">テーマのエクスポート</string>
     <string name="revoke_file__message">ファイルはサーバーから削除されます。</string>
     <string name="if_you_cant_meet_in_person">直接会えない場合は、ビデオ通話で QR コードを表示するか、リンクを共有してください。</string>
@@ -1655,7 +1655,7 @@
     <string name="welcome_message_is_too_long">ウェルカムメッセージが長すぎます</string>
     <string name="clear_note_folder_warning">全てのメッセージが削除されます - これは元に戻せません！</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[新しい端末で<i>別の端末に移行</i>を選択し、QRコードをスキャンします。]]></string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">すべての連絡先、会話、ファイルは安全に暗号化され、設定されたXFTPリレーに分割でアップロードされます。</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">すべての連絡先、会話、ファイルは安全に暗号化され、設定されたDataリレーに分割でアップロードされます。</string>
     <string name="unblock_for_all">ブロックの解除</string>
     <string name="unblock_for_all_question">ブロックを解除しますか？</string>
     <string name="blocked_by_admin_items_description">%d のメッセージが管理者によりブロック済</string>
@@ -1823,9 +1823,9 @@
     <string name="app_check_for_updates_notice_title">アップデートを確認</string>
     <string name="app_check_for_updates">アップデートを確認</string>
     <string name="completed">完了</string>
-    <string name="smp_servers_configured">SMPサーバーの構成</string>
+    <string name="smp_servers_configured">Packetサーバーの構成</string>
     <string name="servers_info_sessions_connected">接続中</string>
-    <string name="xftp_servers_configured">XFTPサーバーの構成</string>
+    <string name="xftp_servers_configured">Dataサーバーの構成</string>
     <string name="one_hand_ui_card_title">チャトリスト切り替え</string>
     <string name="contact_list_header_title">連絡先</string>
     <string name="message_servers">メッセージサーバ</string>
@@ -1960,7 +1960,7 @@
     <string name="network_proxy_password">パスワード</string>
     <string name="toolbar_settings">設定</string>
     <string name="servers_info_missing">情報がありません、リロードしてください</string>
-    <string name="smp_server">SMPサーバ</string>
+    <string name="smp_server">Packetサーバ</string>
     <string name="info_view_message_button">メッセージ</string>
     <string name="operator_website">ウェブサイト</string>
     <string name="info_view_video_button">ビデオ</string>

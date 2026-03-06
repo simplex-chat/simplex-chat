@@ -5,7 +5,7 @@
     <string name="send_disappearing_message_30_seconds">30 secunde</string>
     <string name="accept_contact_button">Acceptă</string>
     <string name="accept_contact_incognito_button">Acceptă incognito</string>
-    <string name="smp_servers_add">Adaugă server</string>
+    <string name="smp_servers_add">Adaugă router</string>
     <string name="network_settings">Setări avansate de rețea</string>
     <string name="contact_wants_to_connect_via_call">%1$s dorește să se conecteze cu tine prin</string>
     <string name="accept_call_on_lock_screen">Acceptă</string>
@@ -342,7 +342,7 @@
     <string name="v5_7_shape_profile_images_descr">Pătrat, cerc, sau orice între.</string>
     <string name="is_not_verified">%s nu este verificat</string>
     <string name="is_verified">%s este verificat</string>
-    <string name="smp_servers">Servere SMP</string>
+    <string name="smp_servers">Servere Packet</string>
     <string name="rcv_group_event_n_members_connected">%s, %s și %d alți membri s-au conectat</string>
     <string name="group_members_n">%s, %s și %d membri</string>
     <string name="audio_device_speaker">Difuzor</string>
@@ -588,7 +588,7 @@
     <string name="chat_console">Consolă conversație</string>
     <string name="confirm_password">Confirmă parola</string>
     <string name="colored_text">colorat</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Toate contactele, conversațiile și fișierele tale vor fi criptate securizat și încărcate în fragmente către releele XFTP configurate.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Toate contactele, conversațiile și fișierele tale vor fi criptate securizat și încărcate în fragmente către releele Data configurate.</string>
     <string name="icon_descr_video_asked_to_receive">S-a solicitat primirea videoclipului</string>
     <string name="smp_server_test_compare_file">Comparați fișierul</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Vă rugăm să rețineți</b>: nu veți putea recupera sau schimba parola dacă o veți pierde.]]></string>
@@ -675,7 +675,7 @@
     <string name="v6_0_connection_servers_status">Controlează-ți rețeaua</string>
     <string name="database_encryption_will_be_updated">Parola pentru criptarea bazei de date va fi actualizată și stocată în Keystore.</string>
     <string name="database_passphrase">Parola bazei de date</string>
-    <string name="xftp_servers_configured">Servere XFTP configurate</string>
+    <string name="xftp_servers_configured">Servere Data configurate</string>
     <string name="set_password_to_export_desc">Baza de date este criptată folosind o parolă aleatorie. Trebuie schimbată înainte de exportare.</string>
     <string name="info_view_call_button">apel</string>
     <string name="info_view_connect_button">conectare</string>
@@ -705,7 +705,7 @@
     <string name="current_user">Profil actual</string>
     <string name="confirm_delete_contact_question">Confirmi ștergerea contactului?</string>
     <string name="delete_contact_cannot_undo_warning">Contactul va fi șters - acest lucru nu poate fi anulat!</string>
-    <string name="smp_servers_configured">Servere SMP configurate</string>
+    <string name="smp_servers_configured">Servere Packet configurate</string>
     <string name="servers_info_sessions_connected">Conectat</string>
     <string name="correct_name_to">Corectează numele la %s?</string>
     <string name="chat_database_exported_continue">Continuă</string>
@@ -750,9 +750,9 @@
     <string name="report_reason_community">Încălcarea liniilor directoare ale comunității</string>
     <string name="report_reason_profile">Profil inadecvat</string>
     <string name="report_reason_other">Alt motiv</string>
-    <string name="error_saving_smp_servers">Eroare la salvarea serverelor SMP</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Asigurați-vă că adresele serverelor XFTP sunt în format corect, separate pe linii și nu sunt duplicate.</string>
-    <string name="error_loading_xftp_servers">Eroare la încărcarea serverlor XFTP</string>
+    <string name="error_saving_smp_servers">Eroare la salvarea serverelor Packet</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Asigurați-vă că adresele serverelor Data sunt în format corect, separate pe linii și nu sunt duplicate.</string>
+    <string name="error_loading_xftp_servers">Eroare la încărcarea serverlor Data</string>
     <string name="error_setting_network_config">Eroare la actualizarea configurației de rețea</string>
     <string name="failed_to_parse_chats_title">Nu s-au putut încărca conversațiile</string>
     <string name="contact_developers">Vă rugăm să actualizați aplicația și contactați dezvoltatorii.</string>
@@ -774,12 +774,12 @@
     <string name="description_via_one_time_link_incognito">incognito printr-un link de unică folosință</string>
     <string name="a_plus_b">a + b</string>
     <string name="simplex_link_connection">prin %1$s</string>
-    <string name="error_loading_smp_servers">Eroare la încărcarea serverlor SMP</string>
+    <string name="error_loading_smp_servers">Eroare la încărcarea serverlor Packet</string>
     <string name="forward_files_missing_desc">%1$d fișier(e) au fost șterse.</string>
     <string name="report_item_archived_by">raport arhivat de %s</string>
     <string name="display_name_accepted_invitation">Invitație acceptată</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Asigurați-vă că adresele serverelor SMP sunt în format corect, separate pe linii și nu sunt duplicate.</string>
-    <string name="error_saving_xftp_servers">Eroare la salvarea serverelor XFTP</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Asigurați-vă că adresele serverelor Packet sunt în format corect, separate pe linii și nu sunt duplicate.</string>
+    <string name="error_saving_xftp_servers">Eroare la salvarea serverelor Data</string>
     <string name="forward_files_in_progress_desc">%1$d fișier(e) sunt încă în curs de descărcare.</string>
     <string name="forward_files_failed_to_receive_desc">%1$d fișier(e) nu au putut fi descărcate.</string>
     <string name="forward_files_not_accepted_desc">%1$d fișier(e) nu au fost descărcate.</string>
@@ -832,9 +832,9 @@
     <string name="v4_5_multiple_chat_profiles">Profiluri de conversație multiple</string>
     <string name="notification_preview_mode_hidden">Ascuns</string>
     <string name="la_lock_mode_passcode">Introducere parolă</string>
-    <string name="snd_error_proxy">Redirecționare server: %1$s\nEroare:%2$s</string>
+    <string name="snd_error_proxy">Redirecționare router: %1$s\nEroare:%2$s</string>
     <string name="file_error_no_file">Fișierul nu a fost găsit - cel mai probabil fișierul a fost șters sau anulat.</string>
-    <string name="smp_servers_invalid_address">Adresă de server invalidă!</string>
+    <string name="smp_servers_invalid_address">Adresă de router invalidă!</string>
     <string name="app_check_for_updates_disabled">Dezactivat</string>
     <string name="file_with_path">Fișier: %s</string>
     <string name="error_creating_link_for_group">Eroare la crearea linkului de grup</string>
@@ -943,7 +943,7 @@
     <string name="hide_notification">Ascunde</string>
     <string name="la_enter_app_passcode">Introduceți parola</string>
     <string name="settings_notifications_mode_title">Serviciu de notificare</string>
-    <string name="snd_error_proxy_relay">Redirecționare server: %1$s\nEroare server destinatar: %2$s</string>
+    <string name="snd_error_proxy_relay">Redirecționare router: %1$s\nEroare router destinatar: %2$s</string>
     <string name="file_error_blocked">Fișierul este blocat de operatorul serverului:\n%1$s.</string>
     <string name="edit_verb">Editează</string>
     <string name="info_menu">Info</string>
@@ -1034,7 +1034,7 @@
     <string name="icon_descr_edited">editat</string>
     <string name="loading_chats">Se încarcă conversațiile…</string>
     <string name="no_filtered_chats">Nicio conversație filtrată</string>
-    <string name="smp_servers_new_server">Server nou</string>
+    <string name="smp_servers_new_server">Router nou</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Asigurați -vă că adresele Serverului WebRTC ICE sunt în format corect, separate pe linii și nu sunt duplicate.</string>
     <string name="update_network_smp_proxy_fallback_question">Rutarea mesajelor</string>
     <string name="edit_image">Editează imaginea</string>
@@ -1057,7 +1057,7 @@
     <string name="auth_open_migration_to_another_device">Deschideți freastra de migrare</string>
     <string name="message_deleted_or_not_received_error_title">Niciun mesaj</string>
     <string name="report_archive_for_me">Pentru mine</string>
-    <string name="file_error_relay">Eroare server fișiere: %1$s</string>
+    <string name="file_error_relay">Eroare router fișiere: %1$s</string>
     <string name="for_everybody">Pentru toți</string>
     <string name="delete_messages_mark_deleted_warning">Mesajele vor fi marcate pentru ștergere. Destinatarul (destinatarii) va (vor) putea dezvălui aceste mesaje.</string>
     <string name="download_file">Descărcare</string>
@@ -1071,7 +1071,7 @@
     <string name="sync_connection_question">Repari conexiunea?</string>
     <string name="disappearing_message">Mesaj care dispare</string>
     <string name="icon_descr_more_button">Mai mult</string>
-    <string name="network_session_mode_server_description">Pentru fiecare server vor fi utilizate acreditări noi SOCKS.</string>
+    <string name="network_session_mode_server_description">Pentru fiecare router vor fi utilizate acreditări noi SOCKS.</string>
     <string name="or_to_share_privately">Sau pentru a partaja în privat</string>
     <string name="permissions_record_audio">Microfon</string>
     <string name="permissions_required">Acordare permisiuni</string>
@@ -1379,7 +1379,7 @@
     <string name="switching_profile_error_title">Eroare la schimbarea profilului</string>
     <string name="no_filtered_contacts">Nicio persoană de contact filtrată</string>
     <string name="media_and_file_servers">Servere media și fișiere</string>
-    <string name="xftp_servers_other">Alte servere XFTP</string>
+    <string name="xftp_servers_other">Alte servere Data</string>
     <string name="network_smp_proxy_mode_never_description">NU utilizați rutare privată.</string>
     <string name="allow_accepting_calls_from_lock_screen">Activează apelurile de pe ecranul de blocare prin Setări.</string>
     <string name="receipts_contacts_disable_keep_overrides">Dezactivează (păstrează suprascrierile)</string>
@@ -1418,7 +1418,7 @@
     <string name="app_check_for_updates_button_download">Descărcați %s (%s)</string>
     <string name="app_check_for_updates_button_install">Instalează actualizarea</string>
     <string name="dont_create_address">Nu crea adresă</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">De exemplu, dacă un contact al tău primește mesaje printr-un server SimpleX Chat, aplicația ta le va trimite printr-un server Flux.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">De exemplu, dacă un contact al tău primește mesaje printr-un router SimpleX Chat, aplicația ta le va trimite printr-un router Flux.</string>
     <string name="call_desktop_permission_denied_safari">Deschide Setările Safari / Site-uri web / Microfon, apoi selectează Permite pentru localhost.</string>
     <string name="icon_descr_call_missed">Apel ratat</string>
     <string name="alert_text_encryption_renegotiation_failed">Renegocierea criptării a eșuat.</string>
@@ -1463,7 +1463,7 @@
     <string name="auth_enable_simplex_lock">Activează blocarea SimpleX</string>
     <string name="error_showing_desktop_notification">Eroare la afișarea notificării, contactați dezvoltatorii.</string>
     <string name="message_delivery_error_title">Eroare de livrare a mesajelor</string>
-    <string name="snd_error_relay">Eroare server destinație: %1$s</string>
+    <string name="snd_error_relay">Eroare router destinație: %1$s</string>
     <string name="ci_status_other_error">Eroare: %1$s</string>
     <string name="report_archive_for_all_moderators">Pentru toți moderatorii</string>
     <string name="forwarded_chat_item_info_tab">Redirecționat</string>
@@ -1494,7 +1494,7 @@
     <string name="new_chat">Conversație nouă</string>
     <string name="one_time_link">Link de invitație unic</string>
     <string name="message_servers">Servere mesaje</string>
-    <string name="smp_servers_other">Alte servere SMP</string>
+    <string name="smp_servers_other">Alte servere Packet</string>
     <string name="smp_servers_enter_manually">Introduceți serverul manual</string>
     <string name="enter_one_ICE_server_per_line">Servere ICE (unul pe linie)</string>
     <string name="network_and_servers">Rețea și servere</string>
@@ -1507,7 +1507,7 @@
     <string name="italic_text">italic</string>
     <string name="how_simplex_works">Cum funcționează SimpleX</string>
     <string name="first_platform_without_user_ids">Fără identificatori de utilizator.</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Acest lucru se poate întâmpla atunci când:\n1. Mesajele au expirat în aplicația de trimitere după 2 zile sau pe server după 30 de zile.\n2. Decriptarea mesajului a eșuat, deoarece tu sau contactul tău ați folosit un backup vechi al bazei de date.\n3. Conexiunea a fost compromisă.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Acest lucru se poate întâmpla atunci când:\n1. Mesajele au expirat în aplicația de trimitere după 2 zile sau pe router după 30 de zile.\n2. Decriptarea mesajului a eșuat, deoarece tu sau contactul tău ați folosit un backup vechi al bazei de date.\n3. Conexiunea a fost compromisă.</string>
     <string name="error_exporting_chat_database">Eroare la exportarea bazei de date a conversației</string>
     <string name="error_stopping_chat">Eroare la oprirea conversației</string>
     <string name="chat_item_ttl_none">niciodată</string>
@@ -1635,7 +1635,7 @@
     <string name="v5_6_picture_in_picture_calls">Apeluri cu funcție picture-in-picture</string>
     <string name="v5_8_persian_ui">Interfață persană</string>
     <string name="proxied">Prin proxy</string>
-    <string name="users_delete_with_connections">Conexiuni de profil și server</string>
+    <string name="users_delete_with_connections">Conexiuni de profil și router</string>
     <string name="callstate_received_answer">răspuns primit…</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Politica de confidențialitate și condițiile de utilizare.</string>
     <string name="settings_section_title_private_message_routing">RUTAREA MESAJELOR PRIVATE</string>
@@ -1706,7 +1706,7 @@
     <string name="icon_descr_profile_image_placeholder">substituent pentru imaginea de profil</string>
     <string name="paste_link">Lipește linkul</string>
     <string name="smp_servers_preset_address">Adresa prestabilită a serverului</string>
-    <string name="smp_servers_preset_server">Server presetat</string>
+    <string name="smp_servers_preset_server">Router presetat</string>
     <string name="rate_the_app">Evaluează aplicația</string>
     <string name="port_verb">Port</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Conversațiile private, grupurile și contactele tale nu sunt accesibile operatorilor serverului.</string>
@@ -1726,7 +1726,7 @@
     <string name="receipts_contacts_override_disabled">Trimiterea confirmărilor este dezactivată pentru %d contacte</string>
     <string name="feature_received_prohibited">primit, interzis</string>
     <string name="app_check_for_updates_button_remind_later">Reamintește mai târziu</string>
-    <string name="server_added_to_operator__name">Server adăugat la operatorul %s.</string>
+    <string name="server_added_to_operator__name">Router adăugat la operatorul %s.</string>
     <string name="v4_6_group_welcome_message_descr">Setați mesajul afișat noilor membri!</string>
     <string name="v5_0_app_passcode_descr">Setați-l în locul autentificării sistemului.</string>
     <string name="set_password_to_export">Setează o parolă pentru export</string>
@@ -1751,7 +1751,7 @@
     <string name="set_passcode">Setați parola</string>
     <string name="operator_review_conditions">Examinați condițiile</string>
     <string name="report_verb">Raport</string>
-    <string name="switch_receiving_address_desc">Adresa de primire va fi schimbată la un alt server. Schimbarea adresei se va finaliza după ce expeditorul se conectează online.</string>
+    <string name="switch_receiving_address_desc">Adresa de primire va fi schimbată la un alt router. Schimbarea adresei se va finaliza după ce expeditorul se conectează online.</string>
     <string name="save_admission_question">Salvezi setările de acces?</string>
     <string name="onboarding_network_operators_review_later">Revizuiți mai târziu</string>
     <string name="receipts_groups_override_disabled">Trimiterea confirmărilor este dezactivată pentru %d grupuri</string>
@@ -1767,7 +1767,7 @@
     <string name="sent_via_proxy">Trimis prin proxy</string>
     <string name="sent_directly">Trimis direct</string>
     <string name="reviewed_by_admins">revizuit de administratori</string>
-    <string name="onboarding_choose_server_operators">Operatori de server</string>
+    <string name="onboarding_choose_server_operators">Operatori de router</string>
     <string name="relay_server_protects_ip">Serverul de retransmisie protejează adresa IP, dar poate observa durata apelului.</string>
     <string name="run_chat_section">PORNIȚI CHATUL</string>
     <string name="rcv_group_event_user_deleted">te-a eliminat</string>
@@ -1822,7 +1822,7 @@
     <string name="report_compose_reason_header_community">Raportați încălcarea: numai moderatorii grupului o vor vedea.</string>
     <string name="icon_descr_record_voice_message">Înregistrați mesajul vocal</string>
     <string name="scan_paste_link">Scanează / Lipește link</string>
-    <string name="network_session_mode_server">Server</string>
+    <string name="network_session_mode_server">Router</string>
     <string name="restart_the_app_to_use_imported_chat_database">Repornește aplicația pentru a folosi baza de date de conversații importată.</string>
     <string name="button_remove_members_question">Eliminați membri?</string>
     <string name="receiving_via">Primirea prin intermediul</string>
@@ -1922,7 +1922,7 @@
     <string name="skip_inviting_button">Omiteți invitarea membrilor</string>
     <string name="servers_info_starting_from">Începând de la %s.</string>
     <string name="waiting_for_mobile_to_connect">Se așteaptă conectarea mobilului:</string>
-    <string name="xftp_server">Server XFTP</string>
+    <string name="xftp_server">Router Data</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Această acțiune nu poate fi anulată - profilul, contactele, mesajele și fișierele tale vor fi pierdute definitiv.</string>
     <string name="theme_system">Sistem</string>
     <string name="unblock_member_question">Deblocați membrul?</string>
@@ -1994,7 +1994,7 @@
     <string name="custom_time_unit_weeks">săptămâni</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Acesta este linkul tău unic, valabil o singură dată!</string>
     <string name="file_not_approved_title">Servere necunoscute!</string>
-    <string name="file_not_approved_descr">Fără Tor sau VPN, adresa ta IP va fi vizibilă pentru aceste retransmiteri XFTP:\n%1$s.</string>
+    <string name="file_not_approved_descr">Fără Tor sau VPN, adresa ta IP va fi vizibilă pentru aceste retransmiteri Data:\n%1$s.</string>
     <string name="update_database_passphrase">Actualizează parola bazei de date</string>
     <string name="stop_snd_file__title">Opriți trimiterea fișierului?</string>
     <string name="strikethrough_text">tăiere</string>
@@ -2103,7 +2103,7 @@
     <string name="this_link_is_not_a_valid_connection_link">Acest link nu este un link de conectare valid!</string>
     <string name="this_QR_code_is_not_a_link">Acest cod QR nu este un link!</string>
     <string name="short_link_button_text">Link scurt</string>
-    <string name="xftp_servers">Server XFTP</string>
+    <string name="xftp_servers">Router Data</string>
     <string name="update_network_session_mode_question">Actualizați modul de izolare a transportului?</string>
     <string name="network_smp_proxy_mode_unknown_description">Folosește rutare privată cu servere necunoscute.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Folosește rutare privată cu servere necunoscute atunci când adresa IP nu este protejată.</string>
@@ -2124,7 +2124,7 @@
     <string name="snd_group_event_member_accepted">ați acceptat acest membru</string>
     <string name="recent_history">Istoric vizibil</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Te alături deja grupului prin intermediul acestui link.</string>
-    <string name="smp_server">Server SMP</string>
+    <string name="smp_server">Router Packet</string>
     <string name="network_smp_proxy_mode_unknown">Servere necunoscute</string>
     <string name="v5_6_picture_in_picture_calls_descr">Folosește aplicația în timpul apelului.</string>
     <string name="this_device_name_shared_with_mobile">Numele dispozitivului va fi partajat cu clientul mobil conectat.</string>
@@ -2176,7 +2176,7 @@
     <string name="you_can_set_connection_name_to_remember">Poți seta numele conexiunii, ca să-ți amintești cu cine ai partajat linkul.</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Adresa SimpleX și linkurile de unică folosință pot fi partajate în siguranță prin orice aplicație de mesagerie.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Codul scanat nu este un cod QR de tip link SimpleX.</string>
-    <string name="smp_servers_test_server">Server de testare</string>
+    <string name="smp_servers_test_server">Router de testare</string>
     <string name="smp_servers_test_servers">Servere de testare</string>
     <string name="network_proxy_random_credentials">Folosește credențiale aleatorii</string>
     <string name="app_check_for_updates_update_available">Actualizare disponibilă: %s</string>
@@ -2206,7 +2206,7 @@
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Folosește acreditări proxy diferite pentru fiecare profil.</string>
     <string name="network_disable_socks">Folosești conexiune directă la internet?</string>
     <string name="you_can_still_send_messages_to_contact">Poți trimite mesaje către %1$s din contactele arhivate.</string>
-    <string name="private_routing_explanation">Pentru a vă proteja adresa IP, rutarea privată utilizează serverele SMP pentru a livra mesaje.</string>
+    <string name="private_routing_explanation">Pentru a vă proteja adresa IP, rutarea privată utilizează serverele Packet pentru a livra mesaje.</string>
     <string name="network_session_mode_transport_isolation">Izolarea transportului</string>
     <string name="network_use_onion_hosts">Folosește gazde .onion</string>
     <string name="network_use_onion_hosts_prefer">Când este disponibil</string>
@@ -2250,7 +2250,7 @@
     <string name="delete_chat_list_warning">Toate conversațiile vor fi eliminate din lista %s, iar lista va fi ștearsă</string>
     <string name="switching_profile_error_message">Conexiunea ta a fost mutată la %s, dar a apărut o eroare la schimbarea profilului.</string>
     <string name="chat_database_exported_migrate">Puteți migra baza de date exportată.</string>
-    <string name="your_XFTP_servers">Serverele tale XFTP</string>
+    <string name="your_XFTP_servers">Serverele tale Data</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Setează <i>Utilizați gazdele .onion</i> la Nu dacă proxy-ul SOCKS nu le acceptă.]]></string>
     <string name="chat_main_profile_sent">Profilul tău de chat va fi trimis membrilor chatului</string>
     <string name="you_will_still_receive_calls_and_ntfs">Vei primi în continuare apeluri și notificări de la profilurile dezactivate atunci când acestea sunt active.</string>
@@ -2357,7 +2357,7 @@
     <string name="connect__your_profile_will_be_shared">Profilul tău %1$s va fi distribuit.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Nu îți vei pierde contactele dacă ulterior îți ștergi adresa.</string>
     <string name="connection_security">Securitatea conexiunii</string>
-    <string name="your_SMP_servers">Serverele tale SMP</string>
+    <string name="your_SMP_servers">Serverele tale Packet</string>
     <string name="network_smp_web_port_all">Toate serverele</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profilul tău este stocat pe dispozitiv și este partajat doar cu contactele tale. Serverele SimpleX nu pot vedea profilul tău.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Baza ta de date actuală de chat va fi ȘTERSĂ și ÎNLOCUITĂ cu cea importată.\nAceastă acțiune nu poate fi anulată - profilul, contactele, mesajele și fișierele tale vor fi pierdute iremediabil.</string>

@@ -55,7 +55,7 @@ struct UserProfile: View {
                     }
                 }
             } footer: {
-                Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
+                Text("Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile.")
             }
 
             Section {

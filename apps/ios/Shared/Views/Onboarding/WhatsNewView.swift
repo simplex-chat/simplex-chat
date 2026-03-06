@@ -79,8 +79,8 @@ private let versionDescriptions: [VersionDescription] = [
             )),
             .feature(Description(
                 icon: "externaldrive.connected.to.line.below",
-                title: "Improved server configuration",
-                description: "Add servers by scanning QR codes."
+                title: "Improved router configuration",
+                description: "Add routers by scanning QR codes."
             )),
             .feature(Description(
                 icon: "eye.slash",
@@ -435,12 +435,12 @@ private let versionDescriptions: [VersionDescription] = [
             .feature(Description(
                 icon: "arrow.forward",
                 title: "Private message routing 🚀",
-                description: "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings."
+                description: "Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network & routers* settings."
             )),
             .feature(Description(
                 icon: "network.badge.shield.half.filled",
                 title: "Safely receive files",
-                description: "Confirm files from unknown servers."
+                description: "Confirm files from unknown routers."
             )),
             .feature(Description(
                 icon: "battery.50",
@@ -483,7 +483,7 @@ private let versionDescriptions: [VersionDescription] = [
             .feature(Description(
                 icon: "network",
                 title: "Better networking",
-                description: "Connection and servers status."
+                description: "Connection and routers status."
             )),
         ]
     ),
@@ -657,7 +657,7 @@ fileprivate struct NewOperatorsView: View {
                 .multilineTextAlignment(.leading)
                 .lineLimit(10)
             HStack {
-                Text("Enable Flux in Network & servers settings for better metadata privacy.")
+                Text("Enable Flux in Network & routers settings for better metadata privacy.")
             }
         }
     }

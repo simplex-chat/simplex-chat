@@ -653,13 +653,13 @@
     <string name="error_receiving_file">خطأ في استلام الملف</string>
     <string name="failed_to_active_user_title">خطأ في تبديل ملف التعريف!</string>
     <string name="v5_2_fix_encryption">حافظ على اتصالاتك</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم XFTP بالتنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم Data بالتنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
     <string name="marked_deleted_description">عُلّم محذوف</string>
     <string name="color_surface">القوائم والتنبيهات</string>
-    <string name="error_saving_xftp_servers">خطأ في حفظ خوادم XFTP</string>
-    <string name="error_loading_smp_servers">خطأ في تحميل خوادم SMP</string>
-    <string name="error_loading_xftp_servers">خطأ في تحميل خوادم XFTP</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم SMP في التنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
+    <string name="error_saving_xftp_servers">خطأ في حفظ خوادم Data</string>
+    <string name="error_loading_smp_servers">خطأ في تحميل خوادم Packet</string>
+    <string name="error_loading_xftp_servers">خطأ في تحميل خوادم Data</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم Packet في التنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
     <string name="markdown_help">مساعدة ماركداون</string>
     <string name="group_member_role_member">عضو</string>
     <string name="markdown_in_messages">ماركداون في الرسائل</string>
@@ -691,7 +691,7 @@
     <string name="v5_2_fix_encryption_descr">إصلاح التعمية بعد استعادة النُسخ الاحتياطية.</string>
     <string name="v5_2_disappear_one_message">اجعل رسالة واحدة تختفي</string>
     <string name="error_enabling_delivery_receipts">خطأ في تفعيل إيصالات التسليم!</string>
-    <string name="error_saving_smp_servers">خطأ في حفظ خوادم SMP</string>
+    <string name="error_saving_smp_servers">خطأ في حفظ خوادم Packet</string>
     <string name="error_sending_message">خطأ في إرسال الرسالة</string>
     <string name="error_joining_group">خطأ في الانضمام إلى المجموعة</string>
     <string name="error_synchronizing_connection">خطأ في مزامنة الاتصال</string>
@@ -1008,7 +1008,7 @@
     <string name="la_notice_title_simplex_lock">قفل SimpleX</string>
     <string name="is_not_verified">لم يتحقق من %s</string>
     <string name="chat_lock">قفل SimpleX</string>
-    <string name="smp_servers">خوادم SMP</string>
+    <string name="smp_servers">خوادم Packet</string>
     <string name="share_image">مشاركة الوسائط…</string>
     <string name="ntf_channel_messages">رسائل SimpleX Chat</string>
     <string name="lock_not_enabled">قفل SimpleX غير مفعّل!</string>
@@ -1144,7 +1144,7 @@
     <string name="you_will_join_group">ستتصل بجميع أعضاء المجموعة.</string>
     <string name="your_chat_profiles">ملفات تعريف دردشتك</string>
     <string name="your_simplex_contact_address">عنوان SimpleX الخاص بك</string>
-    <string name="your_SMP_servers">خوادم SMP الخاصة بك</string>
+    <string name="your_SMP_servers">خوادم Packet الخاصة بك</string>
     <string name="onboarding_notifications_mode_off">عندما يكون التطبيق قيد التشغيل</string>
     <string name="call_connection_via_relay">عبر المُرحل</string>
     <string name="you_joined_this_group">لقد انضممت إلى هذه المجموعة</string>
@@ -1183,9 +1183,9 @@
     <string name="waiting_for_file">في انتظار الملف</string>
     <string name="view_security_code">عرض رمز الأمان</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">لن تفقد جهات اتصالك إذا حذفت عنوانك لاحقًا.</string>
-    <string name="your_XFTP_servers">خوادم XFTP الخاصة بك</string>
+    <string name="your_XFTP_servers">خوادم Data الخاصة بك</string>
     <string name="use_simplex_chat_servers__question">استخدم خوادم SimpleX Chat</string>
-    <string name="xftp_servers">خوادم XFTP</string>
+    <string name="xftp_servers">خوادم Data</string>
     <string name="your_ICE_servers">خوادم ICE الخاصة بك</string>
     <string name="network_disable_socks">هل تستخدم اتصالاً مباشرًا بالإنترنت؟</string>
     <string name="you_control_your_chat">أنت تتحكم في الدردشة!</string>
@@ -1610,7 +1610,7 @@
     <string name="v5_6_safer_groups_descr">يمكن للمُدراء حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">جميع جهات الاتصال، المحادثات والملفات الخاصة بك سيتم تعميتها بأمان ورفعها على شكل أجزاء إلى موجهات XFTP المُعدة.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">جميع جهات الاتصال، المحادثات والملفات الخاصة بك سيتم تعميتها بأمان ورفعها على شكل أجزاء إلى موجهات Data المُعدة.</string>
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
@@ -1747,7 +1747,7 @@
     <string name="message_delivery_warning_title">تحذير تسليم الرسالة</string>
     <string name="snd_error_expired">مشكلات الشبكة - انتهت صلاحية الرسالة بعد عِدة محاولات لإرسالها.</string>
     <string name="network_smp_proxy_fallback_allow">نعم</string>
-    <string name="private_routing_explanation">لحماية عنوان IP الخاص بك، يستخدم التوجيه الخاص خوادم SMP الخاصة بك لتسليم الرسائل.</string>
+    <string name="private_routing_explanation">لحماية عنوان IP الخاص بك، يستخدم التوجيه الخاص خوادم Packet الخاصة بك لتسليم الرسائل.</string>
     <string name="settings_section_title_private_message_routing">توجيه الرسائل الخاصة</string>
     <string name="network_smp_proxy_mode_private_routing">التوجيه الخاص</string>
     <string name="network_smp_proxy_mode_unprotected">غير محمي</string>
@@ -1772,7 +1772,7 @@
     <string name="network_smp_proxy_fallback_allow_protected_description">أرسل الرسائل مباشرة عندما يكون عنوان IP محميًا ولا يدعم الخادم الوجهة لديك التوجيه الخاص.</string>
     <string name="network_smp_proxy_mode_unknown">خوادم غير معروفة</string>
     <string name="file_not_approved_title">خوادم غير معروفة!</string>
-    <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه:
+    <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات Data هذه:
 \n%1$s.</string>
     <string name="chat_list_always_visible">أظهِر قائمة الدردشة في نافذة جديدة</string>
     <string name="settings_section_title_chat_colors">ألوان الدردشة</string>
@@ -1851,10 +1851,10 @@
     <string name="message_forwarded_title">رسالة مُحوّلة</string>
     <string name="message_forwarded_desc">لا يوجد اتصال مباشر حتى الآن، الرسالة مُحوّلة بواسطة المُدير.</string>
     <string name="scan_paste_link">امسح / ألصِق الرابط</string>
-    <string name="smp_servers_configured">خوادم SMP المهيأة</string>
-    <string name="smp_servers_other">خوادم SMP أخرى</string>
-    <string name="xftp_servers_configured">خوادم XFTP المهيأة</string>
-    <string name="xftp_servers_other">خوادم XFTP أخرى</string>
+    <string name="smp_servers_configured">خوادم Packet المهيأة</string>
+    <string name="smp_servers_other">خوادم Packet أخرى</string>
+    <string name="xftp_servers_configured">خوادم Data المهيأة</string>
+    <string name="xftp_servers_other">خوادم Data أخرى</string>
     <string name="subscription_percentage">أظهِر النسبة المئوية</string>
     <string name="app_check_for_updates_disabled">مُعطَّل</string>
     <string name="app_check_for_updates_stable">مستقرّ</string>
@@ -1887,8 +1887,8 @@
     <string name="servers_info_uploaded">رُفع</string>
     <string name="servers_info_reset_stats_alert_confirm">صفّر</string>
     <string name="servers_info_starting_from">بدءًا من %s.</string>
-    <string name="smp_server">خادم SMP</string>
-    <string name="xftp_server">خادم XFTP</string>
+    <string name="smp_server">خادم Packet</string>
+    <string name="xftp_server">خادم Data</string>
     <string name="acknowledged">معترف به</string>
     <string name="chunks_deleted">حُذفت القطع</string>
     <string name="chunks_downloaded">نُزّلت القطع</string>

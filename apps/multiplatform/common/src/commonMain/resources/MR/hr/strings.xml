@@ -171,7 +171,7 @@
     <string name="add_to_list">Dodaj na listu</string>
     <string name="network_enable_socks_info">Pristup na servere pomoću SOCKS proxy na portu %d? Proxy mora da bude uključen pre omogućavanja ove opcije.</string>
     <string name="operator_conditions_accepted">Prihvaćeni uslovi</string>
-    <string name="smp_servers_add">Dodaj server</string>
+    <string name="smp_servers_add">Dodaj router</string>
     <string name="smp_servers_preset_add">Dodaj unapred postavljene servere</string>
     <string name="delete_address__question">Odstraniti adresu?</string>
     <string name="rcv_group_event_group_deleted">odstranjena grupa</string>
@@ -184,7 +184,7 @@
     <string name="migrate_from_device_archive_and_upload">Arhiviraj i otpremi</string>
     <string name="button_delete_chat">Odstraniti razgovor</string>
     <string name="display_name__field">Ime profila:</string>
-    <string name="v4_3_improved_server_configuration_desc">Dodaj server skeniranjem QR koda.</string>
+    <string name="v4_3_improved_server_configuration_desc">Dodaj router skeniranjem QR koda.</string>
     <string name="update_database">Ažuriraj</string>
     <string name="color_primary_variant">Dodatni akcent</string>
     <string name="delete_group_menu_action">Odstraniti</string>
@@ -311,7 +311,7 @@
     <string name="is_verified">%s je verifikovan</string>
     <string name="chat_console">Konzola chata</string>
     <string name="scan_QR_code">Skenirati QR kod</string>
-    <string name="network_session_mode_server">Server</string>
+    <string name="network_session_mode_server">Router</string>
     <string name="no_call_on_lock_screen">Onemogućiti</string>
     <string name="settings_section_title_chat_database">BAZA PODATAKA CHATA</string>
     <string name="send_receipts_disabled">onemogućeno</string>
@@ -340,7 +340,7 @@
     <string name="chat_item_ttl_seconds">%s sekunda(i)</string>
     <string name="chat_database_exported_title">Baza podataka Chata izvezena</string>
     <string name="operator">Operator</string>
-    <string name="operator_server_alert_title">Operacioni server</string>
+    <string name="operator_server_alert_title">Operacioni router</string>
     <string name="timed_messages">Poruke koje nestaju</string>
     <string name="disappearing_messages_are_prohibited">Poruke koje nestaju su zabranjene.</string>
     <string name="server_address">Adresa servera</string>
@@ -391,7 +391,7 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Već ste povezani na %1$s.</string>
     <string name="voice_messages_not_allowed">Glasovne poruke nisu dozvoljenje</string>
     <string name="connection_error">Greška u vezi</string>
-    <string name="smp_servers_test_server">Test server</string>
+    <string name="smp_servers_test_server">Test router</string>
     <string name="audio_call_no_encryption">audio poziv (nije e2e šifrovan)</string>
     <string name="new_chat">Novi razgovor</string>
     <string name="save_and_notify_contact">Sačuvati i obavestiti kontakt</string>
@@ -443,10 +443,10 @@
     <string name="ok">OK</string>
     <string name="call_service_notification_audio_call">Audio poziv</string>
     <string name="call_service_notification_video_call">Video poziv</string>
-    <string name="smp_servers_use_server">Koristi server</string>
+    <string name="smp_servers_use_server">Koristi router</string>
     <string name="smp_servers_your_server_address">Adresa vašeg servera</string>
-    <string name="your_SMP_servers">Vaši SMP serveri</string>
-    <string name="your_XFTP_servers">Vaši XFTP serveri</string>
+    <string name="your_SMP_servers">Vaši Packet serveri</string>
+    <string name="your_XFTP_servers">Vaši Data serveri</string>
     <string name="onboarding_notifications_mode_battery">Obaveštenja i baterija</string>
     <string name="show_call_on_lock_screen">Prikazati</string>
     <string name="status_e2e_encrypted">e2e šifrovano</string>
@@ -463,7 +463,7 @@
     <string name="add_contact_or_create_group">Započeti novi razgovor</string>
     <string name="clear_chat_menu_action">Očistiti</string>
     <string name="clear_chat_button">Očistiti razgovor</string>
-    <string name="smp_servers_your_server">Tvoj server</string>
+    <string name="smp_servers_your_server">Tvoj router</string>
     <string name="snd_conn_event_ratchet_sync_agreed">šifrovanje prihvaćeno za %s</string>
     <string name="voice_messages_are_prohibited">Glasovne poruke su zabranjene.</string>
     <string name="connection_local_display_name">veza %1$d</string>
@@ -659,7 +659,7 @@
     <string name="compose_send_direct_message_to_connect">Poslati direktnu poruku za povezivanje</string>
     <string name="image_descr">Slika</string>
     <string name="icon_descr_server_status_pending">Na čekanju</string>
-    <string name="smp_servers">SMP serveri</string>
+    <string name="smp_servers">Packet serveri</string>
     <string name="display_name">Upišite Vaše ime:</string>
     <string name="open_chat">Otvoriti razgovor</string>
     <string name="rcv_group_event_member_added">pozvan %1$s</string>
@@ -728,7 +728,7 @@
     <string name="remove_member_confirmation">Ukloniti</string>
     <string name="member_info_section_title_member">ČLAN</string>
     <string name="joining_group">Pristupanje grupi</string>
-    <string name="smp_server">SMP server</string>
+    <string name="smp_server">Packet router</string>
     <string name="invite_to_chat_button">Pozvati u razgovor</string>
     <string name="unblock_member_confirmation">Odblokirati</string>
     <string name="v4_5_italian_interface">Italijanski interfejs</string>
@@ -763,7 +763,7 @@
     <string name="group_member_role_owner">vlasnik</string>
     <string name="copy_verb">Kopirati</string>
     <string name="submit_passcode">Predati</string>
-    <string name="xftp_servers_other">Ostali XFTP serveri</string>
+    <string name="xftp_servers_other">Ostali Data serveri</string>
     <string name="create_simplex_address">Napraviti SimpleX adresu</string>
     <string name="encrypt_database">Šifrovati</string>
     <string name="info_row_created_at">Kreirano u</string>
@@ -785,7 +785,7 @@
     <string name="migrate_from_device_finalize_migration">Dovršiti migraciju</string>
     <string name="selected_chat_items_nothing_selected">Ništa nije izabrano</string>
     <string name="conversation_deleted">Konverzacija odstranjena!</string>
-    <string name="smp_servers_other">Ostali SMP serveri</string>
+    <string name="smp_servers_other">Ostali Packet serveri</string>
     <string name="core_version">Verzija jezgra: v%s</string>
     <string name="encrypted_database">Šifrovati bazu podataka</string>
     <string name="delete_link_question">Odstraniti vezu?</string>
@@ -872,9 +872,9 @@
     <string name="network_use_onion_hosts_prefer">Kada je dostupno</string>
     <string name="v5_7_forward">Proslediti i sačuvati poruke</string>
     <string name="forwarded_chat_item_info_tab">Prosleđeno</string>
-    <string name="snd_error_proxy">Server za prosleđivanje: %1$s\nGreška: %2$s</string>
+    <string name="snd_error_proxy">Router za prosleđivanje: %1$s\nGreška: %2$s</string>
     <string name="mark_read">Označiti da je pročitano</string>
-    <string name="snd_error_proxy_relay">Server za prosleđivanje : %1$s\nGreška odredišnog servera: %2$s</string>
+    <string name="snd_error_proxy_relay">Router za prosleđivanje : %1$s\nGreška odredišnog servera: %2$s</string>
     <string name="verify_connections">Verifikovati veze</string>
     <string name="chat_theme_apply_to_mode">Primeniti na</string>
     <string name="migrate_from_device_stopping_chat">Zaustavljanje razgovora</string>
@@ -947,7 +947,7 @@
     <string name="debug_logs">Omogući evidenciju</string>
     <string name="la_immediately">Odmah</string>
     <string name="icon_descr_sent_msg_status_send_failed">greška u slanju</string>
-    <string name="smp_servers_delete_server">Odstraniti server</string>
+    <string name="smp_servers_delete_server">Odstraniti router</string>
     <string name="snd_group_event_member_blocked">blokirali ste %s</string>
     <string name="v5_6_quantum_resistant_encryption">Kvantno otporno šifrovanje</string>
     <string name="dont_create_address">Ne praviti adresu</string>
@@ -984,7 +984,7 @@
     <string name="chat_preferences_always">uvek</string>
     <string name="v4_5_reduced_battery_usage">Smanjiti upotrebu baterije</string>
     <string name="servers_info_proxied_servers_section_header">Proxied(posrednički) serveri</string>
-    <string name="smp_servers_new_server">Novi server</string>
+    <string name="smp_servers_new_server">Novi router</string>
     <string name="subscription_percentage">Prikazati procente</string>
     <string name="exit_without_saving">Napustiti bez čuvanja</string>
     <string name="run_chat_section">POKRENUTI RAZGOVOR</string>
@@ -1093,7 +1093,7 @@
     <string name="privacy_message_draft">Koncept poruke</string>
     <string name="incorrect_passcode">Neispravan pin kod</string>
     <string name="callstate_waiting_for_confirmation">čeka se potvrda…</string>
-    <string name="smp_servers_enter_manually">Uneti server ručno</string>
+    <string name="smp_servers_enter_manually">Uneti router ručno</string>
     <string name="status_contact_has_no_e2e_encryption">kontakt nema e2e šifrovanje</string>
     <string name="contact_deleted">Kontakt odstranjen!</string>
     <string name="invalid_qr_code">Nevažeći QR kod</string>
@@ -1106,7 +1106,7 @@
     <string name="sender_at_ts">%s u %s</string>
     <string name="icon_descr_cancel_live_message">Poništiti živu poruku</string>
     <string name="add_contact">Jednokratna pozivnica</string>
-    <string name="smp_servers_invalid_address">Nevažeća adresa server!</string>
+    <string name="smp_servers_invalid_address">Nevažeća adresa router!</string>
     <string name="saved_ICE_servers_will_be_removed">Sačuvani WebRTC ICE biće uklonjeni.</string>
     <string name="la_lock_mode_passcode">Unos pin koda</string>
     <string name="message_forwarded_title">Prosleđena poruka</string>
@@ -1214,7 +1214,7 @@
     <string name="operator_use_for_messages">Koristiti za poruke</string>
     <string name="failed_to_create_user_title">Greška pri kreiranju profila!</string>
     <string name="error_loading_details">Greška pri učitavanju detalja</string>
-    <string name="error_saving_xftp_servers">Greška pri čuvanju XFTP servera</string>
+    <string name="error_saving_xftp_servers">Greška pri čuvanju Data servera</string>
     <string name="uploaded_files">Otpremljene datoteke</string>
     <string name="open_server_settings_button">Otvoriti podešavanja servera</string>
     <string name="error_deleting_note_folder">Greška pri odstranjivanju privatnih beleški</string>
@@ -1231,13 +1231,13 @@
     <string name="receipts_contacts_title_disable">Onemogućiti potvrde?</string>
     <string name="group_member_status_introduced">povezivanje (uvedeno)</string>
     <string name="enter_password_to_show">Uneti šifru u pretragu</string>
-    <string name="error_loading_xftp_servers">Greška pri učitavanju XFTP servera</string>
+    <string name="error_loading_xftp_servers">Greška pri učitavanju Data servera</string>
     <string name="error_deleting_group">Greška pri odstranjivanju grupe</string>
     <string name="cannot_share_message_alert_title">Nije moguće poslati poruku</string>
     <string name="send_disappearing_message">Poslati poruku koja nestaje</string>
     <string name="message_servers">Serveri za poruke</string>
     <string name="whats_new_read_more">Pročitati više</string>
-    <string name="xftp_server">XFTP server</string>
+    <string name="xftp_server">Data router</string>
     <string name="error_creating_address">Greška pri pravljenju adrese</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">neovlašćeno slanje</string>
     <string name="verify_security_code">Verifikovati bezbednostni kod</string>
@@ -1301,8 +1301,8 @@
     <string name="sent_via_proxy">Poslano putem proxy</string>
     <string name="display_name_invited_to_connect">pozvan za povezivanje</string>
     <string name="simplex_link_connection">pomoću %1$s</string>
-    <string name="error_loading_smp_servers">Greška pri učitavanju SMP servera</string>
-    <string name="error_saving_smp_servers">Greška pri čuvanju SMP servera</string>
+    <string name="error_loading_smp_servers">Greška pri učitavanju Packet servera</string>
+    <string name="error_saving_smp_servers">Greška pri čuvanju Packet servera</string>
     <string name="error_changing_address">Greška pri promeni adrese</string>
     <string name="enter_passphrase_notification_title">Pristupnu frazu je potrebna</string>
     <string name="v6_3_mentions">Spomenuti članove 👋</string>
@@ -1315,7 +1315,7 @@
     <string name="servers_info_missing">Bez Informacija, pokušajte ponovo da učitate</string>
     <string name="chunks_deleted">Komadi su odstranjeni</string>
     <string name="ntf_channel_calls">SimpleX Chat pozivi</string>
-    <string name="xftp_servers">XFTP serveri</string>
+    <string name="xftp_servers">Data serveri</string>
     <string name="network_and_servers">Mreža i serveri</string>
     <string name="configure_ICE_servers">Podesite ICE servere</string>
     <string name="network_disable_socks">Koristiti direktnu internet vezu?</string>
@@ -1412,7 +1412,7 @@
     <string name="your_ice_servers">Vaši ICE serveri</string>
     <string name="use_random_passphrase">Koristiti nasumičnu pristupnu frazu</string>
     <string name="auth_disable_simplex_lock">Onemogućiti SimpleX Zaključavanje</string>
-    <string name="servers_info_reconnect_server_title">Ponovo povezati server?</string>
+    <string name="servers_info_reconnect_server_title">Ponovo povezati router?</string>
     <string name="no_received_app_files">Nema primljenih niti poslanih datoteka</string>
     <string name="integrity_msg_bad_hash">neispravan hash poruke</string>
     <string name="alert_title_msg_bad_id">Neispravan ID poruke</string>
@@ -1420,9 +1420,9 @@
     <string name="notification_preview_mode_message_desc">Prikazati kontakt i poruku</string>
     <string name="show_developer_options">Prikazati opcije za programere</string>
     <string name="alert_title_msg_bad_hash">Neispravan hash poruke</string>
-    <string name="servers_info_reconnect_server_message">Ponovo povezati server kako biste prisilili dostavu poruke. To koristi dodatni saobraćaj.</string>
+    <string name="servers_info_reconnect_server_message">Ponovo povezati router kako biste prisilili dostavu poruke. To koristi dodatni saobraćaj.</string>
     <string name="integrity_msg_bad_id">neispravan ID poruke</string>
-    <string name="xftp_servers_configured">Konfigurisani XFTP serveri</string>
+    <string name="xftp_servers_configured">Konfigurisani Data serveri</string>
     <string name="message_delivery_warning_title">Upozorenje pri isporuci poruke</string>
     <string name="connect_via_link_or_qr">Povezati se pomoću linka / QR koda</string>
     <string name="failed_to_create_user_duplicate_desc">Već imate chat profil sa istim prikaznim imenom. Molimo vas da odaberete drugo ime.</string>
@@ -1430,7 +1430,7 @@
     <string name="v4_3_improved_server_configuration">Unapređena konfiguracija servera</string>
     <string name="n_other_file_errors">%1$d ostale greška datoteke(a).</string>
     <string name="auth_unavailable">Autentifikacija nije dostupna</string>
-    <string name="smp_servers_configured">Konfigurisani SMP serveri</string>
+    <string name="smp_servers_configured">Konfigurisani Packet serveri</string>
     <string name="auto_accept_contact">Automatsko prihvatanje</string>
     <string name="save_preferences_question">Sačuvati preference?</string>
     <string name="unable_to_open_browser_desc">Za pozive je potreban podrazumevani veb pretraživač. Molimo vas da konfigurišete podrazumevani pretraživač u sistemu i podelite više informacija sa programerima.</string>

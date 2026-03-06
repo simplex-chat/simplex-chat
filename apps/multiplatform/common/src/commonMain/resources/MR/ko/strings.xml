@@ -370,8 +370,8 @@
     <string name="description_via_contact_address_link_incognito">상대의 연락처 링크로 익명 연결</string>
     <string name="description_via_contact_address_link">상대의 연락처 링크로 연결</string>
     <string name="description_via_one_time_link_incognito">일회용 링크로 익명 연결</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP 서버 주소가 올바른 형식이고 줄로 구분되어 있고 중복이 없는지 확인해 주세요.</string>
-    <string name="error_saving_smp_servers">SMP 서버 저장 오류</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Packet 서버 주소가 올바른 형식이고 줄로 구분되어 있고 중복이 없는지 확인해 주세요.</string>
+    <string name="error_saving_smp_servers">Packet 서버 저장 오류</string>
     <string name="error_setting_network_config">네트워크 설정 업데이트 오류</string>
     <string name="failed_to_active_user_title">프로필 변경 오류!</string>
     <string name="failed_to_create_user_duplicate_desc">동일한 표시 이름을 가진 채팅 프로필이 있어요. 다른 이름을 선택해 주세요.</string>
@@ -841,7 +841,7 @@
     <string name="settings_section_title_incognito">익명 모드</string>
     <string name="settings_section_title_experimenta">실험적</string>
     <string name="set_password_to_export">내보낼 암호 설정</string>
-    <string name="smp_servers">SMP 서버</string>
+    <string name="smp_servers">Packet 서버</string>
     <string name="smp_servers_preset_address">미리 설정된 서버 주소</string>
     <string name="smp_servers_your_server">내 서버</string>
     <string name="smp_servers_your_server_address">내 서버 주소</string>
@@ -962,7 +962,7 @@
     <string name="acknowledgement_errors">승인 오류</string>
     <string name="allow_to_send_simplex_links">SimpleX 링크 전송을 허용합니다.</string>
     <string name="v5_6_app_data_migration">앱 데이터 이전</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">모든 연락처, 대화 및 파일은 안전하게 암호화되어 구성된 XFTP 릴레이에 일괄 업로드됩니다.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">모든 연락처, 대화 및 파일은 안전하게 암호화되어 구성된 Data 릴레이에 일괄 업로드됩니다.</string>
     <string name="servers_info_subscriptions_connections_subscribed">활성 연결</string>
     <string name="all_users">모든 프로필</string>
     <string name="migrate_to_device_apply_onion">적용</string>
@@ -1048,12 +1048,12 @@
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>그룹 생성</b>: 새로운 그룹을 생성합니다.]]></string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>연락처 추가</b> : 새 초대 링크를 만들거나 받은 링크를 통해 연결합니다.]]></string>
     <string name="clear_note_folder_question">개인 메모를 지우시겠습니까?</string>
-    <string name="xftp_servers_configured">XFTP 서버 구성</string>
+    <string name="xftp_servers_configured">Data 서버 구성</string>
     <string name="v6_0_your_contacts_descr">나중에 채팅할 수 있도록 연락처를 보관합니다.</string>
     <string name="connected_desktop">연결된 데스크톱</string>
     <string name="chunks_uploaded">일괄 업로드됨</string>
     <string name="deleted_chats">보관된 연락처</string>
-    <string name="smp_servers_configured">SMP 서버 구성</string>
+    <string name="smp_servers_configured">Packet 서버 구성</string>
     <string name="create_chat_profile">채팅 프로필 생성</string>
     <string name="cant_call_member_alert_title">그룹 멤버에 전화를 걸 수 없음</string>
     <string name="multicast_connect_automatically">자동 연결</string>
@@ -1190,7 +1190,7 @@
     <string name="v5_0_large_files_support_descr">상대가 온라인 상태가 될 때까지 기다릴 필요가 없습니다!</string>
     <string name="v5_4_block_group_members">그룹 멤버 차단</string>
     <string name="current_user">현재 프로필</string>
-    <string name="error_loading_smp_servers">SMP 서버를 로드하는 중 오류</string>
+    <string name="error_loading_smp_servers">Packet 서버를 로드하는 중 오류</string>
     <string name="error_deleting_note_folder">개인 메모를 삭제하는 동안 오류</string>
     <string name="migrate_from_device_error_deleting_database">데이터베이스를 삭제하는 동안 오류</string>
     <string name="remote_ctrl_disconnected_with_reason">다음과 같은 이유로 끊어졌습니다: %s</string>
@@ -1198,7 +1198,7 @@
     <string name="error_showing_desktop_notification">알림을 표시하는 동안 오류가 발생하였으니, 개발자에게 문의하십시오.</string>
     <string name="la_minutes">%d 분</string>
     <string name="marked_deleted_items_description">%d 개의 메시지가 삭제됨</string>
-    <string name="error_saving_xftp_servers">XFTP 서버를 저장하는 중 오류</string>
+    <string name="error_saving_xftp_servers">Data 서버를 저장하는 중 오류</string>
     <string name="disable_notifications_button">알림 비활성화</string>
     <string name="la_enter_app_passcode">패스코드 입력</string>
     <string name="error_setting_address">주소를 설정하는 중 오류</string>
@@ -1226,7 +1226,7 @@
     <string name="self_destruct">자체 소멸</string>
     <string name="enter_welcome_message_optional">환영 메시지 입력…(선택사항)</string>
     <string name="error_initializing_web_view_wrong_arch">WebView를 초기화하는 중 오류가 발생했습니다. WebView가 설치되어 있고 지원되는 아키텍처가 arm64인지 확인합니다.\n오류: %s</string>
-    <string name="error_loading_xftp_servers">XFTP 서버를 로드하는 중 오류가 발생했습니다.</string>
+    <string name="error_loading_xftp_servers">Data 서버를 로드하는 중 오류가 발생했습니다.</string>
     <string name="error_loading_details">세부 정보를 로드하는 중 오류</string>
     <string name="servers_info_reset_stats_alert_error_title">통계를 재설정하는 중 오류</string>
     <string name="v5_2_disappear_one_message_descr">대화에서 비활성화 된 경우에도 마찬가지입니다.</string>

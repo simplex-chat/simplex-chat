@@ -264,10 +264,10 @@ swipe action */
 "Add profile" = "Lisää profiili";
 
 /* No comment provided by engineer. */
-"Add server" = "Lisää palvelin";
+"Add router" = "Lisää palvelin";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Lisää palvelimia skannaamalla QR-koodeja.";
+"Add routers by scanning QR codes." = "Lisää palvelimia skannaamalla QR-koodeja.";
 
 /* No comment provided by engineer. */
 "Add to another device" = "Lisää toiseen laitteeseen";
@@ -387,7 +387,7 @@ swipe action */
 "Answer call" = "Vastaa puheluun";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
+"Anybody can host routers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Sovellusversio: %@";
@@ -597,7 +597,7 @@ set passcode view */
 "Chats" = "Keskustelut";
 
 /* alert title */
-"Check server address and try again." = "Tarkista palvelimen osoite ja yritä uudelleen.";
+"Check router address and try again." = "Tarkista palvelimen osoite ja yritä uudelleen.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Kiinalainen ja espanjalainen käyttöliittymä";
@@ -684,10 +684,10 @@ set passcode view */
 "connecting call" = "yhdistää puhelun…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Yhteyden muodostaminen palvelimeen…";
+"Connecting router…" = "Yhteyden muodostaminen palvelimeen…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Yhteyden muodostaminen palvelimeen... (virhe: %@)";
+"Connecting router… (error: %@)" = "Yhteyden muodostaminen palvelimeen... (virhe: %@)";
 
 /* No comment provided by engineer. */
 "connecting…" = "yhdistää…";
@@ -1215,7 +1215,7 @@ alert button */
 "Enter password above to show!" = "Kirjoita yllä oleva salasana näyttääksesi!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Syötä palvelin manuaalisesti";
+"Enter router manually" = "Syötä palvelin manuaalisesti";
 
 /* placeholder */
 "Enter welcome message…" = "Kirjoita tervetuloviesti…";
@@ -1397,7 +1397,7 @@ snd error text */
 "Favorite" = "Suosikki";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Tiedosto poistetaan palvelimilta.";
+"File will be deleted from routers." = "Tiedosto poistetaan palvelimilta.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Tiedosto vastaanotetaan, kun kontaktisi on ladannut sen.";
@@ -1430,7 +1430,7 @@ snd error text */
 "Find chats faster" = "Löydä keskustelut nopeammin";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
+"Fingerprint in router address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
 
 /* No comment provided by engineer. */
 "Fix" = "Korjaa";
@@ -1514,7 +1514,7 @@ snd error text */
 "Group profile" = "Ryhmäprofiili";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Ryhmäprofiili tallennetaan jäsenten laitteille, ei palvelimille.";
+"Group profile is stored on members' devices, not on the routers." = "Ryhmäprofiili tallennetaan jäsenten laitteille, ei palvelimille.";
 
 /* snd group event chat item */
 "group profile updated" = "ryhmäprofiili päivitetty";
@@ -1568,7 +1568,7 @@ snd error text */
 "How to use it" = "Kuinka sitä käytetään";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Miten käytät palvelimiasi";
+"How to use your routers" = "Miten käytät palvelimiasi";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE-palvelimet (yksi per rivi)";
@@ -1613,7 +1613,7 @@ snd error text */
 "Improved privacy and security" = "Parannettu yksityisyys ja turvallisuus";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Parannettu palvelimen kokoonpano";
+"Improved router configuration" = "Parannettu palvelimen kokoonpano";
 
 /* No comment provided by engineer. */
 "In reply to" = "Vastauksena";
@@ -1688,7 +1688,7 @@ snd error text */
 "invalid data" = "virheelliset tiedot";
 
 /* alert title */
-"Invalid server address!" = "Virheellinen palvelinosoite!";
+"Invalid router address!" = "Virheellinen palvelinosoite!";
 
 /* item status text */
 "Invalid status" = "Virheellinen tila";
@@ -1742,7 +1742,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "Se voi tapahtua, kun sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Se voi tapahtua, kun:\n1. Viestit vanhenivat lähettävässä päätelaitteessa kahden päivän päästä tai palvelimella 30 päivän kuluttua.\n2. Viestin salauksen purku epäonnistui, koska sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta.\n3. Yhteys vaarantui.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Se voi tapahtua, kun:\n1. Viestit vanhenivat lähettävässä päätelaitteessa kahden päivän päästä tai palvelimella 30 päivän kuluttua.\n2. Viestin salauksen purku epäonnistui, koska sinä tai kontaktisi käytitte vanhaa varmuuskopiota tietokannasta.\n3. Yhteys vaarantui.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Näyttäisi, että olet jo yhteydessä tämän linkin kautta. Jos näin ei ole, tapahtui virhe (%@).";
@@ -1979,7 +1979,7 @@ snd error text */
 "Name" = "Nimi";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Verkko ja palvelimet";
+"Network & routers" = "Verkko ja palvelimet";
 
 /* No comment provided by engineer. */
 "Network settings" = "Verkkoasetukset";
@@ -2248,7 +2248,7 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Esiasetettu palvelimen osoite";
+"Preset router address" = "Esiasetettu palvelimen osoite";
 
 /* No comment provided by engineer. */
 "Preview" = "Esikatselu";
@@ -2263,7 +2263,7 @@ new chat action */
 "Private filenames" = "Yksityiset tiedostonimet";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Profiili- ja palvelinyhteydet";
+"Profile and router connections" = "Profiili- ja palvelinyhteydet";
 
 /* No comment provided by engineer. */
 "Profile image" = "Profiilikuva";
@@ -2353,7 +2353,7 @@ new chat action */
 "Received message" = "Vastaanotettu viesti";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Vastaanotto-osoite vaihdetaan toiseen palvelimeen. Osoitteenmuutos tehdään sen jälkeen, kun lähettäjä tulee verkkoon.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Vastaanotto-osoite vaihdetaan toiseen palvelimeen. Osoitteenmuutos tehdään sen jälkeen, kun lähettäjä tulee verkkoon.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Tiedoston vastaanotto pysäytetään.";
@@ -2365,10 +2365,10 @@ new chat action */
 "Recipients see updates as you type them." = "Vastaanottajat näkevät päivitykset, kun kirjoitat niitä.";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Yhdistä kaikki yhdistetyt palvelimet uudelleen pakottaaksesi viestin toimituksen. Tämä käyttää ylimääräistä liikennettä.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Yhdistä kaikki yhdistetyt palvelimet uudelleen pakottaaksesi viestin toimituksen. Tämä käyttää ylimääräistä liikennettä.";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Yhdistä palvelimet uudelleen?";
+"Reconnect routers?" = "Yhdistä palvelimet uudelleen?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Tietue päivitetty klo";
@@ -2512,10 +2512,10 @@ chat item action */
 "Save profile password" = "Tallenna profiilin salasana";
 
 /* No comment provided by engineer. */
-"Save servers" = "Tallenna palvelimet";
+"Save routers" = "Tallenna palvelimet";
 
 /* alert title */
-"Save servers?" = "Tallenna palvelimet?";
+"Save routers?" = "Tallenna palvelimet?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Tallenna tervetuloviesti?";
@@ -2533,7 +2533,7 @@ chat item action */
 "Scan security code from your contact's app." = "Skannaa turvakoodi kontaktisi sovelluksesta.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Skannaa palvelimen QR-koodi";
+"Scan router QR code" = "Skannaa palvelimen QR-koodi";
 
 /* No comment provided by engineer. */
 "Search" = "Haku";
@@ -2647,16 +2647,16 @@ chat item action */
 "Sent messages will be deleted after set time." = "Lähetetyt viestit poistetaan asetetun ajan kuluttua.";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
+"Router requires authorization to create queues, check password." = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
+"Router requires authorization to upload, check password." = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Palvelintesti epäonnistui!";
+"Router test failed!" = "Palvelintesti epäonnistui!";
 
 /* No comment provided by engineer. */
-"Servers" = "Palvelimet";
+"Routers" = "Palvelimet";
 
 /* No comment provided by engineer. */
 "Set 1 day" = "Aseta 1 päivä";
@@ -2852,10 +2852,10 @@ chat item action */
 "Test failed at step %@." = "Testi epäonnistui vaiheessa %@.";
 
 /* No comment provided by engineer. */
-"Test server" = "Testipalvelin";
+"Test router" = "Testipalvelin";
 
 /* No comment provided by engineer. */
-"Test servers" = "Testipalvelimet";
+"Test routers" = "Testipalvelimet";
 
 /* alert title */
 "Tests failed!" = "Testit epäonnistuivat!";
@@ -2912,7 +2912,7 @@ chat item action */
 "The sender will NOT be notified" = "Lähettäjälle EI ilmoiteta";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille **%@**.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Nämä asetukset koskevat nykyistä profiiliasi **%@**.";
@@ -3044,7 +3044,7 @@ chat item action */
 "updated group profile" = "päivitetty ryhmäprofiili";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Asetusten päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.";
+"Updating settings will re-connect the client to all routers." = "Asetusten päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Päivitä ja avaa keskustelu";
@@ -3071,13 +3071,13 @@ chat item action */
 "Use new incognito profile" = "Käytä uutta incognito-profiilia";
 
 /* No comment provided by engineer. */
-"Use server" = "Käytä palvelinta";
+"Use router" = "Käytä palvelinta";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "Käytä SimpleX Chat palvelimia?";
+"Use SimpleX Chat routers?" = "Käytä SimpleX Chat palvelimia?";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Käyttää SimpleX Chat -palvelimia.";
+"Using SimpleX Chat routers." = "Käyttää SimpleX Chat -palvelimia.";
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
@@ -3374,13 +3374,13 @@ chat item action */
 "Your profile is stored on your device and only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Satunnainen profiilisi";
 
 /* No comment provided by engineer. */
-"Your server address" = "Palvelimesi osoite";
+"Your router address" = "Palvelimesi osoite";
 
 /* No comment provided by engineer. */
 "Your settings" = "Asetuksesi";

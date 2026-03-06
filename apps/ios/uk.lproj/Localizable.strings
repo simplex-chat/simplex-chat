@@ -5,7 +5,7 @@
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- підключитися до [сервера каталогів](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (БЕТА)!\n- підтвердження доставлення (до 20 учасників).\n- швидше і стабільніше.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- підключитися до [сервера каталогів](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (БЕТА)!\n- підтвердження доставлення (до 20 учасників).\n- швидше і стабільніше.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- стабільніша доставка повідомлень.\n- трохи кращі групи.\n- і багато іншого!";
@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ перевірено";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ сервер";
+"%@ router" = "%@ сервер";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ сервери";
+"%@ routers" = "%@ сервери";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ завантажено";
@@ -414,10 +414,10 @@ swipe action */
 "Add profile" = "Додати профіль";
 
 /* No comment provided by engineer. */
-"Add server" = "Додати сервер";
+"Add router" = "Додати сервер";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Додайте сервери, відсканувавши QR-код.";
+"Add routers by scanning QR codes." = "Додайте сервери, відсканувавши QR-код.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Додайте учасників команди";
@@ -531,7 +531,7 @@ swipe action */
 "All reports will be archived for you." = "Всі скарги будуть заархівовані для вас.";
 
 /* No comment provided by engineer. */
-"All servers" = "Всі сервери";
+"All routers" = "Всі сервери";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Всі ваші контакти залишаться на зв'язку.";
@@ -540,7 +540,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Всі ваші контакти залишаться на зв'язку. Повідомлення про оновлення профілю буде надіслано вашим контактам.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Всі ваші контакти, розмови та файли будуть надійно зашифровані та завантажені частинами на налаштовані XFTP-реле.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers." = "Всі ваші контакти, розмови та файли будуть надійно зашифровані та завантажені частинами на налаштовані data-реле.";
 
 /* No comment provided by engineer. */
 "Allow" = "Дозволити";
@@ -642,7 +642,7 @@ swipe action */
 "Answer call" = "Відповісти на дзвінок";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Кожен може хостити сервери.";
+"Anybody can host routers." = "Кожен може хостити сервери.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Збірка програми: %@";
@@ -1102,7 +1102,7 @@ set passcode view */
 "Check messages when allowed." = "Перевірте повідомлення, коли це дозволено.";
 
 /* alert title */
-"Check server address and try again." = "Перевірте адресу сервера та спробуйте ще раз.";
+"Check router address and try again." = "Перевірте адресу сервера та спробуйте ще раз.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Інтерфейс китайською та іспанською мовами";
@@ -1195,7 +1195,7 @@ set passcode view */
 "Configure ICE servers" = "Налаштування серверів ICE";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "Налаштувати операторів сервера";
+"Configure router operators" = "Налаштувати операторів сервера";
 
 /* No comment provided by engineer. */
 "Confirm" = "Підтвердити";
@@ -1207,7 +1207,7 @@ set passcode view */
 "Confirm database upgrades" = "Підтвердити оновлення бази даних";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "Підтвердити файли з невідомих серверів.";
+"Confirm files from unknown routers." = "Підтвердити файли з невідомих серверів.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Підтвердьте налаштування мережі";
@@ -1276,7 +1276,7 @@ set passcode view */
 "Connected desktop" = "Підключений робочий стіл";
 
 /* No comment provided by engineer. */
-"Connected servers" = "Підключені сервери";
+"Connected routers" = "Підключені сервери";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Підключено до настільного комп'ютера";
@@ -1303,10 +1303,10 @@ set passcode view */
 "connecting call" = "підключення дзвінка…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Підключення до сервера…";
+"Connecting router…" = "Підключення до сервера…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Підключення до сервера... (помилка: %@)";
+"Connecting router… (error: %@)" = "Підключення до сервера... (помилка: %@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "З'єднання з контактом, будь ласка, зачекайте або перевірте пізніше!";
@@ -1321,7 +1321,7 @@ set passcode view */
 "Connection" = "Підключення";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Стан з'єднання та серверів.";
+"Connection and routers status." = "Стан з'єднання та серверів.";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Підключення заблоковано";
@@ -1336,7 +1336,7 @@ set passcode view */
 "connection established" = "з'єднання встановлене";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "Підключення заблоковано оператором сервера:\n%@";
+"Connection is blocked by router operator:\n%@" = "Підключення заблоковано оператором сервера:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Підключення не готове.";
@@ -1804,13 +1804,13 @@ alert button */
 "Desktop devices" = "Настільні пристрої";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Адреса сервера призначення %@ несумісна з налаштуваннями сервера пересилання %@.";
+"Destination router address of %@ is incompatible with forwarding router %@ settings." = "Адреса сервера призначення %@ несумісна з налаштуваннями сервера пересилання %@.";
 
 /* snd error text */
-"Destination server error: %@" = "Помилка сервера призначення: %@";
+"Destination router error: %@" = "Помилка сервера призначення: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Версія сервера призначення %@ несумісна з версією сервера переадресації %@.";
+"Destination router version of %@ is incompatible with forwarding router %@." = "Версія сервера призначення %@ несумісна з версією сервера переадресації %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Детальна статистика";
@@ -1912,7 +1912,7 @@ alert button */
 "Do not send history to new members." = "Не надсилайте історію новим користувачам.";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "НЕ надсилайте повідомлення напряму, навіть якщо ваш сервер або сервер призначення не підтримує приватну маршрутизацію.";
+"Do NOT send messages directly, even if your or destination router does not support private routing." = "НЕ надсилайте повідомлення напряму, навіть якщо ваш сервер або сервер призначення не підтримує приватну маршрутизацію.";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "Не використовуйте облікові дані з проксі.";
@@ -2015,7 +2015,7 @@ chat item action */
 "Enable disappearing messages by default." = "Увімкнути зникаючі повідомлення за замовчуванням.";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "Увімкніть Flux у налаштуваннях мережі та серверів для кращої конфіденційності метаданих.";
+"Enable Flux in Network & routers settings for better metadata privacy." = "Увімкніть Flux у налаштуваннях мережі та серверів для кращої конфіденційності метаданих.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Увімкнути для всіх";
@@ -2156,7 +2156,7 @@ chat item action */
 "Enter password above to show!" = "Введіть пароль вище, щоб показати!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Увійдіть на сервер вручну";
+"Enter router manually" = "Увійдіть на сервер вручну";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Введіть назву пристрою…";
@@ -2192,7 +2192,7 @@ chat item action */
 "Error adding member(s)" = "Помилка додавання користувача(ів)";
 
 /* alert title */
-"Error adding server" = "Помилка додавання сервера";
+"Error adding router" = "Помилка додавання сервера";
 
 /* No comment provided by engineer. */
 "Error adding short link" = "Помилка додавання короткого посилання";
@@ -2219,7 +2219,7 @@ chat item action */
 "Error checking token status" = "Помилка перевірки статусу токена";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "Помилка підключення до сервера переадресації %@. Спробуйте пізніше.";
+"Error connecting to forwarding router %@. Please try later." = "Помилка підключення до сервера переадресації %@. Спробуйте пізніше.";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Помилка створення адреси";
@@ -2297,7 +2297,7 @@ chat item action */
 "Error joining group" = "Помилка приєднання до групи";
 
 /* alert title */
-"Error loading servers" = "Помилка завантаження серверів";
+"Error loading routers" = "Помилка завантаження серверів";
 
 /* No comment provided by engineer. */
 "Error migrating settings" = "Помилка міграції налаштувань";
@@ -2312,10 +2312,10 @@ chat item action */
 "Error receiving file" = "Помилка отримання файлу";
 
 /* No comment provided by engineer. */
-"Error reconnecting server" = "Помилка перепідключення сервера";
+"Error reconnecting router" = "Помилка перепідключення сервера";
 
 /* No comment provided by engineer. */
-"Error reconnecting servers" = "Помилка перепідключення серверів";
+"Error reconnecting routers" = "Помилка перепідключення серверів";
 
 /* alert title */
 "Error registering for notifications" = "Помилка під час реєстрації для отримання сповіщень";
@@ -2348,7 +2348,7 @@ chat item action */
 "Error saving passphrase to keychain" = "Помилка збереження пароля на keychain";
 
 /* alert title */
-"Error saving servers" = "Сервери збереження помилок";
+"Error saving routers" = "Сервери збереження помилок";
 
 /* when migrating */
 "Error saving settings" = "Налаштування збереження помилок";
@@ -2387,7 +2387,7 @@ chat item action */
 "Error synchronizing connection" = "Помилка синхронізації з'єднання";
 
 /* No comment provided by engineer. */
-"Error testing server connection" = "Помилка під час перевірки з'єднання з сервером";
+"Error testing router connection" = "Помилка під час перевірки з'єднання з сервером";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "Помилка оновлення посилання на групу";
@@ -2396,7 +2396,7 @@ chat item action */
 "Error updating message" = "Повідомлення про помилку оновлення";
 
 /* alert title */
-"Error updating server" = "Помилка оновлення сервера";
+"Error updating router" = "Помилка оновлення сервера";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Помилка оновлення налаштувань";
@@ -2428,7 +2428,7 @@ snd error text */
 "Errors" = "Помилки";
 
 /* servers error */
-"Errors in servers configuration." = "Помилки в конфігурації серверів.";
+"Errors in routers configuration." = "Помилки в конфігурації серверів.";
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Навіть коли вимкнений у розмові.";
@@ -2491,13 +2491,13 @@ snd error text */
 "File errors:\n%@" = "Помилки файлів:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "Файл заблоковано оператором сервера:\n%@.";
+"File is blocked by router operator:\n%@." = "Файл заблоковано оператором сервера:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Файл не знайдено - найімовірніше, файл було видалено або скасовано.";
 
 /* file error text */
-"File server error: %@" = "Помилка файлового сервера: %@";
+"Data router error: %@" = "Помилка файлового сервера: %@";
 
 /* No comment provided by engineer. */
 "File status" = "Статус файлу";
@@ -2506,7 +2506,7 @@ snd error text */
 "File status: %@" = "Статус файлу: %@";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Файл буде видалено з серверів.";
+"File will be deleted from routers." = "Файл буде видалено з серверів.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Файл буде отримано, коли ваш контакт завершить завантаження.";
@@ -2551,7 +2551,7 @@ snd error text */
 "Find chats faster" = "Швидше знаходьте чати";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Відбиток в адресі сервера не співпадає з сертифікатом.";
+"Fingerprint in router address does not match certificate." = "Відбиток в адресі сервера не співпадає з сертифікатом.";
 
 /* No comment provided by engineer. */
 "Fix" = "Виправити";
@@ -2581,7 +2581,7 @@ snd error text */
 "For console" = "Для консолі";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Наприклад, якщо ваш контакт отримує повідомлення через сервер SimpleX Chat, ваш додаток доставлятиме їх через сервер Flux.";
+"For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router." = "Наприклад, якщо ваш контакт отримує повідомлення через сервер SimpleX Chat, ваш додаток доставлятиме їх через сервер Flux.";
 
 /* No comment provided by engineer. */
 "For me" = "Для мене";
@@ -2623,19 +2623,19 @@ snd error text */
 "Forwarding %lld messages" = "Пересилання повідомлень %lld";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Серверу переадресації %1$@ не вдалося з'єднатися з сервером призначення %2$@. Спробуйте пізніше.";
+"Forwarding router %@ failed to connect to destination router %@. Please try later." = "Серверу переадресації %1$@ не вдалося з'єднатися з сервером призначення %2$@. Спробуйте пізніше.";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "Адреса сервера переадресації несумісна з налаштуваннями мережі: %@.";
+"Forwarding router address is incompatible with network settings: %@." = "Адреса сервера переадресації несумісна з налаштуваннями мережі: %@.";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "Версія сервера переадресації несумісна з мережевими налаштуваннями: %@.";
+"Forwarding router version is incompatible with network settings: %@." = "Версія сервера переадресації несумісна з мережевими налаштуваннями: %@.";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "Сервер переадресації: %1$@\nПомилка сервера призначення: %2$@";
+"Forwarding router: %@\nDestination router error: %@" = "Сервер переадресації: %1$@\nПомилка сервера призначення: %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "Сервер переадресації: %1$@\nПомилка: %2$@";
+"Forwarding router: %@\nError: %@" = "Сервер переадресації: %1$@\nПомилка: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Знайдено робочий стіл";
@@ -2725,7 +2725,7 @@ snd error text */
 "Group profile" = "Профіль групи";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Профіль групи зберігається на пристроях учасників, а не на серверах.";
+"Group profile is stored on members' devices, not on the routers." = "Профіль групи зберігається на пристроях учасників, а не на серверах.";
 
 /* snd group event chat item */
 "group profile updated" = "оновлено профіль групи";
@@ -2800,7 +2800,7 @@ snd error text */
 "How to use it" = "Як ним користуватися";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Як користуватися вашими серверами";
+"How to use your routers" = "Як користуватися вашими серверами";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Інтерфейс угорською мовою";
@@ -2863,7 +2863,7 @@ snd error text */
 "Improved privacy and security" = "Покращена конфіденційність та безпека";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Покращена конфігурація сервера";
+"Improved router configuration" = "Покращена конфігурація сервера";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "Для того, щоб продовжити, чат слід зупинити.";
@@ -2995,7 +2995,7 @@ snd error text */
 "Invalid response" = "Неправильна відповідь";
 
 /* alert title */
-"Invalid server address!" = "Неправильна адреса сервера!";
+"Invalid router address!" = "Неправильна адреса сервера!";
 
 /* item status text */
 "Invalid status" = "Недійсний статус";
@@ -3058,7 +3058,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "Це може статися, якщо ви або ваше з'єднання використовували стару резервну копію бази даних.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Це може статися, коли:\n1. Термін дії повідомлень закінчився в клієнті-відправнику через 2 дні або на сервері через 30 днів.\n2. Не вдалося розшифрувати повідомлення, тому що ви або ваш контакт використовували стару резервну копію бази даних.\n3. З'єднання було скомпрометовано.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Це може статися, коли:\n1. Термін дії повідомлень закінчився в клієнті-відправнику через 2 дні або на сервері через 30 днів.\n2. Не вдалося розшифрувати повідомлення, тому що ви або ваш контакт використовували стару резервну копію бази даних.\n3. З'єднання було скомпрометовано.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Він захищає вашу IP-адресу та з'єднання.";
@@ -3490,7 +3490,7 @@ snd error text */
 "Name" = "Ім'я";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Мережа та сервери";
+"Network & routers" = "Мережа та сервери";
 
 /* No comment provided by engineer. */
 "Network connection" = "Підключення до мережі";
@@ -3568,13 +3568,13 @@ snd error text */
 "New passphrase…" = "Новий пароль…";
 
 /* No comment provided by engineer. */
-"New server" = "Новий сервер";
+"New router" = "Новий сервер";
 
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used every time you start the app." = "Нові облікові дані SOCKS будуть використовуватися при кожному запуску програми.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Для кожного сервера будуть використовуватися нові облікові дані SOCKS.";
+"New SOCKS credentials will be used for each router." = "Для кожного сервера будуть використовуватися нові облікові дані SOCKS.";
 
 /* pref value */
 "no" = "ні";
@@ -3861,7 +3861,7 @@ new chat action */
 "Operator" = "Оператор";
 
 /* alert title */
-"Operator server" = "Сервер оператора";
+"Operator router" = "Сервер оператора";
 
 /* No comment provided by engineer. */
 "Or import archive file" = "Або імпортуйте архівний файл";
@@ -4038,16 +4038,16 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Зберегти чернетку останнього повідомлення з вкладеннями.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Попередньо встановлена адреса сервера";
+"Preset router address" = "Попередньо встановлена адреса сервера";
 
 /* No comment provided by engineer. */
-"Preset servers" = "Попередньо встановлені сервери";
+"Preset routers" = "Попередньо встановлені сервери";
 
 /* No comment provided by engineer. */
 "Preview" = "Попередній перегляд";
 
 /* No comment provided by engineer. */
-"Previously connected servers" = "Раніше підключені сервери";
+"Previously connected routers" = "Раніше підключені сервери";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Конфіденційність і безпека";
@@ -4062,7 +4062,7 @@ new chat action */
 "Privacy redefined" = "Конфіденційність переглянута";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Приватні чати, групи та ваші контакти недоступні для операторів сервера.";
+"Private chats, groups and your contacts are not accessible to router operators." = "Приватні чати, групи та ваші контакти недоступні для операторів сервера.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Приватні імена файлів";
@@ -4089,7 +4089,7 @@ new chat action */
 "Private routing timeout" = "Тайм-аут приватної маршрутизації";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "З'єднання профілю та сервера";
+"Profile and router connections" = "З'єднання профілю та сервера";
 
 /* No comment provided by engineer. */
 "Profile image" = "Зображення профілю";
@@ -4146,7 +4146,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "Захистіть свої профілі чату паролем!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Захистіть свою IP-адресу від ретрансляторів повідомлень, обраних вашими контактами.\nУвімкніть у налаштуваннях *Мережа та сервери*.";
+"Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network & routers* settings." = "Захистіть свою IP-адресу від ретрансляторів повідомлень, обраних вашими контактами.\nУвімкніть у налаштуваннях *Мережа та сервери*.";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "Фоновий тайм-аут протоколу";
@@ -4161,7 +4161,7 @@ new chat action */
 "Proxied" = "Проксі-сервер";
 
 /* No comment provided by engineer. */
-"Proxied servers" = "Проксі-сервери";
+"Proxied routers" = "Проксі-сервери";
 
 /* No comment provided by engineer. */
 "Proxy requires password" = "Проксі вимагає пароль";
@@ -4236,7 +4236,7 @@ new chat action */
 "Received total" = "Отримано всього";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Адреса отримувача буде змінена на інший сервер. Зміна адреси завершиться після того, як відправник з'явиться в мережі.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Адреса отримувача буде змінена на інший сервер. Зміна адреси завершиться після того, як відправник з'явиться в мережі.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Отримання файлу буде зупинено.";
@@ -4245,7 +4245,7 @@ new chat action */
 "Receiving via" = "Отримання через";
 
 /* No comment provided by engineer. */
-"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Нещодавня історія та покращення [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Нещодавня історія та покращення [directory bot](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
 
 /* No comment provided by engineer. */
 "Recipient(s) can't see who this message is from." = "Одержувач(и) не бачить, від кого це повідомлення.";
@@ -4257,22 +4257,22 @@ new chat action */
 "Reconnect" = "Повторне підключення";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Перепідключіть всі підключені сервери, щоб примусово доставити повідомлення. Це використовує додатковий трафік.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Перепідключіть всі підключені сервери, щоб примусово доставити повідомлення. Це використовує додатковий трафік.";
 
 /* No comment provided by engineer. */
-"Reconnect all servers" = "Перепідключіть усі сервери";
+"Reconnect all routers" = "Перепідключіть усі сервери";
 
 /* No comment provided by engineer. */
-"Reconnect all servers?" = "Перепідключити всі сервери?";
+"Reconnect all routers?" = "Перепідключити всі сервери?";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "Перепідключити сервер для примусової доставки повідомлень. Використовує додатковий трафік.";
+"Reconnect router to force message delivery. It uses additional traffic." = "Перепідключити сервер для примусової доставки повідомлень. Використовує додатковий трафік.";
 
 /* No comment provided by engineer. */
-"Reconnect server?" = "Перепідключити сервер?";
+"Reconnect router?" = "Перепідключити сервер?";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Перепідключити сервери?";
+"Reconnect routers?" = "Перепідключити сервери?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Запис оновлено за";
@@ -4557,10 +4557,10 @@ chat item action */
 "Save profile password" = "Зберегти пароль профілю";
 
 /* No comment provided by engineer. */
-"Save servers" = "Зберегти сервери";
+"Save routers" = "Зберегти сервери";
 
 /* alert title */
-"Save servers?" = "Зберегти сервери?";
+"Save routers?" = "Зберегти сервери?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Зберегти вітальне повідомлення?";
@@ -4608,7 +4608,7 @@ chat item action */
 "Scan security code from your contact's app." = "Відскануйте код безпеки з додатку вашого контакту.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Відскануйте QR-код сервера";
+"Scan router QR code" = "Відскануйте QR-код сервера";
 
 /* No comment provided by engineer. */
 "search" = "пошук";
@@ -4704,10 +4704,10 @@ chat item action */
 "Send message to enable calls." = "Надішліть повідомлення, щоб увімкнути дзвінки.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Надсилайте повідомлення напряму, якщо IP-адреса захищена, а ваш сервер або сервер призначення не підтримує приватну маршрутизацію.";
+"Send messages directly when IP address is protected and your or destination router does not support private routing." = "Надсилайте повідомлення напряму, якщо IP-адреса захищена, а ваш сервер або сервер призначення не підтримує приватну маршрутизацію.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Надсилайте повідомлення напряму, якщо ваш сервер або сервер призначення не підтримує приватну маршрутизацію.";
+"Send messages directly when your or destination router does not support private routing." = "Надсилайте повідомлення напряму, якщо ваш сервер або сервер призначення не підтримує приватну маршрутизацію.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Надсилати сповіщення";
@@ -4794,58 +4794,58 @@ chat item action */
 "Sent via proxy" = "Відправлено через проксі";
 
 /* No comment provided by engineer. */
-"Server" = "Сервер";
+"Router" = "Сервер";
 
 /* alert message */
-"Server added to operator %@." = "Сервер додано до оператора %@.";
+"Router added to operator %@." = "Сервер додано до оператора %@.";
 
 /* No comment provided by engineer. */
-"Server address" = "Адреса сервера";
+"Router address" = "Адреса сервера";
 
 /* No comment provided by engineer. */
-"Server address is incompatible with network settings: %@." = "Адреса сервера несумісна з налаштуваннями мережі: %@.";
+"Router address is incompatible with network settings: %@." = "Адреса сервера несумісна з налаштуваннями мережі: %@.";
 
 /* srv error text. */
-"Server address is incompatible with network settings." = "Адреса сервера несумісна з налаштуваннями мережі.";
+"Router address is incompatible with network settings." = "Адреса сервера несумісна з налаштуваннями мережі.";
 
 /* alert title */
-"Server operator changed." = "Оператор сервера змінився.";
+"Router operator changed." = "Оператор сервера змінився.";
 
 /* No comment provided by engineer. */
-"Server operators" = "Оператори серверів";
+"Router operators" = "Оператори серверів";
 
 /* alert title */
-"Server protocol changed." = "Протокол сервера змінено.";
+"Router protocol changed." = "Протокол сервера змінено.";
 
 /* queue info */
-"server queue info: %@\n\nlast received msg: %@" = "інформація про чергу на сервері: %1$@\n\nостаннє отримане повідомлення: %2$@";
+"router queue info: %@\n\nlast received msg: %@" = "інформація про чергу на сервері: %1$@\n\nостаннє отримане повідомлення: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Сервер вимагає авторизації для створення черг, перевірте пароль.";
+"Router requires authorization to create queues, check password." = "Сервер вимагає авторизації для створення черг, перевірте пароль.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Сервер вимагає авторизації для завантаження, перевірте пароль.";
+"Router requires authorization to upload, check password." = "Сервер вимагає авторизації для завантаження, перевірте пароль.";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Тест сервера завершився невдало!";
+"Router test failed!" = "Тест сервера завершився невдало!";
 
 /* No comment provided by engineer. */
-"Server type" = "Тип сервера";
+"Router type" = "Тип сервера";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "Серверна версія несумісна з мережевими налаштуваннями.";
+"Router version is incompatible with network settings." = "Серверна версія несумісна з мережевими налаштуваннями.";
 
 /* No comment provided by engineer. */
-"Server version is incompatible with your app: %@." = "Версія сервера несумісна з вашим додатком: %@.";
+"Router version is incompatible with your app: %@." = "Версія сервера несумісна з вашим додатком: %@.";
 
 /* No comment provided by engineer. */
-"Servers" = "Сервери";
+"Routers" = "Сервери";
 
 /* No comment provided by engineer. */
-"Servers info" = "Інформація про сервери";
+"Routers info" = "Інформація про сервери";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "Статистика серверів буде скинута - це неможливо скасувати!";
+"Routers statistics will be reset - this cannot be undone!" = "Статистика серверів буде скинута - це неможливо скасувати!";
 
 /* No comment provided by engineer. */
 "Session code" = "Код сесії";
@@ -5014,7 +5014,7 @@ chat item action */
 "SimpleX channel link" = "Посилання на канал SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat і Flux уклали угоду про включення серверів, керованих Flux, у додаток.";
+"SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app." = "SimpleX Chat і Flux уклали угоду про включення серверів, керованих Flux, у додаток.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "Безпека SimpleX Chat була перевірена компанією Trail of Bits.";
@@ -5071,7 +5071,7 @@ chat item action */
 "Small groups (max 20)" = "Невеликі групи (максимум 20 осіб)";
 
 /* No comment provided by engineer. */
-"SMP server" = "Сервер SMP";
+"Packet router" = "Сервер packet";
 
 /* No comment provided by engineer. */
 "SOCKS proxy" = "Проксі SOCKS";
@@ -5092,7 +5092,7 @@ chat item action */
 "Some non-fatal errors occurred during import:" = "Під час імпорту виникли деякі несмертельні помилки:";
 
 /* alert message */
-"Some servers failed the test:\n%@" = "Деякі сервери не пройшли тестування:\n%@";
+"Some routers failed the test:\n%@" = "Деякі сервери не пройшли тестування:\n%@";
 
 /* notification title */
 "Somebody" = "Хтось";
@@ -5264,10 +5264,10 @@ report reason */
 "Test notifications" = "Тестові сповіщення";
 
 /* No comment provided by engineer. */
-"Test server" = "Тестовий сервер";
+"Test router" = "Тестовий сервер";
 
 /* No comment provided by engineer. */
-"Test servers" = "Тестові сервери";
+"Test routers" = "Тестові сервери";
 
 /* alert title */
 "Tests failed!" = "Тести не пройшли!";
@@ -5354,16 +5354,16 @@ report reason */
 "The sender will NOT be notified" = "Відправник НЕ буде повідомлений";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Сервери для нових підключень вашого поточного профілю чату **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "Сервери для нових підключень вашого поточного профілю чату **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "Сервери для нових файлів вашого поточного профілю чату **%@**.";
+"The routers for new files of your current chat profile **%@**." = "Сервери для нових файлів вашого поточного профілю чату **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Текст, який ви вставили, не є посиланням SimpleX.";
 
 /* No comment provided by engineer. */
-"The uploaded database archive will be permanently removed from the servers." = "Завантажений архів бази даних буде назавжди видалено з серверів.";
+"The uploaded database archive will be permanently removed from the routers." = "Завантажений архів бази даних буде назавжди видалено з серверів.";
 
 /* No comment provided by engineer. */
 "Themes" = "Теми";
@@ -5450,7 +5450,7 @@ report reason */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Щоб захистити вашу інформацію, увімкніть SimpleX Lock.\nПеред увімкненням цієї функції вам буде запропоновано пройти автентифікацію.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Щоб захистити вашу IP-адресу, приватна маршрутизація використовує ваші SMP-сервери для доставки повідомлень.";
+"To protect your IP address, private routing uses your packet routers to deliver messages." = "Щоб захистити вашу IP-адресу, приватна маршрутизація використовує ваші packet-сервери для доставки повідомлень.";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Щоб захистити конфіденційність, замість ідентифікаторів користувачів, які використовуються на всіх інших платформах, SimpleX має ідентифікатори для черг повідомлень, окремі для кожного з ваших контактів.";
@@ -5480,7 +5480,7 @@ report reason */
 "To use another profile after connection attempt, delete the chat and use the link again." = "Щоб використовувати інший профіль після спроби з'єднання, видаліть чат і скористайтеся посиланням знову.";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "Щоб користуватися серверами **%@**, прийміть умови використання.";
+"To use the routers of **%@**, accept conditions of use." = "Щоб користуватися серверами **%@**, прийміть умови використання.";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Щоб перевірити наскрізне шифрування з вашим контактом, порівняйте (або відскануйте) код на ваших пристроях.";
@@ -5570,10 +5570,10 @@ report reason */
 "Unknown error" = "Невідома помилка";
 
 /* No comment provided by engineer. */
-"unknown servers" = "невідомі реле";
+"unknown routers" = "невідомі реле";
 
 /* alert title */
-"Unknown servers!" = "Невідомі сервери!";
+"Unknown routers!" = "Невідомі сервери!";
 
 /* No comment provided by engineer. */
 "unknown status" = "невідомий статус";
@@ -5633,7 +5633,7 @@ report reason */
 "updated profile" = "оновлений профіль";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Оновлення налаштувань призведе до перепідключення клієнта до всіх серверів.";
+"Updating settings will re-connect the client to all routers." = "Оновлення налаштувань призведе до перепідключення клієнта до всіх серверів.";
 
 /* alert button */
 "Upgrade" = "Оновлення";
@@ -5711,19 +5711,19 @@ report reason */
 "Use only local notifications?" = "Використовувати лише локальні сповіщення?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Використовуйте приватну маршрутизацію з невідомими серверами, якщо IP-адреса не захищена.";
+"Use private routing with unknown routers when IP address is not protected." = "Використовуйте приватну маршрутизацію з невідомими серверами, якщо IP-адреса не захищена.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Використовуйте приватну маршрутизацію з невідомими серверами.";
+"Use private routing with unknown routers." = "Використовуйте приватну маршрутизацію з невідомими серверами.";
 
 /* No comment provided by engineer. */
-"Use server" = "Використовувати сервер";
+"Use router" = "Використовувати сервер";
 
 /* No comment provided by engineer. */
-"Use servers" = "Використовуйте сервери";
+"Use routers" = "Використовуйте сервери";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "Використовувати сервери SimpleX Chat?";
+"Use SimpleX Chat routers?" = "Використовувати сервери SimpleX Chat?";
 
 /* No comment provided by engineer. */
 "Use SOCKS proxy" = "Використовуйте SOCKS проксі";
@@ -5732,7 +5732,7 @@ report reason */
 "Use TCP port %@ when no port is specified." = "Використовуйте TCP-порт %@, якщо порт не вказано.";
 
 /* No comment provided by engineer. */
-"Use TCP port 443 for preset servers only." = "Використовуйте TCP порт 443 лише для попередньо налаштованих серверів.";
+"Use TCP port 443 for preset routers only." = "Використовуйте TCP порт 443 лише для попередньо налаштованих серверів.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Використовуйте додаток під час розмови.";
@@ -5750,7 +5750,7 @@ report reason */
 "Username" = "Ім'я користувача";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Використання серверів SimpleX Chat.";
+"Using SimpleX Chat routers." = "Використання серверів SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -5933,10 +5933,10 @@ report reason */
 "With reduced battery usage." = "З меншим споживанням заряду акумулятора.";
 
 /* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to file servers." = "Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.";
+"Without Tor or VPN, your IP address will be visible to data routers." = "Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Tor або VPN ваша IP-адреса буде видимою для цих XFTP-ретрансляторів: %@.";
+"Without Tor or VPN, your IP address will be visible to these data routers: %@." = "Без Tor або VPN ваша IP-адреса буде видимою для цих data-ретрансляторів: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Неправильний пароль до бази даних";
@@ -5951,7 +5951,7 @@ report reason */
 "Wrong passphrase!" = "Неправильний пароль!";
 
 /* No comment provided by engineer. */
-"XFTP server" = "XFTP-сервер";
+"Data router" = "data-сервер";
 
 /* pref value */
 "yes" = "так";
@@ -6002,7 +6002,7 @@ report reason */
 "You are invited to group" = "Запрошуємо вас до групи";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "Не підключені до цих серверів. Для доставлення повідомлень до них використовується приватна маршрутизація.";
+"You are not connected to these routers. Private routing is used to deliver messages to them." = "Не підключені до цих серверів. Для доставлення повідомлень до них використовується приватна маршрутизація.";
 
 /* No comment provided by engineer. */
 "you are observer" = "ви спостерігач";
@@ -6017,7 +6017,7 @@ report reason */
 "You can change it in Appearance settings." = "Ви можете змінити його в налаштуваннях зовнішнього вигляду.";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "Ви можете налаштувати сервери за допомогою налаштувань.";
+"You can configure routers via settings." = "Ви можете налаштувати сервери за допомогою налаштувань.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Ви можете створити його пізніше";
@@ -6254,7 +6254,7 @@ report reason */
 "Your profile is stored on your device and only shared with your contacts." = "Профіль доступний лише вашим контактам.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам. Сервери SimpleX не бачать ваш профіль.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам. Сервери SimpleX не бачать ваш профіль.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Ваш профіль було змінено. Якщо ви збережете його, оновлений профіль буде надіслано всім вашим контактам.";
@@ -6263,10 +6263,10 @@ report reason */
 "Your random profile" = "Ваш випадковий профіль";
 
 /* No comment provided by engineer. */
-"Your server address" = "Адреса вашого сервера";
+"Your router address" = "Адреса вашого сервера";
 
 /* No comment provided by engineer. */
-"Your servers" = "Ваші сервери";
+"Your routers" = "Ваші сервери";
 
 /* No comment provided by engineer. */
 "Your settings" = "Ваші налаштування";

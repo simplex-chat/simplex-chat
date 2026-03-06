@@ -85,7 +85,7 @@
     <string name="rcv_group_and_other_events">và %d sự kiện khác</string>
     <string name="keychain_is_storing_securely">Android Keystore được sử dụng để lưu trữ passphrase - nó cho phép dịch vụ thông báo hoạt động.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore sẽ được sử dụng để lưu trữ passphrase một cách an toàn sau khi bạn khởi động lại ứng dụng hoặc thay đổi passphrase - nó cho phép tiếp nhận thông báo.</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Tất cả các liên hệ, cuộc hội thoại và tệp của bạn sẽ được mã hóa an toàn và tải lên từng phần tới các XFTP relay được chỉ định.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Tất cả các liên hệ, cuộc hội thoại và tệp của bạn sẽ được mã hóa an toàn và tải lên từng phần tới các Data relay được chỉ định.</string>
     <string name="v5_6_safer_groups_descr">Quản trị viên có thể chặn một thành viên khỏi tất cả.</string>
     <string name="empty_chat_profile_is_created">Một hồ sơ trống với tên chỉ định đã được tạo, và ứng dụng sẽ mở ra như bình thường.</string>
     <string name="answer_call">Trả lời cuộc gọi</string>
@@ -242,7 +242,7 @@
     <string name="notifications_mode_periodic_desc">Kiểm tra tin nhắn mới mỗi 10 phút trong tối đa 1 phút</string>
     <string name="v4_6_chinese_spanish_interface">Giao diện Trung Quốc và Tây Ban Nha</string>
     <string name="chat_with_developers">Trò chuyện với nhà phát triển</string>
-    <string name="smp_servers_check_address">Kiểm tra lại địa chỉ server và thử lại.</string>
+    <string name="smp_servers_check_address">Kiểm tra lại địa chỉ router và thử lại.</string>
     <string name="choose_file_title">Chọn một tệp</string>
     <string name="network_session_mode_user">Hồ sơ trò chuyện</string>
     <string name="migrate_from_device_check_connection_and_try_again">Kiểm tra kết nối internet của bạn và thử lại</string>
@@ -482,8 +482,8 @@
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="app_check_for_updates">Kiểm tra cập nhật</string>
     <string name="servers_info_sessions_connecting">Đang kết nối</string>
-    <string name="smp_servers_configured">Các máy chủ SMP đã được cấu hình</string>
-    <string name="xftp_servers_configured">Các máy chủ XFTP đã được cấu hình</string>
+    <string name="smp_servers_configured">Các máy chủ Packet đã được cấu hình</string>
+    <string name="xftp_servers_configured">Các máy chủ Data đã được cấu hình</string>
     <string name="app_check_for_updates_download_completed_title">Bản cập nhật ứng dụng đã được tải xuống</string>
     <string name="app_check_for_updates_notice_title">Kiểm tra cập nhật</string>
     <string name="servers_info_sessions_connected">Đã kết nối</string>
@@ -712,8 +712,8 @@
     <string name="error_receiving_file">Lỗi nhận tệp</string>
     <string name="error_saving_group_profile">Lỗi lưu hồ sơ nhóm</string>
     <string name="error_saving_file">Lỗi lưu tệp</string>
-    <string name="error_loading_smp_servers">Lỗi tải máy chủ SMP</string>
-    <string name="error_loading_xftp_servers">Lỗi tải máy chủ XFTP</string>
+    <string name="error_loading_smp_servers">Lỗi tải máy chủ Packet</string>
+    <string name="error_loading_xftp_servers">Lỗi tải máy chủ Data</string>
     <string name="servers_info_reconnect_server_error">Lỗi kết nối lại máy chủ</string>
     <string name="servers_info_reconnect_servers_error">Lỗi kết nối lại máy chủ</string>
     <string name="servers_info_sessions_errors">Lỗi</string>
@@ -722,8 +722,8 @@
     <string name="error_showing_message">lỗi hiển thị tin nhắn</string>
     <string name="error_showing_content">lỗi hiển thị nội dung</string>
     <string name="error_saving_ICE_servers">Lỗi lưu máy chủ ICE</string>
-    <string name="error_saving_xftp_servers">Lỗi lưu máy chủ XFTP</string>
-    <string name="error_saving_smp_servers">Lỗi lưu máy chủ SMP</string>
+    <string name="error_saving_xftp_servers">Lỗi lưu máy chủ Data</string>
+    <string name="error_saving_smp_servers">Lỗi lưu máy chủ Packet</string>
     <string name="error_sending_message">Lỗi gửi tin nhắn</string>
     <string name="error_starting_chat">Lỗi khởi động kết nối trò chuyện</string>
     <string name="error_stopping_chat">Lỗi dừng kết nối trò chuyện</string>
@@ -980,8 +980,8 @@
     <string name="icon_descr_add_members">Mời thành viên</string>
     <string name="info_row_local_name">Tên cục bộ</string>
     <string name="message_delivery_warning_title">Cảnh báo chuyển gửi tin nhắn</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ SMP ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ XFTP ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ Packet ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ Data ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
     <string name="link_a_mobile">Liên kết với điện thoại</string>
     <string name="member_inactive_title">Thành viên không hoạt động</string>
     <string name="message_forwarded_title">Tin nhắn đã được chuyển tiếp</string>
@@ -1254,8 +1254,8 @@
     <string name="connect_plan_open_group">Mở nhóm</string>
     <string name="other_label">khác</string>
     <string name="other_errors">các lỗi khác</string>
-    <string name="smp_servers_other">Các máy chủ SMP khác</string>
-    <string name="xftp_servers_other">Các máy chủ XFTP khác</string>
+    <string name="smp_servers_other">Các máy chủ Packet khác</string>
+    <string name="xftp_servers_other">Các máy chủ Data khác</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Dán đường dẫn mà bạn nhận được để kết nối với liên hệ của bạn…</string>
     <string name="paste_link">Dán đường dẫn</string>
     <string name="network_proxy_password">Mật khẩu</string>
@@ -1842,7 +1842,7 @@
     <string name="smp_servers_test_some_failed">Một vài máy chủ không vượt qua bài kiểm tra:</string>
     <string name="star_on_github">Thả sao trên Github</string>
     <string name="rcv_group_event_3_members_connected">%s, %s và %s đã được kết nối</string>
-    <string name="smp_server">Máy chủ SMP</string>
+    <string name="smp_server">Máy chủ Packet</string>
     <string name="rcv_group_event_n_members_connected">%s, %s và %d thành viên khác đã được kết nối</string>
     <string name="conn_event_disabled_pq">mã hóa đầu cuối tiêu chuẩn</string>
     <string name="v5_7_shape_profile_images_descr">Hình vuông, hình tròn, hoặc bất kỳ hình thù gì ở giữa.</string>
@@ -1855,7 +1855,7 @@
     <string name="chat_database_exported_not_all_files">Một số tệp đã không được xuất</string>
     <string name="audio_device_speaker">Loa ngoài</string>
     <string name="start_chat_question">Bắt đầu kết nối trò chuyện?</string>
-    <string name="smp_servers">Các máy chủ SMP</string>
+    <string name="smp_servers">Các máy chủ Packet</string>
     <string name="migrate_from_device_start_chat">Bắt đầu kết nối trò chuyện</string>
     <string name="report_reason_spam">Tin nhắn rác</string>
     <string name="privacy_media_blur_radius_strong">Mạnh</string>
@@ -2009,7 +2009,7 @@
     <string name="connect_plan_this_is_your_own_simplex_address">Đây là địa chỉ SimpleX của riêng bạn!</string>
     <string name="to_connect_via_link_title">Để kết nối qua đường dẫn</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Để bảo vệ đường dẫn của bạn khỏi bị thay thế, bạn có thể so sánh các mã bảo mật liên lạc.</string>
-    <string name="private_routing_explanation">Để bảo vệ địa chỉ IP của bạn, định tuyến riêng tư sử dụng các máy chủ SMP của bạn để gửi tin nhắn.</string>
+    <string name="private_routing_explanation">Để bảo vệ địa chỉ IP của bạn, định tuyến riêng tư sử dụng các máy chủ Packet của bạn để gửi tin nhắn.</string>
     <string name="v4_5_transport_isolation">Cách ly truyền tải</string>
     <string name="network_smp_proxy_mode_unknown">Các máy chủ không xác định</string>
     <string name="group_member_status_unknown">trạng thái không xác định</string>
@@ -2166,7 +2166,7 @@
     <string name="network_smp_proxy_fallback_allow">Có</string>
     <string name="change_automatic_deletion_question">Thay đổi xóa tin nhắn tự động?</string>
     <string name="disable_automatic_deletion_message">Các tin nhắn trong cuộc trò chuyện này sẽ không bao giờ bị xóa.</string>
-    <string name="xftp_server">Máy chủ XFTP</string>
+    <string name="xftp_server">Máy chủ Data</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Không có Tor hoặc VPN, địa chỉ IP của bạn sẽ bị lộ ra cho các máy chủ truyền tệp.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Sẽ được kích hoạt trong các cuộc trò chuyện trực tiếp!</string>
     <string name="network_type_ethernet">Mạng ethernet có dây</string>
@@ -2181,8 +2181,8 @@
     <string name="disable_automatic_deletion_question">Tắt xóa tin nhắn tự động?</string>
     <string name="disable_automatic_deletion">Tắt tính năng xóa tin nhắn</string>
     <string name="text_field_set_chat_placeholder">Đặt tên cuộc trò chuyện…</string>
-    <string name="file_not_approved_descr">Không có Tor hoặc VPN, địa chỉ IP của bạn sẽ bị lộ ra cho các relay XFTP sau đây:\n%1$s.</string>
-    <string name="xftp_servers">Các máy chủ XFTP</string>
+    <string name="file_not_approved_descr">Không có Tor hoặc VPN, địa chỉ IP của bạn sẽ bị lộ ra cho các relay Data sau đây:\n%1$s.</string>
+    <string name="xftp_servers">Các máy chủ Data</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Khi có nhiều hơn một bên vận hành được kích hoạt, không ai trong số họ có siêu dữ liệu để biết được ai trò chuyện với ai.</string>
     <string name="v5_5_private_notes_descr">Với các tệp và đa phương tiện được mã hóa.</string>
     <string name="v5_5_message_delivery_descr">Mức sử dụng pin đã được giảm xuống.</string>
@@ -2260,7 +2260,7 @@
     <string name="your_profile_is_stored_on_your_device">Hồ sơ, các liên hệ và những tin nhắn đã được gửi của bạn được lưu trữ trên thiết bị bạn dùng.</string>
     <string name="v4_3_irreversible_message_deletion_desc">Các liên hệ của bạn có thể cho phép xóa tin nhắn hoàn toàn.</string>
     <string name="appearance_zoom">Thu phóng</string>
-    <string name="your_SMP_servers">Các máy chủ SMP của bạn</string>
+    <string name="your_SMP_servers">Các máy chủ Packet của bạn</string>
     <string name="description_you_shared_one_time_link">Bạn đã chia sẻ đường dẫn dùng một lần</string>
     <string name="group_main_profile_sent">Hồ sơ trò chuyện của bạn sẽ được gửi tới các thành viên nhóm</string>
     <string name="your_current_profile">Hồ sơ hiện tại của bạn</string>
@@ -2279,7 +2279,7 @@
     <string name="chat_main_profile_sent">Hồ sơ trò chuyện của bạn sẽ được gửi tới các thành viên có liên lạc</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Bạn sẽ được kết nối khi yêu cầu kết nối của bạn được chấp nhận, xin vui lòng đợi hoặc kiểm tra sau!</string>
     <string name="connect__your_profile_will_be_shared">Hồ sơ %1$s sẽ được chia sẻ.</string>
-    <string name="your_XFTP_servers">Các máy chủ XFTP của bạn</string>
+    <string name="your_XFTP_servers">Các máy chủ Data của bạn</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Hồ sơ của bạn sẽ được gửi tới liên hệ mà bạn đã nhận từ người đó đường dẫn này.</string>
     <string name="you_will_join_group">Bạn sẽ kết nối với tất cả các thành viên nhóm.</string>
     <string name="non_content_uri_alert_text">Bạn đã chia sẻ một đường dẫn tệp không hợp lệ. Báo cáo vấn đề tới các nhà phát triển ứng dụng.</string>

@@ -39,14 +39,14 @@ struct ProtocolServerView: View {
                 if serverToEditProtocol != serverProtocol {
                     dismiss()
                     showAlert(
-                        NSLocalizedString("Error updating server", comment: "alert title"),
-                        message: NSLocalizedString("Server protocol changed.", comment: "alert title")
+                        NSLocalizedString("Error updating router", comment: "alert title"),
+                        message: NSLocalizedString("Router protocol changed.", comment: "alert title")
                     )
                 } else if serverToEditOperator != serverOperator {
                     dismiss()
                     showAlert(
-                        NSLocalizedString("Error updating server", comment: "alert title"),
-                        message: NSLocalizedString("Server operator changed.", comment: "alert title")
+                        NSLocalizedString("Error updating router", comment: "alert title"),
+                        message: NSLocalizedString("Router operator changed.", comment: "alert title")
                     )
                 } else {
                     server = serverToEdit
@@ -56,14 +56,14 @@ struct ProtocolServerView: View {
             } else {
                 dismiss()
                 showAlert(
-                    NSLocalizedString("Invalid server address!", comment: "alert title"),
-                    message: NSLocalizedString("Check server address and try again.", comment: "alert title")
+                    NSLocalizedString("Invalid router address!", comment: "alert title"),
+                    message: NSLocalizedString("Check router address and try again.", comment: "alert title")
                 )
             }
         })
         .alert(isPresented: $showTestFailure) {
             Alert(
-                title: Text("Server test failed!"),
+                title: Text("Router test failed!"),
                 message: Text(testFailure?.localizedDescription ?? "")
             )
         }
@@ -75,7 +75,7 @@ struct ProtocolServerView: View {
     private func presetServer() -> some View {
         return VStack {
             List {
-                Section(header: Text("Preset server address").foregroundColor(theme.colors.secondary)) {
+                Section(header: Text("Preset router address").foregroundColor(theme.colors.secondary)) {
                     Text(serverToEdit.server)
                         .textSelection(.enabled)
                 }
@@ -100,7 +100,7 @@ struct ProtocolServerView: View {
                         .padding(-6)
                 } header: {
                     HStack {
-                        Text("Your server address")
+                        Text("Your router address")
                             .foregroundColor(theme.colors.secondary)
                         if !valid {
                             Spacer()
@@ -120,9 +120,9 @@ struct ProtocolServerView: View {
     }
 
     private func useServerSection(_ valid: Bool) -> some View {
-        Section(header: Text("Use server").foregroundColor(theme.colors.secondary)) {
+        Section(header: Text("Use router").foregroundColor(theme.colors.secondary)) {
             HStack {
-                Button("Test server") {
+                Button("Test router") {
                     testing = true
                     serverToEdit.tested = nil
                     Task {
@@ -204,7 +204,7 @@ struct ProtocolServerView_Previews: PreviewProvider {
             serverErrors: Binding.constant([]),
             server: Binding.constant(UserServer.sampleData.custom),
             serverToEdit: UserServer.sampleData.custom,
-            backLabel: "Your SMP servers"
+            backLabel: "Your packet routers"
         )
     }
 }

@@ -5,7 +5,7 @@
 "_italic_" = "\\_kurzíva_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- připojit k [adresářová služba](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- doručenky (až 20 členů).\n- Rychlejší a stabilnější.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- připojit k [adresářová služba](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- doručenky (až 20 členů).\n- Rychlejší a stabilnější.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- více stabilní doručování zpráv.\n- o trochu lepší skupiny.\n- a více!";
@@ -122,10 +122,10 @@
 "%@ is verified" = "%@ je ověřený";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ server";
+"%@ router" = "%@ router";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ servery";
+"%@ routers" = "%@ servery";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ nahrán";
@@ -381,10 +381,10 @@ swipe action */
 "Add profile" = "Přidat profil";
 
 /* No comment provided by engineer. */
-"Add server" = "Přidat server";
+"Add router" = "Přidat router";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Přidejte servery skenováním QR kódů.";
+"Add routers by scanning QR codes." = "Přidejte servery skenováním QR kódů.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Přidat členy týmu";
@@ -474,7 +474,7 @@ swipe action */
 "All profiles" = "Všechny profily";
 
 /* No comment provided by engineer. */
-"All servers" = "Všechny servery";
+"All routers" = "Všechny servery";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Všechny vaše kontakty zůstanou připojeny.";
@@ -579,7 +579,7 @@ swipe action */
 "Answer call" = "Přijmout hovor";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Servery může provozovat kdokoli.";
+"Anybody can host routers." = "Servery může provozovat kdokoli.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Sestavení aplikace: %@";
@@ -903,7 +903,7 @@ set passcode view */
 "Chats" = "Chaty";
 
 /* alert title */
-"Check server address and try again." = "Zkontrolujte adresu serveru a zkuste to znovu.";
+"Check router address and try again." = "Zkontrolujte adresu serveru a zkuste to znovu.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Čínské a Španělské rozhranní";
@@ -999,10 +999,10 @@ set passcode view */
 "connecting call" = "spojovací hovor…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Připojování k serveru…";
+"Connecting router…" = "Připojování k serveru…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Připojování k serveru... (chyba: %@)";
+"Connecting router… (error: %@)" = "Připojování k serveru... (chyba: %@)";
 
 /* No comment provided by engineer. */
 "connecting…" = "připojení…";
@@ -1533,7 +1533,7 @@ alert button */
 "Enter password above to show!" = "Zadejte heslo do hledání!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Zadejte server ručně";
+"Enter router manually" = "Zadejte router ručně";
 
 /* placeholder */
 "Enter welcome message…" = "Zadat uvítací zprávu…";
@@ -1721,7 +1721,7 @@ snd error text */
 "Favorite" = "Oblíbené";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Soubor bude smazán ze serverů.";
+"File will be deleted from routers." = "Soubor bude smazán ze routerů.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Soubor bude přijat, jakmile váš kontakt dokončí nahrávání.";
@@ -1754,7 +1754,7 @@ snd error text */
 "Find chats faster" = "Najděte chaty rychleji";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
+"Fingerprint in router address does not match certificate." = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
 
 /* No comment provided by engineer. */
 "Fix" = "Opravit";
@@ -1838,7 +1838,7 @@ snd error text */
 "Group profile" = "Profil skupiny";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Profil skupiny je uložen v zařízeních členů, nikoli na serverech.";
+"Group profile is stored on members' devices, not on the routers." = "Profil skupiny je uložen v zařízeních členů, nikoli na serverech.";
 
 /* snd group event chat item */
 "group profile updated" = "profil skupiny aktualizován";
@@ -1892,7 +1892,7 @@ snd error text */
 "How to use it" = "Jak ji používat";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Jak používat servery";
+"How to use your routers" = "Jak používat servery";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "Servery ICE (jeden na řádek)";
@@ -1937,7 +1937,7 @@ snd error text */
 "Improved privacy and security" = "Vylepšená ochrana soukromí a zabezpečení";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Vylepšená konfigurace serveru";
+"Improved router configuration" = "Vylepšená konfigurace serveru";
 
 /* No comment provided by engineer. */
 "In reply to" = "V odpovědi na";
@@ -2012,7 +2012,7 @@ snd error text */
 "invalid data" = "neplatné údaje";
 
 /* alert title */
-"Invalid server address!" = "Neplatná adresa serveru!";
+"Invalid router address!" = "Neplatná adresa serveru!";
 
 /* item status text */
 "Invalid status" = "Neplatný status";
@@ -2066,7 +2066,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Může se to stát, když:\n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.\n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.\n3. Spojení je kompromitováno.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Může se to stát, když:\n1. Zprávy vypršely v odesílajícím klientovi po 2 dnech nebo na serveru po 30 dnech.\n2. Dešifrování zprávy se nezdařilo, protože vy nebo váš kontakt jste použili starou zálohu databáze.\n3. Spojení je kompromitováno.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Zdá se, že jste již připojeni prostřednictvím tohoto odkazu. Pokud tomu tak není, došlo k chybě (%@).";
@@ -2303,7 +2303,7 @@ snd error text */
 "Name" = "Jméno";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Síť a servery";
+"Network & routers" = "Síť a servery";
 
 /* No comment provided by engineer. */
 "Network settings" = "Nastavení sítě";
@@ -2578,7 +2578,7 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Zachování posledního návrhu zprávy s přílohami.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Přednastavená adresa serveru";
+"Preset router address" = "Přednastavená adresa serveru";
 
 /* No comment provided by engineer. */
 "Preview" = "Náhled";
@@ -2593,7 +2593,7 @@ new chat action */
 "Private filenames" = "Soukromé názvy souborů";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Profil a připojení k serveru";
+"Profile and router connections" = "Profil a připojení k serveru";
 
 /* No comment provided by engineer. */
 "Profile image" = "Profilový obrázek";
@@ -2683,7 +2683,7 @@ new chat action */
 "Received message" = "Přijatá zpráva";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Přijímací adresa bude změněna na jiný server. Změna adresy bude dokončena po připojení odesílatele.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Přijímací adresa bude změněna na jiný router. Změna adresy bude dokončena po připojení odesílatele.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Příjem souboru bude zastaven.";
@@ -2695,10 +2695,10 @@ new chat action */
 "Recipients see updates as you type them." = "Příjemci uvidí aktualizace během jejich psaní.";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Znovu připojte všechny připojené servery a vynuťte doručení zprávy. Využívá další provoz.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Znovu připojte všechny připojené servery a vynuťte doručení zprávy. Využívá další provoz.";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Znovu připojit servery?";
+"Reconnect routers?" = "Znovu připojit servery?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Záznam aktualizován v";
@@ -2842,10 +2842,10 @@ chat item action */
 "Save profile password" = "Uložit heslo profilu";
 
 /* No comment provided by engineer. */
-"Save servers" = "Uložit servery";
+"Save routers" = "Uložit servery";
 
 /* alert title */
-"Save servers?" = "Uložit servery?";
+"Save routers?" = "Uložit servery?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Uložit uvítací zprávu?";
@@ -2863,7 +2863,7 @@ chat item action */
 "Scan security code from your contact's app." = "Naskenujte bezpečnostní kód z aplikace vašeho kontaktu.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Naskenujte QR kód serveru";
+"Scan router QR code" = "Naskenujte QR kód serveru";
 
 /* No comment provided by engineer. */
 "Search" = "Hledat";
@@ -2980,16 +2980,16 @@ chat item action */
 "Sent messages will be deleted after set time." = "Odeslané zprávy se po uplynutí nastavené doby odstraní.";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
+"Router requires authorization to create queues, check password." = "Router vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
+"Router requires authorization to upload, check password." = "Router vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Test serveru se nezdařil!";
+"Router test failed!" = "Test serveru se nezdařil!";
 
 /* No comment provided by engineer. */
-"Servers" = "Servery";
+"Routers" = "Servery";
 
 /* No comment provided by engineer. */
 "Set 1 day" = "Nastavit 1 den";
@@ -3188,10 +3188,10 @@ chat item action */
 "Test failed at step %@." = "Test selhal v kroku %@.";
 
 /* No comment provided by engineer. */
-"Test server" = "Testovací server";
+"Test router" = "Testovací router";
 
 /* No comment provided by engineer. */
-"Test servers" = "Testovací servery";
+"Test routers" = "Testovací servery";
 
 /* alert title */
 "Tests failed!" = "Testy selhaly!";
@@ -3248,7 +3248,7 @@ chat item action */
 "The sender will NOT be notified" = "Odesílatel NEBUDE informován";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního chat profilu **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního chat profilu **%@**.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
@@ -3383,7 +3383,7 @@ chat item action */
 "updated group profile" = "aktualizoval profil skupiny";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Aktualizací nastavení se klient znovu připojí ke všem serverům.";
+"Updating settings will re-connect the client to all routers." = "Aktualizací nastavení se klient znovu připojí ke všem routerům.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Zvýšit a otevřít chat";
@@ -3410,13 +3410,13 @@ chat item action */
 "Use new incognito profile" = "Použít nový inkognito profil";
 
 /* No comment provided by engineer. */
-"Use server" = "Použít server";
+"Use router" = "Použít router";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "Používat servery SimpleX Chat?";
+"Use SimpleX Chat routers?" = "Používat servery SimpleX Chat?";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
+"Using SimpleX Chat routers." = "Používat servery SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
@@ -3713,13 +3713,13 @@ chat item action */
 "Your profile is stored on your device and only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Váš náhodný profil";
 
 /* No comment provided by engineer. */
-"Your server address" = "Adresa vašeho serveru";
+"Your router address" = "Adresa vašeho serveru";
 
 /* No comment provided by engineer. */
 "Your settings" = "Vaše nastavení";

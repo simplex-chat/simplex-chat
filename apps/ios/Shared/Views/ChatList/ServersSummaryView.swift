@@ -35,7 +35,7 @@ struct ServersSummaryView: View {
     var body: some View {
         NavigationView {
             viewBody()
-                .navigationTitle("Servers info")
+                .navigationTitle("Routers info")
                 .navigationBarTitleDisplayMode(.large)
                 .modifier(ThemedBackground(grouped: true))
                 .toolbar {
@@ -108,7 +108,7 @@ struct ServersSummaryView: View {
                         .pickerStyle(.segmented)
                     }
 
-                    Picker("Server type", selection: $selectedServerType) {
+                    Picker("Router type", selection: $selectedServerType) {
                         Text("Messages").tag(PresentedServerType.smp)
                         Text("Files").tag(PresentedServerType.xftp)
                     }
@@ -128,13 +128,13 @@ struct ServersSummaryView: View {
                     smpSubsSection(totals)
 
                     if curr.count > 0 {
-                        smpServersListView(curr, summ.statsStartedAt, "Connected servers")
+                        smpServersListView(curr, summ.statsStartedAt, "Connected routers")
                     }
                     if prev.count > 0 {
-                        smpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
+                        smpServersListView(prev, summ.statsStartedAt, "Previously connected routers")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private routing is used to deliver messages to them.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied routers", "You are not connected to these routers. Private routing is used to deliver messages to them.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -147,13 +147,13 @@ struct ServersSummaryView: View {
                     smpSubsSection(totals)
 
                     if curr.count > 0 {
-                        smpServersListView(curr, summ.statsStartedAt, "Connected servers")
+                        smpServersListView(curr, summ.statsStartedAt, "Connected routers")
                     }
                     if prev.count > 0 {
-                        smpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
+                        smpServersListView(prev, summ.statsStartedAt, "Previously connected routers")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private routing is used to deliver messages to them.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied routers", "You are not connected to these routers. Private routing is used to deliver messages to them.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -164,10 +164,10 @@ struct ServersSummaryView: View {
                     XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
                     if curr.count > 0 {
-                        xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
+                        xftpServersListView(curr, summ.statsStartedAt, "Connected routers")
                     }
                     if prev.count > 0 {
-                        xftpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
+                        xftpServersListView(prev, summ.statsStartedAt, "Previously connected routers")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -178,10 +178,10 @@ struct ServersSummaryView: View {
                     XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
                     if curr.count > 0 {
-                        xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
+                        xftpServersListView(curr, summ.statsStartedAt, "Connected routers")
                     }
                     if prev.count > 0 {
-                        xftpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
+                        xftpServersListView(prev, summ.statsStartedAt, "Previously connected routers")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -219,8 +219,8 @@ struct ServersSummaryView: View {
         Button {
             alert = SomeAlert(
                 alert: Alert(
-                    title: Text("Reconnect all servers?"),
-                    message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
+                    title: Text("Reconnect all routers?"),
+                    message: Text("Reconnect all connected routers to force message delivery. It uses additional traffic."),
                     primaryButton: .default(Text("Ok")) {
                         Task {
                             do {
@@ -228,7 +228,7 @@ struct ServersSummaryView: View {
                             } catch let error {
                                 alert = SomeAlert(
                                     alert: mkAlert(
-                                        title: "Error reconnecting servers",
+                                        title: "Error reconnecting routers",
                                         message: "\(responseError(error))"
                                     ),
                                     id: "error reconnecting servers"
@@ -241,7 +241,7 @@ struct ServersSummaryView: View {
                 id: "reconnect servers question"
             )
         } label: {
-            Text("Reconnect all servers")
+            Text("Reconnect all routers")
         }
     }
 
@@ -277,7 +277,7 @@ struct ServersSummaryView: View {
                 summary: srvSumm,
                 statsStartedAt: statsStartedAt
             )
-            .navigationBarTitle("SMP server")
+            .navigationBarTitle("Packet router")
             .navigationBarTitleDisplayMode(.large)
             .modifier(ThemedBackground(grouped: true))
         } label: {
@@ -346,7 +346,7 @@ struct ServersSummaryView: View {
                 summary: srvSumm,
                 statsStartedAt: statsStartedAt
             )
-            .navigationBarTitle("XFTP server")
+            .navigationBarTitle("Data router")
             .navigationBarTitleDisplayMode(.large)
             .modifier(ThemedBackground(grouped: true))
         } label: {
@@ -378,7 +378,7 @@ struct ServersSummaryView: View {
             alert = SomeAlert(
                 alert: Alert(
                     title: Text("Reset all statistics?"),
-                    message: Text("Servers statistics will be reset - this cannot be undone!"),
+                    message: Text("Routers statistics will be reset - this cannot be undone!"),
                     primaryButton: .destructive(Text("Reset")) {
                         Task {
                             do {
@@ -484,7 +484,7 @@ struct SMPServerSummaryView: View {
 
     var body: some View {
         List {
-            Section("Server address") {
+            Section("Router address") {
                 Text(summary.smpServer)
                     .textSelection(.enabled)
             }
@@ -525,8 +525,8 @@ struct SMPServerSummaryView: View {
         Button {
             alert = SomeAlert(
                 alert: Alert(
-                    title: Text("Reconnect server?"),
-                    message: Text("Reconnect server to force message delivery. It uses additional traffic."),
+                    title: Text("Reconnect router?"),
+                    message: Text("Reconnect router to force message delivery. It uses additional traffic."),
                     primaryButton: .default(Text("Ok")) {
                         Task {
                             do {
@@ -534,7 +534,7 @@ struct SMPServerSummaryView: View {
                             } catch let error {
                                 alert = SomeAlert(
                                     alert: mkAlert(
-                                        title: "Error reconnecting server",
+                                        title: "Error reconnecting router",
                                         message: "\(responseError(error))"
                                     ),
                                     id: "error reconnecting server"
@@ -663,7 +663,7 @@ struct XFTPServerSummaryView: View {
 
     var body: some View {
         List {
-            Section("Server address") {
+            Section("Router address") {
                 Text(summary.xftpServer)
                     .textSelection(.enabled)
             }
