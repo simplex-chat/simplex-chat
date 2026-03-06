@@ -196,7 +196,9 @@ struct MemberSupportView: View {
         }
 
         private func memberStatus(_ member: GroupMember) -> LocalizedStringKey {
-            if member.activeConn?.connDisabled ?? false {
+            if case .error = member.activeConn?.connStatus {
+                return "error"
+            } else if member.activeConn?.connDisabled ?? false {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"

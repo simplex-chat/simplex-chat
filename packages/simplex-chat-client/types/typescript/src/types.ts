@@ -1695,15 +1695,69 @@ export interface ComposedMessage {
   mentions: {[key: string]: number} // string : int64
 }
 
-export enum ConnStatus {
-  New = "new",
-  Prepared = "prepared",
-  Joined = "joined",
-  Requested = "requested",
-  Accepted = "accepted",
-  Snd_ready = "snd-ready",
-  Ready = "ready",
-  Deleted = "deleted",
+export type ConnStatus = 
+  | ConnStatus.New
+  | ConnStatus.Prepared
+  | ConnStatus.Joined
+  | ConnStatus.Requested
+  | ConnStatus.Accepted
+  | ConnStatus.SndReady
+  | ConnStatus.Ready
+  | ConnStatus.Deleted
+  | ConnStatus.Error
+
+export namespace ConnStatus {
+  export type Tag = 
+    | "new"
+    | "prepared"
+    | "joined"
+    | "requested"
+    | "accepted"
+    | "sndReady"
+    | "ready"
+    | "deleted"
+    | "error"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface New extends Interface {
+    type: "new"
+  }
+
+  export interface Prepared extends Interface {
+    type: "prepared"
+  }
+
+  export interface Joined extends Interface {
+    type: "joined"
+  }
+
+  export interface Requested extends Interface {
+    type: "requested"
+  }
+
+  export interface Accepted extends Interface {
+    type: "accepted"
+  }
+
+  export interface SndReady extends Interface {
+    type: "sndReady"
+  }
+
+  export interface Ready extends Interface {
+    type: "ready"
+  }
+
+  export interface Deleted extends Interface {
+    type: "deleted"
+  }
+
+  export interface Error extends Interface {
+    type: "error"
+    connError: string
+  }
 }
 
 export enum ConnType {

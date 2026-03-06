@@ -1473,15 +1473,35 @@ LARGE:
 
 ## ConnStatus
 
-**Enum type**:
-- "new"
-- "prepared"
-- "joined"
-- "requested"
-- "accepted"
-- "snd-ready"
-- "ready"
-- "deleted"
+**Discriminated union type**:
+
+New:
+- type: "new"
+
+Prepared:
+- type: "prepared"
+
+Joined:
+- type: "joined"
+
+Requested:
+- type: "requested"
+
+Accepted:
+- type: "accepted"
+
+SndReady:
+- type: "sndReady"
+
+Ready:
+- type: "ready"
+
+Deleted:
+- type: "deleted"
+
+Error:
+- type: "error"
+- connError: string
 
 
 ---
