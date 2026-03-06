@@ -1904,6 +1904,12 @@ data class Connection(
   val connInactive: Boolean
     get() = quotaErrCounter >= 5 // quotaErrInactiveCount in core
 
+  val connFailedErr: String?
+    get() = when (connStatus) {
+      is ConnStatus.Failed -> connStatus.connError
+      else -> null
+    }
+
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
 
@@ -2638,25 +2644,27 @@ class PendingContactConnection(
 }
 
 @Serializable
-enum class ConnStatus {
-  @SerialName("new") New,
-  @SerialName("prepared") Prepared,
-  @SerialName("joined") Joined,
-  @SerialName("requested") Requested,
-  @SerialName("accepted") Accepted,
-  @SerialName("snd-ready") SndReady,
-  @SerialName("ready") Ready,
-  @SerialName("deleted") Deleted;
+sealed class ConnStatus {
+  @Serializable @SerialName("new") object New: ConnStatus()
+  @Serializable @SerialName("prepared") object Prepared: ConnStatus()
+  @Serializable @SerialName("joined") object Joined: ConnStatus()
+  @Serializable @SerialName("requested") object Requested: ConnStatus()
+  @Serializable @SerialName("accepted") object Accepted: ConnStatus()
+  @Serializable @SerialName("sndReady") object SndReady: ConnStatus()
+  @Serializable @SerialName("ready") object Ready: ConnStatus()
+  @Serializable @SerialName("deleted") object Deleted: ConnStatus()
+  @Serializable @SerialName("failed") class Failed(val connError: String): ConnStatus()
 
   val initiated: Boolean? get() = when (this) {
-    New -> true
-    Prepared -> false
-    Joined -> false
-    Requested -> true
-    Accepted -> true
-    SndReady -> null
-    Ready -> null
-    Deleted -> null
+    is New -> true
+    is Prepared -> false
+    is Joined -> false
+    is Requested -> true
+    is Accepted -> true
+    is SndReady -> null
+    is Ready -> null
+    is Deleted -> null
+    is Failed -> null
   }
 }
 

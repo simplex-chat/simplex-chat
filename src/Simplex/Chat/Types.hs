@@ -1741,18 +1741,13 @@ data ConnStatus
     ConnReady
   | -- | connection deleted
     ConnDeleted
+  | -- | connection had a permanent error during handshake
+    ConnFailed {connError :: Text}
   deriving (Eq, Show, Read)
 
 instance FromField ConnStatus where fromField = fromTextField_ textDecode
 
 instance ToField ConnStatus where toField = toField . textEncode
-
-instance FromJSON ConnStatus where
-  parseJSON = textParseJSON "ConnStatus"
-
-instance ToJSON ConnStatus where
-  toJSON = J.String . textEncode
-  toEncoding = JE.text . textEncode
 
 instance TextEncoding ConnStatus where
   textDecode = \case
@@ -1764,6 +1759,7 @@ instance TextEncoding ConnStatus where
     "snd-ready" -> Just ConnSndReady
     "ready" -> Just ConnReady
     "deleted" -> Just ConnDeleted
+    s | Just err <- T.stripPrefix "failed " s -> Just (ConnFailed err)
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
@@ -1774,6 +1770,12 @@ instance TextEncoding ConnStatus where
     ConnSndReady -> "snd-ready"
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
+    ConnFailed err -> "failed " <> err
+
+isConnFailed :: ConnStatus -> Bool
+isConnFailed = \case
+  ConnFailed {} -> True
+  _ -> False
 
 data ConnType = ConnContact | ConnMember | ConnUserContact
   deriving (Eq, Show)
@@ -1996,6 +1998,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Conn") ''ConnStatus)
 
 $(JQ.deriveJSON defaultJSON ''Connection)
 

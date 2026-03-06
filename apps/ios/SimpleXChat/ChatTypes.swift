@@ -2117,6 +2117,11 @@ public struct Connection: Decodable, Hashable {
 
     public var id: ChatId { get { ":\(connId)" } }
 
+    public var connFailedErr: String? {
+        if case let .failed(err) = connStatus { return err }
+        return nil
+    }
+
     public var connDisabled: Bool {
         authErrCounter >= 10 // authErrDisableCount in core
     }
@@ -2302,15 +2307,16 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     }
 }
 
-public enum ConnStatus: String, Decodable, Hashable {
-    case new = "new"
-    case prepared = "prepared"
-    case joined = "joined"
-    case requested = "requested"
-    case accepted = "accepted"
-    case sndReady = "snd-ready"
-    case ready = "ready"
-    case deleted = "deleted"
+public enum ConnStatus: Decodable, Hashable {
+    case new
+    case prepared
+    case joined
+    case requested
+    case accepted
+    case sndReady
+    case ready
+    case deleted
+    case failed(connError: String)
 
     var initiated: Bool? {
         get {
@@ -2323,6 +2329,7 @@ public enum ConnStatus: String, Decodable, Hashable {
             case .sndReady: return nil
             case .ready: return nil
             case .deleted: return nil
+            case .failed: return nil
             }
         }
     }

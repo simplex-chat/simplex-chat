@@ -878,9 +878,11 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
   }
 
   fun memberConnStatus(): String {
-    return if (member.activeConn?.connDisabled == true) {
-      generalGetString(MR.strings.member_info_member_disabled)
+    return if (member.activeConn?.connStatus is ConnStatus.Failed) {
+      generalGetString(MR.strings.member_info_member_failed)
     } else if (member.activeConn?.connDisabled == true) {
+      generalGetString(MR.strings.member_info_member_disabled)
+    } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
     } else {
       member.memberStatus.shortText
