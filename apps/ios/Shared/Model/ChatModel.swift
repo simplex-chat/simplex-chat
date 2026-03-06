@@ -333,6 +333,22 @@ class ConnectProgressManager: ObservableObject {
     }
 }
 
+class ChannelRelaysModel: ObservableObject {
+    static let shared = ChannelRelaysModel()
+    @Published var groupId: Int64? = nil
+    @Published var groupRelays: [GroupRelay] = []
+
+    func set(groupId: Int64, groupRelays: [GroupRelay]) {
+        self.groupId = groupId
+        self.groupRelays = groupRelays
+    }
+
+    func reset() {
+        groupId = nil
+        groupRelays = []
+    }
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
@@ -366,6 +382,9 @@ final class ChatModel: ObservableObject {
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
+    // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
+    // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
+    @Published var channelRelayHostnames: [Int64: [String]] = [:]
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -1196,12 +1215,23 @@ final class ChatModel: ObservableObject {
 
     // Spec: spec/state.md#removeChat
     func removeChat(_ id: String) {
+        var groupId: Int64?
         withAnimation {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
+                groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
                 removeWallpaperFilesFromChat(removed)
             }
+        }
+        if chatId == id {
+            groupMembers = []
+            groupMembersIndexes.removeAll()
+            // Remove channelRelayHostnames for this channel only, preserving other prepared channels
+            if let gId = groupId {
+                channelRelayHostnames.removeValue(forKey: gId)
+            }
+            membersLoaded = false
         }
     }
 

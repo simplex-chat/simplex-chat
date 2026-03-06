@@ -15,6 +15,7 @@ struct NewServerView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
     @State private var serverToEdit: UserServer = .empty
     @State private var showTestFailure = false
     @State private var testing = false
@@ -28,7 +29,7 @@ struct NewServerView: View {
             }
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
-            addServer(serverToEdit, $userServers, $serverErrors, dismiss)
+            addServer(serverToEdit, $userServers, $serverErrors, $serverWarnings, dismiss)
         })
         .alert(isPresented: $showTestFailure) {
             Alert(
@@ -118,6 +119,7 @@ func addServer(
     _ server: UserServer,
     _ userServers: Binding<[UserOperatorServers]>,
     _ serverErrors: Binding<[UserServersError]>,
+    _ serverWarnings: Binding<[UserServersWarning]>? = nil,
     _ dismiss: DismissAction
 ) {
     if let (serverProtocol, matchingOperator) = serverProtocolAndOperator(server, userServers.wrappedValue) {
@@ -126,7 +128,7 @@ func addServer(
             case .smp: userServers[i].wrappedValue.smpServers.append(server)
             case .xftp: userServers[i].wrappedValue.xftpServers.append(server)
             }
-            validateServers_(userServers, serverErrors)
+            validateServers_(userServers, serverErrors, serverWarnings)
             dismiss()
             if let op = matchingOperator {
                 showAlert(
@@ -152,6 +154,7 @@ func addServer(
 #Preview {
     NewServerView(
         userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
-        serverErrors: Binding.constant([])
+        serverErrors: Binding.constant([]),
+        serverWarnings: Binding.constant([])
     )
 }

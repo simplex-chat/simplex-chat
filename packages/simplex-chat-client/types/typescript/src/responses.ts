@@ -27,6 +27,8 @@ export type ChatResponse =
   | CR.GroupLinkCreated
   | CR.GroupLinkDeleted
   | CR.GroupCreated
+  | CR.PublicGroupCreated
+  | CR.GroupRelays
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
@@ -78,6 +80,8 @@ export namespace CR {
     | "groupLinkCreated"
     | "groupLinkDeleted"
     | "groupCreated"
+    | "publicGroupCreated"
+    | "groupRelays"
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
@@ -243,6 +247,21 @@ export namespace CR {
     type: "groupCreated"
     user: T.User
     groupInfo: T.GroupInfo
+  }
+
+  export interface PublicGroupCreated extends Interface {
+    type: "publicGroupCreated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelays extends Interface {
+    type: "groupRelays"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupRelays: T.GroupRelay[]
   }
 
   export interface GroupMembers extends Interface {

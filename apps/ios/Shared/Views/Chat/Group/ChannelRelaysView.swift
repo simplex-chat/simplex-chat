@@ -1,0 +1,118 @@
+//
+//  ChannelRelaysView.swift
+//  SimpleX (iOS)
+//
+//  Created by spaced4ndy on 20.02.2026.
+//  Copyright © 2026 SimpleX Chat. All rights reserved.
+//
+
+import SwiftUI
+import SimpleXChat
+
+struct ChannelRelaysView: View {
+    @ObservedObject var chat: Chat
+    var groupInfo: GroupInfo
+    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @State private var groupRelays: [GroupRelay] = []
+
+    var body: some View {
+        let isOwner = groupInfo.isOwner
+        List {
+            relaysList(showRelayStatus: isOwner)
+        }
+        .onAppear {
+            Task {
+                await chatModel.loadGroupMembers(groupInfo)
+                if isOwner {
+                    groupRelays = await apiGetGroupRelays(groupInfo.groupId)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func relaysList(showRelayStatus: Bool) -> some View {
+        let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay }
+        if relayMembers.isEmpty {
+            Section {
+                Text("No chat relays")
+                    .foregroundColor(theme.colors.secondary)
+            }
+        } else {
+            Section {
+                ForEach(relayMembers) { member in
+                    NavigationLink {
+                        GroupMemberInfoView(
+                            groupInfo: groupInfo,
+                            chat: chat,
+                            groupMember: member,
+                            scrollToItemId: Binding.constant(nil),
+                            groupRelay: groupRelays.first(where: { $0.groupMemberId == member.wrapped.groupMemberId })
+                        )
+                        .navigationBarHidden(false)
+                    } label: {
+                        relayMemberRow(member.wrapped, relayStatus: showRelayStatus ? relayStatusForMember(member.wrapped) : nil)
+                    }
+                }
+            } footer: {
+                Text("Chat relays forward messages to channel subscribers.")
+            }
+        }
+    }
+
+    private func relayStatusForMember(_ member: GroupMember) -> RelayStatus? {
+        groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus
+    }
+
+    private func relayMemberRow(_ member: GroupMember, relayStatus: RelayStatus?) -> some View {
+        HStack {
+            MemberProfileImage(member, size: 38)
+                .padding(.trailing, 2)
+            VStack(alignment: .leading) {
+                Text(member.chatViewName)
+                    .foregroundColor(theme.colors.onBackground)
+                    .lineLimit(1)
+                Text(relayStatus?.text ?? relayConnStatusText(member))
+                    .lineLimit(1)
+                    .font(.caption)
+                    .foregroundColor(theme.colors.secondary)
+            }
+            Spacer()
+        }
+    }
+
+    private func relayConnStatusText(_ member: GroupMember) -> LocalizedStringKey {
+        if member.activeConn?.connDisabled ?? false {
+            "disabled"
+        } else if member.activeConn?.connInactive ?? false {
+            "inactive"
+        } else {
+            relayConnStatus(member).text
+        }
+    }
+}
+
+
+func relayConnStatus(_ member: GroupMember) -> (text: LocalizedStringKey, color: Color) {
+    switch member.activeConn?.connStatus {
+    case .ready: ("connected", .green)
+    case .deleted: ("deleted", .red)
+    default: ("connecting", .yellow)
+    }
+}
+
+func hostFromRelayLink(_ link: String) -> String {
+    if let ft = parseSimpleXMarkdown(link) {
+        for f in ft {
+            if case let .simplexLink(_, _, _, smpHosts) = f.format,
+               let host = smpHosts.first {
+                return host
+            }
+        }
+    }
+    return link
+}
+
+#Preview {
+    ChannelRelaysView(chat: Chat.sampleData, groupInfo: GroupInfo.sampleData)
+}
