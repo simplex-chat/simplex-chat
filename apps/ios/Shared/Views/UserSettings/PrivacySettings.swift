@@ -134,10 +134,10 @@ struct PrivacySettings: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     if askToApproveRelays {
-                        Text("The app will ask to confirm downloads from unknown file servers (except .onion).")
+                        Text("The app will ask to confirm downloads from unknown data routers (except .onion).")
                             .foregroundColor(theme.colors.secondary)
                     } else {
-                        Text("Without Tor or VPN, your IP address will be visible to file servers.")
+                        Text("Without Tor or VPN, your IP address will be visible to data routers.")
                             .foregroundColor(theme.colors.secondary)
                     }
                 }

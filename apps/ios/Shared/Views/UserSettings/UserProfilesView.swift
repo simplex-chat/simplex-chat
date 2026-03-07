@@ -124,7 +124,7 @@ struct UserProfilesView: View {
             }
         }
         .confirmationDialog("Delete chat profile?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
-            deleteModeButton("Profile and server connections", true)
+            deleteModeButton("Profile and router connections", true)
             deleteModeButton("Local profile data only", false)
         }
         .appSheet(item: $selectedUser) { user in

@@ -214,7 +214,7 @@
     <string name="learn_more">കൂടുതലറിയുക</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.]]></string>
     <string name="smp_servers_check_address">സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
-    <string name="your_SMP_servers">നിങ്ങളുടെ SMP സെർവറുകൾ</string>
+    <string name="your_SMP_servers">നിങ്ങളുടെ Packet സെർവറുകൾ</string>
     <string name="network_session_mode_entity">ബന്ധം</string>
     <string name="stop_sharing_address">വിലാസം പങ്കിടുന്നത് നിർത്തണോ\?</string>
     <string name="continue_to_next_step">തുടരുക</string>
@@ -272,7 +272,7 @@
     <string name="icon_descr_sent_msg_status_sent">അയച്ചു</string>
     <string name="smp_servers_your_server_address">നിങ്ങളുടെ സെർവർ വിലാസം</string>
     <string name="info_row_sent_at">എന്ന വിലാസത്തിൽ അയച്ചു</string>
-    <string name="your_XFTP_servers">നിങ്ങളുടെ XFTP സെർവറുകൾ</string>
+    <string name="your_XFTP_servers">നിങ്ങളുടെ Data സെർവറുകൾ</string>
     <string name="about_simplex_chat">കുറിച്ച് SimpleX Chat</string>
     <string name="users_delete_all_chats_deleted">എല്ലാ സംഭാഷണങ്ങളും സന്ദേശങ്ങളും ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
     <string name="all_group_members_will_remain_connected">സംഘത്തിലെ എല്ലാ അംഗങ്ങളുടെ ബന്ധം നിലനിർത്തും.</string>

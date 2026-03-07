@@ -5,7 +5,7 @@
 "_italic_" = "\\_cursief_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- verbinding maken met [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- ontvangst bevestiging(tot 20 leden).\n- sneller en stabieler.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- verbinding maken met [directory service](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- ontvangst bevestiging(tot 20 leden).\n- sneller en stabieler.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabielere berichtbezorging.\n- een beetje betere groepen.\n- en meer!";
@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ is geverifieerd";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ server";
+"%@ router" = "%@ router";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ servers";
+"%@ routers" = "%@ routers";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ geüpload";
@@ -408,10 +408,10 @@ swipe action */
 "Add profile" = "Profiel toevoegen";
 
 /* No comment provided by engineer. */
-"Add server" = "Server toevoegen";
+"Add router" = "Router toevoegen";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Servers toevoegen door QR-codes te scannen.";
+"Add routers by scanning QR codes." = "Routers toevoegen door QR-codes te scannen.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Teamleden toevoegen";
@@ -525,7 +525,7 @@ swipe action */
 "All reports will be archived for you." = "Alle rapporten worden voor u gearchiveerd.";
 
 /* No comment provided by engineer. */
-"All servers" = "Alle servers";
+"All routers" = "Alle routers";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Al uw contacten blijven verbonden.";
@@ -534,7 +534,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Al uw contacten blijven verbonden. Profiel update wordt naar uw contacten verzonden.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Al uw contacten, gesprekken en bestanden worden veilig gecodeerd en in delen geüpload naar geconfigureerde XFTP-relays.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers." = "Al uw contacten, gesprekken en bestanden worden veilig gecodeerd en in delen geüpload naar geconfigureerde data routers.";
 
 /* No comment provided by engineer. */
 "Allow" = "Toestaan";
@@ -636,7 +636,7 @@ swipe action */
 "Answer call" = "Beantwoord oproep";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Iedereen kan servers hosten.";
+"Anybody can host routers." = "Iedereen kan routers hosten.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "App build: %@";
@@ -1081,7 +1081,7 @@ set passcode view */
 "Check messages when allowed." = "Controleer berichten indien toegestaan.";
 
 /* alert title */
-"Check server address and try again." = "Controleer het server adres en probeer het opnieuw.";
+"Check router address and try again." = "Controleer het router adres en probeer het opnieuw.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Chinese en Spaanse interface";
@@ -1174,7 +1174,7 @@ set passcode view */
 "Configure ICE servers" = "ICE servers configureren";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "Serveroperators configureren";
+"Configure router operators" = "Serveroperators configureren";
 
 /* No comment provided by engineer. */
 "Confirm" = "Bevestigen";
@@ -1186,7 +1186,7 @@ set passcode view */
 "Confirm database upgrades" = "Bevestig database upgrades";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "Bevestig bestanden van onbekende servers.";
+"Confirm files from unknown routers." = "Bevestig bestanden van onbekende routers.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Bevestig netwerk instellingen";
@@ -1252,7 +1252,7 @@ set passcode view */
 "Connected desktop" = "Verbonden desktop";
 
 /* No comment provided by engineer. */
-"Connected servers" = "Verbonden servers";
+"Connected routers" = "Verbonden routers";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Verbonden met desktop";
@@ -1279,10 +1279,10 @@ set passcode view */
 "connecting call" = "gesprek verbinden…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Verbinden met de server…";
+"Connecting router…" = "Verbinden met de router…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Verbinden met server... (fout: %@)";
+"Connecting router… (error: %@)" = "Verbinden met router... (fout: %@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "Er wordt verbinding gemaakt met het contact. Even geduld of controleer het later!";
@@ -1297,7 +1297,7 @@ set passcode view */
 "Connection" = "Verbinding";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Verbindings- en serverstatus.";
+"Connection and routers status." = "Verbindings- en serverstatus.";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Verbinding geblokkeerd";
@@ -1312,7 +1312,7 @@ set passcode view */
 "connection established" = "verbinding gemaakt";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "Verbinding is geblokkeerd door serveroperator:\n%@";
+"Connection is blocked by router operator:\n%@" = "Verbinding is geblokkeerd door serveroperator:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Verbinding nog niet klaar.";
@@ -1771,13 +1771,13 @@ alert button */
 "Desktop devices" = "Desktop apparaten";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.";
+"Destination router address of %@ is incompatible with forwarding router %@ settings." = "Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.";
 
 /* snd error text */
-"Destination server error: %@" = "Bestemmingsserverfout: %@";
+"Destination router error: %@" = "Bestemmingsserverfout: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.";
+"Destination router version of %@ is incompatible with forwarding router %@." = "De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Gedetailleerde statistieken";
@@ -1879,7 +1879,7 @@ alert button */
 "Do not send history to new members." = "Stuur geen geschiedenis naar nieuwe leden.";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.";
+"Do NOT send messages directly, even if your or destination router does not support private routing." = "Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "Gebruik geen inloggegevens met proxy.";
@@ -1976,7 +1976,7 @@ chat item action */
 "Enable camera access" = "Schakel cameratoegang in";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.";
+"Enable Flux in Network & routers settings for better metadata privacy." = "Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Inschakelen voor iedereen";
@@ -2117,7 +2117,7 @@ chat item action */
 "Enter password above to show!" = "Voer hier boven het wachtwoord in om weer te geven!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Voer de server handmatig in";
+"Enter router manually" = "Voer de router handmatig in";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Voer deze apparaatnaam in…";
@@ -2153,7 +2153,7 @@ chat item action */
 "Error adding member(s)" = "Fout bij het toevoegen van leden";
 
 /* alert title */
-"Error adding server" = "Fout bij toevoegen server";
+"Error adding router" = "Fout bij toevoegen router";
 
 /* No comment provided by engineer. */
 "Error changing address" = "Fout bij wijzigen van adres";
@@ -2174,7 +2174,7 @@ chat item action */
 "Error checking token status" = "Fout bij het controleren van de tokenstatus";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.";
+"Error connecting to forwarding router %@. Please try later." = "Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Fout bij aanmaken van adres";
@@ -2252,7 +2252,7 @@ chat item action */
 "Error joining group" = "Fout bij lid worden van groep";
 
 /* alert title */
-"Error loading servers" = "Fout bij het laden van servers";
+"Error loading routers" = "Fout bij het laden van routers";
 
 /* No comment provided by engineer. */
 "Error migrating settings" = "Fout bij migreren van instellingen";
@@ -2264,10 +2264,10 @@ chat item action */
 "Error receiving file" = "Fout bij ontvangen van bestand";
 
 /* No comment provided by engineer. */
-"Error reconnecting server" = "Fout bij opnieuw verbinding maken met de server";
+"Error reconnecting router" = "Fout bij opnieuw verbinding maken met de router";
 
 /* No comment provided by engineer. */
-"Error reconnecting servers" = "Fout bij opnieuw verbinden van servers";
+"Error reconnecting routers" = "Fout bij opnieuw verbinden van routers";
 
 /* alert title */
 "Error registering for notifications" = "Fout bij registreren voor meldingen";
@@ -2297,7 +2297,7 @@ chat item action */
 "Error saving passphrase to keychain" = "Fout bij opslaan van wachtwoord in de keychain";
 
 /* alert title */
-"Error saving servers" = "Fout bij het opslaan van servers";
+"Error saving routers" = "Fout bij het opslaan van routers";
 
 /* when migrating */
 "Error saving settings" = "Fout bij opslaan van instellingen";
@@ -2336,7 +2336,7 @@ chat item action */
 "Error synchronizing connection" = "Fout bij het synchroniseren van de verbinding";
 
 /* No comment provided by engineer. */
-"Error testing server connection" = "Fout bij het testen van de serververbinding";
+"Error testing router connection" = "Fout bij het testen van de serververbinding";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "Fout bij bijwerken van groep link";
@@ -2345,7 +2345,7 @@ chat item action */
 "Error updating message" = "Fout bij updaten van bericht";
 
 /* alert title */
-"Error updating server" = "Fout bij het updaten van de server";
+"Error updating router" = "Fout bij het updaten van de router";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Fout bij bijwerken van instellingen";
@@ -2377,7 +2377,7 @@ snd error text */
 "Errors" = "Fouten";
 
 /* servers error */
-"Errors in servers configuration." = "Fouten in de serverconfiguratie.";
+"Errors in routers configuration." = "Fouten in de serverconfiguratie.";
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Zelfs wanneer uitgeschakeld in het gesprek.";
@@ -2440,13 +2440,13 @@ snd error text */
 "File errors:\n%@" = "Bestandsfouten:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "Bestand is geblokkeerd door serveroperator:\n%@.";
+"File is blocked by router operator:\n%@." = "Bestand is geblokkeerd door serveroperator:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Bestand niet gevonden - hoogstwaarschijnlijk is het bestand verwijderd of geannuleerd.";
 
 /* file error text */
-"File server error: %@" = "Bestandsserverfout: %@";
+"Data router error: %@" = "Bestandsserverfout: %@";
 
 /* No comment provided by engineer. */
 "File status" = "Bestandsstatus";
@@ -2455,7 +2455,7 @@ snd error text */
 "File status: %@" = "Bestandsstatus: %@";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Het bestand wordt van de servers verwijderd.";
+"File will be deleted from routers." = "Het bestand wordt van de routers verwijderd.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Het bestand wordt gedownload wanneer uw contact het uploaden heeft voltooid.";
@@ -2500,7 +2500,7 @@ snd error text */
 "Find chats faster" = "Vind chats sneller";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
+"Fingerprint in router address does not match certificate." = "Mogelijk is de certificaat vingerafdruk in het router adres onjuist";
 
 /* No comment provided by engineer. */
 "Fix" = "Herstel";
@@ -2530,7 +2530,7 @@ snd error text */
 "For console" = "Voor console";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Als uw contactpersoon bijvoorbeeld berichten ontvangt via een SimpleX Chat-server, worden deze door uw app via een Flux-server verzonden.";
+"For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router." = "Als uw contactpersoon bijvoorbeeld berichten ontvangt via een SimpleX Chat-router, worden deze door uw app via een Flux-router verzonden.";
 
 /* No comment provided by engineer. */
 "For me" = "Voor mij";
@@ -2572,19 +2572,19 @@ snd error text */
 "Forwarding %lld messages" = "%lld berichten doorsturen";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "De doorstuurserver %1$@ kon geen verbinding maken met de bestemmingsserver %2$@. Probeer het later opnieuw.";
+"Forwarding router %@ failed to connect to destination router %@. Please try later." = "De doorstuurserver %1$@ kon geen verbinding maken met de bestemmingsserver %2$@. Probeer het later opnieuw.";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "Het adres van de doorstuurserver is niet compatibel met de netwerkinstellingen: %@.";
+"Forwarding router address is incompatible with network settings: %@." = "Het adres van de doorstuurserver is niet compatibel met de netwerkinstellingen: %@.";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %@.";
+"Forwarding router version is incompatible with network settings: %@." = "De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %@.";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "Doorstuurserver: %1$@\nBestemmingsserverfout: %2$@";
+"Forwarding router: %@\nDestination router error: %@" = "Doorstuurserver: %1$@\nBestemmingsserverfout: %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "Doorstuurserver: %1$@\nFout: %2$@";
+"Forwarding router: %@\nError: %@" = "Doorstuurserver: %1$@\nFout: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Desktop gevonden";
@@ -2671,7 +2671,7 @@ snd error text */
 "Group profile" = "Groep profiel";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Groep profiel wordt opgeslagen op de apparaten van de leden, niet op de servers.";
+"Group profile is stored on members' devices, not on the routers." = "Groep profiel wordt opgeslagen op de apparaten van de leden, niet op de routers.";
 
 /* snd group event chat item */
 "group profile updated" = "groep profiel bijgewerkt";
@@ -2743,7 +2743,7 @@ snd error text */
 "How to use it" = "Hoe te gebruiken";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Hoe u uw servers gebruikt";
+"How to use your routers" = "Hoe u uw routers gebruikt";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Hongaarse interface";
@@ -2806,7 +2806,7 @@ snd error text */
 "Improved privacy and security" = "Verbeterde privacy en veiligheid";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Verbeterde serverconfiguratie";
+"Improved router configuration" = "Verbeterde serverconfiguratie";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "Om verder te kunnen gaan, moet de chat worden gestopt.";
@@ -2938,7 +2938,7 @@ snd error text */
 "Invalid response" = "Ongeldig antwoord";
 
 /* alert title */
-"Invalid server address!" = "Ongeldig server adres!";
+"Invalid router address!" = "Ongeldig router adres!";
 
 /* item status text */
 "Invalid status" = "Ongeldige status";
@@ -3001,7 +3001,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of de ander een oude database back-up gebruikt.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt.\n3. De verbinding is verbroken.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de router.\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt.\n3. De verbinding is verbroken.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Het beschermt uw IP-adres en verbindingen.";
@@ -3418,7 +3418,7 @@ snd error text */
 "Name" = "Naam";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Netwerk & servers";
+"Network & routers" = "Netwerk & routers";
 
 /* No comment provided by engineer. */
 "Network connection" = "Netwerkverbinding";
@@ -3493,13 +3493,13 @@ snd error text */
 "New passphrase…" = "Nieuw wachtwoord…";
 
 /* No comment provided by engineer. */
-"New server" = "Nieuwe server";
+"New router" = "Nieuwe router";
 
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used every time you start the app." = "Elke keer dat u de app start, worden er nieuwe SOCKS-inloggegevens gebruikt.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Voor elke server worden nieuwe SOCKS-inloggegevens gebruikt.";
+"New SOCKS credentials will be used for each router." = "Voor elke router worden nieuwe SOCKS-inloggegevens gebruikt.";
 
 /* pref value */
 "no" = "Nee";
@@ -3580,16 +3580,16 @@ snd error text */
 "No received or sent files" = "Geen ontvangen of verzonden bestanden";
 
 /* servers error */
-"No servers for private message routing." = "Geen servers voor het routeren van privéberichten.";
+"No servers for private message routing." = "Geen routers voor het routeren van privéberichten.";
 
 /* servers error */
-"No servers to receive files." = "Geen servers om bestanden te ontvangen.";
+"No servers to receive files." = "Geen routers om bestanden te ontvangen.";
 
 /* servers error */
-"No servers to receive messages." = "Geen servers om berichten te ontvangen.";
+"No servers to receive messages." = "Geen routers om berichten te ontvangen.";
 
 /* servers error */
-"No servers to send files." = "Geen servers om bestanden te verzenden.";
+"No servers to send files." = "Geen routers om bestanden te verzenden.";
 
 /* copied message info in history */
 "no text" = "geen tekst";
@@ -3768,7 +3768,7 @@ new chat action */
 "Operator" = "Operator";
 
 /* alert title */
-"Operator server" = "Operatorserver";
+"Operator router" = "Operatorserver";
 
 /* No comment provided by engineer. */
 "Or import archive file" = "Of importeer archiefbestand";
@@ -3945,16 +3945,16 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Bewaar het laatste berichtconcept, met bijlagen.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Vooraf ingesteld server adres";
+"Preset router address" = "Vooraf ingesteld router adres";
 
 /* No comment provided by engineer. */
-"Preset servers" = "Vooraf ingestelde servers";
+"Preset routers" = "Vooraf ingestelde routers";
 
 /* No comment provided by engineer. */
 "Preview" = "Voorbeeld";
 
 /* No comment provided by engineer. */
-"Previously connected servers" = "Eerder verbonden servers";
+"Previously connected routers" = "Eerder verbonden routers";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Privacy en beveiliging";
@@ -3969,7 +3969,7 @@ new chat action */
 "Privacy redefined" = "Privacy opnieuw gedefinieerd";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.";
+"Private chats, groups and your contacts are not accessible to router operators." = "Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privé bestandsnamen";
@@ -3993,7 +3993,7 @@ new chat action */
 "Private routing error" = "Fout in privéroutering";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Profiel- en serververbindingen";
+"Profile and router connections" = "Profiel- en serververbindingen";
 
 /* No comment provided by engineer. */
 "Profile image" = "profielfoto";
@@ -4050,7 +4050,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "Bescherm je chatprofielen met een wachtwoord!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen.\nSchakel dit in in *Netwerk en servers*-instellingen.";
+"Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network & routers* settings." = "Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen.\nSchakel dit in in *Netwerk en routers*-instellingen.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protocol timeout";
@@ -4062,7 +4062,7 @@ new chat action */
 "Proxied" = "Proxied";
 
 /* No comment provided by engineer. */
-"Proxied servers" = "Proxied servers";
+"Proxied routers" = "Proxied routers";
 
 /* No comment provided by engineer. */
 "Proxy requires password" = "Proxy vereist wachtwoord";
@@ -4137,7 +4137,7 @@ new chat action */
 "Received total" = "Totaal ontvangen";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere router. Adres wijziging wordt voltooid nadat de afzender online is.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Het ontvangen van het bestand wordt gestopt.";
@@ -4146,7 +4146,7 @@ new chat action */
 "Receiving via" = "Ontvang via";
 
 /* No comment provided by engineer. */
-"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Recente geschiedenis en verbeterde [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Recente geschiedenis en verbeterde [directory bot](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
 
 /* No comment provided by engineer. */
 "Recipient(s) can't see who this message is from." = "Ontvanger(s) kunnen niet zien van wie dit bericht afkomstig is.";
@@ -4158,22 +4158,22 @@ new chat action */
 "Reconnect" = "opnieuw verbinden";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Verbind alle verbonden servers opnieuw om de bezorging van berichten af te dwingen. Het maakt gebruik van extra data.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Verbind alle verbonden routers opnieuw om de bezorging van berichten af te dwingen. Het maakt gebruik van extra data.";
 
 /* No comment provided by engineer. */
-"Reconnect all servers" = "Maak opnieuw verbinding met alle servers";
+"Reconnect all routers" = "Maak opnieuw verbinding met alle routers";
 
 /* No comment provided by engineer. */
-"Reconnect all servers?" = "Alle servers opnieuw verbinden?";
+"Reconnect all routers?" = "Alle routers opnieuw verbinden?";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "Maak opnieuw verbinding met de server om de bezorging van berichten te forceren. Er wordt gebruik gemaakt van extra verkeer.Maak opnieuw verbinding met de server om de bezorging van berichten te forceren. Er wordt gebruik gemaakt van extra data.";
+"Reconnect router to force message delivery. It uses additional traffic." = "Maak opnieuw verbinding met de router om de bezorging van berichten te forceren. Er wordt gebruik gemaakt van extra verkeer.Maak opnieuw verbinding met de router om de bezorging van berichten te forceren. Er wordt gebruik gemaakt van extra data.";
 
 /* No comment provided by engineer. */
-"Reconnect server?" = "Server opnieuw verbinden?";
+"Reconnect router?" = "Router opnieuw verbinden?";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Servers opnieuw verbinden?";
+"Reconnect routers?" = "Routers opnieuw verbinden?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Record bijgewerkt op";
@@ -4443,10 +4443,10 @@ chat item action */
 "Save profile password" = "Bewaar profiel wachtwoord";
 
 /* No comment provided by engineer. */
-"Save servers" = "Servers opslaan";
+"Save routers" = "Routers opslaan";
 
 /* alert title */
-"Save servers?" = "Servers opslaan?";
+"Save routers?" = "Routers opslaan?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Welkom bericht opslaan?";
@@ -4494,7 +4494,7 @@ chat item action */
 "Scan security code from your contact's app." = "Scan de beveiligingscode van de app van uw contact.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Scan server QR-code";
+"Scan router QR code" = "Scan router QR-code";
 
 /* No comment provided by engineer. */
 "search" = "zoekopdracht";
@@ -4587,10 +4587,10 @@ chat item action */
 "Send message to enable calls." = "Stuur een bericht om oproepen mogelijk te maken.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.";
+"Send messages directly when IP address is protected and your or destination router does not support private routing." = "Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Stuur berichten rechtstreeks wanneer uw of de doelserver geen privéroutering ondersteunt.";
+"Send messages directly when your or destination router does not support private routing." = "Stuur berichten rechtstreeks wanneer uw of de doelserver geen privéroutering ondersteunt.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Meldingen verzenden";
@@ -4668,58 +4668,58 @@ chat item action */
 "Sent via proxy" = "Verzonden via proxy";
 
 /* No comment provided by engineer. */
-"Server" = "Server";
+"Router" = "Router";
 
 /* alert message */
-"Server added to operator %@." = "Server toegevoegd aan operator %@.";
+"Router added to operator %@." = "Router toegevoegd aan operator %@.";
 
 /* No comment provided by engineer. */
-"Server address" = "Server adres";
+"Router address" = "Router adres";
 
 /* No comment provided by engineer. */
-"Server address is incompatible with network settings: %@." = "Serveradres is incompatibel met netwerkinstellingen: %@.";
+"Router address is incompatible with network settings: %@." = "Serveradres is incompatibel met netwerkinstellingen: %@.";
 
 /* srv error text. */
-"Server address is incompatible with network settings." = "Serveradres is niet compatibel met netwerkinstellingen.";
+"Router address is incompatible with network settings." = "Serveradres is niet compatibel met netwerkinstellingen.";
 
 /* alert title */
-"Server operator changed." = "Serveroperator gewijzigd.";
+"Router operator changed." = "Serveroperator gewijzigd.";
 
 /* No comment provided by engineer. */
-"Server operators" = "Serverbeheerders";
+"Router operators" = "Serverbeheerders";
 
 /* alert title */
-"Server protocol changed." = "Serverprotocol gewijzigd.";
+"Router protocol changed." = "Serverprotocol gewijzigd.";
 
 /* queue info */
-"server queue info: %@\n\nlast received msg: %@" = "informatie over serverwachtrij: %1$@\n\nlaatst ontvangen bericht: %2$@";
+"router queue info: %@\n\nlast received msg: %@" = "informatie over serverwachtrij: %1$@\n\nlaatst ontvangen bericht: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
+"Router requires authorization to create queues, check password." = "Router vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Server vereist autorisatie om te uploaden, wachtwoord controleren";
+"Router requires authorization to upload, check password." = "Router vereist autorisatie om te uploaden, wachtwoord controleren";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Servertest mislukt!";
+"Router test failed!" = "Servertest mislukt!";
 
 /* No comment provided by engineer. */
-"Server type" = "Server type";
+"Router type" = "Router type";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "Serverversie is incompatibel met netwerkinstellingen.";
+"Router version is incompatible with network settings." = "Serverversie is incompatibel met netwerkinstellingen.";
 
 /* No comment provided by engineer. */
-"Server version is incompatible with your app: %@." = "Serverversie is incompatibel met uw app: %@.";
+"Router version is incompatible with your app: %@." = "Serverversie is incompatibel met uw app: %@.";
 
 /* No comment provided by engineer. */
-"Servers" = "Servers";
+"Routers" = "Routers";
 
 /* No comment provided by engineer. */
-"Servers info" = "Server informatie";
+"Routers info" = "Router informatie";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "Serverstatistieken worden gereset - dit kan niet ongedaan worden gemaakt!";
+"Routers statistics will be reset - this cannot be undone!" = "Serverstatistieken worden gereset - dit kan niet ongedaan worden gemaakt!";
 
 /* No comment provided by engineer. */
 "Session code" = "Sessie code";
@@ -4870,7 +4870,7 @@ chat item action */
 "SimpleX channel link" = "SimpleX channel link";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "Simplex-chat en flux hebben een overeenkomst gemaakt om door flux geëxploiteerde servers in de app op te nemen.";
+"SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app." = "Simplex-chat en flux hebben een overeenkomst gemaakt om door flux geëxploiteerde routers in de app op te nemen.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.";
@@ -4927,7 +4927,7 @@ chat item action */
 "Small groups (max 20)" = "Kleine groepen (max 20)";
 
 /* No comment provided by engineer. */
-"SMP server" = "SMP server";
+"Packet router" = "packet router";
 
 /* No comment provided by engineer. */
 "SOCKS proxy" = "SOCKS proxy";
@@ -4948,7 +4948,7 @@ chat item action */
 "Some non-fatal errors occurred during import:" = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:";
 
 /* alert message */
-"Some servers failed the test:\n%@" = "Sommige servers zijn niet geslaagd voor de test:\n%@";
+"Some routers failed the test:\n%@" = "Sommige routers zijn niet geslaagd voor de test:\n%@";
 
 /* notification title */
 "Somebody" = "Iemand";
@@ -5108,10 +5108,10 @@ report reason */
 "Test notifications" = "Testmeldingen";
 
 /* No comment provided by engineer. */
-"Test server" = "Server test";
+"Test router" = "Router test";
 
 /* No comment provided by engineer. */
-"Test servers" = "Servers testen";
+"Test routers" = "Routers testen";
 
 /* alert title */
 "Tests failed!" = "Testen mislukt!";
@@ -5192,16 +5192,16 @@ report reason */
 "The sender will NOT be notified" = "De afzender wordt NIET op de hoogte gebracht";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "De servers voor nieuwe verbindingen van uw huidige chatprofiel **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "De routers voor nieuwe verbindingen van uw huidige chatprofiel **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "De servers voor nieuwe bestanden van uw huidige chatprofiel **%@**.";
+"The routers for new files of your current chat profile **%@**." = "De routers voor nieuwe bestanden van uw huidige chatprofiel **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "De tekst die u hebt geplakt is geen SimpleX link.";
 
 /* No comment provided by engineer. */
-"The uploaded database archive will be permanently removed from the servers." = "Het geüploade databasearchief wordt permanent van de servers verwijderd.";
+"The uploaded database archive will be permanently removed from the routers." = "Het geüploade databasearchief wordt permanent van de routers verwijderd.";
 
 /* No comment provided by engineer. */
 "Themes" = "Thema's";
@@ -5285,7 +5285,7 @@ report reason */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Schakel SimpleX Vergrendelen om uw informatie te beschermen.\nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.";
+"To protect your IP address, private routing uses your packet routers to deliver messages." = "Om uw IP-adres te beschermen, gebruikt privéroutering uw packet-routers om berichten te bezorgen.";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID's die door alle andere platforms worden gebruikt, ID's voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.";
@@ -5312,7 +5312,7 @@ report reason */
 "To support instant push notifications the chat database has to be migrated." = "Om directe push meldingen te ondersteunen, moet de chat database worden gemigreerd.";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "Om de servers van **%@** te gebruiken, moet u de gebruiksvoorwaarden accepteren.";
+"To use the routers of **%@**, accept conditions of use." = "Om de routers van **%@** te gebruiken, moet u de gebruiksvoorwaarden accepteren.";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.";
@@ -5402,10 +5402,10 @@ report reason */
 "Unknown error" = "Onbekende fout";
 
 /* No comment provided by engineer. */
-"unknown servers" = "onbekende relays";
+"unknown routers" = "onbekende relays";
 
 /* alert title */
-"Unknown servers!" = "Onbekende servers!";
+"Unknown routers!" = "Onbekende routers!";
 
 /* No comment provided by engineer. */
 "unknown status" = "onbekende status";
@@ -5465,7 +5465,7 @@ report reason */
 "updated profile" = "bijgewerkt profiel";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle servers.";
+"Updating settings will re-connect the client to all routers." = "Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle routers.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Upgrade en open chat";
@@ -5522,19 +5522,19 @@ report reason */
 "Use only local notifications?" = "Alleen lokale meldingen gebruiken?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Gebruik privéroutering met onbekende servers wanneer het IP-adres niet beveiligd is.";
+"Use private routing with unknown routers when IP address is not protected." = "Gebruik privéroutering met onbekende routers wanneer het IP-adres niet beveiligd is.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Gebruik privéroutering met onbekende servers.";
+"Use private routing with unknown routers." = "Gebruik privéroutering met onbekende routers.";
 
 /* No comment provided by engineer. */
-"Use server" = "Gebruik server";
+"Use router" = "Gebruik router";
 
 /* No comment provided by engineer. */
-"Use servers" = "Gebruik servers";
+"Use routers" = "Gebruik routers";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "SimpleX Chat servers gebruiken?";
+"Use SimpleX Chat routers?" = "SimpleX Chat routers gebruiken?";
 
 /* No comment provided by engineer. */
 "Use SOCKS proxy" = "Gebruik SOCKS proxy";
@@ -5543,7 +5543,7 @@ report reason */
 "Use TCP port %@ when no port is specified." = "Gebruik TCP-poort %@ als er geen poort is opgegeven.";
 
 /* No comment provided by engineer. */
-"Use TCP port 443 for preset servers only." = "Gebruik TCP-poort 443 alleen voor vooraf ingestelde servers.";
+"Use TCP port 443 for preset routers only." = "Gebruik TCP-poort 443 alleen voor vooraf ingestelde routers.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Gebruik de app tijdens het gesprek.";
@@ -5561,7 +5561,7 @@ report reason */
 "Username" = "Gebruikersnaam";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Gebruik SimpleX Chat servers.";
+"Using SimpleX Chat routers." = "Gebruik SimpleX Chat routers.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -5741,10 +5741,10 @@ report reason */
 "With reduced battery usage." = "Met verminderd batterijgebruik.";
 
 /* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to file servers." = "Zonder Tor of VPN is uw IP-adres zichtbaar voor bestandsservers.";
+"Without Tor or VPN, your IP address will be visible to data routers." = "Zonder Tor of VPN is uw IP-adres zichtbaar voor bestandsservers.";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Zonder Tor of VPN zal uw IP-adres zichtbaar zijn voor deze XFTP-relays: %@.";
+"Without Tor or VPN, your IP address will be visible to these data routers: %@." = "Zonder Tor of VPN zal uw IP-adres zichtbaar zijn voor deze data routers: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Verkeerd wachtwoord voor de database";
@@ -5759,7 +5759,7 @@ report reason */
 "Wrong passphrase!" = "Verkeerd wachtwoord!";
 
 /* No comment provided by engineer. */
-"XFTP server" = "XFTP server";
+"Data router" = "data router";
 
 /* pref value */
 "yes" = "Ja";
@@ -5810,7 +5810,7 @@ report reason */
 "You are invited to group" = "Je bent uitgenodigd voor de groep";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "U bent niet verbonden met deze servers. Privéroutering wordt gebruikt om berichten bij hen af te leveren.";
+"You are not connected to these routers. Private routing is used to deliver messages to them." = "U bent niet verbonden met deze routers. Privéroutering wordt gebruikt om berichten bij hen af te leveren.";
 
 /* No comment provided by engineer. */
 "you are observer" = "je bent waarnemer";
@@ -5825,7 +5825,7 @@ report reason */
 "You can change it in Appearance settings." = "U kunt dit wijzigen in de instellingen onder uiterlijk.";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "U kunt servers configureren via instellingen.";
+"You can configure routers via settings." = "U kunt routers configureren via instellingen.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "U kan het later maken";
@@ -6047,7 +6047,7 @@ report reason */
 "Your profile is stored on your device and only shared with your contacts." = "Het profiel wordt alleen gedeeld met uw contacten.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX servers kunnen uw profiel niet zien.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX routers kunnen uw profiel niet zien.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Je profiel is gewijzigd. Als je het opslaat, wordt het bijgewerkte profiel naar al je contacten verzonden.";
@@ -6056,10 +6056,10 @@ report reason */
 "Your random profile" = "Je willekeurige profiel";
 
 /* No comment provided by engineer. */
-"Your server address" = "Uw server adres";
+"Your router address" = "Uw router adres";
 
 /* No comment provided by engineer. */
-"Your servers" = "Uw servers";
+"Your routers" = "Uw routers";
 
 /* No comment provided by engineer. */
 "Your settings" = "Uw instellingen";

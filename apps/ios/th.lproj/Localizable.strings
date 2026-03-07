@@ -240,10 +240,10 @@ swipe action */
 "Add profile" = "เพิ่มโปรไฟล์";
 
 /* No comment provided by engineer. */
-"Add server" = "เพิ่มเซิร์ฟเวอร์";
+"Add router" = "เพิ่มเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด";
+"Add routers by scanning QR codes." = "เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด";
 
 /* No comment provided by engineer. */
 "Add to another device" = "เพิ่มเข้าไปในอุปกรณ์อื่น";
@@ -363,7 +363,7 @@ swipe action */
 "Answer call" = "รับสาย";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
+"Anybody can host routers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
 
 /* No comment provided by engineer. */
 "App build: %@" = "รุ่นแอป: %@";
@@ -573,7 +573,7 @@ set passcode view */
 "Chats" = "แชท";
 
 /* alert title */
-"Check server address and try again." = "ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง";
+"Check router address and try again." = "ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "อินเทอร์เฟซภาษาจีนและสเปน";
@@ -657,10 +657,10 @@ set passcode view */
 "connecting call" = "กําลังเชื่อมต่อสาย…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์…";
+"Connecting router…" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)";
+"Connecting router… (error: %@)" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)";
 
 /* No comment provided by engineer. */
 "connecting…" = "กำลังเชื่อมต่อ…";
@@ -1170,7 +1170,7 @@ alert button */
 "Enter password above to show!" = "ใส่รหัสผ่านด้านบนเพื่อแสดง!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "ใส่เซิร์ฟเวอร์ด้วยตนเอง";
+"Enter router manually" = "ใส่เซิร์ฟเวอร์ด้วยตนเอง";
 
 /* placeholder */
 "Enter welcome message…" = "ใส่ข้อความต้อนรับ…";
@@ -1349,7 +1349,7 @@ snd error text */
 "Favorite" = "ที่ชอบ";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "ไฟล์จะถูกลบออกจากเซิร์ฟเวอร์";
+"File will be deleted from routers." = "ไฟล์จะถูกลบออกจากเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "จะได้รับไฟล์เมื่อผู้ติดต่อของคุณอัปโหลดเสร็จ";
@@ -1382,7 +1382,7 @@ snd error text */
 "Find chats faster" = "ค้นหาแชทได้เร็วขึ้น";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
+"Fingerprint in router address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
 
 /* No comment provided by engineer. */
 "Fix" = "แก้ไข";
@@ -1466,7 +1466,7 @@ snd error text */
 "Group profile" = "โปรไฟล์กลุ่ม";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "โปรไฟล์กลุ่มถูกจัดเก็บไว้ในอุปกรณ์ของสมาชิก ไม่ใช่บนเซิร์ฟเวอร์";
+"Group profile is stored on members' devices, not on the routers." = "โปรไฟล์กลุ่มถูกจัดเก็บไว้ในอุปกรณ์ของสมาชิก ไม่ใช่บนเซิร์ฟเวอร์";
 
 /* snd group event chat item */
 "group profile updated" = "อัปเดตโปรไฟล์กลุ่มแล้ว";
@@ -1520,7 +1520,7 @@ snd error text */
 "How to use it" = "วิธีการใช้งาน";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "วิธีใช้เซิร์ฟเวอร์ของคุณ";
+"How to use your routers" = "วิธีใช้เซิร์ฟเวอร์ของคุณ";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "เซิร์ฟเวอร์ ICE (หนึ่งเครื่องต่อสาย)";
@@ -1565,7 +1565,7 @@ snd error text */
 "Improved privacy and security" = "ปรับปรุงความเป็นส่วนตัวและความปลอดภัยแล้ว";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "ปรับปรุงการกําหนดค่าเซิร์ฟเวอร์แล้ว";
+"Improved router configuration" = "ปรับปรุงการกําหนดค่าเซิร์ฟเวอร์แล้ว";
 
 /* No comment provided by engineer. */
 "In reply to" = "ในการตอบกลับถึง";
@@ -1637,7 +1637,7 @@ snd error text */
 "invalid data" = "ข้อมูลไม่ถูกต้อง";
 
 /* alert title */
-"Invalid server address!" = "ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง!";
+"Invalid router address!" = "ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง!";
 
 /* No comment provided by engineer. */
 "Invitation expired!" = "คำเชิญหมดอายุแล้ว!";
@@ -1688,7 +1688,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "สามารถเกิดขึ้นได้เมื่อคุณหรือการเชื่อมต่อของคุณใช้การสํารองข้อมูลฐานข้อมูลเก่า";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "มันสามารถเกิดขึ้นได้เมื่อ:\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน\n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า\n3. การเชื่อมต่อถูกบุกรุก";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "มันสามารถเกิดขึ้นได้เมื่อ:\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน\n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า\n3. การเชื่อมต่อถูกบุกรุก";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "ดูเหมือนว่าคุณได้เชื่อมต่อผ่านลิงก์นี้แล้ว หากไม่เป็นเช่นนั้น แสดงว่ามีข้อผิดพลาด (%@).";
@@ -1922,7 +1922,7 @@ snd error text */
 "Name" = "ชื่อ";
 
 /* No comment provided by engineer. */
-"Network & servers" = "เครือข่ายและเซิร์ฟเวอร์";
+"Network & routers" = "เครือข่ายและเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "Network settings" = "การตั้งค่าเครือข่าย";
@@ -2188,7 +2188,7 @@ new chat action */
 "Preserve the last message draft, with attachments." = "เก็บข้อความที่ร่างไว้ล่าสุดพร้อมไฟล์แนบ";
 
 /* No comment provided by engineer. */
-"Preset server address" = "ที่อยู่เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า";
+"Preset router address" = "ที่อยู่เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า";
 
 /* No comment provided by engineer. */
 "Preview" = "ดูตัวอย่าง";
@@ -2203,7 +2203,7 @@ new chat action */
 "Private filenames" = "ชื่อไฟล์ส่วนตัว";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "การเชื่อมต่อโปรไฟล์และเซิร์ฟเวอร์";
+"Profile and router connections" = "การเชื่อมต่อโปรไฟล์และเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "Profile image" = "รูปโปรไฟล์";
@@ -2290,7 +2290,7 @@ new chat action */
 "Received message" = "ได้รับข้อความ";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "ที่อยู่ผู้รับจะถูกเปลี่ยนเป็นเซิร์ฟเวอร์อื่น การเปลี่ยนแปลงที่อยู่จะเสร็จสมบูรณ์หลังจากที่ผู้ส่งออนไลน์";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "ที่อยู่ผู้รับจะถูกเปลี่ยนเป็นเซิร์ฟเวอร์อื่น การเปลี่ยนแปลงที่อยู่จะเสร็จสมบูรณ์หลังจากที่ผู้ส่งออนไลน์";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "การรับไฟล์จะหยุดลง";
@@ -2302,10 +2302,10 @@ new chat action */
 "Recipients see updates as you type them." = "ผู้รับจะเห็นการอัปเดตเมื่อคุณพิมพ์";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "เชื่อมต่อเซิร์ฟเวอร์ที่เชื่อมต่อทั้งหมดอีกครั้งเพื่อบังคับให้ส่งข้อความ มันใช้การจราจรเพิ่มเติม";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "เชื่อมต่อเซิร์ฟเวอร์ที่เชื่อมต่อทั้งหมดอีกครั้งเพื่อบังคับให้ส่งข้อความ มันใช้การจราจรเพิ่มเติม";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "เชื่อมต่อเซิร์ฟเวอร์อีกครั้งหรือไม่?";
+"Reconnect routers?" = "เชื่อมต่อเซิร์ฟเวอร์อีกครั้งหรือไม่?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "บันทึกถูกอัปเดตเมื่อ";
@@ -2446,10 +2446,10 @@ chat item action */
 "Save profile password" = "บันทึกรหัสผ่านโปรไฟล์";
 
 /* No comment provided by engineer. */
-"Save servers" = "บันทึกเซิร์ฟเวอร์";
+"Save routers" = "บันทึกเซิร์ฟเวอร์";
 
 /* alert title */
-"Save servers?" = "บันทึกเซิร์ฟเวอร์?";
+"Save routers?" = "บันทึกเซิร์ฟเวอร์?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "บันทึกข้อความต้อนรับ?";
@@ -2467,7 +2467,7 @@ chat item action */
 "Scan security code from your contact's app." = "สแกนรหัสความปลอดภัยจากแอปของผู้ติดต่อของคุณ";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "สแกนคิวอาร์โค้ดของเซิร์ฟเวอร์";
+"Scan router QR code" = "สแกนคิวอาร์โค้ดของเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "Search" = "ค้นหา";
@@ -2575,16 +2575,16 @@ chat item action */
 "Sent messages will be deleted after set time." = "ข้อความที่ส่งจะถูกลบหลังเกินเวลาที่กําหนด";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
+"Router requires authorization to create queues, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
+"Router requires authorization to upload, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "การทดสอบเซิร์ฟเวอร์ล้มเหลว!";
+"Router test failed!" = "การทดสอบเซิร์ฟเวอร์ล้มเหลว!";
 
 /* No comment provided by engineer. */
-"Servers" = "เซิร์ฟเวอร์";
+"Routers" = "เซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "Set 1 day" = "ตั้ง 1 วัน";
@@ -2774,10 +2774,10 @@ chat item action */
 "Test failed at step %@." = "การทดสอบล้มเหลวในขั้นตอน %@";
 
 /* No comment provided by engineer. */
-"Test server" = "เซิร์ฟเวอร์ทดสอบ";
+"Test router" = "เซิร์ฟเวอร์ทดสอบ";
 
 /* No comment provided by engineer. */
-"Test servers" = "เซิร์ฟเวอร์ทดสอบ";
+"Test routers" = "เซิร์ฟเวอร์ทดสอบ";
 
 /* alert title */
 "Tests failed!" = "การทดสอบล้มเหลว!";
@@ -2834,7 +2834,7 @@ chat item action */
 "The sender will NOT be notified" = "ผู้ส่งจะไม่ได้รับแจ้ง";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ **%@**";
+"The routers for new connections of your current chat profile **%@**." = "เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ **%@**";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";
@@ -2960,7 +2960,7 @@ chat item action */
 "updated group profile" = "อัปเดตโปรไฟล์กลุ่มแล้ว";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
+"Updating settings will re-connect the client to all routers." = "การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "อัปเกรดและเปิดการแชท";
@@ -2981,13 +2981,13 @@ chat item action */
 "Use iOS call interface" = "ใช้อินเทอร์เฟซการโทร iOS";
 
 /* No comment provided by engineer. */
-"Use server" = "ใช้เซิร์ฟเวอร์";
+"Use router" = "ใช้เซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม?";
+"Use SimpleX Chat routers?" = "ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม?";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
+"Using SimpleX Chat routers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
@@ -3278,13 +3278,13 @@ chat item action */
 "Your profile is stored on your device and only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
 
 /* No comment provided by engineer. */
 "Your random profile" = "โปรไฟล์แบบสุ่มของคุณ";
 
 /* No comment provided by engineer. */
-"Your server address" = "ที่อยู่เซิร์ฟเวอร์ของคุณ";
+"Your router address" = "ที่อยู่เซิร์ฟเวอร์ของคุณ";
 
 /* No comment provided by engineer. */
 "Your settings" = "การตั้งค่าของคุณ";

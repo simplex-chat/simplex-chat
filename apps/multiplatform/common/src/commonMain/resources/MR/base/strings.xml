@@ -33,10 +33,10 @@
   <string name="server_error">error</string>
   <string name="server_connecting">connecting</string>
   <string name="server_no_sub">no subscription</string>
-  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this connection.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this connection.</string>
-  <string name="error_connecting_to_server_to_receive_messages">Error connecting to the server used to receive messages from this connection: %1$s.</string>
-  <string name="not_connected_to_server_to_receive_messages_no_sub">You are not connected to the server used to receive messages from this connection (no subscription).</string>
+  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the router used to receive messages from this connection.</string>
+  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the router used to receive messages from this connection.</string>
+  <string name="error_connecting_to_server_to_receive_messages">Error connecting to the router used to receive messages from this connection: %1$s.</string>
+  <string name="not_connected_to_server_to_receive_messages_no_sub">You are not connected to the router used to receive messages from this connection (no subscription).</string>
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
@@ -116,12 +116,12 @@
   <string name="report_reason_other">Another reason</string>
 
   <!-- SimpleXAPI.kt -->
-  <string name="error_saving_smp_servers">Error saving SMP servers</string>
-  <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
-  <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
-  <string name="ensure_xftp_server_address_are_correct_format_and_unique">Make sure XFTP server addresses are in correct format, line separated and are not duplicated.</string>
-  <string name="error_loading_smp_servers">Error loading SMP servers</string>
-  <string name="error_loading_xftp_servers">Error loading XFTP servers</string>
+  <string name="error_saving_smp_servers">Error saving packet routers</string>
+  <string name="error_saving_xftp_servers">Error saving data routers</string>
+  <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure packet router addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="ensure_xftp_server_address_are_correct_format_and_unique">Make sure data router addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="error_loading_smp_servers">Error loading packet routers</string>
+  <string name="error_loading_xftp_servers">Error loading data routers</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
@@ -132,15 +132,15 @@
   <string name="failed_to_create_user_invalid_title">Invalid display name!</string>
   <string name="failed_to_create_user_invalid_desc">This display name is invalid. Please choose another name.</string>
   <string name="failed_to_active_user_title">Error switching profile!</string>
-  <string name="failed_to_save_servers">Error saving servers</string>
-  <string name="no_message_servers_configured">No message servers.</string>
-  <string name="no_message_servers_configured_for_receiving">No servers to receive messages.</string>
-  <string name="no_message_servers_configured_for_private_routing">No servers for private message routing.</string>
-  <string name="no_media_servers_configured">No media &amp; file servers.</string>
-  <string name="no_media_servers_configured_for_sending">No servers to send files.</string>
-  <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
+  <string name="failed_to_save_servers">Error saving routers</string>
+  <string name="no_message_servers_configured">No packet routers.</string>
+  <string name="no_message_servers_configured_for_receiving">No routers to receive messages.</string>
+  <string name="no_message_servers_configured_for_private_routing">No routers for private message routing.</string>
+  <string name="no_media_servers_configured">No data routers.</string>
+  <string name="no_media_servers_configured_for_sending">No routers to send files.</string>
+  <string name="no_media_servers_configured_for_private_routing">No routers to receive files.</string>
   <string name="for_chat_profile">For chat profile %s:</string>
-  <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
+  <string name="errors_in_servers_configuration">Errors in routers configuration.</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
   <string name="blocking_reason_spam">Spam</string>
   <string name="blocking_reason_content">Content violates conditions of use</string>
@@ -148,21 +148,21 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
   <string name="connection_error">Connection error</string>
-  <string name="network_error_unknown_ca">Fingerprint in server address does not match certificate: %1$s.</string>
+  <string name="network_error_unknown_ca">Fingerprint in router address does not match certificate: %1$s.</string>
   <string name="network_error_desc">Please check your network connection with %1$s and try again.</string>
-  <string name="network_error_broker_host_desc">Server address is incompatible with network settings: %1$s.</string>
-  <string name="network_error_broker_version_desc">Server version is incompatible with your app: %1$s.</string>
+  <string name="network_error_broker_host_desc">Router address is incompatible with network settings: %1$s.</string>
+  <string name="network_error_broker_version_desc">Router version is incompatible with your app: %1$s.</string>
   <string name="private_routing_timeout">Private routing timeout</string>
   <string name="private_routing_error">Private routing error</string>
   <string name="private_routing_no_session">No private routing session</string>
-  <string name="smp_proxy_error_unknown_ca">Fingerprint in forwarding server address does not match certificate: %1$s.</string>
-  <string name="smp_proxy_error_connecting">Error connecting to forwarding server %1$s. Please try later.</string>
-  <string name="smp_proxy_error_broker_host">Forwarding server address is incompatible with network settings: %1$s.</string>
-  <string name="smp_proxy_error_broker_version">Forwarding server version is incompatible with network settings: %1$s.</string>
-  <string name="proxy_destination_error_unknown_ca">Fingerprint in destination server address does not match certificate: %1$s.</string>
-  <string name="proxy_destination_error_failed_to_connect">Forwarding server %1$s failed to connect to destination server %2$s. Please try later.</string>
-  <string name="proxy_destination_error_broker_host">Destination server address of %1$s is incompatible with forwarding server %2$s settings.</string>
-  <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
+  <string name="smp_proxy_error_unknown_ca">Fingerprint in forwarding router address does not match certificate: %1$s.</string>
+  <string name="smp_proxy_error_connecting">Error connecting to forwarding router %1$s. Please try later.</string>
+  <string name="smp_proxy_error_broker_host">Forwarding router address is incompatible with network settings: %1$s.</string>
+  <string name="smp_proxy_error_broker_version">Forwarding router version is incompatible with network settings: %1$s.</string>
+  <string name="proxy_destination_error_unknown_ca">Fingerprint in destination router address does not match certificate: %1$s.</string>
+  <string name="proxy_destination_error_failed_to_connect">Forwarding router %1$s failed to connect to destination router %2$s. Please try later.</string>
+  <string name="proxy_destination_error_broker_host">Destination router address of %1$s is incompatible with forwarding router %2$s settings.</string>
+  <string name="proxy_destination_error_broker_version">Destination router version of %1$s is incompatible with forwarding router %2$s.</string>
   <string name="please_try_later">Please try later.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_forwarding_messages">Error forwarding messages</string>
@@ -176,8 +176,8 @@
   <string name="error_deleting_member_support_chat">Error deleting chat</string>
   <string name="cannot_receive_file">Cannot receive file</string>
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
-  <string name="file_not_approved_title">Unknown servers!</string>
-  <string name="file_not_approved_descr">Without Tor or VPN, your IP address will be visible to these XFTP relays:\n%1$s.</string>
+  <string name="file_not_approved_title">Unknown routers!</string>
+  <string name="file_not_approved_descr">Without Tor or VPN, your IP address will be visible to these data routers:\n%1$s.</string>
   <string name="n_other_file_errors">%1$d other file error(s).</string>
   <string name="error_receiving_file">Error receiving file</string>
   <string name="n_file_errors">%1$d file error(s):\n%2$s</string>
@@ -191,7 +191,7 @@
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="connection_error_blocked">Connection blocked</string>
-  <string name="connection_error_blocked_desc">Connection is blocked by server operator:\n%1$s.</string>
+  <string name="connection_error_blocked_desc">Connection is blocked by router operator:\n%1$s.</string>
   <string name="connection_error_quota">Undelivered messages</string>
   <string name="connection_error_quota_desc">The connection reached the limit of undelivered messages, your contact may be offline.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
@@ -206,9 +206,9 @@
   <string name="error_aborting_address_change">Error aborting address change</string>
   <string name="error_synchronizing_connection">Error synchronizing connection</string>
   <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
-  <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password.</string>
-  <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password.</string>
-  <string name="error_smp_test_certificate">Fingerprint in server address does not match certificate.</string>
+  <string name="error_smp_test_server_auth">Router requires authorization to create queues, check password.</string>
+  <string name="error_xftp_test_server_auth">Router requires authorization to upload, check password.</string>
+  <string name="error_smp_test_certificate">Fingerprint in router address does not match certificate.</string>
   <string name="error_setting_address">Error setting address</string>
   <string name="error_alert_title">Error</string>
   <string name="smp_server_test_connect">Connect</string>
@@ -242,7 +242,7 @@
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
-  <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
+  <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the routers.</string>
   <string name="turn_off_battery_optimization_button">Allow</string>
   <string name="turn_off_system_restriction_button">Open app settings</string>
   <string name="disable_notifications_button">Disable notifications</string>
@@ -348,17 +348,17 @@
   <string name="snd_error_auth">Wrong key or unknown connection - most likely this connection is deleted.</string>
   <string name="snd_error_quota">Capacity exceeded - recipient did not receive previously sent messages.</string>
   <string name="snd_error_expired">Network issues - message expired after many attempts to send it.</string>
-  <string name="snd_error_relay">Destination server error: %1$s</string>
-  <string name="snd_error_proxy">Forwarding server: %1$s\nError: %2$s</string>
-  <string name="snd_error_proxy_relay">Forwarding server: %1$s\nDestination server error: %2$s</string>
-  <string name="srv_error_host">Server address is incompatible with network settings.</string>
-  <string name="srv_error_version">Server version is incompatible with network settings.</string>
+  <string name="snd_error_relay">Destination router error: %1$s</string>
+  <string name="snd_error_proxy">Forwarding router: %1$s\nError: %2$s</string>
+  <string name="snd_error_proxy_relay">Forwarding router: %1$s\nDestination router error: %2$s</string>
+  <string name="srv_error_host">Router address is incompatible with network settings.</string>
+  <string name="srv_error_version">Router version is incompatible with network settings.</string>
 
   <!-- CIFileStatus errors -->
   <string name="file_error_auth">Wrong key or unknown file chunk address - most likely file is deleted.</string>
-  <string name="file_error_blocked">File is blocked by server operator:\n%1$s.</string>
+  <string name="file_error_blocked">File is blocked by router operator:\n%1$s.</string>
   <string name="file_error_no_file">File not found - most likely file was deleted or cancelled.</string>
-  <string name="file_error_relay">File server error: %1$s</string>
+  <string name="file_error_relay">Data router error: %1$s</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
@@ -426,7 +426,7 @@
   <string name="stop_file__confirm">Stop</string>
   <string name="revoke_file__action">Revoke file</string>
   <string name="revoke_file__title">Revoke file?</string>
-  <string name="revoke_file__message">File will be deleted from servers.</string>
+  <string name="revoke_file__message">File will be deleted from routers.</string>
   <string name="revoke_file__confirm">Revoke</string>
   <string name="forward_chat_item">Forward</string>
   <string name="download_file">Download</string>
@@ -663,7 +663,7 @@
   <string name="icon_descr_server_status_error">Error</string>
   <string name="icon_descr_server_status_pending">Pending</string>
   <string name="switch_receiving_address_question">Change receiving address?</string>
-  <string name="switch_receiving_address_desc">Receiving address will be changed to a different server. Address change will complete after sender comes online.</string>
+  <string name="switch_receiving_address_desc">Receiving address will be changed to a different router. Address change will complete after sender comes online.</string>
   <string name="abort_switch_receiving_address_question">Abort changing address?</string>
   <string name="abort_switch_receiving_address_desc">Address change will be aborted. Old receiving address will be used.</string>
   <string name="abort_switch_receiving_address_confirm">Abort</string>
@@ -940,48 +940,48 @@
   <string name="send_us_an_email">Send us email</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
-  <string name="message_servers">Message servers</string>
-  <string name="smp_servers">SMP servers</string>
-  <string name="smp_servers_configured">Configured SMP servers</string>
-  <string name="smp_servers_other">Other SMP servers</string>
-  <string name="smp_servers_preset_address">Preset server address</string>
-  <string name="smp_servers_preset_add">Add preset servers</string>
-  <string name="smp_servers_add">Add server</string>
-  <string name="smp_servers_test_server">Test server</string>
-  <string name="smp_servers_test_servers">Test servers</string>
-  <string name="smp_servers_save">Save servers</string>
-  <string name="smp_servers_test_failed">Server test failed!</string>
-  <string name="smp_servers_test_some_failed">Some servers failed the test:</string>
-  <string name="smp_servers_scan_qr">Scan server QR code</string>
-  <string name="smp_servers_enter_manually">Enter server manually</string>
-  <string name="smp_servers_new_server">New server</string>
-  <string name="smp_servers_preset_server">Preset server</string>
-  <string name="smp_servers_your_server">Your server</string>
-  <string name="smp_servers_your_server_address">Your server address</string>
-  <string name="smp_servers_use_server">Use server</string>
+  <string name="message_servers">Packet routers</string>
+  <string name="smp_servers">Packet routers</string>
+  <string name="smp_servers_configured">Configured packet routers</string>
+  <string name="smp_servers_other">Other packet routers</string>
+  <string name="smp_servers_preset_address">Preset router address</string>
+  <string name="smp_servers_preset_add">Add preset routers</string>
+  <string name="smp_servers_add">Add router</string>
+  <string name="smp_servers_test_server">Test router</string>
+  <string name="smp_servers_test_servers">Test routers</string>
+  <string name="smp_servers_save">Save routers</string>
+  <string name="smp_servers_test_failed">Router test failed!</string>
+  <string name="smp_servers_test_some_failed">Some routers failed the test:</string>
+  <string name="smp_servers_scan_qr">Scan router QR code</string>
+  <string name="smp_servers_enter_manually">Enter router manually</string>
+  <string name="smp_servers_new_server">New router</string>
+  <string name="smp_servers_preset_server">Preset router</string>
+  <string name="smp_servers_your_server">Your router</string>
+  <string name="smp_servers_your_server_address">Your router address</string>
+  <string name="smp_servers_use_server">Use router</string>
   <string name="smp_servers_use_server_for_new_conn">Use for new connections</string>
   <string name="smp_servers_add_to_another_device">Add to another device</string>
-  <string name="smp_servers_invalid_address">Invalid server address!</string>
-  <string name="smp_servers_check_address">Check server address and try again.</string>
-  <string name="smp_servers_delete_server">Delete server</string>
-  <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
-  <string name="smp_save_servers_question">Save servers?</string>
-  <string name="media_and_file_servers">Media &amp; file servers</string>
-  <string name="xftp_servers">XFTP servers</string>
-  <string name="xftp_servers_configured">Configured XFTP servers</string>
-  <string name="xftp_servers_other">Other XFTP servers</string>
+  <string name="smp_servers_invalid_address">Invalid router address!</string>
+  <string name="smp_servers_check_address">Check router address and try again.</string>
+  <string name="smp_servers_delete_server">Delete router</string>
+  <string name="smp_servers_per_user">The routers for new connections of your current chat profile</string>
+  <string name="smp_save_servers_question">Save routers?</string>
+  <string name="media_and_file_servers">Data routers</string>
+  <string name="xftp_servers">Data routers</string>
+  <string name="xftp_servers_configured">Configured data routers</string>
+  <string name="xftp_servers_other">Other data routers</string>
   <string name="subscription_percentage">Show percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
   <string name="reset_all_hints">Reset all hints</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
-  <string name="use_simplex_chat_servers__question">Use SimpleX Chat servers?</string>
-  <string name="your_SMP_servers">Your SMP servers</string>
-  <string name="your_XFTP_servers">Your XFTP servers</string>
-  <string name="using_simplex_chat_servers">Using SimpleX Chat servers.</string>
+  <string name="use_simplex_chat_servers__question">Use SimpleX Chat routers?</string>
+  <string name="your_SMP_servers">Your packet routers</string>
+  <string name="your_XFTP_servers">Your data routers</string>
+  <string name="using_simplex_chat_servers">Using SimpleX Chat routers.</string>
   <string name="how_to">How to</string>
-  <string name="how_to_use_your_servers">How to use your servers</string>
+  <string name="how_to_use_your_servers">How to use your routers</string>
   <string name="saved_ICE_servers_will_be_removed">Saved WebRTC ICE servers will be removed.</string>
   <string name="your_ICE_servers">Your ICE servers</string>
   <string name="configure_ICE_servers">Configure ICE servers</string>
@@ -989,7 +989,7 @@
   <string name="error_saving_ICE_servers">Error saving ICE servers</string>
   <string name="ensure_ICE_server_address_are_correct_format_and_unique">Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="save_servers_button">Save</string>
-  <string name="network_and_servers">Network &amp; servers</string>
+  <string name="network_and_servers">Network &amp; routers</string>
   <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Advanced settings</string>
   <string name="network_socks_proxy">SOCKS proxy</string>
@@ -1009,54 +1009,54 @@
   <string name="host_verb">Host</string>
   <string name="port_verb">Port</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
-  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port %d? Proxy must be started before enabling this option.</string>
+  <string name="network_enable_socks_info">Access the routers via SOCKS proxy on port %d? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
-  <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
+  <string name="network_disable_socks_info">If you confirm, the packet routers will be able to see your IP address, and your provider - which routers you are connecting to.</string>
   <string name="network_use_onion_hosts">Use .onion hosts</string>
   <string name="network_use_onion_hosts_prefer">When available</string>
   <string name="network_use_onion_hosts_no">No</string>
   <string name="network_use_onion_hosts_required">Required</string>
   <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
-  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the servers without .onion address.</string>
+  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the routers without .onion address.</string>
   <string name="network_session_mode_transport_isolation">Transport isolation</string>
   <string name="network_session_mode_user">Chat profile</string>
   <string name="network_session_mode_session">App session</string>
-  <string name="network_session_mode_server">Server</string>
+  <string name="network_session_mode_server">Router</string>
   <string name="network_session_mode_entity">Connection</string>
   <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
   <string name="network_session_mode_session_description">New SOCKS credentials will be used every time you start the app.</string>
-  <string name="network_session_mode_server_description">New SOCKS credentials will be used for each server.</string>
+  <string name="network_session_mode_server_description">New SOCKS credentials will be used for each router.</string>
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
-  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
+  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: packet and data routers are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
   <string name="network_smp_proxy_mode_private_routing">Private routing</string>
   <string name="network_smp_proxy_mode_always">Always</string>
-  <string name="network_smp_proxy_mode_unknown">Unknown servers</string>
+  <string name="network_smp_proxy_mode_unknown">Unknown routers</string>
   <string name="network_smp_proxy_mode_unprotected">Unprotected</string>
   <string name="network_smp_proxy_mode_never">Never</string>
   <string name="network_smp_proxy_mode_always_description">Always use private routing.</string>
-  <string name="network_smp_proxy_mode_unknown_description">Use private routing with unknown servers.</string>
-  <string name="network_smp_proxy_mode_unprotected_description">Use private routing with unknown servers when IP address is not protected.</string>
+  <string name="network_smp_proxy_mode_unknown_description">Use private routing with unknown routers.</string>
+  <string name="network_smp_proxy_mode_unprotected_description">Use private routing with unknown routers when IP address is not protected.</string>
   <string name="network_smp_proxy_mode_never_description">Do NOT use private routing.</string>
   <string name="update_network_smp_proxy_mode_question">Message routing mode</string>
   <string name="network_smp_proxy_fallback_allow_downgrade">Allow downgrade</string>
   <string name="network_smp_proxy_fallback_allow">Yes</string>
   <string name="network_smp_proxy_fallback_allow_protected">When IP hidden</string>
   <string name="network_smp_proxy_fallback_prohibit">No</string>
-  <string name="network_smp_proxy_fallback_allow_description">Send messages directly when your or destination server does not support private routing.</string>
-  <string name="network_smp_proxy_fallback_allow_protected_description">Send messages directly when IP address is protected and your or destination server does not support private routing.</string>
-  <string name="network_smp_proxy_fallback_prohibit_description">Do NOT send messages directly, even if your or destination server does not support private routing.</string>
+  <string name="network_smp_proxy_fallback_allow_description">Send messages directly when your or destination router does not support private routing.</string>
+  <string name="network_smp_proxy_fallback_allow_protected_description">Send messages directly when IP address is protected and your or destination router does not support private routing.</string>
+  <string name="network_smp_proxy_fallback_prohibit_description">Do NOT send messages directly, even if your or destination router does not support private routing.</string>
   <string name="update_network_smp_proxy_fallback_question">Message routing fallback</string>
   <string name="private_routing_show_message_status">Show message status</string>
-  <string name="private_routing_explanation">To protect your IP address, private routing uses your SMP servers to deliver messages.</string>
+  <string name="private_routing_explanation">To protect your IP address, private routing uses your packet routers to deliver messages.</string>
   <string name="network_smp_web_port_section_title">TCP port for messaging</string>
   <string name="network_smp_web_port_toggle">Use web port</string>
   <string name="network_smp_web_port_footer">Use TCP port %1$s when no port is specified.</string>
-  <string name="network_smp_web_port_preset_footer">Use TCP port 443 for preset servers only.</string>
-  <string name="network_smp_web_port_all">All servers</string>
-  <string name="network_smp_web_port_preset">Preset servers</string>
+  <string name="network_smp_web_port_preset_footer">Use TCP port 443 for preset routers only.</string>
+  <string name="network_smp_web_port_all">All routers</string>
+  <string name="network_smp_web_port_preset">Preset routers</string>
   <string name="network_smp_web_port_off">Off</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
@@ -1153,7 +1153,7 @@
   <string name="short_descr__field">Bio:</string>
   <string name="bio_too_large">Bio too large</string>
   <string name="your_current_profile">Your current profile</string>
-  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
+  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
   <string name="save_admission_question">Save admission settings?</string>
@@ -1175,7 +1175,7 @@
   <!-- Welcome Prompts - WelcomeView.kt -->
   <string name="you_control_your_chat">You control your chat!</string>
   <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
-  <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the servers.</string>
+  <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the routers.</string>
   <string name="create_profile">Create profile</string>
   <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
@@ -1244,7 +1244,7 @@
   <string name="immune_to_spam_and_abuse">Immune to spam</string>
   <string name="people_can_connect_only_via_links_you_share">You decide who can connect.</string>
   <string name="decentralized">Decentralized</string>
-  <string name="opensource_protocol_and_code_anybody_can_run_servers">Anybody can host servers.</string>
+  <string name="opensource_protocol_and_code_anybody_can_run_servers">Anybody can host routers.</string>
   <string name="create_your_profile">Create your profile</string>
   <string name="make_private_connection">Make a private connection</string>
   <string name="migrate_from_another_device">Migrate from another device</string>
@@ -1278,23 +1278,23 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to server operators.</string>
+  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to router operators.</string>
   <string name="onboarding_conditions_by_using_you_agree">By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam.</string>
   <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacy policy and conditions of use.</string>
   <string name="onboarding_conditions_accept">Accept</string>
-  <string name="onboarding_conditions_configure_server_operators">Configure server operators</string>
-  <string name="onboarding_choose_server_operators">Server operators</string>
+  <string name="onboarding_conditions_configure_server_operators">Configure router operators</string>
+  <string name="onboarding_choose_server_operators">Router operators</string>
   <string name="onboarding_network_operators">Network operators</string>
-  <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
+  <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app.</string>
   <string name="onboarding_network_operators_app_will_use_different_operators">The app protects your privacy by using different operators in each conversation.</string>
   <string name="onboarding_network_operators_cant_see_who_talks_to_whom">When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</string>
-  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</string>
+  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router.</string>
   <string name="onboarding_network_about_operators">About operators</string>
   <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
   <string name="how_it_helps_privacy">How it helps privacy</string>
-  <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
+  <string name="onboarding_network_operators_configure_via_settings">You can configure routers via settings.</string>
   <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
-  <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>
+  <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; routers settings.</string>
   <string name="onboarding_network_operators_review_later">Review later</string>
   <string name="onboarding_network_operators_update">Update</string>
   <string name="onboarding_network_operators_continue">Continue</string>
@@ -1367,7 +1367,7 @@
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
-  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
   <string name="alert_title_msg_bad_hash">Bad message hash</string>
   <string name="alert_text_msg_bad_hash">The hash of the previous message is different."</string>
   <string name="alert_title_msg_bad_id">Bad message ID</string>
@@ -1385,8 +1385,8 @@
   <string name="encrypt_local_files">Encrypt local files</string>
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="protect_ip_address">Protect IP address</string>
-  <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
-  <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
+  <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown data routers (except .onion or when SOCKS proxy is enabled).</string>
+  <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to data routers.</string>
   <string name="send_link_previews">Send link previews</string>
   <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
@@ -1930,7 +1930,7 @@
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
   <string name="message_queue_info">Message queue info</string>
   <string name="message_queue_info_none">none</string>
-  <string name="message_queue_info_server_info">server queue info: %1$s\n\nlast received msg: %2$s</string>
+  <string name="message_queue_info_server_info">router queue info: %1$s\n\nlast received msg: %2$s</string>
 
   <string name="cant_call_contact_alert_title">Can\'t call contact</string>
   <string name="cant_call_contact_connecting_wait_alert_text">Connecting to contact, please wait or check later!</string>
@@ -1954,7 +1954,7 @@
   <string name="message_too_large">Message too large</string>
 
   <!-- ConnectionStats -->
-  <string name="conn_stats_section_title_servers">SERVERS</string>
+  <string name="conn_stats_section_title_servers">ROUTERS</string>
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
   <string name="network_status">Network status</string>
@@ -1979,27 +1979,27 @@
   <string name="create_group_button">Create group</string>
 
   <!-- GroupProfileView.kt -->
-  <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the routers.</string>
   <string name="save_group_profile">Save group profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
 
   <!-- NetworkAndServers.kt -->
-  <string name="network_preset_servers_title">Preset servers</string>
+  <string name="network_preset_servers_title">Preset routers</string>
   <string name="operator_review_conditions">Review conditions</string>
   <string name="operator_conditions_accepted">Accepted conditions</string>
   <string name="operator_conditions_accepted_for_enabled_operators_on">Conditions will be automatically accepted for enabled operators on: %s.</string>
-  <string name="your_servers">Your servers</string>
+  <string name="your_servers">Your routers</string>
   <string name="operators_conditions_accepted_for"><![CDATA[Conditions are accepted for the operator(s): <b>%s</b>.]]></string>
   <string name="operators_conditions_will_be_accepted_for"><![CDATA[Conditions will be accepted for the operator(s): <b>%s</b>.]]></string>
 
   <!-- OperatorView.kt -->
   <string name="operator">Operator</string>
-  <string name="operator_servers_title">%s servers</string>
+  <string name="operator_servers_title">%s routers</string>
   <string name="operator_info_title">Network operator</string>
   <string name="operator_website">Website</string>
   <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
   <string name="operator_conditions_will_be_accepted_on">Conditions will be accepted on: %s.</string>
-  <string name="operator_use_operator_toggle_description">Use servers</string>
+  <string name="operator_use_operator_toggle_description">Use routers</string>
   <string name="use_servers_of_operator_x">Use %s</string>
   <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
   <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
@@ -2012,27 +2012,27 @@
   <string name="accept_conditions">Accept conditions</string>
   <string name="operator_conditions_of_use">Conditions of use</string>
   <string name="operator_updated_conditions">Updated conditions</string>
-  <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the servers of <b>%s</b>, accept conditions of use.]]></string>
+  <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the routers of <b>%s</b>, accept conditions of use.]]></string>
   <string name="operator_use_for_messages">Use for messages</string>
   <string name="operator_use_for_messages_receiving">To receive</string>
   <string name="operator_use_for_messages_private_routing">For private routing</string>
-  <string name="operator_added_message_servers">Added message servers</string>
+  <string name="operator_added_message_servers">Added packet routers</string>
   <string name="operator_use_for_files">Use for files</string>
   <string name="operator_use_for_sending">To send</string>
-  <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
-  <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
+  <string name="xftp_servers_per_user">The routers for new files of your current chat profile</string>
+  <string name="operator_added_xftp_servers">Added data routers</string>
   <string name="operator_open_conditions">Open conditions</string>
   <string name="operator_open_changes">Open changes</string>
 
   <!-- ProtocolServerView.kt -->
-  <string name="error_updating_server_title">Error updating server</string>
-  <string name="error_server_protocol_changed">Server protocol changed.</string>
-  <string name="error_server_operator_changed">Server operator changed.</string>
+  <string name="error_updating_server_title">Error updating router</string>
+  <string name="error_server_protocol_changed">Router protocol changed.</string>
+  <string name="error_server_operator_changed">Router operator changed.</string>
 
   <!-- NewServerView.kt -->
-  <string name="operator_server_alert_title">Operator server</string>
-  <string name="server_added_to_operator__name">Server added to operator %s.</string>
-  <string name="error_adding_server">Error adding server</string>
+  <string name="operator_server_alert_title">Operator router</string>
+  <string name="server_added_to_operator__name">Router added to operator %s.</string>
+  <string name="error_adding_server">Error adding router</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
@@ -2050,7 +2050,7 @@
   <string name="network_options_save">Save</string>
   <string name="network_options_save_and_reconnect">Save and reconnect</string>
   <string name="update_network_settings_question">Update network settings?</string>
-  <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
+  <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all routers.</string>
   <string name="update_network_settings_confirmation">Update</string>
 
   <!-- UserProfilesView.kt -->
@@ -2058,7 +2058,7 @@
   <string name="users_delete_question">Delete chat profile?</string>
   <string name="users_delete_all_chats_deleted">All chats and messages will be deleted - this cannot be undone!</string>
   <string name="users_delete_profile_for">Delete chat profile for</string>
-  <string name="users_delete_with_connections">Profile and server connections</string>
+  <string name="users_delete_with_connections">Profile and router connections</string>
   <string name="users_delete_data_only">Local profile data only</string>
   <string name="user_hide">Hide</string>
   <string name="user_unhide">Unhide</string>
@@ -2325,8 +2325,8 @@
   <string name="v4_3_voice_messages_desc">Max 40 seconds, received instantly.</string>
   <string name="v4_3_irreversible_message_deletion">Irreversible message deletion</string>
   <string name="v4_3_irreversible_message_deletion_desc">Your contacts can allow full message deletion.</string>
-  <string name="v4_3_improved_server_configuration">Improved server configuration</string>
-  <string name="v4_3_improved_server_configuration_desc">Add servers by scanning QR codes.</string>
+  <string name="v4_3_improved_server_configuration">Improved router configuration</string>
+  <string name="v4_3_improved_server_configuration_desc">Add routers by scanning QR codes.</string>
   <string name="v4_3_improved_privacy_and_security">Improved privacy and security</string>
   <string name="v4_3_improved_privacy_and_security_desc">Hide app screen in the recent apps.</string>
   <string name="v4_4_disappearing_messages">Disappearing messages</string>
@@ -2434,11 +2434,11 @@
   <string name="v5_7_network_descr">More reliable network connection.</string>
   <string name="v5_7_new_interface_languages">Lithuanian UI</string>
   <string name="v5_8_private_routing">Private message routing 🚀</string>
-  <string name="v5_8_private_routing_descr">Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network &amp; servers* settings.</string>
+  <string name="v5_8_private_routing_descr">Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network &amp; routers* settings.</string>
   <string name="v5_8_chat_themes">New chat themes</string>
   <string name="v5_8_chat_themes_descr">Make your chats look different!</string>
   <string name="v5_8_safe_files">Safely receive files</string>
-  <string name="v5_8_safe_files_descr">Confirm files from unknown servers.</string>
+  <string name="v5_8_safe_files_descr">Confirm files from unknown routers.</string>
   <string name="v5_8_message_delivery">Improved message delivery</string>
   <string name="v5_8_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_8_persian_ui">Persian UI</string>
@@ -2456,7 +2456,7 @@
   <string name="v6_0_upgrade_app">Upgrade app automatically</string>
   <string name="v6_0_upgrade_app_descr">Download new versions from GitHub.</string>
   <string name="v6_0_connection_servers_status">Control your network</string>
-  <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
+  <string name="v6_0_connection_servers_status_descr">Connection and routers status.</string>
   <string name="v6_1_better_security">Better security ✅</string>
   <string name="v6_1_better_security_descr">SimpleX protocols reviewed by Trail of Bits.</string>
   <string name="v6_1_better_calls">Better calls</string>
@@ -2469,7 +2469,7 @@
   <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
   <string name="v6_2_network_decentralization">Network decentralization</string>
   <string name="v6_2_network_decentralization_descr">The second preset operator in the app!</string>
-  <string name="v6_2_network_decentralization_enable_flux">Enable Flux in Network &amp; servers settings for better metadata privacy.</string>
+  <string name="v6_2_network_decentralization_enable_flux">Enable Flux in Network &amp; routers settings for better metadata privacy.</string>
   <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
   <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
   <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>
@@ -2677,7 +2677,7 @@
   <string name="migrate_from_device_chat_should_be_stopped">In order to continue, chat should be stopped.</string>
   <string name="migrate_from_device_archive_and_upload">Archive and upload</string>
   <string name="migrate_from_device_confirm_upload">Confirm upload</string>
-  <string name="migrate_from_device_all_data_will_be_uploaded">All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</string>
+  <string name="migrate_from_device_all_data_will_be_uploaded">All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers.</string>
   <string name="migrate_from_device_archiving_database">Archiving database</string>
   <string name="migrate_from_device_bytes_uploaded">%s uploaded</string>
   <string name="migrate_from_device_uploading_archive">Uploading archive</string>
@@ -2688,7 +2688,7 @@
   <string name="migrate_from_device_cancel_migration">Cancel migration</string>
   <string name="migrate_from_device_finalize_migration">Finalize migration</string>
   <string name="migrate_from_device_remove_archive_question">Remove archive?</string>
-  <string name="migrate_from_device_uploaded_archive_will_be_removed">The uploaded database archive will be permanently removed from the servers.</string>
+  <string name="migrate_from_device_uploaded_archive_will_be_removed">The uploaded database archive will be permanently removed from the routers.</string>
   <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Choose <i>Migrate from another device</i> on the new device and scan QR code.]]></string>
   <string name="migrate_from_device_or_share_this_file_link">Or securely share this file link</string>
   <string name="migrate_from_device_delete_database_from_device">Delete database from this device</string>
@@ -2712,7 +2712,7 @@
   <string name="network_type_other">Other</string>
 
   <!-- ServersSummaryView.kt -->
-  <string name="servers_info">Servers info</string>
+  <string name="servers_info">Routers info</string>
   <string name="servers_info_files_tab">Files</string>
   <string name="servers_info_missing">No info, try to reload</string>
   <string name="servers_info_target">Showing info for</string>
@@ -2731,21 +2731,21 @@
   <string name="servers_info_subscriptions_connections_subscribed">Active connections</string>
   <string name="servers_info_subscriptions_connections_pending">Pending</string>
   <string name="servers_info_subscriptions_total">Total</string>
-  <string name="servers_info_connected_servers_section_header">Connected servers</string>
-  <string name="servers_info_previously_connected_servers_section_header">Previously connected servers</string>
-  <string name="servers_info_proxied_servers_section_header">Proxied servers</string>
-  <string name="servers_info_proxied_servers_section_footer">You are not connected to these servers. Private routing is used to deliver messages to them.</string>
-  <string name="servers_info_reconnect_servers_title">Reconnect servers?</string>
-  <string name="servers_info_reconnect_servers_message">Reconnect all connected servers to force message delivery. It uses additional traffic.</string>
-  <string name="servers_info_reconnect_server_title">Reconnect server?</string>
-  <string name="servers_info_reconnect_server_message">Reconnect server to force message delivery. It uses additional traffic.</string>
-  <string name="servers_info_reconnect_servers_error">Error reconnecting servers</string>
-  <string name="servers_info_reconnect_server_error">Error reconnecting server</string>
+  <string name="servers_info_connected_servers_section_header">Connected routers</string>
+  <string name="servers_info_previously_connected_servers_section_header">Previously connected routers</string>
+  <string name="servers_info_proxied_servers_section_header">Proxied routers</string>
+  <string name="servers_info_proxied_servers_section_footer">You are not connected to these routers. Private routing is used to deliver messages to them.</string>
+  <string name="servers_info_reconnect_servers_title">Reconnect routers?</string>
+  <string name="servers_info_reconnect_servers_message">Reconnect all connected routers to force message delivery. It uses additional traffic.</string>
+  <string name="servers_info_reconnect_server_title">Reconnect router?</string>
+  <string name="servers_info_reconnect_server_message">Reconnect router to force message delivery. It uses additional traffic.</string>
+  <string name="servers_info_reconnect_servers_error">Error reconnecting routers</string>
+  <string name="servers_info_reconnect_server_error">Error reconnecting router</string>
   <string name="servers_info_modal_error_title">Error</string>
-  <string name="servers_info_reconnect_all_servers_button">Reconnect all servers</string>
+  <string name="servers_info_reconnect_all_servers_button">Reconnect all routers</string>
   <string name="servers_info_reset_stats">Reset all statistics</string>
   <string name="servers_info_reset_stats_alert_title">Reset all statistics?</string>
-  <string name="servers_info_reset_stats_alert_message">Servers statistics will be reset - this cannot be undone!</string>
+  <string name="servers_info_reset_stats_alert_message">Routers statistics will be reset - this cannot be undone!</string>
   <string name="servers_info_reset_stats_alert_confirm">Reset</string>
   <string name="servers_info_reset_stats_alert_error_title">Error resetting statistics</string>
   <string name="servers_info_uploaded">Uploaded</string>
@@ -2757,8 +2757,8 @@
   <string name="servers_info_detailed_statistics_received_total">Received total</string>
   <string name="servers_info_detailed_statistics_receive_errors">Receive errors</string>
   <string name="servers_info_starting_from">Starting from %s.</string>
-  <string name="smp_server">SMP server</string>
-  <string name="xftp_server">XFTP server</string>
+  <string name="smp_server">Packet router</string>
+  <string name="xftp_server">Data router</string>
   <string name="reconnect">Reconnect</string>
   <string name="attempts_label">attempts</string>
   <string name="sent_directly">Sent directly</string>
@@ -2789,8 +2789,8 @@
   <string name="chunks_downloaded">Chunks downloaded</string>
   <string name="downloaded_files">Downloaded files</string>
   <string name="download_errors">Download errors</string>
-  <string name="server_address">Server address</string>
-  <string name="open_server_settings_button">Open server settings</string>
+  <string name="server_address">Router address</string>
+  <string name="open_server_settings_button">Open router settings</string>
 
   <!-- GroupMentions.kt -->
   <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>

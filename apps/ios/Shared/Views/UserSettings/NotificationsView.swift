@@ -130,7 +130,7 @@ struct NotificationsView: View {
             )
         case let .testFailure(testFailure):
             return Alert(
-                title: Text("Server test failed!"),
+                title: Text("Router test failed!"),
                 message: Text(testFailure.localizedDescription)
             )
         case let .error(title, error):
@@ -268,7 +268,7 @@ struct NotificationsView: View {
             await MainActor.run {
                 let err = responseError(error)
                 logger.error("testServerConnection \(err)")
-                ntfAlert = .error(title: "Error testing server connection", error: err)
+                ntfAlert = .error(title: "Error testing router connection", error: err)
             }
         }
     }

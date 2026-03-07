@@ -100,7 +100,7 @@ struct OperatorView: View {
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .smp,
-                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) routers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
@@ -108,13 +108,13 @@ struct OperatorView: View {
                                 }
                             }
                         } header: {
-                            Text("Message servers")
+                            Text("Packet routers")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
                             if let errStr = globalSMPServersError(serverErrors) {
                                 ServersErrorView(errStr: errStr)
                             } else {
-                                Text("The servers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                Text("The routers for new connections of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
                                     .foregroundColor(theme.colors.secondary)
                                     .lineLimit(10)
                             }
@@ -131,7 +131,7 @@ struct OperatorView: View {
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .smp,
-                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) routers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
@@ -143,7 +143,7 @@ struct OperatorView: View {
                                 validateServers_($userServers, $serverErrors)
                             }
                         } header: {
-                            Text("Added message servers")
+                            Text("Added packet routers")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
@@ -175,7 +175,7 @@ struct OperatorView: View {
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .xftp,
-                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) routers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
@@ -183,13 +183,13 @@ struct OperatorView: View {
                                 }
                             }
                         } header: {
-                            Text("Media & file servers")
+                            Text("Data routers")
                                 .foregroundColor(theme.colors.secondary)
                         } footer: {
                             if let errStr = globalXFTPServersError(serverErrors) {
                                 ServersErrorView(errStr: errStr)
                             } else {
-                                Text("The servers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                                Text("The routers for new files of your current chat profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
                                     .foregroundColor(theme.colors.secondary)
                                     .lineLimit(10)
                             }
@@ -206,7 +206,7 @@ struct OperatorView: View {
                                         duplicateHosts: duplicateHosts,
                                         server: srv,
                                         serverProtocol: .xftp,
-                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
+                                        backLabel: "\(userServers[operatorIndex].operator_.tradeName) routers",
                                         selectedServer: $selectedServer
                                     )
                                 } else {
@@ -218,7 +218,7 @@ struct OperatorView: View {
                                 validateServers_($userServers, $serverErrors)
                             }
                         } header: {
-                            Text("Added media & file servers")
+                            Text("Added data routers")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
@@ -268,7 +268,7 @@ struct OperatorView: View {
     }
 
     private func useOperatorToggle() -> some View {
-        Toggle("Use servers", isOn: $useOperator)
+        Toggle("Use routers", isOn: $useOperator)
             .onChange(of: useOperator) { useOperatorToggle in
                 if useOperatorToggleReset {
                     useOperatorToggleReset = false
@@ -467,7 +467,7 @@ struct SingleOperatorUsageConditionsView: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 viewHeader()
-                Text("To use the servers of **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
+                Text("To use the routers of **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
                 conditionsAppliedToOtherOperatorsText()
                 ConditionsTextView()
                 acceptConditionsButton()

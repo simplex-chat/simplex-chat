@@ -469,8 +469,8 @@
     <string name="error_saving_ICE_servers">Hiba történt az ICE-kiszolgálók mentésekor</string>
     <string name="error_alert_title">Hiba</string>
     <string name="icon_descr_server_status_error">Hiba</string>
-    <string name="error_loading_xftp_servers">Hiba történt az XFTP-kiszolgálók betöltésekor</string>
-    <string name="error_loading_smp_servers">Hiba történt az SMP-kiszolgálók betöltésekor</string>
+    <string name="error_loading_xftp_servers">Hiba történt az Data-kiszolgálók betöltésekor</string>
+    <string name="error_loading_smp_servers">Hiba történt az Packet-kiszolgálók betöltésekor</string>
     <string name="error_setting_network_config">Hiba történt a hálózat konfigurációjának frissítésekor</string>
     <string name="network_option_enable_tcp_keep_alive">TCP életben tartása</string>
     <string name="icon_descr_flip_camera">Kamera váltás</string>
@@ -497,7 +497,7 @@
     <string name="error_updating_user_privacy">Hiba történt a felhasználói adatvédelem frissítésekor</string>
     <string name="encrypt_database">Titkosítás</string>
     <string name="alert_title_no_group">Csoport nem található!</string>
-    <string name="error_saving_smp_servers">Hiba történt az SMP-kiszolgálók mentésekor</string>
+    <string name="error_saving_smp_servers">Hiba történt az Packet-kiszolgálók mentésekor</string>
     <string name="downgrade_and_open_chat">Visszafejlesztés és a csevegés megnyitása</string>
     <string name="icon_descr_group_inactive">A csoport inaktív</string>
     <string name="v5_0_large_files_support_descr">Gyors és nem kell várni, amíg az üzenetküldő online lesz!</string>
@@ -563,7 +563,7 @@
     <string name="error_deleting_pending_contact_connection">Hiba történt a függőben lévő kapcsolat törlésekor</string>
     <string name="error_importing_database">Hiba történt a csevegési adatbázis importálásakor</string>
     <string name="error_enabling_delivery_receipts">Hiba történt a kézbesítési jelentések engedélyezésekor!</string>
-    <string name="error_saving_xftp_servers">Hiba történt az XFTP-kiszolgálók mentésekor</string>
+    <string name="error_saving_xftp_servers">Hiba történt az Data-kiszolgálók mentésekor</string>
     <string name="group_members_can_send_dms">A tagok küldhetnek egymásnak közvetlen üzeneteket.</string>
     <string name="error_removing_member">Hiba történt a tag eltávolításakor</string>
     <string name="callstate_ended">hívás vége</string>
@@ -694,7 +694,7 @@
     <string name="no_info_on_delivery">Nincs kézbesítési információ</string>
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag el lesz távolítva a csoportból – ez a művelet nem vonható vissza!</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott XFTP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott Data-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
     <string name="no_contacts_selected">Nincs partner kiválasztva</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 hordozható eszköz: koppintson a <b>Megnyitás hordozható eszköz-alkalmazásban</b>, majd koppintson a <b>Kapcsolódás</b> gombra az alkalmazásban.]]></string>
@@ -733,7 +733,7 @@
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
     <string name="new_desktop"><![CDATA[<i>(új)</i>]]></string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott SMP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott Packet-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
     <string name="network_use_onion_hosts_no_desc">Az onion kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
@@ -977,7 +977,7 @@
     <string name="network_use_onion_hosts_prefer">Amikor elérhető</string>
     <string name="voice_message_with_duration">Hangüzenet (%1$s)</string>
     <string name="current_version_timestamp">%s (jelenlegi)</string>
-    <string name="smp_servers_your_server">Saját SMP-kiszolgáló</string>
+    <string name="smp_servers_your_server">Saját Packet-kiszolgáló</string>
     <string name="random_port">Véletlen</string>
     <string name="share_with_contacts">Megosztás a partnerekkel</string>
     <string name="sender_you_pronoun">Ön</string>
@@ -1079,18 +1079,18 @@
     <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="save_servers_button">Mentés</string>
     <string name="settings_restart_app">Újraindítás</string>
-    <string name="smp_servers">SMP-kiszolgálók</string>
+    <string name="smp_servers">Packet-kiszolgálók</string>
     <string name="video_descr">Videó</string>
     <string name="save_auto_accept_settings">SimpleX-címbeállítások mentése</string>
     <string name="sync_connection_force_confirm">Újraegyeztetés</string>
     <string name="icon_descr_waiting_for_video">Várakozás a videóra</string>
-    <string name="your_XFTP_servers">Saját XFTP-kiszolgálók</string>
+    <string name="your_XFTP_servers">Saját Data-kiszolgálók</string>
     <string name="icon_descr_video_off">Videó kikapcsolva</string>
     <string name="v4_5_private_filenames">Privát fájlnevek</string>
     <string name="save_settings_question">Menti a beállításokat?</string>
     <string name="la_mode_passcode">Jelkód</string>
     <string name="unknown_error">Ismeretlen hiba</string>
-    <string name="smp_servers_your_server_address">Saját SMP-kiszolgálójának címe</string>
+    <string name="smp_servers_your_server_address">Saját Packet-kiszolgálójának címe</string>
     <string name="auth_open_chat_console">Csevegési konzol megnyitása</string>
     <string name="remove_member_button">Eltávolítás</string>
     <string name="set_database_passphrase">Adatbázis-jelmondat beállítása</string>
@@ -1098,7 +1098,7 @@
     <string name="unblock_member_question">Feloldja a tag letiltását?</string>
     <string name="sender_may_have_deleted_the_connection_request">A kérés küldője törölhette a kapcsolódási kérést.</string>
     <string name="wrong_passphrase">Érvénytelen adatbázis-jelmondat</string>
-    <string name="your_SMP_servers">Saját SMP-kiszolgálók</string>
+    <string name="your_SMP_servers">Saját Packet-kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">A kézbesítési jelentések le vannak tiltva</string>
     <string name="open_database_folder">Adatbázismappa megnyitása</string>
     <string name="description_via_one_time_link">egy egyszer használható meghívón keresztül</string>
@@ -1194,7 +1194,7 @@
     <string name="reveal_verb">Felfedés</string>
     <string name="la_lock_mode">Zárolási mód</string>
     <string name="revoke_file__action">Fájl visszavonása</string>
-    <string name="xftp_servers">XFTP-kiszolgálók</string>
+    <string name="xftp_servers">Data-kiszolgálók</string>
     <string name="prohibit_sending_files">A fájlok és a médiatartalmak küldése le van tiltva.</string>
     <string name="share_file">Fájl megosztása…</string>
     <string name="save_verb">Mentés</string>
@@ -1597,7 +1597,7 @@
     <string name="migrate_from_device_confirm_upload">Feltöltés megerősítése</string>
     <string name="migrate_from_device_error_deleting_database">Hiba történt az adatbázis törlésekor</string>
     <string name="v5_6_safer_groups_descr">Az adminisztrátorok egy tagot a csoport összes tagja számára letilthatnak.</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Az összes partnere, -beszélgetése és -fájlja biztonságosan titkosítva lesz, majd töredékekre bontva feltöltődnek a beállított XFTP-továbbítókiszolgálókra.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Az összes partnere, -beszélgetése és -fájlja biztonságosan titkosítva lesz, majd töredékekre bontva feltöltődnek a beállított Data-továbbítókiszolgálókra.</string>
     <string name="v5_6_app_data_migration">Alkalmazásadatok átköltöztetése</string>
     <string name="migrate_from_device_archiving_database">Adatbázis archiválása</string>
     <string name="migrate_from_device_cancel_migration">Átköltöztetés visszavonása</string>
@@ -1746,7 +1746,7 @@
     <string name="update_network_smp_proxy_mode_question">Üzenet-útválasztási mód</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
-    <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
+    <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az Packet-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
     <string name="update_network_smp_proxy_fallback_question">Üzenet-útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET-ÚTVÁLASZTÁS</string>
     <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata az ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
@@ -1756,7 +1756,7 @@
     <string name="protect_ip_address">IP-cím védelme</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS proxy engedélyezve van).</string>
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
-    <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő XFTP-továbbítókiszolgálók számára:\n%1$s.</string>
+    <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő Data-továbbítókiszolgálók számára:\n%1$s.</string>
     <string name="chat_theme_apply_to_all_modes">Összes színmód</string>
     <string name="theme_black">Fekete</string>
     <string name="color_mode">Színmód</string>
@@ -1824,9 +1824,9 @@
     <string name="member_inactive_desc">Az üzenet később is kézbesíthető, ha a tag aktívvá válik.</string>
     <string name="message_forwarded_desc">Még nincs közvetlen kapcsolat, az üzenetet az adminisztrátor továbbítja.</string>
     <string name="scan_paste_link">Hivatkozás beolvasása / beillesztése</string>
-    <string name="smp_servers_configured">Konfigurált SMP-kiszolgálók</string>
-    <string name="smp_servers_other">Egyéb SMP-kiszolgálók</string>
-    <string name="xftp_servers_other">Egyéb XFTP-kiszolgálók</string>
+    <string name="smp_servers_configured">Konfigurált Packet-kiszolgálók</string>
+    <string name="smp_servers_other">Egyéb Packet-kiszolgálók</string>
+    <string name="xftp_servers_other">Egyéb Data-kiszolgálók</string>
     <string name="member_info_member_disabled">letiltva</string>
     <string name="member_info_member_inactive">inaktív</string>
     <string name="appearance_zoom">Nagyítás</string>
@@ -1857,10 +1857,10 @@
     <string name="sent_directly">Közvetlenül küldött</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Összes elküldött üzenet</string>
     <string name="sent_via_proxy">Proxyn keresztül küldött</string>
-    <string name="smp_server">SMP-kiszolgáló</string>
+    <string name="smp_server">Packet-kiszolgáló</string>
     <string name="servers_info_starting_from">Statisztikagyűjtés kezdete: %s.</string>
     <string name="servers_info_uploaded">Feltöltve</string>
-    <string name="xftp_server">XFTP-kiszolgáló</string>
+    <string name="xftp_server">Data-kiszolgáló</string>
     <string name="proxied">Proxyzott</string>
     <string name="duplicates_label">duplikációk</string>
     <string name="other_errors">egyéb hibák</string>
@@ -1883,7 +1883,7 @@
     <string name="chunks_uploaded">Feltöltött töredékek</string>
     <string name="completed">Elkészült</string>
     <string name="servers_info_connected_servers_section_header">Kapcsolódott kiszolgálók</string>
-    <string name="xftp_servers_configured">Konfigurált XFTP-kiszolgálók</string>
+    <string name="xftp_servers_configured">Konfigurált Data-kiszolgálók</string>
     <string name="servers_info_sessions_connected">Kapcsolódott</string>
     <string name="current_user">Jelenlegi profil</string>
     <string name="servers_info_details">További részletek</string>

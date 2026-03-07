@@ -5,7 +5,7 @@
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- соединиться с [каталогом групп](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- отчеты о доставке (до 20 членов).\n- быстрее и стабильнее.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- соединиться с [каталогом групп](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- отчеты о доставке (до 20 членов).\n- быстрее и стабильнее.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- более стабильная доставка сообщений.\n- немного улучшенные группы.\n- и прочее!";
@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ подтверждён";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ сервер";
+"%@ router" = "%@ сервер";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ серверы";
+"%@ routers" = "%@ серверы";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ загружено";
@@ -414,10 +414,10 @@ swipe action */
 "Add profile" = "Добавить профиль";
 
 /* No comment provided by engineer. */
-"Add server" = "Добавить сервер";
+"Add router" = "Добавить сервер";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Добавить серверы через QR код.";
+"Add routers by scanning QR codes." = "Добавить серверы через QR код.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Добавить сотрудников";
@@ -531,7 +531,7 @@ swipe action */
 "All reports will be archived for you." = "Все сообщения о нарушениях будут заархивированы для вас.";
 
 /* No comment provided by engineer. */
-"All servers" = "Все серверы";
+"All routers" = "Все серверы";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Все контакты, которые соединились через этот адрес, сохранятся.";
@@ -540,7 +540,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Все Ваши контакты сохранятся. Обновленный профиль будет отправлен Вашим контактам.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP серверы.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers." = "Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные data серверы.";
 
 /* No comment provided by engineer. */
 "Allow" = "Разрешить";
@@ -648,7 +648,7 @@ swipe action */
 "Answer call" = "Принять звонок";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Кто угодно может запустить сервер.";
+"Anybody can host routers." = "Кто угодно может запустить сервер.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Сборка приложения: %@";
@@ -1114,7 +1114,7 @@ set passcode view */
 "Check messages when allowed." = "Проверять сообщения по возможности.";
 
 /* alert title */
-"Check server address and try again." = "Проверьте адрес сервера и попробуйте снова.";
+"Check router address and try again." = "Проверьте адрес сервера и попробуйте снова.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Китайский и Испанский интерфейс";
@@ -1207,7 +1207,7 @@ set passcode view */
 "Configure ICE servers" = "Настройка ICE серверов";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "Настроить операторов серверов";
+"Configure router operators" = "Настроить операторов серверов";
 
 /* No comment provided by engineer. */
 "Confirm" = "Подтвердить";
@@ -1219,7 +1219,7 @@ set passcode view */
 "Confirm database upgrades" = "Подтвердить обновление базы данных";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "Подтверждать файлы с неизвестных серверов.";
+"Confirm files from unknown routers." = "Подтверждать файлы с неизвестных серверов.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Подтвердите настройки сети";
@@ -1288,7 +1288,7 @@ set passcode view */
 "Connected desktop" = "Подключенный компьютер";
 
 /* No comment provided by engineer. */
-"Connected servers" = "Подключенные серверы";
+"Connected routers" = "Подключенные серверы";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Компьютер подключен";
@@ -1315,10 +1315,10 @@ set passcode view */
 "connecting call" = "звонок соединяется…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Устанавливается соединение с сервером…";
+"Connecting router…" = "Устанавливается соединение с сервером…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
+"Connecting router… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "Контакт соединяется, подождите или проверьте позже!";
@@ -1333,7 +1333,7 @@ set passcode view */
 "Connection" = "Соединение";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Состояние соединения и серверов.";
+"Connection and routers status." = "Состояние соединения и серверов.";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Соединение заблокировано";
@@ -1348,7 +1348,7 @@ set passcode view */
 "connection established" = "соединение установлено";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "Соединение заблокировано сервером оператора:\n%@";
+"Connection is blocked by router operator:\n%@" = "Соединение заблокировано сервером оператора:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Соединение не готово.";
@@ -1822,13 +1822,13 @@ alert button */
 "Desktop devices" = "Компьютеры";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Адрес сервера назначения %@ несовместим с настройками пересылающего сервера %@.";
+"Destination router address of %@ is incompatible with forwarding router %@ settings." = "Адрес сервера назначения %@ несовместим с настройками пересылающего сервера %@.";
 
 /* snd error text */
-"Destination server error: %@" = "Ошибка сервера получателя: %@";
+"Destination router error: %@" = "Ошибка сервера получателя: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Версия сервера назначения %@ несовместима с пересылающим сервером %@.";
+"Destination router version of %@ is incompatible with forwarding router %@." = "Версия сервера назначения %@ несовместима с пересылающим сервером %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Подробная статистика";
@@ -1930,7 +1930,7 @@ alert button */
 "Do not send history to new members." = "Не отправлять историю новым членам.";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.";
+"Do NOT send messages directly, even if your or destination router does not support private routing." = "Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "Не использовать учетные данные с прокси.";
@@ -2033,7 +2033,7 @@ chat item action */
 "Enable disappearing messages by default." = "Включите исчезающие сообщения по умолчанию.";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "Включите Flux в настройках Сеть и серверы для лучшей конфиденциальности метаданных.";
+"Enable Flux in Network & routers settings for better metadata privacy." = "Включите Flux в настройках Сеть и серверы для лучшей конфиденциальности метаданных.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Включить для всех";
@@ -2174,7 +2174,7 @@ chat item action */
 "Enter password above to show!" = "Введите пароль выше, чтобы раскрыть!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Ввести сервер вручную";
+"Enter router manually" = "Ввести сервер вручную";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Введите имя этого устройства…";
@@ -2210,7 +2210,7 @@ chat item action */
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* alert title */
-"Error adding server" = "Ошибка добавления сервера";
+"Error adding router" = "Ошибка добавления сервера";
 
 /* No comment provided by engineer. */
 "Error adding short link" = "Ошибка создания короткой ссылки";
@@ -2237,10 +2237,10 @@ chat item action */
 "Error checking token status" = "Ошибка проверки статуса токена";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "Ошибка подключения к пересылающему серверу %@. Попробуйте позже.";
+"Error connecting to forwarding router %@. Please try later." = "Ошибка подключения к пересылающему серверу %@. Попробуйте позже.";
 
 /* subscription status explanation */
-"Error connecting to the server used to receive messages from this connection: %@" = "Ошибка подключения к серверу, используемому для получения сообщений от этого соединения: %@";
+"Error connecting to the router used to receive messages from this connection: %@" = "Ошибка подключения к серверу, используемому для получения сообщений от этого соединения: %@";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Ошибка при создании адреса";
@@ -2318,7 +2318,7 @@ chat item action */
 "Error joining group" = "Ошибка при вступлении в группу";
 
 /* alert title */
-"Error loading servers" = "Ошибка загрузки серверов";
+"Error loading routers" = "Ошибка загрузки серверов";
 
 /* No comment provided by engineer. */
 "Error migrating settings" = "Ошибка миграции настроек";
@@ -2333,10 +2333,10 @@ chat item action */
 "Error receiving file" = "Ошибка при получении файла";
 
 /* No comment provided by engineer. */
-"Error reconnecting server" = "Ошибка переподключения к серверу";
+"Error reconnecting router" = "Ошибка переподключения к серверу";
 
 /* No comment provided by engineer. */
-"Error reconnecting servers" = "Ошибка переподключения к серверам";
+"Error reconnecting routers" = "Ошибка переподключения к серверам";
 
 /* alert title */
 "Error registering for notifications" = "Ошибка регистрации для уведомлений";
@@ -2369,7 +2369,7 @@ chat item action */
 "Error saving passphrase to keychain" = "Ошибка сохранения пароля в Keychain";
 
 /* alert title */
-"Error saving servers" = "Ошибка сохранения серверов";
+"Error saving routers" = "Ошибка сохранения серверов";
 
 /* when migrating */
 "Error saving settings" = "Ошибка сохранения настроек";
@@ -2411,7 +2411,7 @@ chat item action */
 "Error synchronizing connection" = "Ошибка синхронизации соединения";
 
 /* No comment provided by engineer. */
-"Error testing server connection" = "Ошибка проверки соединения с сервером";
+"Error testing router connection" = "Ошибка проверки соединения с сервером";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "Ошибка обновления ссылки группы";
@@ -2420,7 +2420,7 @@ chat item action */
 "Error updating message" = "Ошибка при обновлении сообщения";
 
 /* alert title */
-"Error updating server" = "Ошибка сохранения сервера";
+"Error updating router" = "Ошибка сохранения сервера";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Ошибка при сохранении настроек сети";
@@ -2455,7 +2455,7 @@ snd error text */
 "Errors" = "Ошибки";
 
 /* servers error */
-"Errors in servers configuration." = "Ошибки в настройках серверов.";
+"Errors in routers configuration." = "Ошибки в настройках серверов.";
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Даже когда они выключены в разговоре.";
@@ -2518,13 +2518,13 @@ snd error text */
 "File errors:\n%@" = "Ошибки файлов:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "Файл заблокирован оператором сервера:\n%@.";
+"File is blocked by router operator:\n%@." = "Файл заблокирован оператором сервера:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Файл не найден - скорее всего, файл был удален или отменен.";
 
 /* file error text */
-"File server error: %@" = "Ошибка сервера файлов: %@";
+"Data router error: %@" = "Ошибка сервера файлов: %@";
 
 /* No comment provided by engineer. */
 "File status" = "Статус файла";
@@ -2533,7 +2533,7 @@ snd error text */
 "File status: %@" = "Статус файла: %@";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Файл будет удалён с серверов.";
+"File will be deleted from routers." = "Файл будет удалён с серверов.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Файл будет принят когда Ваш контакт загрузит его.";
@@ -2581,16 +2581,16 @@ snd error text */
 "Find chats faster" = "Быстро найти чаты";
 
 /* No comment provided by engineer. */
-"Fingerprint in destination server address does not match certificate: %@." = "Хэш в адресе сервера назначения не соответствует сертификату: %@.";
+"Fingerprint in destination router address does not match certificate: %@." = "Хэш в адресе сервера назначения не соответствует сертификату: %@.";
 
 /* No comment provided by engineer. */
-"Fingerprint in forwarding server address does not match certificate: %@." = "Хэш в адресе пересылающего сервера не соответствует сертификату: %@.";
+"Fingerprint in forwarding router address does not match certificate: %@." = "Хэш в адресе пересылающего сервера не соответствует сертификату: %@.";
 
 /* No comment provided by engineer. */
-"Fingerprint in server address does not match certificate: %@." = "Хэш в адресе сервера не соответствует сертификату: %@.";
+"Fingerprint in router address does not match certificate: %@." = "Хэш в адресе сервера не соответствует сертификату: %@.";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный.";
+"Fingerprint in router address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный.";
 
 /* No comment provided by engineer. */
 "Fix" = "Починить";
@@ -2620,7 +2620,7 @@ snd error text */
 "For console" = "Для консоли";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Например, если Ваш контакт получает сообщения через сервер SimpleX Chat, Ваше приложение доставит их через сервер Flux.";
+"For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router." = "Например, если Ваш контакт получает сообщения через сервер SimpleX Chat, Ваше приложение доставит их через сервер Flux.";
 
 /* No comment provided by engineer. */
 "For me" = "Для меня";
@@ -2662,19 +2662,19 @@ snd error text */
 "Forwarding %lld messages" = "Пересылка %lld сообщений";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Пересылающий сервер %1$@ не смог подключиться к серверу назначения %2$@. Попробуйте позже.";
+"Forwarding router %@ failed to connect to destination router %@. Please try later." = "Пересылающий сервер %1$@ не смог подключиться к серверу назначения %2$@. Попробуйте позже.";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "Адрес пересылающего сервера несовместим с настройками сети: %@.";
+"Forwarding router address is incompatible with network settings: %@." = "Адрес пересылающего сервера несовместим с настройками сети: %@.";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "Версия пересылающего сервера несовместима с настройками сети: %@.";
+"Forwarding router version is incompatible with network settings: %@." = "Версия пересылающего сервера несовместима с настройками сети: %@.";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "Пересылающий сервер: %1$@\nОшибка сервера получателя: %2$@";
+"Forwarding router: %@\nDestination router error: %@" = "Пересылающий сервер: %1$@\nОшибка сервера получателя: %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "Пересылающий сервер: %1$@\nОшибка: %2$@";
+"Forwarding router: %@\nError: %@" = "Пересылающий сервер: %1$@\nОшибка: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Компьютер найден";
@@ -2764,7 +2764,7 @@ snd error text */
 "Group profile" = "Профиль группы";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Профиль группы хранится на устройствах членов, а не на серверах.";
+"Group profile is stored on members' devices, not on the routers." = "Профиль группы хранится на устройствах членов, а не на серверах.";
 
 /* snd group event chat item */
 "group profile updated" = "профиль группы обновлен";
@@ -2839,7 +2839,7 @@ snd error text */
 "How to use it" = "Про адрес";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Как использовать серверы";
+"How to use your routers" = "Как использовать серверы";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Венгерский интерфейс";
@@ -2902,7 +2902,7 @@ snd error text */
 "Improved privacy and security" = "Улучшенная безопасность";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Улучшенная конфигурация серверов";
+"Improved router configuration" = "Улучшенная конфигурация серверов";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "Чтобы продолжить, чат должен быть остановлен.";
@@ -3034,7 +3034,7 @@ snd error text */
 "Invalid response" = "Ошибка ответа";
 
 /* alert title */
-"Invalid server address!" = "Ошибка в адресе сервера!";
+"Invalid router address!" = "Ошибка в адресе сервера!";
 
 /* item status text */
 "Invalid status" = "Неверный статус";
@@ -3097,7 +3097,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "Это может произойти, когда Вы или Ваш контакт используете старую копию базы данных.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Это может произойти, когда:\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.\n3. Соединение компроментировано.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Защищает ваш IP адрес и соединения.";
@@ -3535,7 +3535,7 @@ snd error text */
 "Name" = "Имя";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Сеть и серверы";
+"Network & routers" = "Сеть и серверы";
 
 /* No comment provided by engineer. */
 "Network connection" = "Интернет-соединение";
@@ -3613,13 +3613,13 @@ snd error text */
 "New passphrase…" = "Новый пароль…";
 
 /* No comment provided by engineer. */
-"New server" = "Новый сервер";
+"New router" = "Новый сервер";
 
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used every time you start the app." = "Новые учетные данные SOCKS будут использоваться при каждом запуске приложения.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Новые учетные данные SOCKS будут использоваться для каждого сервера.";
+"New SOCKS credentials will be used for each router." = "Новые учетные данные SOCKS будут использоваться для каждого сервера.";
 
 /* pref value */
 "no" = "нет";
@@ -3924,7 +3924,7 @@ new chat action */
 "Operator" = "Оператор";
 
 /* alert title */
-"Operator server" = "Сервер оператора";
+"Operator router" = "Сервер оператора";
 
 /* No comment provided by engineer. */
 "Or import archive file" = "Или импортировать файл архива";
@@ -4101,16 +4101,16 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Сохранить последний черновик, вместе с вложениями.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Адрес сервера по умолчанию";
+"Preset router address" = "Адрес сервера по умолчанию";
 
 /* No comment provided by engineer. */
-"Preset servers" = "Серверы по умолчанию";
+"Preset routers" = "Серверы по умолчанию";
 
 /* No comment provided by engineer. */
 "Preview" = "Просмотр";
 
 /* No comment provided by engineer. */
-"Previously connected servers" = "Ранее подключенные серверы";
+"Previously connected routers" = "Ранее подключенные серверы";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Конфиденциальность";
@@ -4125,7 +4125,7 @@ new chat action */
 "Privacy redefined" = "Более конфиденциальный";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.";
+"Private chats, groups and your contacts are not accessible to router operators." = "Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Защищенные имена файлов";
@@ -4152,7 +4152,7 @@ new chat action */
 "Private routing timeout" = "Таймаут конфиденциальной доставки";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Профиль и соединения на сервере";
+"Profile and router connections" = "Профиль и соединения на сервере";
 
 /* No comment provided by engineer. */
 "Profile image" = "Картинка профиля";
@@ -4209,7 +4209,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "Защитите Ваши профили чата паролем!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.\nВключите в настройках *Сети и серверов*.";
+"Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network & routers* settings." = "Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.\nВключите в настройках *Сети и серверов*.";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "Фоновый таймаут протокола";
@@ -4224,7 +4224,7 @@ new chat action */
 "Proxied" = "Проксировано";
 
 /* No comment provided by engineer. */
-"Proxied servers" = "Проксированные серверы";
+"Proxied routers" = "Проксированные серверы";
 
 /* No comment provided by engineer. */
 "Proxy requires password" = "Прокси требует пароль";
@@ -4299,7 +4299,7 @@ new chat action */
 "Received total" = "Всего получено";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Адрес получения сообщений будет перемещён на другой сервер. Изменение адреса завершится после того как отправитель будет онлайн.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Адрес получения сообщений будет перемещён на другой сервер. Изменение адреса завершится после того как отправитель будет онлайн.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Приём файла будет прекращён.";
@@ -4308,7 +4308,7 @@ new chat action */
 "Receiving via" = "Получение через";
 
 /* No comment provided by engineer. */
-"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "История сообщений и улучшенный [каталог групп](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "История сообщений и улучшенный [каталог групп](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
 
 /* No comment provided by engineer. */
 "Recipient(s) can't see who this message is from." = "Получатели не видят от кого это сообщение.";
@@ -4320,22 +4320,22 @@ new chat action */
 "Reconnect" = "Переподключить";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Повторно подключите все серверы, чтобы принудительно доставить сообщения. Используется дополнительный трафик.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Повторно подключите все серверы, чтобы принудительно доставить сообщения. Используется дополнительный трафик.";
 
 /* No comment provided by engineer. */
-"Reconnect all servers" = "Переподключить все серверы";
+"Reconnect all routers" = "Переподключить все серверы";
 
 /* No comment provided by engineer. */
-"Reconnect all servers?" = "Переподключить все серверы?";
+"Reconnect all routers?" = "Переподключить все серверы?";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "Переподключить сервер для устранения неполадок доставки сообщений. Это использует дополнительный трафик.";
+"Reconnect router to force message delivery. It uses additional traffic." = "Переподключить сервер для устранения неполадок доставки сообщений. Это использует дополнительный трафик.";
 
 /* No comment provided by engineer. */
-"Reconnect server?" = "Переподключить сервер?";
+"Reconnect router?" = "Переподключить сервер?";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Переподключить серверы?";
+"Reconnect routers?" = "Переподключить серверы?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Запись обновлена";
@@ -4629,10 +4629,10 @@ chat item action */
 "Save profile password" = "Сохранить пароль профиля";
 
 /* No comment provided by engineer. */
-"Save servers" = "Сохранить серверы";
+"Save routers" = "Сохранить серверы";
 
 /* alert title */
-"Save servers?" = "Сохранить серверы?";
+"Save routers?" = "Сохранить серверы?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Сохранить приветственное сообщение?";
@@ -4680,7 +4680,7 @@ chat item action */
 "Scan security code from your contact's app." = "Сканируйте код безопасности из приложения контакта.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Сканировать QR код сервера";
+"Scan router QR code" = "Сканировать QR код сервера";
 
 /* No comment provided by engineer. */
 "search" = "поиск";
@@ -4776,10 +4776,10 @@ chat item action */
 "Send message to enable calls." = "Отправьте сообщение, чтобы включить звонки.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Отправлять сообщения напрямую, когда IP адрес защищен, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.";
+"Send messages directly when IP address is protected and your or destination router does not support private routing." = "Отправлять сообщения напрямую, когда IP адрес защищен, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Отправлять сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.";
+"Send messages directly when your or destination router does not support private routing." = "Отправлять сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Отправлять уведомления";
@@ -4866,58 +4866,58 @@ chat item action */
 "Sent via proxy" = "Отправлено через прокси";
 
 /* No comment provided by engineer. */
-"Server" = "Сервер";
+"Router" = "Сервер";
 
 /* alert message */
-"Server added to operator %@." = "Сервер добавлен к оператору %@.";
+"Router added to operator %@." = "Сервер добавлен к оператору %@.";
 
 /* No comment provided by engineer. */
-"Server address" = "Адрес сервера";
+"Router address" = "Адрес сервера";
 
 /* No comment provided by engineer. */
-"Server address is incompatible with network settings: %@." = "Адрес сервера несовместим с сетевыми настройками: %@.";
+"Router address is incompatible with network settings: %@." = "Адрес сервера несовместим с сетевыми настройками: %@.";
 
 /* srv error text. */
-"Server address is incompatible with network settings." = "Адрес сервера несовместим с настройками сети.";
+"Router address is incompatible with network settings." = "Адрес сервера несовместим с настройками сети.";
 
 /* alert title */
-"Server operator changed." = "Оператор серверов изменен.";
+"Router operator changed." = "Оператор серверов изменен.";
 
 /* No comment provided by engineer. */
-"Server operators" = "Операторы серверов";
+"Router operators" = "Операторы серверов";
 
 /* alert title */
-"Server protocol changed." = "Протокол сервера изменен.";
+"Router protocol changed." = "Протокол сервера изменен.";
 
 /* queue info */
-"server queue info: %@\n\nlast received msg: %@" = "информация сервера об очереди: %1$@\n\nпоследнее полученное сообщение: %2$@";
+"router queue info: %@\n\nlast received msg: %@" = "информация сервера об очереди: %1$@\n\nпоследнее полученное сообщение: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Сервер требует авторизации для создания очередей, проверьте пароль.";
+"Router requires authorization to create queues, check password." = "Сервер требует авторизации для создания очередей, проверьте пароль.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Сервер требует авторизации для загрузки, проверьте пароль.";
+"Router requires authorization to upload, check password." = "Сервер требует авторизации для загрузки, проверьте пароль.";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Ошибка теста сервера!";
+"Router test failed!" = "Ошибка теста сервера!";
 
 /* No comment provided by engineer. */
-"Server type" = "Тип сервера";
+"Router type" = "Тип сервера";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "Версия сервера несовместима с настройками сети.";
+"Router version is incompatible with network settings." = "Версия сервера несовместима с настройками сети.";
 
 /* No comment provided by engineer. */
-"Server version is incompatible with your app: %@." = "Версия сервера несовместима с вашим приложением: %@.";
+"Router version is incompatible with your app: %@." = "Версия сервера несовместима с вашим приложением: %@.";
 
 /* No comment provided by engineer. */
-"Servers" = "Серверы";
+"Routers" = "Серверы";
 
 /* No comment provided by engineer. */
-"Servers info" = "Информация о серверах";
+"Routers info" = "Информация о серверах";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "Статистика серверов будет сброшена - это нельзя отменить!";
+"Routers statistics will be reset - this cannot be undone!" = "Статистика серверов будет сброшена - это нельзя отменить!";
 
 /* No comment provided by engineer. */
 "Session code" = "Код сессии";
@@ -5086,7 +5086,7 @@ chat item action */
 "SimpleX channel link" = "SimpleX ссылка канала";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat и Flux заключили соглашение добавить серверы под управлением Flux в приложение.";
+"SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app." = "SimpleX Chat и Flux заключили соглашение добавить серверы под управлением Flux в приложение.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "Безопасность SimpleX Chat была проверена Trail of Bits.";
@@ -5146,7 +5146,7 @@ chat item action */
 "Small groups (max 20)" = "Маленькие группы (до 20)";
 
 /* No comment provided by engineer. */
-"SMP server" = "SMP сервер";
+"Packet router" = "packet сервер";
 
 /* No comment provided by engineer. */
 "SOCKS proxy" = "SOCKS прокси";
@@ -5167,7 +5167,7 @@ chat item action */
 "Some non-fatal errors occurred during import:" = "Во время импорта произошли некоторые ошибки:";
 
 /* alert message */
-"Some servers failed the test:\n%@" = "Серверы не прошли тест:\n%@";
+"Some routers failed the test:\n%@" = "Серверы не прошли тест:\n%@";
 
 /* notification title */
 "Somebody" = "Контакт";
@@ -5342,10 +5342,10 @@ report reason */
 "Test notifications" = "Протестировать уведомления";
 
 /* No comment provided by engineer. */
-"Test server" = "Тестировать сервер";
+"Test router" = "Тестировать сервер";
 
 /* No comment provided by engineer. */
-"Test servers" = "Тестировать серверы";
+"Test routers" = "Тестировать серверы";
 
 /* alert title */
 "Tests failed!" = "Ошибка тестов!";
@@ -5432,16 +5432,16 @@ report reason */
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Серверы для новых соединений Вашего текущего профиля чата **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "Серверы для новых соединений Вашего текущего профиля чата **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "Серверы для новых файлов Вашего текущего профиля **%@**.";
+"The routers for new files of your current chat profile **%@**." = "Серверы для новых файлов Вашего текущего профиля **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Вставленный текст не является SimpleX-ссылкой.";
 
 /* No comment provided by engineer. */
-"The uploaded database archive will be permanently removed from the servers." = "Загруженный архив базы данных будет навсегда удален с серверов.";
+"The uploaded database archive will be permanently removed from the routers." = "Загруженный архив базы данных будет навсегда удален с серверов.";
 
 /* No comment provided by engineer. */
 "Themes" = "Темы";
@@ -5531,7 +5531,7 @@ report reason */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Чтобы защитить Вашу информацию, включите блокировку SimpleX Chat.\nВам будет нужно пройти аутентификацию для включения блокировки.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Чтобы защитить ваш IP адрес, приложение использует Ваши SMP серверы для конфиденциальной доставки сообщений.";
+"To protect your IP address, private routing uses your packet routers to deliver messages." = "Чтобы защитить ваш IP адрес, приложение использует Ваши packet серверы для конфиденциальной доставки сообщений.";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Чтобы защитить Вашу конфиденциальность, SimpleX использует разные идентификаторы для каждого Вашeго контакта.";
@@ -5564,7 +5564,7 @@ report reason */
 "To use another profile after connection attempt, delete the chat and use the link again." = "Чтобы использовать другой профиль после попытки соединения, удалите чат и используйте ссылку снова.";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "Чтобы использовать серверы оператора **%@**, примите условия использования.";
+"To use the routers of **%@**, accept conditions of use." = "Чтобы использовать серверы оператора **%@**, примите условия использования.";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить end-to-end шифрование с Вашим контактом сравните (или сканируйте) код безопасности на Ваших устройствах.";
@@ -5591,7 +5591,7 @@ report reason */
 "Transport sessions" = "Транспортные сессии";
 
 /* subscription status explanation */
-"Trying to connect to the server used to receive messages from this connection." = "Попытка подключиться к серверу, используемому для получения сообщений от этого соединения.";
+"Trying to connect to the router used to receive messages from this connection." = "Попытка подключиться к серверу, используемому для получения сообщений от этого соединения.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Турецкий интерфейс";
@@ -5657,10 +5657,10 @@ report reason */
 "Unknown error" = "Неизвестная ошибка";
 
 /* No comment provided by engineer. */
-"unknown servers" = "неизвестные серверы";
+"unknown routers" = "неизвестные серверы";
 
 /* alert title */
-"Unknown servers!" = "Неизвестные серверы!";
+"Unknown routers!" = "Неизвестные серверы!";
 
 /* No comment provided by engineer. */
 "unknown status" = "неизвестный статус";
@@ -5720,7 +5720,7 @@ report reason */
 "updated profile" = "профиль обновлён";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.";
+"Updating settings will re-connect the client to all routers." = "Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.";
 
 /* alert button */
 "Upgrade" = "Обновить";
@@ -5798,19 +5798,19 @@ report reason */
 "Use only local notifications?" = "Использовать только локальные нотификации?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищен.";
+"Use private routing with unknown routers when IP address is not protected." = "Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищен.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Использовать конфиденциальную доставку с неизвестными серверами.";
+"Use private routing with unknown routers." = "Использовать конфиденциальную доставку с неизвестными серверами.";
 
 /* No comment provided by engineer. */
-"Use server" = "Использовать сервер";
+"Use router" = "Использовать сервер";
 
 /* No comment provided by engineer. */
-"Use servers" = "Использовать серверы";
+"Use routers" = "Использовать серверы";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";
+"Use SimpleX Chat routers?" = "Использовать серверы предосталенные SimpleX Chat?";
 
 /* No comment provided by engineer. */
 "Use SOCKS proxy" = "Использовать SOCKS прокси";
@@ -5819,7 +5819,7 @@ report reason */
 "Use TCP port %@ when no port is specified." = "Использовать TCP-порт %@, когда порт не указан.";
 
 /* No comment provided by engineer. */
-"Use TCP port 443 for preset servers only." = "Использовать TCP-порт 443 только для серверов по умолчанию.";
+"Use TCP port 443 for preset routers only." = "Использовать TCP-порт 443 только для серверов по умолчанию.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Используйте приложение во время звонка.";
@@ -5837,7 +5837,7 @@ report reason */
 "Username" = "Имя пользователя";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Используются серверы, предоставленные SimpleX Chat.";
+"Using SimpleX Chat routers." = "Используются серверы, предоставленные SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -6020,10 +6020,10 @@ report reason */
 "With reduced battery usage." = "С уменьшенным потреблением батареи.";
 
 /* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to file servers." = "Без Тора или ВПН, Ваш IP адрес будет доступен серверам файлов.";
+"Without Tor or VPN, your IP address will be visible to data routers." = "Без Тора или ВПН, Ваш IP адрес будет доступен серверам файлов.";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Тора или ВПН, Ваш IP адрес будет доступен этим серверам файлов: %@.";
+"Without Tor or VPN, your IP address will be visible to these data routers: %@." = "Без Тора или ВПН, Ваш IP адрес будет доступен этим серверам файлов: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Неправильный пароль базы данных";
@@ -6038,7 +6038,7 @@ report reason */
 "Wrong passphrase!" = "Неправильный пароль!";
 
 /* No comment provided by engineer. */
-"XFTP server" = "XFTP сервер";
+"Data router" = "data сервер";
 
 /* pref value */
 "yes" = "да";
@@ -6086,16 +6086,16 @@ report reason */
 "You are already joining the group!\nRepeat join request?" = "Вы уже вступаете в группу!\nПовторить запрос на вступление?";
 
 /* subscription status explanation */
-"You are connected to the server used to receive messages from this connection." = "Вы подключены к серверу, используемому для приема сообщений от этого соединения.";
+"You are connected to the router used to receive messages from this connection." = "Вы подключены к серверу, используемому для приема сообщений от этого соединения.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Вы приглашены в группу";
 
 /* subscription status explanation */
-"You are not connected to the server used to receive messages from this connection (no subscription)." = "Вы не подключены к серверу, используемому для получения сообщений по этому соединению (нет подписки).";
+"You are not connected to the router used to receive messages from this connection (no subscription)." = "Вы не подключены к серверу, используемому для получения сообщений по этому соединению (нет подписки).";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "Вы не подключены к этим серверам. Для доставки сообщений на них используется конфиденциальная доставка.";
+"You are not connected to these routers. Private routing is used to deliver messages to them." = "Вы не подключены к этим серверам. Для доставки сообщений на них используется конфиденциальная доставка.";
 
 /* No comment provided by engineer. */
 "you are observer" = "только чтение сообщений";
@@ -6110,7 +6110,7 @@ report reason */
 "You can change it in Appearance settings." = "Вы можете изменить это в настройках Интерфейса.";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "Вы можете настроить серверы позже.";
+"You can configure routers via settings." = "Вы можете настроить серверы позже.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Вы можете создать его позже";
@@ -6347,7 +6347,7 @@ report reason */
 "Your profile is stored on your device and only shared with your contacts." = "Ваш профиль хранится на Вашем устройстве и отправляется только контактам.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Ваш профиль был изменен. Если вы сохраните его, обновленный профиль будет отправлен всем вашим контактам.";
@@ -6356,10 +6356,10 @@ report reason */
 "Your random profile" = "Случайный профиль";
 
 /* No comment provided by engineer. */
-"Your server address" = "Адрес Вашего сервера";
+"Your router address" = "Адрес Вашего сервера";
 
 /* No comment provided by engineer. */
-"Your servers" = "Ваши серверы";
+"Your routers" = "Ваши серверы";
 
 /* No comment provided by engineer. */
 "Your settings" = "Настройки";

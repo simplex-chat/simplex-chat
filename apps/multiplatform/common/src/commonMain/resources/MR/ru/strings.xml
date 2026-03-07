@@ -48,8 +48,8 @@
     <string name="simplex_link_mode_browser">В браузере</string>
     <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</string>
     <!-- SimpleXAPI.kt -->
-    <string name="error_saving_smp_servers">Ошибка при сохранении SMP-серверов</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
+    <string name="error_saving_smp_servers">Ошибка при сохранении Packet-серверов</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса Packet-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="error_setting_network_config">Ошибка при сохранении настроек сети</string>
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
@@ -350,7 +350,7 @@
     <string name="send_us_an_email">Написать нам письмо</string>
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
-    <string name="smp_servers">SMP-серверы</string>
+    <string name="smp_servers">Packet-серверы</string>
     <string name="smp_servers_preset_address">Адрес сервера по умолчанию</string>
     <string name="smp_servers_preset_add">Добавить серверы по умолчанию</string>
     <string name="smp_servers_add">Добавить сервер</string>
@@ -375,7 +375,7 @@
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы, предосталенные SimpleX Chat?</string>
-    <string name="your_SMP_servers">Ваши SMP-серверы</string>
+    <string name="your_SMP_servers">Ваши Packet-серверы</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
@@ -1093,17 +1093,17 @@
     <string name="unhide_profile">Раскрыть профиль</string>
     <string name="video_will_be_received_when_contact_is_online">Видео будет получено, когда Ваш контакт будет онлайн, пожалуйста, подождите или проверьте позже!</string>
     <string name="unhide_chat_profile">Раскрыть профиль чата</string>
-    <string name="error_loading_smp_servers">Ошибка при загрузке SMP-серверов</string>
-    <string name="error_loading_xftp_servers">Ошибка при загрузке XFTP-серверов</string>
-    <string name="error_saving_xftp_servers">Ошибка при сохранении XFTP-серверов</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса XFTP-серверов указаны в правильном формате и не дублируются.</string>
+    <string name="error_loading_smp_servers">Ошибка при загрузке Packet-серверов</string>
+    <string name="error_loading_xftp_servers">Ошибка при загрузке Data-серверов</string>
+    <string name="error_saving_xftp_servers">Ошибка при сохранении Data-серверов</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса Data-серверов указаны в правильном формате и не дублируются.</string>
     <string name="error_xftp_test_server_auth">Сервер требует авторизации для загрузки, проверьте пароль.</string>
     <string name="smp_server_test_compare_file">Сравнение файла</string>
     <string name="smp_server_test_delete_file">Удалить файл</string>
     <string name="smp_server_test_download_file">Загрузка файла</string>
     <string name="smp_server_test_upload_file">Загрузка файла</string>
-    <string name="xftp_servers">XFTP-серверы</string>
-    <string name="your_XFTP_servers">Ваши XFTP-серверы</string>
+    <string name="xftp_servers">Data-серверы</string>
+    <string name="your_XFTP_servers">Ваши Data-серверы</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Установите <i>Использовать .onion хосты</i> в Нет если SOCKS-прокси их не поддерживает.]]></string>
     <string name="la_auth_failed">Ошибка аутентификации</string>
     <string name="la_no_app_password">Нет кода доступа</string>
@@ -1739,7 +1739,7 @@
     <string name="migrate_from_device_stopping_chat">Остановка чата</string>
     <string name="migrate_from_device_archive_and_upload">Архивировать и загрузить</string>
     <string name="migrate_from_device_confirm_upload">Подтвердить загрузку</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надёжно зашифрованы и загружены на выбранные XFTP-серверы.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надёжно зашифрованы и загружены на выбранные Data-серверы.</string>
     <string name="migrate_from_device_upload_failed">Ошибка загрузки</string>
     <string name="migrate_from_device_repeat_upload">Повторить загрузку</string>
     <string name="migrate_from_device_try_again">Вы можете попробовать ещё раз.</string>
@@ -1887,7 +1887,7 @@
     <string name="network_smp_proxy_mode_unprotected_description">Использовать конфиденциальную доставку с неизвестными серверами, когда IP-адрес не защищён.</string>
     <string name="network_smp_proxy_fallback_allow_protected">Когда IP защищён</string>
     <string name="network_smp_proxy_fallback_allow">Да</string>
-    <string name="private_routing_explanation">Чтобы защитить Ваш IP-адрес, приложение использует Ваши SMP-серверы для конфиденциальной доставки сообщений.</string>
+    <string name="private_routing_explanation">Чтобы защитить Ваш IP-адрес, приложение использует Ваши Packet-серверы для конфиденциальной доставки сообщений.</string>
     <string name="settings_section_title_profile_images">Изображения профилей</string>
     <string name="chat_theme_apply_to_all_modes">Все режимы</string>
     <string name="theme_destination_app_theme">Тема приложения</string>
@@ -1949,8 +1949,8 @@
     <string name="cannot_share_message_alert_text">Выбранные настройки чата запрещают это сообщение.</string>
     <string name="file_error">Ошибка файла</string>
     <string name="scan_paste_link">Сканировать QR-код/ Вставить ссылку</string>
-    <string name="xftp_servers_other">Другие XFTP-серверы</string>
-    <string name="xftp_servers_configured">Настроенные XFTP-серверы</string>
+    <string name="xftp_servers_other">Другие Data-серверы</string>
+    <string name="xftp_servers_configured">Настроенные Data-серверы</string>
     <string name="app_check_for_updates_button_download">Загрузка %s (%s)</string>
     <string name="app_check_for_updates_update_available">Доступно обновление: %s</string>
     <string name="app_check_for_updates_notice_disable">Выключить</string>
@@ -1969,9 +1969,9 @@
     <string name="servers_info_reset_stats_alert_message">Статистика серверов будет сброшена - это нельзя отменить!</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Всего отправлено</string>
     <string name="reconnect">Переподключить</string>
-    <string name="smp_server">SMP-сервер</string>
+    <string name="smp_server">Packet-сервер</string>
     <string name="servers_info_starting_from">Начиная с %s.</string>
-    <string name="xftp_server">XFTP-сервер</string>
+    <string name="xftp_server">Data-сервер</string>
     <string name="duplicates_label">дубликаты</string>
     <string name="expired_label">истекло</string>
     <string name="other_label">другое</string>
@@ -2011,7 +2011,7 @@
     <string name="no_filtered_contacts">Нет отфильтрованных контактов</string>
     <string name="contact_list_header_title">Ваши контакты</string>
     <string name="deleted_chats">Архивированные контакты</string>
-    <string name="smp_servers_configured">Настроенные SMP-серверы</string>
+    <string name="smp_servers_configured">Настроенные Packet-серверы</string>
     <string name="subscription_percentage">Показать процент</string>
     <string name="privacy_media_blur_radius_soft">Слабое</string>
     <string name="privacy_media_blur_radius_medium">Среднее</string>
@@ -2055,7 +2055,7 @@
     <string name="selected_chat_items_selected_n">Выбрано %d</string>
     <string name="toolbar_settings">Настройки</string>
     <string name="you_can_still_view_conversation_with_contact">Вы по-прежнему можете просмотреть разговор с %1$s в списке чатов.</string>
-    <string name="smp_servers_other">Другие SMP-серверы</string>
+    <string name="smp_servers_other">Другие Packet-серверы</string>
     <string name="app_check_for_updates_disabled">Выключено</string>
     <string name="app_check_for_updates_installed_successfully_title">Установлено успешно</string>
     <string name="app_check_for_updates_button_install">Установить обновление</string>

@@ -5,7 +5,7 @@
 "_italic_" = "\\_斜体_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- [ディレクトリサービス](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) に接続 (ベータ)!\n- 配信証明を送信する (最大 20 人まで)。\n- より速く、より安定。";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- [ディレクトリサービス](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) に接続 (ベータ)!\n- 配信証明を送信する (最大 20 人まで)。\n- より速く、より安定。";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- より安定したメッセージ配信。\n- 改良されたグループ。\n- などなど！";
@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ は検証されています";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ サーバー";
+"%@ router" = "%@ サーバー";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ サーバー";
+"%@ routers" = "%@ サーバー";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ アップロード済";
@@ -390,10 +390,10 @@ swipe action */
 "Add profile" = "プロフィールを追加";
 
 /* No comment provided by engineer. */
-"Add server" = "サーバを追加";
+"Add router" = "サーバを追加";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "QRコードでサーバを追加する。";
+"Add routers by scanning QR codes." = "QRコードでサーバを追加する。";
 
 /* No comment provided by engineer. */
 "Add team members" = "チームメンバーを追加";
@@ -471,7 +471,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "すべての連絡先は維持されます。連絡先に更新されたプロフィールを送信します。";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "すべての連絡先、会話、ファイルは安全に暗号化され、設定されたXFTPリレーに分割でアップロードされます。";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers." = "すべての連絡先、会話、ファイルは安全に暗号化され、設定されたdataリレーに分割でアップロードされます。";
 
 /* No comment provided by engineer. */
 "Allow" = "許可";
@@ -567,7 +567,7 @@ swipe action */
 "Answer call" = "通話に応答";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。";
+"Anybody can host routers." = "プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。";
 
 /* No comment provided by engineer. */
 "App build: %@" = "アプリのビルド: %@";
@@ -822,7 +822,7 @@ set passcode view */
 "Check messages every 20 min." = "20分おきにメッセージを確認する。";
 
 /* alert title */
-"Check server address and try again." = "サーバのアドレスを確認してから再度試してください。";
+"Check router address and try again." = "サーバのアドレスを確認してから再度試してください。";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "中国語とスペイン語UI";
@@ -918,7 +918,7 @@ set passcode view */
 "Connected desktop" = "デスクトップに接続済";
 
 /* No comment provided by engineer. */
-"Connected servers" = "接続中のサーバ";
+"Connected routers" = "接続中のサーバ";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "デスクトップに接続済";
@@ -945,10 +945,10 @@ set passcode view */
 "connecting call" = "発信中…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "サーバーに接続中…";
+"Connecting router…" = "サーバーに接続中…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "サーバーに接続中… (エラー: %@)";
+"Connecting router… (error: %@)" = "サーバーに接続中… (エラー: %@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "連絡先に接続中です。しばらくお待ちいただくか、後で確認してください！";
@@ -963,7 +963,7 @@ set passcode view */
 "Connection" = "接続";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "接続とサーバーのステータス。";
+"Connection and routers status." = "接続とサーバーのステータス。";
 
 /* alert title */
 "Connection error" = "接続エラー";
@@ -1506,7 +1506,7 @@ alert button */
 "Enter password above to show!" = "上にパスワードを入力すると表示されます！";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "サーバを手動で入力";
+"Enter router manually" = "サーバを手動で入力";
 
 /* placeholder */
 "Enter welcome message…" = "ウェルカムメッセージを入力してください…";
@@ -1688,7 +1688,7 @@ snd error text */
 "Favorite" = "お気に入り";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "ファイルはサーバーから削除されます。";
+"File will be deleted from routers." = "ファイルはサーバーから削除されます。";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "連絡先がアップロードを完了した時点で、ファイルを受信します。";
@@ -1721,7 +1721,7 @@ snd error text */
 "Find chats faster" = "チャットを素早く検索";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "サーバアドレスの証明証IDが正しくないかもしれません";
+"Fingerprint in router address does not match certificate." = "サーバアドレスの証明証IDが正しくないかもしれません";
 
 /* No comment provided by engineer. */
 "Fix" = "修正";
@@ -1805,7 +1805,7 @@ snd error text */
 "Group profile" = "グループのプロフィール";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "グループのプロフィールはサーバではなく、メンバーの端末に保存されます。";
+"Group profile is stored on members' devices, not on the routers." = "グループのプロフィールはサーバではなく、メンバーの端末に保存されます。";
 
 /* snd group event chat item */
 "group profile updated" = "グループのプロフィールが更新されました";
@@ -1859,7 +1859,7 @@ snd error text */
 "How to use it" = "使い方";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "自分のサーバの使い方";
+"How to use your routers" = "自分のサーバの使い方";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICEサーバ (1行に1サーバ)";
@@ -1904,7 +1904,7 @@ snd error text */
 "Improved privacy and security" = "プライバシーとセキュリティ強化";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "サーバ設定の向上";
+"Improved router configuration" = "サーバ設定の向上";
 
 /* No comment provided by engineer. */
 "In reply to" = "返信先";
@@ -1979,7 +1979,7 @@ snd error text */
 "invalid data" = "無効なデータ";
 
 /* alert title */
-"Invalid server address!" = "無効なサーバアドレス！";
+"Invalid router address!" = "無効なサーバアドレス！";
 
 /* item status text */
 "Invalid status" = "無効なステータス";
@@ -2033,7 +2033,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "古いデータベースのバックアップを使用した場合に発生する可能性があります。";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "次の場合に起こる場合があります：\n1. メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた。\n2. あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した。\n3. 接続に問題があった。";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "次の場合に起こる場合があります：\n1. メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた。\n2. あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した。\n3. 接続に問題があった。";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "このリンクからすでに接続されているようです。そうでない場合は、エラー(%@)が発生しました。";
@@ -2276,7 +2276,7 @@ snd error text */
 "Name" = "名前";
 
 /* No comment provided by engineer. */
-"Network & servers" = "ネットワークとサーバ";
+"Network & routers" = "ネットワークとサーバ";
 
 /* No comment provided by engineer. */
 "Network settings" = "ネットワーク設定";
@@ -2551,7 +2551,7 @@ new chat action */
 "Preserve the last message draft, with attachments." = "添付を含めて、下書きを保存する。";
 
 /* No comment provided by engineer. */
-"Preset server address" = "プレセットサーバのアドレス";
+"Preset router address" = "プレセットサーバのアドレス";
 
 /* No comment provided by engineer. */
 "Preview" = "プレビュー";
@@ -2569,7 +2569,7 @@ new chat action */
 "Private notes" = "プライベートノート";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "プロフィールとサーバ接続";
+"Profile and router connections" = "プロフィールとサーバ接続";
 
 /* No comment provided by engineer. */
 "Profile image" = "プロフィール画像";
@@ -2656,7 +2656,7 @@ new chat action */
 "Received message" = "受信したメッセージ";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "開発中の機能です！相手のクライアントが4.2でなければ機能しません。アドレス変更が完了すると、会話にメッセージが出ます。連絡相手 (またはグループのメンバー) からメッセージを受信できないかをご確認ください。";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "開発中の機能です！相手のクライアントが4.2でなければ機能しません。アドレス変更が完了すると、会話にメッセージが出ます。連絡相手 (またはグループのメンバー) からメッセージを受信できないかをご確認ください。";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "ファイルの受信を停止します。";
@@ -2668,10 +2668,10 @@ new chat action */
 "Recipients see updates as you type them." = "受信者には、入力時に更新内容が表示されます。";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "接続されているすべてのサーバーを再接続して、メッセージを強制的に配信します。 追加のトラフィックを使用します。";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "接続されているすべてのサーバーを再接続して、メッセージを強制的に配信します。 追加のトラフィックを使用します。";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "サーバーに再接続しますか？";
+"Reconnect routers?" = "サーバーに再接続しますか？";
 
 /* No comment provided by engineer. */
 "Record updated at" = "レコード更新日時";
@@ -2815,10 +2815,10 @@ chat item action */
 "Save profile password" = "プロフィールのパスワードを保存";
 
 /* No comment provided by engineer. */
-"Save servers" = "サーバを保存";
+"Save routers" = "サーバを保存";
 
 /* alert title */
-"Save servers?" = "サーバを保存しますか？";
+"Save routers?" = "サーバを保存しますか？";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "ウェルカムメッセージを保存しますか？";
@@ -2836,7 +2836,7 @@ chat item action */
 "Scan security code from your contact's app." = "連絡相手のアプリからセキュリティコードを読み込む。";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "サーバのQRコードを読み込む";
+"Scan router QR code" = "サーバのQRコードを読み込む";
 
 /* No comment provided by engineer. */
 "Search" = "検索";
@@ -2929,16 +2929,16 @@ chat item action */
 "Sent messages will be deleted after set time." = "一定時間が経ったら送信されたメッセージが削除されます。";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
+"Router requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
+"Router requires authorization to upload, check password." = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "サーバテスト失敗！";
+"Router test failed!" = "サーバテスト失敗！";
 
 /* No comment provided by engineer. */
-"Servers" = "サーバ";
+"Routers" = "サーバ";
 
 /* No comment provided by engineer. */
 "Set 1 day" = "1日に設定";
@@ -3137,10 +3137,10 @@ chat item action */
 "Test failed at step %@." = "テストはステップ %@ で失敗しました。";
 
 /* No comment provided by engineer. */
-"Test server" = "テストサーバ";
+"Test router" = "テストサーバ";
 
 /* No comment provided by engineer. */
-"Test servers" = "テストサーバ";
+"Test routers" = "テストサーバ";
 
 /* alert title */
 "Tests failed!" = "テストは失敗しました！";
@@ -3197,7 +3197,7 @@ chat item action */
 "The sender will NOT be notified" = "送信者には通知されません";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "現在のチャットプロフィールの新しい接続のサーバ **%@**。";
+"The routers for new connections of your current chat profile **%@**." = "現在のチャットプロフィールの新しい接続のサーバ **%@**。";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "これらの設定は現在のプロファイル **%@** 用です。";
@@ -3326,7 +3326,7 @@ chat item action */
 "updated group profile" = "グループプロフィールを更新しました";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "設定を更新すると、全サーバにクライントの再接続が行われます。";
+"Updating settings will re-connect the client to all routers." = "設定を更新すると、全サーバにクライントの再接続が行われます。";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "アップグレードしてチャットを開く";
@@ -3353,13 +3353,13 @@ chat item action */
 "Use new incognito profile" = "新しいシークレットプロファイルを使用する";
 
 /* No comment provided by engineer. */
-"Use server" = "サーバを使う";
+"Use router" = "サーバを使う";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "SimpleX チャット サーバーを使用しますか?";
+"Use SimpleX Chat routers?" = "SimpleX チャット サーバーを使用しますか?";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "SimpleX チャット サーバーを使用する。";
+"Using SimpleX Chat routers." = "SimpleX チャット サーバーを使用する。";
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
@@ -3659,13 +3659,13 @@ chat item action */
 "Your profile is stored on your device and only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
 
 /* No comment provided by engineer. */
 "Your random profile" = "あなたのランダム・プロフィール";
 
 /* No comment provided by engineer. */
-"Your server address" = "あなたのサーバアドレス";
+"Your router address" = "あなたのサーバアドレス";
 
 /* No comment provided by engineer. */
 "Your settings" = "あなたの設定";

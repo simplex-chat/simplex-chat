@@ -5,7 +5,7 @@
 "_italic_" = "\\_italik_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- [dizin hizmeti] 'ne bağlan(simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- çoklu mesaj gönderimi (20 kişiye kadar).\n- daha hızlı ve daha stabil.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- [dizin hizmeti] 'ne bağlan(simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- çoklu mesaj gönderimi (20 kişiye kadar).\n- daha hızlı ve daha stabil.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- daha stabil mesaj gönderimi.\n- birazcık daha iyi gruplar.\n- ve fazlası!";
@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ onaylandı";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ sunucu";
+"%@ router" = "%@ sunucu";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ sunucular";
+"%@ routers" = "%@ sunucular";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ yüklendi";
@@ -414,10 +414,10 @@ swipe action */
 "Add profile" = "Profil ekle";
 
 /* No comment provided by engineer. */
-"Add server" = "Sunucu ekle";
+"Add router" = "Sunucu ekle";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Karekod taratarak sunucuları ekleyin.";
+"Add routers by scanning QR codes." = "Karekod taratarak sunucuları ekleyin.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Takım üyesi ekle";
@@ -531,7 +531,7 @@ swipe action */
 "All reports will be archived for you." = "Tüm raporlar sizin için arşivlenecek.";
 
 /* No comment provided by engineer. */
-"All servers" = "Tüm sunucular";
+"All routers" = "Tüm sunucular";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Konuştuğun kişilerin tümü bağlı kalacaktır.";
@@ -540,7 +540,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP yönlendiricilerine parçalar halinde yüklenir.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers." = "Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış data yönlendiricilerine parçalar halinde yüklenir.";
 
 /* No comment provided by engineer. */
 "Allow" = "İzin ver";
@@ -648,7 +648,7 @@ swipe action */
 "Answer call" = "Aramayı cevapla";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Açık kaynak protokolü ve kodu - herhangi biri sunucuları çalıştırabilir.";
+"Anybody can host routers." = "Açık kaynak protokolü ve kodu - herhangi biri sunucuları çalıştırabilir.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Uygulama sürümü: %@";
@@ -1114,7 +1114,7 @@ set passcode view */
 "Check messages when allowed." = "İzin verildiğinde mesajları kontrol et.";
 
 /* alert title */
-"Check server address and try again." = "Sunucu adresini kontrol edip tekrar deneyin.";
+"Check router address and try again." = "Sunucu adresini kontrol edip tekrar deneyin.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Çince ve İspanyolca arayüz";
@@ -1207,7 +1207,7 @@ set passcode view */
 "Configure ICE servers" = "ICE sunucularını ayarla";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "Sunucu operatörlerini yapılandır";
+"Configure router operators" = "Sunucu operatörlerini yapılandır";
 
 /* No comment provided by engineer. */
 "Confirm" = "Onayla";
@@ -1219,7 +1219,7 @@ set passcode view */
 "Confirm database upgrades" = "Veritabanı geliştirmelerini onayla";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "Bilinmeyen sunuculardan gelen dosyaları onayla.";
+"Confirm files from unknown routers." = "Bilinmeyen sunuculardan gelen dosyaları onayla.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Ağ ayarlarını onaylayın";
@@ -1288,7 +1288,7 @@ set passcode view */
 "Connected desktop" = "Bilgisayara bağlandı";
 
 /* No comment provided by engineer. */
-"Connected servers" = "Bağlı sunucular";
+"Connected routers" = "Bağlı sunucular";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Masaüstüne bağlandı";
@@ -1315,10 +1315,10 @@ set passcode view */
 "connecting call" = "aramaya bağlanılıyor…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Sunucuya bağlanıyor…";
+"Connecting router…" = "Sunucuya bağlanıyor…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Sunucuya bağlanıyor…(hata:%@)";
+"Connecting router… (error: %@)" = "Sunucuya bağlanıyor…(hata:%@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "Kişiye bağlanılıyor, lütfen bekleyin ya da daha sonra kontrol edin!";
@@ -1333,7 +1333,7 @@ set passcode view */
 "Connection" = "Bağlantı";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Bağlantı ve sunucuların durumu.";
+"Connection and routers status." = "Bağlantı ve sunucuların durumu.";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Bağlantı engellendi";
@@ -1348,7 +1348,7 @@ set passcode view */
 "connection established" = "bağlantı kuruldu";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "Bağlantı sunucu operatörü tarafından engellendi:\n%@";
+"Connection is blocked by router operator:\n%@" = "Bağlantı sunucu operatörü tarafından engellendi:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Bağlantı hazır değil.";
@@ -1822,13 +1822,13 @@ alert button */
 "Desktop devices" = "Bilgisayar cihazları";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Hedef sunucu adresi %@, yönlendirme sunucusu %@ ayarlarıyla uyumlu değil.";
+"Destination router address of %@ is incompatible with forwarding router %@ settings." = "Hedef sunucu adresi %@, yönlendirme sunucusu %@ ayarlarıyla uyumlu değil.";
 
 /* snd error text */
-"Destination server error: %@" = "Hedef sunucu hatası: %@";
+"Destination router error: %@" = "Hedef sunucu hatası: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "Hedef sunucu %@ sürümü, yönlendirme sunucusu %@ ile uyumlu değil.";
+"Destination router version of %@ is incompatible with forwarding router %@." = "Hedef sunucu %@ sürümü, yönlendirme sunucusu %@ ile uyumlu değil.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Detaylı istatistikler";
@@ -1930,7 +1930,7 @@ alert button */
 "Do not send history to new members." = "Yeni üyelere geçmişi gönderme.";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.";
+"Do NOT send messages directly, even if your or destination router does not support private routing." = "Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "Kimlik bilgilerini proxy ile kullanmayın.";
@@ -2033,7 +2033,7 @@ chat item action */
 "Enable disappearing messages by default." = "Varsayılan olarak kaybolan mesajları etkinleştirin.";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "Daha iyi meta veri gizliliği için Ağ & sunucu ayarlarında Flux'u etkinleştirin.";
+"Enable Flux in Network & routers settings for better metadata privacy." = "Daha iyi meta veri gizliliği için Ağ & sunucu ayarlarında Flux'u etkinleştirin.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Herkes için etkinleştir";
@@ -2174,7 +2174,7 @@ chat item action */
 "Enter password above to show!" = "Göstermek için yukarıdaki şifreyi gir!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Sunucuya manuel olarak gir";
+"Enter router manually" = "Sunucuya manuel olarak gir";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Bu cihazın adını gir…";
@@ -2210,7 +2210,7 @@ chat item action */
 "Error adding member(s)" = "Üye(ler) eklenirken hata oluştu";
 
 /* alert title */
-"Error adding server" = "Sunucu eklenirken hata oluştu";
+"Error adding router" = "Sunucu eklenirken hata oluştu";
 
 /* No comment provided by engineer. */
 "Error adding short link" = "Kısa bağlantı ekleme hatası";
@@ -2237,7 +2237,7 @@ chat item action */
 "Error checking token status" = "Jeton durumu kontrol hatası";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "Yönlendirme sunucusu %@'ya bağlanırken hata oluştu. Lütfen daha sonra deneyin.";
+"Error connecting to forwarding router %@. Please try later." = "Yönlendirme sunucusu %@'ya bağlanırken hata oluştu. Lütfen daha sonra deneyin.";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Adres oluşturulurken hata oluştu";
@@ -2315,7 +2315,7 @@ chat item action */
 "Error joining group" = "Gruba katılırken hata oluştu";
 
 /* alert title */
-"Error loading servers" = "Sunucular yüklenirken hata oluştu";
+"Error loading routers" = "Sunucular yüklenirken hata oluştu";
 
 /* No comment provided by engineer. */
 "Error migrating settings" = "Ayarlar taşınırken hata oluştu";
@@ -2330,10 +2330,10 @@ chat item action */
 "Error receiving file" = "Dosya alınırken sorun oluştu";
 
 /* No comment provided by engineer. */
-"Error reconnecting server" = "Hata, sunucuya yeniden bağlanılıyor";
+"Error reconnecting router" = "Hata, sunucuya yeniden bağlanılıyor";
 
 /* No comment provided by engineer. */
-"Error reconnecting servers" = "Hata sunuculara yeniden bağlanılıyor";
+"Error reconnecting routers" = "Hata sunuculara yeniden bağlanılıyor";
 
 /* alert title */
 "Error registering for notifications" = "Bildirimler için kayıt hatası";
@@ -2366,7 +2366,7 @@ chat item action */
 "Error saving passphrase to keychain" = "Parolayı Anahtar Zincirine kaydederken hata oluştu";
 
 /* alert title */
-"Error saving servers" = "Sunucular kaydedilirken hata oluştu";
+"Error saving routers" = "Sunucular kaydedilirken hata oluştu";
 
 /* when migrating */
 "Error saving settings" = "Ayarlar kaydedilirken hata oluştu";
@@ -2408,7 +2408,7 @@ chat item action */
 "Error synchronizing connection" = "Bağlantı senkronizasyonunda hata oluştu";
 
 /* No comment provided by engineer. */
-"Error testing server connection" = "Sunucu bağlantısını test etme hatası";
+"Error testing router connection" = "Sunucu bağlantısını test etme hatası";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "Grup bağlantısı güncellenirken hata oluştu";
@@ -2417,7 +2417,7 @@ chat item action */
 "Error updating message" = "Mesaj güncellenirken hata oluştu";
 
 /* alert title */
-"Error updating server" = "Sunucu güncellenirken hata oluştu";
+"Error updating router" = "Sunucu güncellenirken hata oluştu";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Ayarları güncellerken hata oluştu";
@@ -2449,7 +2449,7 @@ snd error text */
 "Errors" = "Hatalar";
 
 /* servers error */
-"Errors in servers configuration." = "Sunucular yapılandırılırken hatalar oluştu.";
+"Errors in routers configuration." = "Sunucular yapılandırılırken hatalar oluştu.";
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Konuşma sırasında devre dışı bırakılsa bile.";
@@ -2512,13 +2512,13 @@ snd error text */
 "File errors:\n%@" = "Dosya hataları:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "Dosya sunucu operatörü tarafından engellendi:\n%@.";
+"File is blocked by router operator:\n%@." = "Dosya sunucu operatörü tarafından engellendi:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Dosya bulunamadı - muhtemelen dosya silindi veya göderim iptal edildi.";
 
 /* file error text */
-"File server error: %@" = "Dosya sunucusu hatası: %@";
+"Data router error: %@" = "Dosya sunucusu hatası: %@";
 
 /* No comment provided by engineer. */
 "File status" = "Dosya durumu";
@@ -2527,7 +2527,7 @@ snd error text */
 "File status: %@" = "Dosya durumu: %@";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Dosya sunuculardan silinecek.";
+"File will be deleted from routers." = "Dosya sunuculardan silinecek.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Dosya kişi yüklemeyi tamamladığında alınacak.";
@@ -2575,7 +2575,7 @@ snd error text */
 "Find chats faster" = "Sohbetleri daha hızlı bul";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil";
+"Fingerprint in router address does not match certificate." = "Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil";
 
 /* No comment provided by engineer. */
 "Fix" = "Düzelt";
@@ -2605,7 +2605,7 @@ snd error text */
 "For console" = "Konsol için";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Örneğin, eğer kişiniz SimpleX Sohbet sunucusundan mesajları alıyorsa, uygulamanız bu mesajları Flux sunucusundan iletecektir.";
+"For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router." = "Örneğin, eğer kişiniz SimpleX Sohbet sunucusundan mesajları alıyorsa, uygulamanız bu mesajları Flux sunucusundan iletecektir.";
 
 /* No comment provided by engineer. */
 "For me" = "Benim için";
@@ -2647,19 +2647,19 @@ snd error text */
 "Forwarding %lld messages" = "%lld mesajlarını ilet";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Yönlendirme sunucusu %1$@, hedef sunucu %2$@'ya bağlanamadı. Lütfen daha sonra deneyin.";
+"Forwarding router %@ failed to connect to destination router %@. Please try later." = "Yönlendirme sunucusu %1$@, hedef sunucu %2$@'ya bağlanamadı. Lütfen daha sonra deneyin.";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "Yönlendirme sunucusu adresi ağ ayarlarıyla uyumsuz: %@.";
+"Forwarding router address is incompatible with network settings: %@." = "Yönlendirme sunucusu adresi ağ ayarlarıyla uyumsuz: %@.";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "Yönlendirme sunucusu sürümü ağ ayarlarıyla uyumsuz: %@.";
+"Forwarding router version is incompatible with network settings: %@." = "Yönlendirme sunucusu sürümü ağ ayarlarıyla uyumsuz: %@.";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "Yönlendirme sunucusu: %1$@\nHedef sunucu hatası: %2$@";
+"Forwarding router: %@\nDestination router error: %@" = "Yönlendirme sunucusu: %1$@\nHedef sunucu hatası: %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "Yönlendirme sunucusu: %1$@\nHata: %2$@";
+"Forwarding router: %@\nError: %@" = "Yönlendirme sunucusu: %1$@\nHata: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Bilgisayar bulundu";
@@ -2749,7 +2749,7 @@ snd error text */
 "Group profile" = "Grup profili";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Grup profili üyelerin cihazlarında saklanır, sunucularda değil.";
+"Group profile is stored on members' devices, not on the routers." = "Grup profili üyelerin cihazlarında saklanır, sunucularda değil.";
 
 /* snd group event chat item */
 "group profile updated" = "grup profili güncellendi";
@@ -2824,7 +2824,7 @@ snd error text */
 "How to use it" = "Nasıl kullanılır";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Sunucularını nasıl kullanabilirsin";
+"How to use your routers" = "Sunucularını nasıl kullanabilirsin";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Macarca arayüz";
@@ -2887,7 +2887,7 @@ snd error text */
 "Improved privacy and security" = "Geliştirilmiş gizlilik ve güvenlik";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Geliştirilmiş sunucu yapılandırması";
+"Improved router configuration" = "Geliştirilmiş sunucu yapılandırması";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "Devam etmek için sohbetin durdurulması gerekiyor.";
@@ -3019,7 +3019,7 @@ snd error text */
 "Invalid response" = "Geçersiz yanıt";
 
 /* alert title */
-"Invalid server address!" = "Geçersiz sunucu adresi!";
+"Invalid router address!" = "Geçersiz sunucu adresi!";
 
 /* item status text */
 "Invalid status" = "Geçersiz durum";
@@ -3082,7 +3082,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "Siz veya bağlantınız eski veritabanı yedeğini kullandığında bu durum ortaya çıkabilir.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Şu durumlarda ortaya çıkabilir:\n1. Mesajların gönderici istemcide 2 gün sonra veya sunucuda 30 gün sonra süresi dolmuştur.\n2. Siz veya kişi eski veritabanı yedeği kullandığı için mesaj şifre çözme işlemi başarısız olmuştur.\n3. Bağlantı tehlikeye girmiştir.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Şu durumlarda ortaya çıkabilir:\n1. Mesajların gönderici istemcide 2 gün sonra veya sunucuda 30 gün sonra süresi dolmuştur.\n2. Siz veya kişi eski veritabanı yedeği kullandığı için mesaj şifre çözme işlemi başarısız olmuştur.\n3. Bağlantı tehlikeye girmiştir.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "IP adresinizi ve bağlantılarınızı korur.";
@@ -3520,7 +3520,7 @@ snd error text */
 "Name" = "İsim";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Ağ & sunucular";
+"Network & routers" = "Ağ & sunucular";
 
 /* No comment provided by engineer. */
 "Network connection" = "Ağ bağlantısı";
@@ -3598,13 +3598,13 @@ snd error text */
 "New passphrase…" = "Yeni parola…";
 
 /* No comment provided by engineer. */
-"New server" = "Yeni sunucu";
+"New router" = "Yeni sunucu";
 
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used every time you start the app." = "Uygulamayı her başlattığınızda yeni SOCKS kimlik bilgileri kullanılacaktır.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Her sunucu için yeni SOCKS kimlik bilgileri kullanılacaktır.";
+"New SOCKS credentials will be used for each router." = "Her sunucu için yeni SOCKS kimlik bilgileri kullanılacaktır.";
 
 /* pref value */
 "no" = "hayır";
@@ -3906,7 +3906,7 @@ new chat action */
 "Operator" = "Operatör";
 
 /* alert title */
-"Operator server" = "Operatör sunucusu";
+"Operator router" = "Operatör sunucusu";
 
 /* No comment provided by engineer. */
 "Or import archive file" = "Veya arşiv dosyasını içe aktar";
@@ -4083,16 +4083,16 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Son mesaj taslağını ekleriyle birlikte koru.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Ön ayarlı sunucu adresi";
+"Preset router address" = "Ön ayarlı sunucu adresi";
 
 /* No comment provided by engineer. */
-"Preset servers" = "Ön ayar sunucuları";
+"Preset routers" = "Ön ayar sunucuları";
 
 /* No comment provided by engineer. */
 "Preview" = "Ön izleme";
 
 /* No comment provided by engineer. */
-"Previously connected servers" = "Önceden bağlanılmış sunucular";
+"Previously connected routers" = "Önceden bağlanılmış sunucular";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Gizlilik & güvenlik";
@@ -4107,7 +4107,7 @@ new chat action */
 "Privacy redefined" = "Gizlilik yeniden tanımlandı";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Özel sohbetler, gruplar ve kişilerinize sunucu operatörleri tarafından erişilemez.";
+"Private chats, groups and your contacts are not accessible to router operators." = "Özel sohbetler, gruplar ve kişilerinize sunucu operatörleri tarafından erişilemez.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Gizli dosya adları";
@@ -4134,7 +4134,7 @@ new chat action */
 "Private routing timeout" = "Özel yönlendirme zaman aşımı";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Profil ve sunucu bağlantıları";
+"Profile and router connections" = "Profil ve sunucu bağlantıları";
 
 /* No comment provided by engineer. */
 "Profile image" = "Profil fotoğrafı";
@@ -4191,7 +4191,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "Bir parolayla birlikte sohbet profillerini koru!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "IP adresinizi kişileriniz tarafından seçilen mesajlaşma yönlendiricilerinden koruyun.\n*Ağ ve sunucular* ayarlarında etkinleştirin.";
+"Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network & routers* settings." = "IP adresinizi kişileriniz tarafından seçilen mesajlaşma yönlendiricilerinden koruyun.\n*Ağ ve sunucular* ayarlarında etkinleştirin.";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "Protokol arka plan zaman aşımı";
@@ -4206,7 +4206,7 @@ new chat action */
 "Proxied" = "Proxyli";
 
 /* No comment provided by engineer. */
-"Proxied servers" = "Proxy sunucuları";
+"Proxied routers" = "Proxy sunucuları";
 
 /* No comment provided by engineer. */
 "Proxy requires password" = "Proxy şifre gerektirir";
@@ -4281,7 +4281,7 @@ new chat action */
 "Received total" = "Toplam alınan";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Alıcı adresi farklı bir sunucuya değiştirilecektir. Gönderici çevrimiçi olduktan sonra adres değişikliği tamamlanacaktır.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Alıcı adresi farklı bir sunucuya değiştirilecektir. Gönderici çevrimiçi olduktan sonra adres değişikliği tamamlanacaktır.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Dosya alımı durdurulacaktır.";
@@ -4290,7 +4290,7 @@ new chat action */
 "Receiving via" = "Aracılığıyla alınıyor";
 
 /* No comment provided by engineer. */
-"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Yakın geçmiş ve geliştirilmiş [dizin botu](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex. im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "Yakın geçmiş ve geliştirilmiş [dizin botu](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex. im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).";
 
 /* No comment provided by engineer. */
 "Recipient(s) can't see who this message is from." = "Alıcı(lar) bu mesajın kimden geldiğini göremez.";
@@ -4302,22 +4302,22 @@ new chat action */
 "Reconnect" = "Yeniden bağlan";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Mesaj teslimini zorlamak için bağlı tüm sunucuları yeniden bağlayın. Ek trafik kullanır.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Mesaj teslimini zorlamak için bağlı tüm sunucuları yeniden bağlayın. Ek trafik kullanır.";
 
 /* No comment provided by engineer. */
-"Reconnect all servers" = "Tüm sunuculara yeniden bağlan";
+"Reconnect all routers" = "Tüm sunuculara yeniden bağlan";
 
 /* No comment provided by engineer. */
-"Reconnect all servers?" = "Tüm sunuculara yeniden bağlansın mı?";
+"Reconnect all routers?" = "Tüm sunuculara yeniden bağlansın mı?";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "Mesajı göndermeye zorlamak için sunucuya yeniden bağlan. Bu ekstra internet kullanır.";
+"Reconnect router to force message delivery. It uses additional traffic." = "Mesajı göndermeye zorlamak için sunucuya yeniden bağlan. Bu ekstra internet kullanır.";
 
 /* No comment provided by engineer. */
-"Reconnect server?" = "Sunucuya yeniden bağlansın mı ?";
+"Reconnect router?" = "Sunucuya yeniden bağlansın mı ?";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Sunuculara yeniden bağlanılsın mı?";
+"Reconnect routers?" = "Sunuculara yeniden bağlanılsın mı?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Kayıt şu zamanda güncellendi";
@@ -4611,10 +4611,10 @@ chat item action */
 "Save profile password" = "Profil şifresini kaydet";
 
 /* No comment provided by engineer. */
-"Save servers" = "Sunucuları kaydet";
+"Save routers" = "Sunucuları kaydet";
 
 /* alert title */
-"Save servers?" = "Sunucular kaydedilsin mi?";
+"Save routers?" = "Sunucular kaydedilsin mi?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Hoşgeldin mesajı kaydedilsin mi?";
@@ -4662,7 +4662,7 @@ chat item action */
 "Scan security code from your contact's app." = "Kişinin uygulamasından güvenlik kodunu okut.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Sunucu QR kodu okut";
+"Scan router QR code" = "Sunucu QR kodu okut";
 
 /* No comment provided by engineer. */
 "search" = "ara";
@@ -4758,10 +4758,10 @@ chat item action */
 "Send message to enable calls." = "Çağrıları aktif etmek için mesaj gönder.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.";
+"Send messages directly when IP address is protected and your or destination router does not support private routing." = "IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.";
+"Send messages directly when your or destination router does not support private routing." = "Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Bildirimler gönder";
@@ -4848,58 +4848,58 @@ chat item action */
 "Sent via proxy" = "Bir proxy aracılığıyla gönderildi";
 
 /* No comment provided by engineer. */
-"Server" = "Sunucu";
+"Router" = "Sunucu";
 
 /* alert message */
-"Server added to operator %@." = "Sunucu operatör %@'ya eklendi.";
+"Router added to operator %@." = "Sunucu operatör %@'ya eklendi.";
 
 /* No comment provided by engineer. */
-"Server address" = "Sunucu adresi";
+"Router address" = "Sunucu adresi";
 
 /* No comment provided by engineer. */
-"Server address is incompatible with network settings: %@." = "Sunucu adresi ağ ayarlarıyla uyumsuz: %@.";
+"Router address is incompatible with network settings: %@." = "Sunucu adresi ağ ayarlarıyla uyumsuz: %@.";
 
 /* srv error text. */
-"Server address is incompatible with network settings." = "Sunucu adresi ağ ayarlarıyla uyumlu değil.";
+"Router address is incompatible with network settings." = "Sunucu adresi ağ ayarlarıyla uyumlu değil.";
 
 /* alert title */
-"Server operator changed." = "Sunucu operatörü değişti.";
+"Router operator changed." = "Sunucu operatörü değişti.";
 
 /* No comment provided by engineer. */
-"Server operators" = "Sunucu operatörleri";
+"Router operators" = "Sunucu operatörleri";
 
 /* alert title */
-"Server protocol changed." = "Sunucu protokolü değişti.";
+"Router protocol changed." = "Sunucu protokolü değişti.";
 
 /* queue info */
-"server queue info: %@\n\nlast received msg: %@" = "sunucu kuyruk bilgisi: %1$@\n\nson alınan msj: %2$@";
+"router queue info: %@\n\nlast received msg: %@" = "sunucu kuyruk bilgisi: %1$@\n\nson alınan msj: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Sunucunun sıra oluşturması için yetki gereklidir, şifreyi kontrol edin";
+"Router requires authorization to create queues, check password." = "Sunucunun sıra oluşturması için yetki gereklidir, şifreyi kontrol edin";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Sunucunun yükleme yapması için yetki gereklidir, şifreyi kontrol edin";
+"Router requires authorization to upload, check password." = "Sunucunun yükleme yapması için yetki gereklidir, şifreyi kontrol edin";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Sunucu testinde hata oluştu!";
+"Router test failed!" = "Sunucu testinde hata oluştu!";
 
 /* No comment provided by engineer. */
-"Server type" = "Sunucu tipi";
+"Router type" = "Sunucu tipi";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "Sunucu sürümü ağ ayarlarıyla uyumlu değil.";
+"Router version is incompatible with network settings." = "Sunucu sürümü ağ ayarlarıyla uyumlu değil.";
 
 /* No comment provided by engineer. */
-"Server version is incompatible with your app: %@." = "Sunucu sürümü uygulamanızla uyumlu değil: %@.";
+"Router version is incompatible with your app: %@." = "Sunucu sürümü uygulamanızla uyumlu değil: %@.";
 
 /* No comment provided by engineer. */
-"Servers" = "Sunucular";
+"Routers" = "Sunucular";
 
 /* No comment provided by engineer. */
-"Servers info" = "Sunucu bilgileri";
+"Routers info" = "Sunucu bilgileri";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "Sunucu istatistikleri sıfırlanacaktır - bu geri alınamaz!";
+"Routers statistics will be reset - this cannot be undone!" = "Sunucu istatistikleri sıfırlanacaktır - bu geri alınamaz!";
 
 /* No comment provided by engineer. */
 "Session code" = "Oturum kodu";
@@ -5068,7 +5068,7 @@ chat item action */
 "SimpleX channel link" = "SimpleX kanal bağlantısı";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat ve Flux, Flux tarafından işletilen sunucuları uygulamaya dahil etmek için bir anlaşma yaptı.";
+"SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app." = "SimpleX Chat ve Flux, Flux tarafından işletilen sunucuları uygulamaya dahil etmek için bir anlaşma yaptı.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "SimpleX Chat güvenliği Trails of Bits tarafından denetlenmiştir.";
@@ -5128,7 +5128,7 @@ chat item action */
 "Small groups (max 20)" = "Küçük gruplar (en fazla 20 kişi)";
 
 /* No comment provided by engineer. */
-"SMP server" = "SMP sunucusu";
+"Packet router" = "packet sunucusu";
 
 /* No comment provided by engineer. */
 "SOCKS proxy" = "SOCKS vekili";
@@ -5149,7 +5149,7 @@ chat item action */
 "Some non-fatal errors occurred during import:" = "İçe aktarma sırasında bazı önemli olmayan hatalar oluştu:";
 
 /* alert message */
-"Some servers failed the test:\n%@" = "Bazı sunucular testi geçemedi:\n%@";
+"Some routers failed the test:\n%@" = "Bazı sunucular testi geçemedi:\n%@";
 
 /* notification title */
 "Somebody" = "Biri";
@@ -5324,10 +5324,10 @@ report reason */
 "Test notifications" = "Bildirimleri test et";
 
 /* No comment provided by engineer. */
-"Test server" = "Sunucuyu test et";
+"Test router" = "Sunucuyu test et";
 
 /* No comment provided by engineer. */
-"Test servers" = "Sunucuları test et";
+"Test routers" = "Sunucuları test et";
 
 /* alert title */
 "Tests failed!" = "Testler başarısız oldu!";
@@ -5414,16 +5414,16 @@ report reason */
 "The sender will NOT be notified" = "Gönderene BİLDİRİLMEYECEKTİR";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Mevcut sohbet profilinizin yeni bağlantıları için sunucular **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "Mevcut sohbet profilinizin yeni bağlantıları için sunucular **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "Mevcut sohbet profiliniz için yeni dosyaların sunucuları **%@**.";
+"The routers for new files of your current chat profile **%@**." = "Mevcut sohbet profiliniz için yeni dosyaların sunucuları **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Yapıştırdığın metin bir SimpleX bağlantısı değildir.";
 
 /* No comment provided by engineer. */
-"The uploaded database archive will be permanently removed from the servers." = "Yüklenen veritabanı arşivi sunuculardan kalıcı olarak kaldırılacaktır.";
+"The uploaded database archive will be permanently removed from the routers." = "Yüklenen veritabanı arşivi sunuculardan kalıcı olarak kaldırılacaktır.";
 
 /* No comment provided by engineer. */
 "Themes" = "Temalar";
@@ -5513,7 +5513,7 @@ report reason */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Bilgilerinizi korumak için SimpleX Lock özelliğini açın.\nBu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenecektir.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.";
+"To protect your IP address, private routing uses your packet routers to deliver messages." = "IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için packet sunucularınızı kullanır.";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Gizliliği korumak için, diğer tüm platformlar gibi kullanıcı kimliği kullanmak yerine, SimpleX mesaj kuyrukları için kişilerinizin her biri için ayrı tanımlayıcılara sahiptir.";
@@ -5546,7 +5546,7 @@ report reason */
 "To use another profile after connection attempt, delete the chat and use the link again." = "Bağlantı denemesinden sonra başka bir profili kullanmak için, sohbeti silin ve bağlantıyı tekrar kullanın.";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "**%@**'nın sunucularını kullanmak için, kullanım koşullarını kabul edin.";
+"To use the routers of **%@**, accept conditions of use." = "**%@**'nın sunucularını kullanmak için, kullanım koşullarını kabul edin.";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Kişinizle uçtan uca şifrelemeyi doğrulamak için cihazlarınızdaki kodu karşılaştırın (veya tarayın).";
@@ -5636,10 +5636,10 @@ report reason */
 "Unknown error" = "Bilinmeyen hata";
 
 /* No comment provided by engineer. */
-"unknown servers" = "bilinmeyen yönlendiriciler";
+"unknown routers" = "bilinmeyen yönlendiriciler";
 
 /* alert title */
-"Unknown servers!" = "Bilinmeyen sunucular!";
+"Unknown routers!" = "Bilinmeyen sunucular!";
 
 /* No comment provided by engineer. */
 "unknown status" = "bilinmeyen durum";
@@ -5699,7 +5699,7 @@ report reason */
 "updated profile" = "güncellenmiş profil";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Ayarların güncellenmesi, istemciyi tüm sunuculara yeniden bağlayacaktır.";
+"Updating settings will re-connect the client to all routers." = "Ayarların güncellenmesi, istemciyi tüm sunuculara yeniden bağlayacaktır.";
 
 /* alert button */
 "Upgrade" = "Yükseltme";
@@ -5777,19 +5777,19 @@ report reason */
 "Use only local notifications?" = "Sadece yerel bildirimler kullanılsın mı?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.";
+"Use private routing with unknown routers when IP address is not protected." = "IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Bilinmeyen sunucularla gizli yönlendirme kullan.";
+"Use private routing with unknown routers." = "Bilinmeyen sunucularla gizli yönlendirme kullan.";
 
 /* No comment provided by engineer. */
-"Use server" = "Sunucu kullan";
+"Use router" = "Sunucu kullan";
 
 /* No comment provided by engineer. */
-"Use servers" = "Sunucuları kullan";
+"Use routers" = "Sunucuları kullan";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "SimpleX Chat sunucuları kullanılsın mı?";
+"Use SimpleX Chat routers?" = "SimpleX Chat sunucuları kullanılsın mı?";
 
 /* No comment provided by engineer. */
 "Use SOCKS proxy" = "SOCKS vekili kullan";
@@ -5798,7 +5798,7 @@ report reason */
 "Use TCP port %@ when no port is specified." = "Port belirtilmediğinde TCP port %@ kullanın.";
 
 /* No comment provided by engineer. */
-"Use TCP port 443 for preset servers only." = "Sadece ön ayar sunucuları için TCP port 443 kullanın.";
+"Use TCP port 443 for preset routers only." = "Sadece ön ayar sunucuları için TCP port 443 kullanın.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Görüşme sırasında uygulamayı kullanın.";
@@ -5816,7 +5816,7 @@ report reason */
 "Username" = "Kullanıcı Adı";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "SimpleX Chat sunucuları kullanılıyor.";
+"Using SimpleX Chat routers." = "SimpleX Chat sunucuları kullanılıyor.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -5999,10 +5999,10 @@ report reason */
 "With reduced battery usage." = "Azaltılmış pil kullanımı ile birlikte.";
 
 /* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to file servers." = "Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.";
+"Without Tor or VPN, your IP address will be visible to data routers." = "Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir: %@.";
+"Without Tor or VPN, your IP address will be visible to these data routers: %@." = "Tor veya VPN olmadan, IP adresiniz bu data aktarıcıları tarafından görülebilir: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Yanlış veritabanı parolası";
@@ -6017,7 +6017,7 @@ report reason */
 "Wrong passphrase!" = "Yanlış parola!";
 
 /* No comment provided by engineer. */
-"XFTP server" = "XFTP sunucusu";
+"Data router" = "data sunucusu";
 
 /* pref value */
 "yes" = "evet";
@@ -6068,7 +6068,7 @@ report reason */
 "You are invited to group" = "Gruba davet edildiniz";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "Bu sunuculara bağlı değilsiniz. Mesajları onlara iletmek için özel yönlendirme kullanılır.";
+"You are not connected to these routers. Private routing is used to deliver messages to them." = "Bu sunuculara bağlı değilsiniz. Mesajları onlara iletmek için özel yönlendirme kullanılır.";
 
 /* No comment provided by engineer. */
 "you are observer" = "gözlemcisiniz";
@@ -6083,7 +6083,7 @@ report reason */
 "You can change it in Appearance settings." = "Görünüm ayarlarından değiştirebilirsiniz.";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "Sunucuları ayarlar aracılığıyla yapılandırabilirsiniz.";
+"You can configure routers via settings." = "Sunucuları ayarlar aracılığıyla yapılandırabilirsiniz.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Daha sonra oluşturabilirsiniz";
@@ -6320,7 +6320,7 @@ report reason */
 "Your profile is stored on your device and only shared with your contacts." = "Profil sadece kişilerinle paylaşılacak.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Profiliniz değiştirildi. Kaydederseniz, güncellenmiş profil tüm kişilerinize gönderilecektir.";
@@ -6329,10 +6329,10 @@ report reason */
 "Your random profile" = "Rasgele profiliniz";
 
 /* No comment provided by engineer. */
-"Your server address" = "Sunucu adresiniz";
+"Your router address" = "Sunucu adresiniz";
 
 /* No comment provided by engineer. */
-"Your servers" = "Sunucularınız";
+"Your routers" = "Sunucularınız";
 
 /* No comment provided by engineer. */
 "Your settings" = "Ayarlarınız";
