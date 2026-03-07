@@ -111,6 +111,7 @@ jobs:
             arch: x86_64
             runner: "ubuntu-22.04"
             ghc: "8.10.7"
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
             should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
           - os: 22.04
             os_underscore: 22_04
@@ -118,24 +119,28 @@ jobs:
             runner: "ubuntu-22.04"
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
           - os: 24.04
             os_underscore: 24_04
             arch: x86_64
             runner: "ubuntu-24.04"
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:98ff7968124952e719a8a69bb3cccdd217f5fe758108ac4f21ad22e1df44d237'
           - os: 22.04
             os_underscore: 22_04
             arch: aarch64
             runner: "ubuntu-22.04-arm"
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:6a62a4157b8775eaf4959cb629e757d32d39d1f4c8ac1b0ddc2510b555cf72f3'
           - os: 24.04
             os_underscore: 24_04
             arch: aarch64
             runner: "ubuntu-24.04-arm"
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
+            hash: 'sha256:68434214381cb38287104e629fe8ee720167dd98cbb36ab1cbbab342515fa6ab'
     steps:
       - name: Checkout Code
         if: matrix.should_run == true
@@ -182,6 +187,7 @@ jobs:
           tags: build/${{ matrix.os }}:latest
           build-args: |
             TAG=${{ matrix.os }}
+            HASH=${{ matrix.hash }}
             GHC=${{ matrix.ghc }}
             USER_UID=${{ steps.ids.outputs.uid }}
             USER_GID=${{ steps.ids.outputs.gid }}
