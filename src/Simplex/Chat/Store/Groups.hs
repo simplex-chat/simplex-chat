@@ -1837,7 +1837,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile,
+    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile _memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memRestriction,
@@ -2003,7 +2003,7 @@ createIntroReMember
   db
   user
   gInfo
-  memInfo@(MemberInfo _ _ _ memberProfile)
+  memInfo@(MemberInfo _ _ _ memberProfile _)
   memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2018,7 +2018,7 @@ createIntroReMemberConn
   _host@GroupMember {memberContactId, activeConn}
   reMember@GroupMember {groupMemberId}
   chatV
-  (MemberInfo _ _ memChatVRange _)
+  (MemberInfo _ _ memChatVRange _ _)
   (groupCmdId, groupAgentConnId)
   subMode = do
     let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
