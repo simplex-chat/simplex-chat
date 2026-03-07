@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set -e
+# Eleventy OOMs with default 2GB V8 heap when building 280+ pages across 23 languages
+export NODE_OPTIONS=--max-old-space-size=4096
 
 cp -R docs website/src
 rm -rf website/src/docs/contributing
@@ -29,6 +31,10 @@ npm install
 cp node_modules/lottie-web/build/player/lottie.min.js src/js
 cp node_modules/ethers/dist/ethers.umd.min.js src/js
 cp node_modules/ethers/dist/ethers.umd.js.map src/js
+mkdir -p src/file-assets
+cp node_modules/@shhhum/xftp-web/dist-web/assets/index.js src/file-assets/
+cp node_modules/@shhhum/xftp-web/dist-web/assets/index.css src/file-assets/
+cp node_modules/@shhhum/xftp-web/dist-web/assets/crypto.worker.js src/file-assets/
 node merge_translations.js
 node customize_docs_frontmatter.js
 
@@ -42,6 +48,7 @@ for lang in "${langs[@]}"; do
   cp src/invitation.html src/$lang
   cp src/fdroid.html src/$lang
   cp src/why.html src/$lang
+  cp src/file.html src/$lang
   echo "{\"lang\":\"$lang\"}" > src/$lang/$lang.json
   echo "done $lang copying"
 done

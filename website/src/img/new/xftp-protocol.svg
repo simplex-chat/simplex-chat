@@ -1,0 +1,130 @@
+<svg width="440" height="520" viewBox="-20 0 440 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sender browser -->
+  <rect x="120" y="16" width="160" height="56" rx="10" fill="url(#gBox)" stroke="#606C71" stroke-width="1.5"/>
+  <text x="200" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#fff">Sender's browser</text>
+  <text x="200" y="56" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="rgba(255,255,255,0.8)">encrypts file</text>
+
+  <!-- Arrow down from sender to chunks -->
+  <line x1="200" y1="72" x2="200" y2="120" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+
+  <!-- Chunks row -->
+  <rect x="112" y="120" width="176" height="40" rx="8" fill="#f0f7ff" stroke="#0053D0" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="200" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#0053D0">encrypted chunks</text>
+
+  <!-- Arrows from chunks to servers -->
+  <line x1="152" y1="160" x2="80" y2="220" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+  <line x1="200" y1="160" x2="200" y2="220" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+  <line x1="248" y1="160" x2="320" y2="220" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+
+  <!-- Server 1 (SimpleX) -->
+  <rect x="20" y="220" width="120" height="56" rx="6" fill="#f0f4f8" stroke="#606C71" stroke-width="1.5"/>
+  <g transform="translate(28, 227)">
+    <rect width="14" height="4" rx="1" fill="#606C71"/>
+    <rect y="6" width="14" height="4" rx="1" fill="#606C71"/>
+    <rect y="12" width="14" height="4" rx="1" fill="#606C71"/>
+    <circle cx="11" cy="2" r="1" fill="#53C1FF"/>
+    <circle cx="11" cy="8" r="1" fill="#53C1FF"/>
+    <circle cx="11" cy="14" r="1" fill="#53C1FF"/>
+  </g>
+  <text x="80" y="244" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#3F484B">SimpleX</text>
+  <text x="80" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#606C71">XFTP server</text>
+
+  <!-- Server 2 (Flux) -->
+  <rect x="155" y="220" width="90" height="56" rx="6" fill="#f0f4f8" stroke="#606C71" stroke-width="1.5"/>
+  <g transform="translate(163, 227)">
+    <rect width="14" height="4" rx="1" fill="#606C71"/>
+    <rect y="6" width="14" height="4" rx="1" fill="#606C71"/>
+    <rect y="12" width="14" height="4" rx="1" fill="#606C71"/>
+    <circle cx="11" cy="2" r="1" fill="#53C1FF"/>
+    <circle cx="11" cy="8" r="1" fill="#53C1FF"/>
+    <circle cx="11" cy="14" r="1" fill="#53C1FF"/>
+  </g>
+  <text x="200" y="244" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#3F484B">Flux</text>
+  <text x="200" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#606C71">XFTP server</text>
+
+  <!-- Server 3 (SimpleX) -->
+  <rect x="260" y="220" width="120" height="56" rx="6" fill="#f0f4f8" stroke="#606C71" stroke-width="1.5"/>
+  <g transform="translate(268, 227)">
+    <rect width="14" height="4" rx="1" fill="#606C71"/>
+    <rect y="6" width="14" height="4" rx="1" fill="#606C71"/>
+    <rect y="12" width="14" height="4" rx="1" fill="#606C71"/>
+    <circle cx="11" cy="2" r="1" fill="#53C1FF"/>
+    <circle cx="11" cy="8" r="1" fill="#53C1FF"/>
+    <circle cx="11" cy="14" r="1" fill="#53C1FF"/>
+  </g>
+  <text x="320" y="244" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#3F484B">SimpleX</text>
+  <text x="320" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#606C71">XFTP server</text>
+
+  <!-- Arrows from servers down -->
+  <line x1="80" y1="276" x2="152" y2="336" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+  <line x1="200" y1="276" x2="200" y2="336" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+  <line x1="320" y1="276" x2="248" y2="336" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+
+  <!-- Re-encrypt label -->
+  <text x="330" y="310" text-anchor="start" font-family="system-ui, sans-serif" font-size="10" fill="#606C71">re-encrypted</text>
+  <text x="330" y="322" text-anchor="start" font-family="system-ui, sans-serif" font-size="10" fill="#606C71">per recipient</text>
+
+  <!-- Chunks row (download) -->
+  <rect x="112" y="336" width="176" height="40" rx="8" fill="#f0f7ff" stroke="#0053D0" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="200" y="361" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#0053D0">encrypted chunks</text>
+
+  <!-- Arrow down to recipient -->
+  <line x1="200" y1="376" x2="200" y2="424" stroke="#606C71" stroke-width="1.5" marker-end="url(#arrowG)"/>
+
+  <!-- Recipient browser -->
+  <rect x="120" y="424" width="160" height="56" rx="10" fill="url(#gBox)" stroke="#606C71" stroke-width="1.5"/>
+  <text x="200" y="448" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#fff">Recipient's browser</text>
+  <text x="200" y="464" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="rgba(255,255,255,0.8)">decrypts file</text>
+
+  <!-- Key path (dashed, side) -->
+  <path d="M120 44 L8 44 L8 452 L120 452" stroke="#0053D0" stroke-width="1.5" stroke-dasharray="6 4" fill="none" marker-end="url(#arrowB)"/>
+  <text x="-6" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#0053D0" transform="rotate(-90 -6 240)">key in URL fragment — never sent to server</text>
+
+
+  <!-- Closed padlock: encryption (between sender and chunks) -->
+  <g transform="translate(192, 88)">
+    <path d="M4,7 V4 C4,1.2 12,1.2 12,4 V7" stroke="#0053D0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <rect x="2" y="7" width="12" height="9" rx="2" fill="#0053D0"/>
+    <circle cx="8" cy="12" r="1.2" fill="#fff"/>
+  </g>
+
+  <!-- Open padlock: decryption (between chunks and recipient) -->
+  <g transform="translate(192, 392)">
+    <path d="M4,7 V4 C4,1.2 12,1.2 12,4 V2" stroke="#0053D0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <rect x="2" y="7" width="12" height="9" rx="2" fill="#0053D0"/>
+    <circle cx="8" cy="12" r="1.2" fill="#fff"/>
+  </g>
+
+  <!-- Key icon on dashed line -->
+  <g transform="translate(8, 410)">
+    <circle cx="0" cy="0" r="6" stroke="#D97706" stroke-width="2" fill="#D97706"/>
+    <circle cx="0" cy="0" r="2" fill="#fff"/>
+    <line x1="6" y1="0" x2="16" y2="0" stroke="#D97706" stroke-width="2"/>
+    <line x1="14" y1="0" x2="14" y2="4" stroke="#D97706" stroke-width="2"/>
+    <line x1="11" y1="0" x2="11" y2="3.5" stroke="#D97706" stroke-width="2"/>
+  </g>
+
+  <!-- Annotation: no shared IDs -->
+  <text x="200" y="510" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#606C71">Each chunk uses unique anonymous credentials — no shared identifiers</text>
+
+  <defs>
+    <linearGradient id="gBox" x1="120" y1="16" x2="280" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0053D0"/>
+      <stop offset="1" stop-color="#53C1FF"/>
+    </linearGradient>
+    <linearGradient id="gSrv1" x1="20" y1="220" x2="140" y2="276" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0053D0"/>
+      <stop offset="1" stop-color="#53C1FF"/>
+    </linearGradient>
+    <linearGradient id="gSrv2" x1="155" y1="220" x2="245" y2="276" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0053D0"/>
+      <stop offset="1" stop-color="#53C1FF"/>
+    </linearGradient>
+    <marker id="arrowG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#606C71"/>
+    </marker>
+    <marker id="arrowB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0053D0"/>
+    </marker>
+  </defs>
+</svg>

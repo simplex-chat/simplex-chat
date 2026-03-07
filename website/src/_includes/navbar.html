@@ -28,6 +28,14 @@
 
             <hr>
 
+            <li class="nav-link {% if active_file %}active{% endif %}">
+                <a href="/file/">
+                    <span class="nav-link-text">{{ "file" | i18n({}, lang) | safe }}</span>
+                </a>
+            </li>
+
+            <hr>
+
             <li class="nav-link">
                 <a href="javascript:void(0);">
                     <span class="">{{ "guide" | i18n({}, lang ) | safe }}</span>
@@ -134,7 +142,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('vouchers' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('vouchers' not in page.url) and ('file' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}
