@@ -728,7 +728,7 @@ updatePreparedUserAndHostMembers'
   db
   vr
   user
-  gInfo@GroupInfo {groupId, groupProfile = gp, businessChat}
+  gInfo@GroupInfo {groupId, membership, groupProfile = gp, businessChat}
   hostMember
   fromMember
   fromMemberProfile
@@ -737,7 +737,9 @@ updatePreparedUserAndHostMembers'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    liftIO $ updateUserMember currentTs
+    -- For channels, don't regress membership status if already connected via another relay
+    unless (memberStatus membership == GSMemConnected) $
+      liftIO $ updateUserMember currentTs
     hostMember' <- updateHostMember currentTs
     when (gp /= groupProfile) $
       void $ updateGroupProfile db user gInfo groupProfile
