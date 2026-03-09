@@ -2521,4 +2521,6 @@
     <string name="placeholder_search_voice_messages">Αναζήτηση φωνητικών μηνυμάτων</string>
     <string name="content_filter_videos">Βίντεο</string>
     <string name="content_filter_voice_messages">Φωνητικά μηνύματα</string>
+    <string name="info_row_connection_failed">Η σύνδεση απέτυχε</string>
+    <string name="member_info_member_failed">απέτυχε</string>
 </resources>
