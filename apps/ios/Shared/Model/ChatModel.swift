@@ -1245,9 +1245,15 @@ final class ChatModel: ObservableObject {
         // update current chat or channel being created
         if chatId == groupInfo.id || creatingChannelId == groupInfo.id {
             if let i = groupMembersIndexes[member.groupMemberId] {
+                let connStatusChanged = self.groupMembers[i].wrapped.activeConn?.connStatus != member.activeConn?.connStatus
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
+                }
+                // Updating wrapped on a reference-type GMember doesn't mutate the groupMembers array,
+                // so ChatModel.objectWillChange doesn't fire automatically — notify views explicitly.
+                if connStatusChanged {
+                    objectWillChange.send()
                 }
                 return false
             } else {
