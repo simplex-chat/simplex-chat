@@ -1379,11 +1379,11 @@ const processCommand = (function () {
   async function getLocalMediaStream(mic: boolean, camera: boolean, facingMode: VideoCamera): Promise<MediaStream> {
     if (!mic && !camera) return new MediaStream()
     const constraints = callMediaConstraints(mic, camera, facingMode)
-    return await navigator.mediaDevices.getUserMedia(constraints)
+    return await navigator.mediaDevices.getDisplayMedia(DisplayMediaStreamConstraints)
   }
 
   function getLocalScreenCaptureStream(): Promise<MediaStream> {
-    const constraints: any /* DisplayMediaStreamConstraints */ = {
+    const DisplayMediaStreamConstraints = {
       video: {
         frameRate: 24,
         //width: {
@@ -1394,10 +1394,10 @@ const processCommand = (function () {
         //aspectRatio: 1.33,
       },
       audio: allowSendScreenAudio,
-      // This works with Chrome, Edge, Opera, but not with Firefox and Safari
-      // systemAudio: "include"
+      // This works with Chrome, Edge, Opera, but not with Firefox and Safari (https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API/Using_Screen_Capture#browser_compatibility)
+      systemAudio: "include"
     }
-    return navigator.mediaDevices.getDisplayMedia(constraints)
+    return navigator.mediaDevices.getDisplayMedia(DisplayMediaStreamConstraints)
   }
 
   async function browserHasCamera(): Promise<boolean> {
