@@ -1,0 +1,16 @@
+{
+    "sections": [
+        {
+            "id": 1,
+            "imgLight": "/img/new/xftp-protocol.svg",
+            "imgDark": "/img/new/xftp-protocol-dark.svg",
+            "overlayContent": {
+                "overlayId": "xftp-protocol",
+                "overlayScrollTo": "",
+                "title": "file-protocol-title",
+                "showImage": true,
+                "contentBody": "overlay_content/file/protocol.html"
+            }
+        }
+    ]
+}

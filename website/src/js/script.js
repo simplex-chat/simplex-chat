@@ -130,7 +130,7 @@ if (isMobile.iOS) {
 }
 
 function clickHandler(e) {
-    if (e.target.closest('.card')) {
+    if (e.target.closest('.card') && !e.target.closest('[data-xftp-app]')) {
         e.target.closest('.card').classList.toggle('card-active');
         e.target.closest('.card').classList.toggle('no-hover');
     }
@@ -182,7 +182,7 @@ function openOverlay() {
     if (hash) {
         const id = hash.split('#')[1];
         const el = document.getElementById(id)
-        if (el.classList.contains('overlay')) {
+        if (el && el.classList.contains('overlay')) {
             const scrollTo = el.getAttribute('data-scroll-to')
             if (scrollTo) {
                 const scrollToEl = document.getElementById(scrollTo)
