@@ -281,13 +281,21 @@ struct AddChannelView: View {
                     if activeCount >= total {
                         showLinkStep = true
                     } else if activeCount > 0 {
+                        let actions: [UIAlertAction] = if activeCount + failedCount < total {
+                            [
+                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
+                            ]
+                        } else {
+                            [
+                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                cancelAlertAction
+                            ]
+                        }
                         showAlert(
                             NSLocalizedString("Not all relays connected", comment: "alert title"),
                             message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
-                            actions: {[
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
-                                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
-                            ]}
+                            actions: { actions }
                         )
                     }
                 }
