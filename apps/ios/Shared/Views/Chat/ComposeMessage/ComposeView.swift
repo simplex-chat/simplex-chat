@@ -399,7 +399,7 @@ struct ComposeView: View {
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
                     let connectedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .ready }.count
                     let deletedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .deleted }.count
-                    let failedCount = relayMembers.filter { if case .failed = $0.wrapped.activeConn?.connStatus { true } else { false } }.count
+                    let failedCount = relayMembers.filter { $0.wrapped.activeConn?.connFailedErr != nil }.count
                     let errorCount = deletedCount + failedCount
                     let resolvedCount = connectedCount + deletedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count

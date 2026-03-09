@@ -749,8 +749,7 @@ updatePreparedUserAndHostMembers'
     pure (gInfo', hostMember')
     where
       updateUserMember currentTs = do
-        let GroupInfo {membership} = gInfo
-            MemberIdRole memberId memberRole = invitedMember
+        let MemberIdRole memberId memberRole = invitedMember
         DB.execute
           db
           [sql|
