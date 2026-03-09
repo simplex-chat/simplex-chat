@@ -32,9 +32,9 @@ cp node_modules/lottie-web/build/player/lottie.min.js src/js
 cp node_modules/ethers/dist/ethers.umd.min.js src/js
 cp node_modules/ethers/dist/ethers.umd.js.map src/js
 mkdir -p src/file-assets
-cp node_modules/@shhhum/xftp-web/dist-web/assets/index.js src/file-assets/
-cp node_modules/@shhhum/xftp-web/dist-web/assets/index.css src/file-assets/
-cp node_modules/@shhhum/xftp-web/dist-web/assets/crypto.worker.js src/file-assets/
+cp node_modules/@simplex-chat/xftp-web/dist-web/assets/index.js src/file-assets/
+cp node_modules/@simplex-chat/xftp-web/dist-web/assets/index.css src/file-assets/
+cp node_modules/@simplex-chat/xftp-web/dist-web/assets/crypto.worker.js src/file-assets/
 node merge_translations.js
 node customize_docs_frontmatter.js
 
