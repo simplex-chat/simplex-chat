@@ -189,6 +189,12 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
+                    if let connFailedErr = member.activeConn?.connFailedErr {
+                        Section {
+                            infoRow("Connection failed", connFailedErr)
+                        }
+                    }
+
                     if groupInfo.membership.memberRole >= .moderator {
                         adminDestructiveSection(member)
                     } else {
