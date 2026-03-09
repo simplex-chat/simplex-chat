@@ -2571,10 +2571,10 @@ public struct GroupRelay: Identifiable, Decodable, Equatable, Hashable {
 extension RelayStatus {
     public var text: LocalizedStringKey {
         switch self {
-        case .rsNew: "New"
-        case .rsInvited: "Invited"
-        case .rsAccepted: "Accepted"
-        case .rsActive: "Active"
+        case .rsNew: "new"
+        case .rsInvited: "invited"
+        case .rsAccepted: "accepted"
+        case .rsActive: "active"
         }
     }
 }

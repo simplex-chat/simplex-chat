@@ -181,6 +181,7 @@ struct AddChannelView: View {
                 }
                 await MainActor.run {
                     m.updateGroup(gInfo)
+                    m.creatingChannelId = gInfo.id
                     groupInfo = gInfo
                     groupLink = gLink
                     groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
@@ -218,7 +219,8 @@ struct AddChannelView: View {
     // MARK: - Step 2: Progress
 
     private func progressStepView(_ gInfo: GroupInfo) -> some View {
-        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive }.count
+        let failedCount = groupRelays.filter { relayConnFailed($0) != nil }.count
+        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayConnFailed($0) == nil }.count
         let total = groupRelays.count
         return List {
             Group {
@@ -238,10 +240,14 @@ struct AddChannelView: View {
                     withAnimation { relayListExpanded.toggle() }
                 } label: {
                     HStack(spacing: 8) {
-                        if activeCount < total {
+                        if activeCount + failedCount < total {
                             RelayProgressIndicator(active: activeCount, total: total)
                         }
-                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel creation progress"), activeCount, total))
+                        if failedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel creation progress with errors"), activeCount, total, failedCount))
+                        } else {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel creation progress"), activeCount, total))
+                        }
                         Spacer()
                         Image(systemName: relayListExpanded ? "chevron.up" : "chevron.down")
                             .foregroundColor(theme.colors.secondary)
@@ -251,10 +257,19 @@ struct AddChannelView: View {
 
                 if relayListExpanded {
                     ForEach(groupRelays) { relay in
-                        HStack {
-                            Text(relayDisplayName(relay))
-                            Spacer()
-                            relayStatusIndicator(relay.relayStatus)
+                        let failed = relayConnFailed(relay)
+                        if let err = failed {
+                            Button {
+                                showAlert(
+                                    NSLocalizedString("Relay connection failed", comment: "alert title"),
+                                    message: err
+                                )
+                            } label: {
+                                relayRow(relay, connFailed: true)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            relayRow(relay, connFailed: false)
                         }
                     }
                 }
@@ -266,13 +281,21 @@ struct AddChannelView: View {
                     if activeCount >= total {
                         showLinkStep = true
                     } else if activeCount > 0 {
+                        let actions: [UIAlertAction] = if activeCount + failedCount < total {
+                            [
+                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
+                            ]
+                        } else {
+                            [
+                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
+                                cancelAlertAction
+                            ]
+                        }
                         showAlert(
                             NSLocalizedString("Not all relays connected", comment: "alert title"),
                             message: String.localizedStringWithFormat(NSLocalizedString("Channel will start working with %d of %d relays. Proceed?", comment: "alert message"), activeCount, total),
-                            actions: {[
-                                UIAlertAction(title: NSLocalizedString("Proceed", comment: "alert action"), style: .default) { _ in showLinkStep = true },
-                                UIAlertAction(title: NSLocalizedString("Wait", comment: "alert action"), style: .cancel) { _ in }
-                            ]}
+                            actions: { actions }
                         )
                     }
                 }
@@ -289,10 +312,23 @@ struct AddChannelView: View {
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
-            if relays.allSatisfy({ $0.relayStatus == .rsActive }) {
+            if relays.allSatisfy({ $0.relayStatus == .rsActive && relayConnFailed($0) == nil }) {
                 showLinkStep = true
                 channelRelaysModel.reset()
             }
+        }
+    }
+
+    private func relayConnFailed(_ relay: GroupRelay) -> String? {
+        m.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?
+            .wrapped.activeConn?.connFailedErr
+    }
+
+    private func relayRow(_ relay: GroupRelay, connFailed: Bool) -> some View {
+        HStack {
+            Text(relayDisplayName(relay))
+            Spacer()
+            relayStatusIndicator(relay.relayStatus, connFailed: connFailed)
         }
     }
 
@@ -307,6 +343,7 @@ struct AddChannelView: View {
             creatingGroup: true,
             isChannel: true
         ) {
+            m.creatingChannelId = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 dismissAllSheets(animated: true) {
                     ItemsModel.shared.loadOpenChat(gInfo.id)
@@ -317,6 +354,7 @@ struct AddChannelView: View {
     }
 
     private func cancelChannelCreation(_ gInfo: GroupInfo) {
+        m.creatingChannelId = nil
         channelRelaysModel.reset()
         dismissAllSheets(animated: true)
         Task {
@@ -358,14 +396,21 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     return "relay \(relay.groupRelayId)"
 }
 
-func relayStatusIndicator(_ status: RelayStatus) -> some View {
-    HStack(spacing: 4) {
+func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false) -> some View {
+    let color: Color = connFailed ? .red : (status == .rsActive ? .green : .orange)
+    let text: LocalizedStringKey = connFailed ? "failed" : status.text
+    return HStack(spacing: 4) {
         Circle()
-            .fill(status == .rsActive ? .green : status == .rsNew ? .red : .orange)
+            .fill(color)
             .frame(width: 8, height: 8)
-        Text(status.text)
+        Text(text)
             .font(.caption)
             .foregroundStyle(.secondary)
+        if connFailed {
+            Image(systemName: "exclamationmark.circle")
+                .foregroundColor(.accentColor)
+                .font(.caption)
+        }
     }
 }
 

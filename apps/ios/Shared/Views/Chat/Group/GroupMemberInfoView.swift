@@ -236,7 +236,14 @@ struct GroupMemberInfoView: View {
 
                     if let connFailedErr = member.activeConn?.connFailedErr {
                         Section {
-                            infoRow("Connection failed", connFailedErr)
+                            Text(connFailedErr)
+                                .foregroundColor(theme.colors.secondary)
+                        } header: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.red)
+                                Text("Connection failed")
+                            }
                         }
                     }
 
