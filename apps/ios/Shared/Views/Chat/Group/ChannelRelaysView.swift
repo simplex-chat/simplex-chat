@@ -17,21 +17,20 @@ struct ChannelRelaysView: View {
     @State private var groupRelays: [GroupRelay] = []
 
     var body: some View {
-        let isOwner = groupInfo.isOwner
         List {
-            relaysList(showRelayStatus: isOwner)
+            relaysList()
         }
         .onAppear {
             Task {
                 await chatModel.loadGroupMembers(groupInfo)
-                if isOwner {
+                if groupInfo.isOwner {
                     groupRelays = await apiGetGroupRelays(groupInfo.groupId)
                 }
             }
         }
     }
 
-    @ViewBuilder private func relaysList(showRelayStatus: Bool) -> some View {
+    @ViewBuilder private func relaysList() -> some View {
         let relayMembers = chatModel.groupMembers.filter { $0.wrapped.memberRole == .relay }
         if relayMembers.isEmpty {
             Section {
@@ -51,7 +50,10 @@ struct ChannelRelaysView: View {
                         )
                         .navigationBarHidden(false)
                     } label: {
-                        relayMemberRow(member.wrapped, relayStatus: showRelayStatus ? relayStatusForMember(member.wrapped) : nil)
+                        let statusText = groupInfo.isOwner
+                            ? ownerRelayStatusText(member.wrapped)
+                            : subscriberRelayStatusText(member.wrapped)
+                        relayMemberRow(member.wrapped, statusText: statusText)
                     }
                 }
             } footer: {
@@ -60,28 +62,7 @@ struct ChannelRelaysView: View {
         }
     }
 
-    private func relayStatusForMember(_ member: GroupMember) -> RelayStatus? {
-        groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus
-    }
-
-    private func relayMemberRow(_ member: GroupMember, relayStatus: RelayStatus?) -> some View {
-        HStack {
-            MemberProfileImage(member, size: 38)
-                .padding(.trailing, 2)
-            VStack(alignment: .leading) {
-                Text(member.chatViewName)
-                    .foregroundColor(theme.colors.onBackground)
-                    .lineLimit(1)
-                Text(relayStatus?.text ?? relayConnStatusText(member))
-                    .lineLimit(1)
-                    .font(.caption)
-                    .foregroundColor(theme.colors.secondary)
-            }
-            Spacer()
-        }
-    }
-
-    private func relayConnStatusText(_ member: GroupMember) -> LocalizedStringKey {
+    private func subscriberRelayStatusText(_ member: GroupMember) -> LocalizedStringKey {
         if member.activeConn?.connDisabled ?? false {
             "disabled"
         } else if member.activeConn?.connInactive ?? false {
@@ -90,13 +71,41 @@ struct ChannelRelaysView: View {
             relayConnStatus(member).text
         }
     }
-}
 
+    private func ownerRelayStatusText(_ member: GroupMember) -> LocalizedStringKey {
+        if member.activeConn?.connDisabled ?? false {
+            "disabled"
+        } else if member.activeConn?.connInactive ?? false {
+            "inactive"
+        } else {
+            groupRelays.first(where: { $0.groupMemberId == member.groupMemberId })?.relayStatus.text
+                ?? relayConnStatus(member).text
+        }
+    }
+
+    private func relayMemberRow(_ member: GroupMember, statusText: LocalizedStringKey) -> some View {
+        HStack {
+            MemberProfileImage(member, size: 38)
+                .padding(.trailing, 2)
+            VStack(alignment: .leading) {
+                Text(member.chatViewName)
+                    .foregroundColor(theme.colors.onBackground)
+                    .lineLimit(1)
+                Text(statusText)
+                    .lineLimit(1)
+                    .font(.caption)
+                    .foregroundColor(theme.colors.secondary)
+            }
+            Spacer()
+        }
+    }
+}
 
 func relayConnStatus(_ member: GroupMember) -> (text: LocalizedStringKey, color: Color) {
     switch member.activeConn?.connStatus {
     case .ready: ("connected", .green)
     case .deleted: ("deleted", .red)
+    case .failed: ("failed", .red)
     default: ("connecting", .yellow)
     }
 }

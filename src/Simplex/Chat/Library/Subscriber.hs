@@ -27,6 +27,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
+import Data.IORef
 import Data.Int (Int64)
 import Data.List (find)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -93,10 +94,16 @@ import Simplex.Messaging.Transport (TransportError (..))
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import qualified System.FilePath as FP
+import System.IO.Unsafe (unsafePerformIO)
 import Text.Read (readMaybe)
 import UnliftIO.Concurrent (forkIO)
 import UnliftIO.Directory
 import UnliftIO.STM
+
+-- TODO remove debug counter before merging
+{-# NOINLINE debugFailRelayCounter #-}
+debugFailRelayCounter :: IORef Int
+debugFailRelayCounter = unsafePerformIO $ newIORef 0
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
@@ -372,9 +379,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     updateConnStatus :: ConnectionEntity -> CM ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus (entityConnection acEntity) agentMessage of
       Just connStatus -> do
-        let conn = (entityConnection acEntity) {connStatus}
-        withStore' $ \db -> updateConnectionStatus db conn connStatus
-        pure $ updateEntityConnStatus acEntity connStatus
+        -- TODO remove debug relay failure simulation before merging
+        connStatus' <- case (acEntity, agentMessage) of
+          (RcvGroupMsgConnection _ _ m', CON _) | isRelay m' -> liftIO $ do
+            cnt <- atomicModifyIORef' debugFailRelayCounter (\n -> (n + 1, n + 1))
+            pure $ if cnt == 2 then ConnFailed "debug: simulated failure" else connStatus
+          _ -> pure connStatus
+        let conn = (entityConnection acEntity) {connStatus = connStatus'}
+        withStore' $ \db -> updateConnectionStatus db conn connStatus'
+        let acEntity' = updateEntityConnStatus acEntity connStatus'
+        -- TODO remove debug: emit group member updated for simulated relay failures
+        case acEntity' of
+          RcvGroupMsgConnection _ gInfo' m' | isConnFailed connStatus' && not (isConnFailed connStatus) ->
+            toView $ CEvtGroupMemberUpdated user gInfo' m' m'
+          _ -> pure ()
+        pure acEntity'
       Nothing -> pure acEntity
 
     agentMsgConnStatus :: Connection -> AEvent e -> Maybe ConnStatus
@@ -789,7 +808,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XOk -> pure ()
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
-      CON _pqEnc -> unless (memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
+      CON _pqEnc -> unless (isConnFailed (connStatus conn) || memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
         -- TODO [knocking] send pending messages after accepting?
         -- possible improvement: check for each pending message, requires keeping track of connection state
         unless (connDisabled conn) $ sendPendingGroupMessages user m conn

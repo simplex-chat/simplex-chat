@@ -379,6 +379,7 @@ final class ChatModel: ObservableObject {
     @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
     @Published var chatToTop: String?
+    @Published var creatingChannelId: String?
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
@@ -1241,8 +1242,8 @@ final class ChatModel: ObservableObject {
             updateGroup(groupInfo)
             return false
         }
-        // update current chat
-        if chatId == groupInfo.id {
+        // update current chat or channel being created
+        if chatId == groupInfo.id || creatingChannelId == groupInfo.id {
             if let i = groupMembersIndexes[member.groupMemberId] {
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
