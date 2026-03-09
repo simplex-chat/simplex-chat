@@ -24,8 +24,8 @@ Following **RFC Option 2: Multi-stage encoding** (recommended in docs/rfcs/2025-
 
 ### Agent API (simplexmq repo) - New Functions
 - `../simplexmq/src/Simplex/Messaging/Agent.hs`:
-  - `prepareConnectionWithLink` - NEW: commits to server, generates link address + root key locally (no network)
-  - `createConnectionWithLink` - NEW: accepts server + root key, creates queue (single network call)
+  - `prepareConnectionLink` - NEW: commits to server, generates link address + root key locally (no network)
+  - `createConnectionWithPreparedLink` - NEW: accepts server + root key, creates queue (single network call)
 - `../simplexmq/src/Simplex/Messaging/Agent/Client.hs` - Implement new functions
 
 ### Database
@@ -86,7 +86,7 @@ XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json  -- unchanged
 - Public key stored in `group_members.member_pub_key` (for all members)
 - NOT stored in profiles table - member keys are per-group, not per-profile
 
-### 5. Signed Message Types (Protocol.hs)
+### 4. Signed Message Types (Protocol.hs)
 
 Types as implemented in Protocol.hs:
 
@@ -120,9 +120,9 @@ data SignedChatMessages = SignedChatMessages
   deriving (Show)
 ```
 
-**Key insight:** `MsgSignatures.signed` field preserves the exact bytes that were signed, enabling signature verification even after the message has been parsed. This is critical for forwarded messages.
+**Key insight:** The binary batch format preserves the exact bytes of each element via length-prefix framing, enabling signature verification even after the message has been parsed. This is critical for forwarded messages.
 
-### 6. Key Resolution and Validation
+### 5. Key Resolution and Validation
 
 ```haskell
 -- Key resolution: lookup member's public key from GroupMember record
@@ -169,7 +169,7 @@ validateOwnerMember gInfo memberId memberKey = do
 - Members receive owner info when joining
 - No multi-owner support yet (deferred)
 
-### 7. Message Batching Analysis
+### 6. Message Batching Analysis
 
 Analysis of current batching behavior (determines new format requirements):
 
@@ -192,7 +192,7 @@ Analysis of current batching behavior (determines new format requirements):
 - `XMsgNew` (welcome/description) appended to `XGrpMsgForward` events
 - Both sent together via `sendGroupMemberMessages`
 
-### 8. Wire Format (Protocol.hs)
+### 7. Wire Format (Protocol.hs)
 
 #### Current Format (JSON-based batching)
 
@@ -213,7 +213,7 @@ For relay-based groups where signatures are required, use binary batching that p
 
 ```abnf
 ; Extended wire format (parser accepts all formats)
-wireMessage = compressedMsg / binaryBatch / forwardEnvelope / jsonMsg
+wireMessage = compressedMsg / binaryBatch / jsonMsg
 
 ; New binary batch format - preserves exact bytes for signature verification
 binaryBatch = %s"=" elementCount *batchElement
@@ -234,9 +234,6 @@ originalBytes = *OCTET                    ; original message bytes (signed or un
 
 ; Unsigned element - plain JSON (backward compatibility)
 unsignedElement = %s"{" *OCTET            ; JSON object
-
-; Single forward envelope (not batched)
-forwardEnvelope = %s"F" forwardMeta originalBytes
 
 ; Signature data
 msgSignatures = chatBinding sigCount *msgSignature
@@ -264,11 +261,11 @@ compressedMsg = %s"X" compressedBlock
 
 **Overhead comparison:**
 - JSON array: `[` + `]` + `,` between = n+1 bytes for n elements
-- Binary batch: `B` + count + 2-byte length per element = 1 + 1 + 2n = 2 + 2n bytes
+- Binary batch: `=` + count + 2-byte length per element = 1 + 1 + 2n = 2 + 2n bytes
 - Difference: ~1 extra byte per element - acceptable for signature support
 
 **Format selection:**
-- Relay-based groups: Use binary batch (`B` prefix) - preserves bytes for signatures
+- Relay-based groups: Use binary batch (`=` prefix) - preserves bytes for signatures
 - Non-relay groups: Use JSON array (`[...]`) - backward compatible, no signatures needed
 - Old groups with old members: Use JSON array - full backward compatibility
 
@@ -280,15 +277,16 @@ compressedMsg = %s"X" compressedBlock
 - All formats accepted regardless of version for forward/backward compatibility
 
 **Batcher behavior (`Messages/Batch.hs`):**
-- Accept `BatchMode` parameter: `BMJsonArray` or `BMBinaryBatch`
-- `BMJsonArray`: Current JSON array encoding
-- `BMBinaryBatch`: Binary format with length prefixes, preserves exact bytes
+- Accept `BatchMode` parameter: `BMJson` or `BMBinary`
+- `BMJson`: Current JSON array encoding
+- `BMBinary`: Binary format with length prefixes, preserves exact bytes
 
 ```haskell
-data BatchMode = BMJsonArray | BMBinaryBatch
+data BatchMode = BMJson | BMBinary
 
 batchMessages :: BatchMode -> Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
-batchDeliveryTasks1 :: BatchMode -> VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
+-- batchDeliveryTasks1 hardcodes BMBinary (relay groups only)
+batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
 ```
 
 **Key insight:** The binary batch format allows:
@@ -299,17 +297,19 @@ batchDeliveryTasks1 :: BatchMode -> VersionRangeChat -> Int -> NonEmpty MessageD
 
 **Forwarding in binary batch (relay groups):**
 
-For relay-based groups, forwarding is NOT via `XGrpMsgForward` ChatMsgEvent (which would re-encode the inner message). Instead, forwarding is a **top-level binary format** that preserves exact bytes:
+For relay-based groups, forwarding is NOT via `XGrpMsgForward` ChatMsgEvent (which would re-encode the inner message). Instead, forwarding uses a **binary batch element format** (`forwardElement` in the ABNF above) that preserves exact bytes:
 
 ```abnf
-; Forwarding envelope - top level, NOT a ChatMsgEvent
-forwardEnvelope = %s"F" forwardMeta originalBytes
+; Forward element details (defined in batchElement above)
+forwardElement = %s"F" forwardMeta originalBytes
 forwardMeta = senderMemberId senderMemberName brokerTs
 senderMemberId = shortString
 senderMemberName = shortString            ; may be empty
 brokerTs = 8*8 OCTET                      ; UTC timestamp, big-endian microseconds
 originalBytes = *OCTET                    ; original signed message bytes (verbatim)
 ```
+
+Forward elements only appear inside binary batches — there is no standalone forward envelope at the wire level.
 
 **Flow:**
 
@@ -320,24 +320,20 @@ originalBytes = *OCTET                    ; original signed message bytes (verba
 
 2. **Relay** receives, parses to validate, stores original bytes in `msg_body`
 
-3. **Relay** forwards using binary envelope:
+3. **Relay** forwards as binary batch element(s):
    ```
-   F<memberId><memberName><brokerTs><original-bytes-verbatim>
-   ```
-   Or batched:
-   ```
-   B<count><len1><F...><len2><F...>...
+   =<count>(<len><F<memberId><memberName><brokerTs><original-bytes>>)*
    ```
 
-4. **Recipient** parses forward envelope, extracts `originalBytes`, verifies sender's signature
+4. **Recipient** parses binary batch, extracts `originalBytes` from forward elements, verifies sender's signature
 
 **Key difference from current approach:**
 - Current: `XGrpMsgForward` nests **parsed** `ChatMessage 'Json` → re-encoded on send → bytes change
-- New: Forward envelope contains **raw bytes** → never re-encoded → signature remains valid
+- New: Forward element contains **raw bytes** → never re-encoded → signature remains valid
 
 **Backward compatibility:**
 - Old groups (non-relay): Continue using `XGrpMsgForward` ChatMsgEvent (JSON array batching)
-- New relay groups: Use binary forward envelope (`F` prefix)
+- New relay groups: Use binary batch with forward elements (`F` prefix inside `=` batch)
 - Parser accepts both formats
 
 **Key resolution:**
@@ -521,8 +517,8 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 ## Implementation Steps
 
 ### Phase 0: Agent API Changes (simplexmq)
-1. Add `prepareConnectionWithLink` function - commits to server, generates link + root key locally
-2. Add `createConnectionWithLink` function - accepts server + root key, single network call
+1. Add `prepareConnectionLink` function - commits to server, generates link + root key locally
+2. Add `createConnectionWithPreparedLink` function - accepts server + root key, single network call
 3. Update Agent store to handle new flow (connection record without queue record)
 
 ### Phase 1: Types and Encoding
