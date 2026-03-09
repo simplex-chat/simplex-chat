@@ -73,7 +73,9 @@ struct ChannelRelaysView: View {
     }
 
     private func ownerRelayStatusText(_ member: GroupMember) -> LocalizedStringKey {
-        if member.activeConn?.connDisabled ?? false {
+        if case .failed = member.activeConn?.connStatus {
+            "failed"
+        } else if member.activeConn?.connDisabled ?? false {
             "disabled"
         } else if member.activeConn?.connInactive ?? false {
             "inactive"

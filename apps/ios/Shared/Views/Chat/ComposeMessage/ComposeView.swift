@@ -386,8 +386,8 @@ struct ComposeView: View {
                 if gInfo.membership.memberRole == .owner {
                     let relays = channelRelaysModel.groupId == gInfo.groupId
                         ? channelRelaysModel.groupRelays : []
-                    let activeCount = relays.filter { $0.relayStatus == .rsActive }.count
                     let failedCount = relays.filter { relayMemberConnFailed($0) != nil }.count
+                    let activeCount = relays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
                     if !relays.isEmpty && activeCount < relays.count {
                         ownerChannelRelayBar(relays: relays, activeCount: activeCount, failedCount: failedCount)
                     }
@@ -724,15 +724,14 @@ struct ComposeView: View {
 
     private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int) -> some View {
         let total = relays.count
-        let targetCount = total - failedCount
         let sorted = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
         return VStack(spacing: 0) {
             relayBarHeader {
-                if activeCount < targetCount {
-                    RelayProgressIndicator(active: activeCount, total: targetCount)
+                if activeCount + failedCount < total {
+                    RelayProgressIndicator(active: activeCount, total: total)
                 }
                 if failedCount > 0 {
-                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel relay bar progress with errors"), activeCount, targetCount, failedCount))
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel relay bar progress with errors"), activeCount, total, failedCount))
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel relay bar progress"), activeCount, total))
                 }
@@ -740,26 +739,32 @@ struct ComposeView: View {
             if relayListExpanded {
                 ForEach(sorted) { relay in
                     let failedErr = relayMemberConnFailed(relay)
-                    Button {
-                        if let err = failedErr {
+                    if let err = failedErr {
+                        Button {
                             showAlert(
                                 NSLocalizedString("Relay connection failed", comment: "alert title"),
                                 message: err
                             )
+                        } label: {
+                            ownerRelayDetailRow(relay, connFailed: true)
                         }
-                    } label: {
-                        relayBarDetailRow {
-                            Text(relayDisplayName(relay)).foregroundColor(theme.colors.secondary)
-                            Spacer()
-                            relayStatusIndicator(relay.relayStatus, connFailed: failedErr != nil)
-                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        ownerRelayDetailRow(relay, connFailed: false)
                     }
-                    .disabled(failedErr == nil)
                 }
             }
         }
         .padding(.bottom, relayListExpanded ? 4 : 0)
         .animation(nil, value: relayListExpanded)
+    }
+
+    private func ownerRelayDetailRow(_ relay: GroupRelay, connFailed: Bool) -> some View {
+        relayBarDetailRow {
+            Text(relayDisplayName(relay)).foregroundColor(theme.colors.secondary)
+            Spacer()
+            relayStatusIndicator(relay.relayStatus, connFailed: connFailed)
+        }
     }
 
     private func subscriberChannelRelayBar(
@@ -772,15 +777,14 @@ struct ComposeView: View {
     ) -> some View {
         VStack(spacing: 0) {
             relayBarHeader {
-                let targetCount = total - errorCount
-                if showProgress && connectedCount < targetCount {
-                    RelayProgressIndicator(active: connectedCount, total: targetCount)
+                if showProgress && connectedCount + errorCount < total {
+                    RelayProgressIndicator(active: connectedCount, total: total)
                 }
                 if showProgress {
                     if errorCount > 0 {
-                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar progress with errors"), connectedCount, targetCount, errorCount))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar progress with errors"), connectedCount, total, errorCount))
                     } else {
-                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, targetCount))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
                     }
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
@@ -800,33 +804,43 @@ struct ComposeView: View {
                         let m = member.wrapped
                         let host = m.relayLink.map { hostFromRelayLink($0) }
                         let failedErr = m.activeConn?.connFailedErr
-                        Button {
-                            if let err = failedErr {
+                        if let err = failedErr {
+                            Button {
                                 showAlert(
                                     NSLocalizedString("Relay connection failed", comment: "alert title"),
                                     message: err
                                 )
+                            } label: {
+                                subscriberRelayDetailRow(m, host: host, connFailed: true)
                             }
-                        } label: {
-                            relayBarDetailRow {
-                                Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName))
-                                    .foregroundColor(theme.colors.secondary)
-                                Spacer()
-                                let status = relayConnStatus(m)
-                                Circle()
-                                    .fill(status.color)
-                                    .frame(width: 8, height: 8)
-                                Text(status.text)
-                                    .foregroundColor(theme.colors.secondary)
-                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            subscriberRelayDetailRow(m, host: host, connFailed: false)
                         }
-                        .disabled(failedErr == nil)
                     }
                 }
             }
         }
         .padding(.bottom, relayListExpanded ? 4 : 0)
         .animation(nil, value: relayListExpanded)
+    }
+
+    private func subscriberRelayDetailRow(_ m: GroupMember, host: String?, connFailed: Bool) -> some View {
+        relayBarDetailRow {
+            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName))
+                .foregroundColor(theme.colors.secondary)
+            Spacer()
+            let status = relayConnStatus(m)
+            Circle()
+                .fill(status.color)
+                .frame(width: 8, height: 8)
+            Text(status.text)
+                .foregroundColor(theme.colors.secondary)
+            if connFailed {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundColor(.accentColor)
+            }
+        }
     }
 
     private func relayBarHeader<Content: View>(@ViewBuilder content: () -> Content) -> some View {
