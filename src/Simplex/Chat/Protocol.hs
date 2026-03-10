@@ -314,7 +314,7 @@ data ChatMessage e = ChatMessage
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
 -- Can be extended to support profile identity keys (e.g., secp256k1 for Nostr)
-data KeyRef = KRMember MemberId
+data KeyRef = KRMember
   deriving (Eq, Show)
 
 data ChatBinding
@@ -364,10 +364,10 @@ instance Encoding MsgForwardData where
 
 instance Encoding KeyRef where
   smpEncode = \case
-    KRMember (MemberId memberId) -> smpEncode ('M', memberId)
+    KRMember -> "M"
   smpP =
-    smpP >>= \case
-      'M' -> KRMember . MemberId <$> smpP
+    A.anyChar >>= \case
+      'M' -> pure KRMember
       c -> fail $ "invalid KeyRef tag: " <> show c
 
 instance Encoding ChatBinding where

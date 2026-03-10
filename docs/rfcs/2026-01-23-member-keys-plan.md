@@ -91,9 +91,10 @@ XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json  -- unchanged
 Types as implemented in Protocol.hs:
 
 ```haskell
--- Key reference for signature verification
--- Can be extended to support profile identity keys (e.g., secp256k1 for Nostr)
-data KeyRef = KRMember MemberId
+-- Key reference tag — indicates which key to use for verification.
+-- KRMember means "use the contextual member's key" (sender or forwarded author).
+-- Can be extended to support profile identity keys (e.g., secp256k1 for Nostr).
+data KeyRef = KRMember
   deriving (Eq, Show)
 
 -- Conversation binding for signature scope
@@ -255,8 +256,7 @@ senderMemberId = shortString
 sigCount = 1*1 OCTET                      ; 1-255 signatures
 msgSignature = keyRef sigBytes
 keyRef = memberKeyRef
-memberKeyRef = %s"M" memberId
-memberId = shortString
+memberKeyRef = %s"M"                      ; use contextual member's key (sender or forwarded author)
 sigBytes = 64*64 OCTET                    ; Ed25519 signature
 
 shortString = length *OCTET
@@ -347,7 +347,7 @@ Forward elements only appear inside binary batches — there is no standalone fo
 - Parser accepts both formats
 
 **Key resolution:**
-- `'M'` (member key ref): Look up member's public key from `group_members.member_pub_key`
+- `'M'` (member key ref): Use the contextual member's public key from `group_members.member_pub_key` — the sender (direct messages) or forwarded author (forward elements)
 
 ## Messages Requiring Signatures
 
@@ -573,17 +573,13 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 Current implementation (`verifySig` in Subscriber.hs) — minimal first step:
 
 ```haskell
--- Verify signature against a member's stored key.
--- Returns Nothing on success (or if verification is not applicable), Just error otherwise.
-verifySig :: GroupMember -> Maybe MsgSigData -> Maybe Text
-verifySig _ Nothing = Nothing
-verifySig GroupMember {memberPubKey = Nothing} _ = Nothing
-verifySig GroupMember {memberId = mId, memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
-  if all verifyOne (L.toList signatures) then Nothing else Just "signature verification failed"
+verifySig :: GroupMember -> Maybe MsgSigData -> Bool
+verifySig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
+  all verifyOne (L.toList signatures)
   where
-    verifyOne (MsgSignature (KRMember sigMemberId) sig)
-      | sigMemberId /= mId = False
-      | otherwise = C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
+    verifyOne (MsgSignature KRMember sig) =
+      C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
+verifySig _ _ = True
 ```
 
 Verification is called in two places:

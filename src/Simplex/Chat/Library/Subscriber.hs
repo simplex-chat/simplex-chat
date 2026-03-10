@@ -917,15 +917,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg)) ->
-              case verifySig m' msgSig_ of
-                Just badSigErr -> do
-                  logInfo $ "group msg=bad_sig " <> eInfo <> " " <> badSigErr
-                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
-                  pure newDeliveryTasks
-                Nothing -> do
+            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg))
+              | verifySig m' msgSig_ -> do
                   newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
                   pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
+              | otherwise -> do
+                  logInfo $ "group msg=bad_sig " <> eInfo
+                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+                  pure newDeliveryTasks
             Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
@@ -3172,12 +3171,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unknownRole <- unknownMemberRole gInfo
           (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_ unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
-          case verifySig author msgSig_ of
-            Just badSigErr -> do
+          if verifySig author msgSig_
+            then processForwardedMsg (Just author)
+            else do
               let ChatMessage {chatMsgEvent = evt} = chatMsg
-              logInfo $ "group fwd=bad_sig " <> tshow (toCMEventTag evt) <> " " <> badSigErr
+              logInfo $ "group fwd=bad_sig " <> tshow (toCMEventTag evt)
               createInternalChatItem user (CDGroupRcv gInfo scopeInfo author) (CIRcvGroupEvent RGEMsgBadSignature) (Just msgTs)
-            Nothing -> processForwardedMsg (Just author)
         Nothing -> processForwardedMsg Nothing
       where
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
@@ -3212,17 +3211,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
-    -- Verify signature against a member's stored key.
-    -- Returns Nothing on success (or if verification is not applicable), Just error otherwise.
-    verifySig :: GroupMember -> Maybe MsgSigData -> Maybe Text
-    verifySig _ Nothing = Nothing
-    verifySig GroupMember {memberPubKey = Nothing} _ = Nothing
-    verifySig GroupMember {memberId = mId, memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
-      if all verifyOne (L.toList signatures) then Nothing else Just "signature verification failed"
+    verifySig :: GroupMember -> Maybe MsgSigData -> Bool
+    verifySig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
+      all verifyOne (L.toList signatures)
       where
-        verifyOne (MsgSignature (KRMember sigMemberId) sig)
-          | sigMemberId /= mId = False
-          | otherwise = C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
+        verifyOne (MsgSignature KRMember sig) =
+          C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
+    verifySig _ _ = True
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
