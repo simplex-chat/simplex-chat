@@ -927,6 +927,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
                     `catchAllErrors` \e -> eToView e
                   pure newDeliveryTasks
+                -- direct JSON and binary messages; binary events don't produce delivery tasks
                 _ -> do
                   logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
                   newTask_ <- join <$> withVerifiedSig gInfo' scopeInfo m' msgSig_ brokerTs
