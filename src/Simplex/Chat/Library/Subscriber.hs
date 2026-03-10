@@ -917,35 +917,39 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent}))
-              | verifySig m' msgSig_ -> do
-                  newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
-                  pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
-              | otherwise -> do
-                  let tag = tshow (toCMEventTag chatMsgEvent) <> ".bad_sig"
-                  atomically $ modifyTVar' tags (tag :)
-                  logInfo $ "group msg=" <> tag <> " " <> eInfo
+            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
+              let tag = toCMEventTag chatMsgEvent
+              atomically $ modifyTVar' tags (tshow tag :)
+              if verifySig m' msgSig_
+                then do
+                  logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
+                  newTask_ <- processEvent gInfo' m' chatMsg `catchAllErrors` \e -> eToView e $> Nothing
+                  pure $ maybe id (:) newTask_ newDeliveryTasks
+                else do
+                  logInfo $ "group msg=" <> tshow tag <> ".bad_sig " <> eInfo
                   createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
                   pure newDeliveryTasks
-            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg)) -> do
-              atomically $ modifyTVar' tags ("fwd" :)
+            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
+              let tag = toCMEventTag chatMsgEvent
+              atomically $ modifyTVar' tags (tshow tag :)
+              logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
               let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
               xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
                 `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
-            Right (ParsedMsg _ _ (ACMsg SBinary chatMsg)) -> do
-              void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
+            Right (ParsedMsg _ _ (ACMsg SBinary chatMsg@ChatMessage {chatMsgEvent})) -> do
+              let tag = toCMEventTag chatMsgEvent
+              atomically $ modifyTVar' tags (tshow tag :)
+              logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
+              void (processEvent gInfo' m' chatMsg) `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               eToView (ChatError . CEException $ "error parsing chat message: " <> e)
               pure newDeliveryTasks
-          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [Text] -> Text -> ChatMessage e -> CM (Maybe NewMessageDeliveryTask)
-          processEvent gInfo' m' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
-            let tag = toCMEventTag chatMsgEvent
-            atomically $ modifyTVar' tags (tshow tag :)
-            logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
+          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> ChatMessage e -> CM (Maybe NewMessageDeliveryTask)
+          processEvent gInfo' m' chatMsg = do
             let body = chatMsgToBody chatMsg
             (m'', conn', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta body chatMsg
             let ctx js = DeliveryTaskContext js False
