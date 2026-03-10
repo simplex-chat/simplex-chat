@@ -37,7 +37,7 @@ import Data.Either (fromRight)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -785,28 +785,19 @@ parseChatMessages msg = case B.head msg of
       Left e -> [Left e]
       Right msgs -> map parseBatchElement msgs
     parseBatchElement :: Large -> Either String ParsedMsg
-    parseBatchElement (Large element)
-      | B.null element = Left "empty batch element"
-      | otherwise = case B.head element of
-          'S' -> parseSignedElement (B.tail element) Nothing
-          'F' -> parseForwardElement (B.tail element)
-          _ -> plainMsg <$> parseMsg element
-    parseSignedElement :: ByteString -> Maybe MsgForwardData -> Either String ParsedMsg
-    parseSignedElement s fwd = do
-      (sigs, jsonBody) <- parseAll ((,) <$> smpP <*> A.takeByteString) s
-      chatMsg <- parseMsg jsonBody
-      pure $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody) fwd
-    parseForwardElement :: ByteString -> Either String ParsedMsg
-    parseForwardElement s = do
-      (fwd, innerBytes) <- parseAll ((,) <$> smpP <*> A.takeByteString) s
-      parseInnerElement fwd innerBytes
-    parseInnerElement :: MsgForwardData -> ByteString -> Either String ParsedMsg
-    parseInnerElement fwd inner
-      | B.null inner = Left "empty forward inner element"
-      | otherwise = case B.head inner of
-          'S' -> parseSignedElement (B.tail inner) (Just fwd)
-          '{' -> (\cm -> ParsedMsg cm Nothing (Just fwd)) <$> parseMsg inner
-          _ -> Left $ "unsupported forward inner element prefix: " <> show (B.head inner)
+    parseBatchElement (Large s) = parseElement Nothing s
+    parseElement :: Maybe MsgForwardData -> ByteString -> Either String ParsedMsg
+    parseElement fwd s
+      | B.null s = Left "empty element"
+      | otherwise = case B.head s of
+          'S' -> do
+            (sigs, jsonBody) <- parseAll ((,) <$> smpP <*> A.takeByteString) (B.tail s)
+            chatMsg <- parseMsg jsonBody
+            pure $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody) fwd
+          'F' | isNothing fwd -> do
+            (fwd', innerBytes) <- parseAll ((,) <$> smpP <*> A.takeByteString) (B.tail s)
+            parseElement (Just fwd') innerBytes
+          _ -> (\cm -> ParsedMsg cm Nothing fwd) <$> parseMsg s
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
