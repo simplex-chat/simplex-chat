@@ -200,13 +200,42 @@ struct AddChannelView: View {
         }
     }
 
-    // TODO [relays] move random relay selection to backend; prefer selecting relays from different operators
     private func getEnabledRelays() async throws -> [UserChatRelay] {
         let servers = try await getUserServers()
-        let all = servers.flatMap { op in
-            op.chatRelays.filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
+        // Operator relays are grouped per operator; custom relays (nil operator)
+        // are treated independently to maximize trust distribution.
+        var operatorGroups: [[UserChatRelay]] = []
+        var customRelays: [UserChatRelay] = []
+        for op in servers {
+            let relays = op.chatRelays.filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
+            guard !relays.isEmpty else { continue }
+            if op.operator != nil {
+                operatorGroups.append(relays.shuffled())
+            } else {
+                customRelays = relays.shuffled()
+            }
         }
-        return Array(all.shuffled().prefix(3))
+        let maxRelays = 3
+        var selected: [UserChatRelay] = []
+        // Prefer at least one custom relay when available -
+        // user's own infrastructure for trust distribution.
+        if let relay = customRelays.first {
+            selected.append(relay)
+            customRelays.removeFirst()
+        }
+        // Round-robin across shuffled groups to distribute relays across operators.
+        var groups = operatorGroups + customRelays.map { [$0] }
+        groups.shuffle()
+        var index = 0
+        while selected.count < maxRelays && index < (groups.map(\.count).max() ?? 0) {
+            for relays in groups {
+                if index < relays.count && selected.count < maxRelays {
+                    selected.append(relays[index])
+                }
+            }
+            index += 1
+        }
+        return selected
     }
 
     private func checkHasRelays() async -> Bool {
