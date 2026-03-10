@@ -32,6 +32,7 @@ fun GroupLinkView(
   groupLink: GroupLink?,
   onGroupLinkUpdated: ((GroupLink?) -> Unit)?,
   creatingGroup: Boolean = false,
+  isChannel: Boolean = false,
   close: (() -> Unit)? = null
 ) {
   var groupLinkVar by rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf(groupLink) }
@@ -122,6 +123,7 @@ fun GroupLinkView(
     groupInfo,
     groupLinkMemberRole,
     creatingLink,
+    isChannel = isChannel,
     createLink = ::createLink,
     showAddShortLinkAlert = ::showAddShortLinkAlert,
     updateLink = {
@@ -168,6 +170,7 @@ fun GroupLinkLayout(
   groupInfo: GroupInfo,
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
+  isChannel: Boolean = false,
   createLink: () -> Unit,
   showAddShortLinkAlert: ((() -> Unit)?) -> Unit,
   updateLink: () -> Unit,
@@ -185,9 +188,9 @@ fun GroupLinkLayout(
   }
 
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.group_link))
+    AppBarTitle(stringResource(if (isChannel) MR.strings.channel_link else MR.strings.group_link))
     Text(
-      stringResource(MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
+      stringResource(if (isChannel) MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect else MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),
       Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 12.dp),
       lineHeight = 22.sp
     )
@@ -208,7 +211,9 @@ fun GroupLinkLayout(
           }
         }
       } else {
-        RoleSelectionRow(groupInfo, groupLinkMemberRole)
+        if (!isChannel) {
+          RoleSelectionRow(groupInfo, groupLinkMemberRole)
+        }
         var initialLaunch by remember { mutableStateOf(true) }
         LaunchedEffect(groupLinkMemberRole.value) {
           if (!initialLaunch) {
@@ -220,6 +225,8 @@ fun GroupLinkLayout(
         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
         if (groupLink.connLinkContact.connShortLink == null) {
           SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = false)
+        } else if (isChannel) {
+          SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
         } else {
           SectionViewWithButton(titleButton = { ToggleShortLinkButton(showShortLink) }) {
             SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
@@ -235,7 +242,7 @@ fun GroupLinkLayout(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
             click = {
-              if (groupLink.shouldBeUpgraded) {
+              if (!isChannel && groupLink.shouldBeUpgraded) {
                 showAddShortLinkAlert {
                   clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
                 }
@@ -246,7 +253,7 @@ fun GroupLinkLayout(
           )
           if (creatingGroup && close != null) {
             ContinueButton(close)
-          } else {
+          } else if (!isChannel) {
             SimpleButton(
               stringResource(MR.strings.delete_link),
               icon = painterResource(MR.images.ic_delete),
@@ -255,7 +262,7 @@ fun GroupLinkLayout(
             )
           }
         }
-        if (groupLink.shouldBeUpgraded) {
+        if (!isChannel && groupLink.shouldBeUpgraded) {
           AddShortLinkButton(text = stringResource(MR.strings.upgrade_group_link)) {
             showAddShortLinkAlert(null)
           }

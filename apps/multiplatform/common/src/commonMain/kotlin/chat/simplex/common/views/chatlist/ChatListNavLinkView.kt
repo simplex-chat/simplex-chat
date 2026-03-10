@@ -316,7 +316,7 @@ fun GroupMenuItems(
       }
     }
     GroupMemberStatus.MemAccepted -> {
-      if (groupInfo.membership.memberCurrentOrPending) {
+      if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -338,7 +338,7 @@ fun GroupMenuItems(
         }
       }
       ClearChatAction(chat, showMenu)
-      if (groupInfo.membership.memberCurrentOrPending) {
+      if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {

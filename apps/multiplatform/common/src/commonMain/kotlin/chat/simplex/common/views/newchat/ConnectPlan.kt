@@ -28,6 +28,15 @@ suspend fun planAndConnect(
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
+  val link = strHasSingleSimplexLink(shortOrFullLink.trim())
+  if (link?.format is Format.SimplexLink && (link.format as Format.SimplexLink).linkType == SimplexLinkType.relay) {
+    AlertManager.privacySensitive.showAlertMsg(
+      generalGetString(MR.strings.relay_address_alert_title),
+      generalGetString(MR.strings.relay_address_alert_message),
+    )
+    cleanup?.invoke()
+    return CompletableDeferred(false)
+  }
   connectProgressManager.cancelConnectProgress()
   val inProgress = mutableStateOf(true)
   connectProgressManager.startConnectProgress(generalGetString(MR.strings.loading_profile)) {
@@ -203,6 +212,7 @@ private suspend fun planAndConnectTask(
             showPrepareGroupAlert(
               rhId,
               connectionLink,
+              connectionPlan.groupLinkPlan.groupSLinkInfo_,
               connectionPlan.groupLinkPlan.groupSLinkData_,
               close,
               cleanup
@@ -421,49 +431,74 @@ fun ownGroupLinkConfirmConnect(
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?,
 ) {
-  AlertManager.privacySensitive.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.connect_plan_join_your_group),
-    text = String.format(generalGetString(MR.strings.connect_plan_this_is_your_link_for_group_vName), groupInfo.displayName) + linkText,
-    buttons = {
-      Column {
-        // Open group
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          openKnownGroup(chatModel, rhId, close, groupInfo)
-          cleanup?.invoke()
-        }) {
-          Text(generalGetString(MR.strings.connect_plan_open_group), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        // Use current profile
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi {
-            connectViaUri(chatModel, rhId, connectionLink, incognito = false, connectionPlan, close, cleanup)
+  if (groupInfo.useRelays) {
+    AlertManager.privacySensitive.showAlertDialogButtonsColumn(
+      title = String.format(generalGetString(MR.strings.connect_plan_this_is_your_link_for_channel_vName), groupInfo.displayName),
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.privacySensitive.hideAlert()
+            openKnownGroup(chatModel, rhId, close, groupInfo)
+            cleanup?.invoke()
+          }) {
+            Text(generalGetString(MR.strings.connect_plan_open_channel), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        // Use new incognito profile
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi {
-            connectViaUri(chatModel, rhId, connectionLink, incognito = true, connectionPlan, close, cleanup)
+          SectionItemView({
+            AlertManager.privacySensitive.hideAlert()
+            cleanup?.invoke()
+          }) {
+            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
-        // Cancel
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          cleanup?.invoke()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      },
+      onDismissRequest = cleanup,
+      hostDevice = hostDevice(rhId),
+    )
+  } else {
+    AlertManager.privacySensitive.showAlertDialogButtonsColumn(
+      title = generalGetString(MR.strings.connect_plan_join_your_group),
+      text = String.format(generalGetString(MR.strings.connect_plan_this_is_your_link_for_group_vName), groupInfo.displayName) + linkText,
+      buttons = {
+        Column {
+          // Open group
+          SectionItemView({
+            AlertManager.privacySensitive.hideAlert()
+            openKnownGroup(chatModel, rhId, close, groupInfo)
+            cleanup?.invoke()
+          }) {
+            Text(generalGetString(MR.strings.connect_plan_open_group), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
+          // Use current profile
+          SectionItemView({
+            AlertManager.privacySensitive.hideAlert()
+            withBGApi {
+              connectViaUri(chatModel, rhId, connectionLink, incognito = false, connectionPlan, close, cleanup)
+            }
+          }) {
+            Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+          }
+          // Use new incognito profile
+          SectionItemView({
+            AlertManager.privacySensitive.hideAlert()
+            withBGApi {
+              connectViaUri(chatModel, rhId, connectionLink, incognito = true, connectionPlan, close, cleanup)
+            }
+          }) {
+            Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+          }
+          // Cancel
+          SectionItemView({
+            AlertManager.privacySensitive.hideAlert()
+            cleanup?.invoke()
+          }) {
+            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
         }
-      }
-    },
-    onDismissRequest = cleanup,
-    hostDevice = hostDevice(rhId),
-  )
+      },
+      onDismissRequest = cleanup,
+      hostDevice = hostDevice(rhId),
+    )
+  }
 }
 
 private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, groupInfo: GroupInfo) {
@@ -478,7 +513,9 @@ private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: ((
       )
     },
     confirmText = generalGetString(
-      if (groupInfo.businessChat == null) {
+      if (groupInfo.useRelays) {
+        if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel
+      } else if (groupInfo.businessChat == null) {
         if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_group else MR.strings.connect_plan_open_group
       } else {
         if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat
@@ -544,21 +581,37 @@ fun showPrepareContactAlert(
 fun showPrepareGroupAlert(
   rhId: Long?,
   connectionLink: CreatedConnLink,
+  groupShortLinkInfo: GroupShortLinkInfo?,
   groupShortLinkData: GroupShortLinkData,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
+  val isChannel = !(groupShortLinkInfo?.direct ?: true)
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupShortLinkData.groupProfile.displayName,
     profileFullName = groupShortLinkData.groupProfile.fullName,
-    profileImage = { ProfileImage(size = alertProfileImageSize, image = groupShortLinkData.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled) },
-    confirmText = generalGetString(MR.strings.connect_plan_open_new_group),
+    profileImage = {
+      ProfileImage(
+        size = alertProfileImageSize,
+        image = groupShortLinkData.groupProfile.image,
+        icon = if (isChannel) MR.images.ic_cell_tower else MR.images.ic_supervised_user_circle_filled
+      )
+    },
+    confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_new_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
-        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, groupShortLinkData)
+        val directLink = groupShortLinkInfo?.direct ?: true
+        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData)
         if (chat != null) {
           withContext(Dispatchers.Main) {
+            val relays = groupShortLinkInfo?.groupRelays
+            if (!relays.isNullOrEmpty()) {
+              val chatInfo = chat.chatInfo
+              if (chatInfo is ChatInfo.Group) {
+                chatModel.channelRelayHostnames[chatInfo.groupInfo.groupId] = relays
+              }
+            }
             ChatController.chatModel.chatsContext.addChat(chat)
             openChat_(chatModel, rhId, close, chat)
           }
