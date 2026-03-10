@@ -917,12 +917,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg))
+            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent}))
               | verifySig m' msgSig_ -> do
                   newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
                   pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
               | otherwise -> do
-                  logInfo $ "group msg=bad_sig " <> eInfo
+                  let tag = tshow (toCMEventTag chatMsgEvent) <> ".bad_sig"
+                  atomically $ modifyTVar' tags (tag :)
+                  logInfo $ "group msg=" <> tag <> " " <> eInfo
                   createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
                   pure newDeliveryTasks
             Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg)) -> do
