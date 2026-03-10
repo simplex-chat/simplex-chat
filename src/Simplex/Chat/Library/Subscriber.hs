@@ -917,26 +917,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
+            Right (ParsedMsg fwd_ msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
-              if verifySig m' msgSig_
-                then do
+              case fwd_ of
+                Nothing -> do
                   logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
-                  newTask_ <- processEvent gInfo' m' chatMsg `catchAllErrors` \e -> eToView e $> Nothing
+                  newTask_ <- join <$> withVerifiedSig gInfo' scopeInfo m' msgSig_ brokerTs
+                    (processEvent gInfo' m' chatMsg `catchAllErrors` \e -> eToView e $> Nothing)
                   pure $ maybe id (:) newTask_ newDeliveryTasks
-                else do
-                  logInfo $ "group msg=" <> tshow tag <> ".bad_sig " <> eInfo
-                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+                Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs} -> do
+                  logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
+                  let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
+                  xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
+                    `catchAllErrors` \e -> eToView e
                   pure newDeliveryTasks
-            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
-              let tag = toCMEventTag chatMsgEvent
-              atomically $ modifyTVar' tags (tshow tag :)
-              logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
-              let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
-              xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
-                `catchAllErrors` \e -> eToView e
-              pure newDeliveryTasks
             Right (ParsedMsg _ _ (ACMsg SBinary chatMsg@ChatMessage {chatMsgEvent})) -> do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
@@ -3175,12 +3170,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unknownRole <- unknownMemberRole gInfo
           (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_ unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
-          if verifySig author msgSig_
-            then processForwardedMsg (Just author)
-            else do
-              let ChatMessage {chatMsgEvent = evt} = chatMsg
-              logInfo $ "group fwd=bad_sig " <> tshow (toCMEventTag evt)
-              createInternalChatItem user (CDGroupRcv gInfo scopeInfo author) (CIRcvGroupEvent RGEMsgBadSignature) (Just msgTs)
+          void $ withVerifiedSig gInfo scopeInfo author msgSig_ msgTs $
+            processForwardedMsg (Just author)
         Nothing -> processForwardedMsg Nothing
       where
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
@@ -3214,6 +3205,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             withAuthor tag action = case author_ of
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
+
+    withVerifiedSig :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe MsgSigData -> UTCTime -> CM a -> CM (Maybe a)
+    withVerifiedSig gInfo scopeInfo member msgSig_ ts action
+      | verifySig member msgSig_ = Just <$> action
+      | otherwise = do
+          createInternalChatItem user (CDGroupRcv gInfo scopeInfo member) (CIRcvGroupEvent RGEMsgBadSignature) (Just ts)
+          pure Nothing
 
     verifySig :: GroupMember -> Maybe MsgSigData -> Bool
     verifySig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
