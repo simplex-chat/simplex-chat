@@ -66,7 +66,7 @@ quotedMsg =
 s ==## msg = do
   case parseChatMessages s of
     [acMsg] -> case acMsg of
-      Right (ACMsg _ msg') -> case checkEncoding msg' of
+      Right (ParsedMsg (ACMsg _ msg') _) -> case checkEncoding msg' of
         Right msg'' -> msg'' `shouldBe` msg
         Left e -> expectationFailure $ "checkEncoding error: " <> show e
       Left e -> expectationFailure $ "parse error: " <> show e

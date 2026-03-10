@@ -112,12 +112,16 @@ data MsgSignatures = MsgSignatures
     signatures :: NonEmpty MsgSignature
   }
 
--- Container for parsed messages with optional signatures
-data SignedChatMessages = SignedChatMessages
-  { signatures :: Maybe MsgSignatures,
-    messages :: [AChatMessage]
+-- Parsed message with optional signature data for verification
+data ParsedMsg = ParsedMsg
+  { chatMsg :: AChatMessage,
+    msgSig :: Maybe MsgSigData
   }
-  deriving (Show)
+
+data MsgSigData = MsgSigData
+  { signatures :: MsgSignatures,
+    signedBody :: ByteString -- exact bytes that were signed
+  }
 ```
 
 **Key insight:** The binary batch format preserves the exact bytes of each element via length-prefix framing, enabling signature verification even after the message has been parsed. This is critical for forwarded messages.
@@ -526,7 +530,7 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 2. Add `memberKey :: Maybe MemberKey` field to `MemberInfo` type
 3. Add `newMemberKey :: MemberKey` to `XMember` message (required, not Maybe)
 4. Add `Maybe MemberKey` parameter to `XGrpLinkMem` message
-5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `SignedChatMessages`
+5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `ParsedMsg`, `MsgSigData`
 6. Implement binary batch encoding/decoding with '=' prefix
 7. Update `parseChatMessages` to accept both JSON array and binary batch formats
 8. Add `BatchMode` parameter to batching functions in Messages/Batch.hs
@@ -558,25 +562,25 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 
 ## Signature Verification Logic
 
-```haskell
-verifyGroupMessage :: GroupInfo -> ChatMessage 'Json -> SignedChatMessage 'Json -> Either String ()
-verifyGroupMessage gInfo msg SignedChatMessage {scmBinding, scmSignatures} = do
-  -- 1. Validate binding matches group
-  case scmBinding of
-    CBGroup {groupRootKey, senderMemberId} -> do
-      when (groupRootKey /= expectedRootKey gInfo) $
-        Left "group root key mismatch"
-      when (senderMemberId /= expectedMemberId) $
-        Left "sender member ID mismatch"
-    _ -> Left "wrong binding type for group"
+Current implementation (`verifyMsgSig` in Protocol.hs) — minimal first step:
 
-  -- 2. Resolve keys and verify signatures
-  forM_ scmSignatures $ \MsgSignature {keyRef, signature} -> do
-    pubKey <- resolveKeyRef gInfo keyRef
-    let signedData = encodeForSigning msg scmBinding
-    unless (C.verify' pubKey signature signedData) $
-      Left "signature verification failed"
+```haskell
+-- Verify message signature against member's stored public key.
+-- Returns True if signature is valid or verification is not applicable.
+verifyMsgSig :: GroupMember -> Maybe MsgSigData -> Bool
+verifyMsgSig _ Nothing = True -- no signature
+verifyMsgSig GroupMember {memberPubKey = Nothing} _ = True -- no stored key
+verifyMsgSig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
+  all verifySig (L.toList signatures)
+  where
+    verifySig (MsgSignature (KRMember _) sig) =
+      C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
 ```
+
+Future full verification should additionally:
+1. Validate `ChatBinding` matches group (root key, sender member ID)
+2. Resolve `KeyRef` → look up member by `MemberId` from group roster
+3. Reject unsigned messages for message types that require signatures
 
 ## Owner Key Integration with Group Link (Separate Key Model)
 

@@ -328,10 +328,42 @@ data MsgSignatures = MsgSignatures
     signatures :: L.NonEmpty MsgSignature
   }
 
-data SignedChatMessages = SignedChatMessages
-  { signatures :: Maybe MsgSignatures,
-    messages :: [AChatMessage]
+-- Parsed message with optional signature data for verification
+data ParsedMsg = ParsedMsg
+  { chatMsg :: AChatMessage,
+    msgSig :: Maybe MsgSigData
   }
+
+data MsgSigData = MsgSigData
+  { signatures :: MsgSignatures,
+    signedBody :: ByteString -- exact bytes that were signed
+  }
+
+instance Encoding KeyRef where
+  smpEncode = \case
+    KRMember (MemberId memberId) -> smpEncode ('M', memberId)
+  smpP =
+    smpP >>= \case
+      'M' -> KRMember . MemberId <$> smpP
+      c -> fail $ "invalid KeyRef tag: " <> show c
+
+instance Encoding ChatBinding where
+  smpEncode = \case
+    CBDirect securityCode -> smpEncode ('D', securityCode)
+    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
+  smpP =
+    smpP >>= \case
+      'D' -> CBDirect <$> smpP
+      'G' -> CBGroup <$> smpP <*> smpP
+      c -> fail $ "invalid ChatBinding tag: " <> show c
+
+instance Encoding MsgSignature where
+  smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
+  smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
+
+instance Encoding MsgSignatures where
+  smpEncode (MsgSignatures chat sigs) = smpEncode ('S', chat, sigs)
+  smpP = A.char 'S' *> (MsgSignatures <$> smpP <*> smpP)
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -696,34 +728,58 @@ encodeChatMessage maxSize msg = do
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
 
-parseChatMessages :: ByteString -> [Either String AChatMessage]
+parseChatMessages :: ByteString -> [Either String ParsedMsg]
 parseChatMessages "" = [Left "empty string"]
 parseChatMessages msg = case B.head msg of
   'X' -> decodeCompressed (B.tail msg)
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [parseMsg s]
+      '{' -> [noSig $ parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
-        Right v -> map parseItem v
+        Right v -> map (noSig . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
-      _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+      _ -> [noSig $ ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+    noSig = fmap (`ParsedMsg` Nothing)
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
-    decodeCompressed :: ByteString -> [Either String AChatMessage]
+    decodeCompressed :: ByteString -> [Either String ParsedMsg]
     decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
       Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*
-    -- TODO [member keys] signatures will also be parsed here.
-    decodeBinaryBatch :: ByteString -> [Either String AChatMessage]
+    decodeBinaryBatch :: ByteString -> [Either String ParsedMsg]
     decodeBinaryBatch s = case parseAll smpListP s of
       Left e -> [Left e]
-      Right msgs -> map (parseMsg . unLarge) msgs
+      Right msgs -> map parseBatchElement msgs
+    parseBatchElement :: Large -> Either String ParsedMsg
+    parseBatchElement (Large element)
+      | B.null element = Left "empty batch element"
+      | otherwise = case B.head element of
+          'S' -> parseSignedElement (B.tail element)
+          'F' -> Left "forward elements are not yet supported"
+          _ -> (`ParsedMsg` Nothing) <$> parseMsg element
+    parseSignedElement :: ByteString -> Either String ParsedMsg
+    parseSignedElement s = do
+      (sigs, jsonBody) <- parseAll ((,) <$> smpP <*> A.takeByteString) s
+      chatMsg <- parseMsg jsonBody
+      Right $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody)
+
+-- | Verify message signature against member's stored public key.
+-- Returns True if signature is valid or verification is not applicable
+-- (no signature present, or no stored key for the member).
+verifyMsgSig :: GroupMember -> Maybe MsgSigData -> Bool
+verifyMsgSig _ Nothing = True
+verifyMsgSig GroupMember {memberPubKey = Nothing} _ = True
+verifyMsgSig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
+  all verifySig (L.toList signatures)
+  where
+    verifySig (MsgSignature (KRMember _) sig) =
+      C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
@@ -1276,28 +1332,3 @@ $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
 
-instance Encoding KeyRef where
-  smpEncode = \case
-    KRMember (MemberId memberId) -> smpEncode ('M', memberId)
-  smpP =
-    smpP >>= \case
-      'M' -> KRMember . MemberId <$> smpP
-      c -> fail $ "invalid KeyRef tag: " <> show c
-
-instance Encoding ChatBinding where
-  smpEncode = \case
-    CBDirect securityCode -> smpEncode ('D', securityCode)
-    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
-  smpP =
-    smpP >>= \case
-      'D' -> CBDirect <$> smpP
-      'G' -> CBGroup <$> smpP <*> smpP
-      c -> fail $ "invalid ChatBinding tag: " <> show c
-
-instance Encoding MsgSignature where
-  smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
-  smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
-
-instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures chat sigs) = smpEncode ('S', chat, sigs)
-  smpP = A.char 'S' *> (MsgSignatures <$> smpP <*> smpP)

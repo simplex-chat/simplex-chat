@@ -1550,7 +1550,7 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
 parseChatMessage conn s = do
   case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(ACMsg _ m) -> checkEncoding m) =<< msg
+    [msg] -> liftEither . first (ChatError . errType) $ (\(ParsedMsg (ACMsg _ m) _) -> checkEncoding m) =<< msg
     _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)

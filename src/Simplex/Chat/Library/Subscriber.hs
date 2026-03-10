@@ -461,7 +461,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
             forM_ aChatMsgs $ \case
-              Right (ACMsg _ chatMsg) ->
+              Right (ParsedMsg (ACMsg _ chatMsg) _) ->
                 processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
@@ -502,12 +502,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 XCallEnd callId -> xCallEnd ct'' callId msg
                 BFileChunk sharedMsgId chunk -> bFileChunk ct'' sharedMsgId chunk msgMeta
                 _ -> messageError $ "unsupported message: " <> T.pack (show event)
-            checkSendRcpt :: Contact -> [AChatMessage] -> CM Bool
-            checkSendRcpt ct' aMsgs = do
+            checkSendRcpt :: Contact -> [ParsedMsg] -> CM Bool
+            checkSendRcpt ct' pMsgs = do
               let Contact {chatSettings = ChatSettings {sendRcpts}} = ct'
-              pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any aChatMsgHasReceipt aMsgs
+              pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any parsedMsgHasReceipt pMsgs
               where
-                aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
+                parsedMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _) =
                   hasDeliveryReceipt (toCMEventTag chatMsgEvent)
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
@@ -897,7 +897,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' m' tags eInfo) [] aChatMsgs
+          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
           shouldDelConns <-
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then createDeliveryTasks gInfo' m' newDeliveryTasks
@@ -909,17 +909,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           brokerTs = metaBrokerTs msgMeta
           processAChatMsg ::
             GroupInfo ->
+            Maybe GroupChatScopeInfo ->
             GroupMember ->
             TVar [Text] ->
             Text ->
             [NewMessageDeliveryTask] ->
-            Either String AChatMessage ->
+            Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
-          processAChatMsg gInfo' m' tags eInfo newDeliveryTasks = \case
-            Right (ACMsg SJson chatMsg) -> do
-              newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
-              pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
-            Right (ACMsg SBinary chatMsg) -> do
+          processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
+            Right (ParsedMsg (ACMsg SJson chatMsg) msgSig_)
+              | verifyMsgSig m' msgSig_ -> do
+                  newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
+                  pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
+              | otherwise -> do
+                  logInfo $ "group msg=bad_sig " <> eInfo
+                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
+                  pure newDeliveryTasks
+            Right (ParsedMsg (ACMsg SBinary chatMsg) _) -> do
               void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
             Left e -> do
@@ -986,16 +992,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
-          checkSendRcpt :: [AChatMessage] -> CM Bool
-          checkSendRcpt aMsgs = do
+          checkSendRcpt :: [ParsedMsg] -> CM Bool
+          checkSendRcpt pMsgs = do
             let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
                 GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
             pure $
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
-                && any aChatMsgHasReceipt aMsgs
+                && any parsedMsgHasReceipt pMsgs
                 && currentMemCount <= smallGroupsRcptsMemLimit
             where
-              aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
+              parsedMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
