@@ -44,7 +44,7 @@ import qualified Data.Text as T
 import Data.Int (Int64)
 import Data.Text.Encoding (decodeLatin1, decodeUtf8, encodeUtf8)
 import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
@@ -347,6 +347,25 @@ data MsgForwardData = MsgForwardData
     fwdMemberName :: ContactName, -- may be empty
     fwdBrokerTs :: UTCTime
   }
+
+microsToUTCTime :: Int64 -> UTCTime
+microsToUTCTime micros =
+  let (secs, remainder) = micros `divMod` 1000000
+   in systemToUTCTime $ MkSystemTime (fromIntegral secs) (fromIntegral remainder * 1000)
+
+utcTimeToMicros :: UTCTime -> Int64
+utcTimeToMicros t =
+  let MkSystemTime secs nanos = utcToSystemTime t
+   in fromIntegral secs * 1000000 + fromIntegral nanos `div` 1000
+
+instance Encoding MsgForwardData where
+  smpEncode MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs} =
+    smpEncode (fwdMemberId, encodeUtf8 fwdMemberName, utcTimeToMicros fwdBrokerTs)
+  smpP = do
+    fwdMemberId <- smpP
+    fwdMemberName <- decodeUtf8 <$> smpP
+    fwdBrokerTs <- microsToUTCTime <$> smpP
+    pure MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}
 
 instance Encoding KeyRef where
   smpEncode = \case
@@ -772,39 +791,22 @@ parseChatMessages msg = case B.head msg of
           'S' -> parseSignedElement (B.tail element) Nothing
           'F' -> parseForwardElement (B.tail element)
           _ -> plainMsg <$> parseMsg element
-    -- Parse signed element: S <MsgSignatures> <jsonBody>
     parseSignedElement :: ByteString -> Maybe MsgForwardData -> Either String ParsedMsg
     parseSignedElement s fwd = do
       (sigs, jsonBody) <- parseAll ((,) <$> smpP <*> A.takeByteString) s
       chatMsg <- parseMsg jsonBody
-      Right $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody) fwd
-    -- Parse forward element: F <memberId> <memberName> <brokerTs> <originalBytes>
-    -- originalBytes is a signed or unsigned inner element
+      pure $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody) fwd
     parseForwardElement :: ByteString -> Either String ParsedMsg
     parseForwardElement s = do
-      (fwdMemberId, nameBS, tsMicro, innerBytes) <-
-        parseAll ((,,,) <$> smpP <*> smpP <*> smpP <*> A.takeByteString) s
-      let fwd = MsgForwardData
-            { fwdMemberId,
-              fwdMemberName = decodeUtf8 nameBS,
-              fwdBrokerTs = microsToUTCTime tsMicro
-            }
+      (fwd, innerBytes) <- parseAll ((,) <$> smpP <*> A.takeByteString) s
       parseInnerElement fwd innerBytes
-    -- Parse inner element of a forward envelope (no nested forwarding)
     parseInnerElement :: MsgForwardData -> ByteString -> Either String ParsedMsg
     parseInnerElement fwd inner
       | B.null inner = Left "empty forward inner element"
       | otherwise = case B.head inner of
           'S' -> parseSignedElement (B.tail inner) (Just fwd)
-          '{' -> do
-            chatMsg <- parseMsg inner
-            Right $ ParsedMsg chatMsg Nothing (Just fwd)
+          '{' -> (\cm -> ParsedMsg cm Nothing (Just fwd)) <$> parseMsg inner
           _ -> Left $ "unsupported forward inner element prefix: " <> show (B.head inner)
-
-microsToUTCTime :: Int64 -> UTCTime
-microsToUTCTime micros =
-  let (secs, remainder) = micros `divMod` 1000000
-   in systemToUTCTime $ MkSystemTime (fromIntegral secs) (fromIntegral remainder * 1000)
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
