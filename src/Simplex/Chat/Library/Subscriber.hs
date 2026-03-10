@@ -925,10 +925,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   logInfo $ "group msg=bad_sig " <> eInfo
                   createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
                   pure newDeliveryTasks
-            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
-              let tag = toCMEventTag chatMsgEvent
-              atomically $ modifyTVar' tags (tshow tag :)
-              logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
+            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg)) -> do
+              atomically $ modifyTVar' tags ("fwd" :)
               let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
               xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
                 `catchAllErrors` \e -> eToView e
