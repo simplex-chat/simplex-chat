@@ -106,21 +106,24 @@ data ChatBinding
 data MsgSignature = MsgSignature KeyRef C.ASignature
   deriving (Show)
 
--- Signatures with the signed bytes preserved
+-- Signatures with chat binding
 data MsgSignatures = MsgSignatures
   { chatBinding :: ChatBinding,
     signatures :: NonEmpty MsgSignature
   }
 
--- Parsed message with optional signature data for verification
-data ParsedMsg = ParsedMsg
-  { chatMsg :: AChatMessage,
-    msgSig :: Maybe MsgSigData
-  }
+-- Field order matches wire format: forward data (F prefix), then sig data (S prefix), then message (M prefix)
+data ParsedMsg = ParsedMsg (Maybe MsgForwardData) (Maybe MsgSigData) AChatMessage
 
 data MsgSigData = MsgSigData
   { signatures :: MsgSignatures,
     signedBody :: ByteString -- exact bytes that were signed
+  }
+
+data MsgForwardData = MsgForwardData
+  { fwdMemberId :: MemberId,
+    fwdMemberName :: ContactName, -- may be empty
+    fwdBrokerTs :: UTCTime
   }
 ```
 
@@ -224,22 +227,23 @@ binaryBatch = %s"=" elementCount *batchElement
 elementCount = 1*1 OCTET                  ; 1-255 elements
 batchElement = elementLen elementBody
 elementLen = 2*2 OCTET                    ; 16-bit big-endian length
-elementBody = signedElement / forwardElement / unsignedElement
+elementBody = signedElement / forwardElement / plainElement
 
-; Signed element - signature prefix before JSON
+; Signed element - signatures followed by JSON body
 signedElement = %s"S" msgSignatures jsonBody
 jsonBody = *OCTET                         ; JSON bytes (length from elementLen)
 
 ; Forward element - relay forwarding with preserved bytes (relay groups only)
-forwardElement = %s"F" forwardMeta originalBytes
+; originalBytes is a nested element (signed or plain, but NOT another forward)
+forwardElement = %s"F" forwardMeta originalElement
 forwardMeta = senderMemberId senderMemberName brokerTs
 brokerTs = 8*8 OCTET                      ; UTC timestamp, big-endian microseconds
-originalBytes = *OCTET                    ; original message bytes (signed or unsigned)
+originalElement = signedElement / plainElement
 
-; Unsigned element - plain JSON (backward compatibility)
-unsignedElement = %s"{" *OCTET            ; JSON object
+; Plain message element
+plainElement = %s"M" jsonBody             ; M prefix for semantic consistency with S/F
 
-; Signature data
+; Signature data (no S prefix — the element prefix serves that role)
 msgSignatures = chatBinding sigCount *msgSignature
 chatBinding = directBinding / groupBinding
 directBinding = %s"D" securityCode
@@ -333,11 +337,13 @@ Forward elements only appear inside binary batches — there is no standalone fo
 
 **Key difference from current approach:**
 - Current: `XGrpMsgForward` nests **parsed** `ChatMessage 'Json` → re-encoded on send → bytes change
-- New: Forward element contains **raw bytes** → never re-encoded → signature remains valid
+- New: Forward element contains **original element bytes** (S or M) → never re-encoded → signature remains valid
+- Forward nesting is guarded: `elementP` rejects nested forward elements (`F` inside `F`)
 
 **Backward compatibility:**
 - Old groups (non-relay): Continue using `XGrpMsgForward` ChatMsgEvent (JSON array batching)
 - New relay groups: Use binary batch with forward elements (`F` prefix inside `=` batch)
+- `XGrpMsgForward` JSON call site passes `Nothing` for `msgSig_` (no signature data available in JSON path)
 - Parser accepts both formats
 
 **Key resolution:**
@@ -530,10 +536,11 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 2. Add `memberKey :: Maybe MemberKey` field to `MemberInfo` type
 3. Add `newMemberKey :: MemberKey` to `XMember` message (required, not Maybe)
 4. Add `Maybe MemberKey` parameter to `XGrpLinkMem` message
-5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `ParsedMsg`, `MsgSigData`
-6. Implement binary batch encoding/decoding with '=' prefix
-7. Update `parseChatMessages` to accept both JSON array and binary batch formats
-8. Add `BatchMode` parameter to batching functions in Messages/Batch.hs
+5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `ParsedMsg`, `MsgSigData`, `MsgForwardData`
+6. Encoding instances added: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `MsgSigData`, `MsgForwardData`
+7. Binary batch element parser (`elementP`) handles S/F/M prefixes with attoparsec
+8. Update `parseChatMessages` to accept both JSON array and binary batch formats
+9. Add `BatchMode` parameter to batching functions in Messages/Batch.hs
 
 ### Phase 2: Key Generation and Storage
 1. Add database migration for `member_pub_key` in group_members, `member_priv_key` in groups
@@ -549,10 +556,11 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 4. Sign `XGrpRelayInv` with owner key
 
 ### Phase 4: Signature Verification
-1. Add `verifyChatMessage` function in Internal.hs
-2. Modify message reception to verify signatures
-3. Add relay validation for `XGrpRelayInv` in Subscriber.hs
-4. Implement key resolution from member profiles
+1. `verifySig` added in Subscriber.hs — verifies against member's stored public key, checks member ID match
+2. `processAChatMsg` verifies direct messages; `xGrpMsgForward` verifies forwarded messages after author resolution
+3. `xGrpMsgForward` extended with `Maybe GroupChatScopeInfo` and `Maybe MsgSigData` — eliminated `processForward` duplication
+4. Bad signature creates `RGEMsgBadSignature` chat item for the user
+5. Add relay validation for `XGrpRelayInv` in Subscriber.hs
 
 ### Phase 5: Version Gating
 1. Add new chat version (e.g., `memberSignaturesVersion = VersionChat 17`)
@@ -562,25 +570,29 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 
 ## Signature Verification Logic
 
-Current implementation (`verifyMsgSig` in Protocol.hs) — minimal first step:
+Current implementation (`verifySig` in Subscriber.hs) — minimal first step:
 
 ```haskell
--- Verify message signature against member's stored public key.
--- Returns True if signature is valid or verification is not applicable.
-verifyMsgSig :: GroupMember -> Maybe MsgSigData -> Bool
-verifyMsgSig _ Nothing = True -- no signature
-verifyMsgSig GroupMember {memberPubKey = Nothing} _ = True -- no stored key
-verifyMsgSig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
-  all verifySig (L.toList signatures)
+-- Verify signature against a member's stored key.
+-- Returns Nothing on success (or if verification is not applicable), Just error otherwise.
+verifySig :: GroupMember -> Maybe MsgSigData -> Maybe Text
+verifySig _ Nothing = Nothing
+verifySig GroupMember {memberPubKey = Nothing} _ = Nothing
+verifySig GroupMember {memberId = mId, memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
+  if all verifyOne (L.toList signatures) then Nothing else Just "signature verification failed"
   where
-    verifySig (MsgSignature (KRMember _) sig) =
-      C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
+    verifyOne (MsgSignature (KRMember sigMemberId) sig)
+      | sigMemberId /= mId = False
+      | otherwise = C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
 ```
+
+Verification is called in two places:
+- `processAChatMsg`: verifies direct messages from the sender member
+- `xGrpMsgForward`: verifies forwarded messages after resolving the author from `MsgForwardData.fwdMemberId`
 
 Future full verification should additionally:
 1. Validate `ChatBinding` matches group (root key, sender member ID)
-2. Resolve `KeyRef` → look up member by `MemberId` from group roster
-3. Reject unsigned messages for message types that require signatures
+2. Reject unsigned messages for message types that require signatures
 
 ## Owner Key Integration with Group Link (Separate Key Model)
 

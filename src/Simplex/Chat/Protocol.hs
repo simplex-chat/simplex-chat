@@ -346,12 +346,12 @@ data MsgForwardData = MsgForwardData
 microsToUTCTime :: Int64 -> UTCTime
 microsToUTCTime micros =
   let (secs, remainder) = micros `divMod` 1000000
-   in systemToUTCTime $ MkSystemTime (fromIntegral secs) (fromIntegral remainder * 1000)
+   in systemToUTCTime $ MkSystemTime secs (fromIntegral remainder * 1000)
 
 utcTimeToMicros :: UTCTime -> Int64
 utcTimeToMicros t =
   let MkSystemTime secs nanos = utcToSystemTime t
-   in fromIntegral secs * 1000000 + fromIntegral nanos `div` 1000
+   in secs * 1000000 + fromIntegral nanos `div` 1000
 
 instance Encoding MsgForwardData where
   smpEncode MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs} =
