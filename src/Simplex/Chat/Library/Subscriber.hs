@@ -461,7 +461,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
             forM_ aChatMsgs $ \case
-              Right (ParsedMsg (ACMsg _ chatMsg) _) ->
+              Right (ParsedMsg (ACMsg _ chatMsg) _ _) ->
                 processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
@@ -503,11 +503,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 BFileChunk sharedMsgId chunk -> bFileChunk ct'' sharedMsgId chunk msgMeta
                 _ -> messageError $ "unsupported message: " <> T.pack (show event)
             checkSendRcpt :: Contact -> [ParsedMsg] -> CM Bool
-            checkSendRcpt ct' pMsgs = do
+            checkSendRcpt ct' aMsgs = do
               let Contact {chatSettings = ChatSettings {sendRcpts}} = ct'
-              pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any parsedMsgHasReceipt pMsgs
+              pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any aChatMsgHasReceipt aMsgs
               where
-                parsedMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _) =
+                aChatMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _ _) =
                   hasDeliveryReceipt (toCMEventTag chatMsgEvent)
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
@@ -917,15 +917,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg (ACMsg SJson chatMsg) msgSig_)
-              | verifyMsgSig m' msgSig_ -> do
-                  newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
-                  pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
-              | otherwise -> do
-                  logInfo $ "group msg=bad_sig " <> eInfo
+            Right (ParsedMsg (ACMsg SJson chatMsg) msgSig_ Nothing) ->
+              case verifySig m' msgSig_ of
+                Just badSigErr -> do
+                  logInfo $ "group msg=bad_sig " <> eInfo <> " " <> badSigErr
                   createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMsgBadSignature) (Just brokerTs)
                   pure newDeliveryTasks
-            Right (ParsedMsg (ACMsg SBinary chatMsg) _) -> do
+                Nothing -> do
+                  newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
+                  pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
+            Right (ParsedMsg (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent}) msgSig_ (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs})) -> do
+              let tag = toCMEventTag chatMsgEvent
+              atomically $ modifyTVar' tags (tshow tag :)
+              logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
+              let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
+              xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
+                `catchAllErrors` \e -> eToView e
+              pure newDeliveryTasks
+            Right (ParsedMsg (ACMsg SBinary chatMsg) _ _) -> do
               void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
             Left e -> do
@@ -984,7 +993,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps'
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
-              XGrpMsgForward memberId memberName msg' msgTs -> Nothing <$ xGrpMsgForward gInfo' m'' memberId memberName msg' msgTs brokerTs
+              XGrpMsgForward memberId memberName msg' msgTs -> Nothing <$ xGrpMsgForward gInfo' Nothing m'' memberId memberName msg' msgTs brokerTs Nothing
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
@@ -993,15 +1002,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
           checkSendRcpt :: [ParsedMsg] -> CM Bool
-          checkSendRcpt pMsgs = do
+          checkSendRcpt aMsgs = do
             let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
                 GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
             pure $
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
-                && any parsedMsgHasReceipt pMsgs
+                && any aChatMsgHasReceipt aMsgs
                 && currentMemCount <= smallGroupsRcptsMemLimit
             where
-              parsedMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _) =
+              aChatMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _ _) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
@@ -3155,15 +3164,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toViewTE $ TEContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
-    xGrpMsgForward :: GroupInfo -> GroupMember -> Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
-    xGrpMsgForward gInfo m@GroupMember {localDisplayName} memberId_ memberName_ chatMsg msgTs brokerTs = do
+    xGrpMsgForward :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> Maybe MsgSigData -> CM ()
+    xGrpMsgForward gInfo scopeInfo m@GroupMember {localDisplayName} memberId_ memberName_ chatMsg msgTs brokerTs msgSig_ = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       case memberId_ of
         Just memberId -> do
           unknownRole <- unknownMemberRole gInfo
           (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_ unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
-          processForwardedMsg (Just author)
+          case verifySig author msgSig_ of
+            Just badSigErr -> do
+              let ChatMessage {chatMsgEvent = evt} = chatMsg
+              logInfo $ "group fwd=bad_sig " <> tshow (toCMEventTag evt) <> " " <> badSigErr
+              createInternalChatItem user (CDGroupRcv gInfo scopeInfo author) (CIRcvGroupEvent RGEMsgBadSignature) (Just msgTs)
+            Nothing -> processForwardedMsg (Just author)
         Nothing -> processForwardedMsg Nothing
       where
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
@@ -3197,6 +3211,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             withAuthor tag action = case author_ of
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
+
+    -- Verify signature against a member's stored key.
+    -- Returns Nothing on success (or if verification is not applicable), Just error otherwise.
+    verifySig :: GroupMember -> Maybe MsgSigData -> Maybe Text
+    verifySig _ Nothing = Nothing
+    verifySig GroupMember {memberPubKey = Nothing} _ = Nothing
+    verifySig GroupMember {memberId = mId, memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
+      if all verifyOne (L.toList signatures) then Nothing else Just "signature verification failed"
+      where
+        verifyOne (MsgSignature (KRMember sigMemberId) sig)
+          | sigMemberId /= mId = False
+          | otherwise = C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do

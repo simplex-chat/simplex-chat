@@ -41,8 +41,10 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Int (Int64)
+import Data.Text.Encoding (decodeLatin1, decodeUtf8, encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
@@ -328,15 +330,22 @@ data MsgSignatures = MsgSignatures
     signatures :: L.NonEmpty MsgSignature
   }
 
--- Parsed message with optional signature data for verification
+-- Parsed message with optional signature and forward data
 data ParsedMsg = ParsedMsg
   { chatMsg :: AChatMessage,
-    msgSig :: Maybe MsgSigData
+    msgSig :: Maybe MsgSigData,
+    msgForward :: Maybe MsgForwardData
   }
 
 data MsgSigData = MsgSigData
   { signatures :: MsgSignatures,
     signedBody :: ByteString -- exact bytes that were signed
+  }
+
+data MsgForwardData = MsgForwardData
+  { fwdMemberId :: MemberId,
+    fwdMemberName :: ContactName, -- may be empty
+    fwdBrokerTs :: UTCTime
   }
 
 instance Encoding KeyRef where
@@ -735,13 +744,13 @@ parseChatMessages msg = case B.head msg of
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [noSig $ parseMsg s]
+      '{' -> [fmap plainMsg $ parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
-        Right v -> map (noSig . parseItem) v
+        Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
-      _ -> [noSig $ ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
-    noSig = fmap (`ParsedMsg` Nothing)
+      _ -> [fmap plainMsg $ ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+    plainMsg am = ParsedMsg am Nothing Nothing
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
@@ -760,26 +769,42 @@ parseChatMessages msg = case B.head msg of
     parseBatchElement (Large element)
       | B.null element = Left "empty batch element"
       | otherwise = case B.head element of
-          'S' -> parseSignedElement (B.tail element)
-          'F' -> Left "forward elements are not yet supported"
-          _ -> (`ParsedMsg` Nothing) <$> parseMsg element
-    parseSignedElement :: ByteString -> Either String ParsedMsg
-    parseSignedElement s = do
+          'S' -> parseSignedElement (B.tail element) Nothing
+          'F' -> parseForwardElement (B.tail element)
+          _ -> plainMsg <$> parseMsg element
+    -- Parse signed element: S <MsgSignatures> <jsonBody>
+    parseSignedElement :: ByteString -> Maybe MsgForwardData -> Either String ParsedMsg
+    parseSignedElement s fwd = do
       (sigs, jsonBody) <- parseAll ((,) <$> smpP <*> A.takeByteString) s
       chatMsg <- parseMsg jsonBody
-      Right $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody)
+      Right $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody) fwd
+    -- Parse forward element: F <memberId> <memberName> <brokerTs> <originalBytes>
+    -- originalBytes is a signed or unsigned inner element
+    parseForwardElement :: ByteString -> Either String ParsedMsg
+    parseForwardElement s = do
+      (fwdMemberId, nameBS, tsMicro, innerBytes) <-
+        parseAll ((,,,) <$> smpP <*> smpP <*> smpP <*> A.takeByteString) s
+      let fwd = MsgForwardData
+            { fwdMemberId,
+              fwdMemberName = decodeUtf8 nameBS,
+              fwdBrokerTs = microsToUTCTime tsMicro
+            }
+      parseInnerElement fwd innerBytes
+    -- Parse inner element of a forward envelope (no nested forwarding)
+    parseInnerElement :: MsgForwardData -> ByteString -> Either String ParsedMsg
+    parseInnerElement fwd inner
+      | B.null inner = Left "empty forward inner element"
+      | otherwise = case B.head inner of
+          'S' -> parseSignedElement (B.tail inner) (Just fwd)
+          '{' -> do
+            chatMsg <- parseMsg inner
+            Right $ ParsedMsg chatMsg Nothing (Just fwd)
+          _ -> Left $ "unsupported forward inner element prefix: " <> show (B.head inner)
 
--- | Verify message signature against member's stored public key.
--- Returns True if signature is valid or verification is not applicable
--- (no signature present, or no stored key for the member).
-verifyMsgSig :: GroupMember -> Maybe MsgSigData -> Bool
-verifyMsgSig _ Nothing = True
-verifyMsgSig GroupMember {memberPubKey = Nothing} _ = True
-verifyMsgSig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
-  all verifySig (L.toList signatures)
-  where
-    verifySig (MsgSignature (KRMember _) sig) =
-      C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
+microsToUTCTime :: Int64 -> UTCTime
+microsToUTCTime micros =
+  let (secs, remainder) = micros `divMod` 1000000
+   in systemToUTCTime $ MkSystemTime (fromIntegral secs) (fromIntegral remainder * 1000)
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
