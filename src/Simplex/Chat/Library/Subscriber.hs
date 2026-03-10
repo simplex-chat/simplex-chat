@@ -461,7 +461,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
             forM_ aChatMsgs $ \case
-              Right (ParsedMsg (ACMsg _ chatMsg) _ _) ->
+              Right (ParsedMsg _ _ (ACMsg _ chatMsg)) ->
                 processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
@@ -507,7 +507,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let Contact {chatSettings = ChatSettings {sendRcpts}} = ct'
               pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any aChatMsgHasReceipt aMsgs
               where
-                aChatMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _ _) =
+                aChatMsgHasReceipt (ParsedMsg _ _ (ACMsg _ ChatMessage {chatMsgEvent})) =
                   hasDeliveryReceipt (toCMEventTag chatMsgEvent)
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
@@ -917,7 +917,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg (ACMsg SJson chatMsg) msgSig_ Nothing) ->
+            Right (ParsedMsg Nothing msgSig_ (ACMsg SJson chatMsg)) ->
               case verifySig m' msgSig_ of
                 Just badSigErr -> do
                   logInfo $ "group msg=bad_sig " <> eInfo <> " " <> badSigErr
@@ -926,7 +926,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Nothing -> do
                   newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
                   pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
-            Right (ParsedMsg (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent}) msgSig_ (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs})) -> do
+            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
               logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
@@ -934,7 +934,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
                 `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
-            Right (ParsedMsg (ACMsg SBinary chatMsg) _ _) -> do
+            Right (ParsedMsg _ _ (ACMsg SBinary chatMsg)) -> do
               void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
             Left e -> do
@@ -1010,7 +1010,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 && any aChatMsgHasReceipt aMsgs
                 && currentMemCount <= smallGroupsRcptsMemLimit
             where
-              aChatMsgHasReceipt (ParsedMsg (ACMsg _ ChatMessage {chatMsgEvent}) _ _) =
+              aChatMsgHasReceipt (ParsedMsg _ _ (ACMsg _ ChatMessage {chatMsgEvent})) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do

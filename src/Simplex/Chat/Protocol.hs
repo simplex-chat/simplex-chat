@@ -21,7 +21,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative ((<|>))
-import Control.Monad ((<=<))
+import Control.Monad (when, (<=<))
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -37,7 +37,7 @@ import Data.Either (fromRight)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isJust)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -330,12 +330,7 @@ data MsgSignatures = MsgSignatures
     signatures :: L.NonEmpty MsgSignature
   }
 
--- Parsed message with optional signature and forward data
-data ParsedMsg = ParsedMsg
-  { chatMsg :: AChatMessage,
-    msgSig :: Maybe MsgSigData,
-    msgForward :: Maybe MsgForwardData
-  }
+data ParsedMsg = ParsedMsg (Maybe MsgForwardData) (Maybe MsgSigData) AChatMessage
 
 data MsgSigData = MsgSigData
   { signatures :: MsgSignatures,
@@ -390,8 +385,12 @@ instance Encoding MsgSignature where
   smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
 
 instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures chat sigs) = smpEncode ('S', chat, sigs)
-  smpP = A.char 'S' *> (MsgSignatures <$> smpP <*> smpP)
+  smpEncode (MsgSignatures chat sigs) = smpEncode (chat, sigs)
+  smpP = MsgSignatures <$> smpP <*> smpP
+
+instance Encoding MsgSigData where
+  smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
+  smpP = MsgSigData <$> smpP <*> A.takeByteString
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -769,8 +768,10 @@ parseChatMessages msg = case B.head msg of
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
       _ -> [fmap plainMsg $ ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
-    plainMsg am = ParsedMsg am Nothing Nothing
+    plainMsg = ParsedMsg Nothing Nothing
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
+    msgP :: A.Parser AChatMessage
+    msgP = parseMsg <$?> A.takeByteString
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
     decodeCompressed :: ByteString -> [Either String ParsedMsg]
@@ -785,19 +786,18 @@ parseChatMessages msg = case B.head msg of
       Left e -> [Left e]
       Right msgs -> map parseBatchElement msgs
     parseBatchElement :: Large -> Either String ParsedMsg
-    parseBatchElement (Large s) = parseElement Nothing s
-    parseElement :: Maybe MsgForwardData -> ByteString -> Either String ParsedMsg
-    parseElement fwd s
-      | B.null s = Left "empty element"
-      | otherwise = case B.head s of
-          'S' -> do
-            (sigs, jsonBody) <- parseAll ((,) <$> smpP <*> A.takeByteString) (B.tail s)
-            chatMsg <- parseMsg jsonBody
-            pure $ ParsedMsg chatMsg (Just $ MsgSigData sigs jsonBody) fwd
-          'F' | isNothing fwd -> do
-            (fwd', innerBytes) <- parseAll ((,) <$> smpP <*> A.takeByteString) (B.tail s)
-            parseElement (Just fwd') innerBytes
-          _ -> (\cm -> ParsedMsg cm Nothing fwd) <$> parseMsg s
+    parseBatchElement (Large s) = parseAll (elementP Nothing) s
+    elementP :: Maybe MsgForwardData -> A.Parser ParsedMsg
+    elementP fwd = A.anyChar >>= \case
+      'S' -> do
+        sigs <- smpP
+        (body, cm) <- A.match msgP
+        pure $ ParsedMsg fwd (Just $ MsgSigData sigs body) cm
+      'F' -> do
+        when (isJust fwd) $ fail "nested forward elements not supported"
+        elementP . Just =<< smpP
+      'M' -> ParsedMsg fwd Nothing <$> msgP
+      c -> fail $ "invalid element prefix: " <> show c
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
