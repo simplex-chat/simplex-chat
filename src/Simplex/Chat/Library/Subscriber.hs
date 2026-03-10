@@ -917,21 +917,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
           processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
-            Right (ParsedMsg (Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}) msgSig_ (ACMsg SJson chatMsg@ChatMessage {chatMsgEvent})) -> do
+            Right (ParsedMsg fwd_ msgSig_ (ACMsg enc chatMsg@ChatMessage {chatMsgEvent})) -> do
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
-              logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
-              let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
-              xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
-                `catchAllErrors` \e -> eToView e
-              pure newDeliveryTasks
-            Right (ParsedMsg _ msgSig_ (ACMsg _ chatMsg@ChatMessage {chatMsgEvent})) -> do
-              let tag = toCMEventTag chatMsgEvent
-              atomically $ modifyTVar' tags (tshow tag :)
-              logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
-              newTask_ <- join <$> withVerifiedSig gInfo' scopeInfo m' msgSig_ brokerTs
-                (processEvent gInfo' m' chatMsg `catchAllErrors` \e -> eToView e $> Nothing)
-              pure $ maybe id (:) newTask_ newDeliveryTasks
+              case fwd_ of
+                Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs} | SJson <- enc -> do
+                  logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
+                  let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
+                  xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
+                    `catchAllErrors` \e -> eToView e
+                  pure newDeliveryTasks
+                _ -> do
+                  logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
+                  newTask_ <- join <$> withVerifiedSig gInfo' scopeInfo m' msgSig_ brokerTs
+                    (processEvent gInfo' m' chatMsg `catchAllErrors` \e -> eToView e $> Nothing)
+                  pure $ maybe id (:) newTask_ newDeliveryTasks
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
