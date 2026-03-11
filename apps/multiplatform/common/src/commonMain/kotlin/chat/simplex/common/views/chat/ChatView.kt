@@ -172,7 +172,6 @@ fun ChatView(
               chatModel.groupMembers.value = emptyList()
               chatModel.groupMembersIndexes.value = emptyMap()
               chatModel.membersLoaded.value = false
-              ChannelRelaysModel.reset()
             }
             showSearch.value = false
             searchText.value = ""

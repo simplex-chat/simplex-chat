@@ -350,16 +350,23 @@ private fun ProgressStepView(
           groupRelays.value.forEach { relay ->
             val failedErr = relayConnFailed(chatModel, relay)
             if (failedErr != null) {
-              SectionItemView(click = {
-                AlertManager.shared.showAlertMsg(
-                  title = generalGetString(MR.strings.relay_connection_failed),
-                  text = failedErr
-                )
-              }) {
+              SectionItemView(
+                click = {
+                  AlertManager.shared.showAlertMsg(
+                    title = generalGetString(MR.strings.relay_connection_failed),
+                    text = failedErr
+                  )
+                },
+                minHeight = 30.dp,
+                padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 4.dp)
+              ) {
                 RelayRow(relay, connFailed = true)
               }
             } else {
-              SectionItemView {
+              SectionItemView(
+                minHeight = 30.dp,
+                padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 4.dp)
+              ) {
                 RelayRow(relay, connFailed = false)
               }
             }
@@ -444,25 +451,28 @@ private fun LinkStepView(
   groupLink: MutableState<GroupLink?>,
   closeAll: () -> Unit
 ) {
-  GroupLinkView(
-    chatModel = chatModel,
-    rhId = null,
-    groupInfo = gInfo,
-    groupLink = groupLink.value,
-    onGroupLinkUpdated = { groupLink.value = it },
-    creatingGroup = true,
-    isChannel = true,
-    close = {
-      chatModel.creatingChannelId.value = null
-      withBGApi {
-        delay(500)
-        withContext(Dispatchers.Main) {
-          ModalManager.start.closeModals()
-          openGroupChat(null, gInfo.groupId)
-        }
+  val close: () -> Unit = {
+    chatModel.creatingChannelId.value = null
+    withBGApi {
+      delay(500)
+      withContext(Dispatchers.Main) {
+        ModalManager.start.closeModals()
+        openGroupChat(null, gInfo.groupId)
       }
     }
-  )
+  }
+  ModalView(close = close, showClose = false) {
+    GroupLinkView(
+      chatModel = chatModel,
+      rhId = null,
+      groupInfo = gInfo,
+      groupLink = groupLink.value,
+      onGroupLinkUpdated = { groupLink.value = it },
+      creatingGroup = true,
+      isChannel = true,
+      close = close
+    )
+  }
 }
 
 fun relayDisplayName(relay: GroupRelay): String {

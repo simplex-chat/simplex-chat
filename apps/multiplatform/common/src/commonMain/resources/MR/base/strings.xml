@@ -2893,7 +2893,7 @@
   <string name="create_channel_button">Create channel</string>
   <string name="create_channel_beta_button">Create channel (BETA)</string>
   <string name="channel_display_name_field">Channel name</string>
-  <string name="creating_channel">Creating channel…</string>
+  <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
   <string name="channel_profile_shared_with_relays_and_subscribers">Channel profile will be shared with relays and subscribers.</string>
