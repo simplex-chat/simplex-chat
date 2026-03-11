@@ -788,15 +788,15 @@ parseChatMessages msg = case B.head msg of
     parseBatchElement :: Large -> Either String ParsedMsg
     parseBatchElement (Large s) = parseAll (elementP Nothing) s
     elementP :: Maybe MsgForwardData -> A.Parser ParsedMsg
-    elementP fwd = A.anyChar >>= \case
-      'S' -> do
+    elementP fwd = A.peekChar' >>= \case
+      'S' -> A.char 'S' *> do
         sigs <- smpP
         (body, cm) <- A.match msgP
         pure $ ParsedMsg fwd (Just $ MsgSigData sigs body) cm
-      'F' -> do
+      'F' -> A.char 'F' *> do
         when (isJust fwd) $ fail "nested forward elements not supported"
         elementP . Just =<< smpP
-      'M' -> ParsedMsg fwd Nothing <$> msgP
+      '{' -> ParsedMsg fwd Nothing <$> msgP
       c -> fail $ "invalid element prefix: " <> show c
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
