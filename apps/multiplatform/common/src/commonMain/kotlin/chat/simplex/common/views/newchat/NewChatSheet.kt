@@ -199,7 +199,7 @@ private fun ModalData.NewChatSheetLayout(
       createGroup,
     ),
     Triple(
-      painterResource(MR.images.ic_cell_tower),
+      painterResource(MR.images.ic_bigtop_updates),
       stringResource(MR.strings.create_channel_beta_button),
       createChannel,
     )

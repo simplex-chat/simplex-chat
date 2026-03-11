@@ -6627,7 +6627,7 @@ sealed class CR {
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is PublicGroupCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
-    is GroupRelays -> withUser(user, "groupInfo: $groupInfo\nrelays: $relays")
+    is GroupRelays -> withUser(user, "groupInfo: $groupInfo\ngroupRelays: $groupRelays")
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")

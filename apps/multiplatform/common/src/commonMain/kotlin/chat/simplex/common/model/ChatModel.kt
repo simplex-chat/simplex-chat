@@ -2100,7 +2100,7 @@ data class GroupInfo (
 
   val chatIconName: ImageResource
     get() = if (useRelays) {
-      MR.images.ic_cell_tower
+      MR.images.ic_bigtop_updates
     } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
       BusinessChatType.Business -> MR.images.ic_work_filled_padded

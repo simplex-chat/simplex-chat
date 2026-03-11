@@ -281,19 +281,20 @@ private fun ProgressStepView(
   showLinkStep: MutableState<Boolean>,
   cancelChannelCreation: () -> Unit
 ) {
-  val channelRelaysGroupRelays = ChannelRelaysModel.groupRelays
   val failedCount = groupRelays.value.count { relayConnFailed(chatModel, it) != null }
   val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }
   val total = groupRelays.value.size
 
-  LaunchedEffect(channelRelaysGroupRelays.toList()) {
-    if (ChannelRelaysModel.groupId.value != gInfo.groupId) return@LaunchedEffect
-    val relays = channelRelaysGroupRelays.toList()
-    groupRelays.value = relays.sortedBy { relayDisplayName(it) }
-    if (relays.all { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }) {
-      showLinkStep.value = true
-      ChannelRelaysModel.reset()
-    }
+  LaunchedEffect(gInfo.groupId) {
+    snapshotFlow { ChannelRelaysModel.groupRelays.toList() }
+      .collect { relays ->
+        if (ChannelRelaysModel.groupId.value != gInfo.groupId) return@collect
+        groupRelays.value = relays.sortedBy { relayDisplayName(it) }
+        if (relays.all { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }) {
+          showLinkStep.value = true
+          ChannelRelaysModel.reset()
+        }
+      }
   }
 
   ModalView(
@@ -338,9 +339,10 @@ private fun ProgressStepView(
             }
             Text(statusText, modifier = Modifier.weight(1f))
             Icon(
-              painterResource(if (relayListExpanded.value) MR.images.ic_arrow_drop_up else MR.images.ic_arrow_drop_down),
+              painterResource(if (relayListExpanded.value) MR.images.ic_chevron_up else MR.images.ic_chevron_down),
               contentDescription = null,
-              tint = MaterialTheme.colors.secondary
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(20.dp)
             )
           }
         }
@@ -484,7 +486,7 @@ fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false) {
     }
     Text(
       text,
-      style = MaterialTheme.typography.caption,
+      fontSize = 12.sp,
       color = MaterialTheme.colors.secondary
     )
     if (connFailed) {

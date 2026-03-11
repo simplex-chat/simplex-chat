@@ -1550,7 +1550,7 @@ fun ComposeView(
           val isChannel = chat.chatInfo.groupInfo.useRelays
           ConnectButtonView(
             text = stringResource(if (isChannel) MR.strings.compose_view_join_channel else MR.strings.compose_view_join_group),
-            icon = if (isChannel) MR.images.ic_wifi_tethering else MR.images.ic_group_filled,
+            icon = if (isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group_filled,
             showProgress = !isChannel,
             connect = { withApi { connectPreparedGroup() } }
           )
@@ -1643,7 +1643,7 @@ private fun OwnerChannelRelayBar(
 ) {
   val total = relays.size
   val sorted = relays.sortedBy { relayDisplayName(it) }
-  Column {
+  Column(Modifier.background(MaterialTheme.colors.surface)) {
     RelayBarHeader(relayListExpanded) {
       if (activeCount + failedCount < total) {
         RelayProgressIndicator(active = activeCount, total = total)
@@ -1653,7 +1653,7 @@ private fun OwnerChannelRelayBar(
       } else {
         String.format(generalGetString(MR.strings.relay_bar_active), activeCount, total)
       }
-      Text(statusText, modifier = Modifier.weight(1f))
+      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
     }
     if (relayListExpanded.value) {
       sorted.forEach { relay ->
@@ -1671,7 +1671,7 @@ private fun OwnerChannelRelayBar(
           Text(
             relayDisplayName(relay),
             color = MaterialTheme.colors.secondary,
-            style = MaterialTheme.typography.caption
+            fontSize = 12.sp
           )
           Spacer(Modifier.weight(1f))
           RelayStatusIndicator(relay.relayStatus, connFailed = failedErr != null)
@@ -1691,7 +1691,7 @@ private fun SubscriberChannelRelayBar(
   showProgress: Boolean,
   relayListExpanded: MutableState<Boolean>
 ) {
-  Column {
+  Column(Modifier.background(MaterialTheme.colors.surface)) {
     RelayBarHeader(relayListExpanded) {
       if (showProgress && connectedCount + errorCount < total) {
         RelayProgressIndicator(active = connectedCount, total = total)
@@ -1705,7 +1705,7 @@ private fun SubscriberChannelRelayBar(
       } else {
         String.format(generalGetString(MR.strings.relay_bar_count), total)
       }
-      Text(statusText, modifier = Modifier.weight(1f))
+      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
     }
     if (relayListExpanded.value) {
       if (relayMembers.isEmpty()) {
@@ -1714,7 +1714,7 @@ private fun SubscriberChannelRelayBar(
             Text(
               String.format(generalGetString(MR.strings.via_relay_hostname), hostFromRelayLink(relay)),
               color = MaterialTheme.colors.secondary,
-              style = MaterialTheme.typography.caption
+              fontSize = 12.sp
             )
             Spacer(Modifier.weight(1f))
           }
@@ -1736,7 +1736,7 @@ private fun SubscriberChannelRelayBar(
             Text(
               String.format(generalGetString(MR.strings.via_relay_hostname), host ?: m.chatViewName),
               color = MaterialTheme.colors.secondary,
-              style = MaterialTheme.typography.caption
+              fontSize = 12.sp
             )
             Spacer(Modifier.weight(1f))
             val (statusText, statusColor) = relayConnStatus(m)
@@ -1744,7 +1744,7 @@ private fun SubscriberChannelRelayBar(
               drawCircle(color = statusColor)
             }
             Spacer(Modifier.width(4.dp))
-            Text(statusText, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.caption)
+            Text(statusText, color = MaterialTheme.colors.secondary, fontSize = 12.sp)
             if (failedErr != null) {
               Spacer(Modifier.width(4.dp))
               Icon(
@@ -1770,16 +1770,16 @@ private fun RelayBarHeader(
     modifier = Modifier
       .fillMaxWidth()
       .clickable { expanded.value = !expanded.value }
-      .padding(start = 12.dp, end = DEFAULT_PADDING, top = 8.dp, bottom = if (expanded.value) 4.dp else 8.dp),
+      .padding(start = 12.dp, end = DEFAULT_PADDING_HALF, top = 8.dp, bottom = if (expanded.value) 4.dp else 8.dp),
     horizontalArrangement = Arrangement.spacedBy(8.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
     Icon(
-      painterResource(if (expanded.value) MR.images.ic_arrow_drop_up else MR.images.ic_arrow_drop_down),
+      painterResource(if (expanded.value) MR.images.ic_chevron_down else MR.images.ic_chevron_up),
       contentDescription = null,
       tint = MaterialTheme.colors.secondary,
-      modifier = Modifier.size(16.dp)
+      modifier = Modifier.size(20.dp)
     )
   }
 }

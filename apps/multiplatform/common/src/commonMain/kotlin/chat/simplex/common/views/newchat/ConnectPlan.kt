@@ -594,7 +594,7 @@ fun showPrepareGroupAlert(
       ProfileImage(
         size = alertProfileImageSize,
         image = groupShortLinkData.groupProfile.image,
-        icon = if (isChannel) MR.images.ic_cell_tower else MR.images.ic_supervised_user_circle_filled
+        icon = if (isChannel) MR.images.ic_bigtop_updates else MR.images.ic_supervised_user_circle_filled
       )
     },
     confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_new_group),
