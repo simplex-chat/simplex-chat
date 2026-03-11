@@ -140,28 +140,26 @@ fun navigateToChatRelayView(
   serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   relayIndex: Int,
+  relay: UserChatRelay,
   rhId: Long?
 ) {
-  ModalManager.start.showModalCloseable { close ->
-    val relayState = remember {
-      mutableStateOf(userServers.value[operatorIndex].chatRelays[relayIndex])
-    }
+  ModalManager.start.showCustomModal { close ->
     ChatRelayView(
-      userServers = userServers,
-      serverErrors = serverErrors,
-      serverWarnings = serverWarnings,
-      relay = relayState,
-      rhId = rhId,
-      close = {
+      relay = relay,
+      onDelete = {
+        deleteChatRelay(userServers, operatorIndex, relayIndex)
+        close()
+      },
+      onUpdate = { updatedRelay ->
         userServers.value = userServers.value.toMutableList().apply {
           this[operatorIndex] = this[operatorIndex].copy(
             chatRelays = this[operatorIndex].chatRelays.toMutableList().apply {
-              this[relayIndex] = relayState.value
+              this[relayIndex] = updatedRelay
             }
           )
         }
-        close()
-      }
+      },
+      close = close
     )
   }
 }
@@ -238,18 +236,26 @@ fun OperatorViewLayout(
 
     if (operator.enabled) {
       if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
+        val duplicateNames = findDuplicateRelayNames(serverErrors.value)
+        val duplicateAddresses = findDuplicateRelayAddresses(serverErrors.value)
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
           userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
             if (!relay.deleted) {
-              if (index > 0) Divider()
-              ChatRelayViewLink(relay) {
-                navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, index, rhId)
+              ChatRelayViewLink(relay, duplicateNames, duplicateAddresses) {
+                navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, index, relay, rhId)
               }
             }
           }
         }
-        SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
+        val relayErr = globalChatRelayError(serverErrors.value)
+        if (relayErr != null) {
+          SectionCustomFooter {
+            ServersErrorFooter(relayErr)
+          }
+        } else {
+          SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
+        }
       }
 
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {

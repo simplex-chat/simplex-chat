@@ -1045,7 +1045,6 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
     if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
     Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
   }
 
@@ -2107,7 +2106,7 @@ object ChatController {
 
   suspend fun apiGetGroupRelays(groupId: Long): List<GroupRelay> {
     val r = sendCmd(null, CC.ApiGetGroupRelays(groupId))
-    if (r is API.Result && r.res is CR.GroupRelays) return r.res.relays
+    if (r is API.Result && r.res is CR.GroupRelays) return r.res.groupRelays
     return emptyList()
   }
 
@@ -3775,7 +3774,7 @@ sealed class CC {
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
       val ttlStr = if (ttl != null) "$ttl" else "default"
-      "/_send ${chatRef(type, id, scope)} send=group:${onOff(sendAsGroup)} live=${onOff(live)} ttl=${ttlStr} json $msgs"
+      "/_send ${chatRef(type, id, scope)}${if (sendAsGroup) "(as_group=on)" else ""} live=${onOff(live)} ttl=${ttlStr} json $msgs"
     }
     is ApiCreateChatTag -> "/_create tag ${json.encodeToString(tag)}"
     is ApiSetChatTags -> "/_tags ${chatRef(type, id, scope = null)} ${tagIds.joinToString(",")}"
@@ -3796,13 +3795,13 @@ sealed class CC {
     is ApiGetReactionMembers -> "/_reaction members $userId #$groupId $itemId ${json.encodeToString(reaction)}"
     is ApiForwardChatItems -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
-      "/_forward ${chatRef(toChatType, toChatId, toScope)} send=group:${onOff(sendAsGroup)} ${chatRef(fromChatType, fromChatId, fromScope)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
+      "/_forward ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) " as_group=on" else ""} ${chatRef(fromChatType, fromChatId, fromScope)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
     }
     is ApiPlanForwardChatItems -> {
       "/_forward plan ${chatRef(fromChatType, fromChatId, fromScope)} ${chatItemIds.joinToString(",")}"
     }
     is ApiNewGroup -> "/_group $userId incognito=${onOff(incognito)} ${json.encodeToString(groupProfile)}"
-    is ApiNewPublicGroup -> "/_group $userId incognito=${onOff(incognito)} relays=${relayIds.joinToString(",")} ${json.encodeToString(groupProfile)}"
+    is ApiNewPublicGroup -> "/_public group $userId incognito=${onOff(incognito)} ${relayIds.joinToString(",")} ${json.encodeToString(groupProfile)}"
     is ApiGetGroupRelays -> "/_get relays #$groupId"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
@@ -4446,12 +4445,12 @@ sealed class UserServersError {
   @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
-  @Serializable @SerialName("duplicateChatRelayName") data class DuplicateChatRelayName(val duplicateName: String): UserServersError()
-  @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateAddress: String): UserServersError()
+  @Serializable @SerialName("duplicateChatRelayName") data class DuplicateChatRelayName(val duplicateChatRelay: String): UserServersError()
+  @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateChatRelay: String, val duplicateAddress: String): UserServersError()
 
   val globalError: String?
     get() = when (this) {
-      is DuplicateChatRelayName -> String.format(generalGetString(MR.strings.duplicate_chat_relay_name), this.duplicateName)
+      is DuplicateChatRelayName -> String.format(generalGetString(MR.strings.duplicate_chat_relay_name), this.duplicateChatRelay)
       is DuplicateChatRelayAddress -> String.format(generalGetString(MR.strings.duplicate_chat_relay_address), this.duplicateAddress)
       else -> when (this.protocol_) {
         ServerProtocol.SMP -> globalSMPError
@@ -6267,7 +6266,7 @@ sealed class CR {
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("publicGroupCreated") class PublicGroupCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
-  @Serializable @SerialName("groupRelays") class GroupRelays(val user: UserRef, val groupInfo: GroupInfo, val relays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupRelays") class GroupRelays(val user: UserRef, val groupInfo: GroupInfo, val groupRelays: List<GroupRelay>): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
@@ -6294,7 +6293,7 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
-  @Serializable @SerialName("groupLinkRelaysUpdated") class GroupLinkRelaysUpdated(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("groupLinkRelaysUpdated") class GroupLinkRelaysUpdated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
   @Serializable @SerialName("groupLink") class CRGroupLink(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
   @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: UserRef, val groupInfo: GroupInfo): CR()
@@ -6655,7 +6654,7 @@ sealed class CR {
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
-    is GroupLinkRelaysUpdated -> withUser(user, "groupInfo: $groupInfo\nmember: $member\ngroupRelays: $groupRelays")
+    is GroupLinkRelaysUpdated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
     is CRGroupLink -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
     is GroupLinkDeleted -> withUser(user, json.encodeToString(groupInfo))

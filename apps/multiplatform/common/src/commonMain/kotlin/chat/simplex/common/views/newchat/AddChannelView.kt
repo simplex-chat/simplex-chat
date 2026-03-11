@@ -31,6 +31,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
 import chat.simplex.res.MR
+import java.net.URI
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 

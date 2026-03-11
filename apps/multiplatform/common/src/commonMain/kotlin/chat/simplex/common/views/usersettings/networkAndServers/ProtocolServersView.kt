@@ -85,20 +85,28 @@ fun YourServersViewLayout(
 
   Column {
     if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
+      val duplicateNames = findDuplicateRelayNames(serverErrors.value)
+      val duplicateAddresses = findDuplicateRelayAddresses(serverErrors.value)
       SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
         userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
           if (relay.deleted) return@forEachIndexed
-          if (i > 0) Divider()
-          ChatRelayViewLink(relay) {
-            navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, i, rhId)
+          ChatRelayViewLink(relay, duplicateNames, duplicateAddresses) {
+            navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, i, relay, rhId)
           }
         }
       }
-      SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
-      SectionDividerSpaced()
+      val relayErr = globalChatRelayError(serverErrors.value)
+      if (relayErr != null) {
+        SectionCustomFooter {
+          ServersErrorFooter(relayErr)
+        }
+      } else {
+        SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
+      }
     }
 
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
+      SectionDividerSpaced()
       SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
@@ -288,8 +296,8 @@ fun showAddServerDialog(
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          ModalManager.start.showModalCloseable { close ->
-            ModalData().NewChatRelayView(userServers, serverErrors, serverWarnings, rhId, close)
+          ModalManager.start.showCustomModal { close ->
+            NewChatRelayView(userServers, serverErrors, serverWarnings, rhId, close)
           }
         }) {
           Text(stringResource(MR.strings.chat_relay), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)

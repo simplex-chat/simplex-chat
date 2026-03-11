@@ -199,7 +199,7 @@ private fun ModalData.NewChatSheetLayout(
       createGroup,
     ),
     Triple(
-      painterResource(MR.images.ic_wifi_tethering),
+      painterResource(MR.images.ic_cell_tower),
       stringResource(MR.strings.create_channel_beta_button),
       createChannel,
     )

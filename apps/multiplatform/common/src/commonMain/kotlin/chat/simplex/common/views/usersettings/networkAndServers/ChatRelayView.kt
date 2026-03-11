@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -106,24 +109,19 @@ fun addChatRelay(
 
 @Composable
 fun ChatRelayView(
-  userServers: MutableState<List<UserOperatorServers>>,
-  serverErrors: MutableState<List<UserServersError>>,
-  serverWarnings: MutableState<List<UserServersWarning>>,
-  relay: MutableState<UserChatRelay>,
-  rhId: Long?,
+  relay: UserChatRelay,
+  onDelete: () -> Unit,
+  onUpdate: (UserChatRelay) -> Unit,
   close: () -> Unit
 ) {
-  val relayToEdit = remember { mutableStateOf(relay.value) }
+  val relayToEdit = remember { mutableStateOf(relay) }
 
   ModalView(
     close = {
       val validName = validRelayName(relayToEdit.value.name)
       val validAddress = validRelayAddress(relayToEdit.value.address)
       if (validName && validAddress) {
-        relay.value = relayToEdit.value
-        withBGApi {
-          validateServers_(rhId, userServers.value, serverErrors, serverWarnings)
-        }
+        onUpdate(relayToEdit.value)
         close()
       } else if (!validName) {
         close()
@@ -142,13 +140,7 @@ fun ChatRelayView(
   ) {
     ChatRelayLayout(
       relayToEdit,
-      onDelete = {
-        relay.value = relay.value.copy(deleted = true)
-        withBGApi {
-          validateServers_(rhId, userServers.value, serverErrors, serverWarnings)
-        }
-        close()
-      }
+      onDelete = onDelete
     )
   }
 }
@@ -211,16 +203,31 @@ private fun CustomRelay(
       .collect { relay.value = relay.value.copy(address = it) }
   }
 
-  SectionView(
-    stringResource(MR.strings.your_relay_name).uppercase(),
-    icon = painterResource(MR.images.ic_error),
-    iconTint = if (!validName.value) MaterialTheme.colors.error else Color.Transparent,
-  ) {
-    TextEditor(
-      relayName,
-      Modifier,
-      placeholder = generalGetString(MR.strings.enter_relay_name)
-    )
+  Column {
+    val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
+    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        stringResource(MR.strings.your_relay_name).uppercase(),
+        color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp
+      )
+      IconButton(
+        onClick = { if (!validName.value) showInvalidRelayNameAlert(relayName) },
+        enabled = !validName.value,
+        modifier = Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize)
+      ) {
+        Icon(
+          painterResource(MR.images.ic_error), null,
+          tint = if (!validName.value) MaterialTheme.colors.error else Color.Transparent
+        )
+      }
+    }
+    Column(Modifier.fillMaxWidth()) {
+      TextEditor(
+        relayName,
+        Modifier,
+        placeholder = generalGetString(MR.strings.enter_relay_name)
+      )
+    }
   }
   SectionDividerSpaced(maxTopPadding = true)
 
@@ -283,14 +290,16 @@ private fun UseRelaySection(
 @Composable
 fun ChatRelayViewLink(
   relay: UserChatRelay,
+  duplicateNames: Set<String>,
+  duplicateAddresses: Set<String>,
   onClick: () -> Unit
 ) {
   SectionItemView(onClick) {
     Box(Modifier.width(16.dp)) {
-      if (!relay.enabled) {
-        Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
-      } else {
-        ShowRelayTestStatus(relay)
+      when {
+        relay.name in duplicateNames || relay.address in duplicateAddresses -> InvalidServer()
+        !relay.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
+        else -> ShowRelayTestStatus(relay)
       }
     }
     Spacer(Modifier.padding(horizontal = 4.dp))
