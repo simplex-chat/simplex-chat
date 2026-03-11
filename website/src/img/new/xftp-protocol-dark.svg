@@ -11,12 +11,12 @@
   <rect x="112" y="120" width="176" height="40" rx="8" fill="none" stroke="#70F0F9" stroke-width="1" stroke-dasharray="4 3"/>
   <text x="200" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#70F0F9">encrypted chunks</text>
 
-  <!-- Arrows from chunks to servers -->
+  <!-- Arrows from chunks to routers -->
   <line x1="152" y1="160" x2="80" y2="220" stroke="#70F0F9" stroke-width="1.5" marker-end="url(#arrowC)"/>
   <line x1="200" y1="160" x2="200" y2="220" stroke="#70F0F9" stroke-width="1.5" marker-end="url(#arrowC)"/>
   <line x1="248" y1="160" x2="320" y2="220" stroke="#70F0F9" stroke-width="1.5" marker-end="url(#arrowC)"/>
 
-  <!-- Server 1 (SimpleX) -->
+  <!-- Router 1 (SimpleX) -->
   <rect x="20" y="220" width="120" height="56" rx="6" fill="none" stroke="#70F0F9" stroke-width="1.5"/>
   <g transform="translate(28, 227)">
     <rect width="14" height="4" rx="1" fill="rgba(112,240,249,0.5)"/>
@@ -27,9 +27,9 @@
     <circle cx="11" cy="14" r="1" fill="#70F0F9"/>
   </g>
   <text x="80" y="244" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#70F0F9">SimpleX</text>
-  <text x="80" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="rgba(112,240,249,0.7)">XFTP server</text>
+  <text x="80" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="rgba(112,240,249,0.7)">XFTP router</text>
 
-  <!-- Server 2 (Flux) -->
+  <!-- Router 2 (Flux) -->
   <rect x="155" y="220" width="90" height="56" rx="6" fill="none" stroke="#70F0F9" stroke-width="1.5"/>
   <g transform="translate(163, 227)">
     <rect width="14" height="4" rx="1" fill="rgba(112,240,249,0.5)"/>
@@ -40,9 +40,9 @@
     <circle cx="11" cy="14" r="1" fill="#70F0F9"/>
   </g>
   <text x="200" y="244" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#70F0F9">Flux</text>
-  <text x="200" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="rgba(112,240,249,0.7)">XFTP server</text>
+  <text x="200" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="rgba(112,240,249,0.7)">XFTP router</text>
 
-  <!-- Server 3 (SimpleX) -->
+  <!-- Router 3 (SimpleX) -->
   <rect x="260" y="220" width="120" height="56" rx="6" fill="none" stroke="#70F0F9" stroke-width="1.5"/>
   <g transform="translate(268, 227)">
     <rect width="14" height="4" rx="1" fill="rgba(112,240,249,0.5)"/>
@@ -53,9 +53,9 @@
     <circle cx="11" cy="14" r="1" fill="#70F0F9"/>
   </g>
   <text x="320" y="244" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#70F0F9">SimpleX</text>
-  <text x="320" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="rgba(112,240,249,0.7)">XFTP server</text>
+  <text x="320" y="258" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="rgba(112,240,249,0.7)">XFTP router</text>
 
-  <!-- Arrows from servers down -->
+  <!-- Arrows from routers down -->
   <line x1="80" y1="276" x2="152" y2="336" stroke="#70F0F9" stroke-width="1.5" marker-end="url(#arrowC)"/>
   <line x1="200" y1="276" x2="200" y2="336" stroke="#70F0F9" stroke-width="1.5" marker-end="url(#arrowC)"/>
   <line x1="320" y1="276" x2="248" y2="336" stroke="#70F0F9" stroke-width="1.5" marker-end="url(#arrowC)"/>
@@ -78,7 +78,7 @@
 
   <!-- Key path (dashed, side) -->
   <path d="M120 44 L8 44 L8 452 L120 452" stroke="#70F0F9" stroke-width="1.5" stroke-dasharray="6 4" fill="none" marker-end="url(#arrowC)"/>
-  <text x="-6" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#70F0F9" transform="rotate(-90 -6 240)">key in URL fragment — never sent to server</text>
+  <text x="-6" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#70F0F9" transform="rotate(-90 -6 240)">key in URL fragment - never sent to page server or data router</text>
 
 
   <!-- Closed padlock: encryption (between sender and chunks) -->
@@ -105,7 +105,7 @@
   </g>
 
   <!-- Annotation: no shared IDs -->
-  <text x="200" y="510" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="rgba(112,240,249,0.7)">Each chunk uses unique anonymous credentials — no shared identifiers</text>
+  <text x="200" y="510" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="rgba(112,240,249,0.7)">Each file fragment uses unique anonymous credentials - no shared identifiers</text>
 
   <defs>
     <marker id="arrowC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
