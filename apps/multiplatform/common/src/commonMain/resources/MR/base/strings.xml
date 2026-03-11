@@ -1950,7 +1950,7 @@
   <string name="info_row_group">Group</string>
   <string name="info_row_chat">Chat</string>
   <string name="info_row_connection">Connection</string>
-  <string name="info_row_connection_failed">Connection failed</string>
+  <string name="info_row_connection_failed">CONNECTION FAILED</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
   <string name="message_queue_info">Message queue info</string>

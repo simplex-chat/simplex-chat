@@ -602,12 +602,13 @@ fun GroupMemberInfoLayout(
     val connFailedErr = member.activeConn?.connFailedErr
     if (connFailedErr != null) {
       SectionDividerSpaced()
-      SectionView(title = stringResource(MR.strings.info_row_connection_failed)) {
-        Text(
-          connFailedErr,
-          Modifier.padding(horizontal = DEFAULT_PADDING),
-          color = MaterialTheme.colors.secondary
-        )
+      SectionView(title = stringResource(MR.strings.info_row_connection_failed), icon = painterResource(MR.images.ic_warning), iconTint = Color.Red, leadingIcon = true) {
+        SectionItemView {
+          Text(
+            connFailedErr,
+            color = MaterialTheme.colors.secondary
+          )
+        }
       }
     }
 
