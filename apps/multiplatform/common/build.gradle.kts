@@ -31,6 +31,7 @@ kotlin {
     }
 
     val commonMain by getting {
+      resources.srcDir(rootProject.rootDir.resolve("../../../simplex-chat-art/multiplatform"))
       dependencies {
         api(compose.runtime)
         api(compose.foundation)
