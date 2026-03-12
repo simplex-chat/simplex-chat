@@ -178,7 +178,8 @@ fun ChatView(
             contentFilter.value = null
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
-            if (chatsCtx.secondaryContextFilter == null && (chatInfo is ChatInfo.Direct || chatInfo is ChatInfo.Group || chatInfo is ChatInfo.Local)) {
+            val ci = activeChat.value?.chatInfo
+            if (chatsCtx.secondaryContextFilter == null && (ci is ChatInfo.Direct || ci is ChatInfo.Group || ci is ChatInfo.Local)) {
               updateAvailableContent(chatRh, activeChat, availableContent)
             }
             if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
@@ -769,7 +770,8 @@ fun ChatView(
               searchText.value = ""
               contentFilter.value = null
               // Update available content types when search closes
-              if (chatsCtx.secondaryContextFilter == null && (chatInfo is ChatInfo.Direct || chatInfo is ChatInfo.Group || chatInfo is ChatInfo.Local)) {
+              val ci = activeChat.value?.chatInfo
+              if (chatsCtx.secondaryContextFilter == null && (ci is ChatInfo.Direct || ci is ChatInfo.Group || ci is ChatInfo.Local)) {
                 updateAvailableContent(chatRh, activeChat, availableContent)
               }
             },
@@ -820,7 +822,7 @@ fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableCon
   withBGApi {
     Log.e(TAG, "updateAvailableContent")
     val chatInfo = activeChat.value?.chatInfo
-    if (chatInfo == null) return@withBGApi
+    if (chatInfo == null || chatInfo !is ChatInfo.Direct && chatInfo !is ChatInfo.Group && chatInfo !is ChatInfo.Local) return@withBGApi
     val types = chatModel.controller.apiGetChatContentTypes(chatRh, chatInfo.chatType, chatInfo.apiId, null)
     if (activeChat.value?.chatInfo?.id != chatInfo.id) return@withBGApi
     if (types == null) {
