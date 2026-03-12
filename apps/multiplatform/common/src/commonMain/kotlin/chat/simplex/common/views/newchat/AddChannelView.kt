@@ -485,7 +485,7 @@ fun relayDisplayName(relay: GroupRelay): String {
 
 @Composable
 fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false) {
-  val color = if (connFailed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningOrange
+  val color = if (connFailed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
   val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else status.text
   Row(
     verticalAlignment = Alignment.CenterVertically,

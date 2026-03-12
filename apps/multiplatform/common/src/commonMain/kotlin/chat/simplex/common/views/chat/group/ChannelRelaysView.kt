@@ -148,7 +148,7 @@ fun relayConnStatus(member: GroupMember): Pair<String, Color> {
     is ConnStatus.Ready -> generalGetString(MR.strings.relay_conn_status_connected) to Color.Green
     is ConnStatus.Deleted -> generalGetString(MR.strings.relay_conn_status_deleted) to Color.Red
     is ConnStatus.Failed -> generalGetString(MR.strings.relay_conn_status_failed) to Color.Red
-    else -> generalGetString(MR.strings.relay_conn_status_connecting) to WarningOrange
+    else -> generalGetString(MR.strings.relay_conn_status_connecting) to WarningYellow
   }
 }
 

@@ -397,7 +397,7 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
 }
 
 func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false) -> some View {
-    let color: Color = connFailed ? .red : (status == .rsActive ? .green : .orange)
+    let color: Color = connFailed ? .red : (status == .rsActive ? .green : .yellow)
     let text: LocalizedStringKey = connFailed ? "failed" : status.text
     return HStack(spacing: 4) {
         Circle()
