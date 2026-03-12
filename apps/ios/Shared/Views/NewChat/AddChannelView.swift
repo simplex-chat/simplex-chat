@@ -220,8 +220,8 @@ struct AddChannelView: View {
     // MARK: - Step 2: Progress
 
     private func progressStepView(_ gInfo: GroupInfo) -> some View {
-        let failedCount = groupRelays.filter { relayConnFailed($0) != nil }.count
-        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayConnFailed($0) == nil }.count
+        let failedCount = groupRelays.filter { relayMemberConnFailed($0) != nil }.count
+        let activeCount = groupRelays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
         let total = groupRelays.count
         return List {
             Group {
@@ -258,7 +258,7 @@ struct AddChannelView: View {
 
                 if relayListExpanded {
                     ForEach(groupRelays) { relay in
-                        let failed = relayConnFailed(relay)
+                        let failed = relayMemberConnFailed(relay)
                         if let err = failed {
                             Button {
                                 showAlert(
@@ -313,14 +313,14 @@ struct AddChannelView: View {
         .onChange(of: channelRelaysModel.groupRelays) { relays in
             guard channelRelaysModel.groupId == gInfo.groupId else { return }
             groupRelays = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
-            if relays.allSatisfy({ $0.relayStatus == .rsActive && relayConnFailed($0) == nil }) {
+            if relays.allSatisfy({ $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }) {
                 showLinkStep = true
                 channelRelaysModel.reset()
             }
         }
     }
 
-    private func relayConnFailed(_ relay: GroupRelay) -> String? {
+    private func relayMemberConnFailed(_ relay: GroupRelay) -> String? {
         m.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?
             .wrapped.activeConn?.connFailedErr
     }

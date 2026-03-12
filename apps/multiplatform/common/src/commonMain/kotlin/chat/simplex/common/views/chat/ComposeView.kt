@@ -1469,8 +1469,8 @@ fun ComposeView(
     if (gInfo != null && gInfo.useRelays) {
       if (gInfo.membership.memberRole == GroupMemberRole.Owner) {
         val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
-        val failedCount = relays.count { relayConnFailed(chatModel, it) != null }
-        val activeCount = relays.count { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }
+        val failedCount = relays.count { relayMemberConnFailed(chatModel, it) != null }
+        val activeCount = relays.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
         if (relays.isNotEmpty() && activeCount < relays.size) {
           OwnerChannelRelayBar(chatModel, relays, activeCount, failedCount, relayListExpanded)
         }
@@ -1655,7 +1655,7 @@ private fun OwnerChannelRelayBar(
     }
     if (relayListExpanded.value) {
       sorted.forEach { relay ->
-        val failedErr = relayConnFailed(chatModel, relay)
+        val failedErr = relayMemberConnFailed(chatModel, relay)
         RelayBarDetailRow(
           onClick = if (failedErr != null) {
             {
@@ -1798,7 +1798,7 @@ private fun RelayBarDetailRow(
   }
 }
 
-private fun relayConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
+private fun relayMemberConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
   return chatModel.groupMembers.value
     .firstOrNull { it.groupMemberId == relay.groupMemberId }
     ?.activeConn?.connFailedErr

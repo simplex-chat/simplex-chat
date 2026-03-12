@@ -296,8 +296,8 @@ private fun ProgressStepView(
   onLinkReady: () -> Unit,
   cancelChannelCreation: () -> Unit
 ) {
-  val failedCount = groupRelays.value.count { relayConnFailed(chatModel, it) != null }
-  val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }
+  val failedCount = groupRelays.value.count { relayMemberConnFailed(chatModel, it) != null }
+  val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
   val total = groupRelays.value.size
 
   if (appPlatform.isDesktop) {
@@ -323,7 +323,7 @@ private fun ProgressStepView(
       .collect { relays ->
         if (ChannelRelaysModel.groupId.value != gInfo.groupId) return@collect
         groupRelays.value = relays.sortedBy { relayDisplayName(it) }
-        if (relays.all { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }) {
+        if (relays.all { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }) {
           onLinkReady()
           ChannelRelaysModel.reset()
         }
@@ -381,7 +381,7 @@ private fun ProgressStepView(
         }
         if (relayListExpanded.value) {
           groupRelays.value.forEach { relay ->
-            val failedErr = relayConnFailed(chatModel, relay)
+            val failedErr = relayMemberConnFailed(chatModel, relay)
             if (failedErr != null) {
               SectionItemView(
                 click = {
@@ -459,7 +459,7 @@ private fun ProgressStepView(
   }
 }
 
-private fun relayConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
+private fun relayMemberConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
   return chatModel.groupMembers.value
     .firstOrNull { it.groupMemberId == relay.groupMemberId }
     ?.activeConn?.connFailedErr
