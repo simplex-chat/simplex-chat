@@ -15,7 +15,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -43,7 +42,7 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Int (Int64)
-import Data.Text.Encoding (decodeLatin1, decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
@@ -331,17 +330,23 @@ data MsgSignatures = MsgSignatures
     signatures :: L.NonEmpty MsgSignature
   }
 
-data ParsedMsg = ParsedMsg (Maybe MsgForwardData) (Maybe MsgSigData) AChatMessage
+data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
 
 data MsgSigData = MsgSigData
   { signatures :: MsgSignatures,
     signedBody :: ByteString -- exact bytes that were signed
   }
 
-data MsgForwardData = MsgForwardData
-  { fwdMember_ :: Maybe (MemberId, ContactName),
+data FwdSender
+  = FwdMember MemberId ContactName
+  | FwdChannel
+  deriving (Eq, Show)
+
+data GrpMsgForward = GrpMsgForward
+  { fwdSender :: FwdSender,
     fwdBrokerTs :: UTCTime
   }
+  deriving (Eq, Show)
 
 microsToUTCTime :: Int64 -> UTCTime
 microsToUTCTime micros =
@@ -353,13 +358,23 @@ utcTimeToMicros t =
   let MkSystemTime secs nanos = utcToSystemTime t
    in secs * 1000000 + fromIntegral nanos `div` 1000
 
-instance Encoding MsgForwardData where
-  smpEncode MsgForwardData {fwdMember_, fwdBrokerTs} =
-    smpEncode (fwdMember_, utcTimeToMicros fwdBrokerTs)
+instance Encoding FwdSender where
+  smpEncode = \case
+    FwdMember memberId memberName -> "M" <> smpEncode (memberId, memberName)
+    FwdChannel -> "C"
+  smpP =
+    A.anyChar >>= \case
+      'M' -> uncurry FwdMember <$> smpP
+      'C' -> pure FwdChannel
+      c -> fail $ "invalid FwdSender tag: " <> show c
+
+instance Encoding GrpMsgForward where
+  smpEncode GrpMsgForward {fwdSender, fwdBrokerTs} =
+    smpEncode (fwdSender, utcTimeToMicros fwdBrokerTs)
   smpP = do
-    fwdMember_ <- smpP
+    fwdSender <- smpP
     fwdBrokerTs <- microsToUTCTime <$> smpP
-    pure MsgForwardData {fwdMember_, fwdBrokerTs}
+    pure GrpMsgForward {fwdSender, fwdBrokerTs}
 
 instance Encoding KeyRef where
   smpEncode = \case
@@ -429,7 +444,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMsgForward :: Maybe (MemberId, ContactName) -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -786,7 +801,7 @@ parseChatMessages msg = case B.head msg of
       Right msgs -> map parseBatchElement msgs
     parseBatchElement :: Large -> Either String ParsedMsg
     parseBatchElement (Large s) = parseAll (elementP Nothing) s
-    elementP :: Maybe MsgForwardData -> A.Parser ParsedMsg
+    elementP :: Maybe GrpMsgForward -> A.Parser ParsedMsg
     elementP fwd = A.peekChar' >>= \case
       'S' -> A.char 'S' *> do
         sigs <- smpP
@@ -1242,9 +1257,11 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpMsgForward_ -> do
-        memberId_ <- opt "memberId"
-        memberName <- fromMaybe "" <$> opt "memberName"
-        XGrpMsgForward ((, memberName) <$> memberId_) <$> p "msg" <*> p "msgTs"
+        fwdSender <- opt "memberId" >>= \case
+          Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
+          Nothing -> pure FwdChannel
+        fwdBrokerTs <- p "msgTs"
+        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> p "msg"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1306,7 +1323,11 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpMsgForward member_ msg msgTs -> o $ ("memberId" .=? (fst <$> member_)) $ ("memberName" .=? (snd <$> member_)) ["msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
+        where
+          encodeFwdSender = \case
+            FwdMember memberId memberName -> ("memberId" .=? Just memberId) . ("memberName" .=? Just memberName)
+            FwdChannel -> id
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

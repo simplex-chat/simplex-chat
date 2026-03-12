@@ -19,7 +19,6 @@ import Data.Int (Int64)
 import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
@@ -78,8 +77,8 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs, chatMessage} = task
-        msgBody = encodeFwdElement fwdSender brokerTs chatMessage
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, chatMessage} = task
+        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} chatMessage
         msgLen = B.length msgBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
@@ -87,14 +86,10 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       let encoded = encodeBinaryBatch (reverse msgBodies)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
--- | Encode a batch element for relay groups: F<MsgForwardData><json>.
-encodeFwdElement :: FwdSender -> UTCTime -> ChatMessage 'Json -> ByteString
-encodeFwdElement fwdSender brokerTs chatMessage =
-  "F" <> smpEncode fwdData <> chatMsgToBody chatMessage
-  where
-    fwdData = case fwdSender of
-      FwdMember memberId memberName -> MsgForwardData (Just (memberId, memberName)) brokerTs
-      FwdChannel -> MsgForwardData Nothing brokerTs
+-- | Encode a batch element for relay groups: F<GrpMsgForward><json>.
+encodeFwdElement :: GrpMsgForward -> ChatMessage 'Json -> ByteString
+encodeFwdElement fwd chatMessage =
+  "F" <> smpEncode fwd <> chatMsgToBody chatMessage
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty
