@@ -1265,9 +1265,8 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   pure . L.toList $ L.map (XMsgFileDescr msgId) parts
                 _ -> pure []
               let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
-                  memberId_ = memberId' <$> sender_
-                  memberName_ = memberShortenedName <$> sender_
-                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId_ memberName_ cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                  member_ = fmap (\s -> (memberId' s, memberShortenedName s)) sender_
+                  msgForwardEvents = map (\cm -> XGrpMsgForward member_ cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
               pure msgForwardEvents
 
 memberShortenedName :: GroupMember -> ContactName

@@ -87,12 +87,14 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       let encoded = encodeBinaryBatch (reverse msgBodies)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
--- | Encode a batch element for relay groups: F<MsgForwardData><json> for forwards, bare json for channel posts.
+-- | Encode a batch element for relay groups: F<MsgForwardData><json>.
 encodeFwdElement :: FwdSender -> UTCTime -> ChatMessage 'Json -> ByteString
-encodeFwdElement fwdSender brokerTs chatMessage = case fwdSender of
-  FwdMember memberId memberName ->
-    "F" <> smpEncode (MsgForwardData memberId memberName brokerTs) <> chatMsgToBody chatMessage
-  FwdChannel -> chatMsgToBody chatMessage
+encodeFwdElement fwdSender brokerTs chatMessage =
+  "F" <> smpEncode fwdData <> chatMsgToBody chatMessage
+  where
+    fwdData = case fwdSender of
+      FwdMember memberId memberName -> MsgForwardData (Just (memberId, memberName)) brokerTs
+      FwdChannel -> MsgForwardData Nothing brokerTs
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty

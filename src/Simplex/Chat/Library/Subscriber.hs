@@ -921,10 +921,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
               case fwd_ of
-                Just MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs} | SJson <- enc -> do
+                Just MsgForwardData {fwdMember_, fwdBrokerTs} | SJson <- enc -> do
                   logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
-                  let memberName_ = if T.null fwdMemberName then Nothing else Just fwdMemberName
-                  xGrpMsgForward gInfo' scopeInfo m' (Just fwdMemberId) memberName_ chatMsg fwdBrokerTs brokerTs msgSig_
+                  xGrpMsgForward gInfo' scopeInfo m' fwdMember_ chatMsg fwdBrokerTs brokerTs msgSig_
                     `catchAllErrors` \e -> eToView e
                   pure newDeliveryTasks
                 -- direct JSON and binary messages; binary events don't produce delivery tasks
@@ -986,7 +985,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps'
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
-              XGrpMsgForward memberId memberName msg' msgTs -> Nothing <$ xGrpMsgForward gInfo' Nothing m'' memberId memberName msg' msgTs brokerTs Nothing
+              XGrpMsgForward member_ msg' msgTs -> Nothing <$ xGrpMsgForward gInfo' Nothing m'' member_ msg' msgTs brokerTs Nothing
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
@@ -2994,9 +2993,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member = do
-          let GroupMember {memberId} = m
-              memberName = Just $ memberShortenedName m
-              event = XGrpMsgForward (Just memberId) memberName chatMsg brokerTs
+          let event = XGrpMsgForward (Just (memberId' m, memberShortenedName m)) chatMsg brokerTs
           sendGroupMemberMessage gInfo member event
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
@@ -3157,12 +3154,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toViewTE $ TEContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
-    xGrpMsgForward :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> Maybe MsgSigData -> CM ()
-    xGrpMsgForward gInfo scopeInfo m@GroupMember {localDisplayName} memberId_ memberName_ chatMsg msgTs brokerTs msgSig_ = do
+    xGrpMsgForward :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe (MemberId, ContactName) -> ChatMessage 'Json -> UTCTime -> UTCTime -> Maybe MsgSigData -> CM ()
+    xGrpMsgForward gInfo scopeInfo m@GroupMember {localDisplayName} member_ chatMsg msgTs brokerTs msgSig_ = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
-      case memberId_ of
-        Just memberId -> do
+      case member_ of
+        Just (memberId, memberName) -> do
           unknownRole <- unknownMemberRole gInfo
+          let memberName_ = if T.null memberName then Nothing else Just memberName
           (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_ unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
           void $ withVerifiedSig gInfo scopeInfo author msgSig_ msgTs $
@@ -3370,10 +3368,10 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
               | otherwise -> do
                   let MessageDeliveryTask {senderGMId, fwdSender, brokerTs, chatMessage} = task
-                      (memberId_, memberName_) = case fwdSender of
-                        FwdMember mid mname -> (Just mid, Just mname)
-                        FwdChannel -> (Nothing, Nothing)
-                      fwdEvt = XGrpMsgForward memberId_ memberName_ chatMessage brokerTs
+                      member_ = case fwdSender of
+                        FwdMember mid mname -> Just (mid, mname)
+                        FwdChannel -> Nothing
+                      fwdEvt = XGrpMsgForward member_ chatMessage brokerTs
                       cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
                       body = chatMsgToBody cm
                   withStore' $ \db -> do

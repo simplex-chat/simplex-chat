@@ -15,6 +15,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -338,8 +339,7 @@ data MsgSigData = MsgSigData
   }
 
 data MsgForwardData = MsgForwardData
-  { fwdMemberId :: MemberId,
-    fwdMemberName :: ContactName, -- may be empty
+  { fwdMember_ :: Maybe (MemberId, ContactName),
     fwdBrokerTs :: UTCTime
   }
 
@@ -354,13 +354,12 @@ utcTimeToMicros t =
    in secs * 1000000 + fromIntegral nanos `div` 1000
 
 instance Encoding MsgForwardData where
-  smpEncode MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs} =
-    smpEncode (fwdMemberId, encodeUtf8 fwdMemberName, utcTimeToMicros fwdBrokerTs)
+  smpEncode MsgForwardData {fwdMember_, fwdBrokerTs} =
+    smpEncode (fwdMember_, utcTimeToMicros fwdBrokerTs)
   smpP = do
-    fwdMemberId <- smpP
-    fwdMemberName <- decodeUtf8 <$> smpP
+    fwdMember_ <- smpP
     fwdBrokerTs <- microsToUTCTime <$> smpP
-    pure MsgForwardData {fwdMemberId, fwdMemberName, fwdBrokerTs}
+    pure MsgForwardData {fwdMember_, fwdBrokerTs}
 
 instance Encoding KeyRef where
   smpEncode = \case
@@ -430,7 +429,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMsgForward :: Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgForward :: Maybe (MemberId, ContactName) -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -1242,7 +1241,10 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpMsgForward_ -> XGrpMsgForward <$> opt "memberId" <*> opt "memberName" <*> p "msg" <*> p "msgTs"
+      XGrpMsgForward_ -> do
+        memberId_ <- opt "memberId"
+        memberName <- fromMaybe "" <$> opt "memberName"
+        XGrpMsgForward ((, memberName) <$> memberId_) <$> p "msg" <*> p "msgTs"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1304,7 +1306,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpMsgForward memberId memberName msg msgTs -> o $ ("memberId" .=? memberId) $ ("memberName" .=? memberName) ["msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgForward member_ msg msgTs -> o $ ("memberId" .=? (fst <$> member_)) $ ("memberName" .=? (snd <$> member_)) ["msg" .= msg, "msgTs" .= msgTs]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
