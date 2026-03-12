@@ -4450,14 +4450,10 @@ sealed class UserServersError {
   @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateChatRelay: String, val duplicateAddress: String): UserServersError()
 
   val globalError: String?
-    get() = when (this) {
-      is DuplicateChatRelayName -> String.format(generalGetString(MR.strings.duplicate_chat_relay_name), this.duplicateChatRelay)
-      is DuplicateChatRelayAddress -> String.format(generalGetString(MR.strings.duplicate_chat_relay_address), this.duplicateAddress)
-      else -> when (this.protocol_) {
-        ServerProtocol.SMP -> globalSMPError
-        ServerProtocol.XFTP -> globalXFTPError
-        null -> null
-      }
+    get() = when (this.protocol_) {
+      ServerProtocol.SMP -> globalSMPError
+      ServerProtocol.XFTP -> globalXFTPError
+      null -> null
     }
 
   private val protocol_: ServerProtocol?

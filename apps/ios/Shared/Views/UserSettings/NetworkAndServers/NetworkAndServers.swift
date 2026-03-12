@@ -483,6 +483,21 @@ func findDuplicateHosts(_ serverErrors: [UserServersError]) -> Set<String> {
     return Set(duplicateHostsList)
 }
 
+func findDuplicateRelayNames(_ serverErrors: [UserServersError]) -> Set<String> {
+    Set(serverErrors.compactMap { err in
+        if case let .duplicateChatRelayName(duplicateChatRelay) = err { return duplicateChatRelay }
+        else { return nil }
+    })
+}
+
+func findDuplicateRelayAddresses(_ serverErrors: [UserServersError]) -> Set<String> {
+    Set(serverErrors.compactMap { err in
+        if case let .duplicateChatRelayAddress(_, duplicateAddress) = err { return duplicateAddress }
+        else { return nil }
+    })
+}
+
+
 func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServers: Binding<[UserOperatorServers]>) {
     let userServersToSave = userServers.wrappedValue
     Task {

@@ -996,15 +996,6 @@ fun findDuplicateRelayNames(serverErrors: List<UserServersError>): Set<String> =
 fun findDuplicateRelayAddresses(serverErrors: List<UserServersError>): Set<String> =
   serverErrors.mapNotNull { (it as? UserServersError.DuplicateChatRelayAddress)?.duplicateAddress }.toSet()
 
-fun globalChatRelayError(serverErrors: List<UserServersError>): String? {
-  for (err in serverErrors) {
-    if (err is UserServersError.DuplicateChatRelayName || err is UserServersError.DuplicateChatRelayAddress) {
-      return err.globalError
-    }
-  }
-  return null
-}
-
 private suspend fun saveServers(
   rhId: Long?,
   currUserServers: MutableState<List<UserOperatorServers>>,

@@ -2846,10 +2846,6 @@
   <string name="check_relay_address">Check relay address and try again.</string>
   <string name="error_adding_relay">Error adding relay</string>
 
-  <!-- UserServersError chat relay errors -->
-  <string name="duplicate_chat_relay_name">Duplicate chat relay name: %1$s</string>
-  <string name="duplicate_chat_relay_address">Duplicate chat relay address: %1$s</string>
-
   <!-- OperatorView.kt / ProtocolServersView.kt -->
   <string name="chat_relays">Chat relays</string>
   <string name="chat_relays_forward_messages_in_channels">Chat relays forward messages in channels you create.</string>

@@ -95,14 +95,7 @@ fun YourServersViewLayout(
           }
         }
       }
-      val relayErr = globalChatRelayError(serverErrors.value)
-      if (relayErr != null) {
-        SectionCustomFooter {
-          ServersErrorFooter(relayErr)
-        }
-      } else {
-        SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
-      }
+      SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
     }
 
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {

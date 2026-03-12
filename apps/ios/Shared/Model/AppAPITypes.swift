@@ -1807,10 +1807,6 @@ enum UserServersError: Decodable {
             case .smp: return globalSMPError
             case .xftp: return globalXFTPError
             }
-        case let .duplicateChatRelayName(duplicateChatRelay):
-            return String.localizedStringWithFormat(NSLocalizedString("Duplicate chat relay name: %@", comment: "servers error"), duplicateChatRelay)
-        case let .duplicateChatRelayAddress(_, duplicateAddress):
-            return String.localizedStringWithFormat(NSLocalizedString("Duplicate chat relay address: %@", comment: "servers error"), duplicateAddress)
         default: return nil
         }
     }
