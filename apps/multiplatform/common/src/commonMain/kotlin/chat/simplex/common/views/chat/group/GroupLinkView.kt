@@ -223,9 +223,11 @@ fun GroupLinkLayout(
         }
         val showShortLink = remember { mutableStateOf(true) }
         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        SectionViewWithButton(titleButton = if (!isChannel && groupLink.connLinkContact.connShortLink != null) {
-          { ToggleShortLinkButton(showShortLink) }
-        } else null) {
+        SectionViewWithButton(
+          titleButton =
+            if (!isChannel && groupLink.connLinkContact.connShortLink != null) {
+              { ToggleShortLinkButton(showShortLink) }
+            } else null) {
           SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
         }
         Row(
