@@ -41,10 +41,9 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Int (Int64)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
-import Data.Time.Clock.System (SystemTime (..), systemToUTCTime, utcToSystemTime)
+import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
@@ -348,19 +347,10 @@ data GrpMsgForward = GrpMsgForward
   }
   deriving (Eq, Show)
 
-microsToUTCTime :: Int64 -> UTCTime
-microsToUTCTime micros =
-  let (secs, remainder) = micros `divMod` 1000000
-   in systemToUTCTime $ MkSystemTime secs (fromIntegral remainder * 1000)
-
-utcTimeToMicros :: UTCTime -> Int64
-utcTimeToMicros t =
-  let MkSystemTime secs nanos = utcToSystemTime t
-   in secs * 1000000 + fromIntegral nanos `div` 1000
 
 instance Encoding FwdSender where
   smpEncode = \case
-    FwdMember memberId memberName -> "M" <> smpEncode (memberId, memberName)
+    FwdMember memberId memberName -> smpEncode ('M', memberId, memberName)
     FwdChannel -> "C"
   smpP =
     A.anyChar >>= \case
@@ -370,10 +360,10 @@ instance Encoding FwdSender where
 
 instance Encoding GrpMsgForward where
   smpEncode GrpMsgForward {fwdSender, fwdBrokerTs} =
-    smpEncode (fwdSender, utcTimeToMicros fwdBrokerTs)
+    smpEncode (fwdSender, utcToSystemTime fwdBrokerTs)
   smpP = do
     fwdSender <- smpP
-    fwdBrokerTs <- microsToUTCTime <$> smpP
+    fwdBrokerTs <- systemToUTCTime <$> smpP
     pure GrpMsgForward {fwdSender, fwdBrokerTs}
 
 instance Encoding KeyRef where
@@ -776,12 +766,12 @@ parseChatMessages msg = case B.head msg of
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [fmap plainMsg $ parseMsg s]
+      '{' -> [plainMsg <$> parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
-      _ -> [fmap plainMsg $ ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+      _ -> [plainMsg . ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
     plainMsg = ParsedMsg Nothing Nothing
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
     msgP :: A.Parser AChatMessage
@@ -1326,7 +1316,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where
           encodeFwdSender = \case
-            FwdMember memberId memberName -> ("memberId" .=? Just memberId) . ("memberName" .=? Just memberName)
+            FwdMember memberId memberName -> (["memberId" .= memberId, "memberName" .= memberName] ++)
             FwdChannel -> id
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
