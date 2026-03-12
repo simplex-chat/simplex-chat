@@ -273,7 +273,8 @@ private fun ProfileStepView(
           if (!hasRelays.value) {
             generalGetString(MR.strings.enable_at_least_one_chat_relay)
           } else {
-            generalGetString(MR.strings.channel_profile_shared_with_relays_and_subscribers)
+            val name = chatModel.currentUser.value?.displayName ?: ""
+            String.format(generalGetString(MR.strings.your_profile_shared_with_channel_relays), name)
           }
         )
 

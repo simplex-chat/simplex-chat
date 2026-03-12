@@ -2894,7 +2894,7 @@
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
   <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
-  <string name="channel_profile_shared_with_relays_and_subscribers">Channel profile will be shared with relays and subscribers.</string>
+  <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.</string>
   <string name="configure_relays">Configure relays</string>
   <string name="relay_progress_with_failures">%1$d/%2$d relays active, %3$d failed</string>
   <string name="relay_progress">%1$d/%2$d relays active</string>

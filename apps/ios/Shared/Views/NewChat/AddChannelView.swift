@@ -90,7 +90,8 @@ struct AddChannelView: View {
                 if !hasRelays {
                     ServersWarningView(warnStr: NSLocalizedString("Enable at least one chat relay in Network & Servers.", comment: "channel creation warning"))
                 } else {
-                    Text("Your profile will be shared with chat relays and subscribers.")
+                    let name = ChatModel.shared.currentUser?.displayName ?? ""
+                    Text("Your profile **\(name)** will be shared with channel relays and subscribers.")
                         .foregroundColor(theme.colors.secondary)
                 }
             }
