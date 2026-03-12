@@ -57,7 +57,21 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
     LinkStepView(chatModel, gInfo, groupLink, closeAll)
   } else if (gInfo != null) {
     ProgressStepView(
-      chatModel, gInfo, groupRelays, relayListExpanded, showLinkStep,
+      chatModel, gInfo, groupRelays, relayListExpanded,
+      onLinkReady = if (appPlatform.isDesktop) {
+        {
+          chatModel.creatingChannelId.value = null
+          closeAll()
+          withBGApi {
+            openGroupChat(null, gInfo.groupId)
+            ModalManager.end.showModalCloseable(true) { close ->
+              GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, close = close)
+            }
+          }
+        }
+      } else {
+        { showLinkStep.value = true }
+      },
       cancelChannelCreation = {
         chatModel.creatingChannelId.value = null
         ChannelRelaysModel.reset()
@@ -278,12 +292,30 @@ private fun ProgressStepView(
   gInfo: GroupInfo,
   groupRelays: MutableState<List<GroupRelay>>,
   relayListExpanded: MutableState<Boolean>,
-  showLinkStep: MutableState<Boolean>,
+  onLinkReady: () -> Unit,
   cancelChannelCreation: () -> Unit
 ) {
   val failedCount = groupRelays.value.count { relayConnFailed(chatModel, it) != null }
   val activeCount = groupRelays.value.count { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }
   val total = groupRelays.value.size
+
+  if (appPlatform.isDesktop) {
+    DisposableEffect(Unit) {
+      chatModel.centerPanelBackgroundClickHandler = {
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.cancel_creating_channel_question),
+          confirmText = generalGetString(MR.strings.cancel_creating_channel_confirm),
+          onConfirm = cancelChannelCreation,
+          dismissText = generalGetString(MR.strings.wait_verb),
+          destructive = true,
+        )
+        true
+      }
+      onDispose {
+        chatModel.centerPanelBackgroundClickHandler = null
+      }
+    }
+  }
 
   LaunchedEffect(gInfo.groupId) {
     snapshotFlow { ChannelRelaysModel.groupRelays.toList() }
@@ -291,7 +323,7 @@ private fun ProgressStepView(
         if (ChannelRelaysModel.groupId.value != gInfo.groupId) return@collect
         groupRelays.value = relays.sortedBy { relayDisplayName(it) }
         if (relays.all { it.relayStatus == RelayStatus.RsActive && relayConnFailed(chatModel, it) == null }) {
-          showLinkStep.value = true
+          onLinkReady()
           ChannelRelaysModel.reset()
         }
       }
@@ -383,7 +415,7 @@ private fun ProgressStepView(
           generalGetString(MR.strings.channel_link),
           click = {
             if (activeCount >= total) {
-              showLinkStep.value = true
+              onLinkReady()
             } else if (activeCount > 0) {
               val alertText = String.format(
                 generalGetString(MR.strings.channel_will_start_with_relays),
@@ -400,7 +432,7 @@ private fun ProgressStepView(
                       }
                       TextButton(onClick = {
                         AlertManager.shared.hideAlert()
-                        showLinkStep.value = true
+                        onLinkReady()
                       }) {
                         Text(generalGetString(MR.strings.proceed_verb))
                       }
@@ -412,7 +444,7 @@ private fun ProgressStepView(
                   title = generalGetString(MR.strings.not_all_relays_connected),
                   text = alertText,
                   confirmText = generalGetString(MR.strings.proceed_verb),
-                  onConfirm = { showLinkStep.value = true }
+                  onConfirm = { onLinkReady() }
                 )
               }
             }

@@ -2891,6 +2891,8 @@
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
+  <string name="cancel_creating_channel_question">Cancel creating channel?</string>
+  <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
   <string name="channel_profile_shared_with_relays_and_subscribers">Channel profile will be shared with relays and subscribers.</string>
   <string name="configure_relays">Configure relays</string>
