@@ -1619,7 +1619,7 @@
     <string name="call_service_notification_end_call">Zakończ połączenie</string>
     <string name="call_service_notification_video_call">Połączenie wideo</string>
     <string name="unable_to_open_browser_title">Błąd podczas otwierania przeglądarki</string>
-    <string name="unable_to_open_browser_desc">Do połączeń wymagana jest domyślna przeglądarka. Proszę skonfigurować domyślną przeglądarkę systemową, i podzielić się informacją z twórcami.</string>
+    <string name="unable_to_open_browser_desc">Do wykonywania połączeń wymagana jest domyślna przeglądarka internetowa. Skonfiguruj domyślną przeglądarkę w systemie i przekaż więcej informacji programistom.</string>
     <string name="e2ee_info_pq_short">Ten czat jest chroniony przez szyfrowanie e2e odporne na ataki kwantowe.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacji.]]></string>
     <string name="auth_open_migration_to_another_device">Otwórz ekran migrowania</string>
@@ -2554,4 +2554,6 @@
     <string name="context_user_picker_your_profile">Twój profil</string>
     <string name="your_servers">Twoje serwery</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Przestaniesz otrzymywać wiadomości z tego czatu. Historia czatu zostanie zachowana.</string>
+    <string name="info_row_connection_failed">Połączenie nie powiodło się</string>
+    <string name="member_info_member_failed">niepowodzenie</string>
 </resources>
