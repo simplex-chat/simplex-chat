@@ -178,7 +178,7 @@ fun ChatView(
             contentFilter.value = null
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
-            if (chatsCtx.secondaryContextFilter == null) {
+            if (chatsCtx.secondaryContextFilter == null && (chatInfo is ChatInfo.Direct || chatInfo is ChatInfo.Group || chatInfo is ChatInfo.Local)) {
               updateAvailableContent(chatRh, activeChat, availableContent)
             }
             if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
@@ -769,7 +769,7 @@ fun ChatView(
               searchText.value = ""
               contentFilter.value = null
               // Update available content types when search closes
-              if (chatsCtx.secondaryContextFilter == null) {
+              if (chatsCtx.secondaryContextFilter == null && (chatInfo is ChatInfo.Direct || chatInfo is ChatInfo.Group || chatInfo is ChatInfo.Local)) {
                 updateAvailableContent(chatRh, activeChat, availableContent)
               }
             },

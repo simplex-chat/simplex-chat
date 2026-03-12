@@ -1362,10 +1362,9 @@ fun ComposeView(
   fun ConnectButtonView(
     text: String,
     icon: ImageResource,
-    showProgress: Boolean = true,
     connect: () -> Unit
   ) {
-    var modifier = Modifier.height(57.dp).fillMaxWidth()
+    var modifier = Modifier.height(60.dp).fillMaxWidth()
     modifier = if (composeState.value.inProgress) modifier else modifier.clickable(onClick = { connect() })
     Box(
       modifier,
@@ -1386,7 +1385,7 @@ fun ComposeView(
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
-      if (showProgress && composeState.value.progressByTimeout) {
+      if (composeState.value.progressByTimeout && chat.chatInfo.groupInfo_?.useRelays != true) {
         Box(
           Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING_HALF),
           contentAlignment = Alignment.CenterEnd
@@ -1551,7 +1550,6 @@ fun ComposeView(
           ConnectButtonView(
             text = stringResource(if (isChannel) MR.strings.compose_view_join_channel else MR.strings.compose_view_join_group),
             icon = if (isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group_filled,
-            showProgress = !isChannel,
             connect = { withApi { connectPreparedGroup() } }
           )
         } else {

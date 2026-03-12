@@ -1045,6 +1045,7 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
     if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
     Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
   }
 
@@ -6798,7 +6799,7 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkData_: GroupShortLinkData? = null, val groupSLinkInfo_: GroupShortLinkInfo? = null): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()

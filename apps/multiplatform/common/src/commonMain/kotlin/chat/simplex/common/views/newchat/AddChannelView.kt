@@ -102,7 +102,8 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
         withBGApi {
           try {
             val enabledRelays = getEnabledRelays()
-            if (enabledRelays == null) {
+            val relayIds = enabledRelays.mapNotNull { it.chatRelayId }
+            if (relayIds.isEmpty()) {
               withContext(Dispatchers.Main) {
                 creationInProgress.value = false
                 hasRelays.value = false
@@ -112,7 +113,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
             val result = chatModel.controller.apiNewPublicGroup(
               rh = null,
               incognito = false,
-              relayIds = enabledRelays,
+              relayIds = relayIds,
               groupProfile = profile
             )
             if (result != null) {
@@ -144,13 +145,12 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
   }
 }
 
-private suspend fun getEnabledRelays(): List<Long>? {
-  val servers = getUserServers(rh = null) ?: return null
+private suspend fun getEnabledRelays(): List<UserChatRelay> {
+  val servers = getUserServers(rh = null) ?: return emptyList()
   val all = servers.flatMap { op ->
     op.chatRelays.filter { it.enabled && !it.deleted && it.chatRelayId != null }
   }
-  val relayIds = all.shuffled().take(3).mapNotNull { it.chatRelayId }
-  return relayIds.ifEmpty { null }
+  return all.shuffled().take(3)
 }
 
 private suspend fun checkHasRelays(): Boolean {

@@ -2234,7 +2234,9 @@ data class UserChatRelay(
   val enabled: Boolean,
   val deleted: Boolean,
 ) {
-  val id: String get() = "$address ${chatRelayId ?: ""}"
+  @Transient
+  private val createdAt: Date = Date()
+  val id: String get() = "$address $createdAt"
 }
 
 @Serializable
