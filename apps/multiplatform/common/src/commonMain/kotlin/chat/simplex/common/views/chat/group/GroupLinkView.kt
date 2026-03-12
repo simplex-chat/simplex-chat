@@ -223,14 +223,10 @@ fun GroupLinkLayout(
         }
         val showShortLink = remember { mutableStateOf(true) }
         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        if (groupLink.connLinkContact.connShortLink == null) {
-          SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = false)
-        } else if (isChannel) {
+        SectionViewWithButton(titleButton = if (!isChannel && groupLink.connLinkContact.connShortLink != null) {
+          { ToggleShortLinkButton(showShortLink) }
+        } else null) {
           SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
-        } else {
-          SectionViewWithButton(titleButton = { ToggleShortLinkButton(showShortLink) }) {
-            SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
-          }
         }
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),

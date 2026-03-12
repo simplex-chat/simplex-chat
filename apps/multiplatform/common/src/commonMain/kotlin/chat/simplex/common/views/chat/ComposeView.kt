@@ -1364,7 +1364,7 @@ fun ComposeView(
     icon: ImageResource,
     connect: () -> Unit
   ) {
-    var modifier = Modifier.height(60.dp).fillMaxWidth()
+    var modifier = Modifier.height(57.dp).fillMaxWidth()
     modifier = if (composeState.value.inProgress) modifier else modifier.clickable(onClick = { connect() })
     Box(
       modifier,
