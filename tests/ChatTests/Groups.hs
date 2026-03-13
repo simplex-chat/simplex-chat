@@ -267,6 +267,7 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
+      it "should delete channel and clean up relay connections" testChannelDeleteGroup
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -9270,6 +9271,37 @@ testChannelMemberMessageDelete ps =
                 dan <# "#team cath> [marked deleted] hello",
                 eve <# "#team cath> [marked deleted] hello"
               ]
+
+testChannelDeleteGroup :: HasCallStack => TestParams -> IO ()
+testChannelDeleteGroup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] shortLink fullLink cath
+
+        -- verify message delivery works
+        alice #> "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+
+        -- owner deletes channel
+        alice ##> "/d #team"
+        concurrentlyN_
+          [ alice <## "#team: you deleted the group",
+            do
+              bob <## "#team: alice deleted the group"
+              bob <## "use /d #team to delete the local copy of the group",
+            do
+              cath <## "#team: alice deleted the group"
+              cath <## "use /d #team to delete the local copy of the group"
+          ]
+
+    -- restart relay, verify no extra subscriptions and no errors
+    withTestChatOpts ps relayTestOpts "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      bob ##> "/groups"
+      bob <## "#team (group deleted, delete local copy: /d #team)"
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =

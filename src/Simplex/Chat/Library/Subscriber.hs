@@ -3017,6 +3017,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
+      deleteGroupLinkIfExists user gInfo
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
       -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
       unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
@@ -3274,14 +3275,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> pure Nothing
 
 deleteGroupConnections :: User -> GroupInfo -> Bool -> CM ()
-deleteGroupConnections user gInfo waitDelivery = do
+deleteGroupConnections user gInfo@GroupInfo {membership} waitDelivery = do
   vr <- chatVersionRange
   -- member records are not deleted to keep history
   members <- getMembers vr
   deleteMembersConnections' user members waitDelivery
   where
     getMembers vr
-      | useRelays' gInfo = withStore' $ \db -> getGroupRelayMembers db vr user gInfo
+      | useRelays' gInfo, not (isRelay membership) = withStore' $ \db -> getGroupRelayMembers db vr user gInfo
       | otherwise = withStore' $ \db -> getGroupMembers db vr user gInfo
 
 startDeliveryTaskWorkers :: CM ()
