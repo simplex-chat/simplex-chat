@@ -433,7 +433,8 @@ fun ownGroupLinkConfirmConnect(
 ) {
   if (groupInfo.useRelays) {
     AlertManager.privacySensitive.showAlertDialogButtonsColumn(
-      title = String.format(generalGetString(MR.strings.connect_plan_this_is_your_link_for_channel_vName), groupInfo.displayName),
+      title = generalGetString(MR.strings.connect_plan_this_is_your_link_for_channel),
+      text = String.format(generalGetString(MR.strings.connect_plan_this_is_your_link_for_channel_vName), groupInfo.displayName),
       buttons = {
         Column {
           SectionItemView({

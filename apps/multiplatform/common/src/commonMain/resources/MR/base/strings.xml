@@ -2908,6 +2908,7 @@
   <string name="relay_address_alert_message">This is a chat relay address, it cannot be used to connect.</string>
   <string name="connect_plan_open_channel">Open channel</string>
   <string name="connect_plan_open_new_channel">Open new channel</string>
+  <string name="connect_plan_this_is_your_link_for_channel">Your channel</string>
   <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[This is your link for channel <b>%1$s</b>!]]></string>
   <string name="error_opening_channel">Error opening channel</string>
 
