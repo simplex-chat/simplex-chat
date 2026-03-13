@@ -249,6 +249,8 @@ chatGroupTests = do
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
+    describe "channel operations" $ do
+      it "should delete channel and clean up relay connections" testChannelDeleteGroup
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -267,7 +269,6 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
-      it "should delete channel and clean up relay connections" testChannelDeleteGroup
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8713,6 +8714,37 @@ testChannels2RelaysIncognito ps =
               [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
               [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")
 
+testChannelDeleteGroup :: HasCallStack => TestParams -> IO ()
+testChannelDeleteGroup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+        memberJoinChannel "team" [bob] shortLink fullLink cath
+
+        -- verify message delivery works
+        alice #> "#team hi"
+        bob <# "#team> hi"
+        cath <# "#team> hi [>>]"
+
+        -- owner deletes channel
+        alice ##> "/d #team"
+        concurrentlyN_
+          [ alice <## "#team: you deleted the group",
+            do
+              bob <## "#team: alice deleted the group"
+              bob <## "use /d #team to delete the local copy of the group",
+            do
+              cath <## "#team: alice deleted the group"
+              cath <## "use /d #team to delete the local copy of the group"
+          ]
+
+    -- restart relay, verify no extra subscriptions and no errors
+    withTestChatOpts ps relayTestOpts "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      bob ##> "/groups"
+      bob <## "#team (group deleted, delete local copy: /d #team)"
+
 testChannelMessageUpdate :: HasCallStack => TestParams -> IO ()
 testChannelMessageUpdate ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -9271,37 +9303,6 @@ testChannelMemberMessageDelete ps =
                 dan <# "#team cath> [marked deleted] hello",
                 eve <# "#team cath> [marked deleted] hello"
               ]
-
-testChannelDeleteGroup :: HasCallStack => TestParams -> IO ()
-testChannelDeleteGroup ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      withNewTestChat ps "cath" cathProfile $ \cath -> do
-        (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
-        memberJoinChannel "team" [bob] shortLink fullLink cath
-
-        -- verify message delivery works
-        alice #> "#team hi"
-        bob <# "#team> hi"
-        cath <# "#team> hi [>>]"
-
-        -- owner deletes channel
-        alice ##> "/d #team"
-        concurrentlyN_
-          [ alice <## "#team: you deleted the group",
-            do
-              bob <## "#team: alice deleted the group"
-              bob <## "use /d #team to delete the local copy of the group",
-            do
-              cath <## "#team: alice deleted the group"
-              cath <## "use /d #team to delete the local copy of the group"
-          ]
-
-    -- restart relay, verify no extra subscriptions and no errors
-    withTestChatOpts ps relayTestOpts "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
-      bob ##> "/groups"
-      bob <## "#team (group deleted, delete local copy: /d #team)"
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
