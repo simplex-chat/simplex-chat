@@ -2896,8 +2896,6 @@
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
   <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.</string>
   <string name="configure_relays">Configure relays</string>
-  <string name="relay_progress_with_failures">%1$d/%2$d relays active, %3$d failed</string>
-  <string name="relay_progress">%1$d/%2$d relays active</string>
   <string name="relay_status_failed">failed</string>
   <string name="relay_connection_failed">Relay connection failed</string>
   <string name="not_all_relays_connected">Not all relays connected</string>

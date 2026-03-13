@@ -201,13 +201,13 @@ fun ChatView(
                 chatModel.chatSubStatus.value = null
               }
             }
-            if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays) {
+            if (cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays) {
               withBGApi {
-                setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
-                if (chatInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
-                  val relays = chatModel.controller.apiGetGroupRelays(chatInfo.groupInfo.groupId)
+                setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
+                if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
+                  val relays = chatModel.controller.apiGetGroupRelays(cInfo.groupInfo.groupId)
                   withContext(Dispatchers.Main) {
-                    ChannelRelaysModel.set(chatInfo.groupInfo.groupId, relays)
+                    ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
                 }
               }

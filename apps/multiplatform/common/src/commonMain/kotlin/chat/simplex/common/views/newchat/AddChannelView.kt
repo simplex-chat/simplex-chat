@@ -366,9 +366,9 @@ private fun ProgressStepView(
               RelayProgressIndicator(active = activeCount, total = total)
             }
             val statusText = if (failedCount > 0) {
-              String.format(generalGetString(MR.strings.relay_progress_with_failures), activeCount, total, failedCount)
+              String.format(generalGetString(MR.strings.relay_bar_active_with_failures), activeCount, total, failedCount)
             } else {
-              String.format(generalGetString(MR.strings.relay_progress), activeCount, total)
+              String.format(generalGetString(MR.strings.relay_bar_active), activeCount, total)
             }
             Text(statusText, modifier = Modifier.weight(1f))
             Icon(
