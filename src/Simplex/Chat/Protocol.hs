@@ -323,11 +323,14 @@ data BindingTag = BTGroup
 data MsgSignature = MsgSignature KeyRef C.ASignature
   deriving (Show)
 
+instance Eq MsgSignature where
+  MsgSignature kr1 sig1 == MsgSignature kr2 sig2 = kr1 == kr2 && C.signatureBytes sig1 == C.signatureBytes sig2
+
 data MsgSignatures = MsgSignatures
   { bindingTag :: BindingTag,
     signatures :: L.NonEmpty MsgSignature
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
 
@@ -397,20 +400,27 @@ instance Encoding MsgSigData where
   smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
   smpP = MsgSigData <$> smpP <*> A.takeByteString
 
--- | Encode a batch element with optional signature prefix.
--- Dual of elementP's 'S'/'{'cases.
-encodeMsgElement :: Maybe MsgSignatures -> ByteString -> ByteString
-encodeMsgElement Nothing body = body
-encodeMsgElement (Just sigs) body = "S" <> smpEncode sigs <> body
+-- | Generic signing context — data, not function.
+-- Callers construct per-event; createSndMessages uses mechanically.
+data MsgSigning = MsgSigning
+  { sigBindingTag :: BindingTag,
+    sigKeyRef :: KeyRef,
+    sigPrefix :: ByteString, -- binding-specific, e.g. smpEncode (rootKey, memberId)
+    sigPrivKey :: C.PrivateKeyEd25519
+  }
 
--- | Sign message body, producing MsgSignatures with group binding.
--- The signed payload includes the binding (group root key + sender member ID)
--- concatenated with the JSON body — reconstructed by verifier from context.
-signMsgElement :: C.PublicKeyEd25519 -> MemberId -> C.PrivateKeyEd25519 -> ByteString -> MsgSignatures
-signMsgElement groupRootPK senderMemberId privKey jsonBody =
-  MsgSignatures {bindingTag = BTGroup, signatures = [MsgSignature KRMember sig]}
+-- | Construct signing context for group messages.
+groupMsgSigning :: GroupKeys -> GroupMember -> MsgSigning
+groupMsgSigning GroupKeys {groupRootKey, memberPrivKey} GroupMember {memberId} =
+  MsgSigning BTGroup KRMember (smpEncode (groupRootPubKey groupRootKey, memberId)) memberPrivKey
+
+-- | Sign message body, producing MsgSignatures.
+-- Signed payload: smpEncode bindingTag <> sigPrefix <> jsonBody
+signMsgBody :: MsgSigning -> ByteString -> MsgSignatures
+signMsgBody MsgSigning {sigBindingTag, sigKeyRef, sigPrefix, sigPrivKey} jsonBody =
+  MsgSignatures {bindingTag = sigBindingTag, signatures = [MsgSignature sigKeyRef sig]}
   where
-    sig = C.ASignature C.SEd25519 $ C.sign' privKey (smpEncode ('G', groupRootPK, senderMemberId) <> jsonBody)
+    sig = C.ASignature C.SEd25519 $ C.sign' sigPrivKey (smpEncode sigBindingTag <> sigPrefix <> jsonBody)
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json

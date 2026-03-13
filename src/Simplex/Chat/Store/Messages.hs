@@ -218,13 +218,13 @@ deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'" (userId, groupId)
 
-createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> Maybe (ByteString -> MsgSignatures) -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
-createNewSndMessage db gVar connOrGroupId signMsg_ chatMsgEvent encodeMessage =
+createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> Maybe MsgSigning -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
+createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage =
   createWithRandomId' db gVar $ \sharedMsgId ->
     case encodeMessage (SharedMsgId sharedMsgId) of
       ECMLarge -> pure $ Left SELargeMsg
       ECMEncoded msgBody -> do
-        let msgSignatures_ = signMsg_ <*> pure msgBody
+        let msgSignatures_ = (`signMsgBody` msgBody) <$> msgSigning_
         createdAt <- getCurrentTime
         DB.execute
           db
@@ -234,8 +234,7 @@ createNewSndMessage db gVar connOrGroupId signMsg_ chatMsgEvent encodeMessage =
               shared_msg_id, shared_msg_id_user, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?)
           |]
-          ((MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, msgSignatures_, connId_, groupId_)
-           :. (DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt))
+          (MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, msgSignatures_, connId_, groupId_, DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt)
         msgId <- insertedRowId db
         pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, msgSignatures_}
   where

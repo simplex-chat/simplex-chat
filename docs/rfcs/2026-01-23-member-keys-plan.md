@@ -360,8 +360,8 @@ Forward elements only appear inside binary batches — there is no standalone fo
 - `XGrpPrefs` - Updating group preferences
 - `XGrpDel` - Deleting group
 
-### Member Signatures (future, for message authenticity)
-- `XMsgNew` - Regular messages (optional, for proof of authorship)
+### Content messages — NOT signed
+- `XMsgNew` and other content messages are not signed to preserve deniability. Relay manipulation of content is detectable post-hoc via cross-relay consistency.
 
 ## Database Migration
 
@@ -645,7 +645,7 @@ createPublicGroup ... = do
 
 ## Design Decisions (Confirmed)
 
-1. **Message signing scope**: Only roster-modifying messages (XGrpRelayInv, XGrpMemNew, XGrpMemRole, XGrpMemDel, XGrpInfo, XGrpPrefs, XGrpDel). Regular messages (XMsgNew) not signed initially.
+1. **Message signing scope**: Only roster-modifying messages (XGrpRelayInv, XGrpMemNew, XGrpMemRole, XGrpMemDel, XGrpInfo, XGrpPrefs, XGrpDel). Regular content messages (XMsgNew) are NOT signed — signing them would destroy deniability by creating non-repudiable proof of authorship. Content manipulation by relays is detectable post-hoc via cross-relay consistency, which is sufficient because content delivery is not irreversible. Roster/profile changes are disruptive and irreversible (member removed, role changed, group deleted), so they must be authenticated at processing time before taking effect — post-detection is too late.
 
 2. **Signature failure handling**: Hard fail for all signed message types. Reject any message that should be signed but isn't or has invalid signature.
 
