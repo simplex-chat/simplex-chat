@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -23,7 +24,7 @@ import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types (VersionRangeChat)
-import Simplex.Messaging.Encoding (Large (..), smpEncodeList)
+import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 
 data BatchMode = BMJson | BMBinary
   deriving (Eq, Show)
@@ -64,31 +65,31 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
 -- Always uses binary batch format for relay groups.
 -- TODO [member keys] signatures will also be encoded here.
 batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
-batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
+batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
     addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageDeliveryTask -> ([ByteString], [Int64], [Int64], Int, Int)
     addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
       -- too large: skip msgBody, record taskId in largeTaskIds
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
-      | batchLen BMBinary len' (n + 1) <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      -- batch overhead: '=' + count (2) + 2-byte length prefix per element
+      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs, chatMessage} = task
-        msgBody =
-          let (memberId_, memberName_) = case fwdSender of
-                FwdMember mid mname -> (Just mid, Just mname)
-                FwdChannel -> (Nothing, Nothing)
-              fwdEvt = XGrpMsgForward memberId_ memberName_ chatMessage brokerTs
-              cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
-           in chatMsgToBody cm
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, chatMessage} = task
+        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} chatMessage
         msgLen = B.length msgBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
     toResult (msgBodies, taskIds, largeTaskIds, _, _) =
-      let encoded = encodeBatch BMBinary (reverse msgBodies)
+      let encoded = encodeBinaryBatch (reverse msgBodies)
        in (encoded, reverse taskIds, reverse largeTaskIds)
+
+-- | Encode a batch element for relay groups: F<GrpMsgForward><json>.
+encodeFwdElement :: GrpMsgForward -> ChatMessage 'Json -> ByteString
+encodeFwdElement fwd chatMessage =
+  "F" <> smpEncode fwd <> chatMsgToBody chatMessage
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty
@@ -96,10 +97,15 @@ encodeBatch _ [msg] = msg
 encodeBatch BMJson msgs = B.concat ["[", B.intercalate "," msgs, "]"]
 encodeBatch BMBinary msgs = B.cons '=' $ smpEncodeList (map Large msgs)
 
--- Returns length the batch would have if encoded
--- `len` - the total length of all `n` content elements
+-- Always uses batch format (no single-element shortcut) since elements may have F prefix.
+encodeBinaryBatch :: [ByteString] -> ByteString
+encodeBinaryBatch [] = mempty
+encodeBinaryBatch msgs = B.cons '=' $ smpEncodeList (map Large msgs)
+
+-- Returns length the batch would have if encoded.
+-- `len` - the total length of all `n` message bodies (without element prefixes)
 batchLen :: BatchMode -> Int -> Int -> Int
 batchLen _ _ 0 = 0
 batchLen _ len 1 = len
 batchLen BMJson len n = len + n + 1 -- (n - 1) commas + 2 brackets
-batchLen BMBinary len n = len + n * 2 + 2 -- length prefixes + '=' + count
+batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + '=' + count

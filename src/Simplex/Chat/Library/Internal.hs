@@ -1265,9 +1265,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   pure . L.toList $ L.map (XMsgFileDescr msgId) parts
                 _ -> pure []
               let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
-                  memberId_ = memberId' <$> sender_
-                  memberName_ = memberShortenedName <$> sender_
-                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId_ memberName_ cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                  fwdSender = maybe FwdChannel (\s -> FwdMember (memberId' s) (memberShortenedName s)) sender_
+                  fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
+                  msgForwardEvents = map (XGrpMsgForward fwd) (xMsgNewChatMsg : fileDescrChatMsgs)
               pure msgForwardEvents
 
 memberShortenedName :: GroupMember -> ContactName
@@ -1550,7 +1550,7 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
 parseChatMessage conn s = do
   case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(ACMsg _ m) -> checkEncoding m) =<< msg
+    [msg] -> liftEither . first (ChatError . errType) $ (\(ParsedMsg _ _ (ACMsg _ m)) -> checkEncoding m) =<< msg
     _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)

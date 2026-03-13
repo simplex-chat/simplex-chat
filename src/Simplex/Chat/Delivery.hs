@@ -125,11 +125,6 @@ data NewMessageDeliveryTask = NewMessageDeliveryTask
   }
   deriving (Show)
 
-data FwdSender
-  = FwdMember MemberId ContactName
-  | FwdChannel
-  deriving (Show)
-
 data MessageDeliveryTask = MessageDeliveryTask
   { taskId :: Int64,
     jobScope :: DeliveryJobScope,

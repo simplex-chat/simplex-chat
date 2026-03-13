@@ -21,7 +21,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative ((<|>))
-import Control.Monad ((<=<))
+import Control.Monad (when, (<=<))
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -37,12 +37,13 @@ import Data.Either (fromRight)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
@@ -312,7 +313,7 @@ data ChatMessage e = ChatMessage
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
 -- Can be extended to support profile identity keys (e.g., secp256k1 for Nostr)
-data KeyRef = KRMember MemberId
+data KeyRef = KRMember
   deriving (Eq, Show)
 
 data ChatBinding
@@ -328,10 +329,72 @@ data MsgSignatures = MsgSignatures
     signatures :: L.NonEmpty MsgSignature
   }
 
-data SignedChatMessages = SignedChatMessages
-  { signatures :: Maybe MsgSignatures,
-    messages :: [AChatMessage]
+data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
+
+data MsgSigData = MsgSigData
+  { signatures :: MsgSignatures,
+    signedBody :: ByteString -- exact bytes that were signed
   }
+
+data FwdSender
+  = FwdMember MemberId ContactName
+  | FwdChannel
+  deriving (Eq, Show)
+
+data GrpMsgForward = GrpMsgForward
+  { fwdSender :: FwdSender,
+    fwdBrokerTs :: UTCTime
+  }
+  deriving (Eq, Show)
+
+
+instance Encoding FwdSender where
+  smpEncode = \case
+    FwdMember memberId memberName -> smpEncode ('M', memberId, memberName)
+    FwdChannel -> "C"
+  smpP =
+    A.anyChar >>= \case
+      'M' -> uncurry FwdMember <$> smpP
+      'C' -> pure FwdChannel
+      c -> fail $ "invalid FwdSender tag: " <> show c
+
+instance Encoding GrpMsgForward where
+  smpEncode GrpMsgForward {fwdSender, fwdBrokerTs} =
+    smpEncode (fwdSender, utcToSystemTime fwdBrokerTs)
+  smpP = do
+    fwdSender <- smpP
+    fwdBrokerTs <- systemToUTCTime <$> smpP
+    pure GrpMsgForward {fwdSender, fwdBrokerTs}
+
+instance Encoding KeyRef where
+  smpEncode = \case
+    KRMember -> "M"
+  smpP =
+    A.anyChar >>= \case
+      'M' -> pure KRMember
+      c -> fail $ "invalid KeyRef tag: " <> show c
+
+instance Encoding ChatBinding where
+  smpEncode = \case
+    CBDirect securityCode -> smpEncode ('D', securityCode)
+    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
+  smpP =
+    smpP >>= \case
+      'D' -> CBDirect <$> smpP
+      'G' -> CBGroup <$> smpP <*> smpP
+      c -> fail $ "invalid ChatBinding tag: " <> show c
+
+instance Encoding MsgSignature where
+  smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
+  smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
+
+instance Encoding MsgSignatures where
+  smpEncode (MsgSignatures chat sigs) = smpEncode (chat, sigs)
+  smpP = MsgSignatures <$> smpP <*> smpP
+
+instance Encoding MsgSigData where
+  smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
+  smpP = MsgSigData <$> smpP <*> A.takeByteString
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -371,7 +434,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMsgForward :: Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -696,34 +759,49 @@ encodeChatMessage maxSize msg = do
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
 
-parseChatMessages :: ByteString -> [Either String AChatMessage]
+parseChatMessages :: ByteString -> [Either String ParsedMsg]
 parseChatMessages "" = [Left "empty string"]
 parseChatMessages msg = case B.head msg of
   'X' -> decodeCompressed (B.tail msg)
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [parseMsg s]
+      '{' -> [plainMsg <$> parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
-        Right v -> map parseItem v
+        Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
-      _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+      _ -> [plainMsg . ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+    plainMsg = ParsedMsg Nothing Nothing
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
+    msgP :: A.Parser AChatMessage
+    msgP = parseMsg <$?> A.takeByteString
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
-    decodeCompressed :: ByteString -> [Either String AChatMessage]
+    decodeCompressed :: ByteString -> [Either String ParsedMsg]
     decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
       Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*
-    -- TODO [member keys] signatures will also be parsed here.
-    decodeBinaryBatch :: ByteString -> [Either String AChatMessage]
+    decodeBinaryBatch :: ByteString -> [Either String ParsedMsg]
     decodeBinaryBatch s = case parseAll smpListP s of
       Left e -> [Left e]
-      Right msgs -> map (parseMsg . unLarge) msgs
+      Right msgs -> map parseBatchElement msgs
+    parseBatchElement :: Large -> Either String ParsedMsg
+    parseBatchElement (Large s) = parseAll (elementP Nothing) s
+    elementP :: Maybe GrpMsgForward -> A.Parser ParsedMsg
+    elementP fwd = A.peekChar' >>= \case
+      'S' -> A.char 'S' *> do
+        sigs <- smpP
+        (body, cm) <- A.match msgP
+        pure $ ParsedMsg fwd (Just $ MsgSigData sigs body) cm
+      'F' -> A.char 'F' *> do
+        when (isJust fwd) $ fail "nested forward elements not supported"
+        elementP . Just =<< smpP
+      '{' -> ParsedMsg fwd Nothing <$> msgP
+      c -> fail $ "invalid element prefix: " <> show c
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
@@ -1168,7 +1246,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpMsgForward_ -> XGrpMsgForward <$> opt "memberId" <*> opt "memberName" <*> p "msg" <*> p "msgTs"
+      XGrpMsgForward_ -> do
+        fwdSender <- opt "memberId" >>= \case
+          Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
+          Nothing -> pure FwdChannel
+        fwdBrokerTs <- p "msgTs"
+        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> p "msg"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1230,7 +1313,11 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpMsgForward memberId memberName msg msgTs -> o $ ("memberId" .=? memberId) $ ("memberName" .=? memberName) ["msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
+        where
+          encodeFwdSender = \case
+            FwdMember memberId memberName -> (["memberId" .= memberId, "memberName" .= memberName] ++)
+            FwdChannel -> id
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
@@ -1276,28 +1363,3 @@ $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
 
-instance Encoding KeyRef where
-  smpEncode = \case
-    KRMember (MemberId memberId) -> smpEncode ('M', memberId)
-  smpP =
-    smpP >>= \case
-      'M' -> KRMember . MemberId <$> smpP
-      c -> fail $ "invalid KeyRef tag: " <> show c
-
-instance Encoding ChatBinding where
-  smpEncode = \case
-    CBDirect securityCode -> smpEncode ('D', securityCode)
-    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
-  smpP =
-    smpP >>= \case
-      'D' -> CBDirect <$> smpP
-      'G' -> CBGroup <$> smpP <*> smpP
-      c -> fail $ "invalid ChatBinding tag: " <> show c
-
-instance Encoding MsgSignature where
-  smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
-  smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
-
-instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures chat sigs) = smpEncode ('S', chat, sigs)
-  smpP = A.char 'S' *> (MsgSignatures <$> smpP <*> smpP)

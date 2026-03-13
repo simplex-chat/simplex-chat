@@ -1087,12 +1087,12 @@ getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (groupId, memberId)
 
-getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Maybe ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
+getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
 getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole = do
   liftIO (runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
     Right m -> pure (m, False)
     Left (SEGroupMemberNotFoundByMemberId _) -> do
-      let name = fromMaybe (nameFromMemberId memberId) memberName
+      let name = if T.null memberName then nameFromMemberId memberId else memberName
       m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
       pure (m, True)
     Left e -> throwError e
