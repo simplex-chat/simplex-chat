@@ -139,7 +139,7 @@ struct MigrateFromDevice: View {
             case let .finishMigration(fileId, ctrl):
                 return Alert(
                     title: Text("Remove archive?"),
-                    message: Text("The uploaded database archive will be permanently removed from the servers."),
+                    message: Text("The uploaded database archive will be permanently removed from the routers."),
                     primaryButton: .destructive(Text("Continue")) {
                         finishMigration(fileId, ctrl)
                     },
@@ -244,7 +244,7 @@ struct MigrateFromDevice: View {
                 Text("Confirm upload")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                Text("All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.")
+                Text("All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers.")
                     .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }

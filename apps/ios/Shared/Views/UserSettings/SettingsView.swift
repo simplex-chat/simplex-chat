@@ -302,10 +302,10 @@ struct SettingsView: View {
 
                 NavigationLink {
                     NetworkAndServers()
-                        .navigationTitle("Network & servers")
+                        .navigationTitle("Network & routers")
                         .modifier(ThemedBackground(grouped: true))
                 } label: {
-                    settingsRow("externaldrive.connected.to.line.below", color: theme.colors.secondary) { Text("Network & servers") }
+                    settingsRow("externaldrive.connected.to.line.below", color: theme.colors.secondary) { Text("Network & routers") }
                 }
                 .disabled(chatModel.chatRunning != true)
 

@@ -158,7 +158,7 @@ struct GroupMemberInfoView: View {
                     }
 
                     if let connStats = connectionStats {
-                        Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
+                        Section(header: Text("Routers").foregroundColor(theme.colors.secondary)) {
                             if let subStatus = connStats.subStatus {
                                 SubStatusRow(status: subStatus)
                                     .onTapGesture {

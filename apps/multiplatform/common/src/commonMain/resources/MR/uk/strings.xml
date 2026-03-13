@@ -159,8 +159,8 @@
     <string name="simplex_link_mode_browser">Через браузер</string>
     <string name="simplex_link_mode_browser_warning">Відкриття посилання в браузері може зменшити конфіденційність та безпеку з\'єднання. Ненадійні посилання SimpleX будуть виділені червоним кольором.</string>
     <string name="failed_to_parse_chats_title">Не вдалося завантажити чати</string>
-    <string name="error_saving_smp_servers">Помилка збереження серверів SMP</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Переконайтеся, що адреси серверів SMP вірного формату, розділені переносами рядків і не дублюються.</string>
+    <string name="error_saving_smp_servers">Помилка збереження серверів Packet</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Переконайтеся, що адреси серверів Packet вірного формату, розділені переносами рядків і не дублюються.</string>
     <string name="error_setting_network_config">Помилка оновлення конфігурації мережі</string>
     <string name="failed_to_parse_chat_title">Не вдалося завантажити чат</string>
     <string name="contact_developers">Будь ласка, оновіть додаток і зверніться до розробників.</string>
@@ -237,7 +237,7 @@
     <string name="markdown_help">Допомога з Markdown</string>
     <string name="chat_lock">Блокування SimpleX</string>
     <string name="chat_console">Консоль чату</string>
-    <string name="smp_servers">Сервери SMP</string>
+    <string name="smp_servers">Сервери Packet</string>
     <string name="smp_servers_scan_qr">Сканувати QR-код сервера</string>
     <string name="smp_servers_use_server_for_new_conn">Використовувати для нових підключень</string>
     <string name="smp_servers_delete_server">Видалити сервер</string>
@@ -307,9 +307,9 @@
     <string name="prohibit_sending_disappearing_messages">Заборонити надсилання повідомлень, які зникають.</string>
     <string name="prohibit_sending_voice_messages">Забороняйте надсилання голосових повідомлень.</string>
     <string name="v4_4_french_interface">Французький інтерфейс</string>
-    <string name="error_saving_xftp_servers">Помилка збереження серверів XFTP</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Переконайтеся, що адреси серверів XFTP вірного формату, розділені переносами рядків і не дублюються.</string>
-    <string name="error_loading_xftp_servers">Помилка завантаження серверів XFTP</string>
+    <string name="error_saving_xftp_servers">Помилка збереження серверів Data</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Переконайтеся, що адреси серверів Data вірного формату, розділені переносами рядків і не дублюються.</string>
+    <string name="error_loading_xftp_servers">Помилка завантаження серверів Data</string>
     <string name="error_adding_members">Помилка додавання учасників</string>
     <string name="error_joining_group">Помилка приєднання до групи</string>
     <string name="cannot_receive_file">Неможливо отримати файл</string>
@@ -354,12 +354,12 @@
     <string name="scan_code_from_contacts_app">Скануйте код безпеки з додатка вашого контакту.</string>
     <string name="smp_servers_invalid_address">Невірна адреса сервера!</string>
     <string name="smp_servers_check_address">Перевірте адресу сервера і спробуйте ще раз.</string>
-    <string name="xftp_servers">Сервери XFTP</string>
+    <string name="xftp_servers">Сервери Data</string>
     <string name="install_simplex_chat_for_terminal">Встановити SimpleX Chat для терміналу</string>
     <string name="contribute">Внести вклад</string>
     <string name="rate_the_app">Оцініть додаток</string>
-    <string name="your_SMP_servers">Ваші сервери SMP</string>
-    <string name="your_XFTP_servers">Ваші сервери XFTP</string>
+    <string name="your_SMP_servers">Ваші сервери Packet</string>
+    <string name="your_XFTP_servers">Ваші сервери Data</string>
     <string name="using_simplex_chat_servers">Використання серверів SimpleX Chat.</string>
     <string name="how_to">Як користуватися</string>
     <string name="callstatus_calling">дзвінок…</string>
@@ -532,7 +532,7 @@
     <string name="custom_time_unit_minutes">хвилини</string>
     <string name="v4_6_chinese_spanish_interface">Китайський та іспанський інтерфейс</string>
     <string name="connection_local_display_name">підключення %1$d</string>
-    <string name="error_loading_smp_servers">Помилка завантаження серверів SMP</string>
+    <string name="error_loading_smp_servers">Помилка завантаження серверів Packet</string>
     <string name="failed_to_create_user_duplicate_title">Дубль імені відображення!</string>
     <string name="error_sending_message">Помилка відправлення повідомлення</string>
     <string name="sender_cancelled_file_transfer">Відправник скасував передачу файлу.</string>
@@ -1674,7 +1674,7 @@
     <string name="migrate_from_device_check_connection_and_try_again">Перевірте підключення до Інтернету та спробуйте ще раз</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Переконайтеся, що ви пам\'ятаєте пароль до бази даних для її перенесення.</string>
     <string name="migrate_from_device_error_verifying_passphrase">Помилка при перевірці парольної фрази:</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Усі ваші контакти, розмови та файли будуть надійно зашифровані та завантажені частинами на налаштовані XFTP-реле.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Усі ваші контакти, розмови та файли будуть надійно зашифровані та завантажені частинами на налаштовані Data-реле.</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Please note</b>: використання однієї і тієї ж бази даних на двох пристроях порушить розшифровку повідомлень з ваших з\'єднань, як захист безпеки.]]></string>
     <string name="migrate_from_device_cancel_migration">Скасувати міграцію</string>
     <string name="migrate_to_device_chat_migrated">Чат перемістився!</string>
@@ -1812,14 +1812,14 @@
     <string name="saved_from_description">збережено з %s</string>
     <string name="network_type_ethernet">Дротова мережа Ethernet</string>
     <string name="file_not_approved_title">Невідомі сервери!</string>
-    <string name="file_not_approved_descr">Без Tor або VPN ваша IP-адреса буде видимою для цих XFTP-ретрансляторів:
+    <string name="file_not_approved_descr">Без Tor або VPN ваша IP-адреса буде видимою для цих Data-ретрансляторів:
 \n%1$s.</string>
     <string name="recipients_can_not_see_who_message_from">Одержувач(и) не бачить, від кого це повідомлення.</string>
     <string name="saved_from_chat_item_info_title">Збережено з</string>
     <string name="srv_error_version">Серверна версія несумісна з мережевими налаштуваннями.</string>
     <string name="simplex_links_not_allowed">Посилання SimpleX заборонені</string>
     <string name="private_routing_show_message_status">Показати статус повідомлення</string>
-    <string name="private_routing_explanation">Щоб захистити вашу IP-адресу, приватна маршрутизація використовує ваші SMP-сервери для доставки повідомлень.</string>
+    <string name="private_routing_explanation">Щоб захистити вашу IP-адресу, приватна маршрутизація використовує ваші Packet-сервери для доставки повідомлень.</string>
     <string name="network_smp_proxy_mode_unknown">Невідомі сервери</string>
     <string name="network_smp_proxy_mode_unprotected">Незахищений</string>
     <string name="network_smp_proxy_fallback_allow_protected">Коли IP приховано</string>
@@ -1840,7 +1840,7 @@
     <string name="proxy_destination_error_broker_host">Адреса сервера призначення %1$s несумісна з налаштуваннями сервера переадресації %2$s.</string>
     <string name="file_error_no_file">Файл не знайдено — ймовірно, файл був видалений або скасований.</string>
     <string name="scan_paste_link">Сканувати / Вставити посилання</string>
-    <string name="xftp_servers_configured">Налаштовані XFTP сервери</string>
+    <string name="xftp_servers_configured">Налаштовані Data сервери</string>
     <string name="app_check_for_updates_beta">Бета</string>
     <string name="info_row_file_status">Статус файлу</string>
     <string name="servers_info_messages_sent">Надіслано повідомлень</string>
@@ -1921,7 +1921,7 @@
     <string name="sent_directly">Надіслано безпосередньо</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Надіслано загалом</string>
     <string name="sent_via_proxy">Надіслано через проксі</string>
-    <string name="smp_server">Сервер SMP</string>
+    <string name="smp_server">Сервер Packet</string>
     <string name="servers_info_starting_from">Починаючи з %s.</string>
     <string name="servers_info_detailed_statistics_received_messages_header">Отримані повідомлення</string>
     <string name="servers_info_detailed_statistics_received_total">Отримано загалом</string>
@@ -1995,11 +1995,11 @@
     <string name="conversation_deleted">Розмову видалено!</string>
     <string name="delete_without_notification">Видалити без сповіщення</string>
     <string name="you_can_still_send_messages_to_contact">Ви можете надсилати повідомлення %1$s з архівованих контактів.</string>
-    <string name="smp_servers_configured">Налаштовані SMP сервери</string>
+    <string name="smp_servers_configured">Налаштовані Packet сервери</string>
     <string name="no_filtered_contacts">Ніяких відфільтрованих контактів</string>
-    <string name="smp_servers_other">Інші SMP сервери</string>
+    <string name="smp_servers_other">Інші Packet сервери</string>
     <string name="contact_list_header_title">Ваші контакти</string>
-    <string name="xftp_servers_other">Інші XFTP сервери</string>
+    <string name="xftp_servers_other">Інші Data сервери</string>
     <string name="subscription_percentage">Показати відсоток</string>
     <string name="app_check_for_updates">Перевірити оновлення</string>
     <string name="app_check_for_updates_disabled">Вимкнено</string>
@@ -2016,7 +2016,7 @@
     <string name="cant_call_member_alert_title">Не можна зателефонувати учаснику групи</string>
     <string name="cant_send_message_to_member_alert_title">Не можна надіслати повідомлення учаснику групи</string>
     <string name="attempts_label">спроби</string>
-    <string name="xftp_server">XFTP сервер</string>
+    <string name="xftp_server">Data сервер</string>
     <string name="reconnect">Перепідключитися</string>
     <string name="created">Створено</string>
     <string name="expired_label">закінчився</string>

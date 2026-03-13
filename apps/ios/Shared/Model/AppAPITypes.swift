@@ -1572,10 +1572,10 @@ let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
         description: [
             "Flux is the largest decentralized cloud, based on a global network of user-operated nodes.",
             "Flux offers a powerful, scalable, and affordable cutting edge technology platform for all.",
-            "Flux operates servers in SimpleX network to improve its privacy and decentralization."
+            "Flux operates routers in SimpleX network to improve its privacy and decentralization."
         ],
         website: URL(string: "https://runonflux.com")!,
-        selfhost: (text: "Self-host SimpleX servers on Flux", link: URL(string: "https://home.runonflux.io/apps/marketplace?q=simplex")!),
+        selfhost: (text: "Self-host SimpleX routers on Flux", link: URL(string: "https://home.runonflux.io/apps/marketplace?q=simplex")!),
         logo: "flux_logo_symbol",
         largeLogo: "flux_logo",
         logoDarkMode: "flux_logo_symbol",
@@ -1781,21 +1781,21 @@ enum UserServersError: Decodable {
     var globalSMPError: String? {
         switch self {
         case let .noServers(.smp, user):
-            let text = NSLocalizedString("No message servers.", comment: "servers error")
+            let text = NSLocalizedString("No packet routers.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .storageMissing(.smp, user):
-            let text = NSLocalizedString("No servers to receive messages.", comment: "servers error")
+            let text = NSLocalizedString("No routers to receive messages.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .proxyMissing(.smp, user):
-            let text = NSLocalizedString("No servers for private message routing.", comment: "servers error")
+            let text = NSLocalizedString("No routers for private message routing.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
@@ -1809,21 +1809,21 @@ enum UserServersError: Decodable {
     var globalXFTPError: String? {
         switch self {
         case let .noServers(.xftp, user):
-            let text = NSLocalizedString("No media & file servers.", comment: "servers error")
+            let text = NSLocalizedString("No data routers.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .storageMissing(.xftp, user):
-            let text = NSLocalizedString("No servers to send files.", comment: "servers error")
+            let text = NSLocalizedString("No routers to send files.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
                 return text
             }
         case let .proxyMissing(.xftp, user):
-            let text = NSLocalizedString("No servers to receive files.", comment: "servers error")
+            let text = NSLocalizedString("No routers to receive files.", comment: "servers error")
             if let user = user {
                 return userStr(user) + " " + text
             } else {
@@ -1953,11 +1953,11 @@ struct ProtocolTestFailure: Decodable, Error, Equatable {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
         case .SMP(_, .AUTH):
-            return err + " " + NSLocalizedString("Server requires authorization to create queues, check password.", comment: "server test error")
+            return err + " " + NSLocalizedString("Router requires authorization to create queues, check password.", comment: "server test error")
         case .XFTP(.AUTH):
-            return err + " " + NSLocalizedString("Server requires authorization to upload, check password.", comment: "server test error")
+            return err + " " + NSLocalizedString("Router requires authorization to upload, check password.", comment: "server test error")
         case .BROKER(_, .NETWORK(.unknownCAError)):
-            return err + " " + NSLocalizedString("Fingerprint in server address does not match certificate.", comment: "server test error")
+            return err + " " + NSLocalizedString("Fingerprint in router address does not match certificate.", comment: "server test error")
         default:
             return err + " " + String.localizedStringWithFormat(NSLocalizedString("Error: %@.", comment: "server test error"), String(describing: testError))
         }

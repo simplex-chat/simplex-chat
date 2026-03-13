@@ -386,8 +386,8 @@
     <string name="contribute">Ziedot</string>
     <string name="rate_the_app">Novērtēt Aplikāciju</string>
     <string name="use_simplex_chat_servers__question">Izmantot SimpleX Chat Serverus?</string>
-    <string name="your_SMP_servers">Jūsu SMP Serveri</string>
-    <string name="your_XFTP_servers">Jūsu XFTP Serveri</string>
+    <string name="your_SMP_servers">Jūsu Packet Serveri</string>
+    <string name="your_XFTP_servers">Jūsu Data Serveri</string>
     <string name="using_simplex_chat_servers">Izmantojot SimpleX Chat Serverus</string>
     <string name="how_to">Kā to darīt</string>
     <string name="how_to_use_your_servers">Kā lietot savus serverus</string>

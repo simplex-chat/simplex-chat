@@ -5,7 +5,7 @@
 "_italic_" = "\\_斜体_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- 连接 [目录服务](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- 发送回执（最多20成员）。\n- 更快并且更稳固。";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- 连接 [目录服务](simplex:/contact#/?v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- 发送回执（最多20成员）。\n- 更快并且更稳固。";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- 更稳定的传输！\n- 更好的社群！\n- 以及更多！";
@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ 已认证";
 
 /* No comment provided by engineer. */
-"%@ server" = "服务器";
+"%@ router" = "服务器";
 
 /* No comment provided by engineer. */
-"%@ servers" = "服务器";
+"%@ routers" = "服务器";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ 已上传";
@@ -411,10 +411,10 @@ swipe action */
 "Add profile" = "添加个人资料";
 
 /* No comment provided by engineer. */
-"Add server" = "添加服务器";
+"Add router" = "添加服务器";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "扫描二维码来添加服务器。";
+"Add routers by scanning QR codes." = "扫描二维码来添加服务器。";
 
 /* No comment provided by engineer. */
 "Add team members" = "添加团队成员";
@@ -528,7 +528,7 @@ swipe action */
 "All reports will be archived for you." = "将为你存档所有举报。";
 
 /* No comment provided by engineer. */
-"All servers" = "全部服务器";
+"All routers" = "全部服务器";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "所有联系人会保持连接。";
@@ -537,7 +537,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "您的所有联系人将保持连接。个人资料更新将发送给您的联系人。";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "你的所有联系人、对话和文件将被安全加密并分块上传到配置的 XFTP 中继。";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured data routers." = "你的所有联系人、对话和文件将被安全加密并分块上传到配置的 data 中继。";
 
 /* No comment provided by engineer. */
 "Allow" = "允许";
@@ -645,7 +645,7 @@ swipe action */
 "Answer call" = "接听来电";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "任何人都可以托管服务器。";
+"Anybody can host routers." = "任何人都可以托管服务器。";
 
 /* No comment provided by engineer. */
 "App build: %@" = "应用程序构建：%@";
@@ -1111,7 +1111,7 @@ set passcode view */
 "Check messages when allowed." = "在被允许时检查消息。";
 
 /* alert title */
-"Check server address and try again." = "检查服务器地址并再试一次。";
+"Check router address and try again." = "检查服务器地址并再试一次。";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "中文和西班牙文界面";
@@ -1204,7 +1204,7 @@ set passcode view */
 "Configure ICE servers" = "配置 ICE 服务器";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "配置服务器运营方";
+"Configure router operators" = "配置服务器运营方";
 
 /* No comment provided by engineer. */
 "Confirm" = "确认";
@@ -1216,7 +1216,7 @@ set passcode view */
 "Confirm database upgrades" = "确认数据库升级";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "确认来自未知服务器的文件。";
+"Confirm files from unknown routers." = "确认来自未知服务器的文件。";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "确认网络设置";
@@ -1285,7 +1285,7 @@ set passcode view */
 "Connected desktop" = "已连接的桌面";
 
 /* No comment provided by engineer. */
-"Connected servers" = "已连接的服务器";
+"Connected routers" = "已连接的服务器";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "已连接到桌面";
@@ -1312,10 +1312,10 @@ set passcode view */
 "connecting call" = "连接通话中……";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "连接服务器中……";
+"Connecting router…" = "连接服务器中……";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "连接服务器中……（错误：%@）";
+"Connecting router… (error: %@)" = "连接服务器中……（错误：%@）";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "正在连接到联系人，请稍候或稍后检查！";
@@ -1330,7 +1330,7 @@ set passcode view */
 "Connection" = "连接";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "连接和服务器状态。";
+"Connection and routers status." = "连接和服务器状态。";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "连接被阻止";
@@ -1345,7 +1345,7 @@ set passcode view */
 "connection established" = "连接已建立";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "连接被运营方 %@ 阻止";
+"Connection is blocked by router operator:\n%@" = "连接被运营方 %@ 阻止";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "连接未就绪。";
@@ -1819,13 +1819,13 @@ alert button */
 "Desktop devices" = "桌面设备";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "目标服务器地址 %@ 与转发服务器 %@ 设置不兼容。";
+"Destination router address of %@ is incompatible with forwarding router %@ settings." = "目标服务器地址 %@ 与转发服务器 %@ 设置不兼容。";
 
 /* snd error text */
-"Destination server error: %@" = "目标服务器错误：%@";
+"Destination router error: %@" = "目标服务器错误：%@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "目标服务器版本 %@ 与转发服务器 %@ 不兼容。";
+"Destination router version of %@ is incompatible with forwarding router %@." = "目标服务器版本 %@ 与转发服务器 %@ 不兼容。";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "详细的统计数据";
@@ -1927,7 +1927,7 @@ alert button */
 "Do not send history to new members." = "不给新成员发送历史消息。";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "请勿直接发送消息，即使您的服务器或目标服务器不支持私有路由。";
+"Do NOT send messages directly, even if your or destination router does not support private routing." = "请勿直接发送消息，即使您的服务器或目标服务器不支持私有路由。";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "代理不使用身份验证凭据。";
@@ -2030,7 +2030,7 @@ chat item action */
 "Enable disappearing messages by default." = "默认启用定时消失消息。";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "在“网络&服务器”设置中启用 Flux，更好地保护元数据隐私。";
+"Enable Flux in Network & routers settings for better metadata privacy." = "在“网络&服务器”设置中启用 Flux，更好地保护元数据隐私。";
 
 /* No comment provided by engineer. */
 "Enable for all" = "全部启用";
@@ -2171,7 +2171,7 @@ chat item action */
 "Enter password above to show!" = "在上面输入密码以显示！";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "手动输入服务器";
+"Enter router manually" = "手动输入服务器";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "输入此设备名…";
@@ -2207,7 +2207,7 @@ chat item action */
 "Error adding member(s)" = "添加成员错误";
 
 /* alert title */
-"Error adding server" = "添加服务器出错";
+"Error adding router" = "添加服务器出错";
 
 /* No comment provided by engineer. */
 "Error adding short link" = "添加短链接出错";
@@ -2234,7 +2234,7 @@ chat item action */
 "Error checking token status" = "查询token状态出错";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "连接到转发服务器 %@ 时出错。请稍后尝试。";
+"Error connecting to forwarding router %@. Please try later." = "连接到转发服务器 %@ 时出错。请稍后尝试。";
 
 /* No comment provided by engineer. */
 "Error creating address" = "创建地址错误";
@@ -2312,7 +2312,7 @@ chat item action */
 "Error joining group" = "加入群组错误";
 
 /* alert title */
-"Error loading servers" = "加载服务器出错";
+"Error loading routers" = "加载服务器出错";
 
 /* No comment provided by engineer. */
 "Error migrating settings" = "迁移设置出错";
@@ -2327,10 +2327,10 @@ chat item action */
 "Error receiving file" = "接收文件错误";
 
 /* No comment provided by engineer. */
-"Error reconnecting server" = "重新连接服务器时出错";
+"Error reconnecting router" = "重新连接服务器时出错";
 
 /* No comment provided by engineer. */
-"Error reconnecting servers" = "重新连接服务器时出错";
+"Error reconnecting routers" = "重新连接服务器时出错";
 
 /* alert title */
 "Error registering for notifications" = "注册消息推送出错";
@@ -2363,7 +2363,7 @@ chat item action */
 "Error saving passphrase to keychain" = "保存密码到钥匙串错误";
 
 /* alert title */
-"Error saving servers" = "保存服务器出错";
+"Error saving routers" = "保存服务器出错";
 
 /* when migrating */
 "Error saving settings" = "保存设置出错";
@@ -2405,7 +2405,7 @@ chat item action */
 "Error synchronizing connection" = "同步连接错误";
 
 /* No comment provided by engineer. */
-"Error testing server connection" = "检验服务器连接出错";
+"Error testing router connection" = "检验服务器连接出错";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "更新群组链接错误";
@@ -2414,7 +2414,7 @@ chat item action */
 "Error updating message" = "更新消息错误";
 
 /* alert title */
-"Error updating server" = "更新服务器出错";
+"Error updating router" = "更新服务器出错";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "更新设置错误";
@@ -2449,7 +2449,7 @@ snd error text */
 "Errors" = "错误";
 
 /* servers error */
-"Errors in servers configuration." = "服务器配置有错误。";
+"Errors in routers configuration." = "服务器配置有错误。";
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "即使在对话中被禁用。";
@@ -2512,13 +2512,13 @@ snd error text */
 "File errors:\n%@" = "文件错误：\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "文件被服务器运营方阻止：\n%@。";
+"File is blocked by router operator:\n%@." = "文件被服务器运营方阻止：\n%@。";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "找不到文件 - 很可能文件已被删除或取消。";
 
 /* file error text */
-"File server error: %@" = "文件服务器错误：%@";
+"Data router error: %@" = "文件服务器错误：%@";
 
 /* No comment provided by engineer. */
 "File status" = "文件状态";
@@ -2527,7 +2527,7 @@ snd error text */
 "File status: %@" = "文件状态：%@";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "文件将从服务器中删除。";
+"File will be deleted from routers." = "文件将从服务器中删除。";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "文件将在您的联系人完成上传后收到。";
@@ -2575,16 +2575,16 @@ snd error text */
 "Find chats faster" = "更快地查找聊天记录";
 
 /* No comment provided by engineer. */
-"Fingerprint in destination server address does not match certificate: %@." = "目的地服务器的指纹与证书不符：%@。";
+"Fingerprint in destination router address does not match certificate: %@." = "目的地服务器的指纹与证书不符：%@。";
 
 /* No comment provided by engineer. */
-"Fingerprint in forwarding server address does not match certificate: %@." = "转发服务器的指纹与证书不符：%@。";
+"Fingerprint in forwarding router address does not match certificate: %@." = "转发服务器的指纹与证书不符：%@。";
 
 /* No comment provided by engineer. */
-"Fingerprint in server address does not match certificate: %@." = "服务器的指纹与证书不符：%@。";
+"Fingerprint in router address does not match certificate: %@." = "服务器的指纹与证书不符：%@。";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "服务器地址中的证书指纹可能不正确";
+"Fingerprint in router address does not match certificate." = "服务器地址中的证书指纹可能不正确";
 
 /* No comment provided by engineer. */
 "Fix" = "修复";
@@ -2614,7 +2614,7 @@ snd error text */
 "For console" = "用于控制台";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "比如，如果你通过 SimpleX 服务器收到消息，应用会通过 Flux 服务器传送它们。";
+"For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router." = "比如，如果你通过 SimpleX 服务器收到消息，应用会通过 Flux 服务器传送它们。";
 
 /* No comment provided by engineer. */
 "For me" = "仅自己";
@@ -2656,19 +2656,19 @@ snd error text */
 "Forwarding %lld messages" = "正在转发 %lld 条消息";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "转发服务器 %1$@ 无法连接到目标服务器 %2$@。请稍后尝试。";
+"Forwarding router %@ failed to connect to destination router %@. Please try later." = "转发服务器 %1$@ 无法连接到目标服务器 %2$@。请稍后尝试。";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "转发服务器地址与网络设置不兼容：%@。";
+"Forwarding router address is incompatible with network settings: %@." = "转发服务器地址与网络设置不兼容：%@。";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "转发服务器版本与网络设置不兼容：%@。";
+"Forwarding router version is incompatible with network settings: %@." = "转发服务器版本与网络设置不兼容：%@。";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "转发服务器： %1$@\n目标服务器错误： %2$@";
+"Forwarding router: %@\nDestination router error: %@" = "转发服务器： %1$@\n目标服务器错误： %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "转发服务器： %1$@\n错误： %2$@";
+"Forwarding router: %@\nError: %@" = "转发服务器： %1$@\n错误： %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "找到了桌面";
@@ -2758,7 +2758,7 @@ snd error text */
 "Group profile" = "集团简介";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "群组资料存储在成员的设备上，而不是服务器上。";
+"Group profile is stored on members' devices, not on the routers." = "群组资料存储在成员的设备上，而不是服务器上。";
 
 /* snd group event chat item */
 "group profile updated" = "群组资料已更新";
@@ -2833,7 +2833,7 @@ snd error text */
 "How to use it" = "如何使用它";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "如何使用您的服务器";
+"How to use your routers" = "如何使用您的服务器";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "匈牙利语界面";
@@ -2896,7 +2896,7 @@ snd error text */
 "Improved privacy and security" = "改进的隐私和安全";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "改进的服务器配置";
+"Improved router configuration" = "改进的服务器配置";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "必须停止聊天才能继续。";
@@ -3028,7 +3028,7 @@ snd error text */
 "Invalid response" = "无效的响应";
 
 /* alert title */
-"Invalid server address!" = "无效的服务器地址！";
+"Invalid router address!" = "无效的服务器地址！";
 
 /* item status text */
 "Invalid status" = "无效状态";
@@ -3091,7 +3091,7 @@ snd error text */
 "It can happen when you or your connection used the old database backup." = "当您或您的连接使用旧数据库备份时，可能会发生这种情况。";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "它可能在以下情况发生：\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。\n3.连接被破坏。";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "它可能在以下情况发生：\n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。\n2. 消息解密失败，因为您或您的联系人使用了旧的数据库备份。\n3.连接被破坏。";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "它可以保护您的 IP 地址和连接。";
@@ -3259,7 +3259,7 @@ snd error text */
 "Max 30 seconds, received instantly." = "最长30秒，立即接收。";
 
 /* No comment provided by engineer. */
-"Media & file servers" = "Media & file servers";
+"Media & file servers" = "Media & file routers";
 
 /* blur media */
 "Medium" = "中等";
@@ -3529,7 +3529,7 @@ snd error text */
 "Name" = "名称";
 
 /* No comment provided by engineer. */
-"Network & servers" = "网络和服务器";
+"Network & routers" = "网络和服务器";
 
 /* No comment provided by engineer. */
 "Network connection" = "网络连接";
@@ -3607,13 +3607,13 @@ snd error text */
 "New passphrase…" = "新密码……";
 
 /* No comment provided by engineer. */
-"New server" = "新服务器";
+"New router" = "新服务器";
 
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used every time you start the app." = "每次启动应用都会使用新的 SOCKS 凭据。";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "每个服务器都会使用新的 SOCKS 凭据。";
+"New SOCKS credentials will be used for each router." = "每个服务器都会使用新的 SOCKS 凭据。";
 
 /* pref value */
 "no" = "否";
@@ -3918,7 +3918,7 @@ new chat action */
 "Operator" = "运营方";
 
 /* alert title */
-"Operator server" = "运营方服务器";
+"Operator router" = "运营方服务器";
 
 /* No comment provided by engineer. */
 "Or import archive file" = "或者导入或者导入压缩文件";
@@ -4092,16 +4092,16 @@ new chat action */
 "Preserve the last message draft, with attachments." = "保留最后的消息草稿及其附件。";
 
 /* No comment provided by engineer. */
-"Preset server address" = "预设服务器地址";
+"Preset router address" = "预设服务器地址";
 
 /* No comment provided by engineer. */
-"Preset servers" = "预设服务器";
+"Preset routers" = "预设服务器";
 
 /* No comment provided by engineer. */
 "Preview" = "预览";
 
 /* No comment provided by engineer. */
-"Previously connected servers" = "以前连接的服务器";
+"Previously connected routers" = "以前连接的服务器";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "隐私和安全";
@@ -4116,7 +4116,7 @@ new chat action */
 "Privacy redefined" = "重新定义隐私";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "服务器运营方无法访问私密聊天、群组和你的联系人。";
+"Private chats, groups and your contacts are not accessible to router operators." = "服务器运营方无法访问私密聊天、群组和你的联系人。";
 
 /* No comment provided by engineer. */
 "Private filenames" = "私密文件名";
@@ -4143,7 +4143,7 @@ new chat action */
 "Private routing timeout" = "私密路由超时";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "资料和服务器连接";
+"Profile and router connections" = "资料和服务器连接";
 
 /* No comment provided by engineer. */
 "Profile image" = "资料图片";
@@ -4200,7 +4200,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "使用密码保护您的聊天资料！";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "保护您的 IP 地址免受联系人选择的消息中继的攻击。\n在*网络和服务器*设置中启用。";
+"Protect your IP address from the packet routers chosen by your contacts.\nEnable in *Network & routers* settings." = "保护您的 IP 地址免受联系人选择的消息中继的攻击。\n在*网络和服务器*设置中启用。";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "协议后台超时";
@@ -4215,7 +4215,7 @@ new chat action */
 "Proxied" = "代理";
 
 /* No comment provided by engineer. */
-"Proxied servers" = "代理服务器";
+"Proxied routers" = "代理服务器";
 
 /* No comment provided by engineer. */
 "Proxy requires password" = "代理需要密码";
@@ -4290,7 +4290,7 @@ new chat action */
 "Received total" = "接收总数";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "即将停止接收文件。";
@@ -4299,7 +4299,7 @@ new chat action */
 "Receiving via" = "接收通过";
 
 /* No comment provided by engineer. */
-"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "最近的历史记录和改进的 [目录机器人]（simplex：/contact#/？v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion）.";
+"Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." = "最近的历史记录和改进的 [目录机器人]（simplex：/contact#/？v=1-4&packet=packet%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion）.";
 
 /* No comment provided by engineer. */
 "Recipient(s) can't see who this message is from." = "收件人看不到这条消息来自何人。";
@@ -4311,22 +4311,22 @@ new chat action */
 "Reconnect" = "重新连接";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "重新连接所有已连接的服务器以强制发送信息。这会耗费更多流量。";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "重新连接所有已连接的服务器以强制发送信息。这会耗费更多流量。";
 
 /* No comment provided by engineer. */
-"Reconnect all servers" = "重新连接所有服务器";
+"Reconnect all routers" = "重新连接所有服务器";
 
 /* No comment provided by engineer. */
-"Reconnect all servers?" = "重新连接所有服务器？";
+"Reconnect all routers?" = "重新连接所有服务器？";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "重新连接服务器以强制发送信息。它使用额外的流量。";
+"Reconnect router to force message delivery. It uses additional traffic." = "重新连接服务器以强制发送信息。它使用额外的流量。";
 
 /* No comment provided by engineer. */
-"Reconnect server?" = "重新连接服务器？";
+"Reconnect router?" = "重新连接服务器？";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "是否重新连接服务器？";
+"Reconnect routers?" = "是否重新连接服务器？";
 
 /* No comment provided by engineer. */
 "Record updated at" = "记录更新于";
@@ -4614,10 +4614,10 @@ chat item action */
 "Save profile password" = "保存个人资料密码";
 
 /* No comment provided by engineer. */
-"Save servers" = "保存服务器";
+"Save routers" = "保存服务器";
 
 /* alert title */
-"Save servers?" = "保存服务器？";
+"Save routers?" = "保存服务器？";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "保存欢迎信息？";
@@ -4665,7 +4665,7 @@ chat item action */
 "Scan security code from your contact's app." = "从您联系人的应用程序中扫描安全码。";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "扫描服务器二维码";
+"Scan router QR code" = "扫描服务器二维码";
 
 /* No comment provided by engineer. */
 "search" = "搜索";
@@ -4761,10 +4761,10 @@ chat item action */
 "Send message to enable calls." = "发送消息以启用呼叫。";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "当 IP 地址受到保护并且您或目标服务器不支持私有路由时，直接发送消息。";
+"Send messages directly when IP address is protected and your or destination router does not support private routing." = "当 IP 地址受到保护并且您或目标服务器不支持私有路由时，直接发送消息。";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "当您或目标服务器不支持私有路由时，直接发送消息。";
+"Send messages directly when your or destination router does not support private routing." = "当您或目标服务器不支持私有路由时，直接发送消息。";
 
 /* No comment provided by engineer. */
 "Send notifications" = "发送通知";
@@ -4851,58 +4851,58 @@ chat item action */
 "Sent via proxy" = "通过代理发送";
 
 /* No comment provided by engineer. */
-"Server" = "服务器";
+"Router" = "服务器";
 
 /* alert message */
-"Server added to operator %@." = "服务器已添加到运营方 %@。";
+"Router added to operator %@." = "服务器已添加到运营方 %@。";
 
 /* No comment provided by engineer. */
-"Server address" = "服务器地址";
+"Router address" = "服务器地址";
 
 /* No comment provided by engineer. */
-"Server address is incompatible with network settings: %@." = "服务器地址与网络设置不兼容：%@。";
+"Router address is incompatible with network settings: %@." = "服务器地址与网络设置不兼容：%@。";
 
 /* srv error text. */
-"Server address is incompatible with network settings." = "服务器地址与网络设置不兼容。";
+"Router address is incompatible with network settings." = "服务器地址与网络设置不兼容。";
 
 /* alert title */
-"Server operator changed." = "服务器运营方已更改。";
+"Router operator changed." = "服务器运营方已更改。";
 
 /* No comment provided by engineer. */
-"Server operators" = "服务器运营方";
+"Router operators" = "服务器运营方";
 
 /* alert title */
-"Server protocol changed." = "服务器协议已更改。";
+"Router protocol changed." = "服务器协议已更改。";
 
 /* queue info */
-"server queue info: %@\n\nlast received msg: %@" = "服务器队列信息： %1$@\n\n上次收到的消息： %2$@";
+"router queue info: %@\n\nlast received msg: %@" = "服务器队列信息： %1$@\n\n上次收到的消息： %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "服务器需要授权才能创建队列，检查密码";
+"Router requires authorization to create queues, check password." = "服务器需要授权才能创建队列，检查密码";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "服务器需要授权来上传，检查密码";
+"Router requires authorization to upload, check password." = "服务器需要授权来上传，检查密码";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "服务器测试失败！";
+"Router test failed!" = "服务器测试失败！";
 
 /* No comment provided by engineer. */
-"Server type" = "服务器类型";
+"Router type" = "服务器类型";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "服务器版本与网络设置不兼容。";
+"Router version is incompatible with network settings." = "服务器版本与网络设置不兼容。";
 
 /* No comment provided by engineer. */
-"Server version is incompatible with your app: %@." = "服务器版本与你的应用程序不兼容：%@。";
+"Router version is incompatible with your app: %@." = "服务器版本与你的应用程序不兼容：%@。";
 
 /* No comment provided by engineer. */
-"Servers" = "服务器";
+"Routers" = "服务器";
 
 /* No comment provided by engineer. */
-"Servers info" = "服务器信息";
+"Routers info" = "服务器信息";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "服务器统计信息将被重置 - 此操作无法撤消！";
+"Routers statistics will be reset - this cannot be undone!" = "服务器统计信息将被重置 - 此操作无法撤消！";
 
 /* No comment provided by engineer. */
 "Session code" = "会话码";
@@ -5071,7 +5071,7 @@ chat item action */
 "SimpleX channel link" = "SimpleX 频道链接";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat 与 Flux 达成了协议，将由 Flux 控制的服务器纳入 SimpleX 应用。";
+"SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app." = "SimpleX Chat 与 Flux 达成了协议，将由 Flux 控制的服务器纳入 SimpleX 应用。";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "SimpleX Chat 的安全性 由 Trail of Bits 审核。";
@@ -5131,7 +5131,7 @@ chat item action */
 "Small groups (max 20)" = "小群组（最多 20 人）";
 
 /* No comment provided by engineer. */
-"SMP server" = "SMP 服务器";
+"Packet router" = "packet 服务器";
 
 /* No comment provided by engineer. */
 "SOCKS proxy" = "SOCKS代理";
@@ -5152,7 +5152,7 @@ chat item action */
 "Some non-fatal errors occurred during import:" = "导入过程中出现一些非致命错误：";
 
 /* alert message */
-"Some servers failed the test:\n%@" = "有服务器测试未通过：\n%@";
+"Some routers failed the test:\n%@" = "有服务器测试未通过：\n%@";
 
 /* notification title */
 "Somebody" = "某人";
@@ -5324,10 +5324,10 @@ report reason */
 "Test notifications" = "测试通知";
 
 /* No comment provided by engineer. */
-"Test server" = "测试服务器";
+"Test router" = "测试服务器";
 
 /* No comment provided by engineer. */
-"Test servers" = "测试服务器";
+"Test routers" = "测试服务器";
 
 /* alert title */
 "Tests failed!" = "测试失败！";
@@ -5411,13 +5411,13 @@ report reason */
 "The sender will NOT be notified" = "发送者将不会收到通知";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "您当前聊天资料 **%@** 的新连接服务器。";
+"The routers for new connections of your current chat profile **%@**." = "您当前聊天资料 **%@** 的新连接服务器。";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "您粘贴的文本不是 SimpleX 链接。";
 
 /* No comment provided by engineer. */
-"The uploaded database archive will be permanently removed from the servers." = "已上传的数据库归档将会从服务器中永久移除。";
+"The uploaded database archive will be permanently removed from the routers." = "已上传的数据库归档将会从服务器中永久移除。";
 
 /* No comment provided by engineer. */
 "Themes" = "主题";
@@ -5507,7 +5507,7 @@ report reason */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "为保护您的信息，请打开 SimpleX 锁定。\n在启用此功能之前，系统将提示您完成身份验证。";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "为了保护您的 IP 地址，私有路由使用您的 SMP 服务器来传递邮件。";
+"To protect your IP address, private routing uses your packet routers to deliver messages." = "为了保护您的 IP 地址，私有路由使用您的 packet 服务器来传递邮件。";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "为了保护隐私，SimpleX使用针对消息队列的标识符，而不是所有其他平台使用的用户ID，每个联系人都有独立的标识符。";
@@ -5540,7 +5540,7 @@ report reason */
 "To use another profile after connection attempt, delete the chat and use the link again." = "要在连接尝试后使用不同的个人资料，请删除聊天并再次使用该链接。";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "要使用**%@**的服务器，需接受条款。";
+"To use the routers of **%@**, accept conditions of use." = "要使用**%@**的服务器，需接受条款。";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。";
@@ -5564,7 +5564,7 @@ report reason */
 "Transport sessions" = "传输会话";
 
 /* subscription status explanation */
-"Trying to connect to the server used to receive messages from this connection." = "尝试连接到用于从该连接接收消息的服务器。";
+"Trying to connect to the router used to receive messages from this connection." = "尝试连接到用于从该连接接收消息的服务器。";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "土耳其语界面";
@@ -5630,10 +5630,10 @@ report reason */
 "Unknown error" = "未知错误";
 
 /* No comment provided by engineer. */
-"unknown servers" = "未知服务器";
+"unknown routers" = "未知服务器";
 
 /* alert title */
-"Unknown servers!" = "未知服务器！";
+"Unknown routers!" = "未知服务器！";
 
 /* No comment provided by engineer. */
 "unknown status" = "未知状态";
@@ -5693,7 +5693,7 @@ report reason */
 "updated profile" = "更新了资料";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "更新设置会将客户端重新连接到所有服务器。";
+"Updating settings will re-connect the client to all routers." = "更新设置会将客户端重新连接到所有服务器。";
 
 /* alert button */
 "Upgrade" = "升级";
@@ -5771,19 +5771,19 @@ report reason */
 "Use only local notifications?" = "仅使用本地通知？";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "当 IP 地址不受保护时，对未知服务器使用私有路由。";
+"Use private routing with unknown routers when IP address is not protected." = "当 IP 地址不受保护时，对未知服务器使用私有路由。";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "对未知服务器使用私有路由。";
+"Use private routing with unknown routers." = "对未知服务器使用私有路由。";
 
 /* No comment provided by engineer. */
-"Use server" = "使用服务器";
+"Use router" = "使用服务器";
 
 /* No comment provided by engineer. */
-"Use servers" = "使用服务器";
+"Use routers" = "使用服务器";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "使用 SimpleX Chat 服务器？";
+"Use SimpleX Chat routers?" = "使用 SimpleX Chat 服务器？";
 
 /* No comment provided by engineer. */
 "Use SOCKS proxy" = "使用 SOCKS 代理";
@@ -5792,7 +5792,7 @@ report reason */
 "Use TCP port %@ when no port is specified." = "当未指定端口时使用TCP端口%@。";
 
 /* No comment provided by engineer. */
-"Use TCP port 443 for preset servers only." = "仅预设服务器使用 TCP 协议 443 端口。";
+"Use TCP port 443 for preset routers only." = "仅预设服务器使用 TCP 协议 443 端口。";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "通话时使用本应用.";
@@ -5810,7 +5810,7 @@ report reason */
 "Username" = "用户名";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "使用 SimpleX Chat 服务器。";
+"Using SimpleX Chat routers." = "使用 SimpleX Chat 服务器。";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -5993,10 +5993,10 @@ report reason */
 "With reduced battery usage." = "降低了电量使用。";
 
 /* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to file servers." = "如果没有 Tor 或 VPN，您的 IP 地址将对文件服务器可见。";
+"Without Tor or VPN, your IP address will be visible to data routers." = "如果没有 Tor 或 VPN，您的 IP 地址将对文件服务器可见。";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "如果没有 Tor 或 VPN，您的 IP 地址将对以下 XFTP 中继可见：%@。";
+"Without Tor or VPN, your IP address will be visible to these data routers: %@." = "如果没有 Tor 或 VPN，您的 IP 地址将对以下 data 中继可见：%@。";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "数据库密码错误";
@@ -6011,7 +6011,7 @@ report reason */
 "Wrong passphrase!" = "密码错误！";
 
 /* No comment provided by engineer. */
-"XFTP server" = "XFTP 服务器";
+"Data router" = "data 服务器";
 
 /* pref value */
 "yes" = "是";
@@ -6059,16 +6059,16 @@ report reason */
 "You are already joining the group!\nRepeat join request?" = "您已经加入了这个群组！\n重复加入请求？";
 
 /* subscription status explanation */
-"You are connected to the server used to receive messages from this connection." = "你已连接到用于接收该连接消息的服务器。";
+"You are connected to the router used to receive messages from this connection." = "你已连接到用于接收该连接消息的服务器。";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "您被邀请加入群组";
 
 /* subscription status explanation */
-"You are not connected to the server used to receive messages from this connection (no subscription)." = "未连接到用于从该连接接收消息的服务器（无订阅）。";
+"You are not connected to the router used to receive messages from this connection (no subscription)." = "未连接到用于从该连接接收消息的服务器（无订阅）。";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "您未连接到这些服务器。私有路由用于向他们发送消息。";
+"You are not connected to these routers. Private routing is used to deliver messages to them." = "您未连接到这些服务器。私有路由用于向他们发送消息。";
 
 /* No comment provided by engineer. */
 "you are observer" = "您是观察者";
@@ -6083,7 +6083,7 @@ report reason */
 "You can change it in Appearance settings." = "您可以在外观设置中更改它。";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "你可以通过设置配置服务器。";
+"You can configure routers via settings." = "你可以通过设置配置服务器。";
 
 /* No comment provided by engineer. */
 "You can create it later" = "您可以以后创建它";
@@ -6311,7 +6311,7 @@ report reason */
 "Your profile is stored on your device and only shared with your contacts." = "该资料仅与您的联系人共享。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "您的资料存储在您的设备上并仅与您的联系人共享。 SimpleX 服务器无法看到您的资料。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "您的资料存储在您的设备上并仅与您的联系人共享。 SimpleX 服务器无法看到您的资料。";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "您的个人资料已修改。如果进行保存，更新后的个人资料将发送到所有联系人。";
@@ -6320,10 +6320,10 @@ report reason */
 "Your random profile" = "您的随机资料";
 
 /* No comment provided by engineer. */
-"Your server address" = "您的服务器地址";
+"Your router address" = "您的服务器地址";
 
 /* No comment provided by engineer. */
-"Your servers" = "你的服务器";
+"Your routers" = "你的服务器";
 
 /* No comment provided by engineer. */
 "Your settings" = "您的设置";
