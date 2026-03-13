@@ -116,8 +116,7 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
   Just Refl -> Right x
   Nothing -> Left "bad chat type"
 
-data GroupChatScope
-  = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
+data GroupChatScope = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
 data GroupChatScopeTag
@@ -172,8 +171,7 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
-data GroupChatScopeInfo
-  = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
+data GroupChatScopeInfo = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
   deriving (Show)
 
 toChatScope :: GroupChatScopeInfo -> GroupChatScope
@@ -292,6 +290,7 @@ data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
   CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
   CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
+  CIChannelRcv :: CIDirection 'CTGroup 'MDRcv
   CILocalSnd :: CIDirection 'CTLocal 'MDSnd
   CILocalRcv :: CIDirection 'CTLocal 'MDRcv
 
@@ -306,6 +305,7 @@ data JSONCIDirection
   | JCIDirectRcv
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
+  | JCIChannelRcv
   | JCILocalSnd
   | JCILocalRcv
   deriving (Show)
@@ -316,6 +316,7 @@ jsonCIDirection = \case
   CIDirectRcv -> JCIDirectRcv
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
+  CIChannelRcv -> JCIChannelRcv
   CILocalSnd -> JCILocalSnd
   CILocalRcv -> JCILocalRcv
 
@@ -325,6 +326,7 @@ jsonACIDirection = \case
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
   JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
   JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
+  JCIChannelRcv -> ACID SCTGroup SMDRcv CIChannelRcv
   JCILocalSnd -> ACID SCTLocal SMDSnd CILocalSnd
   JCILocalRcv -> ACID SCTLocal SMDRcv CILocalRcv
 
@@ -359,10 +361,13 @@ chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
 timedDeleteAt' :: CITimed -> Maybe UTCTime
 timedDeleteAt' CITimed {deleteAt} = deleteAt
 
-chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
-chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
-  CIGroupSnd -> membership
-  CIGroupRcv m -> m
+chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember
+chatItemMember GroupInfo {membership} ChatItem {chatDir, meta = CIMeta {showGroupAsSender}} = case chatDir of
+  CIGroupSnd
+    | showGroupAsSender -> Nothing
+    | otherwise -> Just membership
+  CIGroupRcv m -> Just m
+  CIChannelRcv -> Nothing
 
 chatItemRcvFromMember :: ChatItem c d -> Maybe GroupMember
 chatItemRcvFromMember ChatItem {chatDir} = case chatDir of
@@ -383,6 +388,7 @@ data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
   CDGroupSnd :: GroupInfo -> Maybe GroupChatScopeInfo -> ChatDirection 'CTGroup 'MDSnd
   CDGroupRcv :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+  CDChannelRcv :: GroupInfo -> Maybe GroupChatScopeInfo -> ChatDirection 'CTGroup 'MDRcv
   CDLocalSnd :: NoteFolder -> ChatDirection 'CTLocal 'MDSnd
   CDLocalRcv :: NoteFolder -> ChatDirection 'CTLocal 'MDRcv
 
@@ -392,6 +398,7 @@ toCIDirection = \case
   CDDirectRcv _ -> CIDirectRcv
   CDGroupSnd _ _ -> CIGroupSnd
   CDGroupRcv _ _ m -> CIGroupRcv m
+  CDChannelRcv _ _ -> CIChannelRcv
   CDLocalSnd _ -> CILocalSnd
   CDLocalRcv _ -> CILocalRcv
 
@@ -401,6 +408,7 @@ toChatInfo = \case
   CDDirectRcv c -> DirectChat c
   CDGroupSnd g s -> GroupChat g s
   CDGroupRcv g s _ -> GroupChat g s
+  CDChannelRcv g s -> GroupChat g s
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
 
@@ -634,23 +642,23 @@ deriving instance Show (CIQDirection c)
 
 data ACIQDirection = forall c. (ChatTypeI c, ChatTypeQuotable c) => ACIQDirection (SChatType c) (CIQDirection c)
 
-jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
+jsonCIQDirection :: CIQDirection c -> JSONCIDirection
 jsonCIQDirection = \case
-  CIQDirectSnd -> Just JCIDirectSnd
-  CIQDirectRcv -> Just JCIDirectRcv
-  CIQGroupSnd -> Just JCIGroupSnd
-  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
-  CIQGroupRcv Nothing -> Nothing
+  CIQDirectSnd -> JCIDirectSnd
+  CIQDirectRcv -> JCIDirectRcv
+  CIQGroupSnd -> JCIGroupSnd
+  CIQGroupRcv (Just m) -> JCIGroupRcv m
+  CIQGroupRcv Nothing -> JCIChannelRcv
 
-jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
+jsonACIQDirection :: JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
-  Just JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
-  Just JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
-  Just JCIGroupSnd -> Right $ ACIQDirection SCTGroup CIQGroupSnd
-  Just (JCIGroupRcv m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
-  Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
-  Just JCILocalSnd -> Left "unquotable"
-  Just JCILocalRcv -> Left "unquotable"
+  JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
+  JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
+  JCIGroupSnd -> Right $ ACIQDirection SCTGroup CIQGroupSnd
+  JCIGroupRcv m -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  JCIChannelRcv -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
+  JCILocalSnd -> Left "unquotable"
+  JCILocalRcv -> Left "unquotable"
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
@@ -1468,7 +1476,7 @@ instance FromJSON ACIDirection where
   parseJSON v = jsonACIDirection <$> J.parseJSON v
 
 instance ChatTypeI c => FromJSON (CIQDirection c) where
-  parseJSON v = (jsonACIQDirection >=> \(ACIQDirection _ x) -> checkChatType x) <$?> J.parseJSON v
+  parseJSON v = (jsonACIQDirection . fromMaybe JCIChannelRcv >=> \(ACIQDirection _ x) -> checkChatType x) <$?> J.parseJSON v
 
 instance ToJSON (CIQDirection c) where
   toJSON = J.toJSON . jsonCIQDirection

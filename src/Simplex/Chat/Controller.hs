@@ -157,6 +157,7 @@ data ChatConfig = ChatConfig
     ciExpirationInterval :: Int64, -- microseconds
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
+    channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     remoteCompression :: Bool,
@@ -248,9 +249,11 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
+    relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
+    relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
@@ -336,7 +339,7 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIGetReactionMembers {userId :: UserId, groupId :: GroupId, chatItemId :: ChatItemId, reaction :: MsgReaction}
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
-  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
+  | APIForwardChatItems {toChatRef :: ChatRef, sendAsGroup :: ShowGroupAsSender, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}
@@ -391,6 +394,11 @@ data ChatCommand
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | GetUserChatRelays
+  | SetUserChatRelays [CLINewRelay]
+  -- TODO [relays] commands to test chat relay
+  -- | APITestChatRelay UserId ConnLinkContact
+  -- | TestChatRelay ConnLinkContact
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
@@ -460,7 +468,7 @@ data ChatCommand
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink} -- Maybe is used to report link parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact GroupShortLinkData
+  | APIPrepareGroup UserId CreatedLinkContact DirectLink GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
@@ -502,6 +510,10 @@ data ChatCommand
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
   | NewGroup IncognitoEnabled GroupProfile
+  -- TODO [relays] starting role should be communicated in protocol from owner to relays (see channelSubscriberRole config)
+  | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
+  | APIGetGroupRelays {groupId :: GroupId}
+  | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
@@ -628,6 +640,12 @@ allowRemoteCommand = \case
   ExecAgentStoreSQL _ -> False
   _ -> True
 
+data RelayConnectionResult = RelayConnectionResult
+  { relayMember :: GroupMember,
+    relayError :: Maybe ChatError
+  }
+  deriving (Show)
+
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
@@ -646,7 +664,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
-  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError]}
+  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError], serverWarnings :: [UserServersWarning]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -676,6 +694,8 @@ data ChatResponse
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
+  | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
@@ -704,7 +724,7 @@ data ChatResponse
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRStartedConnectionToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
-  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile, relayResults :: [RelayConnectionResult]}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}
@@ -834,6 +854,7 @@ data ChatEvent
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CEvtGroupLinkRelaysUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
   | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CEvtMemberAcceptedByOther {user :: User, groupInfo :: GroupInfo, acceptingMember :: GroupMember, member :: GroupMember}
@@ -922,13 +943,8 @@ logEventToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupChatScope)
+  | SRGroup GroupId (Maybe GroupChatScope) ShowGroupAsSender
   deriving (Eq, Show)
-
-sendToChatRef :: SendRef -> ChatRef
-sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId Nothing
-  SRGroup gId scope -> ChatRef CTGroup gId scope
 
 data ChatPagination
   = CPLast Int
@@ -982,11 +998,20 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
+  deriving (Show)
+
+type DirectLink = Bool
+
+data GroupShortLinkInfo = GroupShortLinkInfo
+  { direct :: Bool,
+    groupRelays :: [ShortLinkContact],
+    sharedGroupId :: Maybe B64UrlByteString
+  }
   deriving (Show)
 
 connectionPlanProceed :: ConnectionPlan -> Bool
@@ -1002,7 +1027,7 @@ connectionPlanProceed = \case
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk _ -> True
+    GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
@@ -1253,6 +1278,7 @@ data ChatErrorType
   | CEUserUnknown
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
+  | CEChatRelayExists
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
@@ -1583,6 +1609,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
 
+$(JQ.deriveJSON defaultJSON ''GroupShortLinkInfo)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
@@ -1644,6 +1672,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
+
+$(JQ.deriveJSON defaultJSON ''RelayConnectionResult)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

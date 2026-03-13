@@ -63,6 +63,9 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
         createGroup = {
           ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
         },
+        createChannel = {
+          ModalManager.start.showCustomModal { close -> AddChannelView(chatModel, close, closeAll) }
+        },
         rh = rh,
         close = close
       )
@@ -110,6 +113,7 @@ private fun ModalData.NewChatSheetLayout(
   addContact: () -> Unit,
   scanPaste: () -> Unit,
   createGroup: () -> Unit,
+  createChannel: () -> Unit,
   close: () -> Unit,
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -193,6 +197,11 @@ private fun ModalData.NewChatSheetLayout(
       painterResource(MR.images.ic_group),
       stringResource(MR.strings.create_group_button),
       createGroup,
+    ),
+    Triple(
+      painterResource(MR.images.ic_bigtop_updates),
+      stringResource(MR.strings.create_channel_beta_button),
+      createChannel,
     )
   )
 

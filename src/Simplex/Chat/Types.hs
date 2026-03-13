@@ -54,6 +54,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
@@ -119,6 +120,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
+-- TODO [relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -134,13 +136,15 @@ data User = User
     sendRcptsSmallGroups :: Bool,
     autoAcceptMemberContacts :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeEntityOverrides
+    uiThemes :: Maybe UIThemeEntityOverrides,
+    userChatRelay :: BoolDef
   }
   deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    pastTimestamp :: Bool
+    pastTimestamp :: Bool,
+    userChatRelay :: Bool
   }
   deriving (Show)
 
@@ -444,9 +448,26 @@ data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
 
 type GroupId = Int64
 
+data GroupRootKey
+  = GRKPrivate {rootPrivKey :: C.PrivateKeyEd25519}
+  | GRKPublic {rootPubKey :: C.PublicKeyEd25519}
+  deriving (Eq, Show)
+
+groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
+groupRootPubKey (GRKPrivate pk) = C.publicKey pk
+groupRootPubKey (GRKPublic pk) = pk
+
+data GroupKeys = GroupKeys
+  { sharedGroupId :: B64UrlByteString,
+    groupRootKey :: GroupRootKey,
+    memberPrivKey :: C.PrivateKeyEd25519
+  }
+  deriving (Eq, Show)
+
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
+    relayOwnStatus :: Maybe RelayStatus, -- status of the relay itself related to the group
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -465,9 +486,19 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
-    viaGroupLinkUri :: Maybe ConnReqContact
+    viaGroupLinkUri :: Maybe ConnReqContact,
+    groupKeys :: Maybe GroupKeys
   }
   deriving (Eq, Show)
+
+useRelays' :: GroupInfo -> Bool
+useRelays' GroupInfo {useRelays} = isTrue useRelays
+
+sendAsGroup' :: GroupInfo -> Bool
+sendAsGroup' gInfo@GroupInfo {membership} = useRelays' gInfo && memberRole' membership == GROwner
+
+groupId' :: GroupInfo -> GroupId
+groupId' GroupInfo {groupId} = groupId
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -729,6 +760,7 @@ data GroupProfile = GroupProfile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
+    groupLink :: Maybe ShortLinkContact,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
@@ -808,6 +840,15 @@ data GroupLinkRejection = GroupLinkRejection
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+-- sent by owner to relay when adding it to group
+data GroupRelayInvitation = GroupRelayInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberProfile :: Profile,
+    relayMemberId :: MemberId,
+    groupLink :: ShortLinkContact
   }
   deriving (Eq, Show)
 
@@ -946,7 +987,16 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupSupportChat
+    supportChat :: Maybe GroupSupportChat,
+    memberPubKey :: Maybe C.PublicKeyEd25519,
+    relayLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data RelayRequestData = RelayRequestData
+  { relayInvId :: InvitationId,
+    reqGroupLink :: ShortLinkContact,
+    reqChatVRange :: VersionRangeChat
   }
   deriving (Eq, Show)
 
@@ -973,10 +1023,11 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
--- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
--- TODO   - in channels members should directly connect only to relays
-isMemberRelay :: GroupMember -> Bool
-isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
+isRelay :: GroupMember -> Bool
+isRelay m = memberRole' m == GRRelay
+
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1050,7 +1101,10 @@ instance ToJSON MemberId where
   toEncoding = strToJEncoding
 
 nameFromMemberId :: MemberId -> ContactName
-nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
+nameFromMemberId = nameFromBS . unMemberId
+
+nameFromBS :: ByteString -> ContactName
+nameFromBS = T.take 7 . safeDecodeUtf8 . B64.encode
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -1787,6 +1841,8 @@ data CommandFunction
   | CFAcceptContact
   | CFAckMessage -- not used
   | CFDeleteConn -- not used
+  | CFSetShortLink
+  | CFGetShortLink
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1804,6 +1860,8 @@ instance TextEncoding CommandFunction where
     "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
+    "set_short_link" -> Just CFSetShortLink
+    "get_short_link" -> Just CFGetShortLink
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1815,6 +1873,8 @@ instance TextEncoding CommandFunction where
     CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
+    CFSetShortLink -> "set_short_link"
+    CFGetShortLink -> "get_short_link"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1827,6 +1887,8 @@ commandExpectedResponse = \case
   CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
+  CFSetShortLink -> t LINK_
+  CFGetShortLink -> t LDATA_
   where
     t = AEvtTag SAEConn
 
@@ -1963,6 +2025,10 @@ instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
   omittedField = Just GroupSummary {currentMembers = 0}
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
+
+$(JQ.deriveJSON defaultJSON ''GroupKeys)
+
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
@@ -1984,6 +2050,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
