@@ -46,26 +46,26 @@ data MsgBatch = MsgBatch ByteString [SndMessage]
 -- If an element exceeds maxLen, it is returned as ChatError.
 -- Elements are encoded with signature prefix via encodeBatchElement.
 batchMessages :: BatchMode -> Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
-batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
+batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
-    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [SndMessage], Int, Int)
-    addToBatch (Left err) acc = (Left err : addBatch acc, [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody, msgSignatures_}) acc@(batches, batch, len, n)
-      | batchLen mode len' n' <= maxLen = (batches, msg : batch, len', n')
-      | msgLen <= maxLen = (addBatch acc, [msg], msgLen, 1)
-      | otherwise = (errLarge msg : addBatch acc, [], 0, 0)
+    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
+    addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
+    addToBatch (Right msg@SndMessage {msgBody, msgSignatures_}) acc@(batches, bodies, msgs, len, n)
+      | batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
+      | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
+      | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        msgLen = B.length $ encodeBatchElement msgSignatures_ msgBody
+        body = encodeBatchElement msgSignatures_ msgBody
+        msgLen = B.length body
         len' = len + msgLen
         n' = n + 1
         errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
-    addBatch :: ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
-    addBatch (batches, batch, _, n)
+    addBatch :: ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
+    addBatch (batches, bodies, msgs, _, n)
       | n == 0 = batches
       | otherwise =
-          let encoded = encodeBatch mode (map body batch)
-           in Right (MsgBatch encoded batch) : batches
-    body SndMessage {msgBody, msgSignatures_} = encodeBatchElement msgSignatures_ msgBody
+          let encoded = encodeBatch mode bodies
+           in Right (MsgBatch encoded msgs) : batches
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
 -- Always uses binary batch format for relay groups.
