@@ -218,24 +218,26 @@ deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'" (userId, groupId)
 
-createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
-createNewSndMessage db gVar connOrGroupId chatMsgEvent encodeMessage =
+createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> Maybe (ByteString -> MsgSignatures) -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
+createNewSndMessage db gVar connOrGroupId signMsg_ chatMsgEvent encodeMessage =
   createWithRandomId' db gVar $ \sharedMsgId ->
     case encodeMessage (SharedMsgId sharedMsgId) of
       ECMLarge -> pure $ Left SELargeMsg
       ECMEncoded msgBody -> do
+        let msgSignatures_ = signMsg_ <*> pure msgBody
         createdAt <- getCurrentTime
         DB.execute
           db
           [sql|
             INSERT INTO messages (
-              msg_sent, chat_msg_event, msg_body, connection_id, group_id,
+              msg_sent, chat_msg_event, msg_body, msg_sigs, connection_id, group_id,
               shared_msg_id, shared_msg_id_user, created_at, updated_at
-            ) VALUES (?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?)
           |]
-          (MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, connId_, groupId_, DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt)
+          ((MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, msgSignatures_, connId_, groupId_)
+           :. (DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt))
         msgId <- insertedRowId db
-        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
+        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, msgSignatures_}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
@@ -256,7 +258,7 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
-  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ Nothing
+  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ Nothing authorGroupMemberId_ Nothing
   liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
@@ -286,8 +288,8 @@ getLastRcvMsgInfo db connId =
     rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
       RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
-createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, brokerTs} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe MsgSignatures -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, brokerTs} sharedMsgId_ msgSignatures_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -315,11 +317,11 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, broke
         db
         [sql|
           INSERT INTO messages
-            (msg_sent, chat_msg_event, msg_body, broker_ts, created_at, updated_at, connection_id, group_id,
+            (msg_sent, chat_msg_event, msg_body, msg_sigs, broker_ts, created_at, updated_at, connection_id, group_id,
              shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, brokerTs, currentTs, currentTs, connId_, groupId_)
+        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, msgSignatures_, brokerTs, currentTs, currentTs, connId_, groupId_)
          :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
@@ -353,7 +355,7 @@ getPendingGroupMessages db groupMemberId =
     <$> DB.query
       db
       [sql|
-        SELECT pgm.message_id, m.shared_msg_id, m.msg_body
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_sigs
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
@@ -361,8 +363,8 @@ getPendingGroupMessages db groupMemberId =
       |]
       (Only groupMemberId)
   where
-    pendingGroupMessage (msgId, sharedMsgId, msgBody) =
-      SndMessage {msgId, sharedMsgId, msgBody}
+    pendingGroupMessage (msgId, sharedMsgId, msgBody, msgSignatures_) =
+      SndMessage {msgId, sharedMsgId, msgBody, msgSignatures_}
 
 deletePendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 deletePendingGroupMessage db groupMemberId messageId =

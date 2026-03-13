@@ -1862,7 +1862,7 @@ createSndMessages idsEvents = do
   where
     createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
     createMsg db g vr (connOrGroupId, evnt) = runExceptT $ do
-      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt encodeMessage
+      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId Nothing evnt encodeMessage
       where
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
@@ -2234,7 +2234,7 @@ saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMemb
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = groupMemberId' <$> refAuthorMember_
   -- TODO [relays] TBC highlighting difference between deduplicated messages (useRelays branch)
-  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
+  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ Nothing refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
       | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected

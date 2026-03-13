@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
@@ -316,18 +317,17 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding
-  = CBDirect {securityCode :: ByteString}
-  | CBGroup {groupRootKey :: C.PublicKeyEd25519, senderMemberId :: MemberId}
+data BindingTag = BTGroup
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
   deriving (Show)
 
 data MsgSignatures = MsgSignatures
-  { chatBinding :: ChatBinding,
+  { bindingTag :: BindingTag,
     signatures :: L.NonEmpty MsgSignature
   }
+  deriving (Show)
 
 data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
 
@@ -374,27 +374,43 @@ instance Encoding KeyRef where
       'M' -> pure KRMember
       c -> fail $ "invalid KeyRef tag: " <> show c
 
-instance Encoding ChatBinding where
-  smpEncode = \case
-    CBDirect securityCode -> smpEncode ('D', securityCode)
-    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
+instance Encoding BindingTag where
+  smpEncode BTGroup = "G"
   smpP =
-    smpP >>= \case
-      'D' -> CBDirect <$> smpP
-      'G' -> CBGroup <$> smpP <*> smpP
-      c -> fail $ "invalid ChatBinding tag: " <> show c
+    A.anyChar >>= \case
+      'G' -> pure BTGroup
+      c -> fail $ "invalid BindingTag: " <> show c
 
 instance Encoding MsgSignature where
   smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
   smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
 
 instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures chat sigs) = smpEncode (chat, sigs)
+  smpEncode (MsgSignatures tag sigs) = smpEncode (tag, sigs)
   smpP = MsgSignatures <$> smpP <*> smpP
+
+instance ToField MsgSignatures where toField = toField . smpEncode
+
+instance FromField MsgSignatures where fromField = blobFieldDecoder smpDecode
 
 instance Encoding MsgSigData where
   smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
   smpP = MsgSigData <$> smpP <*> A.takeByteString
+
+-- | Encode a batch element with optional signature prefix.
+-- Dual of elementP's 'S'/'{'cases.
+encodeMsgElement :: Maybe MsgSignatures -> ByteString -> ByteString
+encodeMsgElement Nothing body = body
+encodeMsgElement (Just sigs) body = "S" <> smpEncode sigs <> body
+
+-- | Sign message body, producing MsgSignatures with group binding.
+-- The signed payload includes the binding (group root key + sender member ID)
+-- concatenated with the JSON body — reconstructed by verifier from context.
+signMsgElement :: C.PublicKeyEd25519 -> MemberId -> C.PrivateKeyEd25519 -> ByteString -> MsgSignatures
+signMsgElement groupRootPK senderMemberId privKey jsonBody =
+  MsgSignatures {bindingTag = BTGroup, signatures = [MsgSignature KRMember sig]}
+  where
+    sig = C.ASignature C.SEd25519 $ C.sign' privKey (smpEncode ('G', groupRootPK, senderMemberId) <> jsonBody)
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -1170,6 +1186,17 @@ hasDeliveryReceipt = \case
   XMsgNew_ -> True
   XGrpInv_ -> True
   XCallInv_ -> True
+  _ -> False
+
+-- | Admin events that must have a valid signature in relay groups.
+requiresSignature :: CMEventTag e -> Bool
+requiresSignature = \case
+  XGrpDel_ -> True
+  XGrpInfo_ -> True
+  XGrpPrefs_ -> True
+  XGrpMemDel_ -> True
+  XGrpMemRole_ -> True
+  XGrpMemRestrict_ -> True
   _ -> False
 
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
