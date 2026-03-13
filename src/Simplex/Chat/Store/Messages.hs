@@ -151,7 +151,7 @@ import Data.Char (toLower)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (foldl', sortBy)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -179,6 +179,7 @@ import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -224,7 +225,10 @@ createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage
     case encodeMessage (SharedMsgId sharedMsgId) of
       ECMLarge -> pure $ Left SELargeMsg
       ECMEncoded msgBody -> do
-        let msgSignatures_ = (`signMsgBody` msgBody) <$> msgSigning_
+        let msgSignatures_ = signBody <$> msgSigning_
+            signBody MsgSigning {bindingTag, bindingData, keyRef, privKey} =
+              let sig = C.ASignature C.SEd25519 $ C.sign' privKey (smpEncode bindingTag <> bindingData <> msgBody)
+               in MsgSignatures {chatBinding = bindingTag, signatures = MsgSignature keyRef sig :| []}
         createdAt <- getCurrentTime
         DB.execute
           db

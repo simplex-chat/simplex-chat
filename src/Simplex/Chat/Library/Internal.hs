@@ -95,6 +95,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (MsgBody, MsgFlags (..), ProtoServerWithAuth (..), ProtocolServer, ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -1867,11 +1868,15 @@ createSndMessages idsEvents = do
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
+groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
+groupMsgSigning GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
+  | requiresSignature (toCMEventTag evt) = Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
+groupMsgSigning _ _ = Nothing
+
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
-sendGroupMemberMessages user gInfo@GroupInfo {groupId, membership, groupKeys} conn events = do
+sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let signing evt = groupMsgSigning <$> groupKeys <*> pure membership <* guard (requiresSignature $ toCMEventTag evt)
-      idsEvts = L.map (\evt -> (GroupId groupId, signing evt, evt)) events
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
       mode = if useRelays' gInfo then BMBinary else BMJson
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -2031,9 +2036,8 @@ data GroupSndResult = GroupSndResult
   }
 
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages_ _user gInfo@GroupInfo {groupId, membership, groupKeys} recipientMembers events = do
-  let signing evt = groupMsgSigning <$> groupKeys <*> pure membership <* guard (requiresSignature $ toCMEventTag evt)
-      idsEvts = L.map (\evt -> (GroupId groupId, signing evt, evt)) events
+sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}

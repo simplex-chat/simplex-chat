@@ -317,7 +317,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data BindingTag = BTGroup
+data ChatBinding = CBGroup
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -327,7 +327,7 @@ instance Eq MsgSignature where
   MsgSignature kr1 sig1 == MsgSignature kr2 sig2 = kr1 == kr2 && C.signatureBytes sig1 == C.signatureBytes sig2
 
 data MsgSignatures = MsgSignatures
-  { bindingTag :: BindingTag,
+  { chatBinding :: ChatBinding,
     signatures :: L.NonEmpty MsgSignature
   }
   deriving (Eq, Show)
@@ -377,12 +377,12 @@ instance Encoding KeyRef where
       'M' -> pure KRMember
       c -> fail $ "invalid KeyRef tag: " <> show c
 
-instance Encoding BindingTag where
-  smpEncode BTGroup = "G"
+instance Encoding ChatBinding where
+  smpEncode CBGroup = "G"
   smpP =
     A.anyChar >>= \case
-      'G' -> pure BTGroup
-      c -> fail $ "invalid BindingTag: " <> show c
+      'G' -> pure CBGroup
+      c -> fail $ "invalid ChatBinding: " <> show c
 
 instance Encoding MsgSignature where
   smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
@@ -403,24 +403,13 @@ instance Encoding MsgSigData where
 -- | Generic signing context — data, not function.
 -- Callers construct per-event; createSndMessages uses mechanically.
 data MsgSigning = MsgSigning
-  { sigBindingTag :: BindingTag,
-    sigKeyRef :: KeyRef,
-    sigPrefix :: ByteString, -- binding-specific, e.g. smpEncode (rootKey, memberId)
-    sigPrivKey :: C.PrivateKeyEd25519
+  { bindingTag :: ChatBinding,
+    bindingData :: ByteString,
+    keyRef :: KeyRef,
+    privKey :: C.PrivateKeyEd25519
   }
 
--- | Construct signing context for group messages.
-groupMsgSigning :: GroupKeys -> GroupMember -> MsgSigning
-groupMsgSigning GroupKeys {groupRootKey, memberPrivKey} GroupMember {memberId} =
-  MsgSigning BTGroup KRMember (smpEncode (groupRootPubKey groupRootKey, memberId)) memberPrivKey
 
--- | Sign message body, producing MsgSignatures.
--- Signed payload: smpEncode bindingTag <> sigPrefix <> jsonBody
-signMsgBody :: MsgSigning -> ByteString -> MsgSignatures
-signMsgBody MsgSigning {sigBindingTag, sigKeyRef, sigPrefix, sigPrivKey} jsonBody =
-  MsgSignatures {bindingTag = sigBindingTag, signatures = [MsgSignature sigKeyRef sig]}
-  where
-    sig = C.ASignature C.SEd25519 $ C.sign' sigPrivKey (smpEncode sigBindingTag <> sigPrefix <> jsonBody)
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
