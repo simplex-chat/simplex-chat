@@ -42,6 +42,8 @@ struct OperatorView: View {
 
     private func operatorView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
+        let duplicateRelayNames = findDuplicateRelayNames(serverErrors)
+        let duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors)
         return VStack {
             List {
                 Section {
@@ -81,6 +83,8 @@ struct OperatorView: View {
                                         serverErrors: $serverErrors,
                                         serverWarnings: $serverWarnings,
                                         relay: relay,
+                                        duplicateRelayNames: duplicateRelayNames,
+                                        duplicateRelayAddresses: duplicateRelayAddresses,
                                         backLabel: "\(userServers[operatorIndex].operator_.tradeName) servers",
                                         selectedServer: $selectedServer
                                     )
