@@ -35,7 +35,6 @@ instance IsString SndMessage where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
 
-deriving instance Eq SndMessage
 
 instance IsString ChatError where
   fromString s = ChatError $ CEInternalError ("large message " <> show msgId)

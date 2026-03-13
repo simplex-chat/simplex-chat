@@ -323,14 +323,11 @@ data ChatBinding = CBGroup
 data MsgSignature = MsgSignature KeyRef C.ASignature
   deriving (Show)
 
-instance Eq MsgSignature where
-  MsgSignature kr1 sig1 == MsgSignature kr2 sig2 = kr1 == kr2 && C.signatureBytes sig1 == C.signatureBytes sig2
-
 data MsgSignatures = MsgSignatures
   { chatBinding :: ChatBinding,
     signatures :: L.NonEmpty MsgSignature
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
 
