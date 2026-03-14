@@ -9,6 +9,10 @@ revision: 09.09.2024
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
 
+In case you cannot access GitHub, you can also download SimpleX from the following mirrors:
+
+1. [git.simplex.chat](https://git.simplex.chat/simplex-chat/simplex-chat/releases)
+
 - [desktop](#desktop-app)
 - [mobile](#mobile-apps)
 - [terminal](#terminal-console-app) (console)
