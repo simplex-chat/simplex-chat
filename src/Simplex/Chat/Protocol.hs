@@ -787,6 +787,7 @@ parseChatMessages msg = case B.head msg of
         Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
+      'S' -> [parseAll (elementP Nothing) s]
       _ -> [plainMsg . ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
     plainMsg = aParsedMsg Nothing Nothing
     aParsedMsg fwd sm (ACMsg enc cm) = APMsg enc (ParsedMsg fwd sm cm)

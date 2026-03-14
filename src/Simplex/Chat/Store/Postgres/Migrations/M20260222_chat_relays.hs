@@ -66,6 +66,8 @@ ALTER TABLE group_members
 
 ALTER TABLE messages ADD COLUMN msg_chat_binding TEXT;
 ALTER TABLE messages ADD COLUMN msg_signatures BYTEA;
+
+ALTER TABLE chat_items ADD COLUMN msg_signed SMALLINT NOT NULL DEFAULT 0;
 |]
 
 down_m20260222_chat_relays :: Text
@@ -107,4 +109,6 @@ ALTER TABLE group_members
 
 ALTER TABLE messages DROP COLUMN msg_chat_binding;
 ALTER TABLE messages DROP COLUMN msg_signatures;
+
+ALTER TABLE chat_items DROP COLUMN msg_signed;
 |]
