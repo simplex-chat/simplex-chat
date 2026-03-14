@@ -84,6 +84,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..))
 import qualified Simplex.Messaging.Protocol as SMP
@@ -258,13 +259,13 @@ processAgentMsgSndFile _corrId aFileId msg = do
           unless (null errs') $ toView $ CEvtChatErrors errs'
           pure delivered
           where
-            connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, ChatMsgEvent 'Json))
+            connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))
             connDescrEvents partSize = L.fromList $ concatMap splitText (L.toList connsTransfersDescrs)
               where
-                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, ChatMsgEvent 'Json))]
+                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
                 splitText (conn, _, rfdText) =
-                  map (\fileDescr -> (conn, (connOrGroupId, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
-            toMsgReq :: (Connection, (ConnOrGroupId, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
+                  map (\fileDescr -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
+            toMsgReq :: (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
             toMsgReq (conn, _) SndMessage {msgId, msgBody} =
               (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
         sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
@@ -461,7 +462,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
             forM_ aChatMsgs $ \case
-              Right (ACMsg _ chatMsg) ->
+              Right (ParsedMsg _ _ (ACMsg _ chatMsg)) ->
                 processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
@@ -502,12 +503,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 XCallEnd callId -> xCallEnd ct'' callId msg
                 BFileChunk sharedMsgId chunk -> bFileChunk ct'' sharedMsgId chunk msgMeta
                 _ -> messageError $ "unsupported message: " <> T.pack (show event)
-            checkSendRcpt :: Contact -> [AChatMessage] -> CM Bool
+            checkSendRcpt :: Contact -> [ParsedMsg] -> CM Bool
             checkSendRcpt ct' aMsgs = do
               let Contact {chatSettings = ChatSettings {sendRcpts}} = ct'
               pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any aChatMsgHasReceipt aMsgs
               where
-                aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
+                aChatMsgHasReceipt (ParsedMsg _ _ (ACMsg _ ChatMessage {chatMsgEvent})) =
                   hasDeliveryReceipt (toCMEventTag chatMsgEvent)
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
@@ -792,7 +793,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       CON _pqEnc -> unless (memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
         -- TODO [knocking] send pending messages after accepting?
         -- possible improvement: check for each pending message, requires keeping track of connection state
-        unless (connDisabled conn) $ sendPendingGroupMessages user m conn
+        unless (connDisabled conn) $ sendPendingGroupMessages user gInfo m conn
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
@@ -868,7 +869,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               sendXGrpLinkMem gInfo'' = do
                 let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
                     profileToSend = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
-                void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
+                void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend Nothing) groupId -- TODO: send member key
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             notifyMemberConnected gInfo m Nothing
@@ -897,7 +898,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' m' tags eInfo) [] aChatMsgs
+          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' scopeInfo m' tags eInfo) [] aChatMsgs
           shouldDelConns <-
             if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
               then createDeliveryTasks gInfo' m' newDeliveryTasks
@@ -909,29 +910,36 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           brokerTs = metaBrokerTs msgMeta
           processAChatMsg ::
             GroupInfo ->
+            Maybe GroupChatScopeInfo ->
             GroupMember ->
             TVar [Text] ->
             Text ->
             [NewMessageDeliveryTask] ->
-            Either String AChatMessage ->
+            Either String ParsedMsg ->
             CM [NewMessageDeliveryTask]
-          processAChatMsg gInfo' m' tags eInfo newDeliveryTasks = \case
-            Right (ACMsg SJson chatMsg) -> do
-              newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
-              pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
-            Right (ACMsg SBinary chatMsg) -> do
-              void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
-              pure newDeliveryTasks
+          processAChatMsg gInfo' scopeInfo m' tags eInfo newDeliveryTasks = \case
+            Right (ParsedMsg fwd_ msgSig_ (ACMsg enc chatMsg@ChatMessage {chatMsgEvent})) -> do
+              let tag = toCMEventTag chatMsgEvent
+              atomically $ modifyTVar' tags (tshow tag :)
+              case fwd_ of
+                Just fwd | SJson <- enc -> do
+                  logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
+                  xGrpMsgForward gInfo' scopeInfo m' fwd chatMsg brokerTs msgSig_
+                    `catchAllErrors` \e -> eToView e
+                  pure newDeliveryTasks
+                -- direct JSON and binary messages; binary events don't produce delivery tasks
+                _ -> do
+                  logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
+                  newTask_ <- join <$> withVerifiedSig gInfo' scopeInfo m' msgSig_ brokerTs
+                    (processEvent gInfo' m' chatMsg `catchAllErrors` \e -> eToView e $> Nothing)
+                  pure $ maybe id (:) newTask_ newDeliveryTasks
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               eToView (ChatError . CEException $ "error parsing chat message: " <> e)
               pure newDeliveryTasks
-          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [Text] -> Text -> ChatMessage e -> CM (Maybe NewMessageDeliveryTask)
-          processEvent gInfo' m' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
-            let tag = toCMEventTag chatMsgEvent
-            atomically $ modifyTVar' tags (tshow tag :)
-            logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
+          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> ChatMessage e -> CM (Maybe NewMessageDeliveryTask)
+          processEvent gInfo' m' chatMsg = do
             let body = chatMsgToBody chatMsg
             (m'', conn', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta body chatMsg
             let ctx js = DeliveryTaskContext js False
@@ -960,7 +968,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' (Just m'') sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> Nothing <$ xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
               XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p brokerTs
-              XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
+              XGrpLinkMem p memberKey -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p memberKey
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
@@ -978,7 +986,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps'
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
-              XGrpMsgForward memberId memberName msg' msgTs -> Nothing <$ xGrpMsgForward gInfo' m'' memberId memberName msg' msgTs brokerTs
+              XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward gInfo' Nothing m'' fwd msg' brokerTs Nothing
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
@@ -986,7 +994,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
               pure $ NewMessageDeliveryTask {messageId = msgId, taskContext}
-          checkSendRcpt :: [AChatMessage] -> CM Bool
+          checkSendRcpt :: [ParsedMsg] -> CM Bool
           checkSendRcpt aMsgs = do
             let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
                 GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
@@ -995,7 +1003,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 && any aChatMsgHasReceipt aMsgs
                 && currentMemCount <= smallGroupsRcptsMemLimit
             where
-              aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
+              aChatMsgHasReceipt (ParsedMsg _ _ (ACMsg _ ChatMessage {chatMsgEvent})) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createDeliveryTasks :: GroupInfo -> GroupMember -> [NewMessageDeliveryTask] -> CM ShouldDeleteGroupConns
           createDeliveryTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
@@ -1033,7 +1041,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
-        when continued $ sendPendingGroupMessages user m conn
+        when continued $ sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
         (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
@@ -1098,13 +1106,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     let GroupMember {memberId = membershipMemId} = membership
                         incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                         profileToSend = userProfileInGroup user gInfo incognitoProfile
-                    dm <- encodeConnInfo $ XMember profileToSend membershipMemId
+                    g <- asks random
+                    (memberPubKey, _memberPrivKey) <- atomically $ C.generateKeyPair g
+                    -- TODO: store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
+                    dm <- encodeConnInfo $ XMember profileToSend membershipMemId (MemberKey memberPubKey)
                     subMode <- chatReadVar subscriptionMode
                     void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
-        when continued $ sendPendingGroupMessages user m conn
+        when continued $ sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
         processConnMWARN connEntity conn err
@@ -1211,7 +1222,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
-          XMember p joiningMemberId -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId
+          XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
@@ -1422,8 +1433,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           lift $ void $ getRelayRequestWorker True
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
-        memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> CM ()
-        memberJoinRequestViaRelay invId chatVRange p joiningMemberId = do
+        memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()
+        memberJoinRequestViaRelay invId chatVRange p joiningMemberId _joiningMemberKey = do -- TODO: store memberKey in group_members.member_pub_key
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
@@ -2387,8 +2398,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
       pure $ memberEventDeliveryScope m
 
-    xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
-    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
+    xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> Maybe MemberKey -> CM ()
+    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' _memberKey = do -- TODO: store memberKey
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
@@ -2733,7 +2744,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure (conn', Nothing)
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msgScope_ msg brokerTs = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ _) msgScope_ msg brokerTs = do
       checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
         then pure Nothing
@@ -2786,7 +2797,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (announcedMember', Just scopeInfo)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
@@ -2831,7 +2842,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _ _) IntroInvitation {groupConnReq, directConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       toMember <- withStore $ \db -> do
@@ -2900,7 +2911,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         | membershipMemId == memId = pure Nothing -- ignore - XGrpMemRestrict can be sent to restricted member for efficiency
         | otherwise = do
             unknownRole <- unknownMemberRole gInfo
-            (bm, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memId Nothing unknownRole
+            (bm, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memId "" unknownRole
             let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp} = bm
             if
               | blockedByAdmin == mrsBlocked restriction -> pure Nothing
@@ -2983,9 +2994,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member = do
-          let GroupMember {memberId} = m
-              memberName = Just $ memberShortenedName m
-              event = XGrpMsgForward (Just memberId) memberName chatMsg brokerTs
+          let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
+              event = XGrpMsgForward fwd chatMsg
           sendGroupMemberMessage gInfo member event
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
@@ -3146,16 +3156,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toViewTE $ TEContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
-    xGrpMsgForward :: GroupInfo -> GroupMember -> Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
-    xGrpMsgForward gInfo m@GroupMember {localDisplayName} memberId_ memberName_ chatMsg msgTs brokerTs = do
+    xGrpMsgForward :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> GrpMsgForward -> ChatMessage 'Json -> UTCTime -> Maybe MsgSigData -> CM ()
+    xGrpMsgForward gInfo scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} chatMsg brokerTs msgSig_ = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
-      case memberId_ of
-        Just memberId -> do
+      case fwdSender of
+        FwdMember memberId memberName -> do
           unknownRole <- unknownMemberRole gInfo
-          (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName_ unknownRole
+          (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
-          processForwardedMsg (Just author)
-        Nothing -> processForwardedMsg Nothing
+          void $ withVerifiedSig gInfo scopeInfo author msgSig_ msgTs $
+            processForwardedMsg (Just author)
+        FwdChannel -> processForwardedMsg Nothing
       where
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
         processForwardedMsg :: Maybe GroupMember -> CM ()
@@ -3188,6 +3199,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             withAuthor tag action = case author_ of
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
+
+    withVerifiedSig :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe MsgSigData -> UTCTime -> CM a -> CM (Maybe a)
+    withVerifiedSig gInfo scopeInfo member msgSig_ ts action
+      | verifySig gInfo member msgSig_ = Just <$> action
+      | otherwise = do
+          createInternalChatItem user (CDGroupRcv gInfo scopeInfo member) (CIRcvGroupEvent RGEMsgBadSignature) (Just ts)
+          pure Nothing
+
+    verifySig :: GroupInfo -> GroupMember -> Maybe MsgSigData -> Bool
+    verifySig gInfo GroupMember {memberPubKey = Just pubKey, memberId} (Just MsgSigData {signatures = MsgSignatures {chatBinding, signatures}, signedBody}) =
+      case chatBinding of
+        CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
+          let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
+           in all (verifyOne prefix) signatures
+        _ -> True -- can't reconstruct binding → accept (enforcement in Step 5)
+      where
+        verifyOne prefix (MsgSignature KRMember sig) =
+          C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)
+    verifySig _ _ _ = True
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
@@ -3342,11 +3372,8 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
               | otherwise -> do
-                  let MessageDeliveryTask {senderGMId, fwdSender, brokerTs, chatMessage} = task
-                      (memberId_, memberName_) = case fwdSender of
-                        FwdMember mid mname -> (Just mid, Just mname)
-                        FwdChannel -> (Nothing, Nothing)
-                      fwdEvt = XGrpMsgForward memberId_ memberName_ chatMessage brokerTs
+                  let MessageDeliveryTask {senderGMId, fwdSender, brokerTs = fwdBrokerTs, chatMessage} = task
+                      fwdEvt = XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} chatMessage
                       cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
                       body = chatMsgToBody cm
                   withStore' $ \db -> do

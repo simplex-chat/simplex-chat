@@ -2293,8 +2293,8 @@ processChatCommand vr nm = \case
       addContactConn ct ctConns = case contactSendConn_ ct of
         Right conn | directOrUsed ct -> (ct, conn) : ctConns
         _ -> ctConns
-      ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
-      ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
+      ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
+      ctSndEvent (_, Connection {connId}) = (ConnectionId connId, Nothing, XMsgNew $ MCSimple (extMsgContent mc Nothing))
       ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
       ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, (vrValue msgBody, [msgId]))
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
@@ -3409,11 +3409,14 @@ processChatCommand vr nm = \case
               let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
                in userProfileInGroup' user allowSimplexLinks incognitoProfile
             Nothing -> userProfileDirect user incognitoProfile Nothing True
-          chatEvent = case gInfo_ of
-            Just (Just gInfo) | useRelays' gInfo ->
-              let GroupInfo {membership = GroupMember {memberId}} = gInfo
-               in XMember profileToSend memberId
-            _ -> XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+      g <- asks random
+      chatEvent <- case gInfo_ of
+        Just (Just gInfo) | useRelays' gInfo -> do
+          let GroupInfo {membership = GroupMember {memberId}} = gInfo
+          (memberPubKey, _memberPrivKey) <- atomically $ C.generateKeyPair g
+          -- TODO: store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
+          pure $ XMember profileToSend memberId (MemberKey memberPubKey)
+        _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       dm <- encodeConnInfoPQ pqSup chatV chatEvent
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
@@ -3481,8 +3484,8 @@ processChatCommand vr nm = \case
                 mergedProfile = userProfileDirect user Nothing (Just ct) False
                 ct' = updateMergedPreferences user' ct
                 mergedProfile' = userProfileDirect user' Nothing (Just ct') False
-            ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
-            ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
+            ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
+            ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, Nothing, XInfo mergedProfile')
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->

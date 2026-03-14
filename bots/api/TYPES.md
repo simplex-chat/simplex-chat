@@ -3125,6 +3125,9 @@ MemberProfileUpdated:
 NewMemberPendingReview:
 - type: "newMemberPendingReview"
 
+MsgBadSignature:
+- type: "msgBadSignature"
+
 
 ---
 

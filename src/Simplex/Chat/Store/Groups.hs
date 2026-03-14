@@ -1087,12 +1087,12 @@ getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (groupId, memberId)
 
-getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Maybe ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
+getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
 getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole = do
   liftIO (runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
     Right m -> pure (m, False)
     Left (SEGroupMemberNotFoundByMemberId _) -> do
-      let name = fromMaybe (nameFromMemberId memberId) memberName
+      let name = if T.null memberName then nameFromMemberId memberId else memberName
       m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
       pure (m, True)
     Left e -> throwError e
@@ -1838,7 +1838,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile,
+    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile _memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memRestriction,
@@ -2004,7 +2004,7 @@ createIntroReMember
   db
   user
   gInfo
-  memInfo@(MemberInfo _ _ _ memberProfile)
+  memInfo@(MemberInfo _ _ _ memberProfile _)
   memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2019,7 +2019,7 @@ createIntroReMemberConn
   _host@GroupMember {memberContactId, activeConn}
   reMember@GroupMember {groupMemberId}
   chatV
-  (MemberInfo _ _ memChatVRange _)
+  (MemberInfo _ _ memChatVRange _ _)
   (groupCmdId, groupAgentConnId)
   subMode = do
     let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange

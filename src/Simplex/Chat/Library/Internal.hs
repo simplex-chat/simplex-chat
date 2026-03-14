@@ -58,7 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -95,6 +95,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (MsgBody, MsgFlags (..), ProtoServerWithAuth (..), ProtocolServer, ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -1104,7 +1105,7 @@ introduceMember user gInfo@GroupInfo {groupId} toMember@GroupMember {activeConn 
         then do
           let events = map (memberIntroEvt gInfo) shuffledReMembers
           forM_ (L.nonEmpty events) $ \events' ->
-            sendGroupMemberMessages user conn events' groupId
+            sendGroupMemberMessages user gInfo conn events'
         else forM_ shuffledReMembers $ \reMember ->
           void $ sendDirectMemberMessage conn (memberIntroEvt gInfo reMember) groupId
     updateToMemberVector :: [GroupMember] -> CM ()
@@ -1139,11 +1140,11 @@ memberIntroEvt gInfo reMember =
 -- This doesn't create introduction records in db, compared to above methods.
 introduceModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceModerators _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceModerators vr user gInfo@GroupInfo {groupId} GroupMember {activeConn = Just conn} = do
+introduceModerators vr user gInfo GroupMember {activeConn = Just conn} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   let events = map (memberIntroEvt gInfo) modMs
   forM_ (L.nonEmpty events) $ \events' ->
-    sendGroupMemberMessages user conn events' groupId
+    sendGroupMemberMessages user gInfo conn events'
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1160,7 +1161,8 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, activeConn} =
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile
+      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
+      memberKey = Nothing -- TODO: get from GroupMember when stored in database
     }
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
@@ -1175,7 +1177,7 @@ redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDes
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} =
+sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just conn} =
   when (m `supportsVersion` batchSendVersion) $ do
     (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
     (errs', events) <- partitionEithers <$> mapM (tryAllErrors . itemForwardEvents) items
@@ -1190,7 +1192,7 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
             _ -> events' <> [descr]
       Nothing -> pure events'
     forM_ (L.nonEmpty events_) $ \events'' ->
-      sendGroupMemberMessages user conn events'' groupId
+      sendGroupMemberMessages user gInfo conn events''
   where
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)
     descrEvent_
@@ -1264,9 +1266,9 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
                   pure . L.toList $ L.map (XMsgFileDescr msgId) parts
                 _ -> pure []
               let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
-                  memberId_ = memberId' <$> sender_
-                  memberName_ = memberShortenedName <$> sender_
-                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId_ memberName_ cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                  fwdSender = maybe FwdChannel (\s -> FwdMember (memberId' s) (memberShortenedName s)) sender_
+                  fwd = GrpMsgForward {fwdSender, fwdBrokerTs = itemTs}
+                  msgForwardEvents = map (XGrpMsgForward fwd) (xMsgNewChatMsg : fileDescrChatMsgs)
               pure msgForwardEvents
 
 memberShortenedName :: GroupMember -> ContactName
@@ -1549,7 +1551,7 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
 parseChatMessage conn s = do
   case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(ACMsg _ m) -> checkEncoding m) =<< msg
+    [msg] -> liftEither . first (ChatError . errType) $ (\(ParsedMsg _ _ (ACMsg _ m)) -> checkEncoding m) =<< msg
     _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
@@ -1810,10 +1812,10 @@ sendDirectContactMessages user ct events = do
 sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages' user ct events = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
-  let idsEvts = L.map (ConnectionId connId,) events
+  let idsEvts = L.map (ConnectionId connId,Nothing,) events
       msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
   sndMsgs_ <- lift $ createSndMessages idsEvts
-  (sndMsgs', pqEnc_) <- batchSendConnMessagesB user conn msgFlags sndMsgs_
+  (sndMsgs', pqEnc_) <- batchSendConnMessagesB BMJson user conn msgFlags sndMsgs_
   forM_ pqEnc_ $ \pqEnc' -> void $ createContactPQSndItem user ct conn pqEnc'
   pure sndMsgs'
 
@@ -1851,37 +1853,43 @@ sendDirectMessage_ conn chatMsgEvent connOrGroupId = do
 
 createSndMessage :: MsgEncodingI e => ChatMsgEvent e -> ConnOrGroupId -> CM SndMessage
 createSndMessage chatMsgEvent connOrGroupId =
-  liftEither . runIdentity =<< lift (createSndMessages $ Identity (connOrGroupId, chatMsgEvent))
+  liftEither . runIdentity =<< lift (createSndMessages $ Identity (connOrGroupId, Nothing, chatMsgEvent))
 
-createSndMessages :: forall e t. (MsgEncodingI e, Traversable t) => t (ConnOrGroupId, ChatMsgEvent e) -> CM' (t (Either ChatError SndMessage))
+createSndMessages :: forall e t. (MsgEncodingI e, Traversable t) => t (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> CM' (t (Either ChatError SndMessage))
 createSndMessages idsEvents = do
   g <- asks random
   vr <- chatVersionRange'
   withStoreBatch $ \db -> fmap (createMsg db g vr) idsEvents
   where
-    createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
-    createMsg db g vr (connOrGroupId, evnt) = runExceptT $ do
-      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt encodeMessage
+    createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
+    createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ do
+      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt msgSigning_ encodeMessage
       where
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
-sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> Connection -> NonEmpty (ChatMsgEvent e) -> GroupId -> CM ()
-sendGroupMemberMessages user conn events groupId = do
+groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
+groupMsgSigning GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
+  | requiresSignature (toCMEventTag evt) = Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
+groupMsgSigning _ _ = Nothing
+
+sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
+sendGroupMemberMessages user gInfo@GroupInfo {groupId} conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let idsEvts = L.map (GroupId groupId,) events
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
+      mode = if useRelays' gInfo then BMBinary else BMJson
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
   forM_ (L.nonEmpty msgs) $ \msgs' ->
-    batchSendConnMessages user conn MsgFlags {notification = True} msgs'
+    batchSendConnMessages mode user conn MsgFlags {notification = True} msgs'
 
-batchSendConnMessages :: User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
-batchSendConnMessages user conn msgFlags msgs =
-  batchSendConnMessagesB user conn msgFlags $ L.map Right msgs
+batchSendConnMessages :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
+batchSendConnMessages mode user conn msgFlags msgs =
+  batchSendConnMessagesB mode user conn msgFlags $ L.map Right msgs
 
-batchSendConnMessagesB :: User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
-batchSendConnMessagesB _user conn msgFlags msgs_ = do
-  let batched_ = batchSndMessagesJSON msgs_
+batchSendConnMessagesB :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
+batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
+  let batched_ = batchSndMessagesJSON mode msgs_
   case L.nonEmpty batched_ of
     Just batched' -> do
       let msgReqs = L.map (fmap msgBatchReq_) batched'
@@ -1902,8 +1910,8 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
     findLastPQEnc :: NonEmpty (Either ChatError ([Int64], PQEncryption)) -> Maybe PQEncryption
     findLastPQEnc = foldr' (\x acc -> case x of Right (_, pqEnc) -> Just pqEnc; Left _ -> acc) Nothing
 
-batchSndMessagesJSON :: NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
-batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
+batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
+batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo chatMsgEvent = do
@@ -2029,7 +2037,7 @@ data GroupSndResult = GroupSndResult
 
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
-  let idsEvts = L.map (GroupId groupId,) events
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning gInfo evt, evt)) events
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
@@ -2071,7 +2079,8 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
-      let batched_ = batchSndMessagesJSON msgs
+      let mode = if useRelays' gInfo then BMBinary else BMJson
+          batched_ = batchSndMessagesJSON mode msgs
       case L.nonEmpty batched_ of
         Just batched' -> do
           let lenMsgs = length msgs
@@ -2188,11 +2197,12 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
       MSAForwarded -> pure ()
 
 -- TODO ensure order - pending messages interleave with user input messages
-sendPendingGroupMessages :: User -> GroupMember -> Connection -> CM ()
-sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
+sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()
+sendPendingGroupMessages user gInfo GroupMember {groupMemberId} conn = do
+  let mode = if useRelays' gInfo then BMBinary else BMJson
   msgs <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    void $ batchSendConnMessages user conn MsgFlags {notification = True} msgs'
+    void $ batchSendConnMessages mode user conn MsgFlags {notification = True} msgs'
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs'
 
 saveDirectRcvMSG :: MsgEncodingI e => Connection -> MsgMeta -> MsgBody -> ChatMessage e -> CM (Connection, RcvMessage)
@@ -2230,7 +2240,7 @@ saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMemb
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = groupMemberId' <$> refAuthorMember_
   -- TODO [relays] TBC highlighting difference between deduplicated messages (useRelays branch)
-  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
+  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ Nothing refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
       | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
