@@ -30,12 +30,11 @@ batchingTests = describe "message batching tests" $ do
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
 
 instance IsString SndMessage where
-  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s'}
+  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s', msgSignatures_ = Nothing}
     where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
 
-deriving instance Eq SndMessage
 
 instance IsString ChatError where
   fromString s = ChatError $ CEInternalError ("large message " <> show msgId)
@@ -127,7 +126,7 @@ testImageFitsSingleBatch = do
 
   let xMsgNewStr = B.replicate xMsgNewRoundedSize 1
       descrStr = B.replicate descrRoundedSize 2
-      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s}
+      msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s, msgSignatures_ = Nothing}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
   runBatcherTest' BMJson maxEncodedMsgLength [msg xMsgNewStr, msg descrStr] [] [batched]

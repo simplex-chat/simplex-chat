@@ -1149,7 +1149,8 @@ type ChatItemTs = UTCTime
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    msgSignatures_ :: Maybe MsgSignatures
   }
   deriving (Show)
 

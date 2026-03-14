@@ -8,6 +8,7 @@
 module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
     BatchMode (..),
+    encodeBatchElement,
     batchMessages,
     batchDeliveryTasks1,
   )
@@ -29,37 +30,42 @@ import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
 data BatchMode = BMJson | BMBinary
   deriving (Eq, Show)
 
+-- | Encode a batch element with optional signature prefix.
+-- Dual of elementP's 'S'/'{'cases.
+encodeBatchElement :: Maybe MsgSignatures -> ByteString -> ByteString
+encodeBatchElement Nothing body = body
+encodeBatchElement (Just sigs) body = "S" <> smpEncode sigs <> body
+
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
 -- | Batches SndMessages in [Either ChatError SndMessage] into batches of ByteStrings.
 -- BMJson mode: JSON arrays like [msg1,msg2,...]
 -- BMBinary mode: Binary format =<count>(<len:2><body>)*
 -- Preserves original errors in the list.
--- Does not check if the resulting batch is a valid JSON.
--- If a single element is passed, it is returned as is (a JSON string).
+-- If a single element is passed, it is returned as is.
 -- If an element exceeds maxLen, it is returned as ChatError.
--- TODO [member keys] signatures will also be encoded by batcher.
+-- Elements are encoded with signature prefix via encodeBatchElement.
 batchMessages :: BatchMode -> Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
-batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
+batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
-    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [SndMessage], Int, Int)
-    addToBatch (Left err) acc = (Left err : addBatch acc, [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody}) acc@(batches, batch, len, n)
-      | batchLen mode len' n' <= maxLen = (batches, msg : batch, len', n')
-      | msgLen <= maxLen = (addBatch acc, [msg], msgLen, 1)
-      | otherwise = (errLarge msg : addBatch acc, [], 0, 0)
+    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
+    addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
+    addToBatch (Right msg@SndMessage {msgBody, msgSignatures_}) acc@(batches, bodies, msgs, len, n)
+      | batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
+      | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
+      | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        msgLen = B.length msgBody
+        body = encodeBatchElement msgSignatures_ msgBody
+        msgLen = B.length body
         len' = len + msgLen
         n' = n + 1
         errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
-    addBatch :: ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
-    addBatch (batches, batch, _, n)
+    addBatch :: ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
+    addBatch (batches, bodies, msgs, _, n)
       | n == 0 = batches
       | otherwise =
-          let encoded = encodeBatch mode (map body batch)
-           in Right (MsgBatch encoded batch) : batches
-    body SndMessage {msgBody} = msgBody
+          let encoded = encodeBatch mode bodies
+           in Right (MsgBatch encoded msgs) : batches
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
 -- Always uses binary batch format for relay groups.
@@ -103,7 +109,7 @@ encodeBinaryBatch [] = mempty
 encodeBinaryBatch msgs = B.cons '=' $ smpEncodeList (map Large msgs)
 
 -- Returns length the batch would have if encoded.
--- `len` - the total length of all `n` message bodies (without element prefixes)
+-- `len` - the total length of all `n` encoded elements (including signature prefixes)
 batchLen :: BatchMode -> Int -> Int -> Int
 batchLen _ _ 0 = 0
 batchLen _ len 1 = len

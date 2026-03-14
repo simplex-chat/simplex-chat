@@ -84,6 +84,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..))
 import qualified Simplex.Messaging.Protocol as SMP
@@ -258,13 +259,13 @@ processAgentMsgSndFile _corrId aFileId msg = do
           unless (null errs') $ toView $ CEvtChatErrors errs'
           pure delivered
           where
-            connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, ChatMsgEvent 'Json))
+            connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))
             connDescrEvents partSize = L.fromList $ concatMap splitText (L.toList connsTransfersDescrs)
               where
-                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, ChatMsgEvent 'Json))]
+                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
                 splitText (conn, _, rfdText) =
-                  map (\fileDescr -> (conn, (connOrGroupId, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
-            toMsgReq :: (Connection, (ConnOrGroupId, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
+                  map (\fileDescr -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
+            toMsgReq :: (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
             toMsgReq (conn, _) SndMessage {msgId, msgBody} =
               (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
         sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
@@ -3201,18 +3202,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     withVerifiedSig :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe MsgSigData -> UTCTime -> CM a -> CM (Maybe a)
     withVerifiedSig gInfo scopeInfo member msgSig_ ts action
-      | verifySig member msgSig_ = Just <$> action
+      | verifySig gInfo member msgSig_ = Just <$> action
       | otherwise = do
           createInternalChatItem user (CDGroupRcv gInfo scopeInfo member) (CIRcvGroupEvent RGEMsgBadSignature) (Just ts)
           pure Nothing
 
-    verifySig :: GroupMember -> Maybe MsgSigData -> Bool
-    verifySig GroupMember {memberPubKey = Just pubKey} (Just MsgSigData {signatures = MsgSignatures {signatures}, signedBody}) =
-      all verifyOne (L.toList signatures)
+    verifySig :: GroupInfo -> GroupMember -> Maybe MsgSigData -> Bool
+    verifySig gInfo GroupMember {memberPubKey = Just pubKey, memberId} (Just MsgSigData {signatures = MsgSignatures {chatBinding, signatures}, signedBody}) =
+      case chatBinding of
+        CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
+          let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
+           in all (verifyOne prefix) signatures
+        _ -> True -- can't reconstruct binding → accept (enforcement in Step 5)
       where
-        verifyOne (MsgSignature KRMember sig) =
-          C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig signedBody
-    verifySig _ _ = True
+        verifyOne prefix (MsgSignature KRMember sig) =
+          C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)
+    verifySig _ _ _ = True
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do

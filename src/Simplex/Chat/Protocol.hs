@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
@@ -316,9 +317,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding
-  = CBDirect {securityCode :: ByteString}
-  | CBGroup {groupRootKey :: C.PublicKeyEd25519, senderMemberId :: MemberId}
+data ChatBinding = CBGroup
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -328,6 +327,7 @@ data MsgSignatures = MsgSignatures
   { chatBinding :: ChatBinding,
     signatures :: L.NonEmpty MsgSignature
   }
+  deriving (Show)
 
 data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
 
@@ -375,26 +375,38 @@ instance Encoding KeyRef where
       c -> fail $ "invalid KeyRef tag: " <> show c
 
 instance Encoding ChatBinding where
-  smpEncode = \case
-    CBDirect securityCode -> smpEncode ('D', securityCode)
-    CBGroup {groupRootKey, senderMemberId} -> smpEncode ('G', groupRootKey, senderMemberId)
+  smpEncode CBGroup = "G"
   smpP =
-    smpP >>= \case
-      'D' -> CBDirect <$> smpP
-      'G' -> CBGroup <$> smpP <*> smpP
-      c -> fail $ "invalid ChatBinding tag: " <> show c
+    A.anyChar >>= \case
+      'G' -> pure CBGroup
+      c -> fail $ "invalid ChatBinding: " <> show c
 
 instance Encoding MsgSignature where
   smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
   smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
 
 instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures chat sigs) = smpEncode (chat, sigs)
+  smpEncode (MsgSignatures tag sigs) = smpEncode (tag, sigs)
   smpP = MsgSignatures <$> smpP <*> smpP
+
+instance ToField MsgSignatures where toField = toField . smpEncode
+
+instance FromField MsgSignatures where fromField = blobFieldDecoder smpDecode
 
 instance Encoding MsgSigData where
   smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
   smpP = MsgSigData <$> smpP <*> A.takeByteString
+
+-- | Generic signing context — data, not function.
+-- Callers construct per-event; createSndMessages uses mechanically.
+data MsgSigning = MsgSigning
+  { bindingTag :: ChatBinding,
+    bindingData :: ByteString,
+    keyRef :: KeyRef,
+    privKey :: C.PrivateKeyEd25519
+  }
+
+
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -1170,6 +1182,17 @@ hasDeliveryReceipt = \case
   XMsgNew_ -> True
   XGrpInv_ -> True
   XCallInv_ -> True
+  _ -> False
+
+-- | Admin events that must have a valid signature in relay groups.
+requiresSignature :: CMEventTag e -> Bool
+requiresSignature = \case
+  XGrpDel_ -> True
+  XGrpInfo_ -> True
+  XGrpPrefs_ -> True
+  XGrpMemDel_ -> True
+  XGrpMemRole_ -> True
+  XGrpMemRestrict_ -> True
   _ -> False
 
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
