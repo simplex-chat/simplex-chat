@@ -323,18 +323,14 @@ data ChatBinding = CBGroup
 data MsgSignature = MsgSignature KeyRef C.ASignature
   deriving (Show)
 
-data MsgSignatures = MsgSignatures
+data SignedMsg = SignedMsg
   { chatBinding :: ChatBinding,
-    signatures :: L.NonEmpty MsgSignature
+    msgSignatures :: L.NonEmpty MsgSignature,
+    signedBody :: ByteString -- exact bytes that were signed
   }
   deriving (Show)
 
-data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
-
-data MsgSigData = MsgSigData
-  { signatures :: MsgSignatures,
-    signedBody :: ByteString -- exact bytes that were signed
-  }
+data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe SignedMsg) AChatMessage
 
 data FwdSender
   = FwdMember MemberId ContactName
@@ -381,21 +377,18 @@ instance Encoding ChatBinding where
       'G' -> pure CBGroup
       c -> fail $ "invalid ChatBinding: " <> show c
 
+instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
+
+instance FromField ChatBinding where fromField = fromTextField_ $ eitherToMaybe . smpDecode . encodeUtf8
+
 instance Encoding MsgSignature where
   smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
   smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
 
-instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures tag sigs) = smpEncode (tag, sigs)
-  smpP = MsgSignatures <$> smpP <*> smpP
-
-instance ToField MsgSignatures where toField = toField . smpEncode
-
-instance FromField MsgSignatures where fromField = blobFieldDecoder smpDecode
-
-instance Encoding MsgSigData where
-  smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
-  smpP = MsgSigData <$> smpP <*> A.takeByteString
+-- Wire format: <binding:1> <sigCount:1> (<keyRef><sig:64>)* <body>
+instance Encoding SignedMsg where
+  smpEncode (SignedMsg tag sigs body) = smpEncode (tag, sigs) <> body
+  smpP = SignedMsg <$> smpP <*> smpP <*> A.takeByteString
 
 -- | Generic signing context — data, not function.
 -- Callers construct per-event; createSndMessages uses mechanically.
@@ -806,9 +799,10 @@ parseChatMessages msg = case B.head msg of
     elementP :: Maybe GrpMsgForward -> A.Parser ParsedMsg
     elementP fwd = A.peekChar' >>= \case
       'S' -> A.char 'S' *> do
+        tag <- smpP
         sigs <- smpP
         (body, cm) <- A.match msgP
-        pure $ ParsedMsg fwd (Just $ MsgSigData sigs body) cm
+        pure $ ParsedMsg fwd (Just $ SignedMsg tag sigs body) cm
       'F' -> A.char 'F' *> do
         when (isJust fwd) $ fail "nested forward elements not supported"
         elementP . Just =<< smpP

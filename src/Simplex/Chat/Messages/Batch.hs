@@ -34,9 +34,10 @@ data BatchMode = BMJson | BMBinary
 
 -- | Encode a batch element with optional signature prefix.
 -- Dual of elementP's 'S'/'{'cases.
-encodeBatchElement :: Maybe MsgSignatures -> ByteString -> ByteString
+encodeBatchElement :: Maybe SignedMsg -> ByteString -> ByteString
 encodeBatchElement Nothing body = body
-encodeBatchElement (Just sigs) body = "S" <> smpEncode sigs <> body
+encodeBatchElement (Just SignedMsg {chatBinding, msgSignatures}) body =
+  "S" <> smpEncode (chatBinding, msgSignatures) <> body
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
@@ -52,12 +53,12 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
     addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
     addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody, msgSignatures_}) acc@(batches, bodies, msgs, len, n)
+    addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
       | batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
       | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        body = encodeBatchElement msgSignatures_ msgBody
+        body = encodeBatchElement signedMsg_ msgBody
         msgLen = B.length body
         len' = len + msgLen
         n' = n + 1
@@ -84,8 +85,8 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, msgBody, msgSignatures_} = task
-        fwdBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} msgSignatures_ msgBody
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, msgBody, signedMsg_} = task
+        fwdBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} signedMsg_ msgBody
         msgLen = B.length fwdBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
@@ -94,9 +95,9 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
 -- | Encode a batch element for relay groups: F<GrpMsgForward>[S<sigs>]<body>.
-encodeFwdElement :: GrpMsgForward -> Maybe MsgSignatures -> ByteString -> ByteString
-encodeFwdElement fwd sigs_ body =
-  "F" <> smpEncode fwd <> encodeBatchElement sigs_ body
+encodeFwdElement :: GrpMsgForward -> Maybe SignedMsg -> ByteString -> ByteString
+encodeFwdElement fwd signedMsg_ body =
+  "F" <> smpEncode fwd <> encodeBatchElement signedMsg_ body
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty

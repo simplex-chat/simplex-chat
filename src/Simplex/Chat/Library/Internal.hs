@@ -2215,15 +2215,15 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chat
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ Nothing rcvMsgDelivery Nothing
   pure (conn', msg)
 
-saveGroupRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> MsgBody -> ChatMessage e -> Maybe MsgSignatures -> CM (GroupMember, Connection, RcvMessage)
-saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} msgSignatures_ = do
+saveGroupRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> MsgBody -> ChatMessage e -> Maybe SignedMsg -> CM (GroupMember, Connection, RcvMessage)
+saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} signedMsg_ = do
   (am'@GroupMember {memberId = amMemId, groupMemberId = amGroupMemId}, conn') <- updateMemberChatVRange authorMember conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
       newMsg = NewRcvMessage {chatMsgEvent, msgBody, brokerTs}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   msg <-
-    withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ msgSignatures_ rcvMsgDelivery $ Just amGroupMemId)
+    withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ signedMsg_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
           vr <- chatVersionRange
@@ -2234,13 +2234,13 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
         _ -> throwError e
   pure (am', conn', msg)
 
-saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> Maybe GroupMember -> MsgBody -> ChatMessage e -> UTCTime -> Maybe MsgSignatures -> CM (Maybe RcvMessage)
-saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMember_ msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs msgSignatures_ = do
+saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> Maybe GroupMember -> MsgBody -> ChatMessage e -> UTCTime -> Maybe SignedMsg -> CM (Maybe RcvMessage)
+saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMember_ msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs signedMsg_ = do
   let newMsg = NewRcvMessage {chatMsgEvent, msgBody, brokerTs}
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = groupMemberId' <$> refAuthorMember_
   -- TODO [relays] TBC highlighting difference between deduplicated messages (useRelays branch)
-  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ msgSignatures_ refAuthorId fwdMemberId) >>= \case
+  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ signedMsg_ refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
       | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected

@@ -31,6 +31,7 @@ where
 
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
+import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
@@ -40,7 +41,8 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (firstRow')
+import Simplex.Messaging.Encoding (smpDecode)
+import Simplex.Messaging.Util (eitherToMaybe, firstRow')
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -125,7 +127,7 @@ getNextDeliveryTask db deliveryKey = do
           |]
           (groupId, workerScope, DTSNew)
 
-type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, Binary ByteString, Maybe MsgSignatures, BoolInt)
+type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, Binary ByteString, Maybe ChatBinding, Maybe (Binary ByteString), BoolInt)
 
 getMsgDeliveryTask_ :: DB.Connection -> Int64 -> IO (Either StoreError MessageDeliveryTask)
 getMsgDeliveryTask_ db taskId =
@@ -136,7 +138,7 @@ getMsgDeliveryTask_ db taskId =
         SELECT
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_sigs, t.message_from_channel
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -146,12 +148,15 @@ getMsgDeliveryTask_ db taskId =
       (Only taskId)
   where
     toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
-    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, msgSignatures_, BI showGroupAsSender)) =
+    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender)) =
       case toJobScope_ jobScopeRow of
         Just jobScope ->
           let fwdSender = if showGroupAsSender then FwdChannel else FwdMember senderMemberId senderMemberName
-           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, msgBody, msgSignatures_}
+              signedMsg_ = SignedMsg <$> chatBinding_ <*> decodeSigs sigs_ <*> pure msgBody
+           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, msgBody, signedMsg_}
         Nothing -> Left $ SEInvalidDeliveryTask taskId'
+    decodeSigs :: Maybe (Binary ByteString) -> Maybe (L.NonEmpty MsgSignature)
+    decodeSigs = (>>= eitherToMaybe . smpDecode . (\(Binary bs) -> bs))
 
 markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
 markDeliveryTaskFailed_ db taskId =

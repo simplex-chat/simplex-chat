@@ -132,7 +132,7 @@ data MessageDeliveryTask = MessageDeliveryTask
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
     msgBody :: ByteString,
-    msgSignatures_ :: Maybe MsgSignatures
+    signedMsg_ :: Maybe SignedMsg
   }
   deriving (Show)
 

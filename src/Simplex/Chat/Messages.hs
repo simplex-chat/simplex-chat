@@ -1150,7 +1150,7 @@ data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
     msgBody :: MsgBody,
-    msgSignatures_ :: Maybe MsgSignatures
+    signedMsg_ :: Maybe SignedMsg
   }
   deriving (Show)
 

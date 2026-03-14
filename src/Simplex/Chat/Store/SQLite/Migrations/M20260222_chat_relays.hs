@@ -76,7 +76,8 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 ALTER TABLE group_members ADD COLUMN relay_link BLOB;
 ALTER TABLE group_members ADD COLUMN member_pub_key BLOB;
 
-ALTER TABLE messages ADD COLUMN msg_sigs BLOB;
+ALTER TABLE messages ADD COLUMN msg_chat_binding TEXT;
+ALTER TABLE messages ADD COLUMN msg_signatures BLOB;
 |]
 
 down_m20260222_chat_relays :: Query
@@ -116,5 +117,6 @@ DROP TABLE chat_relays;
 ALTER TABLE group_members DROP COLUMN relay_link;
 ALTER TABLE group_members DROP COLUMN member_pub_key;
 
-ALTER TABLE messages DROP COLUMN msg_sigs;
+ALTER TABLE messages DROP COLUMN msg_chat_binding;
+ALTER TABLE messages DROP COLUMN msg_signatures;
 |]

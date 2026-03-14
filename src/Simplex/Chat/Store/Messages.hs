@@ -179,7 +179,7 @@ import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
-import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Encoding (smpDecode, smpEncode)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -225,22 +225,23 @@ createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage
     case encodeMessage (SharedMsgId sharedMsgId) of
       ECMLarge -> pure $ Left SELargeMsg
       ECMEncoded msgBody -> do
-        let msgSignatures_ = signBody <$> msgSigning_
+        let signedMsg_ = signBody <$> msgSigning_
             signBody MsgSigning {bindingTag, bindingData, keyRef, privKey} =
               let sig = C.ASignature C.SEd25519 $ C.sign' privKey (smpEncode bindingTag <> bindingData <> msgBody)
-               in MsgSignatures {chatBinding = bindingTag, signatures = MsgSignature keyRef sig :| []}
+               in SignedMsg {chatBinding = bindingTag, msgSignatures = MsgSignature keyRef sig :| [], signedBody = msgBody}
         createdAt <- getCurrentTime
         DB.execute
           db
           [sql|
             INSERT INTO messages (
-              msg_sent, chat_msg_event, msg_body, msg_sigs, connection_id, group_id,
+              msg_sent, chat_msg_event, msg_body, msg_chat_binding, msg_signatures, connection_id, group_id,
               shared_msg_id, shared_msg_id_user, created_at, updated_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
           |]
-          (MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, msgSignatures_, connId_, groupId_, DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt)
+          ((MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, chatBinding <$> signedMsg_, smpEncode . msgSignatures <$> signedMsg_, connId_, groupId_)
+           :. (DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt))
         msgId <- insertedRowId db
-        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, msgSignatures_}
+        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, signedMsg_}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
@@ -259,9 +260,9 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
     (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
   insertedRowId db
 
-createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe MsgSignatures -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ msgSignatures_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
-  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ msgSignatures_ authorGroupMemberId_ Nothing
+createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe SignedMsg -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ signedMsg_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
+  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ signedMsg_ authorGroupMemberId_ Nothing
   liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
@@ -291,8 +292,8 @@ getLastRcvMsgInfo db connId =
     rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
       RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
-createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe MsgSignatures -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, brokerTs} sharedMsgId_ msgSignatures_ authorMember forwardedByMember =
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe SignedMsg -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, brokerTs} sharedMsgId_ signedMsg_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -320,11 +321,11 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, broke
         db
         [sql|
           INSERT INTO messages
-            (msg_sent, chat_msg_event, msg_body, msg_sigs, broker_ts, created_at, updated_at, connection_id, group_id,
+            (msg_sent, chat_msg_event, msg_body, msg_chat_binding, msg_signatures, broker_ts, created_at, updated_at, connection_id, group_id,
              shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, msgSignatures_, brokerTs, currentTs, currentTs, connId_, groupId_)
+        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, chatBinding <$> signedMsg_, smpEncode . msgSignatures <$> signedMsg_, brokerTs, currentTs, currentTs, connId_, groupId_)
          :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
@@ -358,7 +359,7 @@ getPendingGroupMessages db groupMemberId =
     <$> DB.query
       db
       [sql|
-        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_sigs
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_chat_binding, m.msg_signatures
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
@@ -366,8 +367,9 @@ getPendingGroupMessages db groupMemberId =
       |]
       (Only groupMemberId)
   where
-    pendingGroupMessage (msgId, sharedMsgId, msgBody, msgSignatures_) =
-      SndMessage {msgId, sharedMsgId, msgBody, msgSignatures_}
+    pendingGroupMessage (msgId, sharedMsgId, msgBody, chatBinding_ :: Maybe ChatBinding, sigs_ :: Maybe ByteString) =
+      let signedMsg_ = SignedMsg <$> chatBinding_ <*> (sigs_ >>= eitherToMaybe . smpDecode) <*> pure msgBody
+       in SndMessage {msgId, sharedMsgId, msgBody, signedMsg_}
 
 deletePendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 deletePendingGroupMessage db groupMemberId messageId =
