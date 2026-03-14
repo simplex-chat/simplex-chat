@@ -260,9 +260,9 @@ createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
     (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
   insertedRowId db
 
-createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe SignedMsg -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ signedMsg_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
-  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ signedMsg_ authorGroupMemberId_ Nothing
+createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} authorGroupMemberId_ = do
+  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ Nothing
   liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
@@ -292,8 +292,8 @@ getLastRcvMsgInfo db connId =
     rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
       RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
-createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe SignedMsg -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, brokerTs} sharedMsgId_ signedMsg_ authorMember forwardedByMember =
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -329,6 +329,8 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, broke
          :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
+    msgBody = verifiedMsgBody verifiedMsg
+    signedMsg_ = verifiedSignedMsg verifiedMsg
 
 updateSndMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> IO ()
 updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do

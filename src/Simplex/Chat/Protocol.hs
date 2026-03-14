@@ -330,6 +330,13 @@ data SignedMsg = SignedMsg
   }
   deriving (Show)
 
+-- | Post-verification message. Encodes the invariant that signature
+-- has been checked (or wasn't required). Store and forward functions
+-- accept only VerifiedMsg, preventing unverified messages from being persisted.
+data VerifiedMsg
+  = VMUnsigned AChatMessage
+  | VMSigned SignedMsg AChatMessage
+
 data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe SignedMsg) AChatMessage
 
 data FwdSender
@@ -1356,6 +1363,19 @@ chatMsgToBody :: forall e. MsgEncodingI e => ChatMessage e -> ByteString
 chatMsgToBody chatMsg = case encoding @e of
   SBinary -> chatMsgBinaryToBody chatMsg
   SJson -> LB.toStrict $ J.encode chatMsg
+
+-- | Canonical bytes to store/forward.
+-- Signed: original bytes (re-encoding would invalidate signature).
+-- Unsigned: re-encoded from parsed ChatMessage (sanitizes stored content).
+verifiedMsgBody :: VerifiedMsg -> ByteString
+verifiedMsgBody = \case
+  VMUnsigned (ACMsg _ chatMsg) -> chatMsgToBody chatMsg
+  VMSigned SignedMsg {signedBody} _ -> signedBody
+
+verifiedSignedMsg :: VerifiedMsg -> Maybe SignedMsg
+verifiedSignedMsg = \case
+  VMUnsigned _ -> Nothing
+  VMSigned sm _ -> Just sm
 
 instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage

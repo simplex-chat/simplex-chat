@@ -29,6 +29,7 @@ module Simplex.Chat.Store.Delivery
   )
 where
 
+import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
@@ -149,12 +150,19 @@ getMsgDeliveryTask_ db taskId =
   where
     toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
     toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, Binary msgBody, chatBinding_, sigs_, BI showGroupAsSender)) =
-      case toJobScope_ jobScopeRow of
-        Just jobScope ->
+      case (toJobScope_ jobScopeRow, J.eitherDecodeStrict' msgBody) of
+        (Just jobScope, Right chatMsg) ->
           let fwdSender = if showGroupAsSender then FwdChannel else FwdMember senderMemberId senderMemberName
-              signedMsg_ = SignedMsg <$> chatBinding_ <*> decodeSigs sigs_ <*> pure msgBody
-           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, msgBody, signedMsg_}
-        Nothing -> Left $ SEInvalidDeliveryTask taskId'
+              acm = ACMsg SJson chatMsg
+              -- Re-parsed from msg_body: validates stored content against current code.
+              -- Signed: original bytes preserved (re-encoding would invalidate signature).
+              -- Unsigned: re-encoded from parsed ChatMessage on forward (sanitizes content).
+              verifiedMsg = case (chatBinding_, decodeSigs sigs_) of
+                (Just cb, Just sigs) -> VMSigned (SignedMsg cb sigs msgBody) acm
+                _ -> VMUnsigned acm
+           in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg}
+        (Nothing, _) -> Left $ SEInvalidDeliveryTask taskId'
+        (_, Left _) -> Left $ SEInvalidDeliveryTask taskId'
     decodeSigs :: Maybe (Binary ByteString) -> Maybe (L.NonEmpty MsgSignature)
     decodeSigs = (>>= eitherToMaybe . smpDecode . (\(Binary bs) -> bs))
 

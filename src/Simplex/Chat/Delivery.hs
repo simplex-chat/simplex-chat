@@ -131,10 +131,8 @@ data MessageDeliveryTask = MessageDeliveryTask
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    msgBody :: ByteString,
-    signedMsg_ :: Maybe SignedMsg
+    verifiedMsg :: VerifiedMsg
   }
-  deriving (Show)
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
 deliveryTaskId = taskId

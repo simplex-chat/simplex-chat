@@ -1156,10 +1156,9 @@ data SndMessage = SndMessage
 
 data NewRcvMessage e = NewRcvMessage
   { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody,
+    verifiedMsg :: VerifiedMsg,
     brokerTs :: UTCTime
   }
-  deriving (Show)
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,

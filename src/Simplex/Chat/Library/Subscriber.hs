@@ -477,8 +477,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let tag = toCMEventTag chatMsgEvent
               atomically $ modifyTVar' tags (tshow tag :)
               logInfo $ "contact msg=" <> tshow tag <> " " <> eInfo
-              let body = chatMsgToBody chatMsg
-              (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta body chatMsg
+              (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta chatMsg
               let ct'' = ct' {activeConn = Just conn''} :: Contact
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
@@ -930,18 +929,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 -- direct JSON and binary messages; binary events don't produce delivery tasks
                 _ -> do
                   logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
-                  newTask_ <- join <$> withVerifiedSig gInfo' scopeInfo m' msgSig_ (requiresSignature tag) brokerTs
-                    (processEvent gInfo' m' chatMsg msgSig_ `catchAllErrors` \e -> eToView e $> Nothing)
+                  newTask_ <- join <$> withVerifiedMsg gInfo' scopeInfo m' msgSig_ (requiresSignature tag) brokerTs (ACMsg enc chatMsg)
+                    (\vm -> processEvent gInfo' m' chatMsg vm `catchAllErrors` \e -> eToView e $> Nothing)
                   pure $ maybe id (:) newTask_ newDeliveryTasks
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               eToView (ChatError . CEException $ "error parsing chat message: " <> e)
               pure newDeliveryTasks
-          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> ChatMessage e -> Maybe SignedMsg -> CM (Maybe NewMessageDeliveryTask)
-          processEvent gInfo' m' chatMsg signedMsg_ = do
-            let body = maybe (chatMsgToBody chatMsg) signedBody signedMsg_
-            (m'', conn', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta body chatMsg signedMsg_
+          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> ChatMessage e -> VerifiedMsg -> CM (Maybe NewMessageDeliveryTask)
+          processEvent gInfo' m' chatMsg vm = do
+            (m'', conn', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta chatMsg vm
             let ctx js = DeliveryTaskContext js False
                 checkSendAsGroup :: Maybe Bool -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
                 checkSendAsGroup asGroup_ a
@@ -3165,15 +3163,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unknownRole <- unknownMemberRole gInfo
           (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownRole
           when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
-          void $ withVerifiedSig gInfo scopeInfo author msgSig_ sigRequired msgTs $
-            processForwardedMsg msgSig_ (Just author)
-        FwdChannel -> processForwardedMsg Nothing Nothing
+          void $ withVerifiedMsg gInfo scopeInfo author msgSig_ sigRequired msgTs (ACMsg SJson chatMsg) $
+            \vm -> processForwardedMsg vm (Just author)
+        FwdChannel -> processForwardedMsg (VMUnsigned (ACMsg SJson chatMsg)) Nothing
       where
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
-        processForwardedMsg :: Maybe SignedMsg -> Maybe GroupMember -> CM ()
-        processForwardedMsg signedMsg_' author_ = do
-          let body = maybe (chatMsgToBody chatMsg) signedBody signedMsg_'
-          rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ body chatMsg brokerTs signedMsg_'
+        processForwardedMsg :: VerifiedMsg -> Maybe GroupMember -> CM ()
+        processForwardedMsg vm author_ = do
+          rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author_ chatMsg brokerTs vm
           forM_ rcvMsg_ $ \rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc ->
               void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
@@ -3201,12 +3198,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Just author -> action author
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
-    withVerifiedSig :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe SignedMsg -> Bool -> UTCTime -> CM a -> CM (Maybe a)
-    withVerifiedSig gInfo scopeInfo member signedMsg_ sigRequired ts action
+    withVerifiedMsg :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe SignedMsg -> Bool -> UTCTime -> AChatMessage -> (VerifiedMsg -> CM a) -> CM (Maybe a)
+    withVerifiedMsg gInfo scopeInfo member signedMsg_ sigRequired ts acm action
       | not (verifySig gInfo member signedMsg_) = reject
       | sigRequired, isNothing signedMsg_, isJust (groupKeys gInfo) = reject
-      | otherwise = Just <$> action
+      | otherwise = Just <$> action vm
       where
+        vm = case signedMsg_ of
+          Nothing -> VMUnsigned acm
+          Just sm -> VMSigned sm acm
         reject = do
           createInternalChatItem user (CDGroupRcv gInfo scopeInfo member) (CIRcvGroupEvent RGEMsgBadSignature) (Just ts)
           pure Nothing
@@ -3376,9 +3376,9 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
               | otherwise -> do
-                  let MessageDeliveryTask {senderGMId, fwdSender, brokerTs = fwdBrokerTs, msgBody, signedMsg_} = task
+                  let MessageDeliveryTask {senderGMId, fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
                       fwd = GrpMsgForward {fwdSender, fwdBrokerTs}
-                      body = encodeBinaryBatch [encodeFwdElement fwd signedMsg_ msgBody]
+                      body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
                   withStore' $ \db -> do
                     createMsgDeliveryJob db gInfo jobScope (Just senderGMId) body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed

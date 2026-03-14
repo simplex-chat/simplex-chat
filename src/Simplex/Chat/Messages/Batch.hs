@@ -85,8 +85,8 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, msgBody, signedMsg_} = task
-        fwdBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} signedMsg_ msgBody
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
+        fwdBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
         msgLen = B.length fwdBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
@@ -95,9 +95,9 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
 -- | Encode a batch element for relay groups: F<GrpMsgForward>[S<sigs>]<body>.
-encodeFwdElement :: GrpMsgForward -> Maybe SignedMsg -> ByteString -> ByteString
-encodeFwdElement fwd signedMsg_ body =
-  "F" <> smpEncode fwd <> encodeBatchElement signedMsg_ body
+encodeFwdElement :: GrpMsgForward -> VerifiedMsg -> ByteString
+encodeFwdElement fwd vm =
+  "F" <> smpEncode fwd <> encodeBatchElement (verifiedSignedMsg vm) (verifiedMsgBody vm)
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty
