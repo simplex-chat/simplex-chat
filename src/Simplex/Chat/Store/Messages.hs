@@ -534,8 +534,8 @@ setSupportChatMemberAttention db vr user g m memberAttention = do
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live hasLink createdAt =
-  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing False createdAt
+createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live hasLink createdAt =
+  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing (isJust signedMsg_) createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow

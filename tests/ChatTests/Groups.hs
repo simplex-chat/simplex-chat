@@ -8433,6 +8433,7 @@ testChannels1RelayDeliver ps =
                   eve <## "welcome message changed to:"
                   eve <## "welcome to team"
               ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
 
             -- update group preferences (XGrpPrefs) - signed
             alice ##> "/set delete #team on"
@@ -8466,6 +8467,7 @@ testChannels1RelayDeliver ps =
                 dan <## "#team: alice changed the role of cath from member to admin (signed)",
                 eve <## "#team: alice changed the role of cath from member to admin (signed)"
               ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of cath to admin (signed)")])
 
             -- discover eve so alice can remove her
             eve #> "#team hello from eve"
@@ -8489,6 +8491,8 @@ testChannels1RelayDeliver ps =
                 cath <## "#team: alice removed eve from the group (signed)",
                 dan <## "#team: alice removed eve from the group (signed)"
               ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "removed eve (signed)")])
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
 
             -- delete group (XGrpDel) - signed
             alice ##> "/d #team"

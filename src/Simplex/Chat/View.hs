@@ -358,9 +358,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
               Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
-    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
+    testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText, msgSigned}}) membership_ =
       let deleted_ = maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_)
-       in itemText <> deleted_
+       in itemText <> signedStr msgSigned <> deleted_
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
     unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isUserMention ci
     unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
@@ -647,7 +647,7 @@ viewChatItems ttyUser unmuted u chatItems ts tz
   | otherwise = ttyUser u [sShow (length chatItems) <> " new messages created"]
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention}, content, quotedItem, file} doShow ts tz =
+viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwardedByMember, userMention, msgSigned}, content, quotedItem, file} doShow ts tz =
   withGroupMsgForwarded . withItemDeleted <$> viewCI
   where
     viewCI = case chat of
@@ -730,8 +730,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir context (MCText $ T.pack fileName) ts tz meta
       _ -> view dir context mc ts tz meta
-    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content] meta
-    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content] False
+    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> signedStr msgSigned] meta
+    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> signedStr msgSigned] False
     showSndItemProhibited to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> " " <> prohibited] meta
     showRcvItemProhibited from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> " " <> prohibited] False
     showItem ss = if doShow then ss else []
