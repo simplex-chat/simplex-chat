@@ -131,7 +131,8 @@ data MessageDeliveryTask = MessageDeliveryTask
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    chatMessage :: ChatMessage 'Json
+    msgBody :: ByteString,
+    msgSignatures_ :: Maybe MsgSignatures
   }
   deriving (Show)
 

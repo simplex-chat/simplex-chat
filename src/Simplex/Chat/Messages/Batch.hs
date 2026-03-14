@@ -9,6 +9,8 @@ module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
     BatchMode (..),
     encodeBatchElement,
+    encodeFwdElement,
+    encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
   )
@@ -69,33 +71,32 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
 -- Always uses binary batch format for relay groups.
--- TODO [member keys] signatures will also be encoded here.
 batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
 batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
     addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageDeliveryTask -> ([ByteString], [Int64], [Int64], Int, Int)
     addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
-      -- too large: skip msgBody, record taskId in largeTaskIds
+      -- too large: skip, record taskId in largeTaskIds
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      | len' + (n + 1) * 2 + 2 <= maxLen = (fwdBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, chatMessage} = task
-        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} chatMessage
-        msgLen = B.length msgBody
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, msgBody, msgSignatures_} = task
+        fwdBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} msgSignatures_ msgBody
+        msgLen = B.length fwdBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
     toResult (msgBodies, taskIds, largeTaskIds, _, _) =
       let encoded = encodeBinaryBatch (reverse msgBodies)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
--- | Encode a batch element for relay groups: F<GrpMsgForward><json>.
-encodeFwdElement :: GrpMsgForward -> ChatMessage 'Json -> ByteString
-encodeFwdElement fwd chatMessage =
-  "F" <> smpEncode fwd <> chatMsgToBody chatMessage
+-- | Encode a batch element for relay groups: F<GrpMsgForward>[S<sigs>]<body>.
+encodeFwdElement :: GrpMsgForward -> Maybe MsgSignatures -> ByteString -> ByteString
+encodeFwdElement fwd sigs_ body =
+  "F" <> smpEncode fwd <> encodeBatchElement sigs_ body
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty
