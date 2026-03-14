@@ -329,8 +329,7 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, b
          :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
-    msgBody = verifiedMsgBody verifiedMsg
-    signedMsg_ = verifiedSignedMsg verifiedMsg
+    (signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
 updateSndMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> IO ()
 updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do

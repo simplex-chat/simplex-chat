@@ -153,13 +153,12 @@ getMsgDeliveryTask_ db taskId =
       case (toJobScope_ jobScopeRow, J.eitherDecodeStrict' msgBody) of
         (Just jobScope, Right chatMsg) ->
           let fwdSender = if showGroupAsSender then FwdChannel else FwdMember senderMemberId senderMemberName
-              acm = ACMsg SJson chatMsg
               -- Re-parsed from msg_body: validates stored content against current code.
               -- Signed: original bytes preserved (re-encoding would invalidate signature).
               -- Unsigned: re-encoded from parsed ChatMessage on forward (sanitizes content).
               verifiedMsg = case (chatBinding_, decodeSigs sigs_) of
-                (Just cb, Just sigs) -> VMSigned (SignedMsg cb sigs msgBody) acm
-                _ -> VMUnsigned acm
+                (Just cb, Just sigs) -> VMSigned (SignedMsg cb sigs msgBody) chatMsg
+                _ -> VMUnsigned chatMsg
            in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg}
         (Nothing, _) -> Left $ SEInvalidDeliveryTask taskId'
         (_, Left _) -> Left $ SEInvalidDeliveryTask taskId'

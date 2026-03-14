@@ -1551,7 +1551,7 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
 parseChatMessage :: Connection -> ByteString -> CM (ChatMessage 'Json)
 parseChatMessage conn s = do
   case parseChatMessages s of
-    [msg] -> liftEither . first (ChatError . errType) $ (\(ParsedMsg _ _ (ACMsg _ m)) -> checkEncoding m) =<< msg
+    [msg] -> liftEither . first (ChatError . errType) $ (\(APMsg _ (ParsedMsg _ _ m)) -> checkEncoding m) =<< msg
     _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
@@ -1869,8 +1869,9 @@ createSndMessages idsEvents = do
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
-  | requiresSignature (toCMEventTag evt) = Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
+groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
+  | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
+      Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
 groupMsgSigning _ _ = Nothing
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
@@ -2210,17 +2211,18 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta chatMsg@ChatMessage {chat
   conn' <- updatePeerChatVRange conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
-      newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = VMUnsigned (ACMsg (encoding @e) chatMsg), brokerTs}
+      newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = VMUnsigned chatMsg, brokerTs}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
   pure (conn', msg)
 
-saveGroupRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> ChatMessage e -> VerifiedMsg -> CM (GroupMember, Connection, RcvMessage)
-saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} vm = do
+saveGroupRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> VerifiedMsg e -> CM (GroupMember, Connection, RcvMessage)
+saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta verifiedMsg = do
+  let ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = verifiedChatMsg verifiedMsg
   (am'@GroupMember {memberId = amMemId, groupMemberId = amGroupMemId}, conn') <- updateMemberChatVRange authorMember conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       brokerTs = metaBrokerTs agentMsgMeta
-      newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = vm, brokerTs}
+      newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   msg <-
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
@@ -2234,9 +2236,10 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
         _ -> throwError e
   pure (am', conn', msg)
 
-saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> Maybe GroupMember -> ChatMessage e -> UTCTime -> VerifiedMsg -> CM (Maybe RcvMessage)
-saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMember_ ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs vm = do
-  let newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg = vm, brokerTs}
+saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> Maybe GroupMember -> VerifiedMsg e -> UTCTime -> CM (Maybe RcvMessage)
+saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMember_ verifiedMsg brokerTs = do
+  let ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = verifiedChatMsg verifiedMsg
+      newMsg = NewRcvMessage {chatMsgEvent, verifiedMsg, brokerTs}
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = groupMemberId' <$> refAuthorMember_
   -- TODO [relays] TBC highlighting difference between deduplicated messages (useRelays branch)

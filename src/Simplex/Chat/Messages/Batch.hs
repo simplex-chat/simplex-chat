@@ -95,9 +95,10 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
 -- | Encode a batch element for relay groups: F<GrpMsgForward>[S<sigs>]<body>.
-encodeFwdElement :: GrpMsgForward -> VerifiedMsg -> ByteString
-encodeFwdElement fwd vm =
-  "F" <> smpEncode fwd <> encodeBatchElement (verifiedSignedMsg vm) (verifiedMsgBody vm)
+encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
+encodeFwdElement fwd verifiedMsg = "F" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
+  where
+    (signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty

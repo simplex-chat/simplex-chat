@@ -131,7 +131,7 @@ data MessageDeliveryTask = MessageDeliveryTask
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    verifiedMsg :: VerifiedMsg
+    verifiedMsg :: VerifiedMsg 'Json
   }
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
