@@ -36,8 +36,8 @@ data BatchMode = BMJson | BMBinary
 -- Dual of elementP's 'S'/'{'cases.
 encodeBatchElement :: Maybe SignedMsg -> ByteString -> ByteString
 encodeBatchElement Nothing body = body
-encodeBatchElement (Just SignedMsg {chatBinding, msgSignatures}) body =
-  "S" <> smpEncode (chatBinding, msgSignatures) <> body
+encodeBatchElement (Just SignedMsg {chatBinding, signatures}) body =
+  "S" <> smpEncode (chatBinding, signatures) <> body
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 

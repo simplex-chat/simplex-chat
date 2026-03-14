@@ -3212,11 +3212,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           pure Nothing
 
     verifySig :: GroupInfo -> GroupMember -> Maybe SignedMsg -> Bool
-    verifySig gInfo GroupMember {memberPubKey = Just pubKey, memberId} (Just SignedMsg {chatBinding, msgSignatures, signedBody}) =
+    verifySig gInfo GroupMember {memberPubKey = Just pubKey, memberId} (Just SignedMsg {chatBinding, signatures, signedBody}) =
       case chatBinding of
         CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
           let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
-           in all (verifyOne prefix) msgSignatures
+           in all (verifyOne prefix) signatures
         _ -> True -- can't reconstruct binding → accept (enforcement in Step 5)
       where
         verifyOne prefix (MsgSignature KRMember sig) =

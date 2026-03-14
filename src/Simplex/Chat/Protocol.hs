@@ -325,7 +325,7 @@ data MsgSignature = MsgSignature KeyRef C.ASignature
 
 data SignedMsg = SignedMsg
   { chatBinding :: ChatBinding,
-    msgSignatures :: L.NonEmpty MsgSignature,
+    signatures :: L.NonEmpty MsgSignature,
     signedBody :: ByteString -- exact bytes that were signed
   }
   deriving (Show)
@@ -387,8 +387,10 @@ instance Encoding MsgSignature where
 
 -- Wire format: <binding:1> <sigCount:1> (<keyRef><sig:64>)* <body>
 instance Encoding SignedMsg where
-  smpEncode (SignedMsg tag sigs body) = smpEncode (tag, sigs) <> body
-  smpP = SignedMsg <$> smpP <*> smpP <*> A.takeByteString
+  smpEncode SignedMsg {chatBinding, signatures, signedBody} = smpEncode (chatBinding, signatures, Tail signedBody)
+  smpP = do
+    (chatBinding, signatures, Tail signedBody) <- smpP
+    pure SignedMsg {chatBinding, signatures, signedBody}
 
 -- | Generic signing context — data, not function.
 -- Callers construct per-event; createSndMessages uses mechanically.
