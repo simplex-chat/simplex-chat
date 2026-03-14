@@ -81,13 +81,13 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
-      | len' + (n + 1) * 2 + 2 <= maxLen = (fwdBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
         MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
-        fwdBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
-        msgLen = B.length fwdBody
+        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
+        msgLen = B.length msgBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
     toResult (msgBodies, taskIds, largeTaskIds, _, _) =
