@@ -64,7 +64,10 @@ ALTER TABLE group_members
   ADD COLUMN relay_link BYTEA,
   ADD COLUMN member_pub_key BYTEA;
 
-ALTER TABLE messages ADD COLUMN msg_sigs BYTEA;
+ALTER TABLE messages ADD COLUMN msg_chat_binding TEXT;
+ALTER TABLE messages ADD COLUMN msg_signatures BYTEA;
+
+ALTER TABLE chat_items ADD COLUMN msg_signed SMALLINT NOT NULL DEFAULT 0;
 |]
 
 down_m20260222_chat_relays :: Text
@@ -104,5 +107,8 @@ ALTER TABLE group_members
   DROP COLUMN relay_link,
   DROP COLUMN member_pub_key;
 
-ALTER TABLE messages DROP COLUMN msg_sigs;
+ALTER TABLE messages DROP COLUMN msg_chat_binding;
+ALTER TABLE messages DROP COLUMN msg_signatures;
+
+ALTER TABLE chat_items DROP COLUMN msg_signed;
 |]

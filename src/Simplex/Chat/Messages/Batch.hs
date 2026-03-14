@@ -9,6 +9,8 @@ module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
     BatchMode (..),
     encodeBatchElement,
+    encodeFwdElement,
+    encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
   )
@@ -32,9 +34,10 @@ data BatchMode = BMJson | BMBinary
 
 -- | Encode a batch element with optional signature prefix.
 -- Dual of elementP's 'S'/'{'cases.
-encodeBatchElement :: Maybe MsgSignatures -> ByteString -> ByteString
+encodeBatchElement :: Maybe SignedMsg -> ByteString -> ByteString
 encodeBatchElement Nothing body = body
-encodeBatchElement (Just sigs) body = "S" <> smpEncode sigs <> body
+encodeBatchElement (Just SignedMsg {chatBinding, signatures}) body =
+  "S" <> smpEncode (chatBinding, signatures) <> body
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
@@ -50,12 +53,12 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
     addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
     addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody, msgSignatures_}) acc@(batches, bodies, msgs, len, n)
+    addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
       | batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
       | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        body = encodeBatchElement msgSignatures_ msgBody
+        body = encodeBatchElement signedMsg_ msgBody
         msgLen = B.length body
         len' = len + msgLen
         n' = n + 1
@@ -69,13 +72,12 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
 -- Always uses binary batch format for relay groups.
--- TODO [member keys] signatures will also be encoded here.
 batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
 batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
     addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageDeliveryTask -> ([ByteString], [Int64], [Int64], Int, Int)
     addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
-      -- too large: skip msgBody, record taskId in largeTaskIds
+      -- too large: skip, record taskId in largeTaskIds
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
       -- batch overhead: '=' + count (2) + 2-byte length prefix per element
@@ -83,8 +85,8 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, chatMessage} = task
-        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} chatMessage
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
+        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
         msgLen = B.length msgBody
         len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
@@ -92,10 +94,11 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       let encoded = encodeBinaryBatch (reverse msgBodies)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
--- | Encode a batch element for relay groups: F<GrpMsgForward><json>.
-encodeFwdElement :: GrpMsgForward -> ChatMessage 'Json -> ByteString
-encodeFwdElement fwd chatMessage =
-  "F" <> smpEncode fwd <> chatMsgToBody chatMessage
+-- | Encode a batch element for relay groups: F<GrpMsgForward>[S<sigs>]<body>.
+encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
+encodeFwdElement fwd verifiedMsg = "F" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
+  where
+    (signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty
