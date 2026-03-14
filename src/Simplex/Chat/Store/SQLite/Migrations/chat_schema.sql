@@ -405,7 +405,8 @@ CREATE TABLE messages(
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   broker_ts TEXT,
-  msg_sigs BLOB
+  msg_chat_binding TEXT,
+  msg_signatures BLOB
 ) STRICT;
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
