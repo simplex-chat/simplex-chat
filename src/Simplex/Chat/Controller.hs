@@ -203,7 +203,6 @@ data InlineFilesConfig = InlineFilesConfig
   { offerChunks :: Integer,
     sendChunks :: Integer,
     totalSendChunks :: Integer,
-    sendInline :: Bool,
     receiveChunks :: Integer,
     receiveInstant :: Bool
   }
@@ -211,10 +210,9 @@ data InlineFilesConfig = InlineFilesConfig
 defaultInlineFilesConfig :: InlineFilesConfig
 defaultInlineFilesConfig =
   InlineFilesConfig
-    { offerChunks = 2, -- max when chunks are offered / received with the option - limited to 255 on the encoding level
-      sendChunks = 2, -- max per file when chunks will be sent inline without acceptance
-      totalSendChunks = 20, -- max per conversation when chunks will be sent inline without acceptance
-      sendInline = False, -- currently, files are never sent inline, it's only used in the tests
+    { offerChunks = 15, -- max when chunks are offered / received with the option - limited to 255 on the encoding level
+      sendChunks = 6, -- max per file when chunks will be sent inline without acceptance
+      totalSendChunks = 30, -- max per conversation when chunks will be sent inline without acceptance
       receiveChunks = 8, -- max when chunks are accepted
       receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
