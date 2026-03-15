@@ -782,13 +782,11 @@ parseChatMessages msg = case B.head msg of
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [plainMsg <$> parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
-      'S' -> [parseAll (elementP Nothing) s]
-      _ -> [plainMsg . ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+      _ -> [parseAll (elementP Nothing) s]
     plainMsg = aParsedMsg Nothing Nothing
     aParsedMsg fwd sm (ACMsg enc cm) = APMsg enc (ParsedMsg fwd sm cm)
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
@@ -820,7 +818,7 @@ parseChatMessages msg = case B.head msg of
         when (isJust fwd) $ fail "nested forward elements not supported"
         elementP . Just =<< smpP
       '{' -> aParsedMsg fwd Nothing <$> msgP
-      c -> fail $ "invalid element prefix: " <> show c
+      _ -> aParsedMsg fwd Nothing . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
