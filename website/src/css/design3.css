@@ -365,7 +365,7 @@ section.page .area {
 
 /* --- COVER --- */
 section.cover {
-    background-image: url("/img/design_3/lqip/cover-light.webp");
+    background-image: url("/img/design_3/cover-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
@@ -373,7 +373,7 @@ section.cover {
 }
 
 .dark section.cover {
-    background-image: url("/img/design_3/lqip/cover.webp");
+    background-image: url("/img/design_3/cover.webp");
 }
 
 .chrome-ios section.cover,
@@ -624,52 +624,52 @@ main .section-bg {
 }
 
 .page-2 {
-    background-image: url("/img/design_3/lqip/section-2-desktop-light.webp");
+    background-image: url("/img/design_3/section-2-desktop-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .dark .page-2 {
-    background-image: url("/img/design_3/lqip/section-2-desktop.webp");
+    background-image: url("/img/design_3/section-2-desktop.webp");
 }
 
 .page-3 {
-    background-image: url("/img/design_3/lqip/section-3-desktop-light.webp");
+    background-image: url("/img/design_3/section-3-desktop-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .dark .page-3 {
-    background-image: url("/img/design_3/lqip/section-3-desktop.webp");
+    background-image: url("/img/design_3/section-3-desktop.webp");
 }
 
 .page-4 {
-    background-image: url("/img/design_3/lqip/section-4-desktop-light.webp");
+    background-image: url("/img/design_3/section-4-desktop-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .dark .page-4 {
-    background-image: url("/img/design_3/lqip/section-4-desktop.webp");
+    background-image: url("/img/design_3/section-4-desktop.webp");
 }
 
 .page-5 {
-    background-image: url("/img/design_3/lqip/section-5-desktop-light.webp");
+    background-image: url("/img/design_3/section-5-desktop-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .dark .page-5 {
-    background-image: url("/img/design_3/lqip/section-5-desktop.webp");
+    background-image: url("/img/design_3/section-5-desktop.webp");
 }
 
 @media screen and (max-width: 959px) {
     .page-2 {
-        background-image: url("/img/design_3/lqip/section-2-mobile-light.webp");
+        background-image: url("/img/design_3/section-2-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
         background-position: 51.5% calc(50% - calc(var(--sec-vhu) * 2)) !important;
     }
@@ -684,11 +684,11 @@ main .section-bg {
     }
 
     .dark .page-2 {
-        background-image: url("/img/design_3/lqip/section-2-mobile.webp");
+        background-image: url("/img/design_3/section-2-mobile.webp");
     }
 
     .page-3 {
-        background-image: url("/img/design_3/lqip/section-3-mobile-light.webp");
+        background-image: url("/img/design_3/section-3-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.8);
         background-position: 50% calc(50% - calc(var(--sec-vhu) * 4.5)) !important;
     }
@@ -703,11 +703,11 @@ main .section-bg {
     }
 
     .dark .page-3 {
-        background-image: url("/img/design_3/lqip/section-3-mobile.webp");
+        background-image: url("/img/design_3/section-3-mobile.webp");
     }
 
     .page-4 {
-        background-image: url("/img/design_3/lqip/section-4-mobile-light.webp");
+        background-image: url("/img/design_3/section-4-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
         background-position: 50% calc(50% - calc(var(--sec-vhu) * 2)) !important;
     }
@@ -722,11 +722,11 @@ main .section-bg {
     }
 
     .dark .page-4 {
-        background-image: url("/img/design_3/lqip/section-4-mobile.webp");
+        background-image: url("/img/design_3/section-4-mobile.webp");
     }
 
     .page-5 {
-        background-image: url("/img/design_3/lqip/section-5-mobile-light.webp");
+        background-image: url("/img/design_3/section-5-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
         background-position: 50% calc(50% - calc(var(--sec-vhu) * 3)) !important;
     }
@@ -741,7 +741,7 @@ main .section-bg {
     }
 
     .dark .page-5 {
-        background-image: url("/img/design_3/lqip/section-5-mobile.webp");
+        background-image: url("/img/design_3/section-5-mobile.webp");
     }
 }
 
