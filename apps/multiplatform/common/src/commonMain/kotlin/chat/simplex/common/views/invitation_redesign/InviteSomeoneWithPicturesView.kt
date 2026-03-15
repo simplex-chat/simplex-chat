@@ -1,4 +1,4 @@
-package chat.simplex.app.views.invitation_redesign
+package chat.simplex.common.views.invitation_redesign
 
 import SectionBottomSpacer
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -18,12 +18,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.invitation_redesign.OneTimeLinkView
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.MR
 
 @Composable
-fun InviteSomeoneView(close: () -> Unit) {
+fun InviteSomeoneWithPicturesView(close: () -> Unit) {
   ModalView(close) {
     ColumnWithScrollBar(
       Modifier.fillMaxSize().background(MaterialTheme.colors.background),
@@ -31,14 +30,14 @@ fun InviteSomeoneView(close: () -> Unit) {
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
       Spacer(Modifier.height(DEFAULT_PADDING))
-      InviteSomeoneContent()
+      InviteSomeoneWithPicturesContent()
       SectionBottomSpacer()
     }
   }
 }
 
 @Composable
-fun InviteSomeoneContent() {
+fun InviteSomeoneWithPicturesContent() {
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = MaterialTheme.appColors.sentMessage,
@@ -144,7 +143,7 @@ fun InviteSomeoneContent() {
 
 @Preview
 @Composable
-fun PreviewInviteSomeoneView() {
+private fun PreviewInviteSomeoneView() {
   SimpleXTheme {
     ColumnWithScrollBar(
       Modifier.fillMaxSize().background(MaterialTheme.colors.background),
@@ -152,7 +151,7 @@ fun PreviewInviteSomeoneView() {
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
       Spacer(Modifier.height(DEFAULT_PADDING))
-      InviteSomeoneContent()
+      InviteSomeoneWithPicturesContent()
       SectionBottomSpacer()
     }
   }

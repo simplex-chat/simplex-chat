@@ -1,4 +1,4 @@
-package chat.simplex.app.views.invitation_redesign
+package chat.simplex.common.views.invitation_redesign
 
 import SectionBottomSpacer
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -42,7 +42,11 @@ fun BoxScope.EmptyChatListView() {
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Bold),
       )
       Spacer(Modifier.height(DEFAULT_PADDING))
-      InviteSomeoneContent()
+      if (SHOW_PICTURES) {
+        InviteSomeoneWithPicturesContent()
+      } else {
+        InviteSomeoneContent()
+      }
       SectionBottomSpacer()
     }
   } else {

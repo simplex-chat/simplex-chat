@@ -2,20 +2,12 @@ package chat.simplex.common.views.invitation_redesign
 
 import SectionBottomSpacer
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.*
@@ -32,7 +24,7 @@ fun InviteSomeoneView(close: () -> Unit) {
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
-      Spacer(Modifier.height(DEFAULT_PADDING))
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
       InviteSomeoneContent()
       SectionBottomSpacer()
     }
@@ -75,8 +67,8 @@ fun InviteSomeoneContent() {
     buttonText = stringResource(MR.strings.create_simplex_address),
     onDismiss = {},
     onClick = {
-      ModalManager.start.showModalCloseable { close ->
-        OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
+      ModalManager.start.showModalCloseable { closeAddress ->
+        UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = closeAddress)
       }
     }
   )
@@ -84,7 +76,7 @@ fun InviteSomeoneContent() {
 
 @Preview
 @Composable
-fun PreviewInviteSomeoneView() {
+private fun PreviewInviteSomeoneView() {
   SimpleXTheme {
     ColumnWithScrollBar(
       Modifier.fillMaxSize().background(MaterialTheme.colors.background),
