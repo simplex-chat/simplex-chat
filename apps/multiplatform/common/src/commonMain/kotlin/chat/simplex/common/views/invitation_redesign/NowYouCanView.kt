@@ -3,6 +3,7 @@ package chat.simplex.common.views.invitation_redesign
 import SectionBottomSpacer
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +32,7 @@ fun BoxScope.EmptyChatListView() {
     Column(
       Modifier
         .fillMaxSize()
+        .background(MaterialTheme.colors.background)
         .verticalScroll(rememberScrollState()),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -41,11 +43,11 @@ fun BoxScope.EmptyChatListView() {
         stringResource(MR.strings.invite_someone),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Bold),
       )
-      Spacer(Modifier.height(DEFAULT_PADDING))
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
       if (SHOW_PICTURES) {
-        InviteSomeoneWithPicturesContent()
+          InviteSomeoneWithPicturesContent()
       } else {
-        InviteSomeoneContent()
+          InviteSomeoneContent()
       }
       SectionBottomSpacer()
     }

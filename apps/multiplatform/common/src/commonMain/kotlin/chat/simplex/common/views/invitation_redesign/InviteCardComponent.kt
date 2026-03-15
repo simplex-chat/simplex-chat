@@ -34,7 +34,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
-const val SHOW_PICTURES = false
+const val SHOW_PICTURES = true
 
 @Composable
 fun InviteCardComponent(

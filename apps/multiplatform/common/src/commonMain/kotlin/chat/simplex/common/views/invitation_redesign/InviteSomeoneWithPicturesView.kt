@@ -11,6 +11,8 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
@@ -25,7 +27,7 @@ import chat.simplex.res.MR
 fun InviteSomeoneWithPicturesView(close: () -> Unit) {
   ModalView(close) {
     ColumnWithScrollBar(
-      Modifier.fillMaxSize().background(MaterialTheme.colors.background),
+      Modifier.fillMaxSize().padding(bottom = DEFAULT_BOTTOM_PADDING).background(Color.White),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
@@ -42,7 +44,7 @@ fun InviteSomeoneWithPicturesContent() {
     shape = RoundedCornerShape(18.dp),
     color = MaterialTheme.appColors.sentMessage,
     modifier = Modifier
-      .fillMaxSize().background(MaterialTheme.colors.background)
+      .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
       .clickable {
         ModalManager.start.showModalCloseable { close ->
@@ -50,16 +52,12 @@ fun InviteSomeoneWithPicturesContent() {
         }
       }
   ) {
-    Column(
-      Modifier.fillMaxWidth().padding(DEFAULT_PADDING),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Image(
-        painterResource(MR.images.ic_invitation_card_one_time_link),
-        contentDescription = null,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }
+    Image(
+      painterResource(MR.images.ic_invitation_card_one_time_link),
+      contentDescription = null,
+      contentScale = ContentScale.FillWidth,
+      modifier = Modifier.fillMaxWidth()
+    )
   }
 
   Spacer(Modifier.height(DEFAULT_PADDING_HALF))
@@ -97,27 +95,24 @@ fun InviteSomeoneWithPicturesContent() {
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
       .clickable {
-        ModalManager.start.showModalCloseable { closeAddress ->
-          UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = closeAddress)
+        // TODO, Hayk replace with page when data will be available
+        ModalManager.start.showModalCloseable { close ->
+          OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
         }
       }
   ) {
-    Column(
-      Modifier.fillMaxWidth().padding(DEFAULT_PADDING),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Image(
-        painterResource(MR.images.ic_invitation_card_public_address),
-        contentDescription = null,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }
+    Image(
+      painterResource(MR.images.ic_invitation_card_public_address),
+      contentDescription = null,
+      contentScale = ContentScale.FillWidth,
+      modifier = Modifier.fillMaxWidth()
+    )
   }
 
   Spacer(Modifier.height(DEFAULT_PADDING_HALF))
 
   Row(
-    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+    Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 24.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
