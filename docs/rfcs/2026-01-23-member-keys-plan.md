@@ -113,7 +113,7 @@ data MsgSignatures = MsgSignatures
     signatures :: NonEmpty MsgSignature
   }
 
--- Field order matches wire format: forward data (F prefix), then sig data (S prefix), then message (M prefix)
+-- Field order matches wire format: forward data (> prefix), then sig data (/ prefix), then message ({ prefix)
 data ParsedMsg = ParsedMsg (Maybe MsgForwardData) (Maybe MsgSigData) AChatMessage
 
 data MsgSigData = MsgSigData
@@ -231,20 +231,20 @@ elementLen = 2*2 OCTET                    ; 16-bit big-endian length
 elementBody = signedElement / forwardElement / plainElement
 
 ; Signed element - signatures followed by JSON body
-signedElement = %s"S" msgSignatures jsonBody
+signedElement = %s"/" msgSignatures jsonBody
 jsonBody = *OCTET                         ; JSON bytes (length from elementLen)
 
 ; Forward element - relay forwarding with preserved bytes (relay groups only)
 ; originalBytes is a nested element (signed or plain, but NOT another forward)
-forwardElement = %s"F" forwardMeta originalElement
+forwardElement = %s">" forwardMeta originalElement
 forwardMeta = senderMemberId senderMemberName brokerTs
 brokerTs = 8*8 OCTET                      ; UTC timestamp, big-endian microseconds
 originalElement = signedElement / plainElement
 
-; Plain message element
-plainElement = %s"M" jsonBody             ; M prefix for semantic consistency with S/F
+; Plain message element - starts with '{' (JSON object)
+plainElement = jsonBody
 
-; Signature data (no S prefix — the element prefix serves that role)
+; Signature data (no '/' prefix — the element prefix serves that role)
 msgSignatures = chatBinding sigCount *msgSignature
 chatBinding = directBinding / groupBinding
 directBinding = %s"D" securityCode
@@ -309,7 +309,7 @@ For relay-based groups, forwarding is NOT via `XGrpMsgForward` ChatMsgEvent (whi
 
 ```abnf
 ; Forward element details (defined in batchElement above)
-forwardElement = %s"F" forwardMeta originalBytes
+forwardElement = %s">" forwardMeta originalBytes
 forwardMeta = senderMemberId senderMemberName brokerTs
 senderMemberId = shortString
 senderMemberName = shortString            ; may be empty
@@ -323,26 +323,26 @@ Forward elements only appear inside binary batches — there is no standalone fo
 
 1. **Sender** creates signed message:
    ```
-   S<binding><sigs><{"event":"x.msg.new",...}>
+   /<binding><sigs><{"event":"x.msg.new",...}>
    ```
 
 2. **Relay** receives, parses to validate, stores original bytes in `msg_body`
 
 3. **Relay** forwards as binary batch element(s):
    ```
-   =<count>(<len><F<memberId><memberName><brokerTs><original-bytes>>)*
+   =<count>(<len> ">" <memberId><memberName><brokerTs><original-bytes>)*
    ```
 
 4. **Recipient** parses binary batch, extracts `originalBytes` from forward elements, verifies sender's signature
 
 **Key difference from current approach:**
 - Current: `XGrpMsgForward` nests **parsed** `ChatMessage 'Json` → re-encoded on send → bytes change
-- New: Forward element contains **original element bytes** (S or M) → never re-encoded → signature remains valid
-- Forward nesting is guarded: `elementP` rejects nested forward elements (`F` inside `F`)
+- New: Forward element contains **original element bytes** (`/` or `{`) → never re-encoded → signature remains valid
+- Forward nesting is guarded: `elementP` rejects nested forward elements (`>` inside `>`)
 
 **Backward compatibility:**
 - Old groups (non-relay): Continue using `XGrpMsgForward` ChatMsgEvent (JSON array batching)
-- New relay groups: Use binary batch with forward elements (`F` prefix inside `=` batch)
+- New relay groups: Use binary batch with forward elements (`>` prefix inside `=` batch)
 - `XGrpMsgForward` JSON call site passes `Nothing` for `msgSig_` (no signature data available in JSON path)
 - Parser accepts both formats
 
@@ -538,7 +538,7 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 4. Add `Maybe MemberKey` parameter to `XGrpLinkMem` message
 5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `ParsedMsg`, `MsgSigData`, `MsgForwardData`
 6. Encoding instances added: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `MsgSigData`, `MsgForwardData`
-7. Binary batch element parser (`elementP`) handles S/F/M prefixes with attoparsec
+7. Binary batch element parser (`elementP`) handles `/`/`>`/`{` prefixes with attoparsec
 8. Update `parseChatMessages` to accept both JSON array and binary batch formats
 9. Add `BatchMode` parameter to batching functions in Messages/Batch.hs
 

@@ -33,11 +33,11 @@ data BatchMode = BMJson | BMBinary
   deriving (Eq, Show)
 
 -- | Encode a batch element with optional signature prefix.
--- Dual of elementP's 'S'/'{'cases.
+-- Dual of elementP's '/'/'{'cases.
 encodeBatchElement :: Maybe SignedMsg -> ByteString -> ByteString
 encodeBatchElement Nothing body = body
 encodeBatchElement (Just SignedMsg {chatBinding, signatures}) body =
-  "S" <> smpEncode (chatBinding, signatures) <> body
+  "/" <> smpEncode (chatBinding, signatures) <> body
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
@@ -94,9 +94,9 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
       let encoded = encodeBinaryBatch (reverse msgBodies)
        in (encoded, reverse taskIds, reverse largeTaskIds)
 
--- | Encode a batch element for relay groups: F<GrpMsgForward>[S<sigs>]<body>.
+-- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
-encodeFwdElement fwd verifiedMsg = "F" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
+encodeFwdElement fwd verifiedMsg = ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
   where
     (signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 

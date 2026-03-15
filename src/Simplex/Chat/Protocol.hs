@@ -809,16 +809,18 @@ parseChatMessages msg = case B.head msg of
     parseBatchElement (Large s) = parseAll (elementP Nothing) s
     elementP :: Maybe GrpMsgForward -> A.Parser AParsedMsg
     elementP fwd = A.peekChar' >>= \case
-      'S' -> A.char 'S' *> do
+      '/' -> A.char '/' *> do
         tag <- smpP
         sigs <- smpP
         (body, acm) <- A.match msgP
         pure $ aParsedMsg fwd (Just $ SignedMsg tag sigs body) acm
-      'F' -> A.char 'F' *> do
+      '>' -> A.char '>' *> do
         when (isJust fwd) $ fail "nested forward elements not supported"
         elementP . Just =<< smpP
       '{' -> aParsedMsg fwd Nothing <$> msgP
-      _ -> aParsedMsg fwd Nothing . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+      -- 'F' must match BFileChunk_ tag encoding
+      'F' -> aParsedMsg fwd Nothing . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+      c -> fail $ "invalid element prefix: " <> show c
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
