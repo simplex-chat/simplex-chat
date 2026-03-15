@@ -1003,7 +1003,9 @@ CREATE TABLE test_chat_schema.messages (
     shared_msg_id_user smallint,
     author_group_member_id bigint,
     forwarded_by_group_member_id bigint,
-    broker_ts timestamp with time zone
+    broker_ts timestamp with time zone,
+    msg_chat_binding text,
+    msg_signatures bytea
 );
 
 

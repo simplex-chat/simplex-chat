@@ -1701,7 +1701,7 @@ updateGroupMemberKeys db groupId sharedGroupId rootPubKey memberPrivKey membersh
   DB.execute
     db
     "UPDATE groups SET shared_group_id = ?, root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?"
-    (sharedGroupId, rootPubKey, memberPrivKey, currentTs, groupId)
+    (Binary sharedGroupId, rootPubKey, memberPrivKey, currentTs, groupId)
   DB.execute
     db
     "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
