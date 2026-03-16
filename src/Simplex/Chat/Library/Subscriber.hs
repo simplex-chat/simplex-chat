@@ -3216,9 +3216,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
                     let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
                      in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures
-                  _ -> True -- can't reconstruct binding → accept (enforcement in Step 5)
-            | otherwise -> True
-          Nothing -> not (useRelays' gInfo && requiresSignature (toCMEventTag chatMsgEvent))
+                  _ -> False
+            | otherwise -> signatureOptional
+          Nothing -> signatureOptional
+        signatureOptional = not (useRelays' gInfo && requiresSignature (toCMEventTag chatMsgEvent))
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
