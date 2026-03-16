@@ -250,7 +250,12 @@ chatGroupTests = do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
     describe "channel operations" $ do
-      it "should delete channel and clean up relay connections" testChannelDeleteGroup
+      it "should update channel profile (signed)" testChannelUpdateProfileSigned
+      it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
+      it "should change member role (signed)" testChannelChangeRoleSigned
+      it "should remove member (signed)" testChannelRemoveMemberSigned
+      it "should delete channel (signed)" testChannelDeleteGroupSigned
+      it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -8411,107 +8416,6 @@ testChannels1RelayDeliver ps =
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
-            -- admin operations are signed in channels
-
-            -- update group profile (XGrpInfo) - signed
-            alice ##> "/set welcome #team welcome to team"
-            alice <## "welcome message changed to:"
-            alice <## "welcome to team"
-            concurrentlyN_
-              [ do
-                  bob <## "alice updated group #team: (signed)"
-                  bob <## "welcome message changed to:"
-                  bob <## "welcome to team",
-                do
-                  cath <## "alice updated group #team: (signed)"
-                  cath <## "welcome message changed to:"
-                  cath <## "welcome to team",
-                do
-                  dan <## "alice updated group #team: (signed)"
-                  dan <## "welcome message changed to:"
-                  dan <## "welcome to team",
-                do
-                  eve <## "alice updated group #team: (signed)"
-                  eve <## "welcome message changed to:"
-                  eve <## "welcome to team"
-              ]
-            alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
-
-            -- update group preferences (XGrpPrefs) - signed
-            alice ##> "/set delete #team on"
-            alice <## "updated group preferences:"
-            alice <## "Full deletion: on"
-            concurrentlyN_
-              [ do
-                  bob <## "alice updated group #team: (signed)"
-                  bob <## "updated group preferences:"
-                  bob <## "Full deletion: on",
-                do
-                  cath <## "alice updated group #team: (signed)"
-                  cath <## "updated group preferences:"
-                  cath <## "Full deletion: on",
-                do
-                  dan <## "alice updated group #team: (signed)"
-                  dan <## "updated group preferences:"
-                  dan <## "Full deletion: on",
-                do
-                  eve <## "alice updated group #team: (signed)"
-                  eve <## "updated group preferences:"
-                  eve <## "Full deletion: on"
-              ]
-
-            -- change member role (XGrpMemRole) - signed
-            alice ##> "/mr #team cath admin"
-            alice <## "#team: you changed the role of cath to admin (signed)"
-            concurrentlyN_
-              [ bob <## "#team: alice changed the role of cath from member to admin (signed)",
-                cath <## "#team: alice changed your role from member to admin (signed)",
-                dan <## "#team: alice changed the role of cath from member to admin (signed)",
-                eve <## "#team: alice changed the role of cath from member to admin (signed)"
-              ]
-            alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of cath to admin (signed)")])
-
-            -- discover eve so alice can remove her
-            eve #> "#team hello from eve"
-            bob <# "#team eve> hello from eve"
-            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
-            alice <# "#team eve> hello from eve [>>]"
-            concurrentlyN_
-              [ do
-                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
-                  dan <# "#team eve> hello from eve [>>]",
-                do
-                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
-                  cath <# "#team eve> hello from eve [>>]"
-              ]
-
-            -- remove member (XGrpMemDel) - signed
-            threadDelay 1000000
-            alice ##> "/rm #team eve"
-            alice <## "#team: you removed eve from the group (signed)"
-            concurrentlyN_
-              [ bob <## "#team: alice removed eve from the group (signed)",
-                cath <## "#team: alice removed eve from the group (signed)",
-                dan <## "#team: alice removed eve from the group (signed)"
-              ]
-            alice #$> ("/_get chat #1 count=1", chat, [(1, "removed eve (signed)")])
-            bob #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
-
-            -- delete group (XGrpDel) - signed
-            alice ##> "/d #team"
-            alice <## "#team: you deleted the group (signed)"
-            concurrentlyN_
-              [ do
-                  bob <## "#team: alice deleted the group (signed)"
-                  bob <## "use /d #team to delete the local copy of the group",
-                do
-                  cath <## "#team: alice deleted the group (signed)"
-                  cath <## "use /d #team to delete the local copy of the group",
-                do
-                  dan <## "#team: alice deleted the group (signed)"
-                  dan <## "use /d #team to delete the local copy of the group"
-              ]
-
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
   (shortLink, fullLink) <- prepareChannel1Relay gName owner relay
@@ -8815,8 +8719,168 @@ testChannels2RelaysIncognito ps =
               [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
               [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")
 
-testChannelDeleteGroup :: HasCallStack => TestParams -> IO ()
-testChannelDeleteGroup ps =
+testChannelUpdateProfileSigned :: HasCallStack => TestParams -> IO ()
+testChannelUpdateProfileSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice ##> "/set welcome #team welcome to team"
+            alice <## "welcome message changed to:"
+            alice <## "welcome to team"
+            concurrentlyN_
+              [ do
+                  bob <## "alice updated group #team: (signed)"
+                  bob <## "welcome message changed to:"
+                  bob <## "welcome to team",
+                do
+                  cath <## "alice updated group #team: (signed)"
+                  cath <## "welcome message changed to:"
+                  cath <## "welcome to team",
+                do
+                  dan <## "alice updated group #team: (signed)"
+                  dan <## "welcome message changed to:"
+                  dan <## "welcome to team",
+                do
+                  eve <## "alice updated group #team: (signed)"
+                  eve <## "welcome message changed to:"
+                  eve <## "welcome to team"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
+
+testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
+testChannelUpdatePrefsSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice ##> "/set delete #team on"
+            alice <## "updated group preferences:"
+            alice <## "Full deletion: on"
+            concurrentlyN_
+              [ do
+                  bob <## "alice updated group #team: (signed)"
+                  bob <## "updated group preferences:"
+                  bob <## "Full deletion: on",
+                do
+                  cath <## "alice updated group #team: (signed)"
+                  cath <## "updated group preferences:"
+                  cath <## "Full deletion: on",
+                do
+                  dan <## "alice updated group #team: (signed)"
+                  dan <## "updated group preferences:"
+                  dan <## "Full deletion: on",
+                do
+                  eve <## "alice updated group #team: (signed)"
+                  eve <## "updated group preferences:"
+                  eve <## "Full deletion: on"
+              ]
+
+testChannelChangeRoleSigned :: HasCallStack => TestParams -> IO ()
+testChannelChangeRoleSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- discover cath so alice can change her role
+            cath #> "#team hello from cath"
+            bob <# "#team cath> hello from cath"
+            concurrentlyN_
+              [ do
+                  alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  alice <# "#team cath> hello from cath [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> hello from cath [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> hello from cath [>>]"
+              ]
+
+            -- change member role (XGrpMemRole) - signed
+            alice ##> "/mr #team cath admin"
+            alice <## "#team: you changed the role of cath to admin (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of cath from member to admin (signed)",
+                cath <## "#team: alice changed your role from member to admin (signed)",
+                dan <## "#team: alice changed the role of cath from member to admin (signed)",
+                eve <## "#team: alice changed the role of cath from member to admin (signed)"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of cath to admin (signed)")])
+
+testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
+testChannelRemoveMemberSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- discover eve so alice can remove her
+            eve #> "#team hello from eve"
+            bob <# "#team eve> hello from eve"
+            concurrentlyN_
+              [ do
+                  alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  alice <# "#team eve> hello from eve [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  dan <# "#team eve> hello from eve [>>]",
+                do
+                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  cath <# "#team eve> hello from eve [>>]"
+              ]
+
+            -- remove member (XGrpMemDel) - signed
+            threadDelay 1000000
+            alice ##> "/rm #team eve"
+            alice <## "#team: you removed eve from the group (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice removed eve from the group (signed)",
+                cath <## "#team: alice removed eve from the group (signed)",
+                dan <## "#team: alice removed eve from the group (signed)"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "removed eve (signed)")])
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
+
+testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
+testChannelDeleteGroupSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice ##> "/d #team"
+            alice <## "#team: you deleted the group (signed)"
+            concurrentlyN_
+              [ do
+                  bob <## "#team: alice deleted the group (signed)"
+                  bob <## "use /d #team to delete the local copy of the group",
+                do
+                  cath <## "#team: alice deleted the group (signed)"
+                  cath <## "use /d #team to delete the local copy of the group",
+                do
+                  dan <## "#team: alice deleted the group (signed)"
+                  dan <## "use /d #team to delete the local copy of the group",
+                do
+                  eve <## "#team: alice deleted the group (signed)"
+                  eve <## "use /d #team to delete the local copy of the group"
+              ]
+
+testChannelDeleteGroupCleanup :: HasCallStack => TestParams -> IO ()
+testChannelDeleteGroupCleanup ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
@@ -8831,12 +8895,12 @@ testChannelDeleteGroup ps =
         -- owner deletes channel
         alice ##> "/d #team"
         concurrentlyN_
-          [ alice <## "#team: you deleted the group",
+          [ alice <## "#team: you deleted the group (signed)",
             do
-              bob <## "#team: alice deleted the group"
+              bob <## "#team: alice deleted the group (signed)"
               bob <## "use /d #team to delete the local copy of the group",
             do
-              cath <## "#team: alice deleted the group"
+              cath <## "#team: alice deleted the group (signed)"
               cath <## "use /d #team to delete the local copy of the group"
           ]
 
