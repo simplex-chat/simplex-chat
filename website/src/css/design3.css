@@ -601,6 +601,10 @@ section.cover div.content p {
     .socials {
         position: static;
     }
+
+    .socials {
+        min-height: 42px;
+    }
 }
 
 /* --- MAIN SECTIONS --- */
