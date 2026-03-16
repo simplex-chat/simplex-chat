@@ -343,7 +343,8 @@ CREATE TABLE test_chat_schema.chat_items (
     group_scope_tag text,
     group_scope_group_member_id bigint,
     show_group_as_sender smallint DEFAULT 0 NOT NULL,
-    has_link smallint DEFAULT 0 NOT NULL
+    has_link smallint DEFAULT 0 NOT NULL,
+    msg_signed smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1002,7 +1003,9 @@ CREATE TABLE test_chat_schema.messages (
     shared_msg_id_user smallint,
     author_group_member_id bigint,
     forwarded_by_group_member_id bigint,
-    broker_ts timestamp with time zone
+    broker_ts timestamp with time zone,
+    msg_chat_binding text,
+    msg_signatures bytea
 );
 
 

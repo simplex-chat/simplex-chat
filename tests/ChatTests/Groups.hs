@@ -8409,6 +8409,107 @@ testChannels1RelayDeliver ps =
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
+            -- admin operations are signed in channels
+
+            -- update group profile (XGrpInfo) - signed
+            alice ##> "/set welcome #team welcome to team"
+            alice <## "welcome message changed to:"
+            alice <## "welcome to team"
+            concurrentlyN_
+              [ do
+                  bob <## "alice updated group #team: (signed)"
+                  bob <## "welcome message changed to:"
+                  bob <## "welcome to team",
+                do
+                  cath <## "alice updated group #team: (signed)"
+                  cath <## "welcome message changed to:"
+                  cath <## "welcome to team",
+                do
+                  dan <## "alice updated group #team: (signed)"
+                  dan <## "welcome message changed to:"
+                  dan <## "welcome to team",
+                do
+                  eve <## "alice updated group #team: (signed)"
+                  eve <## "welcome message changed to:"
+                  eve <## "welcome to team"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
+
+            -- update group preferences (XGrpPrefs) - signed
+            alice ##> "/set delete #team on"
+            alice <## "updated group preferences:"
+            alice <## "Full deletion: on"
+            concurrentlyN_
+              [ do
+                  bob <## "alice updated group #team: (signed)"
+                  bob <## "updated group preferences:"
+                  bob <## "Full deletion: on",
+                do
+                  cath <## "alice updated group #team: (signed)"
+                  cath <## "updated group preferences:"
+                  cath <## "Full deletion: on",
+                do
+                  dan <## "alice updated group #team: (signed)"
+                  dan <## "updated group preferences:"
+                  dan <## "Full deletion: on",
+                do
+                  eve <## "alice updated group #team: (signed)"
+                  eve <## "updated group preferences:"
+                  eve <## "Full deletion: on"
+              ]
+
+            -- change member role (XGrpMemRole) - signed
+            alice ##> "/mr #team cath admin"
+            alice <## "#team: you changed the role of cath to admin (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice changed the role of cath from member to admin (signed)",
+                cath <## "#team: alice changed your role from member to admin (signed)",
+                dan <## "#team: alice changed the role of cath from member to admin (signed)",
+                eve <## "#team: alice changed the role of cath from member to admin (signed)"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of cath to admin (signed)")])
+
+            -- discover eve so alice can remove her
+            eve #> "#team hello from eve"
+            bob <# "#team eve> hello from eve"
+            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+            alice <# "#team eve> hello from eve [>>]"
+            concurrentlyN_
+              [ do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  dan <# "#team eve> hello from eve [>>]",
+                do
+                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record eve"
+                  cath <# "#team eve> hello from eve [>>]"
+              ]
+
+            -- remove member (XGrpMemDel) - signed
+            threadDelay 1000000
+            alice ##> "/rm #team eve"
+            alice <## "#team: you removed eve from the group (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice removed eve from the group (signed)",
+                cath <## "#team: alice removed eve from the group (signed)",
+                dan <## "#team: alice removed eve from the group (signed)"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "removed eve (signed)")])
+            bob #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
+
+            -- delete group (XGrpDel) - signed
+            alice ##> "/d #team"
+            alice <## "#team: you deleted the group (signed)"
+            concurrentlyN_
+              [ do
+                  bob <## "#team: alice deleted the group (signed)"
+                  bob <## "use /d #team to delete the local copy of the group",
+                do
+                  cath <## "#team: alice deleted the group (signed)"
+                  cath <## "use /d #team to delete the local copy of the group",
+                do
+                  dan <## "#team: alice deleted the group (signed)"
+                  dan <## "use /d #team to delete the local copy of the group"
+              ]
+
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
   (shortLink, fullLink) <- prepareChannel1Relay gName owner relay

@@ -323,18 +323,23 @@ data ChatBinding = CBGroup
 data MsgSignature = MsgSignature KeyRef C.ASignature
   deriving (Show)
 
-data MsgSignatures = MsgSignatures
+data SignedMsg = SignedMsg
   { chatBinding :: ChatBinding,
-    signatures :: L.NonEmpty MsgSignature
+    signatures :: L.NonEmpty MsgSignature,
+    signedBody :: ByteString -- exact bytes that were signed
   }
   deriving (Show)
 
-data ParsedMsg = ParsedMsg (Maybe GrpMsgForward) (Maybe MsgSigData) AChatMessage
+-- | Post-verification message. Encodes the invariant that signature
+-- has been checked (or wasn't required). Store and forward functions
+-- accept only VerifiedMsg, preventing unverified messages from being persisted.
+data VerifiedMsg e
+  = VMUnsigned (ChatMessage e)
+  | VMSigned SignedMsg (ChatMessage e)
 
-data MsgSigData = MsgSigData
-  { signatures :: MsgSignatures,
-    signedBody :: ByteString -- exact bytes that were signed
-  }
+data ParsedMsg e = ParsedMsg (Maybe GrpMsgForward) (Maybe SignedMsg) (ChatMessage e)
+
+data AParsedMsg = forall e. MsgEncodingI e => APMsg (SMsgEncoding e) (ParsedMsg e)
 
 data FwdSender
   = FwdMember MemberId ContactName
@@ -381,21 +386,20 @@ instance Encoding ChatBinding where
       'G' -> pure CBGroup
       c -> fail $ "invalid ChatBinding: " <> show c
 
+instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
+
+instance FromField ChatBinding where fromField = fromTextField_ $ eitherToMaybe . smpDecode . encodeUtf8
+
 instance Encoding MsgSignature where
   smpEncode (MsgSignature keyRef sig) = smpEncode (keyRef, C.signatureBytes sig)
   smpP = MsgSignature <$> smpP <*> (C.decodeSignature <$?> smpP)
 
-instance Encoding MsgSignatures where
-  smpEncode (MsgSignatures tag sigs) = smpEncode (tag, sigs)
-  smpP = MsgSignatures <$> smpP <*> smpP
-
-instance ToField MsgSignatures where toField = toField . smpEncode
-
-instance FromField MsgSignatures where fromField = blobFieldDecoder smpDecode
-
-instance Encoding MsgSigData where
-  smpEncode (MsgSigData sigs body) = smpEncode sigs <> body
-  smpP = MsgSigData <$> smpP <*> A.takeByteString
+-- Wire format: <binding:1> <sigCount:1> (<keyRef><sig:64>)* <body>
+instance Encoding SignedMsg where
+  smpEncode SignedMsg {chatBinding, signatures, signedBody} = smpEncode (chatBinding, signatures, Tail signedBody)
+  smpP = do
+    (chatBinding, signatures, Tail signedBody) <- smpP
+    pure SignedMsg {chatBinding, signatures, signedBody}
 
 -- | Generic signing context — data, not function.
 -- Callers construct per-event; createSndMessages uses mechanically.
@@ -771,48 +775,51 @@ encodeChatMessage maxSize msg = do
         else ECMEncoded body
     AMBinary m -> ECMEncoded $ strEncode m
 
-parseChatMessages :: ByteString -> [Either String ParsedMsg]
+parseChatMessages :: ByteString -> [Either String AParsedMsg]
 parseChatMessages "" = [Left "empty string"]
 parseChatMessages msg = case B.head msg of
   'X' -> decodeCompressed (B.tail msg)
   c -> parseUncompressed c msg
   where
     parseUncompressed c s = case c of
-      '{' -> [plainMsg <$> parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map (fmap plainMsg . parseItem) v
         Left e -> [Left e]
       '=' -> decodeBinaryBatch (B.tail s)
-      _ -> [plainMsg . ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
-    plainMsg = ParsedMsg Nothing Nothing
+      _ -> [parseAll (elementP Nothing) s]
+    plainMsg = aParsedMsg Nothing Nothing
+    aParsedMsg fwd sm (ACMsg enc cm) = APMsg enc (ParsedMsg fwd sm cm)
     parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
     msgP :: A.Parser AChatMessage
     msgP = parseMsg <$?> A.takeByteString
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
-    decodeCompressed :: ByteString -> [Either String ParsedMsg]
+    decodeCompressed :: ByteString -> [Either String AParsedMsg]
     decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
       Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*
-    decodeBinaryBatch :: ByteString -> [Either String ParsedMsg]
+    decodeBinaryBatch :: ByteString -> [Either String AParsedMsg]
     decodeBinaryBatch s = case parseAll smpListP s of
       Left e -> [Left e]
       Right msgs -> map parseBatchElement msgs
-    parseBatchElement :: Large -> Either String ParsedMsg
+    parseBatchElement :: Large -> Either String AParsedMsg
     parseBatchElement (Large s) = parseAll (elementP Nothing) s
-    elementP :: Maybe GrpMsgForward -> A.Parser ParsedMsg
+    elementP :: Maybe GrpMsgForward -> A.Parser AParsedMsg
     elementP fwd = A.peekChar' >>= \case
-      'S' -> A.char 'S' *> do
+      '/' -> A.char '/' *> do
+        tag <- smpP
         sigs <- smpP
-        (body, cm) <- A.match msgP
-        pure $ ParsedMsg fwd (Just $ MsgSigData sigs body) cm
-      'F' -> A.char 'F' *> do
+        (body, acm) <- A.match msgP
+        pure $ aParsedMsg fwd (Just $ SignedMsg tag sigs body) acm
+      '>' -> A.char '>' *> do
         when (isJust fwd) $ fail "nested forward elements not supported"
         elementP . Just =<< smpP
-      '{' -> ParsedMsg fwd Nothing <$> msgP
+      '{' -> aParsedMsg fwd Nothing <$> msgP
+      -- 'F' must match BFileChunk_ tag encoding
+      'F' -> aParsedMsg fwd Nothing . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
       c -> fail $ "invalid element prefix: " <> show c
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
@@ -1360,6 +1367,20 @@ chatMsgToBody :: forall e. MsgEncodingI e => ChatMessage e -> ByteString
 chatMsgToBody chatMsg = case encoding @e of
   SBinary -> chatMsgBinaryToBody chatMsg
   SJson -> LB.toStrict $ J.encode chatMsg
+
+verifiedChatMsg :: VerifiedMsg e -> ChatMessage e
+verifiedChatMsg = \case
+  VMUnsigned cm -> cm
+  VMSigned _ cm -> cm
+
+-- | Canonical bytes to store/forward, with optional signature.
+-- Signed: original bytes (re-encoding would invalidate signature).
+-- Unsigned: re-encoded from parsed ChatMessage (sanitizes stored content).
+verifiedMsgParts :: MsgEncodingI e => VerifiedMsg e -> (Maybe SignedMsg, ByteString)
+verifiedMsgParts = \case
+  VMUnsigned chatMsg -> (Nothing, chatMsgToBody chatMsg)
+  VMSigned sm@SignedMsg {signedBody} _ -> (Just sm, signedBody)
+
 
 instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage

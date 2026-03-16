@@ -1200,7 +1200,10 @@ processChatCommand vr nm = \case
         deleteCIFiles user filesInfo
         (members, recipients) <- getRecipients gInfo
         let doSendDel = memberActive membership && isOwner
-        when doSendDel . void $ sendGroupMessage' user gInfo recipients XGrpDel
+        msgSigned <-
+          if doSendDel
+            then isJust . signedMsg_ <$> sendGroupMessage' user gInfo recipients XGrpDel
+            else pure False
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
@@ -1208,7 +1211,7 @@ processChatCommand vr nm = \case
         withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
         withFastStore' $ \db -> deleteGroup db user gInfo
-        pure $ CRGroupDeletedUser user gInfo
+        pure $ CRGroupDeletedUser user gInfo msgSigned
         where
           getRecipients gInfo
             | useRelays' gInfo = do
@@ -2529,11 +2532,11 @@ processChatCommand vr nm = \case
       when anyPending $ throwCmdError "can't change role of members pending approval"
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
-      (errs2, changed2, acis) <- changeRoleCurrentMems user g currentMems
+      (errs2, changed2, acis, msgSigned) <- changeRoleCurrentMems user g currentMems
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CEvtChatErrors errs
-      pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole} -- same order is not guaranteed
+      pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole, msgSigned} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
@@ -2564,19 +2567,20 @@ processChatCommand vr nm = \case
                 withFastStore' $ \db -> updateGroupMemberRole db user m newRole
                 pure (m :: GroupMember) {memberRole = newRole}
               _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
-      changeRoleCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+      changeRoleCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
       changeRoleCurrentMems user (Group gInfo members) memsToChange = case L.nonEmpty memsToChange of
-        Nothing -> pure ([], [], [])
+        Nothing -> pure ([], [], [], False)
         Just memsToChange' -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing recipients events
-          let itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
+          let signed = any (either (const False) (isJust . signedMsg_)) msgs_
+              itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
           (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
-          pure (errs, changed, acis)
+          pure (errs, changed, acis, signed)
           where
             sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
             sndItemData GroupMember {groupMemberId, memberProfile} msg =
@@ -2618,7 +2622,8 @@ processChatCommand vr nm = \case
               events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId MemberRestrictions {restriction = mrs}) blockMems'
               recipients = filter memberCurrent remainingMems
           (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipients events
-          let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
+          let msgSigned = any (either (const False) (isJust . signedMsg_)) msgs_
+              itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
@@ -2627,7 +2632,7 @@ processChatCommand vr nm = \case
           unless (null errs) $ toView $ CEvtChatErrors errs
           -- TODO not batched - requires agent batch api
           forM_ blocked $ \m -> toggleNtf m (not blockFlag)
-          pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag}
+          pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag, msgSigned}
         where
           sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
           sndItemData GroupMember {groupMemberId, memberProfile} msg =
@@ -2646,22 +2651,23 @@ processChatCommand vr nm = \case
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
-      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo Nothing recipients currentMems
-      (errs3, deleted3, acis3) <-
-        foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], []) pendingApprvMems
+      (errs2, deleted2, acis2, signed2) <- deleteMemsSend user gInfo Nothing recipients currentMems
+      (errs3, deleted3, acis3, signed3) <-
+        foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], [], False) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
-      (errs4, deleted4, acis4) <-
-        foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], []) pendingRvwMems
+      (errs4, deleted4, acis4, signed4) <-
+        foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], [], False) pendingRvwMems
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
+          msgSigned = signed2 || signed3 || signed4
       -- Read group info with updated membersRequireAttention
       gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
       when withMessages $ deleteMessages user gInfo' deleted
-      pure $ CRUserDeletedMembers user gInfo' deleted withMessages -- same order is not guaranteed
+      pure $ CRUserDeletedMembers user gInfo' deleted withMessages msgSigned -- same order is not guaranteed
     where
       selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
       selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False)
@@ -2685,19 +2691,20 @@ processChatCommand vr nm = \case
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
-      deletePendingMember :: ([ChatError], [GroupMember], [AChatItem]) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem])
-      deletePendingMember (accErrs, accDeleted, accACIs) user gInfo recipients m = do
+      deletePendingMember :: ([ChatError], [GroupMember], [AChatItem], Bool) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
+      deletePendingMember (accErrs, accDeleted, accACIs, accSigned) user gInfo recipients m = do
         (m', scopeInfo) <- mkMemberSupportChatInfo m
-        (errs, deleted, acis) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
-        pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs)
-      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+        (errs, deleted, acis, signed) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
+        pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs, accSigned || signed)
+      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem], Bool)
       deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
-        Nothing -> pure ([], [], [])
+        Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
-          let itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
+          let signed = any (either (const False) (isJust . signedMsg_)) msgs_
+              itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
               skipUnwantedItem = \case
                 Right Nothing -> Nothing
                 Right (Just a) -> Just $ Right a
@@ -2707,7 +2714,7 @@ processChatCommand vr nm = \case
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
-          pure (errs, deleted, acis)
+          pure (errs, deleted, acis, signed)
           where
             sndItemData :: GroupMember -> SndMessage -> Maybe (NewSndChatItemData c)
             sndItemData GroupMember {groupMemberId, memberProfile, memberStatus} msg
@@ -3551,7 +3558,7 @@ processChatCommand vr nm = \case
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
         toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' Nothing) ci]
       createGroupFeatureChangedItems user cd CISndGroupFeature gInfo gInfo'
-      pure $ CRGroupUpdated user gInfo gInfo' Nothing
+      pure $ CRGroupUpdated user gInfo gInfo' Nothing (isJust $ signedMsg_ msg)
     checkValidName :: GroupName -> CM ()
     checkValidName displayName = do
       when (T.null displayName) $ throwChatError CEInvalidDisplayName {displayName, validName = ""}
