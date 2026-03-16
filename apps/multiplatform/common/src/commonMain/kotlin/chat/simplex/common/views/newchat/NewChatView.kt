@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -451,15 +452,19 @@ fun ActiveProfilePicker(
 @Composable
 private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contactConnection: MutableState<PendingContactConnection?>) {
   val showShortLink = remember { mutableStateOf(true) }
-  Spacer(Modifier.height(10.dp))
 
-  Image(
-    painterResource(MR.images.ic_invitation_one_time_link),
-    contentDescription = null,
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING * 3)
-  )
+
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Image(
+      painterResource(MR.images.ic_invitation_one_time_link),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier
+        .size(100.dp)
+        .align(Alignment.CenterHorizontally)
+    )
+  }
+
 
   Spacer(Modifier.height(DEFAULT_PADDING))
 
@@ -594,14 +599,18 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
       connectProgressManager.cancelConnectProgress()
     }
   }
+  Column(modifier = Modifier.fillMaxWidth()) {
+    Image(
+      painterResource(MR.images.ic_invitation_connect_link),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier
+        .size(100.dp)
+        .padding(horizontal = DEFAULT_PADDING)
+        .align(Alignment.CenterHorizontally)
+    )
+  }
 
-  Image(
-    painterResource(MR.images.ic_invitation_connect_link),
-    contentDescription = null,
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING * 3)
-  )
 
   Spacer(Modifier.height(DEFAULT_PADDING))
 
