@@ -125,20 +125,14 @@ data NewMessageDeliveryTask = NewMessageDeliveryTask
   }
   deriving (Show)
 
-data FwdSender
-  = FwdMember MemberId ContactName
-  | FwdChannel
-  deriving (Show)
-
 data MessageDeliveryTask = MessageDeliveryTask
   { taskId :: Int64,
     jobScope :: DeliveryJobScope,
     senderGMId :: GroupMemberId,
     fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    chatMessage :: ChatMessage 'Json
+    verifiedMsg :: VerifiedMsg 'Json
   }
-  deriving (Show)
 
 deliveryTaskId :: MessageDeliveryTask -> Int64
 deliveryTaskId = taskId

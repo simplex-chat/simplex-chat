@@ -404,7 +404,9 @@ CREATE TABLE messages(
   shared_msg_id_user INTEGER,
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  broker_ts TEXT
+  broker_ts TEXT,
+  msg_chat_binding TEXT,
+  msg_signatures BLOB
 ) STRICT;
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
@@ -458,7 +460,8 @@ CREATE TABLE chat_items(
   group_scope_tag TEXT,
   group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   show_group_as_sender INTEGER NOT NULL DEFAULT 0,
-  has_link INTEGER NOT NULL DEFAULT 0
+  has_link INTEGER NOT NULL DEFAULT 0,
+  msg_signed INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
