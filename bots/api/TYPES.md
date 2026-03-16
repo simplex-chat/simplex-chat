@@ -780,6 +780,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
+- msgSigned: bool
 - createdAt: UTCTime
 - updatedAt: UTCTime
 

@@ -736,6 +736,7 @@ MembersRoleUser: Members role changed by user.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -777,6 +778,7 @@ MembersBlockedForAllUser: Members blocked for all by admin.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - blocked: bool
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -818,6 +820,7 @@ UserDeletedMembers: Members deleted.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - withMessages: bool
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1054,6 +1057,7 @@ GroupUpdated: Group updated.
 - fromGroup: [GroupInfo](./TYPES.md#groupinfo)
 - toGroup: [GroupInfo](./TYPES.md#groupinfo)
 - member_: [GroupMember](./TYPES.md#groupmember)?
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1600,6 +1604,7 @@ GroupDeletedUser: User deleted group.
 - type: "groupDeletedUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

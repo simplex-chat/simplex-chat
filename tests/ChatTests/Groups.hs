@@ -8484,6 +8484,7 @@ testChannels1RelayDeliver ps =
               ]
 
             -- remove member (XGrpMemDel) - signed
+            threadDelay 1000000
             alice ##> "/rm #team eve"
             alice <## "#team: you removed eve from the group (signed)"
             concurrentlyN_
