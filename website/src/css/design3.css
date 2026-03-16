@@ -216,10 +216,6 @@ html {
     font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
 }
 
-html,
-body {
-    background: #ffffff;
-}
 
 .dark html,
 .dark body {
