@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="tr"
+<html class="bg-[#C1E3FE] dark:bg-[#050920]" lang="tr"
     
         
     
@@ -43,9 +43,10 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark')</script>
+
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="transparent">
     <title>SimpleX Chat: private and secure messenger without any user IDs (not even random)</title>
     <meta name="description" content="SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."/>
     <meta name="Content-Type" content="text/html;charset=utf-8"/>
@@ -59,6 +60,34 @@
     <meta property="og:image" content="https://simplex.chat/img/share_simplex.jpg"/>
     <meta name="twitter:card" content="summary"/>
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+    <meta name="theme-color" content="#C1E3FE">
+
+    <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
+    <link rel="preload" href="/img/design_3/cover-light.webp" as="image" type="image/webp" media="(prefers-color-scheme: light)">
+    <link rel="preload" href="/img/new/logo-dark.png" as="image">
+    <link rel="preload" href="/img/new/logo-light.png" as="image" media="(prefers-color-scheme: light)">
+    <link rel="preload" href="/img/design_3/publications/trail-of-bits.png" as="image">
+    <link rel="preload" href="/img/design_3/publications/privacy-guides.png" as="image">
+    <link rel="preload" href="/img/design_3/publications/whonix.png" as="image">
+    <link rel="preload" href="/img/design_3/publications/heise.png" as="image">
+    <link rel="preload" href="/img/design_3/publications/kuketz-blog.png" as="image">
+    <link rel="preload" href="/img/design_3/publications/optout.png" as="image">
+
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-ExtraLight.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Light.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Medium.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Bold.ttf" as="font" type="font/ttf" crossorigin>
+
+    <link rel="preload" href="/img/new/apple_store.svg" as="image">
+    <link rel="preload" href="/img/new/google_play.svg" as="image">
+    <link rel="preload" href="/img/new/f_droid.svg" as="image" media="(max-width: 959px)">
+    <link rel="preload" href="/img/design_3/testflight-dark.png" as="image" media="(max-width: 959px)">
+    <link rel="preload" href="/img/design_3/android-dark.png" as="image" media="(max-width: 959px)">
+    <link rel="preload" href="/img/design_3/socials/linux.png" as="image" media="(min-width: 960px)">
+    <link rel="preload" href="/img/design_3/socials/apple.png" as="image" media="(min-width: 960px)">
+    <link rel="preload" href="/img/design_3/socials/windows.png" as="image" media="(min-width: 960px)">
 
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
@@ -500,6 +529,20 @@ function iconToggle () {
     moonIcon.classList.toggle('hidden');
 }
 
+function updateThemeColor() {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(document.body).backgroundColor);
+    const navbar = document.querySelector('header#navbar');
+    if (navbar && navbar.classList.contains('open')) {
+        navbar.style.transition = 'none';
+        navbar.classList.remove('open');
+        setTimeout(() => {
+            navbar.classList.add('open');
+            setTimeout(() => navbar.style.transition = '', 0);
+        }, 0);
+    }
+}
+
 function themeCheck() {
     if (userTheme === 'dark' || (!userTheme && systemTheme)) {
         document.documentElement.classList.add('dark');
@@ -514,6 +557,7 @@ function themeCheck() {
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
     }
+    updateThemeColor();
 }
 themeCheck();
 
@@ -533,6 +577,7 @@ function themeSwitch () {
         }
         iconToggle();
     }
+    updateThemeColor();
 }
 
 const nav = document.querySelector('header#navbar');

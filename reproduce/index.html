@@ -45,12 +45,15 @@
 
     <head>
         <meta charset="UTF-8">
+        <script>if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark')</script>
+
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Verify and reproduce builds</title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+        <meta name="theme-color" content="#ffffff">
         <link href="/css/tailwind.css" rel="stylesheet"/>
         <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
         <link href="/css/style.css" rel="stylesheet"/>
@@ -410,6 +413,20 @@ function iconToggle () {
     moonIcon.classList.toggle('hidden');
 }
 
+function updateThemeColor() {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(document.body).backgroundColor);
+    const navbar = document.querySelector('header#navbar');
+    if (navbar && navbar.classList.contains('open')) {
+        navbar.style.transition = 'none';
+        navbar.classList.remove('open');
+        setTimeout(() => {
+            navbar.classList.add('open');
+            setTimeout(() => navbar.style.transition = '', 0);
+        }, 0);
+    }
+}
+
 function themeCheck() {
     if (userTheme === 'dark' || (!userTheme && systemTheme)) {
         document.documentElement.classList.add('dark');
@@ -424,6 +441,7 @@ function themeCheck() {
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
     }
+    updateThemeColor();
 }
 themeCheck();
 
@@ -443,6 +461,7 @@ function themeSwitch () {
         }
         iconToggle();
     }
+    updateThemeColor();
 }
 
 const nav = document.querySelector('header#navbar');
