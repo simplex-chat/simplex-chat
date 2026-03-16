@@ -1156,13 +1156,13 @@ userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
    in redactedMemberProfile allowSimplexLinks p'
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
-memberInfo g m@GroupMember {memberId, memberRole, memberProfile, activeConn} =
+memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
   MemberInfo
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
       profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
-      memberKey = Nothing -- TODO: get from GroupMember when stored in database
+      memberKey = MemberKey <$> memberPubKey
     }
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g

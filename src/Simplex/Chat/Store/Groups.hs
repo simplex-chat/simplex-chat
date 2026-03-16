@@ -1426,7 +1426,7 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     (currentTs, groupId)
 
 createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange = do
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink, fromMemberKey} invId reqChatVRange = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1465,6 +1465,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
         (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
+          ownerPubKey = (\(MemberKey k) -> k) <$> fromMemberKey
       (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
@@ -1473,11 +1474,11 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           [sql|
             INSERT INTO group_members
               ( group_id, index_in_group, member_id, member_role, member_category, member_status,
-                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted)
-              :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+              :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, ownerPubKey, currentTs, currentTs)
           )
         insertedRowId db
 
@@ -1838,7 +1839,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile _memKey,
+    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memRestriction,
@@ -1852,6 +1853,7 @@ createNewMember_
     let invitedById = fromInvitedBy userContactId invitedBy
         activeConn = Nothing
         memberChatVRange@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
+        memberPubKey = (\(MemberKey k) -> k) <$> memKey
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId
     liftIO $
       DB.execute
@@ -1860,13 +1862,13 @@ createNewMember_
           INSERT INTO group_members
             (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
             member_restriction, invited_by, invited_by_group_member_id,
-            user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+            user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty)
             :. (memRestriction, invitedById, memInvitedByGroupMemberId)
-            :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
+            :. (userId, localDisplayName, memberContactId, memberContactProfileId, memberPubKey, createdAt, createdAt)
             :. (minV, maxV)
         )
     groupMemberId <- liftIO $ insertedRowId db
@@ -1892,8 +1894,7 @@ createNewMember_
           createdAt,
           updatedAt = createdAt,
           supportChat = Nothing,
-          -- TODO [member keys] is it used with relay/public groups?
-          memberPubKey = Nothing,
+          memberPubKey,
           relayLink = Nothing
         }
 

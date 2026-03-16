@@ -977,7 +977,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemRestrict memId memRestrictions -> fmap ctx <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
               XGrpMemDel memId withMessages -> case encoding @e of
-                SJson -> fmap ctx <$> xGrpMemDel gInfo' m'' memId withMessages chatMsg msg brokerTs False
+                SJson -> fmap ctx <$> xGrpMemDel gInfo' m'' memId withMessages verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave gInfo' m'' msg brokerTs
               XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
@@ -2937,8 +2937,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
       withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
-    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages chatMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
+    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
         then checkRole membership $ do
@@ -2992,10 +2992,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem m msgDir
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
-        forwardToMember member = do
-          let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
-              event = XGrpMsgForward fwd chatMsg
-          sendGroupMemberMessage gInfo member event
+        forwardToMember member =
+          forM_ (readyMemberConn member) $ \(_, conn) -> do
+            let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
+                body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+            void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
     isUserGrpFwdRelay gInfo@GroupInfo {membership}
@@ -3187,7 +3188,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p msgTs
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
-            XGrpMemDel memId withMessages -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages chatMsg rcvMsg msgTs True
+            XGrpMemDel memId withMessages -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
@@ -3578,12 +3579,16 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (_fd, cData) <- getShortLinkConnReq NRMBackground user reqGroupLink
+              (FixedLinkData {linkEntityId, rootKey}, cData) <- getShortLinkConnReq NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just (GroupShortLinkData gp) -> do
                   validateGroupProfile gp
                   gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo gp
+                  forM_ linkEntityId $ \sharedGroupId -> do
+                    gVar <- asks random
+                    (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+                    withFastStore' $ \db -> updateGroupMemberKeys db groupId sharedGroupId rootKey memberPrivKey (groupMemberId' $ membership gInfo')
                   sLnk <- createRelayLink gInfo'
                   pure (gInfo', sLnk)
               where

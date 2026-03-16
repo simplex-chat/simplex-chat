@@ -849,7 +849,8 @@ data GroupRelayInvitation = GroupRelayInvitation
   { fromMember :: MemberIdRole,
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
-    groupLink :: ShortLinkContact
+    groupLink :: ShortLinkContact,
+    fromMemberKey :: Maybe MemberKey
   }
   deriving (Eq, Show)
 

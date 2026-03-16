@@ -3729,7 +3729,8 @@ processChatCommand vr nm = \case
                     fromMember = MemberIdRole userMemberId userRole,
                     fromMemberProfile = membershipProfile,
                     relayMemberId,
-                    groupLink = groupSLink
+                    groupLink = groupSLink,
+                    fromMemberKey = MemberKey <$> memberPubKey membership
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv
               (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
