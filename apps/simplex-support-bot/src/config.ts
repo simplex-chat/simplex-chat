@@ -34,6 +34,15 @@ function optionalArg(args: string[], flag: string, defaultValue: string): string
   return args[i + 1]
 }
 
+function collectOptionalArgs(args: string[], flags: string[]): string[] {
+  const values: string[] = []
+  for (const flag of flags) {
+    const i = args.indexOf(flag)
+    if (i >= 0 && i + 1 < args.length) values.push(args[i + 1])
+  }
+  return values
+}
+
 export function parseConfig(args: string[]): Config {
   const grokApiKey = process.env.GROK_API_KEY
   if (!grokApiKey) throw new Error("Missing environment variable: GROK_API_KEY")
@@ -42,8 +51,10 @@ export function parseConfig(args: string[]): Config {
   const grokDbPrefix = optionalArg(args, "--grok-db-prefix", "./data/grok")
   const teamGroupName = requiredArg(args, "--team-group")
   const teamGroup: IdName = {id: 0, name: teamGroupName} // id resolved at startup
-  const teamMembersRaw = optionalArg(args, "--team-members", "")
-  const teamMembers = teamMembersRaw ? teamMembersRaw.split(",").map(parseIdName) : []
+  const teamMembersRaws = collectOptionalArgs(args, ["--team-members", "--team-member"])
+  const teamMembers = teamMembersRaws.length > 0
+    ? teamMembersRaws.flatMap(s => s.split(",")).map(parseIdName)
+    : []
 
   const groupLinks = optionalArg(args, "--group-links", "")
   const timezone = optionalArg(args, "--timezone", "UTC")
