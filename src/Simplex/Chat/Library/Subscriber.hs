@@ -2995,10 +2995,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =
-          forM_ (readyMemberConn member) $ \(_, conn) -> do
-            let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
-                body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-            void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+          let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
+           in sendFwdMemberMessage member fwd verifiedMsg
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
     isUserGrpFwdRelay gInfo@GroupInfo {membership}
