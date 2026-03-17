@@ -45,5 +45,5 @@ private val emojiRegex = Regex(emojiStr)
 
 fun isShortEmoji(str: String): Boolean {
   val s = str.trim()
-  return s.codePoints().count() in 1..5 && emojiRegex.matches(str)
+  return s.codePoints().count() in 1..5 && emojiRegex.matches(s)
 }
