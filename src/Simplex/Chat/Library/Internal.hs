@@ -1031,7 +1031,7 @@ acceptBusinessJoinRequestAsync
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
 
-acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> CM (GroupInfo, GroupMember)
+acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> MemberKey -> CM (GroupInfo, GroupMember)
 acceptRelayJoinRequestAsync
   user
   uclId
@@ -1039,8 +1039,9 @@ acceptRelayJoinRequestAsync
   _ownerMember@GroupMember {groupMemberId}
   cReqInvId
   cReqChatVRange
-  relayLink = do
-    let msg = XGrpRelayAcpt relayLink
+  relayLink
+  memberKey = do
+    let msg = XGrpRelayAcpt relayLink memberKey
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
@@ -1869,7 +1870,7 @@ createSndMessages idsEvents = do
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey = Just memberPrivKey}} evt
+groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
   | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
       Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
 groupMsgSigning _ _ = Nothing

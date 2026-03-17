@@ -461,7 +461,7 @@ groupRootPubKey (GRKPublic pk) = pk
 data GroupKeys = GroupKeys
   { sharedGroupId :: B64UrlByteString,
     groupRootKey :: GroupRootKey,
-    memberPrivKey :: Maybe C.PrivateKeyEd25519 -- Nothing for relays (they verify but don't sign)
+    memberPrivKey :: C.PrivateKeyEd25519
   }
   deriving (Eq, Show)
 
