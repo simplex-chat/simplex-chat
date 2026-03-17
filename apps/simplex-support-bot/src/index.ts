@@ -1,9 +1,9 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
 import {join} from "path"
-import {bot, api} from "simplex-chat"
+import {bot, api, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
 import {parseConfig} from "./config.js"
-import {SupportBot} from "./bot.js"
+import {SupportBot, GroupMetadata, GroupPendingInfo} from "./bot.js"
 import {GrokApiClient} from "./grok.js"
 import {welcomeMessage} from "./messages.js"
 import {resolveDisplayNameConflict} from "./startup.js"
@@ -13,6 +13,10 @@ interface BotState {
   teamGroupId?: number
   grokContactId?: number
   grokGroupMap?: {[mainGroupId: string]: number}
+  newItems?: {[groupId: string]: {teamItemId: number; timestamp: number; originalText: string}}
+  groupLastActive?: {[groupId: string]: number}
+  groupMetadata?: {[groupId: string]: GroupMetadata}
+  groupPendingInfo?: {[groupId: string]: GroupPendingInfo}
 }
 
 function readState(path: string): BotState {
@@ -72,14 +76,32 @@ async function main(): Promise<void> {
     acceptingBusinessRequest: (evt) => supportBot?.onBusinessRequest(evt),
     newChatItems: (evt) => supportBot?.onNewChatItems(evt),
     chatItemUpdated: (evt) => supportBot?.onChatItemUpdated(evt),
+    chatItemReaction: (evt) => supportBot?.onChatItemReaction(evt),
     leftMember: (evt) => supportBot?.onLeftMember(evt),
-    connectedToGroupMember: (evt) => supportBot?.onMemberConnected(evt),
-    newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
+    joinedGroupMemberConnecting: (evt) => {
+      log(`[event] joinedGroupMemberConnecting: group=${evt.groupInfo.groupId} member=${evt.member.memberProfile.displayName} memberContactId=${evt.member.memberContactId ?? "null"}`)
+    },
+    joinedGroupMember: (evt) => {
+      log(`[event] joinedGroupMember: group=${evt.groupInfo.groupId} member=${evt.member.memberProfile.displayName} memberContactId=${evt.member.memberContactId ?? "null"}`)
+      supportBot?.onJoinedGroupMember(evt)
+    },
+    connectedToGroupMember: (evt) => {
+      log(`[event] connectedToGroupMember: group=${evt.groupInfo.groupId} member=${evt.member.memberProfile.displayName} memberContactId=${evt.member.memberContactId ?? "null"} memberContact=${evt.memberContact?.contactId ?? "null"}`)
+      supportBot?.onMemberConnected(evt)
+    },
+    newMemberContactReceivedInv: (evt) => {
+      log(`[event] newMemberContactReceivedInv: group=${evt.groupInfo.groupId} contact=${evt.contact.contactId} member=${evt.member.memberProfile.displayName}`)
+      supportBot?.onMemberContactReceivedInv(evt)
+    },
+    contactConnected: (evt) => {
+      log(`[event] contactConnected: contactId=${evt.contact.contactId} name=${evt.contact.profile?.displayName ?? "unknown"}`)
+      supportBot?.onContactConnected(evt)
+    },
   }
 
   log("Initializing main bot...")
   resolveDisplayNameConflict(config.dbPrefix, "Ask SimpleX Team")
-  const [mainChat, mainUser, _mainAddress] = await bot.run({
+  const [mainChat, mainUser, mainAddress] = await bot.run({
     profile: {displayName: "Ask SimpleX Team", fullName: "", shortDescr: "Send questions about SimpleX Chat app and your suggestions", image: supportImage},
     dbOpts: {dbFilePrefix: config.dbPrefix},
     options: {
@@ -91,7 +113,6 @@ async function main(): Promise<void> {
       commands: [
         {type: "command", keyword: "grok", label: "Ask Grok AI"},
         {type: "command", keyword: "team", label: "Switch to team"},
-        {type: "command", keyword: "add", label: "Join group"},
       ],
       useBotProfile: true,
     },
@@ -173,6 +194,12 @@ async function main(): Promise<void> {
 
   const teamGroupPreferences: T.GroupPreferences = {
     directMessages: {enable: T.GroupFeatureEnabled.On},
+    commands: [
+      {type: "command", keyword: "add", label: "Join customer chat", params: "groupId:name"},
+      {type: "command", keyword: "inviteall", label: "Join all active chats (24h)"},
+      {type: "command", keyword: "invitenew", label: "Join new chats (48h, no team/Grok)"},
+      {type: "command", keyword: "pending", label: "Show pending conversations"},
+    ],
   }
 
   if (config.teamGroup.id === 0) {
@@ -252,6 +279,12 @@ async function main(): Promise<void> {
   // Create SupportBot — event handlers now route through it
   supportBot = new SupportBot(mainChat, grokChat, grokApi, config)
 
+  // Set business address for direct message replies
+  if (mainAddress) {
+    supportBot.businessAddress = util.contactAddressStr(mainAddress.connLinkContact)
+    log(`Business address: ${supportBot.businessAddress}`)
+  }
+
   // Restore Grok group map from persisted state
   if (state.grokGroupMap) {
     const entries: [number, number][] = Object.entries(state.grokGroupMap)
@@ -264,6 +297,66 @@ async function main(): Promise<void> {
     const obj: {[key: string]: number} = {}
     for (const [k, v] of map) obj[k] = v
     state.grokGroupMap = obj
+    writeState(stateFilePath, state)
+  }
+
+  // Restore newItems from persisted state
+  if (state.newItems) {
+    const entries: [number, {teamItemId: number; timestamp: number; originalText: string}][] =
+      Object.entries(state.newItems).map(([k, v]) => [Number(k), v])
+    supportBot.restoreNewItems(entries)
+  }
+
+  // Persist newItems on every change
+  supportBot.onNewItemsChanged = (map) => {
+    const obj: {[key: string]: {teamItemId: number; timestamp: number; originalText: string}} = {}
+    for (const [k, v] of map) obj[String(k)] = v
+    state.newItems = obj
+    writeState(stateFilePath, state)
+  }
+
+  // Restore groupLastActive from persisted state
+  if (state.groupLastActive) {
+    const entries: [number, number][] = Object.entries(state.groupLastActive)
+      .map(([k, v]) => [Number(k), v])
+    supportBot.restoreGroupLastActive(entries)
+  }
+
+  // Persist groupLastActive on every change
+  supportBot.onGroupLastActiveChanged = (map) => {
+    const obj: {[key: string]: number} = {}
+    for (const [k, v] of map) obj[String(k)] = v
+    state.groupLastActive = obj
+    writeState(stateFilePath, state)
+  }
+
+  // Restore groupMetadata from persisted state
+  if (state.groupMetadata) {
+    const entries: [number, GroupMetadata][] = Object.entries(state.groupMetadata)
+      .map(([k, v]) => [Number(k), v])
+    supportBot.restoreGroupMetadata(entries)
+  }
+
+  // Persist groupMetadata on every change
+  supportBot.onGroupMetadataChanged = (map) => {
+    const obj: {[key: string]: GroupMetadata} = {}
+    for (const [k, v] of map) obj[String(k)] = v
+    state.groupMetadata = obj
+    writeState(stateFilePath, state)
+  }
+
+  // Restore groupPendingInfo from persisted state
+  if (state.groupPendingInfo) {
+    const entries: [number, GroupPendingInfo][] = Object.entries(state.groupPendingInfo)
+      .map(([k, v]) => [Number(k), v])
+    supportBot.restoreGroupPendingInfo(entries)
+  }
+
+  // Persist groupPendingInfo on every change
+  supportBot.onGroupPendingInfoChanged = (map) => {
+    const obj: {[key: string]: GroupPendingInfo} = {}
+    for (const [k, v] of map) obj[String(k)] = v
+    state.groupPendingInfo = obj
     writeState(stateFilePath, state)
   }
 
