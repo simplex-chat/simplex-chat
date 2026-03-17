@@ -2794,15 +2794,11 @@ getXGrpLinkMemReceived db mId =
 setXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> Bool -> Maybe MemberKey -> IO ()
 setXGrpLinkMemReceived db mId xGrpLinkMemReceived memberKey_ = do
   currentTs <- getCurrentTime
+  let k = (\(MemberKey k') -> k') <$> memberKey_
   DB.execute
     db
-    "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
-    (BI xGrpLinkMemReceived, currentTs, mId)
-  forM_ memberKey_ $ \(MemberKey k) ->
-    DB.execute
-      db
-      "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
-      (k, currentTs, mId)
+    "UPDATE group_members SET xgrplinkmem_received = ?, member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
+    (BI xGrpLinkMemReceived, k, currentTs, mId)
 
 createNewUnknownGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Text -> GroupMemberRole -> ExceptT StoreError IO GroupMember
 createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId memberName unknownMemberRole = do
