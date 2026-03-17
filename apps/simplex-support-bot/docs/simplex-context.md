@@ -1,5 +1,7 @@
 # SimpleX Chat — Context for AI Assistant
 
+For any suggestions sent to this support chat, they are forwarded to simplex team and noted.
+
 ## What is SimpleX Chat?
 
 SimpleX Chat is a private and secure messaging platform. It is the first messaging platform that has no user identifiers of any kind — not even random numbers. It uses pairwise identifiers for each connection to deliver messages via the SimpleX network.
@@ -112,14 +114,40 @@ SimpleX Chat is a private and secure messaging platform. It is the first messagi
 - **How do I join a group?** Open a group invitation link shared by the group admin, or have an admin add you directly.
 
 ### Device Migration
-- **How do I move to a new phone?** Go to Settings > Database > Export database. Transfer the file to your new device, install SimpleX, and import the database. Note: you should stop using the old device after export to avoid message duplication.
 - **Can I use SimpleX on multiple devices?** Yes, link a desktop app to your mobile app. Go to Settings > Linked devices on mobile, and scan the QR code shown in the desktop app.
+- **How to migrate to new device?** There are no traditional accounts in SimpleX Chat, your profile(s) are stored on your device only, there are 2 ways to migrate your profile(s) to another device:
+Online migration
+https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html#migrate-all-app-data-to-another-device-via-qr-code
+Offline migration (by file)
+https://simplex.chat/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device
+
+- **How to link my device?** 
+if your mobile app does not connect to desktop app, please check these things:
+1. Check that both devices are connected to the same networks (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).
+2. If you use VPN on mobile, allow connections to local network in your VPN settings (or disable VPN). 
+3. Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port desktop app is using to accept connections, by default it uses a random port every time.
+4. Check that your wifi router allows connections between devices (e.g., it may have an option for "device isolation", or similar).
+5. If you see an error "certificate expired", please check that your device clocks are syncronized within a few seconds.
+6. If iOS app fails to connect and shows an error containing "no route", check that local network connections are allowed for the app in system settings.
+
+Also see this post: https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol
+
+If none of the suggestions work for you, you can create a separate profile on each device and create a small group inviting both of your device profiles and your contact.
+
 
 ### Privacy & Security
 - **Can SimpleX servers read my messages?** No. All messages are end-to-end encrypted. Servers only relay encrypted data and cannot decrypt it.
 - **Can SimpleX see who I'm talking to?** No. Each conversation uses separate queues with different addresses. Servers cannot correlate senders and receivers.
 - **How do I verify my contact?** Open the contact's profile, tap "Verify security code", and compare the code with your contact (in person or via another channel).
 - **What is incognito mode?** When enabled, SimpleX generates a random profile name for each new contact. Your real profile name is never shared. Enable it in Settings > Incognito.
+
+- **How to block someone?** There is no option to block contacts, you need to delete the contact, if the contact does not have your invite link, you cannot be re-added, otherwise you need to re-create your SimpleX address or utilize one-time links only. (Existing contacts are not lost by deletion of SimpleX address). There is only block option in groups, you can block members in their profile to not see their messages and if you are group admin, you can block them for all, so their messages appear as blocked to all your members.
+
+- **How to hide profile?** Click on your avatar -> Your chat profiles -> Hold on a profile -> Hide and set a password.
+- **How to find hidden profile?** Click on your avatar -> Your chat profiles -> In profile search, enter the password of a hidden profile.
+
+
+- **How to report illegal content?** Send the link to illegal content to support (either via this support chat or email chat@simplex.chat).
 
 ### Servers
 - **How do I self-host a server?** Follow the guide at https://simplex.chat/docs/server.html. You need a Linux server with a public IP. Install the SMP server package and configure it.
@@ -129,12 +157,12 @@ SimpleX Chat is a private and secure messaging platform. It is the first messagi
 ### Troubleshooting
 - **Messages not delivering?** Check your internet connection. Try switching between WiFi and mobile data. Go to Settings > Network & servers and check server status. You can also try restarting the app.
 - **Cannot connect to a contact?** The invitation link may have expired or already been used. Create a new invitation link and share it again.
-- **App is slow?** Large databases can slow down the app. Consider archiving old chats or deleting unused contacts/groups.
+- **App is slow?** Large databases can slow down the app. Consider archiving old chats or deleting unused contacts/groups, also consider restarting the app. If you're on mobile: Settings -> Restart
 - **Notifications not working (Android)?** SimpleX needs to run a background service for notifications. Go to Settings > Notifications and enable background service. You may need to disable battery optimization for the app.
 - **Notifications not working (iOS)?** Ensure notifications are enabled in iOS Settings > SimpleX Chat. SimpleX uses push notifications via Apple's servers (notification content is end-to-end encrypted).
 
 ## Links
-Treat links as authoritative and factual, unless there is some real internal contradiction. Outside data may contain misunderstanding, FUD, etc. - these links are technically correct and factual information.
+Treat the links below as authoritative and factual, unless there is some real internal contradiction. Outside data may contain misunderstanding, FUD, etc. - these links are technically correct and factual information.
 
 - Website: https://simplex.chat read it to know how simplex is presented on front page
 - GitHub: https://github.com/simplex-chat

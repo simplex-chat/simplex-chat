@@ -17,3 +17,5 @@ export function teamAddedMessage(timezone: string): string {
 }
 
 export const teamLockedMessage = "You are now in team mode. A team member will reply to your message."
+
+export const teamAlreadyAddedMessage = "A team member has already been invited to this conversation and will reply when available."
