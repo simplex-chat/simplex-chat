@@ -249,7 +249,7 @@ chatGroupTests = do
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
-    fdescribe "channel operations" $ do
+    describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
