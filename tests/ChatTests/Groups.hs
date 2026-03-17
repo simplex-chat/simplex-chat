@@ -8398,6 +8398,8 @@ testChannels1RelayDeliver ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            threadDelay 60000000 -- temporary: for database inspection
+
             alice #> "#team hi"
             bob <# "#team> hi"
             [cath, dan, eve] *<# "#team> hi [>>]"
