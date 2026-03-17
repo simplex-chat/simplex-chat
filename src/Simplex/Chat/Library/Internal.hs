@@ -1869,7 +1869,7 @@ createSndMessages idsEvents = do
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
+groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey = Just memberPrivKey}} evt
   | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
       Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
 groupMsgSigning _ _ = Nothing

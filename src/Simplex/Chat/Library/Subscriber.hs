@@ -2800,9 +2800,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Right _ ->
-              unless (useRelays' gInfo) $
-                messageError "x.grp.mem.intro ignored: member already exists"
+            Right existingMember
+              | useRelays' gInfo ->
+                  void $ withStore $ \db -> updateIntroducedMember db vr user existingMember memInfo
+              | otherwise ->
+                  messageError "x.grp.mem.intro ignored: member already exists"
             Left _
               | useRelays' gInfo ->
                   void $ withStore $ \db -> createIntroReMember db user gInfo memInfo memRestrictions
@@ -3579,16 +3581,14 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (FixedLinkData {linkEntityId, rootKey}, cData) <- getShortLinkConnReq NRMBackground user reqGroupLink
+              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just (GroupShortLinkData gp) -> do
                   validateGroupProfile gp
                   gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo gp
-                  forM_ linkEntityId $ \sharedGroupId -> do
-                    gVar <- asks random
-                    (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
-                    withFastStore' $ \db -> updateGroupMemberKeys db groupId sharedGroupId rootKey memberPrivKey (groupMemberId' $ membership gInfo')
+                  forM_ linkEntityId $ \sharedGroupId ->
+                    withStore $ \db -> updateRelayGroupKeys db user gInfo sharedGroupId rootKey owners
                   sLnk <- createRelayLink gInfo'
                   pure (gInfo', sLnk)
               where

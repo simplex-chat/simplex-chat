@@ -691,7 +691,7 @@ toPreparedGroup = \case
 
 toGroupKeys :: GroupKeysRow -> Maybe GroupKeys
 toGroupKeys = \case
-  (Just sharedGroupId, rootPrivKey_, rootPubKey_, Just memberPrivKey) ->
+  (Just sharedGroupId, rootPrivKey_, rootPubKey_, memberPrivKey) ->
     (\grk -> GroupKeys {sharedGroupId, groupRootKey = grk, memberPrivKey})
       <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
   _ -> Nothing

@@ -1999,7 +1999,7 @@ processChatCommand vr nm = \case
         sLnk <- case toShortLinkContact connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-        (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {relays}) <- getShortLinkConnReq nm user sLnk
+        (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}) <- getShortLinkConnReq nm user sLnk
         -- Set group link info and incognito profile once before connecting to relays
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
@@ -2008,6 +2008,9 @@ processChatCommand vr nm = \case
           gVar <- asks random
           (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
           withFastStore' $ \db -> updateGroupMemberKeys db groupId sharedGroupId rootKey memberPrivKey (groupMemberId' $ membership gInfo')
+        -- Pre-emptively create owner member with trusted key from link data
+        forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
+          withFastStore $ \db -> createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
         rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
@@ -2369,7 +2372,7 @@ processChatCommand vr nm = \case
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
-        let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+        let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey = Just memberPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
               subRole <- asks $ channelSubscriberRole . config
@@ -3729,8 +3732,7 @@ processChatCommand vr nm = \case
                     fromMember = MemberIdRole userMemberId userRole,
                     fromMemberProfile = membershipProfile,
                     relayMemberId,
-                    groupLink = groupSLink,
-                    fromMemberKey = MemberKey <$> memberPubKey membership
+                    groupLink = groupSLink
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv
               (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
