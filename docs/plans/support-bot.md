@@ -190,43 +190,15 @@ Currently commented out in `chatCommandsDocsData`. The bot uses raw `sendChatCmd
 
 ### B. Custom Data Sum Types
 
-**Why:** `customData` on `GroupInfo` and `Contact` is typed as `object | undefined` — opaque JSON with no compile-time guarantees. The bot needs to store structured routing data (which group belongs to which contact, which group is the team group, etc.) and read it back safely after restarts. Defining Haskell sum types that auto-generate TypeScript discriminated unions (same pattern as `CIDeleted`) gives: exhaustive `switch` matching, compile-time field access checks, and self-documenting JSON schemas.
+**Why:** `customData` on `GroupInfo` and `Contact` is typed as `object | undefined` — opaque JSON with no compile-time guarantees. The bot needs to store structured routing data (which group belongs to which contact, which group is the team group, etc.) and read it back safely after restarts. Discriminated unions give: exhaustive `switch` matching, compile-time field access checks, and self-documenting JSON schemas.
 
-#### Haskell definitions
+These types are specific to the support bot — they live in `apps/simplex-support-bot/src/types.ts`, not in the shared library. The library's `customData` stays as generic `object | undefined`.
 
-New module `bots/src/API/Docs/BotTypes.hs`. The `sti` function (TypeInfo.hs:78) uses GHC Generics to extract type metadata at compile time, so `Generic` deriving is required:
-
-```haskell
-{-# LANGUAGE DeriveGeneric #-}
-module API.Docs.BotTypes where
-
-import GHC.Generics (Generic)
-import Data.Int (Int64)
-
--- | Custom data stored on groups managed by the support bot.
--- Discriminated by constructor tag → auto-generates TypeScript union with `type` field.
-data SupportGroupData
-  = SGDCustomer {agentLocalGroupId :: Maybe Int64, lastProcessedItemId :: Maybe Int64}
-  | SGDCustomerContact {contactId :: Int64, agentLocalGroupId :: Maybe Int64, lastProcessedItemId :: Maybe Int64}
-  | SGDTeam
-  deriving (Show, Generic)
-
--- | Custom data stored on contacts known to the support bot.
-data SupportContactData
-  = SCDAgent
-  | SCDCustomer {supportGroupId :: Int64}
-  deriving (Show, Generic)
-```
-
-Register in `chatTypesDocsData` (bots/src/API/Docs/Types.hs). The third field (`"SGD"`, `"SCD"`) is the constructor prefix stripped during tag normalization (e.g., `SGDCustomer` → `"customer"`, `SCDAgent` → `"agent"`):
-```haskell
-((sti @SupportGroupData) {typeName = "SupportGroupData"}, STUnion, "SGD", [], "", ""),
-((sti @SupportContactData) {typeName = "SupportContactData"}, STUnion, "SCD", [], "", ""),
-```
-
-#### Auto-generated TypeScript
+#### TypeScript definitions
 
 ```typescript
+// SupportGroupData — stored in GroupInfo.customData
+
 export type SupportGroupData =
   | SupportGroupData.Customer
   | SupportGroupData.CustomerContact
@@ -256,9 +228,9 @@ export namespace SupportGroupData {
     type: "team"
   }
 }
-```
 
-```typescript
+// SupportContactData — stored in Contact.customData
+
 export type SupportContactData =
   | SupportContactData.Agent
   | SupportContactData.Customer
@@ -551,9 +523,9 @@ Replace each with `customData`-based routing using `isSupportGroupData` type gua
 
 ```mermaid
 graph LR
-    A["A. Haskell API +<br/>code gen fixes"] --> B["B. Custom data<br/>sum types"]
-    B --> C["C. TypeScript<br/>wrappers"]
-    C --> D["D. Persistence<br/>overhaul"]
+    A["A. Haskell API +<br/>code gen fixes"] --> C["C. TypeScript<br/>wrappers"]
+    B["B. Custom data<br/>sum types"] --> D["D. Persistence<br/>overhaul"]
+    C --> D
     D --> E["E. Regular<br/>contacts"]
 
     D --> G["G. Tests"]
@@ -564,9 +536,9 @@ graph LR
 | Order | Section | Depends on | Files |
 |-------|---------|------------|-------|
 | 1 | A. Haskell API | — | Controller.hs, Commands.hs, Docs/Commands.hs, Syntax.hs |
-| 2 | B. Sum types | A | Docs/BotTypes.hs (new), Docs/Types.hs |
-| 3 | C. Wrappers | B | simplex-chat (npm) |
-| 4 | D. Persistence | C | index.ts, bot.ts; delete startup.ts |
+| 2 | B. Sum types | — | types.ts (new, in support bot) |
+| 3 | C. Wrappers | A | simplex-chat (npm) |
+| 4 | D. Persistence | B, C | index.ts, bot.ts; delete startup.ts |
 | 5 | E. Regular contacts | D | bot.ts, index.ts |
 | — | F. Robustness | — | grok.ts, bot.ts, config.ts |
 | 6 | G. Tests | D, E, F | bot.test.ts |
