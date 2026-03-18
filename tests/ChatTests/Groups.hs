@@ -8848,7 +8848,10 @@ testChannelRemoveMemberSigned ps =
             concurrentlyN_
               [ bob <## "#team: alice removed eve from the group (signed)",
                 cath <## "#team: alice removed eve from the group (signed)",
-                dan <## "#team: alice removed eve from the group (signed)"
+                dan <## "#team: alice removed eve from the group (signed)",
+                do
+                  eve <## "#team: alice removed you from the group (signed)"
+                  eve <## "use /d #team to delete the group"
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "removed eve (signed)")])
             bob #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])

@@ -275,6 +275,16 @@ SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
           SELECT user_id FROM users u
+          WHERE u.deleted = ?
+            AND NOT EXISTS (SELECT c.conn_id FROM connections c WHERE c.user_id = u.user_id)
+        
+Plan:
+SCAN u
+CORRELATED SCALAR SUBQUERY 1
+SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
+
+Query: 
+          SELECT user_id FROM users u
           WHERE u.user_id = ?
             AND u.deleted = ?
             AND NOT EXISTS (SELECT c.conn_id FROM connections c WHERE c.user_id = u.user_id)
@@ -526,6 +536,54 @@ Plan:
 SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
 
 Query: 
+      DELETE FROM encrypted_rcv_message_hashes
+      WHERE encrypted_rcv_message_hash_id IN (
+        SELECT encrypted_rcv_message_hash_id
+        FROM encrypted_rcv_message_hashes
+        WHERE created_at < ?
+        ORDER BY created_at ASC
+        LIMIT ?
+      )
+    
+Plan:
+SEARCH encrypted_rcv_message_hashes USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_created_at (created_at<?)
+
+Query: 
+      DELETE FROM messages
+      WHERE (conn_id, internal_id) IN (
+        SELECT conn_id, internal_id
+        FROM messages
+        WHERE internal_ts < ? AND internal_snd_id IS NOT NULL
+        ORDER BY internal_ts ASC
+        LIMIT ?
+      )
+    
+Plan:
+SEARCH messages USING COVERING INDEX idx_messages_conn_id (conn_id=? AND internal_id=?)
+LIST SUBQUERY 1
+SEARCH messages USING INDEX idx_messages_internal_ts (internal_ts<?)
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=? AND internal_id=?)
+SEARCH snd_messages USING COVERING INDEX idx_snd_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+
+Query: 
+      DELETE FROM processed_ratchet_key_hashes
+      WHERE processed_ratchet_key_hash_id IN (
+        SELECT processed_ratchet_key_hash_id
+        FROM processed_ratchet_key_hashes
+        WHERE created_at < ?
+        ORDER BY created_at ASC
+        LIMIT ?
+      )
+    
+Plan:
+SEARCH processed_ratchet_key_hashes USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_created_at (created_at<?)
+
+Query: 
       INSERT INTO connections
         (user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs, pq_support, duplex_handshake) VALUES (?,?,?,?,?,?,?)
     
@@ -650,12 +708,60 @@ Query:
 Plan:
 
 Query: 
+      SELECT rcv_file_id, rcv_file_entity_id, prefix_path
+      FROM rcv_files
+      WHERE created_at < ?
+    
+Plan:
+SCAN rcv_files
+
+Query: 
+      SELECT rcv_file_id, rcv_file_entity_id, prefix_path
+      FROM rcv_files
+      WHERE deleted = 1
+    
+Plan:
+SCAN rcv_files
+
+Query: 
+      SELECT rcv_file_id, rcv_file_entity_id, tmp_path
+      FROM rcv_files
+      WHERE status IN (?,?) AND tmp_path IS NOT NULL
+    
+Plan:
+SEARCH rcv_files USING INDEX idx_rcv_files_status_created_at (status=?)
+
+Query: 
       SELECT rcv_replica_id, rcv_replica_key
       FROM snd_file_chunk_replica_recipients
       WHERE snd_file_chunk_replica_id = ?
     
 Plan:
 SEARCH snd_file_chunk_replica_recipients USING INDEX idx_snd_file_chunk_replica_recipients_snd_file_chunk_replica_id (snd_file_chunk_replica_id=?)
+
+Query: 
+      SELECT snd_file_id, snd_file_entity_id, prefix_path
+      FROM snd_files
+      WHERE created_at < ?
+    
+Plan:
+SCAN snd_files
+
+Query: 
+      SELECT snd_file_id, snd_file_entity_id, prefix_path
+      FROM snd_files
+      WHERE deleted = 1
+    
+Plan:
+SCAN snd_files
+
+Query: 
+      SELECT snd_file_id, snd_file_entity_id, prefix_path
+      FROM snd_files
+      WHERE status IN (?,?) AND prefix_path IS NOT NULL
+    
+Plan:
+SEARCH snd_files USING INDEX idx_snd_files_status_created_at (status=?)
 
 Query: 
       UPDATE conn_confirmations
@@ -948,6 +1054,10 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id (conn_id=?)
 SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=?)
 SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 
+Query: DELETE FROM deleted_snd_chunk_replicas WHERE created_at < ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_pending (created_at<?)
+
 Query: DELETE FROM deleted_snd_chunk_replicas WHERE deleted_snd_chunk_replica_id = ?
 Plan:
 SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
@@ -966,6 +1076,10 @@ SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (c
 Query: DELETE FROM ntf_subscriptions WHERE conn_id = ?
 Plan:
 SEARCH ntf_subscriptions USING PRIMARY KEY (conn_id=?)
+
+Query: DELETE FROM ntf_tokens_to_delete WHERE created_at < ?
+Plan:
+SCAN ntf_tokens_to_delete
 
 Query: DELETE FROM ratchets WHERE conn_id = ?
 Plan:
@@ -1082,6 +1196,14 @@ Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
 Query: SELECT conn_id FROM connections WHERE deleted = 0
+Plan:
+SCAN connections
+
+Query: SELECT conn_id FROM connections WHERE deleted = ?
+Plan:
+SCAN connections
+
+Query: SELECT conn_id FROM connections WHERE deleted_at_wait_delivery IS NOT NULL
 Plan:
 SCAN connections
 

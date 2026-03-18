@@ -58,7 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages, encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -1031,7 +1031,7 @@ acceptBusinessJoinRequestAsync
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
 
-acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> CM (GroupInfo, GroupMember)
+acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> MemberKey -> CM (GroupInfo, GroupMember)
 acceptRelayJoinRequestAsync
   user
   uclId
@@ -1039,8 +1039,9 @@ acceptRelayJoinRequestAsync
   _ownerMember@GroupMember {groupMemberId}
   cReqInvId
   cReqChatVRange
-  relayLink = do
-    let msg = XGrpRelayAcpt relayLink
+  relayLink
+  memberKey = do
+    let msg = XGrpRelayAcpt relayLink memberKey
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
@@ -1156,13 +1157,13 @@ userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
    in redactedMemberProfile allowSimplexLinks p'
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
-memberInfo g m@GroupMember {memberId, memberRole, memberProfile, activeConn} =
+memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
   MemberInfo
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
       profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
-      memberKey = Nothing -- TODO: get from GroupMember when stored in database
+      memberKey = MemberKey <$> memberPubKey
     }
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
@@ -2196,6 +2197,13 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
       MSASendBatched conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
       MSAForwarded -> pure ()
+
+-- Send pre-encoded forwarded message preserving original signature
+sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
+sendFwdMemberMessage member fwd verifiedMsg =
+  forM_ (readyMemberConn member) $ \(_, conn) -> do
+    let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
+    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()

@@ -1999,7 +1999,7 @@ processChatCommand vr nm = \case
         sLnk <- case toShortLinkContact connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-        (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {relays}) <- getShortLinkConnReq nm user sLnk
+        (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}) <- getShortLinkConnReq nm user sLnk
         -- Set group link info and incognito profile once before connecting to relays
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
@@ -2008,6 +2008,9 @@ processChatCommand vr nm = \case
           gVar <- asks random
           (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
           withFastStore' $ \db -> updateGroupMemberKeys db groupId sharedGroupId rootKey memberPrivKey (groupMemberId' $ membership gInfo')
+        -- Pre-emptively create owner member with trusted key from link data
+        forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
+          withFastStore $ \db -> createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
         rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
@@ -3421,7 +3424,7 @@ processChatCommand vr nm = \case
         Just (Just gInfo) | useRelays' gInfo -> do
           let GroupInfo {membership = GroupMember {memberId}} = gInfo
           (memberPubKey, _memberPrivKey) <- atomically $ C.generateKeyPair g
-          -- TODO: store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
+          -- TODO [member keys] store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
           pure $ XMember profileToSend memberId (MemberKey memberPubKey)
         _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       dm <- encodeConnInfoPQ pqSup chatV chatEvent
