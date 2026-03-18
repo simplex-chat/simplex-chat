@@ -37,18 +37,28 @@ Two SimpleX Chat instances (separate databases) in one process:
 ### State Machine
 
 ```mermaid
-stateDiagram-v2
-    Welcome --> TeamQueue: 1st customer text
-    Welcome --> GrokMode: /grok (first message)
-    Welcome --> TeamPending: /team (first message)
-    TeamQueue --> TeamQueue: customer text (forwarded to team)
-    TeamQueue --> GrokMode: /grok
-    TeamQueue --> TeamPending: /team
-    GrokMode --> TeamPending: /team (remove Grok)
-    GrokMode --> GrokMode: customer text (relay to API)
-    TeamPending --> TeamPending: customer text (forwarded to team)
-    TeamPending --> TeamLocked: team member sends message
-    TeamLocked --> TeamLocked: customer text (team sees directly)
+flowchart TD
+    W([Welcome])
+    TQ([TeamQueue])
+    GM([GrokMode])
+    TP([TeamPending])
+    TL([TeamLocked])
+
+    W -->|1st text| TQ
+    W -->|/grok| GM
+    W -->|/team| TP
+
+    TQ -->|customer text| TQ
+    TQ -->|/grok| GM
+    TQ -->|/team| TP
+
+    GM -->|customer text| GM
+    GM -->|"/team (remove Grok)"| TP
+
+    TP -->|customer text| TP
+    TP -->|team member msg| TL
+
+    TL -->|customer text| TL
 ```
 
 State is derived from group composition + chat history — not stored explicitly. The code uses 3 internal labels (`GROK`, `TEAM`, `QUEUE`) in prefixed headers on messages forwarded to the team group; Welcome/TeamPending/TeamLocked are implicit from message history. Note: there is no transition from GrokMode back to TeamQueue — the only commands are `/grok` and `/team`, so once Grok is active, the customer either continues with Grok or moves to team. TeamLocked is terminal (once a team member engages, the group stays locked).
