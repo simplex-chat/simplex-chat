@@ -4,13 +4,14 @@
 
 - [1. Architecture](#1-architecture)
 - [2. Plan](#2-plan)
-  - [A. Haskell API & Code Generation](#a-haskell-api--code-generation)
-  - [B. Custom Data Sum Types](#b-custom-data-sum-types)
-  - [C. TypeScript API Wrappers](#c-typescript-api-wrappers)
-  - [D. Persistence Overhaul](#d-persistence-overhaul)
-  - [E. Regular Contact Support](#e-regular-contact-support)
-  - [F. Robustness](#f-robustness)
-  - [G. Tests](#g-tests)
+  - [A. Haskell API & TypeScript Wrappers (done)](#a-haskell-api--typescript-wrappers-done)
+  - [B. Switch to Typed API](#b-switch-to-typed-api)
+  - [C. Persistence Overhaul](#c-persistence-overhaul)
+  - [D. Abstract Agent Architecture](#d-abstract-agent-architecture)
+  - [E. Robustness](#e-robustness)
+  - [F. Regular Contact Support](#f-regular-contact-support)
+  - [G. Notification & Formatting Cleanup](#g-notification--formatting-cleanup)
+  - [H. Tests](#h-tests)
 - [3. Implementation Order](#3-implementation-order)
 
 ---
@@ -63,7 +64,7 @@ flowchart TD
 
 State is derived from group composition + chat history — not stored explicitly. The code uses 3 internal labels (`GROK`, `TEAM`, `QUEUE`) in prefixed headers on messages forwarded to the team group; Welcome/TeamPending/TeamLocked are implicit from message history. Note: there is no transition from GrokMode back to TeamQueue — the only commands are `/grok` and `/team`, so once Grok is active, the customer either continues with Grok or moves to team. TeamLocked is terminal (once a team member engages, the group stays locked).
 
-**Bug:** `activateTeam` (bot.ts:933) accepts `_grokMember` but ignores it — never calls `apiRemoveMembers`. Grok stays in the group until a team member sends a message, which reactively triggers removal (bot.ts:647-659). See section F for the fix.
+**Bug:** `activateTeam` (bot.ts:933) accepts `_grokMember` but ignores it — never calls `apiRemoveMembers`. Grok stays in the group until a team member sends a message, which reactively triggers removal (bot.ts:647-659). See section E for the fix.
 
 ### Business Address Flow (existing)
 
@@ -103,90 +104,45 @@ Two-phase confirmation using protocol-level `memberId` (same across both databas
 4. Grok receives `connectedToGroupMember` → resolves waiter
 5. Main bot gathers customer messages, calls xAI API, Grok sends response
 
-Race condition guard: after API call, re-checks group composition — if team member appeared, removes Grok. See section F for the fix to a related race in the join protocol.
+Race condition guard: after API call, re-checks group composition — if team member appeared, removes Grok. See section E for the fix to a related race in the join protocol.
 
 ---
 
 ## 2. Plan
 
-### A. Haskell API & Code Generation
+### A. Haskell API & TypeScript Wrappers (done)
 
-**Why:** The bot currently uses raw `sendChatCmd` strings for several operations because typed API wrappers don't exist. This is fragile — command strings aren't type-checked, and changes to the Haskell parser silently break them. Additionally, the `APIListGroups` parser has a missing space bug that produces broken command strings.
+**PR:** https://github.com/simplex-chat/simplex-chat/pull/6691
 
-#### New commands
+Added Haskell commands `APISetGroupCustomData`, `APISetContactCustomData` with parsers, processors, and `chatCommandsDocsData` entries. Added `APISetUserAutoAcceptMemberContacts` to docs. Fixed `APIListGroups` parser space bug. Auto-generated TypeScript `cmdString` functions via codegen test suite. Added native `ChatApi` wrappers: `apiSetGroupCustomData`, `apiSetContactCustomData`, `apiSetAutoAcceptMemberContacts`, `apiGetChat` (manual wrapper).
 
-**`APISetGroupCustomData`** — `/_set custom #<groupId> [<json>]`
+Raw commands to replace in the bot:
 
-Calls existing `setGroupCustomData` (Store/Groups.hs). Returns `CRCmdOk`. Omit JSON to clear.
-
-**`APISetContactCustomData`** — `/_set custom @<contactId> [<json>]`
-
-Calls existing `setContactCustomData` (Store/Direct.hs). Returns `CRCmdOk`. Omit JSON to clear.
-
-Implementation follows the `APISetChatUIThemes` pattern:
-
-**Controller.hs** — add to `ChatCommand`:
-```haskell
-| APISetGroupCustomData GroupId (Maybe CustomData)
-| APISetContactCustomData ContactId (Maybe CustomData)
-```
-
-**Commands.hs** — parsers:
-```haskell
-"/_set custom #" *> (APISetGroupCustomData <$> A.decimal <*> optional (A.space *> jsonP))
-"/_set custom @" *> (APISetContactCustomData <$> A.decimal <*> optional (A.space *> jsonP))
-```
-
-**Commands.hs** — processors:
-```haskell
-APISetGroupCustomData groupId customData_ -> withUser $ \user -> do
-  withFastStore $ \db -> do
-    g <- getGroupInfo db vr user groupId
-    liftIO $ setGroupCustomData db user g customData_
-  ok user
-APISetContactCustomData contactId customData_ -> withUser $ \user -> do
-  withFastStore $ \db -> do
-    ct <- getContact db vr user contactId
-    liftIO $ setContactCustomData db user ct customData_
-  ok user
-```
-
-**chatCommandsDocsData** (bots/src/API/Docs/Commands.hs) — add for TypeScript auto-generation. The first two are for the new commands above. `APISetUserAutoAcceptMemberContacts` already exists in Haskell (Controller.hs:274) but is missing from the docs data, so the bot uses raw `sendChatCmd` (index.ts:136):
-```haskell
-("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing,
-  "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
-("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing,
-  "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
-("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing,
-  "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "autoAccept")
-```
-
-#### Bug fixes
-
-**`APIListGroups` parser space bug** (Commands.hs:4647): The parser expects `/_groups<userId>` (no space), but the docs syntax generates `/_groups <userId>` (with space). The auto-generated `cmdString` produces the space-separated form, so `apiListGroups` fails at the parser level — the bot currently works around this with a raw `sendChatCmd("/_groups${userId}")` that omits the space (index.ts:178). Fixing the parser to require the space aligns it with the generated `cmdString`, letting the typed wrapper work. Fix:
-```diff
-- "/_groups" *> (APIListGroups <$> A.decimal <*> ...
-+ "/_groups " *> (APIListGroups <$> A.decimal <*> ...
-```
-
-#### APIGetChat
-
-Currently commented out in `chatCommandsDocsData`. The bot uses raw `sendChatCmd("/_get chat #${groupId} count=${count}")`. Two options:
-
-1. **Uncomment** in docs with full syntax + dependent types (`ChatPagination`, `NavigationInfo`, `CRApiChat`)
-2. **Manual wrapper** in ChatApi/ChatClient that constructs the command string directly (bot only needs `count=N`)
-
-**Decision: option 2** — manual wrapper, simpler, avoids uncommenting a full dependency chain. The wrapper constructs `/_get chat ${ChatType.cmdString(chatType)}${chatId} count=${count}` and parses the `CRApiChat` response.
+| Current | Replacement |
+|---------|-------------|
+| `sendChatCmd("/_get chat #${groupId} count=${count}")` (bot.ts:316, bot.ts:1222) | `apiGetChat(ChatType.Group, groupId, count)` |
+| `sendChatCmd("/_groups${userId}")` (index.ts:178) | `apiListGroups(userId)` |
+| `sendChatCmd("/_set accept member contacts ${userId} on")` (index.ts:136) | `apiSetAutoAcceptMemberContacts(userId, true)` |
+| `sendChatCmd("/_create member contact #${groupId} ${memberId}")` (bot.ts:526) | Keep raw — low priority |
+| `sendChatCmd("/_invite member contact @${contactId}")` (bot.ts:536) | Keep raw — low priority |
 
 ---
 
-### B. Custom Data Sum Types
+### B. Switch to Typed API
 
-**Why:** `customData` on `GroupInfo` and `Contact` is typed as `object | undefined` — opaque JSON with no compile-time guarantees. The bot needs to store structured routing data (which group belongs to which contact, which group is the team group, etc.) and read it back safely after restarts. Discriminated unions give: exhaustive `switch` matching, compile-time field access checks, and self-documenting JSON schemas.
+**Why:** Stage A added typed wrappers but the bot still uses raw `sendChatCmd` calls. This stage replaces them with the typed wrappers and defines the `customData` sum types needed for persistence.
 
-These types are specific to the support bot — they live in `apps/simplex-support-bot/src/types.ts`, not in the shared library. The library's `customData` stays as generic `object | undefined`.
+#### Replace raw commands
 
-#### TypeScript definitions
+| Current | Replacement |
+|---------|-------------|
+| `sendChatCmd("/_get chat #${groupId} count=${count}")` (bot.ts:316, bot.ts:1222) | `apiGetChat(ChatType.Group, groupId, count)` |
+| `sendChatCmd("/_groups${userId}")` (index.ts:178) | `apiListGroups(userId)` |
+| `sendChatCmd("/_set accept member contacts ${userId} on")` (index.ts:136) | `apiSetAutoAcceptMemberContacts(userId, true)` |
+
+#### Define custom data sum types
+
+These types are specific to the support bot — they live in `apps/simplex-support-bot/src/types.ts`, not in the shared library. The library's `customData` stays as generic `object | undefined`. Discriminated unions give exhaustive `switch` matching, compile-time field access checks, and self-documenting JSON schemas.
 
 ```typescript
 // SupportGroupData — stored in GroupInfo.customData
@@ -253,7 +209,7 @@ Group — **business customer** (`"customer"`):
 ```
 - `type: "customer"` — marks this group as a customer support group (vs team or unmanaged). Startup scans all groups for this to rebuild maps.
 - `agentLocalGroupId` — the corresponding group ID in the AI agent's database. Needed to route the agent's responses back to the correct main group. Set when the agent is activated, absent otherwise.
-- `lastProcessedItemId` — the last chat item the bot successfully forwarded from this group. On restart, the bot fetches items after this ID and forwards any it missed. See section D for rationale.
+- `lastProcessedItemId` — the last chat item the bot successfully forwarded from this group. On restart, the bot fetches items after this ID and forwards any it missed. See section C for rationale.
 
 Group — **regular contact customer** (`"customerContact"`):
 ```json
@@ -302,37 +258,9 @@ function isSupportGroupData(cd: object | undefined): cd is SupportGroupData {
 }
 ```
 
-The `never` assertion in `default` ensures exhaustiveness — adding a variant without updating this switch causes a compile error.
-
 ---
 
-### C. TypeScript API Wrappers
-
-**Why:** Raw `sendChatCmd` calls are string-based — no type checking, break silently when command syntax changes. Every bot operation should go through a typed wrapper.
-
-The bot uses native `ChatApi` from the `simplex-chat` npm package. New wrappers to add:
-
-| Method | Status | Notes |
-|--------|--------|-------|
-| `apiGetChat(chatType, chatId, count)` | Missing | Manual wrapper (constructs `/_get chat` string, per section A) |
-| `apiSetGroupCustomData(groupId, data?: object)` | Missing | Auto-generated from step A. Bot passes `SupportGroupData` (subtype of `object`) |
-| `apiSetContactCustomData(contactId, data?: object)` | Missing | Auto-generated from step A. Bot passes `SupportContactData` |
-| `apiSetAutoAcceptMemberContacts(userId, onOff)` | Missing | Auto-generated from step A |
-| `apiListGroups(userId)` | Broken | Parser bug (step A fix) |
-
-Raw commands to replace:
-
-| Current | Replacement |
-|---------|-------------|
-| `sendChatCmd("/_get chat #${groupId} count=${count}")` (bot.ts:316, bot.ts:1222) | `apiGetChat(ChatType.Group, groupId, count)` |
-| `sendChatCmd("/_groups${userId}")` (index.ts:178) | `apiListGroups(userId)` |
-| `sendChatCmd("/_set accept member contacts ${userId} on")` (index.ts:136) | `apiSetAutoAcceptMemberContacts(userId, true)` |
-| `sendChatCmd("/_create member contact #${groupId} ${memberId}")` (bot.ts:526) | Keep raw — low priority |
-| `sendChatCmd("/_invite member contact @${contactId}")` (bot.ts:536) | Keep raw — low priority |
-
----
-
-### D. Persistence Overhaul
+### C. Persistence Overhaul
 
 **Why:** The bot currently persists state in two places: `_state.json` (team group ID, Grok contact ID, Grok group mappings) and in-memory maps (forwarded items, join resolvers). Both are problematic:
 - `_state.json` uses non-atomic `writeFileSync` — crash during write corrupts state
@@ -385,7 +313,7 @@ Note: `apiListGroups` returns `GroupInfoSummary[]` (properties nested under `.gr
 | `grokFullyConnected` | `Set<groupId>` — groups where Grok's `connectedToGroupMember` has fired | User retries `/grok` |
 | `pendingTeamDMs` | `Map<contactId, string>` — pending DMs for newly-created team member contacts | Ephemeral, safe to lose |
 | `pendingOwnerRole` | `Set<"groupId:groupMemberId">` — pending owner role assignments | Ephemeral, safe to lose |
-| `pendingGroupCreations` | `Set<contactId>` guard against duplicates (new — section E) | Ephemeral, safe to lose (clean up contactId on success or failure) |
+| `pendingGroupCreations` | `Set<contactId>` guard against duplicates (new — section F) | Ephemeral, safe to lose (clean up contactId on success or failure) |
 | `welcomeCompleted` | `Set<groupId>` — tracks groups past welcome state | Ephemeral, rebuilt from chat history on startup |
 | `groupLastActive` | `Map<groupId, timestamp>` — last activity per customer group | Rebuilt from chat history timestamps on startup |
 | `groupMetadata` | `Map<groupId, GroupMetadata>` — `{firstContact, msgCount, customerName}` per group | Rebuilt from chat history + group member info on startup |
@@ -393,7 +321,63 @@ Note: `apiListGroups` returns `GroupInfoSummary[]` (properties nested under `.gr
 
 ---
 
-### E. Regular Contact Support
+### D. Abstract Agent Architecture
+
+**Why:** The bot code hardcodes Grok throughout — `grokGroupMap`, `reverseGrokMap`, `activateGrok`, `grokChat`, `GrokApiClient`. The sum types already use neutral names (`agent`, `agentLocalGroupId`), but the implementation doesn't match. The AI provider should be a pluggable dependency so the bot can work with any AI service.
+
+#### Extract agent interface
+
+```typescript
+interface AIAgent {
+  readonly contactId: number
+  readonly chat: ChatApi
+  getResponse(messages: {role: string, content: string}[]): Promise<string>
+}
+```
+
+#### Rename internal maps and functions
+
+| Current | New |
+|---------|-----|
+| `grokGroupMap` | `agentGroupMap` |
+| `reverseGrokMap` | `reverseAgentMap` |
+| `grokFullyConnected` | `agentFullyConnected` |
+| `pendingGrokJoins` | `pendingAgentJoins` |
+| `grokJoinResolvers` | `agentJoinResolvers` |
+| `activateGrok()` | `activateAgent()` |
+| `onGrokGroupInvitation()` | `onAgentGroupInvitation()` |
+| `grokChat` | `agentChat` |
+
+#### Move Grok-specific logic behind the interface
+
+- `GrokApiClient` implements `AIAgent` — keeps xAI API calls, system prompt, model config
+- `bot.ts` only references `AIAgent`, never `GrokApiClient` directly
+- Configurable model via `--agent-model` CLI arg (replaces hardcoded `grok-3` at grok.ts:29)
+- Agent provider selected via config (currently only Grok, but the interface allows others)
+
+---
+
+### E. Robustness
+
+**Why:** Several existing bugs and missing error handling need fixing before adding new features. Stale map entries on restart are handled by section C's startup validation (step 6).
+
+- **Agent API timeout**: `fetch()` has no `AbortController`. Add 30s timeout:
+  ```typescript
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 30000)
+  try {
+    const resp = await fetch(url, {...opts, signal: controller.signal})
+  } finally {
+    clearTimeout(timer)
+  }
+  ```
+- **Fix `activateTeam` agent removal** (bot.ts:933): Currently ignores `_grokMember` parameter — agent stays in the group until a team member reactively triggers removal (bot.ts:647-659). Fix: call `apiRemoveMembers(groupId, [agentMember.groupMemberId])` immediately in `activateTeam`.
+- **Agent join race**: If `connectedToGroupMember` fires before `onAgentGroupInvitation` sets maps, use `pendingAgentJoins` as fallback.
+- **Add try/catch to `onChatItemReaction`** (bot.ts:432): Unlike `onNewChatItems`, this handler has no error wrapping — a bad cast at line 437 can throw unhandled.
+
+---
+
+### F. Regular Contact Support
 
 **Why:** The bot currently only works with business address groups where the platform auto-creates a group and the customer is a group member. For regular contacts (legacy or non-business address), the customer sends direct messages — there's no group, no `businessChat` field, and all the existing guards silently drop the message. Supporting regular contacts requires a parallel message flow where the bot creates a support group itself and relays messages between the customer's direct chat and the group.
 
@@ -430,7 +414,7 @@ flowchart TD
    - Remove `contactId` from `pendingGroupCreations` in a `finally` block (clean up on success or failure)
 5. Forward to support group (prefixed `groupSnd`) + team group
 6. First message → send queue reply to direct chat, send `/add` to team group
-7. `/grok` → `activateGrok(supportGroupId)` — sets `agentLocalGroupId` in group `customData` on agent join (per section D), relay response to direct chat
+7. `/grok` → `activateGrok(supportGroupId)` — sets `agentLocalGroupId` in group `customData` on agent join (per section C), relay response to direct chat
 8. `/team` → `activateTeam(supportGroupId)`
 
 #### Reverse forwarding (group → direct chat)
@@ -463,51 +447,42 @@ Replace each with `customData`-based routing using `isSupportGroupData` type gua
 - `leftMember` (bot.ts:351): Add cleanup for regular contact groups — clear `customData` on the associated contact when its support group is disbanded
 
 **Event handlers to add:**
-- `groupDeleted`: Clean up maps (`grokGroupMap`, `contactToGroupMap`). For `customerContact` groups, extract `contactId` from `customData` and clear the contact's `customData` via `apiSetContactCustomData(contactId)`. For `customer` (business) groups, no contact cleanup needed — the customer is identified by `businessChat.customerId` (a group member), not a direct contact.
+- `groupDeleted`: Clean up maps (`agentGroupMap`, `contactToGroupMap`). For `customerContact` groups, extract `contactId` from `customData` and clear the contact's `customData` via `apiSetContactCustomData(contactId)`. For `customer` (business) groups, no contact cleanup needed — the customer is identified by `businessChat.customerId` (a group member), not a direct contact.
 - `contactDeletedByContact` (CEvt, not CRResp): If the contact has `customData.type === "customer"`, remove its `contactToGroupMap` entry and delete the orphaned support group via `apiDeleteChat(ChatType.Group, supportGroupId)` (prevents both stale map entries and orphaned groups with a `contactId` pointing at a deleted contact — symmetric with `groupDeleted` which clears the contact's `customData`)
 
 ---
 
-### F. Robustness
+### G. Notification & Formatting Cleanup
 
-**Why:** The Grok API call (`grok.ts:23-30`) has no timeout — if xAI hangs, the bot blocks indefinitely, the customer sees nothing, and the support group stays in limbo. The model name is hardcoded (`grok-3`, line 29), requiring a code change to switch. The Grok join protocol has a subtle race: `connectedToGroupMember` can fire before `onGrokGroupInvitation` populates the maps, silently dropping the join confirmation. `activateTeam` has a bug where Grok is not removed (see Architecture section). Stale map entries on restart are handled by section D's startup validation (step 6).
+**Why:** The bot has complex notification formatting logic — `[NEW]` markers, prefixed headers (`[QUEUE]`, `[GROK]`, `[TEAM]`), `groupMetadata` (customerName, msgCount, firstContact), `groupPendingInfo` (lastEventType, lastEventFrom, lastEventTimestamp). Some of this may not be needed after the persistence overhaul, and the rest should be simplified.
 
-- **Grok API timeout**: `fetch()` has no `AbortController`. Add 30s timeout:
-  ```typescript
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 30000)
-  try {
-    const resp = await fetch(url, {...opts, signal: controller.signal})
-  } finally {
-    clearTimeout(timer)
-  }
-  ```
-- **Fix `activateTeam` Grok removal** (bot.ts:933): Currently ignores `_grokMember` parameter — Grok stays in the group until a team member reactively triggers removal (bot.ts:647-659). Fix: call `apiRemoveMembers(groupId, [grokMember.groupMemberId])` immediately in `activateTeam`.
-- **Configurable Grok model**: `grok-3` is hardcoded at `grok.ts:29`. Add `--grok-model` CLI arg to `config.ts`, pass to `GrokApiClient` constructor.
-- **Grok join race**: If `connectedToGroupMember` fires before `onGrokGroupInvitation` sets maps, use `pendingGrokJoins` as fallback.
-- **Add try/catch to `onChatItemReaction`** (bot.ts:432): Unlike `onNewChatItems`, this handler has no error wrapping — a bad cast at line 437 can throw unhandled.
+- Review which prefixed headers are still needed after `customData` provides group type info
+- Decide whether `[NEW]` markers are worth the complexity or can be dropped
+- Simplify `groupMetadata` — `customerName` is derivable from group members, `msgCount` may not be needed
+- Simplify `groupPendingInfo` — evaluate if the team notification logic can be streamlined
+- Clean up `messages.ts` templates for consistency between business and regular contact modes
 
 ---
 
-### G. Tests
+### H. Tests
 
-**Why:** The bot has zero tests today. Every change (persistence overhaul, regular contact support, Grok race fixes) modifies core routing logic — without tests, regressions are invisible until a customer reports them. The test list targets the highest-risk paths: persistence recovery (data loss on restart), message routing (wrong recipient), and race conditions (Grok join timing).
+**Why:** The bot has zero tests today. Every change (persistence overhaul, agent abstraction, regular contact support) modifies core routing logic — without tests, regressions are invisible until a customer reports them.
 
 - Persistence recovery from `customData` (simulate restart, rebuild maps from group/contact listing)
 - Regular contact flow end-to-end (direct message → group creation → forward → team reply → relay back)
-- `/grok` and `/team` commands in direct chat (not just group)
-- `contactConnected` sends welcome message to new non-team/non-Grok contacts
-- Contact filtering (team member / Grok direct messages → ignored, not routed as customer)
+- `/agent` and `/team` commands in direct chat (not just group)
+- `contactConnected` sends welcome message to new non-team/non-agent contacts
+- Contact filtering (agent / team member direct messages → ignored, not routed as customer)
 - Team member added as Owner in regular contact groups (not Member)
 - Both modes coexisting (business address + regular contact customers simultaneously)
-- Grok join race conditions (`connectedToGroupMember` before maps are set)
+- Agent join race conditions (`connectedToGroupMember` before maps are set)
 - `customData` tagging on creation (group and contact custom data set atomically with creation)
-- `/team` removes Grok immediately (not deferred until team member sends message)
+- `/team` removes agent immediately (not deferred until team member sends message)
 - `groupDeleted` event cleans up maps and clears `customData` on associated contact
 - `contactDeletedByContact` event cleans up `contactToGroupMap` and deletes orphaned support group
 - `leftMember` event clears `customData` on associated contact for regular contact groups
-- Reverse forwarding: team/Grok messages in `customerContact` groups relayed to direct chat; bot's own `groupSnd` skipped (echo-loop prevention)
-- Grok API timeout: fetch aborts after 30s, customer receives error message (not indefinite hang)
+- Reverse forwarding: team/agent messages in `customerContact` groups relayed to direct chat; bot's own `groupSnd` skipped (echo-loop prevention)
+- Agent API timeout: fetch aborts after 30s, customer receives error message (not indefinite hang)
 
 ---
 
@@ -515,22 +490,22 @@ Replace each with `customData`-based routing using `isSupportGroupData` type gua
 
 ```mermaid
 graph LR
-    A["A. Haskell API +<br/>code gen fixes"] --> C["C. TypeScript<br/>wrappers"]
-    B["B. Custom data<br/>sum types"] --> D["D. Persistence<br/>overhaul"]
-    C --> D
-    D --> E["E. Regular<br/>contacts"]
-
-    D --> G["G. Tests"]
-    E --> G
-    F["F. Robustness<br/>(independent)"] --> G
+    A["A. Haskell API +<br/>TS wrappers ✅"] --> B["B. Switch to<br/>typed API"]
+    B --> C["C. Persistence<br/>overhaul"]
+    C --> D["D. Abstract<br/>agent arch"]
+    D --> E["E. Robustness"]
+    E --> F["F. Regular<br/>contacts"]
+    F --> G["G. Notification<br/>cleanup"]
+    G --> H["H. Tests"]
 ```
 
-| Order | Section | Depends on | Files |
-|-------|---------|------------|-------|
-| 1 | A. Haskell API | — | Controller.hs, Commands.hs, Docs/Commands.hs, Syntax.hs |
-| 2 | B. Sum types | — | types.ts (new, in support bot) |
-| 3 | C. Wrappers | A | simplex-chat (npm) |
-| 4 | D. Persistence | B, C | index.ts, bot.ts; delete startup.ts |
-| 5 | E. Regular contacts | D | bot.ts, index.ts |
-| — | F. Robustness | — | grok.ts, bot.ts, config.ts |
-| 6 | G. Tests | D, E, F | bot.test.ts |
+| Order | Section | Status | Depends on | Files |
+|-------|---------|--------|------------|-------|
+| 1 | A. Haskell API + TS wrappers | **done** ([PR #6691](https://github.com/simplex-chat/simplex-chat/pull/6691)) | — | Controller.hs, Commands.hs, Docs/Commands.hs, api.ts |
+| 2 | B. Switch to typed API | | A | bot.ts, index.ts, types.ts (new) |
+| 3 | C. Persistence | | B | index.ts, bot.ts; delete startup.ts |
+| 4 | D. Abstract agent architecture | | C | bot.ts, grok.ts, types.ts |
+| 5 | E. Robustness | | D | bot.ts, grok.ts |
+| 6 | F. Regular contacts | | E | bot.ts, index.ts |
+| 7 | G. Notification cleanup | | F | bot.ts, messages.ts |
+| 8 | H. Tests | | G | bot.test.ts |
