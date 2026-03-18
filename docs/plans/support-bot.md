@@ -111,7 +111,7 @@ Race condition guard: after API call, re-checks group composition — if team me
 
 ### A. Haskell API & Code Generation
 
-**Why:** The bot currently uses raw `sendChatCmd` strings for several operations because typed API wrappers don't exist. This is fragile — command strings aren't type-checked, and changes to the Haskell parser silently break them. Additionally, two bugs in the auto-generation pipeline (`APIListGroups` parser missing a space, `ChatRef.cmdString` using `.toString()` instead of `.cmdString()`) produce broken command strings.
+**Why:** The bot currently uses raw `sendChatCmd` strings for several operations because typed API wrappers don't exist. This is fragile — command strings aren't type-checked, and changes to the Haskell parser silently break them. Additionally, the `APIListGroups` parser has a missing space bug that produces broken command strings.
 
 #### New commands
 
@@ -167,14 +167,6 @@ APISetContactCustomData contactId customData_ -> withUser $ \user -> do
 ```diff
 - "/_groups" *> (APIListGroups <$> A.decimal <*> ...
 + "/_groups " *> (APIListGroups <$> A.decimal <*> ...
-```
-
-**`ChatRef.cmdString` `.toString()` bug** (Syntax.hs:114-116): The auto-generation pipeline produces TypeScript `cmdString` functions that build command strings like `/_get chat #123 count=10`. When a type like `ChatType` has its own syntax (e.g., `#` for group, `@` for direct), the code generator needs to emit `ChatType.cmdString(chatType)` which returns `"#"`. Instead, `toStringSyntax` emits `.toString()`, which returns the human-readable enum string `"group"` — producing broken commands like `/_get chat group123 count=10` instead of `/_get chat #123 count=10`. This breaks any auto-generated wrapper that references a type with syntax (`ChatRef`, `ChatType`, `ChatDeleteMode`, `CreatedConnLink`, `GroupChatScope`). Fix:
-```diff
-  toStringSyntax (APITypeDef typeName _)
--   | typeHasSyntax typeName = paramName' useSelf param p <> ".toString()"
-+   | typeHasSyntax typeName = typeName <> ".cmdString(" <> paramName' useSelf param p <> ")"
-    | otherwise = paramName' useSelf param p
 ```
 
 #### APIGetChat
