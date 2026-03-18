@@ -362,6 +362,8 @@ data ChatCommand
   | APISetConnectionAlias {connectionId :: Int64, localAlias :: LocalAlias}
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
+  | APISetGroupCustomData GroupId (Maybe CustomData)
+  | APISetContactCustomData ContactId (Maybe CustomData)
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString

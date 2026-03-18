@@ -142,7 +142,10 @@ chatCommandsDocsData =
       "Commands to list and delete conversations.",
       [ ("APIListContacts", [], "Get contacts.", ["CRContactsList", "CRChatCmdError"], [], Nothing, "/_contacts " <> Param "userId"),
         ("APIListGroups", [], "Get groups.", ["CRGroupsList", "CRChatCmdError"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"),
-        ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode")
+        ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
+        ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
+        ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
+        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "autoAccept")
         -- ("APIChatItemsRead", [], "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),
