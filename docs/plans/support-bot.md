@@ -136,9 +136,13 @@ Raw commands to replace in the bot:
 
 | Current | Replacement |
 |---------|-------------|
-| `sendChatCmd("/_get chat #${groupId} count=${count}")` (bot.ts:316, bot.ts:1222) | `apiGetChat(ChatType.Group, groupId, count)` |
+| `sendChatCmd("/_get chat #${groupId} count=${count}")` (bot.ts:316 on `mainChat`, bot.ts:1222 on `grokChat`) | `apiGetChat(ChatType.Group, groupId, count)` — both ChatApi instances need this |
 | `sendChatCmd("/_groups${userId}")` (index.ts:178) | `apiListGroups(userId)` |
 | `sendChatCmd("/_set accept member contacts ${userId} on")` (index.ts:136) | `apiSetAutoAcceptMemberContacts(userId, true)` |
+
+#### Delete `state.ts`
+
+`state.ts` only contains the `GrokMessage` type. Move it to `types.ts` as a neutral `AgentMessage` (or inline it in the agent interface from stage D).
 
 #### Define custom data sum types
 
@@ -318,6 +322,9 @@ Note: `apiListGroups` returns `GroupInfoSummary[]` (properties nested under `.gr
 | `groupLastActive` | `Map<groupId, timestamp>` — last activity per customer group | Rebuilt from chat history timestamps on startup |
 | `groupMetadata` | `Map<groupId, GroupMetadata>` — `{firstContact, msgCount, customerName}` per group | Rebuilt from chat history + group member info on startup |
 | `groupPendingInfo` | `Map<groupId, GroupPendingInfo>` — `{lastEventType, lastEventFrom, lastEventTimestamp, lastMessageFrom}` | Rebuilt from recent chat history on startup |
+| `forwardedItems` | `Map<"groupId:itemId", {teamItemId, header, sender}>` — maps customer items to team items for edit forwarding + reply threading | Lost on restart; edit forwarding and reply threading degrade gracefully. Stage G decides if this should be simplified. |
+| `lastTeamItemByGroup` | `Map<groupId, chatItemId>` — last team group item per customer group for reply-to threading | Lost on restart; first post-restart message unthreaded, subsequent messages re-thread. Stage G decides fate. |
+| `newItems` | `Map<groupId, {teamItemId, timestamp, originalText}>` — `[NEW]` marker tracking | Currently persisted via `_state.json` (entries < 24h). Stage G decides if [NEW] markers are worth the complexity. |
 
 ---
 
@@ -348,12 +355,24 @@ interface AIAgent {
 | `onGrokGroupInvitation()` | `onAgentGroupInvitation()` |
 | `grokChat` | `agentChat` |
 
+#### Rename config and CLI args
+
+| Current | New |
+|---------|-----|
+| `--grok-db-prefix` | `--agent-db-prefix` |
+| `config.grokDbPrefix` | `config.agentDbPrefix` |
+| `config.grokContactId` | `config.agentContactId` |
+| `config.grokApiKey` | `config.agentApiKey` |
+| `GROK_API_KEY` env var | `AGENT_API_KEY` (keep `GROK_API_KEY` as fallback) |
+
+Add `--agent-model` CLI arg (replaces hardcoded `grok-3` at grok.ts:29).
+
 #### Move Grok-specific logic behind the interface
 
 - `GrokApiClient` implements `AIAgent` — keeps xAI API calls, system prompt, model config
 - `bot.ts` only references `AIAgent`, never `GrokApiClient` directly
-- Configurable model via `--agent-model` CLI arg (replaces hardcoded `grok-3` at grok.ts:29)
 - Agent provider selected via config (currently only Grok, but the interface allows others)
+- `GrokMessage` type in `state.ts` → absorbed into `AIAgent` interface or `types.ts`
 
 ---
 
@@ -454,35 +473,58 @@ Replace each with `customData`-based routing using `isSupportGroupData` type gua
 
 ### G. Notification & Formatting Cleanup
 
-**Why:** The bot has complex notification formatting logic — `[NEW]` markers, prefixed headers (`[QUEUE]`, `[GROK]`, `[TEAM]`), `groupMetadata` (customerName, msgCount, firstContact), `groupPendingInfo` (lastEventType, lastEventFrom, lastEventTimestamp). Some of this may not be needed after the persistence overhaul, and the rest should be simplified.
+**Why:** The bot has complex notification formatting logic — `[NEW]` markers (with `!1 NEW!` color prefix), state-prefixed headers (`[QUEUE]`, `[GROK]`, `[TEAM]`), `groupMetadata`, `groupPendingInfo`, and three ephemeral maps (`forwardedItems`, `lastTeamItemByGroup`, `newItems`) that exist solely for team group formatting. Some of this may not be needed after the persistence overhaul, and the rest should be simplified.
 
-- Review which prefixed headers are still needed after `customData` provides group type info
-- Decide whether `[NEW]` markers are worth the complexity or can be dropped
+#### Ephemeral maps to evaluate
+
+- `forwardedItems` — used for edit forwarding (updating team group when customer edits) and reply-to threading. Lost on restart; edits and threading degrade gracefully. Decide: keep as-is, simplify, or drop edit forwarding.
+- `lastTeamItemByGroup` — used for auto-threading all messages from a customer group into a single team group thread. Lost on restart. Decide: keep (low cost) or drop.
+- `newItems` — used for `[NEW]` markers on first customer message in team group. Currently persisted via `_state.json` with 24h expiry. Decide: keep with `customData` persistence, or drop `[NEW]` entirely.
+
+#### Message templates (`messages.ts`)
+
+6 templates to review for neutral agent naming and regular contact mode:
+- `welcomeMessage(groupLinks)` — needs variant for regular contacts (no business address context)
+- `teamQueueMessage(timezone)` — references `/grok` command by name
+- `grokActivatedMessage` — rename to agent-neutral
+- `teamAddedMessage(timezone)` — OK as-is
+- `teamLockedMessage` — OK as-is
+- `teamAlreadyAddedMessage` — OK as-is
+
+#### Formatting
+
+- Review `formatForwardMessage` (bot.ts:189-205) — color-coded prefixes (`!1`, `!2`, `!5`) and state markers
 - Simplify `groupMetadata` — `customerName` is derivable from group members, `msgCount` may not be needed
-- Simplify `groupPendingInfo` — evaluate if the team notification logic can be streamlined
-- Clean up `messages.ts` templates for consistency between business and regular contact modes
+- Simplify `groupPendingInfo` — evaluate if the `/pending` command notification logic can be streamlined
 
 ---
 
 ### H. Tests
 
-**Why:** The bot has zero tests today. Every change (persistence overhaul, agent abstraction, regular contact support) modifies core routing logic — without tests, regressions are invisible until a customer reports them.
+**Why:** The bot already has 232 tests (Vitest, `bot.test.ts`, 4482 lines) with comprehensive mocking (`MockChatApi`, `MockGrokApi`) and a DSL for readable tests (`customer.sends`, `teamMember.wasInvited`, `grokAgent.joins`). The existing tests cover business address flows, state transitions, error handling, race conditions, edit forwarding, reply threading, NEW markers, and team commands. This stage extends the test suite for the new functionality — it does not start from scratch.
 
-- Persistence recovery from `customData` (simulate restart, rebuild maps from group/contact listing)
+#### Existing coverage (no changes needed)
+
+State transitions (welcome → queue → grok/team → locked), error handling (Grok timeout, API failure, member add failure), race conditions (team member during Grok join), edit forwarding, reply-to threading, NEW markers, /add /inviteall /invitenew /pending commands, weekend hours, message truncation, DM contact creation, business request media upload, Grok system prompt, group map persistence.
+
+#### New tests to add
+
+- Persistence recovery from `customData` (simulate restart, rebuild maps from `apiListGroups`/`apiListContacts`)
+- `customData` tagging on creation (group and contact custom data set atomically with creation)
+- `lastProcessedItemId` crash recovery (items after checkpoint re-forwarded on restart)
+- Agent abstraction (AIAgent interface works with mock provider, not just Grok)
 - Regular contact flow end-to-end (direct message → group creation → forward → team reply → relay back)
 - `/agent` and `/team` commands in direct chat (not just group)
 - `contactConnected` sends welcome message to new non-team/non-agent contacts
 - Contact filtering (agent / team member direct messages → ignored, not routed as customer)
 - Team member added as Owner in regular contact groups (not Member)
 - Both modes coexisting (business address + regular contact customers simultaneously)
-- Agent join race conditions (`connectedToGroupMember` before maps are set)
-- `customData` tagging on creation (group and contact custom data set atomically with creation)
-- `/team` removes agent immediately (not deferred until team member sends message)
+- Reverse forwarding: team/agent messages in `customerContact` groups relayed to direct chat; bot's own `groupSnd` skipped
 - `groupDeleted` event cleans up maps and clears `customData` on associated contact
 - `contactDeletedByContact` event cleans up `contactToGroupMap` and deletes orphaned support group
 - `leftMember` event clears `customData` on associated contact for regular contact groups
-- Reverse forwarding: team/agent messages in `customerContact` groups relayed to direct chat; bot's own `groupSnd` skipped (echo-loop prevention)
-- Agent API timeout: fetch aborts after 30s, customer receives error message (not indefinite hang)
+- `/team` removes agent immediately (not deferred until team member sends message)
+- Agent API timeout: fetch aborts after 30s, customer receives error message
 
 ---
 
