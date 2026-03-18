@@ -253,6 +253,7 @@ chatGroupTests = do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
+      it "should block member for all (signed)" testChannelBlockMemberSigned
       it "should remove member (signed)" testChannelRemoveMemberSigned
       it "should delete channel (signed)" testChannelDeleteGroupSigned
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
@@ -8816,6 +8817,40 @@ testChannelChangeRoleSigned ps =
                 eve <## "#team: alice changed the role of cath from member to admin (signed)"
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "changed role of cath to admin (signed)")])
+
+testChannelBlockMemberSigned :: HasCallStack => TestParams -> IO ()
+testChannelBlockMemberSigned ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- discover cath so alice can block her
+            cath #> "#team hello from cath"
+            bob <# "#team cath> hello from cath"
+            concurrentlyN_
+              [ do
+                  alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  alice <# "#team cath> hello from cath [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> hello from cath [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> hello from cath [>>]"
+              ]
+
+            -- block member (XGrpMemRestrict) - signed
+            alice ##> "/block for all #team cath"
+            alice <## "#team: you blocked cath (signed)"
+            concurrentlyN_
+              [ bob <## "#team: alice blocked cath (signed)",
+                dan <## "#team: alice blocked cath (signed)",
+                eve <## "#team: alice blocked cath (signed)"
+              ]
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "blocked cath (signed)")])
 
 testChannelRemoveMemberSigned :: HasCallStack => TestParams -> IO ()
 testChannelRemoveMemberSigned ps =
