@@ -206,19 +206,19 @@ import Data.Int (Int64)
 -- | Custom data stored on groups managed by the support bot.
 -- Discriminated by constructor tag → auto-generates TypeScript union with `type` field.
 data SupportGroupData
-  = SGDCustomer {grokLocalGroupId :: Maybe Int64}
-  | SGDCustomerContact {contactId :: Int64, grokLocalGroupId :: Maybe Int64}
+  = SGDCustomer {agentLocalGroupId :: Maybe Int64, lastProcessedItemId :: Maybe Int64}
+  | SGDCustomerContact {contactId :: Int64, agentLocalGroupId :: Maybe Int64, lastProcessedItemId :: Maybe Int64}
   | SGDTeam
   deriving (Show, Generic)
 
 -- | Custom data stored on contacts known to the support bot.
 data SupportContactData
-  = SCDGrok
+  = SCDAgent
   | SCDCustomer {supportGroupId :: Int64}
   deriving (Show, Generic)
 ```
 
-Register in `chatTypesDocsData` (bots/src/API/Docs/Types.hs). The third field (`"SGD"`, `"SCD"`) is the constructor prefix stripped during tag normalization (e.g., `SGDCustomer` → `"customer"`, `SCDGrok` → `"grok"`):
+Register in `chatTypesDocsData` (bots/src/API/Docs/Types.hs). The third field (`"SGD"`, `"SCD"`) is the constructor prefix stripped during tag normalization (e.g., `SGDCustomer` → `"customer"`, `SCDAgent` → `"agent"`):
 ```haskell
 ((sti @SupportGroupData) {typeName = "SupportGroupData"}, STUnion, "SGD", [], "", ""),
 ((sti @SupportContactData) {typeName = "SupportContactData"}, STUnion, "SCD", [], "", ""),
@@ -241,13 +241,15 @@ export namespace SupportGroupData {
 
   export interface Customer extends Interface {
     type: "customer"
-    grokLocalGroupId?: number
+    agentLocalGroupId?: number
+    lastProcessedItemId?: number
   }
 
   export interface CustomerContact extends Interface {
     type: "customerContact"
     contactId: number
-    grokLocalGroupId?: number
+    agentLocalGroupId?: number
+    lastProcessedItemId?: number
   }
 
   export interface Team extends Interface {
@@ -258,18 +260,18 @@ export namespace SupportGroupData {
 
 ```typescript
 export type SupportContactData =
-  | SupportContactData.Grok
+  | SupportContactData.Agent
   | SupportContactData.Customer
 
 export namespace SupportContactData {
-  export type Tag = "grok" | "customer"
+  export type Tag = "agent" | "customer"
 
   interface Interface {
     type: Tag
   }
 
-  export interface Grok extends Interface {
-    type: "grok"
+  export interface Agent extends Interface {
+    type: "agent"
   }
 
   export interface Customer extends Interface {
@@ -279,32 +281,43 @@ export namespace SupportContactData {
 }
 ```
 
-#### JSON in DB
+#### JSON in DB — what each field is for
 
-Group — business customer:
+Group — **business customer** (`"customer"`):
 ```json
-{"type": "customer", "grokLocalGroupId": 200}
+{"type": "customer", "agentLocalGroupId": 200, "lastProcessedItemId": 1234}
 ```
+- `type: "customer"` — marks this group as a customer support group (vs team or unmanaged). Startup scans all groups for this to rebuild maps.
+- `agentLocalGroupId` — the corresponding group ID in the AI agent's database. Needed to route the agent's responses back to the correct main group. Set when the agent is activated, absent otherwise.
+- `lastProcessedItemId` — the last chat item the bot successfully forwarded from this group. On restart, the bot fetches items after this ID and forwards any it missed. See section D for rationale.
 
-Group — regular contact customer:
+Group — **regular contact customer** (`"customerContact"`):
 ```json
-{"type": "customerContact", "contactId": 42, "grokLocalGroupId": 200}
+{"type": "customerContact", "contactId": 42, "agentLocalGroupId": 200, "lastProcessedItemId": 1234}
 ```
+- `type: "customerContact"` — same as `"customer"` but for regular contacts (no `businessChat` field). The bot created this group, not the platform.
+- `contactId` — the direct-chat contact this group was created for. Needed for reverse forwarding: when a team member replies in this group, the bot relays the message to this contact's direct chat.
+- `agentLocalGroupId` — same as above.
+- `lastProcessedItemId` — same as above.
 
-Group — team:
+Group — **team**:
 ```json
 {"type": "team"}
 ```
+- `type: "team"` — identifies the single team coordination group. Startup finds this to know where to forward customer notifications. Replaces `teamGroupId` from `_state.json`.
 
-Contact — Grok agent:
+Contact — **AI agent**:
 ```json
-{"type": "grok"}
+{"type": "agent"}
 ```
+- `type: "agent"` — identifies which contact is the AI agent. Needed on startup to rebuild the agent contact reference, and to filter out the agent from customer routing (don't create support groups for infrastructure contacts). Replaces `grokContactId` from `_state.json`.
 
-Contact — regular customer (note: tag `"customer"` is unambiguous — `SupportContactData` is only stored on contacts, `SupportGroupData` on groups):
+Contact — **regular customer**:
 ```json
 {"type": "customer", "supportGroupId": 100}
 ```
+- `type: "customer"` — marks this contact as a customer (tag is unambiguous — `SupportContactData` is only stored on contacts, `SupportGroupData` on groups).
+- `supportGroupId` — the support group created for this contact. Needed to route incoming direct messages to the correct group without scanning all groups.
 
 #### Type-safe access
 
@@ -368,28 +381,16 @@ The fix: store all persistent state in the SimpleX DB itself via `customData` on
 
 - **Delete** `_state.json` support — the full `BotState` interface (index.ts:12-20) and all its fields:
   - `teamGroupId`, `grokContactId` → derived from `customData` on startup
-  - `grokGroupMap` → derived from `customData.grokLocalGroupId` on startup
+  - `grokGroupMap` → derived from `customData.agentLocalGroupId` on startup
   - `newItems` (team notification tracking) → ephemeral, rebuilt from chat history or dropped
   - `groupLastActive` → ephemeral, rebuilt from chat history timestamps
   - `groupMetadata` (`firstContact`, `msgCount`, `customerName`) → derivable from chat history + group member info on startup
   - `groupPendingInfo` (`lastEventType`, `lastEventFrom`, `lastEventTimestamp`, `lastMessageFrom`) → ephemeral notification state, rebuilt from recent chat history on startup
 - **Delete** `readState`/`writeState` functions and all `on*Changed` callbacks (`onGrokMapChanged`, `onNewItemsChanged`, `onGroupLastActiveChanged`, `onGroupMetadataChanged`, `onGroupPendingInfoChanged`)
 - **Delete** `startup.ts` (direct SQLite access via `execSync`/`sqlite3` CLI) — `bot.run()` with `useBotProfile: true` handles display name conflicts natively
-- **Tag on creation:** team group → `{type: "team"}`, Grok contact → `{type: "grok"}`, customer groups → `{type: "customer"}` or `{type: "customerContact", contactId}`
-- **Store** `grokLocalGroupId` in group `customData` on Grok join
-
-#### Migration from `_state.json`
-
-On first run after upgrade, if `_state.json` exists (wrap each step in try/catch — if the referenced entity was deleted while offline, skip it and let startup recovery handle the gap):
-1. Read `teamGroupId` → `apiSetGroupCustomData(teamGroupId, {type: "team"})`
-2. Read `grokContactId` → `apiSetContactCustomData(grokContactId, {type: "grok"})`
-3. `apiListGroups(userId)` → for each summary where `.groupInfo.businessChat` is set and group is NOT the team group (i.e., a customer group), determine if it has an entry in `grokGroupMap`:
-   - With Grok: `apiSetGroupCustomData(groupId, {type: "customer", grokLocalGroupId: N})`
-   - Without Grok: `apiSetGroupCustomData(groupId, {type: "customer"})`
-   - Skip groups without `businessChat` — these are not customer groups (e.g., manually created groups). At migration time, only business address groups exist; regular contact groups don't exist yet.
-4. Delete `_state.json`
-
-This is a one-time step. Without it, existing deployments would lose their team group, Grok contact, and customer group identification on upgrade.
+- **Tag on creation:** team group → `{type: "team"}`, agent contact → `{type: "agent"}`, customer groups → `{type: "customer"}` or `{type: "customerContact", contactId}`
+- **Store** `agentLocalGroupId` in group `customData` on agent join
+- **Track** `lastProcessedItemId` in group `customData` — updated after each successful forward. On restart, the bot fetches items after this ID and forwards any it missed. This avoids needing a `customData` column on `ChatItem` (which would require a DB migration on every SimpleX Chat client, not just the bot) and avoids per-item write pairs (marking pending before send, clearing after). One write per forwarded message is enough — if the bot crashes mid-forward, it just re-forwards from the last checkpoint.
 
 #### Startup recovery (replaces _state.json)
 
@@ -398,12 +399,15 @@ Run steps 1-7 before wiring event handlers — all maps must be fully populated 
 Note: `apiListGroups` returns `GroupInfoSummary[]` (properties nested under `.groupInfo`). `apiListContacts` returns `Contact[]` directly.
 
 1. `apiListGroups(userId)` → find team group by `.groupInfo.customData.type === "team"`
-2. `apiListContacts(userId)` → find Grok contact by `.customData.type === "grok"`
-3. Build `grokGroupMap` from groups where `.groupInfo.customData.grokLocalGroupId` is set
+2. `apiListContacts(userId)` → find agent contact by `.customData.type === "agent"`
+3. Build `grokGroupMap` from groups where `.groupInfo.customData.agentLocalGroupId` is set
 4. Build `reverseGrokMap` as inverse of `grokGroupMap`
 5. Build `contactToGroupMap` from contacts where `customData.type === "customer"` (has `supportGroupId`)
 6. Validate all maps — remove entries where the referenced group/contact no longer exists. Downgrade stale `customData` rather than clearing it: a `customerContact` group whose `contactId` points to a deleted contact gets downgraded to `{type: "customer"}` via `apiSetGroupCustomData(groupId, {type: "customer"})` — this preserves the group as a known support group while removing the dangling reference. A `customer` contact whose `supportGroupId` points to a deleted group gets its `customData` cleared via `apiSetContactCustomData(contactId)`. Covers entities deleted while bot was offline.
-7. Rebuild chat-history-derived state: for each customer group, `apiGetChat(ChatType.Group, groupId, 100)` to populate `welcomeCompleted`, `lastTeamItemByGroup`, `newItems`, `groupLastActive`, `groupMetadata`, and `groupPendingInfo`. Best-effort: if a group has no recent history, maps start empty (first new message repopulates).
+7. For each customer group, `apiGetChat(ChatType.Group, groupId, 100)`:
+   - Forward any items after `lastProcessedItemId` that were missed (crash recovery)
+   - Rebuild `welcomeCompleted`, `groupLastActive`, `groupMetadata`, and `groupPendingInfo`
+   - Best-effort: if a group has no recent history, maps start empty (first new message repopulates)
 
 #### Ephemeral state (RAM only)
 
@@ -411,17 +415,14 @@ Note: `apiListGroups` returns `GroupInfoSummary[]` (properties nested under `.gr
 |-----|---------|----------|
 | `pendingGrokJoins` | In-flight Grok invitations | User retries `/grok` |
 | `grokJoinResolvers` | Promise callbacks for Grok join | Timeout after 30s |
-| `grokGroupMap` | `mainGroupId → grokLocalGroupId` | Rebuilt on startup |
-| `reverseGrokMap` | `grokLocalGroupId → mainGroupId` | Rebuilt on startup |
+| `grokGroupMap` | `mainGroupId → agentLocalGroupId` | Rebuilt on startup |
+| `reverseGrokMap` | `agentLocalGroupId → mainGroupId` | Rebuilt on startup |
 | `contactToGroupMap` | `contactId → supportGroupId` | Rebuilt on startup |
 | `grokFullyConnected` | `Set<groupId>` — groups where Grok's `connectedToGroupMember` has fired | User retries `/grok` |
 | `pendingTeamDMs` | `Map<contactId, string>` — pending DMs for newly-created team member contacts | Ephemeral, safe to lose |
 | `pendingOwnerRole` | `Set<"groupId:groupMemberId">` — pending owner role assignments | Ephemeral, safe to lose |
 | `pendingGroupCreations` | `Set<contactId>` guard against duplicates (new — section E) | Ephemeral, safe to lose (clean up contactId on success or failure) |
-| `forwardedItems` | `Map<"groupId:itemId", {teamItemId, header, sender}>` — tracks forwarded messages for team group threading | Ephemeral, rebuilt as messages arrive |
 | `welcomeCompleted` | `Set<groupId>` — tracks groups past welcome state | Ephemeral, rebuilt from chat history on startup |
-| `lastTeamItemByGroup` | `Map<groupId, chatItemId>` — last team group item per customer group for reply threading | Ephemeral, rebuilt from recent chat history |
-| `newItems` | `Map<groupId, {teamItemId, timestamp, originalText}>` — `[NEW]` marker tracking for team group notifications | Rebuilt from chat history on startup, or dropped (stale markers acceptable to lose) |
 | `groupLastActive` | `Map<groupId, timestamp>` — last activity per customer group | Rebuilt from chat history timestamps on startup |
 | `groupMetadata` | `Map<groupId, GroupMetadata>` — `{firstContact, msgCount, customerName}` per group | Rebuilt from chat history + group member info on startup |
 | `groupPendingInfo` | `Map<groupId, GroupPendingInfo>` — `{lastEventType, lastEventFrom, lastEventTimestamp, lastMessageFrom}` | Rebuilt from recent chat history on startup |
@@ -465,7 +466,7 @@ flowchart TD
    - Remove `contactId` from `pendingGroupCreations` in a `finally` block (clean up on success or failure)
 5. Forward to support group (prefixed `groupSnd`) + team group
 6. First message → send queue reply to direct chat, send `/add` to team group
-7. `/grok` → `activateGrok(supportGroupId)` — sets `grokLocalGroupId` in group `customData` on Grok join (per section D), relay response to direct chat
+7. `/grok` → `activateGrok(supportGroupId)` — sets `agentLocalGroupId` in group `customData` on agent join (per section D), relay response to direct chat
 8. `/team` → `activateTeam(supportGroupId)`
 
 #### Reverse forwarding (group → direct chat)
@@ -498,7 +499,7 @@ Replace each with `customData`-based routing using `isSupportGroupData` type gua
 - `leftMember` (bot.ts:351): Add cleanup for regular contact groups — clear `customData` on the associated contact when its support group is disbanded
 
 **Event handlers to add:**
-- `groupDeleted`: Clean up all maps (`grokGroupMap`, `contactToGroupMap`, `forwardedItems`). For `customerContact` groups, extract `contactId` from `customData` and clear the contact's `customData` via `apiSetContactCustomData(contactId)`. For `customer` (business) groups, no contact cleanup needed — the customer is identified by `businessChat.customerId` (a group member), not a direct contact.
+- `groupDeleted`: Clean up maps (`grokGroupMap`, `contactToGroupMap`). For `customerContact` groups, extract `contactId` from `customData` and clear the contact's `customData` via `apiSetContactCustomData(contactId)`. For `customer` (business) groups, no contact cleanup needed — the customer is identified by `businessChat.customerId` (a group member), not a direct contact.
 - `contactDeletedByContact` (CEvt, not CRResp): If the contact has `customData.type === "customer"`, remove its `contactToGroupMap` entry and delete the orphaned support group via `apiDeleteChat(ChatType.Group, supportGroupId)` (prevents both stale map entries and orphaned groups with a `contactId` pointing at a deleted contact — symmetric with `groupDeleted` which clears the contact's `customData`)
 
 ---
@@ -543,7 +544,6 @@ Replace each with `customData`-based routing using `isSupportGroupData` type gua
 - `leftMember` event clears `customData` on associated contact for regular contact groups
 - Reverse forwarding: team/Grok messages in `customerContact` groups relayed to direct chat; bot's own `groupSnd` skipped (echo-loop prevention)
 - Grok API timeout: fetch aborts after 30s, customer receives error message (not indefinite hang)
-- Migration from `_state.json` → `customData` (existing deployment upgrade path)
 
 ---
 
