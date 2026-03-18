@@ -324,5 +324,9 @@
     "why-p5": "Není lepší zámek na dveřích někoho jiného. Není milejší nájemce, který respektuje vaše soukromí, ale přesto vede evidenci všech návštěvníků. Vy nejste host. Jste doma. Ani král do něj nemůže vstoupit &mdash; jste suverén.",
     "why-p6": "Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.",
     "why-p7": "Nejstarší lidská svoboda &mdash; mluvit s druhým člověkem, aniž by byl sledován &mdash; postavena na infrastruktuře, která ji nemůže zradit.",
-    "why-p8": "Protože jsme zničili sílu vědět, kdo jste. Aby vám <em>vaši</em> moc nikdo nemohl vzít."
+    "why-p8": "Protože jsme zničili sílu vědět, kdo jste. Aby vám <em>vaši</em> moc nikdo nemohl vzít.",
+    "file": "Soubor",
+    "file-noscript": "Pro přenos souborů je zapotřebí JavaScript.",
+    "file-e2e-note": "Koncové šifrovaní — server nikdy neuvidí váš soubor.",
+    "file-learn-more": "Další informace o protokolu XFTP"
 }
