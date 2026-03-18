@@ -1723,6 +1723,7 @@ updateRelayGroupKeys db user gInfo linkEntityId rootPubKey memberPrivKey owners 
       db
       "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
       (C.publicKey memberPrivKey, currentTs, membershipGMId)
+  -- TODO [relays] relay: if not found, create owner record (multi-owner)
   forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
     ownerGMId <- getGroupMemberIdViaMemberId db user gInfo (MemberId ownerId)
     liftIO $
