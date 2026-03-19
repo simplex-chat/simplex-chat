@@ -18,7 +18,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
@@ -8565,12 +8565,6 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
          ]
   pure memIncognito
 
-checkMemberStatus :: HasCallStack => TestCC -> T.Text -> T.Text -> IO ()
-checkMemberStatus cc name expectedStatus = do
-  [Only (status :: T.Text)] <- withCCTransaction cc $ \db ->
-    DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name)
-  status `shouldBe` expectedStatus
-
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -9091,11 +9085,11 @@ testChannelSubscriberLeave ps =
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no leave item
 
             -- verify cath's member status is "left" on all clients
-            checkMemberStatus alice "cath" "left"
-            checkMemberStatus bob "cath" "left"
-            checkMemberStatus cath "cath" "left"
-            checkMemberStatus dan "cath" "left"
-            checkMemberStatus eve "cath" "left"
+            checkMemberStatus alice "cath" (Just "left")
+            checkMemberStatus bob "cath" (Just "left")
+            checkMemberStatus cath "cath" (Just "left")
+            checkMemberStatus dan "cath" (Just "left")
+            checkMemberStatus eve "cath" (Just "left")
 
             -- silent subscriber leaves (unknown to other subscribers)
             threadDelay 1000000
@@ -9111,10 +9105,18 @@ testChannelSubscriberLeave ps =
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no new item
 
             -- verify dan's member status is "left" on nodes that know dan
-            checkMemberStatus alice "dan" "left"
-            checkMemberStatus bob "dan" "left"
-            checkMemberStatus dan "dan" "left"
-            -- eve doesn't know dan (never sent a message, XGrpLeave skips unknown member creation)
+            checkMemberStatus alice "dan" (Just "left")
+            checkMemberStatus bob "dan" (Just "left")
+            checkMemberStatus dan "dan" (Just "left")
+            -- eve doesn't know dan - no member record (XGrpLeave skips unknown member creation)
+            checkMemberStatus eve "dan" Nothing
+            checkMemberStatus cath "dan" Nothing
+  where
+    checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
+    checkMemberStatus cc name expected = do
+      statuses <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
+      map (\(Only s) -> s) statuses `shouldBe` maybeToList expected
 
 testChannelOwnerProfileUpdate :: HasCallStack => TestParams -> IO ()
 testChannelOwnerProfileUpdate ps =
@@ -9132,6 +9134,7 @@ testChannelOwnerProfileUpdate ps =
             alice <## "user profile is changed to alisa (your 0 contacts are notified)"
 
             -- sending as channel does NOT trigger profile update
+            threadDelay 1000000
             alice #> "#team hello from channel"
             bob <# "#team> hello from channel"
             concurrentlyN_
@@ -9140,12 +9143,20 @@ testChannelOwnerProfileUpdate ps =
                 eve <# "#team> hello from channel [>>]"
               ]
             -- no profile update items on any participant
-            forM_ [alice, bob, cath, dan, eve] $ \cc -> do
-              cc ##> "/_get chat #1 count=100"
-              items <- chat <$> getTermLine cc
-              items `shouldSatisfy` notElem (0, "updated profile")
+            alice #$> ("/_get chat #1 count=1", chat, [(1, "hello from channel")])
+            bob #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (0, "hello from channel")])
+            cath #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (0, "hello from channel")])
+            dan #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (0, "hello from channel")])
+            eve #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (0, "hello from channel")])
+            -- verify profiles are updated correctly
+            alice `hasContactProfiles` ["alisa", "bob", "cath", "dan", "eve"]
+            bob `hasContactProfiles` ["alice", "bob", "cath", "dan", "eve"]
+            cath `hasContactProfiles` ["alice", "bob", "cath"]
+            dan `hasContactProfiles` ["alice", "bob", "dan"]
+            eve `hasContactProfiles` ["alice", "bob", "eve"]
 
             -- sending as member (as_group=off) triggers profile update
+            threadDelay 1000000
             alice ##> "/_send #1(as_group=off) text hello from alisa"
             alice <# "#team hello from alisa"
             bob <# "#team alisa> hello from alisa"
@@ -9154,11 +9165,17 @@ testChannelOwnerProfileUpdate ps =
                 dan <# "#team alisa> hello from alisa [>>]",
                 eve <# "#team alisa> hello from alisa [>>]"
               ]
-            -- profile update items on all receivers (not on alice who sent it)
-            forM_ [bob, cath, dan, eve] $ \cc -> do
-              cc ##> "/_get chat #1 count=100"
-              items <- chat <$> getTermLine cc
-              items `shouldSatisfy` elem (0, "updated profile")
+            -- profile update items on all receivers (signed), not on alice who sent it
+            alice #$> ("/_get chat #1 count=2", chat, [(1, "hello from channel"), (1, "hello from alisa")])
+            bob #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from alisa")])
+            cath #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from alisa")])
+            dan #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from alisa")])
+            eve #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from alisa")])
+            -- verify profiles are updated correctly
+            forM_ [alice, bob] $ \cc -> cc `hasContactProfiles` ["alisa", "bob", "cath", "dan", "eve"]
+            cath `hasContactProfiles` ["alisa", "bob", "cath"]
+            dan `hasContactProfiles` ["alisa", "bob", "dan"]
+            eve `hasContactProfiles` ["alisa", "bob", "eve"]
 
 testChannelSubscriberProfileUpdate :: HasCallStack => TestParams -> IO ()
 testChannelSubscriberProfileUpdate ps =
@@ -9184,6 +9201,7 @@ testChannelSubscriberProfileUpdate ps =
               ]
 
             -- known subscriber updates profile (XInfo signed)
+            threadDelay 1000000
             cath ##> "/_profile 1 {\"displayName\": \"kate\", \"fullName\": \"\"}"
             cath <## "user profile is changed to kate (your 0 contacts are notified)"
             cath #> "#team hello from kate"
@@ -9193,18 +9211,22 @@ testChannelSubscriberProfileUpdate ps =
                 dan <# "#team kate> hello from kate [>>]",
                 eve <# "#team kate> hello from kate [>>]"
               ]
-            -- profile update items on alice and bob (moderator+/relay)
-            forM_ [alice, bob] $ \cc -> do
-              cc ##> "/_get chat #1 count=100"
-              items <- chat <$> getTermLine cc
-              items `shouldSatisfy` elem (0, "updated profile")
+            -- profile update items on alice and bob (owner/relay, signed)
+            alice #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from kate")])
+            bob #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from kate")])
             -- no profile update items on dan and eve (subscriber-to-subscriber muted)
-            forM_ [dan, eve] $ \cc -> do
-              cc ##> "/_get chat #1 count=100"
-              items <- chat <$> getTermLine cc
-              items `shouldSatisfy` notElem (0, "updated profile")
+            dan #$> ("/_get chat #1 count=2", chat, [(0, "hello from cath"), (0, "hello from kate")])
+            eve #$> ("/_get chat #1 count=2", chat, [(0, "hello from cath"), (0, "hello from kate")])
+            -- cath doesn't see her own profile update
+            cath #$> ("/_get chat #1 count=2", chat, [(1, "hello from cath"), (1, "hello from kate")])
+            -- verify profiles are updated correctly
+            forM_ [alice, bob] $ \cc -> cc `hasContactProfiles` ["alice", "bob", "kate", "dan", "eve"]
+            cath `hasContactProfiles` ["alice", "bob", "kate"]
+            dan `hasContactProfiles` ["alice", "bob", "kate", "dan"]
+            eve `hasContactProfiles` ["alice", "bob", "kate", "eve"]
 
-            -- silent subscriber updates profile
+            -- previously silent subscriber updates profile
+            threadDelay 1000000
             dan ##> "/_profile 1 {\"displayName\": \"dave\", \"fullName\": \"\"}"
             dan <## "user profile is changed to dave (your 0 contacts are notified)"
             dan #> "#team hello from dave"
@@ -9218,16 +9240,19 @@ testChannelSubscriberProfileUpdate ps =
                   cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dave"
                   cath <# "#team dave> hello from dave [>>]"
               ]
-            -- profile update items on alice and bob (moderator+/relay)
-            forM_ [alice, bob] $ \cc -> do
-              cc ##> "/_get chat #1 count=100"
-              items <- chat <$> getTermLine cc
-              length (filter (== (0, "updated profile")) items) `shouldBe` 2
+            -- profile update items on alice and bob (moderator+/relay, 2nd profile update signed)
+            alice #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from dave")])
+            bob #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from dave")])
             -- no profile update items on cath and eve (subscriber-to-subscriber muted)
-            forM_ [cath, eve] $ \cc -> do
-              cc ##> "/_get chat #1 count=100"
-              items <- chat <$> getTermLine cc
-              items `shouldSatisfy` notElem (0, "updated profile")
+            cath #$> ("/_get chat #1 count=2", chat, [(1, "hello from kate"), (0, "hello from dave")])
+            eve #$> ("/_get chat #1 count=2", chat, [(0, "hello from kate"), (0, "hello from dave")])
+            -- dan doesn't see his own profile update
+            dan #$> ("/_get chat #1 count=2", chat, [(0, "hello from kate"), (1, "hello from dave")])
+            -- verify profiles are updated correctly
+            forM_ [alice, bob] $ \cc -> cc `hasContactProfiles` ["alice", "bob", "kate", "dave", "eve"]
+            cath `hasContactProfiles` ["alice", "bob", "kate", "dave"]
+            dan `hasContactProfiles` ["alice", "bob", "kate", "dave"]
+            eve `hasContactProfiles` ["alice", "bob", "kate", "dave", "eve"]
 
 testChannelMessageUpdate :: HasCallStack => TestParams -> IO ()
 testChannelMessageUpdate ps =

@@ -2400,8 +2400,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Profile {displayName = n', fullName = fn', shortDescr = sd', image = i', contactLink = cl'} = p'
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xInfoMember gInfo m p' RcvMessage {msgSigned} brokerTs = do
-      void $ processMemberProfileUpdate gInfo m p' True msgSigned (Just brokerTs)
+    xInfoMember gInfo m p' msg brokerTs = do
+      void $ processMemberProfileUpdate gInfo m p' (Just (msg, brokerTs))
       pure $ memberEventDeliveryScope m
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> Maybe MemberKey -> CM ()
@@ -2409,7 +2409,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
-          m' <- processMemberProfileUpdate gInfo m p' False False Nothing
+          m' <- processMemberProfileUpdate gInfo m p' Nothing
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True memberKey_
           let connectedIncognito = memberIncognito membership
           probeMatchingMemberContact m' connectedIncognito
@@ -2473,15 +2473,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         expectHistory = groupFeatureAllowed SGFHistory gInfo && m `supportsVersion` groupHistoryIncludeWelcomeVersion
 
-    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Bool -> Maybe UTCTime -> CM GroupMember
-    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems signed itemTs_
+    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Maybe (RcvMessage, UTCTime) -> CM GroupMember
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' msgTs_
       | redactedMemberProfile allowSimplexLinks (fromLocalProfile p) /= redactedMemberProfile allowSimplexLinks p' = do
           updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db user m p'
               unless (muteEventInChannel gInfo m) $ do
-                createProfileUpdatedItem m'
+                forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
               pure m'
             Just mContactId -> do
@@ -2490,7 +2490,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
                   unless (muteEventInChannel gInfo m) $ do
-                    createProfileUpdatedItem m'
+                    forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
                     toView $ CEvtContactUpdated user mCt ct'
                   pure m'
@@ -2513,11 +2513,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         isMainBusinessMember BusinessChatInfo {chatType, businessId, customerId} GroupMember {memberId} = case chatType of
           BCBusiness -> businessId == memberId
           BCCustomer -> customerId == memberId
-        createProfileUpdatedItem m' =
-          when createItems $ do
-            (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
-            let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
-            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m'') ciContent itemTs_
+        createProfileUpdatedItem m' (msg, brokerTs) = do
+          (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
+          let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
+              cd = CDGroupRcv gInfo' scopeInfo m''
+          (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
+          groupMsgToView cInfo ci
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do
