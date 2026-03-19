@@ -1447,9 +1447,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
     muteEventInChannel :: GroupInfo -> GroupMember -> Bool
-    muteEventInChannel gInfo m =
-      let GroupInfo {membership} = gInfo
-       in useRelays' gInfo && memberRole' membership < GRModerator && not (isRelay membership) && memberRole' m < GRModerator
+    muteEventInChannel gInfo@GroupInfo {membership} m =
+      useRelays' gInfo && memberRole' membership < GRModerator && not (isRelay membership) && memberRole' m < GRModerator
 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
     memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
