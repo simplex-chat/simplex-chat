@@ -968,7 +968,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' (Just m'') sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> Nothing <$ xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
-              XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p True brokerTs
+              XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p brokerTs
               XGrpLinkMem p memberKey -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p memberKey
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
@@ -981,7 +981,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemDel memId withMessages -> case encoding @e of
                 SJson -> fmap ctx <$> xGrpMemDel gInfo' m'' memId withMessages verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
-              XGrpLeave -> fmap ctx <$> xGrpLeave gInfo' m'' True msg brokerTs
+              XGrpLeave -> fmap ctx <$> xGrpLeave gInfo' m'' msg brokerTs
               XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> fmap ctx <$> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs msgSigned gInfo' m'' ps'
@@ -1446,6 +1446,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
             Nothing ->
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
+
+    muteEventInChannel :: GroupInfo -> GroupMember -> Bool
+    muteEventInChannel gInfo m =
+      let GroupInfo {membership} = gInfo
+       in useRelays' gInfo && memberRole' membership < GRModerator && not (isRelay membership) && memberRole' m < GRModerator
 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
     memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
@@ -2394,9 +2399,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Profile {displayName = n, fullName = fn, shortDescr = sd, image = i, contactLink = cl} = p
             Profile {displayName = n', fullName = fn', shortDescr = sd', image = i', contactLink = cl'} = p'
 
-    xInfoMember :: GroupInfo -> GroupMember -> Profile -> Bool -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xInfoMember gInfo m p' createItems brokerTs = do
-      void $ processMemberProfileUpdate gInfo m p' createItems (Just brokerTs)
+    xInfoMember :: GroupInfo -> GroupMember -> Profile -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xInfoMember gInfo m p' brokerTs = do
+      void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
       pure $ memberEventDeliveryScope m
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> Maybe MemberKey -> CM ()
@@ -2475,17 +2480,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db user m p'
-              createProfileUpdatedItem m'
-              toView $ CEvtGroupMemberUpdated user gInfo m m'
+              unless (muteEventInChannel gInfo m) $ do
+                createProfileUpdatedItem m'
+                toView $ CEvtGroupMemberUpdated user gInfo m m'
               pure m'
             Just mContactId -> do
               mCt <- withStore $ \db -> getContact db vr user mContactId
               if canUpdateProfile mCt
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
-                  createProfileUpdatedItem m'
-                  toView $ CEvtGroupMemberUpdated user gInfo m m'
-                  when createItems $ toView $ CEvtContactUpdated user mCt ct'
+                  unless (muteEventInChannel gInfo m) $ do
+                    createProfileUpdatedItem m'
+                    toView $ CEvtGroupMemberUpdated user gInfo m m'
+                    toView $ CEvtContactUpdated user mCt ct'
                   pure m'
                 else pure m
               where
@@ -2763,7 +2770,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               memberAnnouncedToView updatedMember gInfo'
               pure $ deliveryJobScope updatedMember
             Right _
-              | useRelays' gInfo -> pure Nothing
+              | useRelays' gInfo -> logInfo "x.grp.mem.new: member already created via another relay" $> Nothing
               | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _ -> do
               (newMember, gInfo') <- withStore $ \db -> do
@@ -3017,12 +3024,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | useRelays' gInfo = asks $ channelSubscriberRole . config
       | otherwise = pure GRAuthor
 
-    xGrpLeave :: GroupInfo -> GroupMember -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpLeave gInfo m createItems_ msg brokerTs = do
+    xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    xGrpLeave gInfo m msg brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-      when createItems_ $ do
+      unless (muteEventInChannel gInfo m) $ do
         (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
@@ -3190,21 +3197,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
-            XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p (createItems author) msgTs
+            XInfo p -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p msgTs
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
             XGrpMemDel memId withMessages -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages verifiedMsg rcvMsg msgTs True
-            XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave gInfo author (createItems author) rcvMsg msgTs
+            XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs msgSigned gInfo author ps'
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
-            createItems :: GroupMember -> Bool
-            createItems author =
-              let GroupInfo {membership} = gInfo
-               in not (useRelays' gInfo) || memberRole' membership >= GRModerator || memberRole' author >= GRModerator
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()
             withAuthor tag action = case author_ of
               Just author -> action author
