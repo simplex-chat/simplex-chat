@@ -1202,6 +1202,13 @@ requiresSignature = \case
   XGrpMemRestrict_ -> True
   _ -> False
 
+-- | Member events that should be signed in relay groups.
+memberSignableEvent :: CMEventTag e -> Bool
+memberSignableEvent = \case
+  XGrpLeave_ -> True
+  XInfo_ -> True
+  _ -> False
+
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag

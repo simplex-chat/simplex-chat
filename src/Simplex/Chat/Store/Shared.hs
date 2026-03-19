@@ -861,16 +861,6 @@ getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
       (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
       (groupId, userId, userContactId)
 
--- Set group link info and optionally incognito profile before connecting to relays.
--- This is called once before connecting to relays, unlike createConnReqConnection -> setPreparedGroupLinkInfo_,
--- which is used in single-connection flows.
-setPreparedGroupLinkInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Profile -> ExceptT StoreError IO GroupInfo
-setPreparedGroupLinkInfo db vr user@User {userId} gInfo@GroupInfo {groupId} cReq cReqHash incognitoProfile = do
-  currentTs <- liftIO getCurrentTime
-  customUserProfileId <- liftIO $ mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
-  liftIO $ setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId currentTs
-  getGroupInfo db vr user groupId
-
 setPreparedGroupLinkInfo_ :: DB.Connection -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Int64 -> UTCTime -> IO ()
 setPreparedGroupLinkInfo_ db GroupInfo {groupId, membership} cReq cReqHash customUserProfileId currentTs = do
   DB.execute

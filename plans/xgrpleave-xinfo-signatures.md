@@ -81,11 +81,10 @@ introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn}
   forM_ (L.nonEmpty introEvents) $ \events' ->
     sendGroupMemberMessages user gInfo conn events'
   -- Send XGrpMemNew about subscriber TO moderators+ (new)
-  when (isJust $ memberPubKey subscriber) $
-    void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
 ```
 
-The `when (isJust $ memberPubKey subscriber)` guard ensures we only announce if the relay has the subscriber's key (from Part 1b).
+Subscriber always has a key (it's non-optional in `XMember` and stored atomically with member creation in Part 1b), so no guard is needed.
 
 ### 2c. Handle duplicate XGrpMemNew gracefully in relay groups
 
@@ -96,22 +95,20 @@ The `when (isJust $ memberPubKey subscriber)` guard ensures we only announce if 
 Right _ -> messageError "x.grp.mem.new error: member already exists" $> Nothing
 
 -- After:
-Right existingMember
-  | useRelays' gInfo -> do
-      void $ withStore $ \db -> updateAnnouncedMember db vr user existingMember memInfo
-      pure Nothing
+Right _
+  | useRelays' gInfo -> pure Nothing  -- silently accept duplicate in channels
   | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
 ```
 
-Where `updateAnnouncedMember` updates profile, role, version, and pubKey without changing status (since the member may already be at a higher status like GSMemConnected).
+For relay groups, silently accept the duplicate — no update needed since the member already exists with correct data.
 
-### 2d. Add member_pub_key to member update functions
+### 2d. Add member_pub_key to `updateUnknownMemberAnnounced`
 
 **File**: `Groups.hs`
 
-Add `member_pub_key` update to `updateIntroducedMember` (line 2854) and `updateUnknownMemberAnnounced` (line 2875). Both receive `MemberInfo` which carries `memberKey :: Maybe MemberKey`.
+Add `member_pub_key` update to `updateUnknownMemberAnnounced` (line 2875). It receives `MemberInfo` which carries `memberKey :: Maybe MemberKey`. When a subscriber was previously created as unknown (from a forwarded message) and then announced via XGrpMemNew, the key should be stored.
 
-Also add new `updateAnnouncedMember` function for the duplicate XGrpMemNew case — updates profile, role, version, and pubKey, but preserves current status.
+**Do NOT update `member_pub_key` in `updateIntroducedMember`** — members introduced via XGrpMemIntro are owners/moderators whose keys were loaded from link data out-of-band (trusted). Updating from an in-band message would allow a compromised relay to substitute a different key, defeating the purpose of out-of-band key distribution. Add comment explaining why key is not updated here.
 
 ### 2e. Fix existing tests
 
@@ -199,10 +196,12 @@ xInfoMember gInfo m p' createItems brokerTs = do
 
 Update call sites:
 - Direct path (line 971): `xInfoMember gInfo' m'' p True brokerTs`
-- Forwarded path (line 3190): `xInfoMember gInfo author p (isJust $ memberPubKey author) msgTs`
+- Forwarded path (line 3190): `xInfoMember gInfo author p createItems msgTs`
+
+Where `createItems` is role-based (see below).
 
 **Also guard `CEvtGroupMemberUpdated`** in `processMemberProfileUpdate` (Subscriber.hs:2479, 2487):
-`processMemberProfileUpdate` emits `toView $ CEvtGroupMemberUpdated` independently of `createItems`. Wrap these with `when createItems` too, so the UI isn't notified about profile changes from unknown subscribers. The database profile update (`updateMemberProfile`) still happens regardless — only the view notification is suppressed.
+`processMemberProfileUpdate` emits `toView $ CEvtGroupMemberUpdated` independently of `createItems`. Wrap these with `when createItems` too, so the UI isn't notified about profile changes from subscribers. The database profile update (`updateMemberProfile`) still happens regardless — only the view notification is suppressed.
 
 **Parameterize `xGrpLeave`** (Subscriber.hs:3018):
 ```haskell
@@ -230,12 +229,21 @@ xGrpLeave gInfo m createItems msg brokerTs = do
 
 Update call sites:
 - Direct path (line 984): `xGrpLeave gInfo' m'' True msg brokerTs`
-- Forwarded path (line 3195): `xGrpLeave gInfo author (isJust $ memberPubKey author) rcvMsg msgTs`
+- Forwarded path (line 3195): `xGrpLeave gInfo author createItems rcvMsg msgTs`
 
-The `isJust (memberPubKey author)` check correctly maps to the user's requirement:
-- Moderator receives XGrpLeave from subscriber → has pubKey (from XGrpMemNew) → items ✓
-- Subscriber receives XGrpLeave from moderator → has pubKey (from XGrpMemIntro) → items ✓
-- Subscriber receives XGrpLeave from subscriber → no pubKey → suppressed ✓
+**`createItems` logic** — role-based, not key-based (keys may be communicated differently in future):
+
+```haskell
+let GroupInfo {membership} = gInfo
+    createItems = memberRole' membership >= GRModerator || memberRole' author >= GRModerator
+```
+
+Roles: `GRObserver < GRAuthor < GRMember < GRModerator < GRAdmin < GROwner`
+
+This gives:
+- Moderator+ receives from anyone → items ✓ (first condition)
+- Subscriber receives from moderator+ → items ✓ (second condition, e.g. owner leaving)
+- Subscriber receives from subscriber → suppressed ✓ (neither condition, reduces visual clutter)
 
 ## Part 4: Tests
 
@@ -276,5 +284,5 @@ The `isJust (memberPubKey author)` check correctly maps to the user's requiremen
 | `src/Simplex/Chat/Library/Subscriber.hs` | Fix key at :1111, store key at :1438, handle dup XGrpMemNew at :2765, parameterize xInfoMember/xGrpLeave, modify withVerifiedMsg |
 | `src/Simplex/Chat/Library/Internal.hs` | Rename+extend introduceInChannel, modify groupMsgSigning |
 | `src/Simplex/Chat/Library/Commands.hs` | Fix key at :3426 |
-| `src/Simplex/Chat/Store/Groups.hs` | Add pubKey to update functions, add updateAnnouncedMember |
+| `src/Simplex/Chat/Store/Groups.hs` | Add pubKey to `updateUnknownMemberAnnounced`, add `member_pub_key` param to `createJoiningMember` |
 | `tests/ChatTests/Groups.hs` | Add 4 new tests, fix existing test output |

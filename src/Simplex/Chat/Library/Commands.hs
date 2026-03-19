@@ -2000,17 +2000,18 @@ processChatCommand vr nm = \case
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}) <- getShortLinkConnReq nm user sLnk
-        -- Set group link info and incognito profile once before connecting to relays
+        -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
+        -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
-        gInfo' <- withFastStore $ \db -> setPreparedGroupLinkInfo db vr user gInfo mainCReq cReqHash incognitoProfile
-        forM_ linkEntityId $ \sharedGroupId -> do
-          gVar <- asks random
-          (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
-          withFastStore' $ \db -> updateGroupMemberKeys db groupId sharedGroupId rootKey memberPrivKey (groupMemberId' $ membership gInfo')
-        -- Pre-emptively create owner member with trusted key from link data
-        forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
-          withFastStore $ \db -> createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
+        gVar <- asks random
+        (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        gInfo' <- withFastStore $ \db -> do
+          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile linkEntityId rootKey memberPrivKey
+          -- Pre-emptively create owner members with trusted keys from link data
+          forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
+            void $ createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
+          pure gInfo'
         rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
@@ -3423,8 +3424,9 @@ processChatCommand vr nm = \case
       chatEvent <- case gInfo_ of
         Just (Just gInfo) | useRelays' gInfo -> do
           let GroupInfo {membership = GroupMember {memberId}} = gInfo
-          (memberPubKey, _memberPrivKey) <- atomically $ C.generateKeyPair g
-          -- TODO [member keys] store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
+          memberPubKey <- case groupKeys gInfo of
+            Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
+            Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
           pure $ XMember profileToSend memberId (MemberKey memberPubKey)
         _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       dm <- encodeConnInfoPQ pqSup chatV chatEvent

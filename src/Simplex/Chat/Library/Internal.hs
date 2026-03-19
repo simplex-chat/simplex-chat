@@ -923,7 +923,7 @@ acceptContactRequestAsync
       liftIO $ setCommandConnId db user cmdId connId
       getContact db vr user contactId
 
-acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> Maybe MemberKey -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
   uclId
@@ -936,11 +936,12 @@ acceptGroupJoinRequestAsync
   welcomeMsgId_
   gAccepted
   gLinkMemRole
-  incognitoProfile = do
+  incognitoProfile
+  memberKey_ = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
     let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -975,7 +976,7 @@ acceptGroupJoinSendRejectAsync
   rejectionReason = do
     gVar <- asks random
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing Nothing GRObserver GSMemRejected
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing Nothing GRObserver GSMemRejected Nothing
     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkReject $
@@ -1133,19 +1134,17 @@ memberIntroEvt gInfo reMember =
       mRestrictions = memberRestrictions reMember
    in XGrpMemIntro mInfo mRestrictions
 
--- Used in groups with relays to introduce moderators and above to a new member.
--- Member is not introduced to anybody:
---   - in channels member will be prohibited to send, so it doesn't matter;
---   - if member does send, recipients will create unknown member record;
---   - later - to do member profile request protocol.
+-- Used in groups with relays to introduce moderators and above to a new member,
+-- and to announce the new member to moderators and above.
 -- This doesn't create introduction records in db, compared to above methods.
-introduceModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceModerators _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceModerators vr user gInfo GroupMember {activeConn = Just conn} = do
+introduceInChannel :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
+introduceInChannel vr user gInfo subscriber@GroupMember {activeConn = Just conn} = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  let events = map (memberIntroEvt gInfo) modMs
-  forM_ (L.nonEmpty events) $ \events' ->
-    sendGroupMemberMessages user gInfo conn events'
+  void $ sendGroupMessage' user gInfo modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  let introEvts = map (memberIntroEvt gInfo) modMs
+  forM_ (L.nonEmpty introEvts) $ \introEvts' ->
+    sendGroupMemberMessages user gInfo conn introEvts'
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1871,8 +1870,10 @@ createSndMessages idsEvents = do
 
 groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
 groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
-  | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
+  | useRelays' gInfo && shouldSign (toCMEventTag evt) =
       Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
+  where
+    shouldSign tag = requiresSignature tag || memberSignableEvent tag
 groupMsgSigning _ _ = Nothing
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
