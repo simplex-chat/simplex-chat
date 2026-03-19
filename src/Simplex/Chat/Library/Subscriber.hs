@@ -3235,12 +3235,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
                      in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures
                   _ -> signatureOptional
-            | otherwise -> unverifiedAllowed'
+            | otherwise -> signatureOptional || unverifiedAllowed membership member tag
           Nothing -> signatureOptional
           where
             tag = toCMEventTag chatMsgEvent
             signatureOptional = not (useRelays' gInfo) || not (requiresSignature tag)
-            unverifiedAllowed' = signatureOptional || unverifiedAllowed membership member tag
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
