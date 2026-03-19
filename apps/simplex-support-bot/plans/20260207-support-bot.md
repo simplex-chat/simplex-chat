@@ -1,4 +1,4 @@
-# SimpleX Support Bot — MVP Product Specification
+# SimpleX Support Bot — Product Specification
 
 ## Principles
 
@@ -15,7 +15,7 @@ Bot sends:
 > *Join public groups*: [existing link]
 > Please send questions in English, you can use translator.
 
-No mention of Grok, no choices. User simply types their question. Messages at this stage are only forwarded to the team — never to any third party.
+No mention of Grok, no choices. User simply types their question. Messages are forwarded to the team — never to any third party.
 
 ## Step 2 — After user sends first message
 
@@ -26,32 +26,49 @@ All messages are forwarded to the team group. Bot replies:
 
 On weekends, the bot says "48 hours" instead of "24 hours".
 
+The bot also posts a clickable `/add groupId:name` shortcut to the team group so any team member can join with one tap.
+
 ## Step 3 — `/grok` (Grok mode)
 
 Bot replies:
 > *You are now chatting with Grok. You can send questions in any language.* Your message(s) have been forwarded.
 > Send /team at any time to switch to a human team member.
 
-Grok must be added as a separate participant to the chat, so that user can differentiate bot messages from Grok messages. When switching to team mode, Grok is removed.
+Grok is added as a separate participant so the user can differentiate bot messages from Grok messages.
 
-Grok is prompted as a privacy expert and support assistant who knows SimpleX Chat apps, network, design choices, and trade-offs. It gives concise, mobile-friendly answers — brief numbered steps for how-to questions, 1-2 sentence explanations for design questions. For criticism, it briefly acknowledges the concern and explains the design choice. It avoids filler and markdown formatting. Relevant documentation pages and links must be injected into the context by the bot.
+Grok is prompted as a privacy expert and support assistant who knows SimpleX Chat apps, network, design choices, and trade-offs. It gives concise, mobile-friendly answers — brief numbered steps for how-to questions, 1–2 sentence explanations for design questions. For criticism, it briefly acknowledges the concern and explains the design choice. It avoids filler and markdown formatting. Relevant documentation pages and links are injected into the context by the bot.
 
 ## Step 4 — `/team` (Team mode, one-way gate)
 
-Bot adds a team member to the support group and replies:
+Bot adds the first configured team member to the support group as Owner and replies:
 > A team member has been added and will reply within 24 hours. You can keep describing your issue — they will see the full conversation.
 
-**One-way gate:** once the user switches to team mode, `/grok` command is permanently disabled for this conversation and Grok participant is removed. Bot replies to any subsequent `/grok`:
+On weekends, the bot says "48 hours" instead of "24 hours".
+
+If `/team` is clicked again after a team member was already added:
+> A team member has already been invited to this conversation and will reply when available.
+
+**One-way gate:** once a team member sends their first text message in the customer group, Grok is removed. From the moment a team member joins the group, `/grok` is permanently disabled and replies with:
 > You are now in team mode. A team member will reply to your message.
 
-This gate should trigger only after team joins and member sends message to team.
+## Team group view
 
-## Commands summary
+All customer messages are forwarded to the team group with a formatted header showing: group ID, customer name, current state (QUEUE / GROK / TEAM), message number, and elapsed time since first contact. The clickable `/add groupId:name` shortcut (sent in Step 2) lets any team member join a conversation with one tap.
 
-| Command | Available in | Effect |
-|---------|-------------|--------|
-| `/grok` | Team Queue (before escalation only) | Enter Grok mode |
-| `/team` | Grok mode or Team Queue | Add team member, permanently enter Team mode |
-| `/add` | Team group only | Team member sends `/add groupId:name` → bot adds them to the customer group |
+## Customer commands
 
-**Unrecognized commands:** treated as normal messages in the current mode.
+| Command | Available | Effect |
+|---------|-----------|--------|
+| `/grok` | Before team escalation | Enter Grok mode |
+| `/team` | Grok mode or before escalation | Add team member, permanently enter Team mode |
+
+**Unrecognized commands** are treated as normal messages in the current mode.
+
+## Team commands (in team group only)
+
+| Command | Effect |
+|---------|--------|
+| `/add <groupId>:<name>` | Add yourself to the specified customer group as Owner |
+| `/inviteall` | Add yourself to all customer groups active in the last 24 hours |
+| `/invitenew` | Add yourself to groups active in the last 48 hours that have no team or Grok member yet |
+| `/pending` | List all conversations awaiting a team response, sorted by longest wait first |
