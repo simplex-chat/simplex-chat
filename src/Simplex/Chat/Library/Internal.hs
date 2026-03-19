@@ -1870,10 +1870,8 @@ createSndMessages idsEvents = do
 
 groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
 groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
-  | useRelays' gInfo && shouldSign (toCMEventTag evt) =
+  | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
       Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
-  where
-    shouldSign tag = requiresSignature tag || memberSignableEvent tag
 groupMsgSigning _ _ = Nothing
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()

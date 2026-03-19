@@ -38,7 +38,7 @@ import Data.Either (fromRight)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1191,7 +1191,7 @@ hasDeliveryReceipt = \case
   XCallInv_ -> True
   _ -> False
 
--- | Admin events that must have a valid signature in relay groups.
+-- | Events that must have a valid signature in relay groups.
 requiresSignature :: CMEventTag e -> Bool
 requiresSignature = \case
   XGrpDel_ -> True
@@ -1200,14 +1200,27 @@ requiresSignature = \case
   XGrpMemDel_ -> True
   XGrpMemRole_ -> True
   XGrpMemRestrict_ -> True
-  _ -> False
-
--- | Member events that should be signed in relay groups.
-memberSignableEvent :: CMEventTag e -> Bool
-memberSignableEvent = \case
   XGrpLeave_ -> True
   XInfo_ -> True
   _ -> False
+
+-- TODO [relays] relay: vectors tracking which members received which other member profiles/keys.
+-- TODO   - don't forward XGrpLeave/XInfo to members who haven't seen sender's profile/key.
+-- TODO   - unverifiedAllowed is a temporary workaround postponing targeted event forwarding.
+
+-- Allow signed but unverified XGrpLeave/XInfo between subscribers when sender's key is unknown.
+-- Owner keys are always known, so subscribers are required to verify from owners.
+-- Likewise, subscriber keys are always known to owners, so owners are required to verify from subscribers.
+unverifiedAllowed :: GroupMember -> GroupMember -> CMEventTag e -> Bool
+unverifiedAllowed membership member = \case
+  XGrpLeave_ -> membersNoKey
+  XInfo_ -> membersNoKey
+  _ -> False
+  where
+    membersNoKey =
+      memberRole' membership < GRModerator
+        && memberRole' member < GRModerator
+        && isNothing (memberPubKey member)
 
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do

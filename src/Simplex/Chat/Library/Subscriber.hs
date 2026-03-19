@@ -3220,7 +3220,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
     withVerifiedMsg :: MsgEncodingI e => GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
-    withVerifiedMsg gInfo scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action
+    withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action
       | verified = Just <$> action verifiedMsg
       | otherwise = do
           createInternalChatItem user (CDGroupRcv gInfo scopeInfo member) (CIRcvGroupEvent RGEMsgBadSignature) (Just ts)
@@ -3236,14 +3236,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
                     let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
                      in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures
-                  _ -> False
-            | otherwise -> unknownMemberAccepted
+                  _ -> signatureOptional
+            | otherwise -> unverifiedAllowed'
           Nothing -> signatureOptional
           where
             tag = toCMEventTag chatMsgEvent
-            signatureOptional = not (useRelays' gInfo && (requiresSignature tag || memberSignableEvent tag))
-            unknownMemberAccepted = not (useRelays' gInfo && (requiresSignature tag || ownerSignable))
-            ownerSignable = memberSignableEvent tag && memberRole' member >= GROwner
+            signatureOptional = not (useRelays' gInfo) || not (requiresSignature tag)
+            unverifiedAllowed' = signatureOptional || unverifiedAllowed membership member tag
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
