@@ -476,7 +476,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtMemberBlockedForAll u g by m blocked signed -> ttyUser u $ viewMemberBlockedForAll g by m blocked signed
   CEvtDeletedMemberUser u g by wm signed -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group" <> withMessages wm <> signedStr signed] <> groupPreserved g
   CEvtDeletedMember u g by m wm signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group" <> withMessages wm <> signedStr signed]
-  CEvtLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
+  CEvtLeftMember u g m signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group" <> signedStr signed]
   CEvtGroupDeleted u g m signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group" <> signedStr signed, "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CEvtGroupUpdated u g g' m signed -> ttyUser u $ viewGroupUpdated g g' m signed
   CEvtAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]

@@ -1091,14 +1091,16 @@ getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (groupId, memberId)
 
-getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
-getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole = do
+getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ContactName -> GroupMemberRole -> Bool -> ExceptT StoreError IO (Maybe (GroupMember, Bool))
+getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole allowCreate = do
   liftIO (runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
-    Right m -> pure (m, False)
-    Left (SEGroupMemberNotFoundByMemberId _) -> do
-      let name = if T.null memberName then nameFromMemberId memberId else memberName
-      m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
-      pure (m, True)
+    Right m -> pure $ Just (m, False)
+    Left (SEGroupMemberNotFoundByMemberId _)
+      | allowCreate -> do
+          let name = if T.null memberName then nameFromMemberId memberId else memberName
+          m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
+          pure $ Just (m, True)
+      | otherwise -> pure Nothing
     Left e -> throwError e
 
 getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
