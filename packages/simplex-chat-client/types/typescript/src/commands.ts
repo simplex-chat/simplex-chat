@@ -557,6 +557,51 @@ export namespace APIDeleteChat {
   }
 }
 
+// Set group custom data.
+// Network usage: no.
+export interface APISetGroupCustomData {
+  groupId: number // int64
+  customData?: object
+}
+
+export namespace APISetGroupCustomData {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetGroupCustomData): string {
+    return '/_set custom #' + self.groupId + (self.customData ? ' ' + JSON.stringify(self.customData) : '')
+  }
+}
+
+// Set contact custom data.
+// Network usage: no.
+export interface APISetContactCustomData {
+  contactId: number // int64
+  customData?: object
+}
+
+export namespace APISetContactCustomData {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetContactCustomData): string {
+    return '/_set custom @' + self.contactId + (self.customData ? ' ' + JSON.stringify(self.customData) : '')
+  }
+}
+
+// Set auto-accept member contacts.
+// Network usage: no.
+export interface APISetUserAutoAcceptMemberContacts {
+  userId: number // int64
+  onOff: boolean
+}
+
+export namespace APISetUserAutoAcceptMemberContacts {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserAutoAcceptMemberContacts): string {
+    return '/_set accept member contacts ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
+  }
+}
+
 // User profile commands
 // Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
 
