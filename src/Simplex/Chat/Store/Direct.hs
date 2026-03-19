@@ -179,7 +179,7 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
     )
   connId <- insertedRowId db
   case preparedEntity_ of
-    -- For relay groups, setPreparedGroupLinkInfo is called before the relay loop
+    -- For relay groups, setPreparedGroupLinkInfo_ is called via updatePreparedRelayedGroup before the relay loop
     Just (PCEGroup gInfo _) | not (useRelays' gInfo) ->
       setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId currentTs
     _ -> pure ()

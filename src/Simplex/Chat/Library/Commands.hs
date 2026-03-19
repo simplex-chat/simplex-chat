@@ -766,7 +766,7 @@ processChatCommand vr nm = \case
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing $ toMsgScope gInfo <$> chatScopeInfo) msgIds
-          mapM_ (sendGroupMessages user gInfo Nothing recipients) events
+          mapM_ (sendGroupMessages user gInfo Nothing False recipients) events
           -- TODO delGroupChatItems sends deletion events too. Are they needed?
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
@@ -2000,17 +2000,18 @@ processChatCommand vr nm = \case
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}) <- getShortLinkConnReq nm user sLnk
-        -- Set group link info and incognito profile once before connecting to relays
+        -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
+        -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
-        gInfo' <- withFastStore $ \db -> setPreparedGroupLinkInfo db vr user gInfo mainCReq cReqHash incognitoProfile
-        forM_ linkEntityId $ \sharedGroupId -> do
-          gVar <- asks random
-          (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
-          withFastStore' $ \db -> updateGroupMemberKeys db groupId sharedGroupId rootKey memberPrivKey (groupMemberId' $ membership gInfo')
-        -- Pre-emptively create owner member with trusted key from link data
-        forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
-          withFastStore $ \db -> createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
+        gVar <- asks random
+        (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        gInfo' <- withFastStore $ \db -> do
+          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile linkEntityId rootKey memberPrivKey
+          -- Pre-emptively create owner members with trusted keys from link data
+          forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
+            void $ createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
+          pure gInfo'
         rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
@@ -2576,7 +2577,7 @@ processChatCommand vr nm = \case
         Just memsToChange' -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
               recipients = filter memberCurrent members
-          (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing recipients events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
@@ -2705,7 +2706,7 @@ processChatCommand vr nm = \case
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope False recipients events
           let signed = any (either (const False) (isJust . signedMsg_)) msgs_
               itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
               skipUnwantedItem = \case
@@ -3423,8 +3424,9 @@ processChatCommand vr nm = \case
       chatEvent <- case gInfo_ of
         Just (Just gInfo) | useRelays' gInfo -> do
           let GroupInfo {membership = GroupMember {memberId}} = gInfo
-          (memberPubKey, _memberPrivKey) <- atomically $ C.generateKeyPair g
-          -- TODO [member keys] store memberPrivKey in groups.member_priv_key, memberPubKey in group_members.member_pub_key
+          memberPubKey <- case groupKeys gInfo of
+            Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
+            Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
           pure $ XMember profileToSend memberId (MemberKey memberPubKey)
         _ -> pure $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       dm <- encodeConnInfoPQ pqSup chatV chatEvent
@@ -4095,7 +4097,7 @@ processChatCommand vr nm = \case
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length recipients)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          (msgs_, gsr) <- sendGroupMessages user gInfo Nothing recipients chatMsgEvents
+          (msgs_, gsr) <- sendGroupMessages user gInfo Nothing showGroupAsSender recipients chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
