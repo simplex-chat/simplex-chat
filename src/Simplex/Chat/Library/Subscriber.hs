@@ -941,7 +941,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               pure newDeliveryTasks
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
           processEvent gInfo' m' verifiedMsg = do
-            let chatMsg = verifiedChatMsg verifiedMsg
             (m'', conn', msg@RcvMessage {msgId, chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta verifiedMsg
             let ctx js = DeliveryTaskContext js False
                 checkSendAsGroup :: Maybe Bool -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
@@ -2480,7 +2479,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db user m p'
-              unless (muteEventInChannel gInfo m) $ do
+              unless (muteEventInChannel gInfo m') $ do
                 forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
               pure m'
@@ -2489,7 +2488,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               if canUpdateProfile mCt
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
-                  unless (muteEventInChannel gInfo m) $ do
+                  unless (muteEventInChannel gInfo m') $ do
                     forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
                     toView $ CEvtContactUpdated user mCt ct'
@@ -3032,7 +3031,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-      unless (muteEventInChannel gInfo m) $ do
+      unless (muteEventInChannel gInfo' m) $ do
         (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
         (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci

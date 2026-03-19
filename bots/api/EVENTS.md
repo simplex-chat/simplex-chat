@@ -361,6 +361,7 @@ Another member left the group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+- msgSigned: bool
 
 ---
 

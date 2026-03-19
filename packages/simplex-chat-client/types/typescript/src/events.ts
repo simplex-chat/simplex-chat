@@ -251,6 +251,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
+    msgSigned: boolean
   }
 
   export interface DeletedMemberUser extends Interface {
