@@ -313,5 +313,6 @@
     "messengers-comparison-section-list-point-4": "Wdrożenie wielu urządzeń zagraża zabezpieczeniu po naruszeniu bezpieczeństwa systemu Double Ratchet",
     "messengers-comparison-section-list-point-5": "Wymiana kluczy 2-składnikowych jest opcjonalna poprzez weryfikację kodu bezpieczeństwa.",
     "messengers-comparison-section-list-point-6": "Post-kwantowe, kluczowe porozumienie jest \"rzadkie\" &mdash; chroni tylko niektóre kroki systemu Ratchet.",
-    "navbar-old-site": "Stara strona"
+    "navbar-old-site": "Stara strona",
+    "send-file": "Wyślij plik"
 }

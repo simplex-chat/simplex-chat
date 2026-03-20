@@ -313,5 +313,6 @@
     "messengers-comparison-section-list-point-4": "Podpora více zařízení může oslabit post-kompromitační bezpečnost protokolu Double Ratchet",
     "messengers-comparison-section-list-point-5": "Dvoufaktorovou výměnu klíčů lze volitelně aktivovat pomocí ověření bezpečnostním kódem.",
     "messengers-comparison-section-list-point-6": "Postkvantová dohoda o klíči je omezená — chrání pouze některé kroky ratchet mechanismu.",
-    "navbar-old-site": "Starý web"
+    "navbar-old-site": "Starý web",
+    "send-file": "Odeslat soubor"
 }
