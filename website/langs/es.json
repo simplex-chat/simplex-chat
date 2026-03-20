@@ -313,5 +313,6 @@
     "messengers-comparison-section-list-point-5": "El intercambio de clave de doble factor es opcional mediante la verificación del código de seguridad.",
     "messengers-comparison-section-list-point-6": "El acuerdo de claves postcuántico es \"parcial\", solo protege determinados pasos del ratchet.",
     "navbar-token": "Token",
-    "navbar-old-site": "Web antigua"
+    "navbar-old-site": "Web antigua",
+    "send-file": "Enviar archivo"
 }
