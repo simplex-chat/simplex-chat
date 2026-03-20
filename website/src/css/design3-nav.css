@@ -498,7 +498,7 @@ button#cross-btn {
 }
 
 @media (min-width: 960px) {
-    @media (max-width: 1100px) {
+    @media (max-width: 1050px) {
         header#navbar nav#menu .nav-link.send-file {
             display: none;
         }
