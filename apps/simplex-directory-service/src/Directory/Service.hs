@@ -326,6 +326,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           notifyAdminUsers msg
           logError msg
     groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
+    knockingStr :: Maybe GroupMemberAdmission -> Text
+    knockingStr = \case
+      Just GroupMemberAdmission {review = Just MCAll} -> "\nKnocking: enabled"
+      _ -> ""
     groupNameDescr GroupProfile {displayName = n, fullName = fn, shortDescr = sd_} =
       n <> maybe "" (\d' -> " (" <> d' <> ")") descr
       where
@@ -485,9 +489,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
         sameProfile
-          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d}
-          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d'} =
-            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d')
+          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma}
+          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma'} =
+            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma'
         groupLinkAdded gr byMember =
           getDuplicateGroup toGroup >>= \case
             Left e -> notifyOwner gr $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
@@ -996,10 +1000,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary = GroupSummary {currentMembers}}, _) =
+            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary = GroupSummary {currentMembers}}, _) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
-                  text = showId <> groupInfoText p <> "\n" <> membersStr
+                  text = showId <> groupInfoText p <> "\n" <> membersStr <> knockingStr memberAdmission
                in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
             moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
 
@@ -1181,14 +1185,15 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| map groupMessage gs'
       where
         groupMessage ((g, gr), ct_) =
-          let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary} = g
+          let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary} = g
               GroupReg {userGroupRegId, groupRegStatus} = gr
               useGroupId = if isAdmin then groupId else userGroupRegId
               statusStr = "Status: " <> groupRegStatusText groupRegStatus
               membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
               ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
-              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr, cmds]
+              knockStr = ["Knocking: enabled" | Just GroupMemberAdmission {review = Just MCAll} <- [memberAdmission]]
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockStr ++ [cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
