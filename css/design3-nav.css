@@ -497,6 +497,14 @@ button#cross-btn {
     height: auto;
 }
 
+@media (min-width: 960px) {
+    @media (max-width: 1100px) {
+        header#navbar nav#menu .nav-link.send-file {
+            display: none;
+        }
+    }
+}
+
 @media (max-width: 959px) {
     #mobile-header {
         position: fixed;
