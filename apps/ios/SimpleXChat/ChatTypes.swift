@@ -4663,6 +4663,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case strikeThrough
     case snippet
     case secret
+    case small
     case colored(color: FormatColor)
     case uri
     case hyperLink(showText: String?, linkUri: String)
