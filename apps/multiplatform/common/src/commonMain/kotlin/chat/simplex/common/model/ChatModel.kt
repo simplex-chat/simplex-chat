@@ -4363,6 +4363,7 @@ sealed class Format {
   @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
   @Serializable @SerialName("snippet") class Snippet: Format()
   @Serializable @SerialName("secret") class Secret: Format()
+  @Serializable @SerialName("small") class Small: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("hyperLink") class HyperLink(val showText: String?, val linkUri: String): Format()
@@ -4384,6 +4385,7 @@ sealed class Format {
     is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
     is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
+    is Small -> SpanStyle(fontSize = 12.sp, color = MaterialTheme.colors.secondary)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is HyperLink -> linkStyle
