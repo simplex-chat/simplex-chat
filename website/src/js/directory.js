@@ -433,6 +433,9 @@ function renderMarkdown(fts) {
         case 'secret':
           html += `<span class="secret">${escapeHtml(text)}</span>`;
           break;
+        case 'small':
+          html += `<span class="small-text">${escapeHtml(text)}</span>`;
+          break;
         case 'colored':
           html += `<span class="${format.color}">${escapeHtml(text)}</span>`;
           break;
