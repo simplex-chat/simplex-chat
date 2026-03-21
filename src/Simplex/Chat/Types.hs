@@ -532,7 +532,8 @@ groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
 data GroupSummary = GroupSummary
-  { currentMembers :: Int64
+  { currentMembers :: Int64,
+    publicMemberCount :: Maybe Int64
   }
   deriving (Eq, Show)
 
@@ -2036,7 +2037,7 @@ $(JQ.deriveToJSON defaultJSON ''GroupSummary)
 
 instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
-  omittedField = Just GroupSummary {currentMembers = 0}
+  omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
 

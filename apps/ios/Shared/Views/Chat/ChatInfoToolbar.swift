@@ -57,6 +57,14 @@ struct ChatInfoToolbar: View {
                             .padding(.top, -2)
                     }
                 }
+            if case let .group(groupInfo, _) = cInfo,
+               groupInfo.useRelays,
+               let count = groupInfo.groupSummary.publicMemberCount,
+               count > 0 {
+                Text("\(count) subscribers")
+                    .font(.caption)
+                    .foregroundColor(theme.colors.secondary)
+            }
             if let contact = chat.chatInfo.contact,
                contact.ready && contact.active,
                let chatSubStatus = m.chatSubStatus,

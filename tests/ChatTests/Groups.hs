@@ -16,12 +16,12 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, unless, void, when)
 import Data.Bifunctor (second)
 import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf)
+import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
@@ -8421,6 +8421,15 @@ testChannels1RelayDeliver ps =
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
+            -- owner's public member count is maintained automatically
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 4)
+            -- subscriber refreshes count via short link
+            threadDelay 3000000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            _ <- getTermLine cath -- current members (local)
+            checkPublicMemberCount cath "team" >>= (`shouldBe` Just 4)
+
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
   (shortLink, fullLink) <- prepareChannel1Relay gName owner relay
@@ -8478,20 +8487,20 @@ prepareChannel2Relays gName owner relay1 relay2 = do
   owner <## "wait for selected relay(s) to join, then you can invite members via group link"
 
   concurrentlyN_
-    [ owner
-        <### [  -- one relay connects
-                ConsoleString ("#" <> gName <> ": group link relays updated, current relays:"),
-                StartsWith "  - relay id 1: ",
-                StartsWith "  - relay id 2: ",
-                "group link:",
-                Predicate (const True), -- consume group link line
-                -- second relay connects
-                ConsoleString ("#" <> gName <> ": group link relays updated, current relays:"),
-                "  - relay id 1: active",
-                "  - relay id 2: active",
-                "group link:",
-                Predicate (const True) -- consume group link line
-              ],
+    [ do
+        -- first relay status update — one or both relays may be active
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+        r1 <- getTermLine owner
+        r2 <- getTermLine owner
+        owner <## "group link:"
+        void $ getTermLine owner
+        -- if both relays already active (race condition), second event is muted
+        unless ("active" `isSuffixOf` r1 && "active" `isSuffixOf` r2) $ do
+          owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+          owner <## "  - relay id 1: active"
+          owner <## "  - relay id 2: active"
+          owner <## "group link:"
+          void $ getTermLine owner,
       relay1 <## ("#" <> gName <> ": you joined the group as relay"),
       relay2 <## ("#" <> gName <> ": you joined the group as relay")
     ]
@@ -8928,6 +8937,9 @@ testChannelRemoveMemberSigned ps =
                   cath <# "#team eve> hello from eve [>>]"
               ]
 
+            -- before removal — owner count is maintained synchronously
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 4)
+
             -- remove member (XGrpMemDel) - signed (other members can verify)
             threadDelay 1000000
             alice ##> "/rm #team eve"
@@ -8946,6 +8958,14 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
 
+            -- after first removal
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 3)
+            threadDelay 3000000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            _ <- getTermLine cath -- current members (local)
+            checkPublicMemberCount cath "team" >>= (`shouldBe` Just 3)
+
             -- remove silent member (other members don't know about member)
             threadDelay 1000000
             alice ##> "/rm #team dan"
@@ -8962,6 +8982,14 @@ testChannelRemoveMemberSigned ps =
             cath #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")]) -- no new chat item
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")]) -- no new chat item
+
+            -- after second removal
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 2)
+            threadDelay 3000000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            _ <- getTermLine cath -- current members (local)
+            checkPublicMemberCount cath "team" >>= (`shouldBe` Just 2)
 
 testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupSigned ps =
@@ -9069,6 +9097,9 @@ testChannelSubscriberLeave ps =
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
+            -- before any leave — owner count is maintained synchronously
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 4)
+
             -- known member leaves (XGrpLeave signed) - owner and relay see items
             threadDelay 1000000
             cath ##> "/leave #team"
@@ -9083,6 +9114,14 @@ testChannelSubscriberLeave ps =
             cath #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no leave item
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no leave item
+
+            -- after first leave
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 3)
+            threadDelay 3000000 -- wait for async short link data update
+            eve ##> "/_get group link data #1"
+            eve <## "group ID: 1"
+            _ <- getTermLine eve -- current members (local)
+            checkPublicMemberCount eve "team" >>= (`shouldBe` Just 3)
 
             -- verify cath's member status is "left" on all clients
             checkMemberStatus alice "cath" (Just "left")
@@ -9103,6 +9142,14 @@ testChannelSubscriberLeave ps =
             bob #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no new item
+
+            -- after second leave
+            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 2)
+            threadDelay 3000000 -- wait for async short link data update
+            eve ##> "/_get group link data #1"
+            eve <## "group ID: 1"
+            _ <- getTermLine eve -- current members (local)
+            checkPublicMemberCount eve "team" >>= (`shouldBe` Just 2)
 
             -- verify dan's member status is "left" on nodes that know dan
             checkMemberStatus alice "dan" (Just "left")

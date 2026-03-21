@@ -19,6 +19,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
+import Data.Int (Int64)
 import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
@@ -648,6 +649,15 @@ withCCUser cc action = do
 withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCTransaction cc action =
   withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+checkPublicMemberCount :: TestCC -> String -> IO (Maybe Int64)
+checkPublicMemberCount cc groupName = withCCTransaction cc $ \db -> do
+  r <-
+    DB.query db "SELECT public_member_count FROM groups WHERE local_display_name = ?" (Only groupName) ::
+      IO [Only (Maybe Int64)]
+  pure $ case r of
+    [Only cnt] -> cnt
+    _ -> Nothing
 
 withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =

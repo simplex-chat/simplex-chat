@@ -35,6 +35,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
+import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -1418,12 +1419,20 @@ data ContactShortLinkData = ContactShortLinkData
   }
   deriving (Show)
 
+data PublicGroupData = PublicGroupData
+  { publicMemberCount :: Int64
+  }
+  deriving (Eq, Show)
+
 data GroupShortLinkData = GroupShortLinkData
-  { groupProfile :: GroupProfile
+  { groupProfile :: GroupProfile,
+    publicGroupData :: Maybe PublicGroupData
   }
   deriving (Show)
 
 $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupData)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
 

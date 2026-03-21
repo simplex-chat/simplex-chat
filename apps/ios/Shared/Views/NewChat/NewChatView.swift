@@ -1106,6 +1106,7 @@ private func showPrepareGroupAlert(
     cleanup: (() -> Void)?
 ) {
     let isChannel = !(groupShortLinkInfo?.direct ?? true)
+    let subscriberCount = groupShortLinkData.publicGroupData.map { "\($0.publicMemberCount) subscribers" }
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
@@ -1118,6 +1119,7 @@ private func showPrepareGroupAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
+        subtitle: isChannel ? subscriberCount : nil,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
             ? NSLocalizedString("Open new channel", comment: "new chat action")
@@ -1178,6 +1180,7 @@ private func showOpenKnownGroupAlert(
     theme: AppTheme,
     dismiss: Bool
 ) {
+    let subscriberCount = groupInfo.groupSummary.publicMemberCount.map { "\($0) subscribers" }
     showOpenChatAlert(
         profileName: groupInfo.groupProfile.displayName,
         profileFullName: groupInfo.groupProfile.fullName,
@@ -1188,6 +1191,7 @@ private func showOpenKnownGroupAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
+        subtitle: groupInfo.useRelays ? subscriberCount : nil,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle:
             groupInfo.useRelays

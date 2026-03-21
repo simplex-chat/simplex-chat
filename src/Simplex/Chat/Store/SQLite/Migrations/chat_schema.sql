@@ -171,7 +171,8 @@ CREATE TABLE groups(
   shared_group_id BLOB,
   root_priv_key BLOB,
   root_pub_key BLOB,
-  member_priv_key BLOB, -- received
+  member_priv_key BLOB,
+  public_member_count INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

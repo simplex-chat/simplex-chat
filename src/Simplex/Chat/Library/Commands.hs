@@ -1883,7 +1883,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False GRMember
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -1909,12 +1909,13 @@ processChatCommand vr nm = \case
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink direct groupSLinkData -> withUserId userId $ \user -> do
-    let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
+    let GroupShortLinkData {groupProfile = gp@GroupProfile {description}, publicGroupData = publicGroupData_} = groupSLinkData
+        publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     let useRelays = not direct
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays subRole
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -1999,7 +2000,11 @@ processChatCommand vr nm = \case
         sLnk <- case toShortLinkContact connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-        (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, ContactLinkData _ UserContactData {owners, relays}) <- getShortLinkConnReq nm user sLnk
+        (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
+        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        let publicMemberCount_ = case groupSLinkData_ of
+              Just GroupShortLinkData {publicGroupData = Just PublicGroupData {publicMemberCount}} -> Just publicMemberCount
+              _ -> Nothing
         -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
         -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -2007,7 +2012,7 @@ processChatCommand vr nm = \case
         gVar <- asks random
         (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
         gInfo' <- withFastStore $ \db -> do
-          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile linkEntityId rootKey memberPrivKey
+          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile linkEntityId rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
           forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
             void $ createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
@@ -2369,7 +2374,7 @@ processChatCommand vr nm = \case
         memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
         (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
         let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
-            userData = encodeShortLinkData $ GroupShortLinkData groupProfile'
+            userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Nothing}
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
@@ -2667,6 +2672,7 @@ processChatCommand vr nm = \case
           msgSigned = signed2 || signed3 || signed4
       -- Read group info with updated membersRequireAttention
       gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+      gInfo' <- updatePublicGroupData user gInfo'
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
@@ -2824,7 +2830,7 @@ processChatCommand vr nm = \case
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
-    let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+    let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
         crClientData = encodeJSON $ CRDataGroup groupLinkId
     -- TODO [certs rcv]
@@ -2851,6 +2857,18 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo gLnk
+  APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
+    gInfo@GroupInfo {groupProfile = GroupProfile {groupLink = groupLink_}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    case groupLink_ of
+      Just sLnk | useRelays' gInfo -> do
+        (_, cData) <- getShortLinkConnReq nm user sLnk
+        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        case groupSLinkData_ of
+          Just GroupShortLinkData {publicGroupData = Just PublicGroupData {publicMemberCount}} -> do
+            gInfo' <- withFastStore $ \db -> setPublicMemberCount db vr user gInfo publicMemberCount
+            pure $ CRGroupInfo user gInfo'
+          _ -> throwCmdError "no public group data in short link"
+      _ -> throwCmdError "group link data not available"
   APIAddGroupShortLink groupId -> withUser $ \user -> do
     (gInfo, gLink) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
@@ -4822,6 +4840,7 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
+      "/_get group link data #" *> (APIGetUpdatedGroupLinkData <$> A.decimal),
       "/_short link #" *> (APIAddGroupShortLink <$> A.decimal),
       "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember)),
       "/set link role #" *> (GroupLinkMemberRole <$> displayNameP <*> memberRole),

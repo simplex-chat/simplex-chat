@@ -42,7 +42,8 @@ ALTER TABLE groups
   ADD COLUMN shared_group_id BYTEA,
   ADD COLUMN root_priv_key BYTEA,
   ADD COLUMN root_pub_key BYTEA,
-  ADD COLUMN member_priv_key BYTEA;
+  ADD COLUMN member_priv_key BYTEA,
+  ADD COLUMN public_member_count BIGINT;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
 
@@ -89,7 +90,8 @@ ALTER TABLE groups
   DROP COLUMN shared_group_id,
   DROP COLUMN root_priv_key,
   DROP COLUMN root_pub_key,
-  DROP COLUMN member_priv_key;
+  DROP COLUMN member_priv_key,
+  DROP COLUMN public_member_count;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 
