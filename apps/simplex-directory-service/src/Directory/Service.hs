@@ -328,7 +328,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
     knockingStr :: Maybe GroupMemberAdmission -> Text
     knockingStr = \case
-      Just GroupMemberAdmission {review = Just MCAll} -> "\nKnocking: enabled"
+      Just GroupMemberAdmission {review = Just MCAll} -> "\nMember admission: enabled"
       _ -> ""
     groupNameDescr GroupProfile {displayName = n, fullName = fn, shortDescr = sd_} =
       n <> maybe "" (\d' -> " (" <> d' <> ")") descr
@@ -1192,7 +1192,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
               ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
-              knockStr = ["Knocking: enabled" | Just GroupMemberAdmission {review = Just MCAll} <- [memberAdmission]]
+              knockStr = ["Member admission: enabled" | Just GroupMemberAdmission {review = Just MCAll} <- [memberAdmission]]
               text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockStr ++ [cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)

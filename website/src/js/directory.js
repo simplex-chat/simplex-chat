@@ -248,7 +248,7 @@ function displayEntries(entries) {
 
       if (entryType?.admission?.review === "all") {
         const knockingElement = document.createElement('p');
-        knockingElement.textContent = 'Knocking: enabled';
+        knockingElement.textContent = 'Member admission: enabled';
         knockingElement.className = 'text-sm';
         textContainer.appendChild(knockingElement);
       }
