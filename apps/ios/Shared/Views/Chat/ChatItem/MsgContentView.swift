@@ -322,6 +322,7 @@ func messageText(
         var bold: UIFont?
         var italic: UIFont?
         var snippet: UIFont?
+        var small: UIFont?
         var mention: UIFont?
         var secretIdx: Int = 0
         for ft in fts {
@@ -353,6 +354,10 @@ func messageText(
                     attrs[.backgroundColor] = secretColor
                 }
                 hasSecrets = true
+            case .small:
+                small = small ?? UIFont.preferredFont(forTextStyle: .footnote)
+                attrs[.font] = small
+                attrs[.foregroundColor] = UIColor.secondaryLabel
             case let .colored(color):
                 if let c = color.uiColor {
                     attrs[.foregroundColor] = UIColor(c)

@@ -748,6 +748,47 @@ export class ChatApi {
   }
 
   /**
+   * Set group custom data.
+   * Network usage: no.
+   */
+  async apiSetGroupCustomData(groupId: number, customData?: object): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetGroupCustomData.cmdString({groupId, customData}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting group custom data", r)
+  }
+
+  /**
+   * Set contact custom data.
+   * Network usage: no.
+   */
+  async apiSetContactCustomData(contactId: number, customData?: object): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetContactCustomData.cmdString({contactId, customData}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting contact custom data", r)
+  }
+
+  /**
+   * Set auto-accept member contacts.
+   * Network usage: no.
+   */
+  async apiSetAutoAcceptMemberContacts(userId: number, onOff: boolean): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetUserAutoAcceptMemberContacts.cmdString({userId, onOff}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting auto-accept member contacts", r)
+  }
+
+  /**
+   * Get chat items.
+   * Network usage: no.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async apiGetChat(chatType: T.ChatType, chatId: number, count: number): Promise<any> {
+    const r: any = await this.sendChatCmd(`/_get chat ${T.ChatType.cmdString(chatType)}${chatId} count=${count}`)
+    if (r.type === "apiChat") return r.chat
+    throw new ChatCommandError("error getting chat", r)
+  }
+
+  /**
    * Get active user profile
    * Network usage: no.
    */

@@ -313,5 +313,6 @@
     "messengers-comparison-section-list-point-5": "Pertukaran kunci 2 faktor bersifat opsional via verifikasi kode keamanan.",
     "messengers-comparison-section-list-point-6": "Kesepakatan kunci Post-quantum \"jarang\" &mdash; hanya melindungi beberapa langkah ratchet.",
     "navbar-token": "Token",
-    "navbar-old-site": "Situs lama"
+    "navbar-old-site": "Situs lama",
+    "send-file": "Kirim file"
 }

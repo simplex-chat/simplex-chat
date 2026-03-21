@@ -4,7 +4,6 @@ permalink: /downloads/index.html
 revision: 09.09.2024
 ---
 
-| Updated 09.09.2024 | Languages: EN |
 # Download SimpleX apps
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).

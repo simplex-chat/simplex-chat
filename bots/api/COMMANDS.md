@@ -52,6 +52,9 @@ This file is generated automatically.
 - [APIListContacts](#apilistcontacts)
 - [APIListGroups](#apilistgroups)
 - [APIDeleteChat](#apideletechat)
+- [APISetGroupCustomData](#apisetgroupcustomdata)
+- [APISetContactCustomData](#apisetcontactcustomdata)
+- [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -1605,6 +1608,117 @@ GroupDeletedUser: User deleted group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - msgSigned: bool
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetGroupCustomData
+
+Set group custom data.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+- customData: JSONObject?
+
+**Syntax**:
+
+```
+/_set custom #<groupId>[ <json(customData)>]
+```
+
+```javascript
+'/_set custom #' + groupId + (customData ? ' ' + JSON.stringify(customData) : '') // JavaScript
+```
+
+```python
+'/_set custom #' + str(groupId) + ((' ' + json.dumps(customData)) if customData is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetContactCustomData
+
+Set contact custom data.
+
+*Network usage*: no.
+
+**Parameters**:
+- contactId: int64
+- customData: JSONObject?
+
+**Syntax**:
+
+```
+/_set custom @<contactId>[ <json(customData)>]
+```
+
+```javascript
+'/_set custom @' + contactId + (customData ? ' ' + JSON.stringify(customData) : '') // JavaScript
+```
+
+```python
+'/_set custom @' + str(contactId) + ((' ' + json.dumps(customData)) if customData is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserAutoAcceptMemberContacts
+
+Set auto-accept member contacts.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- onOff: bool
+
+**Syntax**:
+
+```
+/_set accept member contacts <userId> on|off
+```
+
+```javascript
+'/_set accept member contacts ' + userId + ' ' + (onOff ? 'on' : 'off') // JavaScript
+```
+
+```python
+'/_set accept member contacts ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
