@@ -2184,4 +2184,16 @@
     <string name="open_with_app">使用 %s 開啟</string>
     <string name="no_unread_chats">沒有未讀聊天</string>
     <string name="no_chats_found">找不到聊天</string>
+    <string name="group_preview_open_to_join">開啟以加入</string>
+    <string name="open_to_connect">開啟以連接</string>
+    <string name="open_to_use_bot">開啟以使用機械人</string>
+    <string name="open_to_accept">開啟以接受</string>
+    <string name="search_or_paste_simplex_link">搜尋或貼上 SimpleX 連結</string>
+    <string name="max_group_mentions_per_message_reached">你的每個訊息最多可以提及 %1$s 位成員！</string>
+    <string name="sent_via_proxy">已透過代理傳送</string>
+    <string name="servers_info_reset_stats_alert_message">伺服器統計資料將被重設—此操作無法撤銷！</string>
+    <string name="servers_info_proxied_servers_section_footer">你沒有連接至這些伺服器。已使用私密路由將訊息傳送至這些伺服器。</string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[你<b>不能</b>在兩部裝置上使用同一資料庫。]]></string>
+    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">警告：不支援在多個裝置上同時聊天，否則會導致訊息傳送失敗</string>
+    <string name="chat_archive">或匯入封存檔案</string>
 </resources>
