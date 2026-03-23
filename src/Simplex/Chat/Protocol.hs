@@ -1426,3 +1426,4 @@ data GroupShortLinkData = GroupShortLinkData
 $(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
+
