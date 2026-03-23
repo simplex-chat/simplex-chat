@@ -25,7 +25,7 @@ import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (lefts, partitionEithers, rights)
-import Data.Foldable (foldr')
+import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -1237,23 +1237,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    results <- liftIO $ mapM (updateRelay db) relays
-                    let relays' = map fst results
-                        changed = any snd results
+                    (relays', changed) <- liftIO $ foldrM (updateRelay db) ([], False) relays
                     liftIO $ setGroupInProgressDone db gInfo
                     pure (gInfo, gLink, relays', changed)
                   toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
                   where
                     -- TODO [relays] owner: on relay deletion (link absent from relayLinks)
                     -- TODO          move status RSActive to new "Removed" status / remove relay record
-                    updateRelay :: DB.Connection -> GroupRelay -> IO (GroupRelay, Bool)
-                    updateRelay db relay@GroupRelay {relayLink, relayStatus} =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
                       case relayLink of
                         Just rLink
                           | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
                               relay' <- updateRelayStatus db relay RSActive
-                              pure (relay', True)
-                        _ -> pure (relay, False)
+                              pure (relay' : acc, True)
+                        _ -> pure (relay : acc, changed)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
