@@ -855,9 +855,11 @@ addGroupChatTags db g@GroupInfo {groupId} = do
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
   chatTags <- getGroupChatTags db groupId
-  let q = groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?"
   firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
-    DB.query db q (groupId, userId, userContactId)
+    DB.query
+      db
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+      (groupId, userId, userContactId)
 
 setPreparedGroupLinkInfo_ :: DB.Connection -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Int64 -> Maybe Int64 -> UTCTime -> IO ()
 setPreparedGroupLinkInfo_ db GroupInfo {groupId, membership} cReq cReqHash customUserProfileId publicMemberCount_ currentTs = do
