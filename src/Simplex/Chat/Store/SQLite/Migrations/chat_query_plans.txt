@@ -1224,8 +1224,8 @@ Query:
           INSERT INTO groups
             (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at,
-             shared_group_id, root_priv_key, root_pub_key, member_priv_key)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             shared_group_id, root_priv_key, root_pub_key, member_priv_key, public_member_count)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1384,7 +1384,7 @@ INDEX 2
 SEARCH users USING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
-          SELECT COUNT(*) FROM group_members
+          SELECT COUNT(1) FROM group_members
           WHERE group_id = ? AND member_role = ?
             AND member_status IN (?,?,?,?,?,?,?)
         
@@ -5527,6 +5527,22 @@ Query:
            gr.relay_status, gr.relay_link
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
+   JOIN group_members m ON m.group_member_id = gr.group_member_id
+                   WHERE gr.group_id = ?
+                     AND m.member_status = ?
+                     AND gr.relay_status IN (?,?)
+             
+Plan:
+SEARCH gr USING INDEX idx_group_relays_group_id (group_id=?)
+SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT gr.group_relay_id, gr.group_member_id,
+           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           gr.relay_status, gr.relay_link
+    FROM group_relays gr
+    JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
    WHERE gr.group_id = ?
 Plan:
 SEARCH gr USING INDEX idx_group_relays_group_id (group_id=?)
@@ -6682,10 +6698,6 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
-
-Query: SELECT public_member_count FROM groups WHERE local_display_name = ?
-Plan:
-SCAN groups
 
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
