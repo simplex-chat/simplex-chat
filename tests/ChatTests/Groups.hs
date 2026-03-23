@@ -237,7 +237,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  fdescribe "channels" $ do
+  describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -8489,19 +8489,18 @@ prepareChannel2Relays gName owner relay1 relay2 = do
 
   concurrentlyN_
     [ do
-        -- first relay status update — one or both relays may be active
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
-        r1 <- getTermLine owner
-        r2 <- getTermLine owner
+        owner
+          <### [ EndsWith ": active",
+                 EndsWith ": accepted"
+               ]
         owner <## "group link:"
-        void $ getTermLine owner
-        -- if both relays already active (race condition), second event is muted
-        unless ("active" `isSuffixOf` r1 && "active" `isSuffixOf` r2) $ do
-          owner <## ("#" <> gName <> ": group link relays updated, current relays:")
-          owner <## "  - relay id 1: active"
-          owner <## "  - relay id 2: active"
-          owner <## "group link:"
-          void $ getTermLine owner,
+        void $ getTermLine owner -- consume group link line
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+        owner <## "  - relay id 1: active"
+        owner <## "  - relay id 2: active"
+        owner <## "group link:"
+        void $ getTermLine owner, -- consume group link line
       relay1 <## ("#" <> gName <> ": you joined the group as relay"),
       relay2 <## ("#" <> gName <> ": you joined the group as relay")
     ]

@@ -1298,7 +1298,7 @@ setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM G
 setGroupLinkData nm user gInfo gLink = do
   vr <- chatVersionRange
   (conn, groupRelays) <- withFastStore $ \db ->
-    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
@@ -1307,7 +1307,7 @@ setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
 setGroupLinkDataAsync user gInfo gLink = do
   vr <- chatVersionRange
   (conn, groupRelays) <- withStore $ \db ->
-    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
