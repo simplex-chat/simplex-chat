@@ -448,9 +448,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
-          -- TODO [member keys] inviting host should generate its keys in public groups
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing Nothing currentTs hostVRange
-          -- TODO [member keys] relay should pass key received via XMember
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId Nothing currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
           pure
@@ -810,7 +808,7 @@ createGroupViaLink'
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
-    -- TODO [member keys] can this be used with public groups? if yes member keys need to be added
+    -- TODO [member keys] this is currently not used with public groups. If it needs to be used, member keys need to be added
     void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId Nothing currentTs vr
     liftIO $ setViaGroupLinkUri db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
