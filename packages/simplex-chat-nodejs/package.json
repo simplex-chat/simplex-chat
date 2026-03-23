@@ -1,0 +1,58 @@
+{
+  "name": "simplex-chat",
+  "version": "6.5.0-beta.4.4",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "src",
+    "cpp",
+    "dist",
+    "binding.gyp",
+    "tsconfig.json",
+    "docs",
+    "examples"
+  ],
+  "scripts": {
+    "preinstall": "node src/download-libs.js",
+    "install": "node-gyp configure; node-gyp rebuild --release",
+    "install-tools": "npm install -g node-gyp",
+    "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
+    "build": "node-gyp rebuild && tsc && cp ./src/simplex.* ./dist",
+    "run": "node src/index.js",
+    "build-run": "node-gyp build && node src/index.js",
+    "test": "jest",
+    "docs": "typedoc"
+  },
+  "dependencies": {
+    "@simplex-chat/types": "^0.3.0",
+    "extract-zip": "^2.0.1",
+    "fast-deep-equal": "^3.1.3",
+    "node-addon-api": "^8.5.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.5",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typedoc": "^0.28.15",
+    "typedoc-plugin-markdown": "^4.9.0",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
+  },
+  "keywords": [
+    "messenger",
+    "chat",
+    "privacy",
+    "security"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/simplex-chat/simplex-chat/issues"
+  },
+  "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-nodejs#readme",
+  "description": "SimpleX Chat Node.js library for chat bots"
+}

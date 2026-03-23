@@ -13,6 +13,7 @@ enum class NotificationAction {
   ACCEPT_CONTACT_REQUEST
 }
 
+// Spec: spec/services/notifications.md#ntfManager
 lateinit var ntfManager: NtfManager
 
 abstract class NtfManager {

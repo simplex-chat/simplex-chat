@@ -5,9 +5,11 @@
 //  Created by Evgeny on 07/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 
+// Spec: spec/client/navigation.md#OnboardingView
 struct OnboardingView: View {
     var onboarding: OnboardingStage
 
@@ -40,6 +42,7 @@ func onboardingButtonPlaceholder() -> some View {
     Spacer().frame(height: 40)
 }
 
+// Spec: spec/client/navigation.md#onboardingStage
 enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
     case step2_CreateProfile // deprecated

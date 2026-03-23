@@ -2452,7 +2452,7 @@
     <string name="compose_view_join_group">Entra nel gruppo</string>
     <string name="connect_plan_open_chat">Apri la chat</string>
     <string name="connect_plan_open_new_chat">Apri una chat nuova</string>
-    <string name="connect_plan_open_new_group">Apri un gruppo nuovo</string>
+    <string name="connect_plan_open_new_group">Apri il nuovo gruppo</string>
     <string name="open_to_accept">Apri per accettare</string>
     <string name="open_to_connect">Apri per connettere</string>
     <string name="group_preview_open_to_join">Apri per entrare</string>
@@ -2541,4 +2541,21 @@
     <string name="network_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server non corrisponde al certificato: %1$s.</string>
     <string name="server_no_sub">nessuna iscrizione</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Non sei connesso/a al server usato per ricevere messaggi da questa connessione (nessuna iscrizione).</string>
+    <string name="button_delete_member_messages">Elimina i messaggi del membro</string>
+    <string name="button_delete_member_messages_question">Eliminare i messaggi del membro?</string>
+    <string name="delete_member_messages_confirmation">Elimina i messaggi</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">I messaggi del membro verranno eliminati. Non è reversibile!</string>
+    <string name="remove_member_delete_messages_confirmation">Rimuovi ed elimina i messaggi</string>
+    <string name="content_filter_all_messages">Tutti i messaggi</string>
+    <string name="content_filter_files">File</string>
+    <string name="content_filter_images">Immagini</string>
+    <string name="content_filter_links">Link</string>
+    <string name="placeholder_search_files">Cerca file</string>
+    <string name="placeholder_search_images">Cerca immagini</string>
+    <string name="placeholder_search_links">Cerca link</string>
+    <string name="placeholder_search_videos">Cerca video</string>
+    <string name="placeholder_search_voice_messages">Cerca messaggi vocali</string>
+    <string name="content_filter_videos">Video</string>
+    <string name="content_filter_voice_messages">Messaggi vocali</string>
+    <string name="content_filter_menu_item">Filtro</string>
 </resources>

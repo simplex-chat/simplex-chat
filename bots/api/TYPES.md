@@ -153,6 +153,7 @@ This file is generated automatically.
 - [SndGroupEvent](#sndgroupevent)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
+- [SubscriptionStatus](#subscriptionstatus)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -765,6 +766,7 @@ Group:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- hasLink: bool
 - deletable: bool
 - editable: bool
 - forwardedByMember: int64?
@@ -1306,7 +1308,7 @@ Used in API commands. Chat scope can only be passed with groups.
 ```
 
 ```javascript
-chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaScript
+ChatType.cmdString(chatType) + chatId + (chatScope ? GroupChatScope.cmdString(chatScope) : '') // JavaScript
 ```
 
 ```python
@@ -1468,15 +1470,35 @@ LARGE:
 
 ## ConnStatus
 
-**Enum type**:
-- "new"
-- "prepared"
-- "joined"
-- "requested"
-- "accepted"
-- "snd-ready"
-- "ready"
-- "deleted"
+**Discriminated union type**:
+
+New:
+- type: "new"
+
+Prepared:
+- type: "prepared"
+
+Joined:
+- type: "joined"
+
+Requested:
+- type: "requested"
+
+Accepted:
+- type: "accepted"
+
+SndReady:
+- type: "sndReady"
+
+Ready:
+- type: "ready"
+
+Deleted:
+- type: "deleted"
+
+Failed:
+- type: "failed"
+- connError: string
 
 
 ---
@@ -1961,6 +1983,9 @@ Snippet:
 
 Secret:
 - type: "secret"
+
+Small:
+- type: "small"
 
 Colored:
 - type: "colored"
@@ -3589,6 +3614,26 @@ DeliveryJobNotFound:
 WorkItemError:
 - type: "workItemError"
 - errContext: string
+
+
+---
+
+## SubscriptionStatus
+
+**Discriminated union type**:
+
+Active:
+- type: "active"
+
+Pending:
+- type: "pending"
+
+Removed:
+- type: "removed"
+- subError: string
+
+NoSub:
+- type: "noSub"
 
 
 ---

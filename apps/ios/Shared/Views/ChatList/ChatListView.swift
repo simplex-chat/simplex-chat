@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 27/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-list.md
 
 import SwiftUI
 import SimpleXChat
@@ -31,6 +32,7 @@ enum UserPickerSheet: Identifiable {
     }
 }
 
+// Spec: spec/client/chat-list.md#PresetTag
 enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     case groupReports = 0
     case favorites = 1
@@ -46,6 +48,7 @@ enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     }
 }
 
+// Spec: spec/client/chat-list.md#ActiveFilter
 enum ActiveFilter: Identifiable, Equatable {
     case presetTag(PresetTag)
     case userTag(ChatTag)
@@ -135,6 +138,7 @@ struct UserPickerSheetView: View {
     }
 }
 
+// Spec: spec/client/chat-list.md#ChatListView
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
@@ -160,6 +164,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     
+    // Spec: spec/client/chat-list.md#body
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody.scrollDismissesKeyboard(.immediately)
@@ -445,6 +450,7 @@ struct ChatListView: View {
     }
 
     
+    // Spec: spec/client/chat-list.md#unreadBadge
     private func unreadBadge(size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
@@ -464,11 +470,13 @@ struct ChatListView: View {
         }
     }
     
+    // Spec: spec/client/chat-list.md#stopAudioPlayer
     func stopAudioPlayer() {
         VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
         VoiceItemState.smallView = [:]
     }
     
+    // Spec: spec/client/chat-list.md#filteredChats
     private func filteredChats() -> [Chat] {
         if let linkChatId = searchChatFilteredBySimplexLink {
             return chatModel.chats.filter { $0.id == linkChatId }
@@ -511,6 +519,7 @@ struct ChatListView: View {
         }
     }
     
+    // Spec: spec/client/chat-list.md#searchString
     func searchString() -> String {
         searchShowingSimplexLink ? "" : searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
     }
@@ -574,6 +583,7 @@ struct SubsStatusIndicator: View {
     }
 }
 
+// Spec: spec/client/chat-list.md#ChatListSearchBar
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -875,6 +885,7 @@ struct TagsView: View {
         }
     }
 
+    // Spec: spec/client/chat-list.md#setActiveFilter
     private func setActiveFilter(filter: ActiveFilter) {
         if filter != chatTagsModel.activeFilter {
             chatTagsModel.activeFilter = filter
@@ -895,6 +906,7 @@ func chatStoppedIcon() -> some View {
     }
 }
 
+// Spec: spec/client/chat-list.md#presetTagMatchesChat
 func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: ChatStats) -> Bool {
     switch tag {
     case .groupReports:

@@ -46,6 +46,7 @@ data class Call(
     get() = localMediaSources.hasVideo || peerMediaSources.hasVideo
 }
 
+// Spec: spec/services/calls.md#CallState
 enum class CallState {
   WaitCapabilities,
   InvitationSent,

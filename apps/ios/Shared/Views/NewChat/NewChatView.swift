@@ -5,6 +5,7 @@
 //  Created by spaced4ndy on 28.11.2023.
 //  Copyright © 2023 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/navigation.md
 
 import SwiftUI
 import SimpleXChat
@@ -73,6 +74,7 @@ func showKeepInvitationAlert() {
     ChatModel.shared.showingInvitation = nil
 }
 
+// Spec: spec/client/navigation.md#NewChatView
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -1163,6 +1165,7 @@ private func showOpenKnownGroupAlert(
     )
 }
 
+// Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
     theme: AppTheme,

@@ -22,7 +22,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Type.Equality
 import Data.Word (Word32)
 import Simplex.Chat.Messages.CIContent.Events
@@ -323,7 +323,7 @@ e2eInfoPQText =
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> (decodeLatin1 . strEncode $ role)
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> textEncode role
 
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
@@ -338,9 +338,9 @@ rcvGroupEventToText = \case
   RGEMemberAccepted _ p -> "accepted " <> profileToText p
   RGEUserAccepted -> "accepted you"
   RGEMemberLeft -> "left"
-  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> textEncode r
   RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
-  RGEUserRole r -> "changed your role to " <> safeDecodeUtf8 (strEncode r)
+  RGEUserRole r -> "changed your role to " <> textEncode r
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
@@ -352,9 +352,9 @@ rcvGroupEventToText = \case
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
-  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
+  SGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> textEncode r
   SGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
-  SGEUserRole r -> "changed role for yourself to " <> safeDecodeUtf8 (strEncode r)
+  SGEUserRole r -> "changed role for yourself to " <> textEncode r
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"

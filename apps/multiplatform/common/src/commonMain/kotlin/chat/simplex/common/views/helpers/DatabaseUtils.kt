@@ -74,6 +74,7 @@ object DatabaseUtils {
   }
 }
 
+// Spec: spec/database.md#DBMigrationResult
 @Serializable
 sealed class DBMigrationResult {
   @Serializable @SerialName("ok") object OK: DBMigrationResult()
