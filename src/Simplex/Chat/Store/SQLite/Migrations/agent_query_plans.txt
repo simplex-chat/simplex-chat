@@ -540,6 +540,30 @@ SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
 
 Query: 
+        SELECT user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
+          last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
+        FROM connections
+        WHERE conn_id = ? AND deleted = ?
+      
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: 
+      DELETE FROM client_services
+      WHERE user_id = ? AND host = ? AND port = ?
+        AND EXISTS (
+          SELECT 1 FROM servers s
+          WHERE s.host = client_services.host
+            AND s.port = client_services.port
+            AND COALESCE(client_services.server_key_hash, s.key_hash) = ?
+        );
+    
+Plan:
+SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=? AND host=? AND port=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+
+Query: 
       DELETE FROM conn_confirmations
       WHERE conn_id = ?
     
