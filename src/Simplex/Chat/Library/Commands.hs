@@ -1675,6 +1675,18 @@ processChatCommand vr nm = \case
       Nothing -> throwChatError $ CEContactNotActive ct
   APIGroupInfo gId -> withUser $ \user ->
     CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db vr user gId)
+  APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
+    gInfo@GroupInfo {groupProfile = GroupProfile {groupLink = groupLink_}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    case groupLink_ of
+      Just sLnk | useRelays' gInfo -> do
+        (_, cData) <- getShortLinkConnReq nm user sLnk
+        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        case groupSLinkData_ of
+          Just GroupShortLinkData {publicGroupData = Just PublicGroupData {publicMemberCount}} -> do
+            gInfo' <- withFastStore $ \db -> setPublicMemberCount db vr user gInfo publicMemberCount
+            pure $ CRGroupInfo user gInfo'
+          _ -> throwCmdError "no public group data in short link"
+      _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
@@ -2857,18 +2869,6 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo gLnk
-  APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
-    gInfo@GroupInfo {groupProfile = GroupProfile {groupLink = groupLink_}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    case groupLink_ of
-      Just sLnk | useRelays' gInfo -> do
-        (_, cData) <- getShortLinkConnReq nm user sLnk
-        groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        case groupSLinkData_ of
-          Just GroupShortLinkData {publicGroupData = Just PublicGroupData {publicMemberCount}} -> do
-            gInfo' <- withFastStore $ \db -> setPublicMemberCount db vr user gInfo publicMemberCount
-            pure $ CRGroupInfo user gInfo'
-          _ -> throwCmdError "no public group data in short link"
-      _ -> throwCmdError "group link data not available"
   APIAddGroupShortLink groupId -> withUser $ \user -> do
     (gInfo, gLink) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
@@ -4765,6 +4765,7 @@ chatCommandP =
       "/_member settings #" *> (APISetMemberSettings <$> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info #" *> (APIGroupInfo <$> A.decimal),
+      "/_get group link data #" *> (APIGetUpdatedGroupLinkData <$> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
       ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayNameP),
@@ -4840,7 +4841,6 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/_get group link data #" *> (APIGetUpdatedGroupLinkData <$> A.decimal),
       "/_short link #" *> (APIAddGroupShortLink <$> A.decimal),
       "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember)),
       "/set link role #" *> (GroupLinkMemberRole <$> displayNameP <*> memberRole),

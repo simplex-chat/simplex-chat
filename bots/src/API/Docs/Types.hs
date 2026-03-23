@@ -319,6 +319,7 @@ chatTypesDocsData =
     (sti @Profile, STRecord, "", [], "", ""),
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
     (sti @ProxyError, STUnion, "", [], "", ""),
+    (sti @PublicGroupData, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
     (sti @RcvConnEvent, STUnion, "RCE", [], "", ""),
@@ -518,6 +519,7 @@ deriving instance Generic PreparedGroup
 deriving instance Generic Profile
 deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
+deriving instance Generic PublicGroupData
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent

@@ -386,7 +386,6 @@ data ChatCommand
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
   | APIGetGroupLink {groupId :: GroupId}
-  | APIGetUpdatedGroupLinkData GroupId
   | APIAddGroupShortLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
@@ -426,6 +425,7 @@ data ChatCommand
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
   | APIContactInfo ContactId
   | APIGroupInfo GroupId
+  | APIGetUpdatedGroupLinkData {groupId :: GroupId}
   | APIGroupMemberInfo GroupId GroupMemberId
   | APIContactQueueInfo ContactId
   | APIGroupMemberQueueInfo GroupId GroupMemberId
