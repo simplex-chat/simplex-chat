@@ -215,7 +215,7 @@ export namespace CEvt {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface JoinedGroupMember extends Interface {
@@ -233,7 +233,7 @@ export namespace CEvt {
     member: T.GroupMember
     fromRole: T.GroupMemberRole
     toRole: T.GroupMemberRole
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface DeletedMember extends Interface {
@@ -243,7 +243,7 @@ export namespace CEvt {
     byMember: T.GroupMember
     deletedMember: T.GroupMember
     withMessages: boolean
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface LeftMember extends Interface {
@@ -251,7 +251,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface DeletedMemberUser extends Interface {
@@ -260,7 +260,7 @@ export namespace CEvt {
     groupInfo: T.GroupInfo
     member: T.GroupMember
     withMessages: boolean
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface GroupDeleted extends Interface {
@@ -268,7 +268,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface ConnectedToGroupMember extends Interface {
@@ -294,7 +294,7 @@ export namespace CEvt {
     byMember: T.GroupMember
     member: T.GroupMember
     blocked: boolean
-    msgSigned: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface GroupMemberUpdated extends Interface {

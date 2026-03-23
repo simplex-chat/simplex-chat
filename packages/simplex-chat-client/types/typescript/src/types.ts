@@ -795,7 +795,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
-  msgSigned: boolean
+  msgSigned?: MsgSigStatus
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -3026,6 +3026,11 @@ export namespace MsgReaction {
 export enum MsgReceiptStatus {
   Ok = "ok",
   BadMsgHash = "badMsgHash",
+}
+
+export enum MsgSigStatus {
+  Verified = "verified",
+  SignedNoKey = "signedNoKey",
 }
 
 export type NetworkError = 

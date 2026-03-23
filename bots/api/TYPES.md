@@ -125,6 +125,7 @@ This file is generated automatically.
 - [MsgFilter](#msgfilter)
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
+- [MsgSigStatus](#msgsigstatus)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -780,7 +781,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
-- msgSigned: bool
+- msgSigned: [MsgSigStatus](#msgsigstatus)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -2720,6 +2721,15 @@ Unknown:
 **Enum type**:
 - "ok"
 - "badMsgHash"
+
+
+---
+
+## MsgSigStatus
+
+**Enum type**:
+- "verified"
+- "signedNoKey"
 
 
 ---
