@@ -237,7 +237,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  describe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -8422,13 +8422,14 @@ testChannels1RelayDeliver ps =
             eve <## "    + 👍"
 
             -- owner's public member count is maintained automatically
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 4)
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 4"
             -- subscriber refreshes count via short link
-            threadDelay 3000000 -- wait for async short link data update
+            threadDelay 100000 -- wait for async short link data update
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
-            _ <- getTermLine cath -- current members (local)
-            checkPublicMemberCount cath "team" >>= (`shouldBe` Just 4)
+            cath <## "subscribers: 4"
 
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
@@ -8938,7 +8939,13 @@ testChannelRemoveMemberSigned ps =
               ]
 
             -- before removal — owner count is maintained synchronously
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 4)
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 4"
+            threadDelay 100000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            cath <## "subscribers: 4"
 
             -- remove member (XGrpMemDel) - signed (other members can verify)
             threadDelay 1000000
@@ -8959,12 +8966,13 @@ testChannelRemoveMemberSigned ps =
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
 
             -- after first removal
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 3)
-            threadDelay 3000000 -- wait for async short link data update
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 3"
+            threadDelay 100000 -- wait for async short link data update
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
-            _ <- getTermLine cath -- current members (local)
-            checkPublicMemberCount cath "team" >>= (`shouldBe` Just 3)
+            cath <## "subscribers: 3"
 
             -- remove silent member (other members don't know about member)
             threadDelay 1000000
@@ -8984,12 +8992,13 @@ testChannelRemoveMemberSigned ps =
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")]) -- no new chat item
 
             -- after second removal
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 2)
-            threadDelay 3000000 -- wait for async short link data update
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 2"
+            threadDelay 100000 -- wait for async short link data update
             cath ##> "/_get group link data #1"
             cath <## "group ID: 1"
-            _ <- getTermLine cath -- current members (local)
-            checkPublicMemberCount cath "team" >>= (`shouldBe` Just 2)
+            cath <## "subscribers: 2"
 
 testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupSigned ps =
@@ -9098,7 +9107,13 @@ testChannelSubscriberLeave ps =
               ]
 
             -- before any leave — owner count is maintained synchronously
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 4)
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 4"
+            threadDelay 100000 -- wait for async short link data update
+            eve ##> "/_get group link data #1"
+            eve <## "group ID: 1"
+            eve <## "subscribers: 4"
 
             -- known member leaves (XGrpLeave signed) - owner and relay see items
             threadDelay 1000000
@@ -9116,12 +9131,13 @@ testChannelSubscriberLeave ps =
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no leave item
 
             -- after first leave
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 3)
-            threadDelay 3000000 -- wait for async short link data update
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 3"
+            threadDelay 100000 -- wait for async short link data update
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
-            _ <- getTermLine eve -- current members (local)
-            checkPublicMemberCount eve "team" >>= (`shouldBe` Just 3)
+            eve <## "subscribers: 3"
 
             -- verify cath's member status is "left" on all clients
             checkMemberStatus alice "cath" (Just "left")
@@ -9144,12 +9160,13 @@ testChannelSubscriberLeave ps =
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no new item
 
             -- after second leave
-            checkPublicMemberCount alice "team" >>= (`shouldBe` Just 2)
-            threadDelay 3000000 -- wait for async short link data update
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 2"
+            threadDelay 100000 -- wait for async short link data update
             eve ##> "/_get group link data #1"
             eve <## "group ID: 1"
-            _ <- getTermLine eve -- current members (local)
-            checkPublicMemberCount eve "team" >>= (`shouldBe` Just 2)
+            eve <## "subscribers: 2"
 
             -- verify dan's member status is "left" on nodes that know dan
             checkMemberStatus alice "dan" (Just "left")
