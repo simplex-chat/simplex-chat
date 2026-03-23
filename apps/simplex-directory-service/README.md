@@ -84,7 +84,7 @@ simplex-directory-service \
   --web-folder /path/to/simplex-chat/website/_site/directory-data
 ```
 
-**Step 2 — switch the data URL in `website/src/js/directory.js`.** The file contains two URL definitions (around line 488); comment out the production one and uncomment the localhost one:
+**Step 2 — switch the data URL in `website/src/js/directory.js`.** The file contains two URL definitions (around line 484); comment out the production one and uncomment the localhost one:
 ```js
 // const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
 const simplexDirectoryDataURL = 'http://localhost:8080/directory-data/';
@@ -212,12 +212,11 @@ Permanently removes the group from the directory. The group can be re-registered
 
 ### 4. Admin Commands
 
-Admins receive a notification whenever a group enters pending state. The `<approval-id>` in `/approve` is the integer from that notification (or from `/pending`); it increments each time a group re-enters pending state so that stale approvals are rejected.
+Admins receive a notification whenever a group enters the PendingApproval state. The `<approval-id>` in `/approve` is the integer from that notification (or from `/pending`); it increments each time a group re-enters the PendingApproval state so that stale approvals are rejected.
 
 | Command | Syntax | Effect |
 |---|---|---|
 | Approve | `/approve <ID>:<name> <approval-id> [promote=on\|off]` | List group in directory; notifies owner |
-| Reject | `/reject <ID>:<name>` | Reject pending group; notifies owner |
 | Suspend | `/suspend <ID>:<name>` | Hide group from directory; notifies owner |
 | Resume | `/resume <ID>:<name>` | Re-list a suspended group; notifies owner |
 | List recent | `/last [N]` | Show last N registered groups (default: 10) |
