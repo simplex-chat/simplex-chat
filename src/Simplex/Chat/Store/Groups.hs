@@ -1309,7 +1309,8 @@ getConnectedGroupRelays db GroupInfo {groupId} =
           <> [sql| JOIN group_members m ON m.group_member_id = gr.group_member_id
                    WHERE gr.group_id = ?
                      AND m.member_status = ?
-                     AND gr.relay_status IN (?,?) |]
+                     AND gr.relay_status IN (?,?)
+             |]
       )
       (groupId, GSMemConnected, RSAccepted, RSActive)
 
@@ -1736,18 +1737,18 @@ updatePreparedRelayedGroup db vr user@User {userId} gInfo cReq cReqHash incognit
 updatePublicMemberCount :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ExceptT StoreError IO GroupInfo
 updatePublicMemberCount db vr user GroupInfo {groupId} = do
   liftIO $ do
-    [Only totalCount] <-
-      DB.query db "SELECT summary_current_members_count FROM groups WHERE group_id = ?" (Only groupId)
-    [Only relayCount] <-
-      DB.query
+    totalCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
+      (DB.query db "SELECT summary_current_members_count FROM groups WHERE group_id = ?" (Only groupId))
+    relayCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
+      (DB.query
         db
         [sql|
           SELECT COUNT(*) FROM group_members
           WHERE group_id = ? AND member_role = ?
             AND member_status IN (?,?,?,?,?,?,?)
         |]
-        (groupId, GRRelay, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator)
-    let publicCount = totalCount - relayCount :: Int64
+        (groupId, GRRelay, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator))
+    let publicCount = max 0 (totalCount - relayCount) :: Int64
     currentTs <- getCurrentTime
     DB.execute db "UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?" (publicCount, currentTs, groupId)
   getGroupInfo db vr user groupId
