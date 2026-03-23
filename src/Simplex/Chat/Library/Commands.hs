@@ -2682,7 +2682,10 @@ processChatCommand vr nm = \case
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
           msgSigned = signed2 || signed3 || signed4
       -- Read group info with updated membersRequireAttention and publicMemberCount
-      gInfo' <- updatePublicGroupData user gInfo
+      gInfo' <-
+        if useRelays' gInfo
+          then updatePublicGroupData user gInfo
+          else withFastStore $ \db -> getGroupInfo db vr user groupId
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
