@@ -8489,6 +8489,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
 
   concurrentlyN_
     [ do
+        -- one relay connects
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner
           <### [ EndsWith ": active",
@@ -8496,6 +8497,7 @@ prepareChannel2Relays gName owner relay1 relay2 = do
                ]
         owner <## "group link:"
         void $ getTermLine owner -- consume group link line
+        -- second relay connects
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner <## "  - relay id 1: active"
         owner <## "  - relay id 2: active"

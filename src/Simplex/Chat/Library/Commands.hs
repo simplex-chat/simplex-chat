@@ -1676,16 +1676,16 @@ processChatCommand vr nm = \case
   APIGroupInfo gId -> withUser $ \user ->
     CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db vr user gId)
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
-    gInfo@GroupInfo {groupProfile = GroupProfile {groupLink = groupLink_}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    case groupLink_ of
+    gInfo@GroupInfo {groupProfile = GroupProfile {groupLink}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    case groupLink of
       Just sLnk | useRelays' gInfo -> do
         (_, cData) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        case groupSLinkData_ of
-          Just GroupShortLinkData {publicGroupData = Just PublicGroupData {publicMemberCount}} -> do
-            gInfo' <- withFastStore $ \db -> setPublicMemberCount db vr user gInfo publicMemberCount
-            pure $ CRGroupInfo user gInfo'
-          _ -> throwCmdError "no public group data in short link"
+        let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
+            publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
+        gInfo' <- fromMaybe gInfo
+          <$> forM publicMemberCount_ (\count -> withFastStore $ \db -> setPublicMemberCount db vr user gInfo count)
+        pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
@@ -2014,9 +2014,8 @@ processChatCommand vr nm = \case
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        let publicMemberCount_ = case groupSLinkData_ of
-              Just GroupShortLinkData {publicGroupData = Just PublicGroupData {publicMemberCount}} -> Just publicMemberCount
-              _ -> Nothing
+        let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
+            publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
         -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
         -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
