@@ -2681,9 +2681,8 @@ processChatCommand vr nm = \case
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
           msgSigned = signed2 || signed3 || signed4
-      -- Read group info with updated membersRequireAttention
-      gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
-      gInfo' <- updatePublicGroupData user gInfo'
+      -- Read group info with updated membersRequireAttention and publicMemberCount
+      gInfo' <- updatePublicGroupData user gInfo
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
@@ -3437,7 +3436,6 @@ processChatCommand vr nm = \case
               let allowSimplexLinks = maybe True (groupFeatureUserAllowed SGFSimplexLinks) gInfo_'
                in userProfileInGroup' user allowSimplexLinks incognitoProfile
             Nothing -> userProfileDirect user incognitoProfile Nothing True
-      g <- asks random
       chatEvent <- case gInfo_ of
         Just (Just gInfo) | useRelays' gInfo -> do
           let GroupInfo {membership = GroupMember {memberId}} = gInfo
