@@ -1743,7 +1743,7 @@ updatePublicMemberCount db vr user GroupInfo {groupId} = do
       (DB.query
         db
         [sql|
-          SELECT COUNT(*) FROM group_members
+          SELECT COUNT(1) FROM group_members
           WHERE group_id = ? AND member_role = ?
             AND member_status IN (?,?,?,?,?,?,?)
         |]
