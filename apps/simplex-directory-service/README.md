@@ -6,12 +6,6 @@ Chat bot for registering and searching groups. Superusers and admins are configu
 
 ## Prerequisites
 
-**System packages (Ubuntu/Debian):**
-```sh
-sudo apt install build-essential libsqlite3-dev libssl-dev libgmp-dev zlib1g-dev
-```
-
-**Haskell toolchain:**
 - GHC 9.6.3 — install via [GHCup](https://www.haskell.org/ghcup/)
 - Cabal 3.10.2+
 
