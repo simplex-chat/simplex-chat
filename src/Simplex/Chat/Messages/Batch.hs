@@ -98,7 +98,7 @@ batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0)
 encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
 encodeFwdElement fwd verifiedMsg = ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
   where
-    (signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
+    (_, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
 
 encodeBatch :: BatchMode -> [ByteString] -> ByteString
 encodeBatch _ [] = mempty

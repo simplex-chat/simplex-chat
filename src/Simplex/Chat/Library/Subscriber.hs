@@ -2506,7 +2506,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
-            toView $ CEvtGroupUpdated user g g' (Just m) False
+            toView $ CEvtGroupUpdated user g g' (Just m) Nothing
           _ -> pure ()
         isMainBusinessMember BusinessChatInfo {chatType, businessId, customerId} GroupMember {memberId} = case chatType of
           BCBusiness -> businessId == memberId
@@ -3072,7 +3072,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | memberRole < GROwner = messageError "x.grp.prefs with insufficient member permissions" $> Nothing
       | otherwise = updateGroupPrefs_ msgSigned g m ps' $> Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
-    updateGroupPrefs_ :: Bool -> GroupInfo -> GroupMember -> GroupPreferences -> CM ()
+    updateGroupPrefs_ :: Maybe MsgSigStatus -> GroupInfo -> GroupMember -> GroupPreferences -> CM ()
     updateGroupPrefs_ msgSigned g@GroupInfo {groupProfile = p} m ps' =
       unless (groupPreferences p == Just ps') $ do
         g' <- withStore' $ \db -> updateGroupPreferences db user g ps'
@@ -3226,7 +3226,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         verifiedMsg = case signedMsg_ of
           Nothing -> VMUnsigned chatMsg
-          Just sm -> VMSigned sm chatMsg
+          Just sm -> VMSigned sigStatus sm chatMsg
+        sigStatus = maybe MSSSignedNoKey (const MSSVerified) (memberPubKey member)
         verified = case signedMsg_ of
           Just SignedMsg {chatBinding, signatures, signedBody}
             | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->

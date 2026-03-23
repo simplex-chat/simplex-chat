@@ -240,7 +240,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRMemberSupportChatDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " support chat deleted"]
   CRMembersRoleUser u g members r' signed -> ttyUser u $ viewMemberRoleUserChanged g members r' signed
   CRMembersBlockedForAllUser u g members blocked signed -> ttyUser u $ viewMembersBlockedForAllUser g members blocked signed
-  CRGroupUpdated u g g' m signed -> ttyUser u $ viewGroupUpdated g g' m signed
+  CRGroupUpdated u g g' m signed -> ttyUser u $ viewGroupUpdated g g' m (if signed then Just MSSVerified else Nothing)
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
   CRGroupLinkCreated u g gLink -> ttyUser u $ groupLink_ "Group link is created!" g gLink
@@ -360,7 +360,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
     testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText, msgSigned}}) membership_ =
       let deleted_ = maybe "" (\t -> " [" <> t <> "]") (chatItemDeletedText ci membership_)
-       in itemText <> signedStr msgSigned <> deleted_
+       in itemText <> sigStatusStr msgSigned <> deleted_
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
     unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isUserMention ci
     unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
@@ -371,6 +371,12 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       | testView = map (<> " <muted>") s
       | otherwise = []
     withMessages wm = if wm then " with all messages" else ""
+
+sigStatusStr :: IsString a => Maybe MsgSigStatus -> a
+sigStatusStr = \case
+  Just MSSVerified -> " (signed)"
+  Just MSSSignedNoKey -> " (signed, no key to verify)"
+  Nothing -> ""
 
 signedStr :: IsString a => Bool -> a
 signedStr signed = if signed then " (signed)" else ""
@@ -474,10 +480,10 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtMemberAcceptedByOther u g acceptingMember m -> ttyUser u $ viewMemberAcceptedByOther g acceptingMember m
   CEvtMemberRole u g by m r r' signed -> ttyUser u $ viewMemberRoleChanged g by m r r' signed
   CEvtMemberBlockedForAll u g by m blocked signed -> ttyUser u $ viewMemberBlockedForAll g by m blocked signed
-  CEvtDeletedMemberUser u g by wm signed -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group" <> withMessages wm <> signedStr signed] <> groupPreserved g
-  CEvtDeletedMember u g by m wm signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group" <> withMessages wm <> signedStr signed]
-  CEvtLeftMember u g m signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group" <> signedStr signed]
-  CEvtGroupDeleted u g m signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group" <> signedStr signed, "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
+  CEvtDeletedMemberUser u g by wm signed -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group" <> withMessages wm <> sigStatusStr signed] <> groupPreserved g
+  CEvtDeletedMember u g by m wm signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group" <> withMessages wm <> sigStatusStr signed]
+  CEvtLeftMember u g m signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group" <> sigStatusStr signed]
+  CEvtGroupDeleted u g m signed -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group" <> sigStatusStr signed, "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CEvtGroupUpdated u g g' m signed -> ttyUser u $ viewGroupUpdated g g' m signed
   CEvtAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CEvtNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
@@ -730,8 +736,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir context (MCText $ T.pack fileName) ts tz meta
       _ -> view dir context mc ts tz meta
-    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> signedStr msgSigned] meta
-    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> signedStr msgSigned] False
+    showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> sigStatusStr msgSigned] meta
+    showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> sigStatusStr msgSigned] False
     showSndItemProhibited to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> " " <> prohibited] meta
     showRcvItemProhibited from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> " " <> prohibited] False
     showItem ss = if doShow then ss else []
@@ -1303,7 +1309,7 @@ connectedMember m = case memberCategory m of
   GCPostMember -> "new member " <> ttyMember m -- without fullName as as it was shown in joinedGroupMemberConnecting
   _ -> "member " <> ttyMember m -- these case is not used
 
-viewMemberRoleChanged :: GroupInfo -> GroupMember -> GroupMember -> GroupMemberRole -> GroupMemberRole -> Bool -> [StyledString]
+viewMemberRoleChanged :: GroupInfo -> GroupMember -> GroupMember -> GroupMemberRole -> GroupMemberRole -> Maybe MsgSigStatus -> [StyledString]
 viewMemberRoleChanged g@GroupInfo {membership} by m r r' signed
   | r == r' = [ttyGroup' g <> ": member role did not change"]
   | groupMemberId' membership == memId = view "your role"
@@ -1311,16 +1317,16 @@ viewMemberRoleChanged g@GroupInfo {membership} by m r r' signed
   | otherwise = view $ "the role of " <> ttyMember m
   where
     memId = groupMemberId' m
-    view s = [ttyGroup' g <> ": " <> ttyMember by <> " changed " <> s <> " from " <> showRole r <> " to " <> showRole r' <> signedStr signed]
+    view s = [ttyGroup' g <> ": " <> ttyMember by <> " changed " <> s <> " from " <> showRole r <> " to " <> showRole r' <> sigStatusStr signed]
 
 viewMemberRoleUserChanged :: GroupInfo -> [GroupMember] -> GroupMemberRole -> Bool -> [StyledString]
 viewMemberRoleUserChanged g members r signed = case members of
   [m] -> [ttyGroup' g <> ": you changed the role of " <> ttyMember m <> " to " <> showRole r <> signedStr signed]
   mems' -> [ttyGroup' g <> ": you changed the role of " <> sShow (length mems') <> " members to " <> showRole r <> signedStr signed]
 
-viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> Bool -> Bool -> [StyledString]
+viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> Bool -> Maybe MsgSigStatus -> [StyledString]
 viewMemberBlockedForAll g by m blocked signed =
-  [ttyGroup' g <> ": " <> ttyMember by <> " " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m <> signedStr signed]
+  [ttyGroup' g <> ": " <> ttyMember by <> " " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m <> sigStatusStr signed]
 
 viewMembersBlockedForAllUser :: GroupInfo -> [GroupMember] -> Bool -> Bool -> [StyledString]
 viewMembersBlockedForAllUser g members blocked signed = case members of
@@ -1888,7 +1894,7 @@ countactUserPrefText cup = case cup of
   CUPUser p -> "default (" <> preferenceText p <> ")"
   CUPContact p -> preferenceText p
 
-viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> Bool -> [StyledString]
+viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> Maybe MsgSigStatus -> [StyledString]
 viewGroupUpdated
   GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma}}
   g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma'}}
@@ -1898,7 +1904,7 @@ viewGroupUpdated
       then []
       else memberUpdated <> update
     where
-      memberUpdated = maybe [] (\m' -> [ttyMember m' <> " updated group " <> ttyGroup n <> ":" <> signedStr signed]) m
+      memberUpdated = maybe [] (\m' -> [ttyMember m' <> " updated group " <> ttyGroup n <> ":" <> sigStatusStr signed]) m
       groupProfileUpdated =
         ["changed to " <> ttyFullGroup g' | n /= n']
           <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']

@@ -39,6 +39,7 @@ import Simplex.Chat.Delivery
 import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared (MsgSigStatus (..))
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -157,7 +158,7 @@ getMsgDeliveryTask_ db taskId =
               -- Signed: original bytes preserved (re-encoding would invalidate signature).
               -- Unsigned: re-encoded from parsed ChatMessage on forward (sanitizes content).
               verifiedMsg = case (chatBinding_, decodeSigs sigs_) of
-                (Just cb, Just sigs) -> VMSigned (SignedMsg cb sigs msgBody) chatMsg
+                (Just cb, Just sigs) -> VMSigned MSSVerified (SignedMsg cb sigs msgBody) chatMsg
                 _ -> VMUnsigned chatMsg
            in Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, fwdSender, brokerTs, verifiedMsg}
         (Nothing, _) -> Left $ SEInvalidDeliveryTask taskId'
