@@ -536,9 +536,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   checkRolesSendToApprove gr' n'
               where
                 onlyLinkChanged
-                  GroupProfile {displayName = dn, fullName = fn, shortDescr = sd, image = i, description = d}
-                  GroupProfile {displayName = dn', fullName = fn', shortDescr = sd', image = i', description = d'} =
-                    dn == dn' && fn == fn' && i == i' && sd == sd' && (T.words . T.replace linkBefore "" <$> d) == (T.words . T.replace linkNow "" <$> d')
+                  GroupProfile {displayName = dn, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma}
+                  GroupProfile {displayName = dn', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma'} =
+                    dn == dn' && fn == fn' && i == i' && sd == sd' && ma == ma' && (T.words . T.replace linkBefore "" <$> d) == (T.words . T.replace linkNow "" <$> d')
             GPServiceLinkError -> logError $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
