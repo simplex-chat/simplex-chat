@@ -743,8 +743,6 @@ $(JQ.deriveJSON defaultJSON ''MsgMention)
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
-
-
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, - 16 for block encryption ("rounded" to 15602)
 maxEncodedMsgLength :: Int

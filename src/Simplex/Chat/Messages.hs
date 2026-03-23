@@ -494,7 +494,6 @@ updateFileStatus ci@ChatItem {file} status = case file of
   Nothing -> ci
 
 -- This type is not saved to DB, so all JSON encodings are platform-specific
-
 data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   { itemId :: ChatItemId,
     itemTs :: ChatItemTs,
