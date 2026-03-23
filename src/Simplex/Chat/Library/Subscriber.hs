@@ -3218,26 +3218,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
     withVerifiedMsg :: MsgEncodingI e => GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ParsedMsg e -> UTCTime -> (VerifiedMsg e -> CM a) -> CM (Maybe a)
-    withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action
-      | verified = Just <$> action verifiedMsg
-      | otherwise = do
+    withVerifiedMsg gInfo@GroupInfo {membership} scopeInfo member (ParsedMsg _ signedMsg_ chatMsg@ChatMessage {chatMsgEvent}) ts action =
+      case verified of
+        Just verifiedMsg -> Just <$> action verifiedMsg
+        Nothing -> do
           createInternalChatItem user (CDGroupRcv gInfo scopeInfo member) (CIRcvGroupEvent RGEMsgBadSignature) (Just ts)
           pure Nothing
       where
-        verifiedMsg = case signedMsg_ of
-          Nothing -> VMUnsigned chatMsg
-          Just sm -> VMSigned sigStatus sm chatMsg
-        sigStatus = maybe MSSSignedNoKey (const MSSVerified) (memberPubKey member)
         verified = case signedMsg_ of
-          Just SignedMsg {chatBinding, signatures, signedBody}
+          Just sm@SignedMsg {chatBinding, signatures, signedBody}
             | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->
                 case chatBinding of
                   CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
                     let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
-                     in all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures
-                  _ -> signatureOptional
-            | otherwise -> signatureOptional || unverifiedAllowed membership member tag
-          Nothing -> signatureOptional
+                     in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
+                  _ -> signed MSSSignedNoKey <$ guard signatureOptional
+            | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
+            where
+              signed status = VMSigned status sm chatMsg
+          Nothing -> VMUnsigned chatMsg <$ guard signatureOptional
           where
             tag = toCMEventTag chatMsgEvent
             signatureOptional = not (useRelays' gInfo) || not (requiresSignature tag)
