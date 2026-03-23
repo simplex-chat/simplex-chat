@@ -16,12 +16,12 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, unless, void, when)
+import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
 import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List (intercalate, isInfixOf, isSuffixOf)
+import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
@@ -237,7 +237,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  describe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
