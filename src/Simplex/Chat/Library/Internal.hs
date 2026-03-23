@@ -1316,14 +1316,10 @@ updatePublicGroupData user gInfo
   | useRelays' gInfo && memberRole' (membership gInfo) == GROwner = do
       vr <- chatVersionRange
       gInfo' <- withStore $ \db -> updatePublicMemberCount db vr user gInfo
-      updatePublicGroupLinkDataAsync user gInfo'
+      gLink <- withStore $ \db -> getGroupLink db user gInfo'
+      setGroupLinkDataAsync user gInfo' gLink
       pure gInfo'
   | otherwise = pure gInfo
-
-updatePublicGroupLinkDataAsync :: User -> GroupInfo -> CM ()
-updatePublicGroupLinkDataAsync user gInfo = do
-  gLink <- withStore $ \db -> getGroupLink db user gInfo
-  setGroupLinkDataAsync user gInfo gLink
 
 -- TODO [relays] owner: set owners on updating link data
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
