@@ -194,6 +194,7 @@ toTypeInfo tr =
     primitiveToLower st@(ST t ps) = let t' = fstToLower t in if t' `elem` primitiveTypes then ST t' ps else st
     stringTypes =
       [ "AConnectionLink",
+        "AProtocolType",
         "AgentConnId",
         "AgentInvId",
         "AgentRcvFileId",
@@ -212,6 +213,7 @@ toTypeInfo tr =
         "ProtocolServer",
         "SbKey",
         "SharedMsgId",
+        "TransportHost",
         "UIColor",
         "UserPwd",
         "XContactId"

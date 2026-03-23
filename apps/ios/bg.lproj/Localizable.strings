@@ -1613,7 +1613,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Изтрий съобщението?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Изтрий съобщенията";
 
 /* No comment provided by engineer. */
@@ -2750,7 +2751,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Ролята на члена ще бъде променена на \"%@\". Членът ще получи нова покана.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
 
 /* No comment provided by engineer. */
@@ -3417,13 +3418,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Relay сървърът защитава вашия IP адрес, но може да наблюдава продължителността на разговора.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Премахване";
 
 /* No comment provided by engineer. */
 "Remove member" = "Острани член";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Острани член?";
 
 /* No comment provided by engineer. */

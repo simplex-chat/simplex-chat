@@ -1,8 +1,105 @@
 # Android App Development
 
-This readme is currently a stub and as such is in development.
+This is a guide to contributing to the develop of the SimpleX android and desktop apps.
 
-Ultimately, this readme will act as a guide to contributing to the develop of the SimpleX android app.
+## Project Overview
+
+This is the **Kotlin Multiplatform (KMP)** mobile and desktop client for SimpleX Chat, sharing code between Android and Desktop (JVM) platforms using Compose Multiplatform for UI.
+
+## Build Commands
+
+```bash
+# Android debug APK
+./gradlew assembleDebug
+
+# Android release APK
+./gradlew assembleRelease
+
+# Desktop distribution (current OS)
+./gradlew :desktop:packageDistributionForCurrentOS
+
+# Run desktop/JVM tests
+./gradlew desktopTest
+
+# Run Android instrumented tests (requires connected device/emulator)
+./gradlew connectedAndroidTest
+
+# Build native libraries for all platforms
+./gradlew common:cmakeBuild -PcrossCompile
+
+# Clean build
+./gradlew clean
+```
+
+## Architecture
+
+### Module Structure
+
+- **`common/`** - Shared code (Compose UI, models, business logic)
+  - `src/commonMain/` - Cross-platform code
+  - `src/androidMain/` - Android-specific implementations
+  - `src/desktopMain/` - Desktop-specific implementations
+- **`android/`** - Android app container
+- **`desktop/`** - Desktop JVM app container
+
+### Key Components (`common/src/commonMain/kotlin/chat/simplex/common/`)
+
+- **`model/ChatModel.kt`** - Main state container with reactive properties (MutableState, MutableStateFlow)
+- **`model/SimpleXAPI.kt`** - API bindings to Haskell core library via FFI
+- **`platform/Core.kt`** - FFI interface to native `libapp` library
+- **`platform/`** - Platform abstraction layer (expect/actual pattern for Android/Desktop specifics)
+- **`views/`** - Compose UI screens organized by feature (chat, chatlist, call, usersettings, etc.)
+- **`ui/theme/`** - Design system (colors, typography, shapes)
+
+### Native Integration
+
+The app calls into a Haskell core library via JNI/FFI:
+- CMake builds in `common/src/commonMain/cpp/android/` and `cpp/desktop/`
+- Cross-compilation toolchains in `cpp/toolchains/`
+- Built libraries go to `cpp/desktop/libs/` (organized by platform)
+
+## Configuration
+
+### `local.properties` (create from `local.properties.example`)
+
+```properties
+compression.level=0          # APK compression (0-9)
+enable_debuggable=true       # Debug mode
+application_id.suffix=.debug # Multiple app instances on same device
+app.name=SimpleX Debug       # App name for debug builds
+```
+
+### `gradle.properties`
+
+Contains versions (Kotlin, Compose, AGP) and app version info. Key settings:
+- `kotlin.jvm.target=11`
+- `database.backend=sqlite` (or `postgres`)
+
+## Testing
+
+Tests are in:
+- `common/src/commonTest/kotlin/` - Cross-platform tests
+- `common/src/desktopTest/kotlin/` - Desktop-specific tests (run with `./gradlew desktopTest`)
+- `android/src/androidTest/` - Android instrumented tests
+
+## Resources & Localization
+
+- String resources: `common/src/commonMain/resources/MR/base/strings.xml` + 21 language variants
+- Uses Moko Resources (`dev.icerock.moko:resources`) for cross-platform resource management
+- The `adjustFormatting` gradle task validates string resources during build
+
+## Platform-Specific Notes
+
+### Android
+- Min SDK 26, Target SDK 35
+- NDK 23.1.7779620
+- Supports ABI splits: `arm64-v8a`, `armeabi-v7a`
+- Deep linking requires SHA certificate fingerprint in `assetlinks.json` (see README.md)
+
+### Desktop
+- Distributions: DMG (macOS), MSI/EXE (Windows), DEB (Linux)
+- Mac signing/notarization configured via `local.properties`
+- Video playback uses VLCJ
 
 ## Gotchas
 

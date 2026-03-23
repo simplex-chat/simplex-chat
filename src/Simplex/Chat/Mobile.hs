@@ -257,7 +257,8 @@ mobileChatOpts dbOptions =
             deviceName = Nothing,
             highlyAvailable = False,
             yesToUpMigrations = False,
-            migrationBackupPath = Just ""
+            migrationBackupPath = Just "",
+            maintenance = True
           },
       chatCmd = "",
       chatCmdDelay = 3,
@@ -270,8 +271,7 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Nothing,
-      maintenance = True
+      createBot = Nothing
     }
 
 defaultMobileConfig :: ChatConfig

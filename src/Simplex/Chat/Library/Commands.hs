@@ -262,7 +262,7 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  readTVarIO s >>= mapM_ (\(a1, a2) -> forkIO $ uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
@@ -549,16 +549,14 @@ processChatCommand vr nm = \case
   APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      when (isJust contentFilter) $ throwCmdError "content filter not supported"
-      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
+      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
       (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ contentFilter pagination search)
       groupChat' <- checkSupportChatAttention user groupChat
       pure $ CRApiChat user (AChat SCTGroup groupChat') navInfo
     CTLocal -> do
-      when (isJust contentFilter) $ throwCmdError "content filter not supported"
-      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
+      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> throwCmdError "not implemented"
     CTContactConnection -> throwCmdError "not supported"
@@ -584,6 +582,8 @@ processChatCommand vr nm = \case
               newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
                 groupMemberId' m == scopeGMId
               newFromMember _ = False
+  APIGetChatContentTypes chatRef -> withUser $ \user ->
+    CRChatContentTypes <$> withStore (\db -> getChatContentTypes db user chatRef)
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
@@ -1423,6 +1423,16 @@ processChatCommand vr nm = \case
         liftIO $ setGroupUIThemes db user g uiThemes
       ok user
     _ -> throwCmdError "not supported"
+  APISetGroupCustomData groupId customData_ -> withUser $ \user -> do
+    withFastStore $ \db -> do
+      g <- getGroupInfo db vr user groupId
+      liftIO $ setGroupCustomData db user g customData_
+    ok user
+  APISetContactCustomData contactId customData_ -> withUser $ \user -> do
+    withFastStore $ \db -> do
+      ct <- getContact db vr user contactId
+      liftIO $ setContactCustomData db user ct customData_
+    ok user
   APIGetNtfToken -> withUser' $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a nm token mode)
@@ -1818,7 +1828,7 @@ processChatCommand vr nm = \case
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
     let PendingContactConnection {pccConnStatus, connLinkInv} = conn
     case (pccConnStatus, connLinkInv) of
-      (ConnNew, Just _ссLink) -> do
+      (ConnNew, Just _ccLink) -> do
         newUser <- privateGetUser newUserId
         conn' <- recreateConn user conn newUser
         pure $ CRConnectionUserChanged user conn conn' newUser
@@ -2168,7 +2178,8 @@ processChatCommand vr nm = \case
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
-          lift . void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
+          let hasLink = msgContentHasLink mc $ parseMaybeMarkdownList $ msgContentText mc
+          lift . void $ withStoreBatch' $ \db -> map (createCI db user hasLink timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
     where
       addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
@@ -2183,9 +2194,9 @@ processChatCommand vr nm = \case
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
       combineResults _ _ (Left e) = Left e
-      createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
-      createCI db user createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False createdAt
+      createCI :: DB.Connection -> User -> Bool -> UTCTime -> (Contact, SndMessage) -> IO ()
+      createCI db user hasLink createdAt (ct, sndMsg) =
+        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2967,7 +2978,7 @@ processChatCommand vr nm = \case
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
-  VerifyRemoteCtrlSession sessId -> withUser_ $ CRRemoteCtrlConnected <$> verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -3061,11 +3072,11 @@ processChatCommand vr nm = \case
       (chatRef,) <$> case cType of
         CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
-#if !defined(dbPostgres)
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
+#if !defined(dbPostgres)
     withStoreChanged :: CM () -> CM ChatResponse
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged >> ok_
 #endif
@@ -3485,8 +3496,8 @@ processChatCommand vr nm = \case
         pure (groupId, groupMemberId)
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
     sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
-      currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-      let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+      let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+          GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
             GroupInvitation
               { fromMember = MemberIdRole userMemberId userRole,
@@ -3727,7 +3738,7 @@ processChatCommand vr nm = \case
     getShortLinkConnReq :: User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
     getShortLinkConnReq user l = do
       l' <- restoreShortLink' l
-      (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+      (FixedLinkData {linkConnReq = cReq}, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
       case cData of
         ContactLinkData _ UserContactData {direct} | not direct -> throwChatError CEUnsupportedConnReq
         _ -> pure ()
@@ -4162,7 +4173,7 @@ agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   forever (atomically (readTBQueue q) >>= process)
-    `E.catchAny` \e -> do
+    `catchOwn` \e -> do
       eToView' $ chatErrorAgent $ CRITICAL True $ "Message reception stopped: " <> show e
       E.throwIO e
   where
@@ -4173,7 +4184,7 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchAllErrors'` (eToView')
+        run action = action `catchAllOwnErrors'` eToView'
 
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
 
@@ -4377,6 +4388,7 @@ chatCommandP =
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
+      "/_get content types " *> (APIGetChatContentTypes <$> chatRefP),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
@@ -4422,6 +4434,8 @@ chatCommandP =
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
+      "/_set custom #" *> (APISetGroupCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
+      "/_set custom @" *> (APISetContactCustomData <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
@@ -4533,7 +4547,7 @@ chatCommandP =
       "/clear " *> char_ '@' *> (ClearContact <$> displayNameP),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayNameP),
       "/member support chats #" *> (ListMemberSupportChats <$> displayNameP),
-      "/_groups" *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> textP)),
+      "/_groups " *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> textP)),
       ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayNameP) <*> optional (A.space *> textP)),
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayNameP <* A.space <*> groupProfile),

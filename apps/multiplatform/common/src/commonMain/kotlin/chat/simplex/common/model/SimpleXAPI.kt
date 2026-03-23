@@ -90,6 +90,7 @@ enum class SimplexLinkMode {
   }
 }
 
+// Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -491,6 +492,7 @@ private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
   private var chatCtrl: ChatCtrl? = -1
+  // Spec: spec/state.md#appPrefs
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
   val messagesChannel: Channel<API> = Channel()
@@ -654,6 +656,7 @@ object ChatController {
     chatModel.updateChatTags(rhId)
   }
 
+  // Spec: spec/api.md#startReceiver
   private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
     if (receiverJob != null || chatCtrl == null) return
@@ -797,6 +800,7 @@ object ChatController {
     return null
   }
 
+  // Spec: spec/api.md#sendCmd
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
     val ctrl = otherCtrl ?: chatCtrl ?: throw Exception("Controller is not initialized")
 
@@ -821,6 +825,7 @@ object ChatController {
     }
   }
 
+  // Spec: spec/api.md#recvMsg
   fun recvMsg(ctrl: ChatCtrl): API? {
     val rStr = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
     return if (rStr == "") {
@@ -1033,6 +1038,14 @@ object ChatController {
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_parse_chat_title), generalGetString(MR.strings.contact_developers))
     }
+    return null
+  }
+
+  suspend fun apiGetChatContentTypes(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?): List<MsgContentTag>? {
+    val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
+    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
+    Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
   }
 
@@ -2551,6 +2564,7 @@ object ChatController {
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
+  // Spec: spec/api.md#processReceivedMsg
   private suspend fun processReceivedMsg(msg: API) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val rhId = msg.rhId
@@ -3511,6 +3525,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 }
 
 // ChatCommand
+// Spec: spec/api.md#CC
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
@@ -3542,6 +3557,7 @@ sealed class CC {
   class ApiGetChatTags(val userId: Long): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val scope: GroupChatScope?, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
+  class ApiGetChatContentTypes(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val scope: GroupChatScope?, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val scope: GroupChatScope?, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
@@ -3726,6 +3742,7 @@ sealed class CC {
       }
       "/_get chat ${chatRef(type, id, scope)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
+    is ApiGetChatContentTypes -> "/_get content types ${chatRef(type, id, scope)}"
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id, scope)} $itemId"
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
@@ -3912,6 +3929,7 @@ sealed class CC {
     is ApiGetChatTags -> "apiGetChatTags"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
+    is ApiGetChatContentTypes -> "apiGetChatContentTypes"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessages -> "apiSendMessages"
     is ApiCreateChatTag -> "apiCreateChatTag"
@@ -4139,9 +4157,11 @@ class UpdatedMessage(val msgContent: MsgContent, val mentions: Map<String, Long>
 @Serializable
 class ChatTagData(val emoji: String?, val text: String)
 
+// Spec: spec/api.md#ArchiveConfig
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
 
+// Spec: spec/database.md#DBEncryptionConfig
 @Serializable
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
@@ -5949,6 +5969,7 @@ val yaml = Yaml(configuration = YamlConfiguration(
   codePointLimit = 5500000,
 ))
 
+// Spec: spec/api.md#API
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = APISerializer::class)
 sealed class API {
@@ -6088,6 +6109,7 @@ private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: Json
   runCatching { json.decodeFromJsonElement(deserializer, obj!!) }.getOrNull()
 
 // ChatResponse
+// Spec: spec/api.md#CR
 @Serializable
 sealed class CR {
   @Serializable @SerialName("activeUser") class ActiveUser(val user: User): CR()
@@ -6097,6 +6119,7 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val navInfo: NavigationInfo = NavigationInfo()): CR()
+  @Serializable @SerialName("chatContentTypes") class ChatContentTypes(val contentTypes: List<MsgContentTag>): CR()
   @Serializable @SerialName("chatTags") class ChatTags(val user: UserRef, val userTags: List<ChatTag>): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
@@ -6278,6 +6301,7 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is ChatContentTypes -> "chatContentTypes"
     is ChatTags -> "chatTags"
     is ApiChatItemInfo -> "chatItemInfo"
     is ServerTestResult -> "serverTestResult"
@@ -6451,6 +6475,7 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, "remoteHostId: ${chat.remoteHostId}\nchatInfo: ${chat.chatInfo}\nchatStats: ${chat.chatStats}\nnavInfo: ${navInfo}\nchatItems: ${chat.chatItems}")
+    is ChatContentTypes -> "content types: ${json.encodeToString(contentTypes)}"
     is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
@@ -6944,6 +6969,7 @@ data class RemoteFile(
   val fileSource: CryptoFile
 )
 
+// Spec: spec/api.md#ChatError
 @Serializable
 sealed class ChatError {
   val string: String get() = when (this) {
@@ -7627,6 +7653,7 @@ sealed class RCErrorType {
   @Serializable @SerialName("syntax") data class SYNTAX(val syntaxErr: String): RCErrorType()
 }
 
+// Spec: spec/database.md#ArchiveError
 @Serializable
 sealed class ArchiveError {
   val string: String get() = when (this) {
@@ -7708,6 +7735,7 @@ sealed class RemoteCtrlError {
   @Serializable @SerialName("protocolError") object ProtocolError: RemoteCtrlError()
 }
 
+// Spec: spec/services/notifications.md#NotificationsMode
 enum class NotificationsMode() {
   OFF, PERIODIC, SERVICE, /*INSTANT - for Firebase notifications */;
 

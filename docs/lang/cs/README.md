@@ -277,11 +277,11 @@ Přispět je možné prostřednictvím:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - je to pro nás bez provize.
 - OpenCollective](https://opencollective.com/simplex-chat) - účtuje si provizi a přijímá také dary v kryptoměnách.
-- Adresa Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt.
-- Bitcoinová adresa: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH adresa: BCH: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Ethereum adresa: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Adresa Solana: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- Adresa Monero: 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c.
+- Bitcoinová adresa: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
+- BCH adresa: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
+- ETH/USDT (Ethereum, Arbitrum One) adresa: 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a (donate.simplexchat.eth)
+- Adresa Solana: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 - dejte nám prosím vědět prostřednictvím GitHub issue nebo chatu, pokud chcete vytvořit příspěvek v nějaké jiné kryptoměně - přidáme adresu do seznamu.
 
 Děkujeme,

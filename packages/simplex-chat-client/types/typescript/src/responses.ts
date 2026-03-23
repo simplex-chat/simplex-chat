@@ -10,6 +10,9 @@ export type ChatResponse =
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
   | CR.ChatItemsDeleted
+  | CR.ChatRunning
+  | CR.ChatStarted
+  | CR.ChatStopped
   | CR.CmdOk
   | CR.ChatCmdError
   | CR.ConnectionPlan
@@ -58,6 +61,9 @@ export namespace CR {
     | "chatItemReaction"
     | "chatItemUpdated"
     | "chatItemsDeleted"
+    | "chatRunning"
+    | "chatStarted"
+    | "chatStopped"
     | "cmdOk"
     | "chatCmdError"
     | "connectionPlan"
@@ -138,6 +144,18 @@ export namespace CR {
     chatItemDeletions: T.ChatItemDeletion[]
     byUser: boolean
     timed: boolean
+  }
+
+  export interface ChatRunning extends Interface {
+    type: "chatRunning"
+  }
+
+  export interface ChatStarted extends Interface {
+    type: "chatStarted"
+  }
+
+  export interface ChatStopped extends Interface {
+    type: "chatStopped"
   }
 
   export interface CmdOk extends Interface {

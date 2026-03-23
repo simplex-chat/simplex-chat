@@ -58,7 +58,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -873,27 +873,26 @@ data MemberRestrictionStatus
   | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberRestrictionStatus where fromField = blobFieldDecoder strDecode
+instance FromField MemberRestrictionStatus where fromField = fromTextField_ textDecode
 
-instance ToField MemberRestrictionStatus where toField = toField . strEncode
+instance ToField MemberRestrictionStatus where toField = toField . textEncode
 
-instance StrEncoding MemberRestrictionStatus where
-  strEncode = \case
+instance TextEncoding MemberRestrictionStatus where
+  textEncode = \case
     MRSBlocked -> "blocked"
     MRSUnrestricted -> "unrestricted"
-    MRSUnknown tag -> encodeUtf8 tag
-  strDecode s = Right $ case s of
+    MRSUnknown tag -> tag
+  textDecode s = Just $ case s of
     "blocked" -> MRSBlocked
     "unrestricted" -> MRSUnrestricted
-    tag -> MRSUnknown $ safeDecodeUtf8 tag
-  strP = strDecode <$?> A.takeByteString
+    tag -> MRSUnknown tag
 
 instance FromJSON MemberRestrictionStatus where
-  parseJSON = strParseJSON "MemberRestrictionStatus"
+  parseJSON = textParseJSON "MemberRestrictionStatus"
 
 instance ToJSON MemberRestrictionStatus where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+  toJSON = textToJSON
+  toEncoding = textToEncoding
 
 mrsBlocked :: MemberRestrictionStatus -> Bool
 mrsBlocked = \case
@@ -1690,18 +1689,13 @@ data ConnStatus
     ConnReady
   | -- | connection deleted
     ConnDeleted
+  | -- | connection had a permanent error during handshake
+    ConnFailed {connError :: Text}
   deriving (Eq, Show, Read)
 
 instance FromField ConnStatus where fromField = fromTextField_ textDecode
 
 instance ToField ConnStatus where toField = toField . textEncode
-
-instance FromJSON ConnStatus where
-  parseJSON = textParseJSON "ConnStatus"
-
-instance ToJSON ConnStatus where
-  toJSON = J.String . textEncode
-  toEncoding = JE.text . textEncode
 
 instance TextEncoding ConnStatus where
   textDecode = \case
@@ -1713,6 +1707,7 @@ instance TextEncoding ConnStatus where
     "snd-ready" -> Just ConnSndReady
     "ready" -> Just ConnReady
     "deleted" -> Just ConnDeleted
+    s | Just err <- T.stripPrefix "failed " s -> Just (ConnFailed err)
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
@@ -1723,6 +1718,12 @@ instance TextEncoding ConnStatus where
     ConnSndReady -> "snd-ready"
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
+    ConnFailed err -> "failed " <> err
+
+isConnFailed :: ConnStatus -> Bool
+isConnFailed = \case
+  ConnFailed {} -> True
+  _ -> False
 
 data ConnType = ConnContact | ConnMember | ConnUserContact
   deriving (Eq, Show)
@@ -1937,6 +1938,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Conn") ''ConnStatus)
 
 $(JQ.deriveJSON defaultJSON ''Connection)
 

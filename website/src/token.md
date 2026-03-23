@@ -116,11 +116,7 @@ Server operators will receive up to 70% of the infrastructure payments. A higher
 
 **What is technology design?**
 
-[Early ideas about Community Vouchers](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2024-04-26-commercial-model.md).
-
-[The most recent design](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2025-10-23-vouchers.md) based on zero-knowledge proofs.
-
-[Previosly shared FAQ](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2025-12-17-community-vouchers-faq.md).
+[The conceptual design](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2025-12-10-vouchers-2.md) for Community Vouchers uses zero-knowledge proofs, making the purchase, assigning vouchers to groups and their redemptions unlinkable.
 
 A whitepaper will be published in February 2026.
 

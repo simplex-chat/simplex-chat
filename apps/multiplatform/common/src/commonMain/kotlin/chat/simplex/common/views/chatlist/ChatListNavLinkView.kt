@@ -32,6 +32,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
+// Spec: spec/client/chat-list.md#ChatListNavLinkView
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
@@ -228,6 +229,7 @@ suspend fun openChat(
     } else {
       ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
     },
+    contentTag = null,
     "",
     openAroundItemId
   )
@@ -241,11 +243,12 @@ suspend fun openLoadedChat(chat: Chat) {
   }
 }
 
-suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, search: String) {
+suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, contentTag: MsgContentTag?, search: String) {
   withContext(Dispatchers.Main) {
     chatsCtx.chatItems.clearAndNotify()
   }
-  apiLoadMessages(chatsCtx, ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
+  val pagination = if (search.isNotEmpty() || contentTag != null) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
+  apiLoadMessages(chatsCtx, ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination, contentTag, search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {

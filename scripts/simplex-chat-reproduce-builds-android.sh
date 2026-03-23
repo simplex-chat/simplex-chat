@@ -18,6 +18,7 @@ CMDS="curl git docker"
 
 INIT_DIR="$PWD"
 TEMPDIR="$(mktemp -d)"
+PID_MAX_ORIGINAL="$(sysctl -n kernel.pid_max)"
 
 ARCHES="${ARCHES:-aarch64 armv7a}"
 
@@ -32,6 +33,15 @@ cleanup() {
   rm -rf -- "${TEMPDIR}"
   docker rm --force "${CONTAINER_NAME}" 2>/dev/null || :
   docker image rm "${IMAGE_NAME}" 2>/dev/null || :
+
+  if [ "$(sysctl -n kernel.pid_max)" != "$PID_MAX_ORIGINAL" ]; then
+    printf 'Adjusting kernel.pid_max back to original value...\n'
+    if $SUDO sysctl kernel.pid_max="$PID_MAX_ORIGINAL"; then
+      printf 'Successfully adjusted kernel.pid_max\n'
+    else
+      printf 'Failed to adjust kernel.pid_max. Please set the value manually with: %s sysctl kernel.pid_max=%s\n' "$SUDO" "$PID_MAX_ORIGINAL"
+    fi
+  fi
 }
 trap 'cleanup' EXIT INT
 
@@ -50,6 +60,19 @@ check() {
     commands_failed=${commands_failed% *}
     printf "%s is not found in your \$PATH. Please install them and re-run the script.\n" "$commands_failed"
     exit 1
+  fi
+
+  if [ "$PID_MAX_ORIGINAL" -gt 65535 ]; then
+    SUDO=$(command -v sudo || command -v doas) || { echo "No sudo or doas"; exit 1; }
+
+    printf 'Adjusting kernel.pid_max value to 65535...\n'
+
+    if $SUDO sysctl kernel.pid_max=65535; then
+      printf 'Successfully adjusted kernel.pid_max\n'
+    else
+      printf 'Failed to adjust kernel.pid_max, aborting.\n'
+      exit 1
+    fi
   fi
 
   set -u
@@ -181,6 +204,9 @@ main() {
 2) download APK from GitHub and validate signatures.
 3) build core library with nix (12-24 hours).
 4) build APK and compare with downloaded one
+
+The script will ask for sudo password to adjust kernel.pid_max (needed for armv7a build)
+and set it back to otiginal value when the build is done.
 
 Continue?'
 

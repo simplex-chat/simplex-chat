@@ -68,7 +68,6 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupRelays,
     getGroupMembersForExpiration,
-    getGroupCurrentMembersCount,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -184,7 +183,6 @@ import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>=),
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
-import qualified Data.Set as S
 import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
@@ -1101,20 +1099,6 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
 
-getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
-getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
-  statuses :: [GroupMemberStatus] <-
-    map fromOnly
-      <$> DB.query
-        db
-        [sql|
-          SELECT member_status
-          FROM group_members
-          WHERE group_id = ? AND user_id = ?
-        |]
-        (groupId, userId)
-  pure $ length $ filter memberCurrent' statuses
-
 getGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db vr user groupId =
   getConnRec_ user >>= \case
@@ -1134,7 +1118,7 @@ getGroupInvitation db vr user groupId =
 createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createNewContactMember _ _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ _ _ = throwError $ SEContactNotReady localDisplayName
 createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile, activeConn = Just Connection {connChatVersion, peerChatVRange}} memberRole agentConnId connRequest subMode =
-  createWithRandomId' gVar $ \memId -> runExceptT $ do
+  createWithRandomId' db gVar $ \memId -> runExceptT $ do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
     void $ liftIO $ createMemberConnection_ db userId groupMemberId agentConnId connChatVersion peerChatVRange Nothing 0 createdAt subMode
@@ -1189,7 +1173,7 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
 
 createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> ExceptT StoreError IO ()
 createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) chatV peerChatVRange subMode =
-  createWithRandomId' gVar $ \memId -> runExceptT $ do
+  createWithRandomId' db gVar $ \memId -> runExceptT $ do
     createdAt <- liftIO getCurrentTime
     insertMember_ (MemberId memId) createdAt
     groupMemberId <- liftIO $ insertedRowId db
@@ -1234,7 +1218,7 @@ createJoiningMember
           "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
           (displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs)
       profileId <- liftIO $ insertedRowId db
-      createWithRandomId' gVar $ \memId -> runExceptT $ do
+      createWithRandomId' db gVar $ \memId -> runExceptT $ do
         insertMember_ ldn profileId (MemberId memId) currentTs
         groupMemberId <- liftIO $ insertedRowId db
         pure (groupMemberId, MemberId memId)
@@ -1319,7 +1303,7 @@ createBusinessRequestGroup
       VersionRange minV maxV = cReqChatVRange
       insertClientMember_ currentTs groupId membership =
         ExceptT . withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-          createWithRandomId' gVar $ \memId -> runExceptT $ do
+          createWithRandomId' db gVar $ \memId -> runExceptT $ do
             indexInGroup <- getUpdateNextIndexInGroup_ db groupId
             liftIO $
               DB.execute
@@ -1596,11 +1580,11 @@ setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
   v_ <- maybeFirstRow fromOnly $
     DB.query
       db
+      ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
 #if defined(dbPostgres)
-      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? FOR UPDATE"
-#else
-      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+          <> " FOR UPDATE"
 #endif
+      )
       (Only groupMemberId)
   let v' = setNewRelations relations $ fromMaybe B.empty v_
   currentTs <- getCurrentTime
@@ -1638,11 +1622,11 @@ setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {ind
     firstRow fromOnly (SEMemberRelationsVectorNotFound groupMemberId) $
       DB.query
         db
+        ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL"
 #if defined(dbPostgres)
-        "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL FOR UPDATE"
-#else
-        "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL"
+          <> " FOR UPDATE"
 #endif
+        )
         (Only groupMemberId)
   let v' = setRelationConnected indexInGroup newStatus v
   currentTs <- liftIO getCurrentTime
@@ -1951,7 +1935,7 @@ getMatchingMemberContacts db vr user@User {userId} GroupMember {memberProfile = 
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> ContactOrMember -> ExceptT StoreError IO (Probe, Int64)
 createSentProbe db gVar userId to =
-  createWithRandomBytes 32 gVar $ \probe -> do
+  createWithRandomBytes db 32 gVar $ \probe -> do
     currentTs <- getCurrentTime
     let (ctId, gmId) = contactOrMemberIds to
     DB.execute

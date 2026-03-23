@@ -112,11 +112,11 @@ Il est possible de faire un don via :
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - il n'y a pas de commission à payer.
 - [OpenCollective](https://opencollective.com/simplex-chat) - ils prélèvent une commission et acceptent également les dons en crypto-monnaies.
-- Adresse Monero : 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Adresse Bitcoin : 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Adresse BCH : 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- Adresse Ethereum : 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Adresse Solana : 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- Adresse Monero : 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c
+- Adresse Bitcoin : bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
+- Adresse BCH : bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
+- Adresse ETH/USDT (Ethereum, Arbitrum One) : 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a (donate.simplexchat.eth)
+- Adresse Solana : 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 
 Nous vous remercions,
 

@@ -50,8 +50,7 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
-    createBot :: Maybe CreateBotOpts,
-    maintenance :: Bool
+    createBot :: Maybe CreateBotOpts
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -68,7 +67,8 @@ data CoreChatOpts = CoreChatOpts
     deviceName :: Maybe Text,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
-    migrationBackupPath :: Maybe FilePath
+    migrationBackupPath :: Maybe FilePath,
+    maintenance :: Bool    
   }
 
 data CreateBotOpts = CreateBotOpts
@@ -246,6 +246,12 @@ coreChatOptsP appDir defaultDbName = do
           <> help "Automatically confirm \"up\" database migrations"
       )
   migrationBackupPath <- migrationBackupPathP
+  maintenance <-
+    switch
+      ( long "maintenance"
+          <> short 'm'
+          <> help "Run in maintenance mode (/_start to start chat)"
+      )
   pure
     CoreChatOpts
       { dbOptions,
@@ -272,7 +278,8 @@ coreChatOptsP appDir defaultDbName = do
         deviceName,
         highlyAvailable,
         yesToUpMigrations,
-        migrationBackupPath
+        migrationBackupPath,
+        maintenance
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
@@ -382,12 +389,6 @@ chatOptsP appDir defaultDbName = do
       ( long "create-bot-client-service"
           <> help "Flag for created bot to use client service certificate"
       )
-  maintenance <-
-    switch
-      ( long "maintenance"
-          <> short 'm'
-          <> help "Run in maintenance mode (/_start to start chat)"
-      )
   pure
     ChatOpts
       { coreOptions,
@@ -407,8 +408,7 @@ chatOptsP appDir defaultDbName = do
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
             | createBotClientService -> error "--create-bot-client-service option requires --create-bot-name option"
-            | otherwise -> Nothing,
-        maintenance
+            | otherwise -> Nothing
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]

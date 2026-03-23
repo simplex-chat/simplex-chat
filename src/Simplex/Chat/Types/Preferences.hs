@@ -782,7 +782,7 @@ groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature ->
 groupPrefStateText feature pref param role =
   let enabled = getField @"enable" pref
       paramText = if enabled == FEOn then groupParamText_ feature param else ""
-      roleText = maybe "" (\r -> " for " <> safeDecodeUtf8 (strEncode r) <> "s") role
+      roleText = maybe "" (\r -> " for " <> textEncode r <> "s") role
    in groupFeatureNameText feature <> ": " <> safeDecodeUtf8 (strEncode enabled) <> paramText <> roleText
 
 groupParamText_ :: GroupFeature -> Maybe Int -> Text

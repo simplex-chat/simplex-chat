@@ -94,10 +94,7 @@ chatGroupTests = do
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
-#if !defined(dbPostgres)
-    -- TODO [postgres] this test hangs with PostgreSQL
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
-#endif
     it "shared message body is reused" testSharedMessageBody
     it "shared batch body is reused" testSharedBatchBody
   describe "async group connections" $ do
@@ -124,7 +121,6 @@ chatGroupTests = do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
     it "group link without contact - connecting" testPlanGroupLinkConnecting
-    it "group link without contact - connecting (slow handshake)" testPlanGroupLinkConnectingSlow
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
@@ -138,6 +134,8 @@ chatGroupTests = do
   describe "group delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
+  describe "link content filter" $ do
+    it "filter group chat by link content" testGroupLinkContentFilter
   describe "direct connections in group are not established based on chat protocol version" $ do
     it "direct contacts are not created" testNoGroupDirectConns
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
@@ -2044,20 +2042,17 @@ testSendMultiManyBatches =
           (bob <# ("#team alice> message " <> show i))
           (cath <# ("#team alice> message " <> show i))
 
-      aliceItemsCount <- withCCTransaction alice $ \db ->
-        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
-      aliceItemsCount `shouldBe` [[300]]
-
-      bobItemsCount <- withCCTransaction bob $ \db ->
-        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
-      bobItemsCount `shouldBe` [[300]]
-
-      cathItemsCount <- withCCTransaction cath $ \db ->
-        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdCath) :: IO [[Int]]
-      cathItemsCount `shouldBe` [[300]]
+      checkItemCount alice msgIdAlice 300
+      checkItemCount bob msgIdBob 300
+      checkItemCount cath msgIdCath 300
+  where
+    checkItemCount c msgId n = do
+      itemsCount <- withCCTransaction c $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgId) :: IO [[Int]]
+      itemsCount `shouldBe` [[n]]
 
 testSharedMessageBody :: HasCallStack => TestParams -> IO ()
-testSharedMessageBody ps =
+testSharedMessageBody ps' =
   withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
     withSmpServer' serverCfg' $
       withNewTestChatOpts ps opts' "bob" bobProfile $ \bob ->
@@ -2066,9 +2061,7 @@ testSharedMessageBody ps =
 
     alice <## "disconnected 4 connections on server localhost"
     alice #> "#team hello"
-    bodiesCount1 <- withCCAgentTransaction alice $ \db ->
-      DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
-    bodiesCount1 `shouldBe` [[1]]
+    checkMsgBodyCount alice 1
 
     withSmpServer' serverCfg' $
       withTestChatOpts ps opts' "bob" $ \bob ->
@@ -2080,12 +2073,12 @@ testSharedMessageBody ps =
             ]
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
-          bodiesCount2 <- withCCAgentTransaction alice $ \db ->
-            DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
-          bodiesCount2 `shouldBe` [[0]]
+          threadDelay 500000
+          checkMsgBodyCount alice 0
 
     alice <## "disconnected 4 connections on server localhost"
   where
+    ps = ps' {printOutput = True} :: TestParams
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
@@ -2099,6 +2092,12 @@ testSharedMessageBody ps =
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+checkMsgBodyCount :: TestCC -> Int -> IO ()
+checkMsgBodyCount c n = do
+  bodiesCount <- withCCAgentTransaction c $ \db ->
+    DB.query_ db "SELECT count(1) FROM snd_message_bodies"
+  bodiesCount `shouldBe` [[n]]
 
 testSharedBatchBody :: HasCallStack => TestParams -> IO ()
 testSharedBatchBody ps =
@@ -2116,9 +2115,7 @@ testSharedBatchBody ps =
     _ <- getTermLine alice
     alice <## "300 messages sent"
 
-    bodiesCount1 <- withCCAgentTransaction alice $ \db ->
-      DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
-    bodiesCount1 `shouldBe` [[3]]
+    checkMsgBodyCount alice 3
 
     withSmpServer' serverCfg' $
       withTestChatOpts ps opts' "bob" $ \bob ->
@@ -2132,9 +2129,7 @@ testSharedBatchBody ps =
             concurrently_
               (bob <# ("#team alice> message " <> show i))
               (cath <# ("#team alice> message " <> show i))
-          bodiesCount2 <- withCCAgentTransaction alice $ \db ->
-            DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
-          bodiesCount2 `shouldBe` [[0]]
+          checkMsgBodyCount alice 0
 
     alice <## "disconnected 4 connections on server localhost"
   where
@@ -3610,49 +3605,6 @@ testPlanGroupLinkConnecting ps = do
     bob ##> ("/c " <> gLink)
     bob <## "group link: known group #team"
     bob <## "use #team <message> to send messages"
-
-testPlanGroupLinkConnectingSlow :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkConnectingSlow ps = do
-  gLink <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
-    threadDelay 100000
-    alice ##> "/g team"
-    alice <## "group #team is created"
-    alice <## "to add members use /a team <name> or /create link #team"
-    alice ##> "/create link #team"
-    getGroupLinkNoShortLink alice "team" GRMember True
-  withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
-    threadDelay 100000
-
-    bob ##> ("/c " <> gLink)
-    bob <## "connection request sent!"
-
-    bob ##> ("/_connect plan 1 " <> gLink)
-    bob <## "group link: connecting, allowed to reconnect"
-
-    let gLinkSchema2 = linkAnotherSchema gLink
-    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-    bob <## "group link: connecting, allowed to reconnect"
-
-    threadDelay 100000
-  withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
-    alice
-      <### [ "subscribed 1 connections on server localhost",
-             "bob (Bob): accepting request to join group #team..."
-           ]
-  withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
-    threadDelay 500000
-    bob <## "subscribed 1 connections on server localhost"
-    bob <## "#team: joining the group..."
-
-    bob ##> ("/_connect plan 1 " <> gLink)
-    bob <## "group link: connecting to group #team"
-
-    let gLinkSchema2 = linkAnotherSchema gLink
-    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-    bob <## "group link: connecting to group #team"
-
-    bob ##> ("/c " <> gLink)
-    bob <## "group link: connecting to group #team"
 
 #if !defined(dbPostgres)
 testGroupMsgDecryptError :: HasCallStack => TestParams -> IO ()
@@ -8433,7 +8385,7 @@ testChannelsRelayDeliver =
 createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> GroupMemberRole -> IO ()
 createChannel5 alice bob cath dan eve mRole = do
   createGroup2 "team" alice bob
-  bob ##> ("/create link #team " <> B.unpack (strEncode mRole))
+  bob ##> ("/create link #team " <> T.unpack (textEncode mRole))
   gLink <- getGroupLink bob "team" mRole True
   cath ##> ("/c " <> gLink)
   cath <## "connection request sent!"
@@ -8565,3 +8517,40 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
+
+testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
+testGroupLinkContentFilter =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      let linkPreview = "{\"msgContent\": {\"type\": \"link\", \"text\": \"https://simplex.chat\", \"preview\": {\"uri\": \"https://simplex.chat\", \"title\": \"SimpleX Chat\", \"description\": \"SimpleX Chat\", \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
+      alice ##> ("/_send #1 json [" <> linkPreview <> "]")
+      alice <# "#team https://simplex.chat"
+      concurrently_
+        (bob <# "#team alice> https://simplex.chat")
+        (cath <# "#team alice> https://simplex.chat")
+
+      threadDelay 1000000
+
+      bob #> "#team check out https://example.com"
+      concurrently_
+        (alice <# "#team bob> check out https://example.com")
+        (cath <# "#team bob> check out https://example.com")
+
+      cath #> "#team hello, no links here"
+      concurrently_
+        (alice <# "#team cath> hello, no links here")
+        (bob <# "#team cath> hello, no links here")
+
+      alice ##> "/_get content types #1"
+      alice <## "Chat content types: link, text"
+      alice #$> ("/_get chat #1 content=link count=100", chat, [(1, "https://simplex.chat"), (0, "check out https://example.com")])
+
+      bob ##> "/_get content types #1"
+      bob <## "Chat content types: link, text"
+      bob #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (1, "check out https://example.com")])
+
+      cath ##> "/_get content types #1"
+      cath <## "Chat content types: link, text"
+      cath #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com")])

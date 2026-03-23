@@ -164,14 +164,11 @@ Możesz nas wesprzeć za pomocą:
 
 - [GitHuba](https://github.com/sponsors/simplex-chat) - jest to dla nas wolne od prowizji.
 - [OpenCollective](https://opencollective.com/simplex-chat) - pobiera prowizję, a także przyjmuje darowizny w kryptowalutach.
-- Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- USDT:
-  - BNB Smart Chain: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-  - Tron: TNnTrKLBmdy2Wn3cAQR98dAVvWhLskQGfW
-- Ethereum: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+- Monero: 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c
+- Bitcoin: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
+- BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
+- ETH/USDT (Ethereum, Arbitrum One): 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a (donate.simplexchat.eth)
+- Solana: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 
 Dziękuję,
 
