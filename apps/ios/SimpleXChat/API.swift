@@ -371,7 +371,7 @@ public struct UpMigration: Decodable, Equatable {
 
 public func downMigrationWarnings(_ downMigrations: [String]) -> [String] {
     let warnings: [(String, String)] = [
-        ("20260222_chat_relays", NSLocalizedString("Channels, chat relays and message signatures will be lost.", comment: "down migration warning"))
+        ("20260222_chat_relays", NSLocalizedString("Channels will become unusable and cannot be restored.", comment: "down migration warning"))
     ]
     return warnings.compactMap { (key, message) in
         downMigrations.contains(key) ? message : nil
