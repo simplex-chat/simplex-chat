@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
-import SectionDividerSpaced
 import SectionItemView
 import SectionView
 import androidx.compose.foundation.layout.*
@@ -15,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 
@@ -27,66 +27,51 @@ fun ChannelMembersView(
   showMemberInfo: (GroupMember) -> Unit
 ) {
   BackHandler(onBack = close)
-  val allMembers = remember { chatModel.groupMembers }.value
+  val members = remember { chatModel.groupMembers }.value
     .filter { m ->
       m.memberStatus != GroupMemberStatus.MemLeft
           && m.memberStatus != GroupMemberStatus.MemRemoved
-          && m.groupMemberId != groupInfo.membership.groupMemberId
+          && m.memberRole != GroupMemberRole.Relay
     }
-  val owners = allMembers.filter { it.memberRole >= GroupMemberRole.Owner }
-  // TODO [relays] subscriber/owner counts require backend support for accurate totals
-  val subscribers = allMembers.filter { it.memberRole < GroupMemberRole.Owner && it.memberRole != GroupMemberRole.Relay }
 
   ColumnWithScrollBar {
     val title = if (groupInfo.isOwner) {
-      generalGetString(MR.strings.channel_members_title_owners_and_subscribers)
+      generalGetString(MR.strings.channel_members_title_subscribers)
     } else {
       generalGetString(MR.strings.channel_members_section_owners)
     }
     AppBarTitle(title)
 
-    SectionView(title = generalGetString(MR.strings.channel_members_section_owners)) {
-      if (groupInfo.membership.memberRole >= GroupMemberRole.Owner) {
-        SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-          ChannelMemberRow(groupInfo.membership)
-        }
-      }
-      owners.forEachIndexed { index, member ->
-        if (index > 0 || groupInfo.membership.memberRole >= GroupMemberRole.Owner) {
-          Divider()
-        }
-        SectionItemView(
-          click = { showMemberInfo(member) },
-          minHeight = 54.dp,
-          padding = PaddingValues(horizontal = DEFAULT_PADDING)
-        ) {
-          ChannelMemberRow(member)
-        }
-      }
-    }
-
     if (groupInfo.isOwner) {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
-      SectionView(title = String.format(generalGetString(MR.strings.channel_members_num_subscribers), subscribers.size)) {
-        if (subscribers.isEmpty()) {
-          SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-            Text(
-              generalGetString(MR.strings.channel_members_no_subscribers),
-              color = MaterialTheme.colors.secondary
-            )
+      val subscriberCount = groupInfo.groupSummary.publicMemberCount ?: (members.size + 1).toLong()
+      SectionView(title = subscriberCountStr(subscriberCount).uppercase()) {
+        SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+          ChannelMemberRow(groupInfo.membership, user = true, showRole = true)
+        }
+        members.forEachIndexed { index, member ->
+          Divider()
+          SectionItemView(
+            click = { showMemberInfo(member) },
+            minHeight = 54.dp,
+            padding = PaddingValues(horizontal = DEFAULT_PADDING)
+          ) {
+            ChannelMemberRow(member, user = false, showRole = member.memberRole >= GroupMemberRole.Owner)
           }
-        } else {
-          subscribers.forEachIndexed { index, member ->
-            if (index > 0) {
-              Divider()
-            }
-            SectionItemView(
-              click = { showMemberInfo(member) },
-              minHeight = 54.dp,
-              padding = PaddingValues(horizontal = DEFAULT_PADDING)
-            ) {
-              ChannelMemberRow(member)
-            }
+        }
+      }
+    } else {
+      val owners = members.filter { it.memberRole >= GroupMemberRole.Owner }
+      SectionView(title = generalGetString(MR.strings.channel_members_section_owners)) {
+        owners.forEachIndexed { index, member ->
+          if (index > 0) {
+            Divider()
+          }
+          SectionItemView(
+            click = { showMemberInfo(member) },
+            minHeight = 54.dp,
+            padding = PaddingValues(horizontal = DEFAULT_PADDING)
+          ) {
+            ChannelMemberRow(member, user = false, showRole = false)
           }
         }
       }
@@ -96,7 +81,7 @@ fun ChannelMembersView(
 }
 
 @Composable
-private fun ChannelMemberRow(member: GroupMember) {
+private fun ChannelMemberRow(member: GroupMember, user: Boolean, showRole: Boolean) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
@@ -104,15 +89,30 @@ private fun ChannelMemberRow(member: GroupMember) {
   ) {
     MemberProfileImage(size = 38.dp, member)
     Spacer(Modifier.width(2.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      if (member.verified) {
-        MemberVerifiedShield()
+    Column(Modifier.weight(1f)) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (member.verified) {
+          MemberVerifiedShield()
+        }
+        Text(
+          member.chatViewName,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          color = if (member.memberIncognito) Indigo else Color.Unspecified
+        )
       }
+      if (user) {
+        Text(
+          generalGetString(MR.strings.channel_member_you),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary
+        )
+      }
+    }
+    if (showRole) {
       Text(
-        member.chatViewName,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        color = if (member.memberIncognito) Indigo else Color.Unspecified
+        member.memberRole.text,
+        color = MaterialTheme.colors.secondary
       )
     }
   }

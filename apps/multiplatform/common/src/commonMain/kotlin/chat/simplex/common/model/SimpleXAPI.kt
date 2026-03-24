@@ -1343,6 +1343,12 @@ object ChatController {
   suspend fun apiSetMemberSettings(rh: Long?, groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(rh, CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
 
+  suspend fun apiGetUpdatedGroupLinkData(rh: Long?, groupId: Long): GroupInfo? {
+    val r = sendCmd(rh, CC.ApiGetUpdatedGroupLinkData(groupId))
+    if (r is API.Result && r.res is CR.CRGroupInfo) return r.res.groupInfo
+    return null
+  }
+
   suspend fun apiContactInfo(rh: Long?, contactId: Long): Pair<ConnectionStats?, Profile?>? {
     val r = sendCmd(rh, CC.APIContactInfo(contactId))
     if (r is API.Result && r.res is CR.ContactInfo) return r.res.connectionStats_ to r.res.customUserProfile
@@ -3642,6 +3648,7 @@ sealed class CC {
   class ReconnectAllServers: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
+  class ApiGetUpdatedGroupLinkData(val groupId: Long): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APIContactQueueInfo(val contactId: Long): CC()
@@ -3841,6 +3848,7 @@ sealed class CC {
     is ReconnectAllServers -> "/reconnect"
     is APISetChatSettings -> "/_settings ${chatRef(type, id, scope = null)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
+    is ApiGetUpdatedGroupLinkData -> "/_get group link data #$groupId"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is APIContactQueueInfo -> "/_queue info @$contactId"
@@ -4018,6 +4026,7 @@ sealed class CC {
     is ReconnectAllServers -> "reconnectAllServers"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
+    is ApiGetUpdatedGroupLinkData -> "apiGetUpdatedGroupLinkData"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is APIContactQueueInfo -> "apiContactQueueInfo"
@@ -6197,6 +6206,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()
+  @Serializable @SerialName("groupInfo") class CRGroupInfo(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
   @Serializable @SerialName("queueInfo") class QueueInfoR(val user: UserRef, val rcvMsgInfo: RcvMsgInfo?, val queueInfo: ServerQueueInfo): CR()
   @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
@@ -6382,6 +6392,7 @@ sealed class CR {
     is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
+    is CRGroupInfo -> "groupInfo"
     is GroupMemberInfo -> "groupMemberInfo"
     is QueueInfoR -> "queueInfo"
     is ContactSwitchStarted -> "contactSwitchStarted"
@@ -6559,6 +6570,7 @@ sealed class CR {
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
+    is CRGroupInfo -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}")
     is GroupMemberInfo -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
     is QueueInfoR -> withUser(user, "rcvMsgInfo: ${json.encodeToString(rcvMsgInfo)}\nqueueInfo: ${json.encodeToString(queueInfo)}\n")
     is ContactSwitchStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")

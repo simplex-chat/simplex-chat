@@ -1466,7 +1466,9 @@ fun ComposeView(
     }
 
     val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo
-    if (gInfo != null && gInfo.useRelays) {
+    if (gInfo != null && gInfo.useRelays
+      && gInfo.membership.memberStatus !in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+    ) {
       if (gInfo.membership.memberRole == GroupMemberRole.Owner) {
         val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
         val failedCount = relays.count { relayMemberConnFailed(chatModel, it) != null }

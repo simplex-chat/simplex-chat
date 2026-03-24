@@ -209,6 +209,13 @@ fun ChatView(
                   withContext(Dispatchers.Main) {
                     ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
                   }
+                } else {
+                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
+                  if (gInfo != null) {
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateGroup(chatRh, gInfo)
+                    }
+                  }
                 }
               }
             }
@@ -1444,6 +1451,10 @@ fun BoxScope.ChatInfoToolbar(
   }
 }
 
+fun subscriberCountStr(count: Long): String =
+  if (count == 1L) String.format(generalGetString(MR.strings.channel_subscriber_count_singular), count)
+  else String.format(generalGetString(MR.strings.channel_subscriber_count_plural), count)
+
 @Composable
 fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
@@ -1470,6 +1481,17 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
       if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
           cInfo.fullName,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
+      val channelSubscriberCount = (cInfo as? ChatInfo.Group)?.let { g ->
+        if (g.groupInfo.useRelays) g.groupInfo.groupSummary.publicMemberCount?.takeIf { it > 0 } else null
+      }
+      if (channelSubscriberCount != null) {
+        Text(
+          subscriberCountStr(channelSubscriberCount),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
       }

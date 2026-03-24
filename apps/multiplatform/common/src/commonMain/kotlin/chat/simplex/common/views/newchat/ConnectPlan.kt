@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.subscriberCountStr
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -503,6 +504,7 @@ fun ownGroupLinkConfirmConnect(
 }
 
 private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, groupInfo: GroupInfo) {
+  val subscriberCount = if (groupInfo.useRelays) groupInfo.groupSummary.publicMemberCount?.let { subscriberCountStr(it) } else null
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupInfo.groupProfile.displayName,
     profileFullName = groupInfo.groupProfile.fullName,
@@ -513,6 +515,7 @@ private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: ((
         icon = groupInfo.chatIconName
       )
     },
+    subtitle = subscriberCount,
     confirmText = generalGetString(
       if (groupInfo.useRelays) {
         if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel
@@ -588,6 +591,7 @@ fun showPrepareGroupAlert(
   cleanup: (() -> Unit)?
 ) {
   val isChannel = !(groupShortLinkInfo?.direct ?: true)
+  val subscriberCount = if (isChannel) groupShortLinkData.publicGroupData?.publicMemberCount?.let { subscriberCountStr(it) } else null
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupShortLinkData.groupProfile.displayName,
     profileFullName = groupShortLinkData.groupProfile.fullName,
@@ -598,6 +602,7 @@ fun showPrepareGroupAlert(
         icon = if (isChannel) MR.images.ic_bigtop_updates else MR.images.ic_supervised_user_circle_filled
       )
     },
+    subtitle = subscriberCount,
     confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_new_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
