@@ -124,6 +124,7 @@ fun DatabaseErrorView(
               Text(generalGetString(MR.strings.downgrade_and_open_chat))
             }
             Spacer(Modifier.height(20.dp))
+            Text(generalGetString(MR.strings.database_downgrade_warning), fontWeight = FontWeight.Bold)
             if (warnings.isNotEmpty()) {
               Icon(
                 painterResource(MR.images.ic_warning_filled),
@@ -135,8 +136,6 @@ fun DatabaseErrorView(
               warnings.forEach { warning ->
                 Text(warning, fontWeight = FontWeight.Bold)
               }
-            } else {
-              Text(generalGetString(MR.strings.database_downgrade_warning), fontWeight = FontWeight.Bold)
             }
             FileNameText(status.dbFile)
             MigrationsText(err.downMigrations)

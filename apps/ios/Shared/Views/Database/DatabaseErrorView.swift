@@ -82,6 +82,10 @@ struct DatabaseErrorView: View {
                     let warnings = downMigrationWarnings(downMigrations).reversed()
                     titleText("Database downgrade")
                     Spacer()
+                    Text("Warning: you may lose some data!")
+                        .bold()
+                        .padding(.horizontal, 25)
+                        .multilineTextAlignment(.center)
                     if !warnings.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -95,11 +99,6 @@ struct DatabaseErrorView: View {
                                     .padding(.horizontal, 25)
                             }
                         }
-                    } else {
-                        Text("Warning: you may lose some data!")
-                            .bold()
-                            .padding(.horizontal, 25)
-                            .multilineTextAlignment(.center)
                     }
                     migrationsText(downMigrations)
                     Spacer()

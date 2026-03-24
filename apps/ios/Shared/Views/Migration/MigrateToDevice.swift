@@ -377,9 +377,9 @@ struct MigrateToDevice: View {
                 case let .downgrade(downMigrations):
                     ("Database downgrade",
                     "Downgrade and open chat",
-                     downMigrationWarnings(downMigrations).isEmpty
-                        ? NSLocalizedString("Warning: you may lose some data!", comment: "")
-                        : downMigrationWarnings(downMigrations).reversed().joined(separator: "\n"),
+                     ([NSLocalizedString("Warning: you may lose some data!", comment: "")]
+                        + downMigrationWarnings(downMigrations).reversed())
+                        .joined(separator: "\n"),
                     .yesUpDown)
                 case let .migrationError(mtrError):
                     ("Incompatible database version",
