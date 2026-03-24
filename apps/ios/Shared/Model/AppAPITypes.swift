@@ -87,7 +87,6 @@ enum ChatCommand: ChatCmdProtocol {
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
     case apiAddGroupShortLink(groupId: Int64)
-    case apiGetUpdatedGroupLinkData(groupId: Int64)
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiAcceptMemberContact(contactId: Int64)
@@ -110,6 +109,7 @@ enum ChatCommand: ChatCmdProtocol {
     case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
+    case apiGetUpdatedGroupLinkData(groupId: Int64)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case apiContactQueueInfo(contactId: Int64)
@@ -285,7 +285,6 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case let .apiAddGroupShortLink(groupId): return "/_short link #\(groupId)"
-            case let .apiGetUpdatedGroupLinkData(groupId): return "/_get group link data #\(groupId)"
             case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiAcceptMemberContact(contactId): return "/_accept member contact @\(contactId)"
@@ -308,6 +307,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id, scope: nil)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
+            case let .apiGetUpdatedGroupLinkData(groupId): return "/_get group link data #\(groupId)"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case let .apiContactQueueInfo(contactId): return "/_queue info @\(contactId)"
@@ -474,7 +474,6 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
             case .apiAddGroupShortLink: return "apiAddGroupShortLink"
-            case .apiGetUpdatedGroupLinkData: return "apiGetUpdatedGroupLinkData"
             case .apiCreateMemberContact: return "apiCreateMemberContact"
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiAcceptMemberContact: return "apiAcceptMemberContact"
@@ -497,6 +496,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
+            case .apiGetUpdatedGroupLinkData: return "apiGetUpdatedGroupLinkData"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .apiContactQueueInfo: return "apiContactQueueInfo"

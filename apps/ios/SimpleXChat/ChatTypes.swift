@@ -2360,7 +2360,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
-    public var groupSummary: GroupSummary = GroupSummary()
+    public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 
     public var id: ChatId { get { "#\(groupId)" } }
@@ -2414,6 +2414,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
+        groupSummary: GroupSummary(currentMembers: 0),
         membersRequireAttention: 0,
         chatTags: [],
         localAlias: ""
@@ -2517,7 +2518,7 @@ public struct GroupSummary: Decodable, Hashable {
     }
 }
 
-public struct PublicGroupData: Decodable, Hashable {
+public struct PublicGroupData: Codable, Hashable {
     public var publicMemberCount: Int64
 }
 

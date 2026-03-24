@@ -890,6 +890,12 @@ func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSett
     try await sendCommandOkResp(.apiSetMemberSettings(groupId: groupId, groupMemberId: groupMemberId, memberSettings: memberSettings))
 }
 
+func apiGetUpdatedGroupLinkData(_ groupId: Int64) async -> GroupInfo? {
+    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiGetUpdatedGroupLinkData(groupId: groupId))
+    if case let .result(.groupInfo(_, groupInfo)) = r { return groupInfo }
+    return nil
+}
+
 func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r: ChatResponse0 = try await chatSendCmd(.apiContactInfo(contactId: contactId))
     if case let .contactInfo(_, _, connStats, customUserProfile) = r { return (connStats, customUserProfile) }
@@ -1840,12 +1846,6 @@ func apiGetGroupRelays(_ groupId: Int64) async -> [GroupRelay] {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiGetGroupRelays(groupId: groupId))
     if case let .result(.groupRelays(_, _, relays)) = r { return relays }
     return []
-}
-
-func apiGetUpdatedGroupLinkData(_ groupId: Int64) async -> GroupInfo? {
-    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiGetUpdatedGroupLinkData(groupId: groupId))
-    if case let .result(.groupInfo(_, groupInfo)) = r { return groupInfo }
-    return nil
 }
 
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
