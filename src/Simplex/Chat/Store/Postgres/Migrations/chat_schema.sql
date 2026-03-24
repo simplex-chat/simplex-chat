@@ -344,7 +344,7 @@ CREATE TABLE test_chat_schema.chat_items (
     group_scope_group_member_id bigint,
     show_group_as_sender smallint DEFAULT 0 NOT NULL,
     has_link smallint DEFAULT 0 NOT NULL,
-    msg_signed smallint DEFAULT 0 NOT NULL
+    msg_signed text
 );
 
 

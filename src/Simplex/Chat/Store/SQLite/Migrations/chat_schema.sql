@@ -462,7 +462,7 @@ CREATE TABLE chat_items(
   group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   show_group_as_sender INTEGER NOT NULL DEFAULT 0,
   has_link INTEGER NOT NULL DEFAULT 0,
-  msg_signed INTEGER NOT NULL DEFAULT 0
+  msg_signed TEXT
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(

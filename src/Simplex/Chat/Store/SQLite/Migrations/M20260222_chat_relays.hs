@@ -80,7 +80,7 @@ ALTER TABLE group_members ADD COLUMN member_pub_key BLOB;
 ALTER TABLE messages ADD COLUMN msg_chat_binding TEXT;
 ALTER TABLE messages ADD COLUMN msg_signatures BLOB;
 
-ALTER TABLE chat_items ADD COLUMN msg_signed INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE chat_items ADD COLUMN msg_signed TEXT;
 |]
 
 down_m20260222_chat_relays :: Query

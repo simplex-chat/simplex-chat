@@ -512,7 +512,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     showGroupAsSender :: ShowGroupAsSender,
-    msgSigned :: Bool,
+    msgSigned :: Maybe MsgSigStatus,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -520,7 +520,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Bool -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgSigStatus -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
@@ -556,7 +556,7 @@ dummyMeta itemId ts itemText =
       editable = False,
       forwardedByMember = Nothing,
       showGroupAsSender = False,
-      msgSigned = False,
+      msgSigned = Nothing,
       createdAt = ts,
       updatedAt = ts
     }
@@ -1166,7 +1166,7 @@ data RcvMessage = RcvMessage
   { msgId :: MessageId,
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
-    msgSigned :: Bool,
+    msgSigned :: Maybe MsgSigStatus,
     forwardedByMember :: Maybe GroupMemberId
   }
 

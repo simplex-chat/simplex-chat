@@ -336,7 +336,7 @@ data SignedMsg = SignedMsg
 -- accept only VerifiedMsg, preventing unverified messages from being persisted.
 data VerifiedMsg e
   = VMUnsigned (ChatMessage e)
-  | VMSigned SignedMsg (ChatMessage e)
+  | VMSigned MsgSigStatus SignedMsg (ChatMessage e)
 
 data ParsedMsg e = ParsedMsg (Maybe GrpMsgForward) (Maybe SignedMsg) (ChatMessage e)
 
@@ -1392,15 +1392,15 @@ chatMsgToBody chatMsg = case encoding @e of
 verifiedChatMsg :: VerifiedMsg e -> ChatMessage e
 verifiedChatMsg = \case
   VMUnsigned cm -> cm
-  VMSigned _ cm -> cm
+  VMSigned _ _ cm -> cm
 
 -- | Canonical bytes to store/forward, with optional signature.
 -- Signed: original bytes (re-encoding would invalidate signature).
 -- Unsigned: re-encoded from parsed ChatMessage (sanitizes stored content).
-verifiedMsgParts :: MsgEncodingI e => VerifiedMsg e -> (Maybe SignedMsg, ByteString)
+verifiedMsgParts :: MsgEncodingI e => VerifiedMsg e -> (Maybe MsgSigStatus, Maybe SignedMsg, ByteString)
 verifiedMsgParts = \case
-  VMUnsigned chatMsg -> (Nothing, chatMsgToBody chatMsg)
-  VMSigned sm@SignedMsg {signedBody} _ -> (Just sm, signedBody)
+  VMUnsigned chatMsg -> (Nothing, Nothing, chatMsgToBody chatMsg)
+  VMSigned s sm@SignedMsg {signedBody} _ -> (Just s, Just sm, signedBody)
 
 
 instance ToJSON (ChatMessage 'Json) where

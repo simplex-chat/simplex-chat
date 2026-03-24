@@ -110,3 +110,21 @@ instance FromField RelayStatus where fromField = fromTextField_ textDecode
 instance ToField RelayStatus where toField = toField . textEncode
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
+
+data MsgSigStatus = MSSVerified | MSSSignedNoKey
+  deriving (Eq, Show)
+
+instance TextEncoding MsgSigStatus where
+  textEncode = \case
+    MSSVerified -> "verified"
+    MSSSignedNoKey -> "no_key"
+  textDecode = \case
+    "verified" -> Just MSSVerified
+    "no_key" -> Just MSSSignedNoKey
+    _ -> Nothing
+
+instance ToField MsgSigStatus where toField = toField . textEncode
+
+instance FromField MsgSigStatus where fromField = fromTextField_ textDecode
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MSS") ''MsgSigStatus)
