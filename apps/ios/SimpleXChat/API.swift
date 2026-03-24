@@ -369,6 +369,15 @@ public struct UpMigration: Decodable, Equatable {
 //    public var withDown: Bool
 }
 
+public func downMigrationWarnings(_ downMigrations: [String]) -> [String] {
+    let warnings: [(String, String)] = [
+        ("20260222_chat_relays", NSLocalizedString("Channels, chat relays and message signatures will be lost.", comment: "down migration warning"))
+    ]
+    return warnings.compactMap { (key, message) in
+        downMigrations.contains(key) ? message : nil
+    }
+}
+
 public enum MTRError: Decodable, Equatable {
     case noDown(dbMigrations: [String])
     case different(appMigration: String, dbMigration: String)

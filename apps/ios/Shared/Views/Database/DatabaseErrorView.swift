@@ -79,18 +79,37 @@ struct DatabaseErrorView: View {
                         fileNameText(dbFile)
                     }
                 case let .downgrade(downMigrations):
+                    let warnings = downMigrationWarnings(downMigrations).reversed()
                     titleText("Database downgrade")
-                    Text("Warning: you may lose some data!")
-                        .bold()
-                        .padding(.horizontal, 25)
-                        .multilineTextAlignment(.center)
-
+                    Spacer()
+                    if !warnings.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .resizable()
+                                .frame(width: 40, height: 36)
+                                .foregroundColor(.orange)
+                            ForEach(warnings, id: \.self) { warning in
+                                Text(warning)
+                                    .bold()
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 25)
+                            }
+                        }
+                    } else {
+                        Text("Warning: you may lose some data!")
+                            .bold()
+                            .padding(.horizontal, 25)
+                            .multilineTextAlignment(.center)
+                    }
                     migrationsText(downMigrations)
                     Spacer()
                     VStack(spacing: 10) {
                         Button("Downgrade and open chat") {
                             runChat(confirmMigrations: .yesUpDown)
-                        }.buttonStyle(OnboardingButtonStyle(isDisabled: false))
+                        }.buttonStyle(OnboardingButtonStyle(
+                            isDisabled: false,
+                            color: warnings.isEmpty ? nil : .orange
+                        ))
                         fileNameText(dbFile)
                     }
                 case let .migrationError(mtrError):

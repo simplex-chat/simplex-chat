@@ -15,6 +15,7 @@ let conditionsURL = URL(string: "https://github.com/simplex-chat/simplex-chat/bl
 struct OnboardingButtonStyle: ButtonStyle {
     @EnvironmentObject var theme: AppTheme
     var isDisabled: Bool = false
+    var color: Color? = nil
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -28,7 +29,7 @@ struct OnboardingButtonStyle: ButtonStyle {
                     ? .gray.opacity(0.17)
                     : .gray.opacity(0.27)
                 )
-                : theme.colors.primary
+                : color ?? theme.colors.primary
             )
             .foregroundColor(
                 isDisabled
