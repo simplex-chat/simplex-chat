@@ -124,15 +124,15 @@ fun DatabaseErrorView(
               Text(generalGetString(MR.strings.downgrade_and_open_chat))
             }
             Spacer(Modifier.height(20.dp))
+            Icon(
+              painterResource(MR.images.ic_warning_filled),
+              contentDescription = null,
+              Modifier.size(40.dp).align(Alignment.CenterHorizontally),
+              tint = Color.Red
+            )
+            Spacer(Modifier.height(12.dp))
             Text(generalGetString(MR.strings.database_downgrade_warning), fontWeight = FontWeight.Bold)
             if (warnings.isNotEmpty()) {
-              Icon(
-                painterResource(MR.images.ic_warning_filled),
-                contentDescription = null,
-                Modifier.size(40.dp).align(Alignment.CenterHorizontally),
-                tint = Color.Red
-              )
-              Spacer(Modifier.height(12.dp))
               warnings.forEach { warning ->
                 Text(warning, fontWeight = FontWeight.Bold)
               }
