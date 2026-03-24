@@ -635,7 +635,7 @@ struct GroupChatInfoView: View {
     }
 
     private func channelMembersButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.isOwner ? "Owners & subscribers" : "Owners"
+        let label: LocalizedStringKey = groupInfo.isOwner ? "Subscribers" : "Owners"
         return NavigationLink {
             ChannelMembersView(chat: chat, groupInfo: groupInfo)
                 .navigationTitle(label)
