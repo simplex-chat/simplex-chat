@@ -125,6 +125,12 @@ struct ChatInfoToolbar: View {
     }
 }
 
+public func subscriberCountStr(_ count: Int64) -> String {
+    count == 1
+        ? String.localizedStringWithFormat(NSLocalizedString("%d subscriber", comment: "channel subscriber count"), count)
+        : String.localizedStringWithFormat(NSLocalizedString("%d subscribers", comment: "channel subscriber count"), count)
+}
+
 struct ChatInfoToolbar_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoToolbar(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
