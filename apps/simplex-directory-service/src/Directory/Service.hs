@@ -326,10 +326,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           notifyAdminUsers msg
           logError msg
     groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
-    knockingStr :: Maybe GroupMemberAdmission -> Text
+    knockingStr :: Maybe GroupMemberAdmission -> [Text]
     knockingStr = \case
-      Just GroupMemberAdmission {review = Just MCAll} -> "\nMember admission: enabled"
-      _ -> ""
+      Just GroupMemberAdmission {review = Just MCAll} -> ["New members are reviewed by admins"]
+      _ -> []
     groupNameDescr GroupProfile {displayName = n, fullName = fn, shortDescr = sd_} =
       n <> maybe "" (\d' -> " (" <> d' <> ")") descr
       where
@@ -1003,7 +1003,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary = GroupSummary {currentMembers}}, _) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
-                  text = showId <> groupInfoText p <> "\n" <> membersStr <> knockingStr memberAdmission
+                  text = T.unlines $ [showId <> groupInfoText p, membersStr] ++ knockingStr memberAdmission
                in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
             moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
 
@@ -1192,8 +1192,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
               ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
-              knockStr = ["Member admission: enabled" | Just GroupMemberAdmission {review = Just MCAll} <- [memberAdmission]]
-              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockStr ++ [cmds]
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockingStr memberAdmission ++ [cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
