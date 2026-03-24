@@ -369,6 +369,7 @@ undocumentedCommands =
     "APIGetUsageConditions",
     "APIGetUserServers",
     "APIGroupInfo",
+    "APIGetUpdatedGroupLinkData",
     "APIGroupMemberInfo",
     "APIGroupMemberQueueInfo",
     "APIHideUser",

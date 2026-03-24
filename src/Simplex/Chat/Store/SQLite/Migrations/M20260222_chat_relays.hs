@@ -56,6 +56,7 @@ ALTER TABLE groups ADD COLUMN shared_group_id BLOB;
 ALTER TABLE groups ADD COLUMN root_priv_key BLOB;
 ALTER TABLE groups ADD COLUMN root_pub_key BLOB;
 ALTER TABLE groups ADD COLUMN member_priv_key BLOB;
+ALTER TABLE groups ADD COLUMN public_member_count INTEGER;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
 
@@ -103,6 +104,7 @@ ALTER TABLE groups DROP COLUMN shared_group_id;
 ALTER TABLE groups DROP COLUMN root_priv_key;
 ALTER TABLE groups DROP COLUMN root_pub_key;
 ALTER TABLE groups DROP COLUMN member_priv_key;
+ALTER TABLE groups DROP COLUMN public_member_count;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 

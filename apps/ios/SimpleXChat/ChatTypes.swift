@@ -2360,6 +2360,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
+    public var groupSummary: GroupSummary
     public var membersRequireAttention: Int
 
     public var id: ChatId { get { "#\(groupId)" } }
@@ -2413,6 +2414,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
+        groupSummary: GroupSummary(currentMembers: 0),
         membersRequireAttention: 0,
         chatTags: [],
         localAlias: ""
@@ -2506,8 +2508,23 @@ public struct ContactShortLinkData: Codable, Hashable {
     public var business: Bool
 }
 
+public struct GroupSummary: Decodable, Hashable {
+    public var currentMembers: Int64
+    public var publicMemberCount: Int64?
+
+    public init(currentMembers: Int64 = 0, publicMemberCount: Int64? = nil) {
+        self.currentMembers = currentMembers
+        self.publicMemberCount = publicMemberCount
+    }
+}
+
+public struct PublicGroupData: Codable, Hashable {
+    public var publicMemberCount: Int64
+}
+
 public struct GroupShortLinkData: Codable, Hashable {
     public var groupProfile: GroupProfile
+    public var publicGroupData: PublicGroupData?
 }
 
 public enum RelayStatus: String, Decodable, Equatable, Hashable {

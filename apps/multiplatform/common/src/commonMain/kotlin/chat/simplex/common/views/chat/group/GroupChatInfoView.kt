@@ -852,6 +852,17 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    if (groupInfo.useRelays) {
+      val count = groupInfo.groupSummary.publicMemberCount
+      if (count != null && count > 0) {
+        Text(
+          subscriberCountStr(count),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
+          modifier = Modifier.padding(bottom = 2.dp)
+        )
+      }
+    }
   }
 }
 
@@ -1118,7 +1129,7 @@ private fun ChannelLinkQRCodeSection(groupLink: String) {
 @Composable
 private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberInfo: (GroupMember, GroupRelay?) -> Unit) {
   val title = if (groupInfo.isOwner) {
-    stringResource(MR.strings.channel_members_title_owners_and_subscribers)
+    stringResource(MR.strings.channel_members_title_subscribers)
   } else {
     stringResource(MR.strings.channel_members_section_owners)
   }

@@ -2058,6 +2058,7 @@ data class GroupInfo (
   val chatTs: Instant?,
   val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
+  val groupSummary: GroupSummary,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
@@ -2136,6 +2137,7 @@ data class GroupInfo (
       chatTs = Clock.System.now(),
       preparedGroup = null,
       uiThemes = null,
+      groupSummary = GroupSummary(currentMembers = 0),
       membersRequireAttention = 0,
       chatTags = emptyList(),
       localAlias = "",
@@ -2204,8 +2206,20 @@ data class ContactShortLinkData (
 )
 
 @Serializable
+data class GroupSummary (
+  val currentMembers: Long,
+  val publicMemberCount: Long? = null
+)
+
+@Serializable
+data class PublicGroupData (
+  val publicMemberCount: Long
+)
+
+@Serializable
 data class GroupShortLinkData (
-  val groupProfile: GroupProfile
+  val groupProfile: GroupProfile,
+  val publicGroupData: PublicGroupData? = null
 )
 
 @Serializable

@@ -890,6 +890,12 @@ func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSett
     try await sendCommandOkResp(.apiSetMemberSettings(groupId: groupId, groupMemberId: groupMemberId, memberSettings: memberSettings))
 }
 
+func apiGetUpdatedGroupLinkData(_ groupId: Int64) async -> GroupInfo? {
+    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiGetUpdatedGroupLinkData(groupId: groupId))
+    if case let .result(.groupInfo(_, groupInfo)) = r { return groupInfo }
+    return nil
+}
+
 func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r: ChatResponse0 = try await chatSendCmd(.apiContactInfo(contactId: contactId))
     if case let .contactInfo(_, _, connStats, customUserProfile) = r { return (connStats, customUserProfile) }
@@ -2578,7 +2584,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateGroup(toGroup)
             }
         }
-    case let .groupLinkRelaysUpdated(user, groupInfo, _, groupRelays):
+    case let .groupLinkDataUpdated(user, groupInfo, _, groupRelays, _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)

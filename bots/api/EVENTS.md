@@ -38,7 +38,7 @@ This file is generated automatically.
   - [MemberAcceptedByOther](#memberacceptedbyother)
   - [MemberBlockedForAll](#memberblockedforall)
   - [GroupMemberUpdated](#groupmemberupdated)
-  - [GroupLinkRelaysUpdated](#grouplinkrelaysupdated)
+  - [GroupLinkDataUpdated](#grouplinkdataupdated)
 
 [File events](#file-events)
 - Main events
@@ -453,16 +453,17 @@ Another group member profile updated.
 ---
 
 
-### GroupLinkRelaysUpdated
+### GroupLinkDataUpdated
 
-Group link relays updated.
+Group link data updated.
 
 **Record type**:
-- type: "groupLinkRelaysUpdated"
+- type: "groupLinkDataUpdated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+- relaysChanged: bool
 
 ---
 

@@ -136,6 +136,7 @@ This file is generated automatically.
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
+- [PublicGroupData](#publicgroupdata)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
 - [RcvConnEvent](#rcvconnevent)
@@ -2418,6 +2419,7 @@ Public:
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
+- publicGroupData: [PublicGroupData](#publicgroupdata)?
 
 
 ---
@@ -2436,6 +2438,7 @@ Public:
 
 **Record type**:
 - currentMembers: int64
+- publicMemberCount: int64?
 
 
 ---
@@ -2891,6 +2894,14 @@ BASIC_AUTH:
 
 NO_SESSION:
 - type: "NO_SESSION"
+
+
+---
+
+## PublicGroupData
+
+**Record type**:
+- publicMemberCount: int64
 
 
 ---

@@ -2821,10 +2821,11 @@
   <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>
 
   <!-- ChannelMembersView.kt -->
-  <string name="channel_members_title_owners_and_subscribers">Owners &amp; subscribers</string>
+  <string name="channel_members_title_subscribers">Subscribers</string>
   <string name="channel_members_section_owners">Owners</string>
-  <string name="channel_members_num_subscribers">%1$d subscribers</string>
-  <string name="channel_members_no_subscribers">No subscribers</string>
+  <string name="channel_subscriber_count_singular">%1$d subscriber</string>
+  <string name="channel_subscriber_count_plural">%1$d subscribers</string>
+  <string name="channel_member_you">you</string>
 
   <!-- ChatRelayView.kt -->
   <string name="chat_relay">Chat relay</string>

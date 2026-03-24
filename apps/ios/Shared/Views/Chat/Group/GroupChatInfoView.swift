@@ -297,6 +297,14 @@ struct GroupChatInfoView: View {
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if groupInfo.useRelays,
+               let count = groupInfo.groupSummary.publicMemberCount,
+               count > 0 {
+                Text(subscriberCountStr(count))
+                    .font(.subheadline)
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.bottom, 2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -627,7 +635,7 @@ struct GroupChatInfoView: View {
     }
 
     private func channelMembersButton() -> some View {
-        let label: LocalizedStringKey = groupInfo.isOwner ? "Owners & subscribers" : "Owners"
+        let label: LocalizedStringKey = groupInfo.isOwner ? "Subscribers" : "Owners"
         return NavigationLink {
             ChannelMembersView(chat: chat, groupInfo: groupInfo)
                 .navigationTitle(label)

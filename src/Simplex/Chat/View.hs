@@ -465,7 +465,9 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
-  CEvtGroupLinkRelaysUpdated u g groupLink relays -> ttyUser u $ viewGroupLinkRelaysUpdated g groupLink relays
+  CEvtGroupLinkDataUpdated u g groupLink relays relaysChanged
+    | relaysChanged -> ttyUser u $ viewGroupLinkRelaysUpdated g groupLink relays
+    | otherwise -> []
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CEvtHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CEvtHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
@@ -1708,12 +1710,16 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> viewCustomData customData
 
 viewGroupInfo :: GroupInfo -> [StyledString]
-viewGroupInfo GroupInfo {groupId, uiThemes, customData, groupSummary = s} =
+viewGroupInfo gInfo@GroupInfo {groupId, uiThemes, customData, groupSummary = GroupSummary {currentMembers, publicMemberCount}} =
   [ "group ID: " <> sShow groupId,
-    "current members: " <> sShow (currentMembers s)
+    memberCountLine
   ]
     <> viewUITheme uiThemes
     <> viewCustomData customData
+  where
+    memberCountLine
+      | useRelays' gInfo, Just count <- publicMemberCount = "subscribers: " <> sShow count
+      | otherwise = "current members: " <> sShow currentMembers
 
 viewUITheme :: Maybe UIThemeEntityOverrides -> [StyledString]
 viewUITheme = maybe [] (\uiThemes -> ["UI themes: " <> viewJSON uiThemes])

@@ -1298,7 +1298,7 @@ setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM G
 setGroupLinkData nm user gInfo gLink = do
   vr <- chatVersionRange
   (conn, groupRelays) <- withFastStore $ \db ->
-    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
@@ -1307,16 +1307,29 @@ setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
 setGroupLinkDataAsync user gInfo gLink = do
   vr <- chatVersionRange
   (conn, groupRelays) <- withStore $ \db ->
-    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
+updatePublicGroupData :: User -> GroupInfo -> CM GroupInfo
+updatePublicGroupData user gInfo
+  | useRelays' gInfo && memberRole' (membership gInfo) == GROwner = do
+      vr <- chatVersionRange
+      (gInfo', gLink) <- withStore $ \db -> do
+        gInfo' <- updatePublicMemberCount db vr user gInfo
+        gLink <- getGroupLink db user gInfo'
+        pure (gInfo', gLink)
+      setGroupLinkDataAsync user gInfo' gLink
+      pure gInfo'
+  | otherwise = pure gInfo
+
 -- TODO [relays] owner: set owners on updating link data
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
-groupLinkData gInfo@GroupInfo {groupProfile} GroupLink {groupLinkId} groupRelays =
+groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo
       relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
-      userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+      publicGroupData_ = PublicGroupData <$> publicMemberCount
+      userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_}
       userLinkData = UserContactLinkData UserContactData {direct, owners = [], relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
    in (userLinkData, crClientData)

@@ -382,7 +382,8 @@ struct ComposeView: View {
                 Divider()
             }
 
-            if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays {
+            if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+               ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
                     let relays = channelRelaysModel.groupId == gInfo.groupId
                         ? channelRelaysModel.groupRelays : []

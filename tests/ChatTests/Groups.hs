@@ -8421,6 +8421,16 @@ testChannels1RelayDeliver ps =
             eve <# "#team cath> > hi"
             eve <## "    + 👍"
 
+            -- owner's public member count is maintained automatically
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 4"
+            -- subscriber refreshes count via short link
+            threadDelay 100000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            cath <## "subscribers: 4"
+
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
   (shortLink, fullLink) <- prepareChannel1Relay gName owner relay
@@ -8478,20 +8488,21 @@ prepareChannel2Relays gName owner relay1 relay2 = do
   owner <## "wait for selected relay(s) to join, then you can invite members via group link"
 
   concurrentlyN_
-    [ owner
-        <### [  -- one relay connects
-                ConsoleString ("#" <> gName <> ": group link relays updated, current relays:"),
-                StartsWith "  - relay id 1: ",
-                StartsWith "  - relay id 2: ",
-                "group link:",
-                Predicate (const True), -- consume group link line
-                -- second relay connects
-                ConsoleString ("#" <> gName <> ": group link relays updated, current relays:"),
-                "  - relay id 1: active",
-                "  - relay id 2: active",
-                "group link:",
-                Predicate (const True) -- consume group link line
-              ],
+    [ do
+        -- one relay connects
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+        owner
+          <### [ EndsWith ": active",
+                 EndsWith ": accepted"
+               ]
+        owner <## "group link:"
+        void $ getTermLine owner -- consume group link line
+        -- second relay connects
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+        owner <## "  - relay id 1: active"
+        owner <## "  - relay id 2: active"
+        owner <## "group link:"
+        void $ getTermLine owner, -- consume group link line
       relay1 <## ("#" <> gName <> ": you joined the group as relay"),
       relay2 <## ("#" <> gName <> ": you joined the group as relay")
     ]
@@ -8928,6 +8939,15 @@ testChannelRemoveMemberSigned ps =
                   cath <# "#team eve> hello from eve [>>]"
               ]
 
+            -- before removal — owner count is maintained synchronously
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 4"
+            threadDelay 100000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            cath <## "subscribers: 4"
+
             -- remove member (XGrpMemDel) - signed (other members can verify)
             threadDelay 1000000
             alice ##> "/rm #team eve"
@@ -8946,6 +8966,15 @@ testChannelRemoveMemberSigned ps =
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
 
+            -- after first removal
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 3"
+            threadDelay 100000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            cath <## "subscribers: 3"
+
             -- remove silent member (other members don't know about member)
             threadDelay 1000000
             alice ##> "/rm #team dan"
@@ -8962,6 +8991,15 @@ testChannelRemoveMemberSigned ps =
             cath #$> ("/_get chat #1 count=1", chat, [(0, "removed eve (signed)")]) -- no new chat item
             dan #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "removed you (signed)")]) -- no new chat item
+
+            -- after second removal
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 2"
+            threadDelay 100000 -- wait for async short link data update
+            cath ##> "/_get group link data #1"
+            cath <## "group ID: 1"
+            cath <## "subscribers: 2"
 
 testChannelDeleteGroupSigned :: HasCallStack => TestParams -> IO ()
 testChannelDeleteGroupSigned ps =
@@ -9069,6 +9107,15 @@ testChannelSubscriberLeave ps =
                   eve <# "#team cath> hello from cath [>>]"
               ]
 
+            -- before any leave — owner count is maintained synchronously
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 4"
+            threadDelay 100000 -- wait for async short link data update
+            eve ##> "/_get group link data #1"
+            eve <## "group ID: 1"
+            eve <## "subscribers: 4"
+
             -- known member leaves (XGrpLeave signed) - owner and relay see items
             threadDelay 1000000
             cath ##> "/leave #team"
@@ -9083,6 +9130,15 @@ testChannelSubscriberLeave ps =
             cath #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no leave item
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no leave item
+
+            -- after first leave
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 3"
+            threadDelay 100000 -- wait for async short link data update
+            eve ##> "/_get group link data #1"
+            eve <## "group ID: 1"
+            eve <## "subscribers: 3"
 
             -- verify cath's member status is "left" on all clients
             checkMemberStatus alice "cath" (Just "left")
@@ -9103,6 +9159,15 @@ testChannelSubscriberLeave ps =
             bob #$> ("/_get chat #1 count=1", chat, [(0, "left (signed)")])
             dan #$> ("/_get chat #1 count=1", chat, [(1, "left (signed)")])
             eve #$> ("/_get chat #1 count=1", chat, [(0, "hello from cath")]) -- no new item
+
+            -- after second leave
+            alice ##> "/_info #1"
+            alice <## "group ID: 1"
+            alice <## "subscribers: 2"
+            threadDelay 100000 -- wait for async short link data update
+            eve ##> "/_get group link data #1"
+            eve <## "group ID: 1"
+            eve <## "subscribers: 2"
 
             -- verify dan's member status is "left" on nodes that know dan
             checkMemberStatus alice "dan" (Just "left")

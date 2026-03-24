@@ -25,7 +25,7 @@ import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (lefts, partitionEithers, rights)
-import Data.Foldable (foldr')
+import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find)
@@ -1233,25 +1233,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CFSetShortLink ->
               case (ucGroupId_, auData) of
                 (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
-                  (gInfo, gLink, relays) <- withStore $ \db -> do
+                  (gInfo, gLink, relays, relaysChanged) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
                     relays <- liftIO $ getGroupRelays db gInfo
-                    relays' <- liftIO $ mapM (updateRelay db) relays
+                    (relays', changed) <- liftIO $ foldrM (updateRelay db) ([], False) relays
                     liftIO $ setGroupInProgressDone db gInfo
-                    pure (gInfo, gLink, relays')
-                  -- TODO [relays] owner: "relays updated" chat item?
-                  toView $ CEvtGroupLinkRelaysUpdated user gInfo gLink relays
+                    pure (gInfo, gLink, relays', changed)
+                  toView $ CEvtGroupLinkDataUpdated user gInfo gLink relays relaysChanged
                   where
                     -- TODO [relays] owner: on relay deletion (link absent from relayLinks)
                     -- TODO          move status RSActive to new "Removed" status / remove relay record
-                    updateRelay :: DB.Connection -> GroupRelay -> IO GroupRelay
-                    updateRelay db relay@GroupRelay {relayLink, relayStatus} =
+                    updateRelay :: DB.Connection -> GroupRelay -> ([GroupRelay], Bool) -> IO ([GroupRelay], Bool)
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} (acc, changed) =
                       case relayLink of
                         Just rLink
-                          | rLink `elem` relayLinks && relayStatus == RSAccepted ->
-                              updateRelayStatus db relay RSActive
-                        _ -> pure relay
+                          | rLink `elem` relayLinks && relayStatus == RSAccepted -> do
+                              relay' <- updateRelayStatus db relay RSActive
+                              pure (relay' : acc, True)
+                        _ -> pure (relay : acc, changed)
                 _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
@@ -2765,8 +2765,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     then liftIO $ increaseGroupMembersRequireAttention db user gInfo
                     else pure gInfo
                 pure (updatedMember, gInfo')
-              toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
-              memberAnnouncedToView updatedMember gInfo'
+              gInfo'' <- updatePublicGroupData user gInfo'
+              toView $ CEvtUnknownMemberAnnounced user gInfo'' m unknownMember updatedMember
+              memberAnnouncedToView updatedMember gInfo''
               pure $ deliveryJobScope updatedMember
             Right _
               | useRelays' gInfo -> logInfo "x.grp.mem.new: member already created via another relay" $> Nothing
@@ -2779,7 +2780,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     then liftIO $ increaseGroupMembersRequireAttention db user gInfo
                     else pure gInfo
                 pure (newMember, gInfo')
-              memberAnnouncedToView newMember gInfo'
+              gInfo'' <- updatePublicGroupData user gInfo'
+              memberAnnouncedToView newMember gInfo''
               pure $ deliveryJobScope newMember
       where
         initialStatus = case msgScope_ of
@@ -2986,11 +2988,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeleted user gInfo deletedMember GSMemRemoved
                   -- Undeleted "member connected" chat item will prevent deletion of member record.
                   _ -> deleteOrUpdateMemberRecord user gInfo deletedMember
+                gInfo'' <- updatePublicGroupData user gInfo'
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                     deletedMember' = deletedMember {memberStatus = GSMemRemoved}
-                when withMessages $ deleteMessages gInfo' deletedMember' SMDRcv
-                unless wasDeleted $ deleteMemberItem gInfo' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                toView $ CEvtDeletedMember user gInfo' m deletedMember' withMessages msgSigned
+                when withMessages $ deleteMessages gInfo'' deletedMember' SMDRcv
+                unless wasDeleted $ deleteMemberItem gInfo'' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                toView $ CEvtDeletedMember user gInfo'' m deletedMember' withMessages msgSigned
                 pure deliveryScope
       where
         checkRole GroupMember {memberRole} a
@@ -3030,11 +3033,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-      unless (muteEventInChannel gInfo' m) $ do
-        (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
-        (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
+      gInfo'' <- updatePublicGroupData user gInfo'
+      unless (muteEventInChannel gInfo'' m) $ do
+        (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m
+        (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo''' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
         groupMsgToView cInfo ci
-        toView $ CEvtLeftMember user gInfo'' m' {memberStatus = GSMemLeft} msgSigned
+        toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
       pure $ memberEventDeliveryScope m
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
@@ -3605,7 +3609,7 @@ runRelayRequestWorker a Worker {doWork} = do
               (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
-                Just (GroupShortLinkData gp) -> do
+                Just GroupShortLinkData {groupProfile = gp} -> do
                   validateGroupProfile gp
                   gVar <- asks random
                   (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
@@ -3628,7 +3632,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
                   subRole <- asks $ channelSubscriberRole . config
-                  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+                  let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
                       userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
                       crClientData = encodeJSON $ CRDataGroup groupLinkId
                   (connId, (ccLink, _serviceId)) <- withAgent $ \a' -> createConnection a' NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode

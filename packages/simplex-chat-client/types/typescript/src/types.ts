@@ -2706,6 +2706,7 @@ export namespace GroupRootKey {
 
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
+  publicGroupData?: PublicGroupData
 }
 
 export interface GroupShortLinkInfo {
@@ -2716,6 +2717,7 @@ export interface GroupShortLinkInfo {
 
 export interface GroupSummary {
   currentMembers: number // int64
+  publicMemberCount?: number // int64
 }
 
 export interface GroupSupportChat {
@@ -3202,6 +3204,10 @@ export namespace ProxyError {
   export interface NO_SESSION extends Interface {
     type: "NO_SESSION"
   }
+}
+
+export interface PublicGroupData {
+  publicMemberCount: number // int64
 }
 
 export type RCErrorType = 
