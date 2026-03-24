@@ -87,7 +87,7 @@ struct DatabaseErrorView: View {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .resizable()
                                 .frame(width: 40, height: 36)
-                                .foregroundColor(.orange)
+                                .foregroundColor(.red)
                             ForEach(warnings, id: \.self) { warning in
                                 Text(warning)
                                     .bold()
@@ -106,10 +106,7 @@ struct DatabaseErrorView: View {
                     VStack(spacing: 10) {
                         Button("Downgrade and open chat") {
                             runChat(confirmMigrations: .yesUpDown)
-                        }.buttonStyle(OnboardingButtonStyle(
-                            isDisabled: false,
-                            color: warnings.isEmpty ? nil : .orange
-                        ))
+                        }.buttonStyle(OnboardingButtonStyle(isDisabled: false))
                         fileNameText(dbFile)
                     }
                 case let .migrationError(mtrError):
