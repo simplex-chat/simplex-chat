@@ -1638,7 +1638,7 @@
   <string name="mtr_error_different">different migration in the app/database: %s / %s</string>
   <string name="database_migrations">Migrations: %s</string>
   <string name="database_downgrade_warning">Warning: you may lose some data!</string>
-  <string name="down_migration_warning_chat_relays">Channels will become unusable and cannot be restored.</string>
+  <string name="down_migration_warning_chat_relays">If you joined or created channels, they will stop working permanently.</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
