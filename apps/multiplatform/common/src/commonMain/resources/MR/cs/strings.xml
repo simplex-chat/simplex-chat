@@ -2517,7 +2517,7 @@
     <string name="cant_send_commands_alert_text">Pro odeslání příkazů musíte být připojen.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Pro použití jiného profilu po pokusu o připojení, smažte chat a znovu použijte odkaz.</string>
     <string name="v6_4_1_short_address_update">Aktualizovat vaši adresu</string>
-    <string name="share_profile_via_link_alert_confirm">Povýšení</string>
+    <string name="share_profile_via_link_alert_confirm">Povýšit</string>
     <string name="share_profile_via_link">Povýšit adresu?</string>
     <string name="upgrade_group_link">Povýšit odkaz skupiny</string>
     <string name="share_group_profile_via_link">Povýšit odkaz skupiny?</string>
@@ -2549,4 +2549,5 @@
     <string name="not_connected_to_server_to_receive_messages_no_sub">Nejste připojen k serveru, který se používá k přijímání zpráv z tohoto připojení (bez předplatného).</string>
     <string name="info_row_connection_failed">Připojení selhalo</string>
     <string name="member_info_member_failed">selhal</string>
+    <string name="down_migration_warning_chat_relays">Pokud jste se připojili k nějakým kanálům nebo je vytvořili, přestanou trvale fungovat.</string>
 </resources>
