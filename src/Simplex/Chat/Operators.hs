@@ -390,13 +390,14 @@ updatedServerOperators presetOps storedOps =
 
 -- This function should be used inside DB transaction to update servers.
 updatedUserServers :: (Maybe PresetOperator, UserOperatorServers) -> UpdatedUserOperatorServers
-updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers}) =
-  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp', chatRelays = []}
+updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers, chatRelays = storedRelays}) =
+  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp', chatRelays = cRelays'}
   where
     stored = map (AUS SDBStored)
-    (smp', xftp') = case presetOp_ of
-      Nothing -> (stored smpServers, stored xftpServers)
-      Just presetOp -> (updated SPSMP smpServers, updated SPXFTP xftpServers)
+    storedCRelays = map (AUCR SDBStored)
+    (smp', xftp', cRelays') = case presetOp_ of
+      Nothing -> (stored smpServers, stored xftpServers, storedCRelays storedRelays)
+      Just presetOp -> (updated SPSMP smpServers, updated SPXFTP xftpServers, updatedCRelays presetOp storedRelays)
         where
           updated :: forall p. UserProtocol p => SProtocolType p -> [UserServer p] -> [AUserServer p]
           updated p srvs = map userServer presetSrvs <> stored (filter customServer srvs)
@@ -411,9 +412,23 @@ updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpSe
               presetHosts = foldMap' (S.fromList . L.toList . srvHost) presetSrvs
               userServer :: NewUserServer p -> AUserServer p
               userServer srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
+          updatedCRelays :: PresetOperator -> [UserChatRelay] -> [AUserChatRelay]
+          updatedCRelays PresetOperator {chatRelays = presetCRelays} relays =
+            map userRelay presetCRelays <> storedCRelays (filter customRelay relays)
+            where
+              customRelay :: UserChatRelay -> Bool
+              customRelay UserChatRelay {preset, address = addr} =
+                not preset && not (any (sameShortLinkContact addr . chatRelayAddress) presetCRelays)
+              userRelay :: NewUserChatRelay -> AUserChatRelay
+              userRelay relay@UserChatRelay {address = addr} =
+                maybe (AUCR SDBNew relay) (AUCR SDBStored) $
+                  find (sameShortLinkContact addr . chatRelayAddress) relays
 
 srvHost :: UserServer' s p -> NonEmpty TransportHost
 srvHost UserServer {server = ProtoServerWithAuth srv _} = host srv
+
+chatRelayAddress :: UserChatRelay' s -> ShortLinkContact
+chatRelayAddress UserChatRelay {address} = address
 
 agentServerCfgs :: UserProtocol p => SProtocolType p -> [(Text, ServerOperator)] -> [UserServer' s p] -> [ServerCfg p]
 agentServerCfgs p opDomains = mapMaybe agentServer
