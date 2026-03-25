@@ -78,14 +78,17 @@ updatedServersTest = describe "validate user servers" $ do
     all addedPreset ops' `shouldBe` True
     let ops'' :: [(Maybe PresetOperator, Maybe ServerOperator)] =
           saveOps ops' -- mock getUpdateServerOperators
-    uss <- groupByOperator' (ops'', [], [], []) -- no stored servers
+    uss <- groupByOperator' (ops'', [], [], []) -- no stored servers or relays
     length uss `shouldBe` 3
     [op1, op2, op3] <- pure $ map updatedUserServers uss
     [p1, p2] <- pure operators -- presets
     sameServers p1 op1
+    sameRelays p1 op1
     sameServers p2 op2
+    sameRelays p2 op2
     null (servers' SPSMP op3) `shouldBe` True
     null (servers' SPXFTP op3) `shouldBe` True
+    null (chatRelays' op3) `shouldBe` True
   it "adding preset operators and assigning servers to operator for existing users" $ do
     let ops' = updatedServerOperators operators []
         ops'' = saveOps ops'
@@ -94,25 +97,34 @@ updatedServersTest = describe "validate user servers" $ do
         ( ops'',
           saveSrvs $ take 3 simplexChatSMPServers <> [newUserServer "smp://abcd@smp.example.im"],
           saveSrvs $ map (presetServer True) $ L.take 3 defaultXFTPServers,
-          []
+          saveCRelays $ take 2 simplexChatRelays <> [newChatRelay "custom_relay" ["example.im"] customRelayAddr]
         )
     [op1, op2, op3] <- pure $ map updatedUserServers uss
     [p1, p2] <- pure operators -- presets
     sameServers p1 op1
+    sameRelays p1 op1
     sameServers p2 op2
+    sameRelays p2 op2
     map srvHost' (servers' SPSMP op3) `shouldBe` [["smp.example.im"]]
     null (servers' SPXFTP op3) `shouldBe` True
+    map relayName' (chatRelays' op3) `shouldBe` ["custom_relay"]
   where
     addedPreset = \case
       (Just PresetOperator {operator = Just op}, Just (ASO SDBNew op')) -> operatorTag op == operatorTag op'
       _ -> False
     saveOps = zipWith (\i -> second ((\(ASO _ op) -> op {operatorId = DBEntityId i}) <$>)) [1 ..]
     saveSrvs = zipWith (\i srv -> srv {serverId = DBEntityId i}) [1 ..]
+    saveCRelays = zipWith (\i relay -> relay {chatRelayId = DBEntityId i}) [1 ..]
     sameServers preset op = do
       map srvHost (pServers SPSMP preset) `shouldBe` map srvHost' (servers' SPSMP op)
       map srvHost (pServers SPXFTP preset) `shouldBe` map srvHost' (servers' SPXFTP op)
+    sameRelays PresetOperator {chatRelays = presetCRelays} op =
+      map chatRelayAddress presetCRelays `shouldBe` map relayAddr' (chatRelays' op)
     srvHost' (AUS _ s) = srvHost s
+    relayAddr' (AUCR _ r) = chatRelayAddress r
+    relayName' (AUCR _ UserChatRelay {name}) = name
     PresetServers {operators} = presetServers defaultChatConfig
+    customRelayAddr = either error id $ strDecode "https://relay.example.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
 
 deriving instance Eq User
 
