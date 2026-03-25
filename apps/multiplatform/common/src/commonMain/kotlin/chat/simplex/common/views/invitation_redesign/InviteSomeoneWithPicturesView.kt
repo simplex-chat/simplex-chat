@@ -40,57 +40,29 @@ fun InviteSomeoneWithPicturesView(close: () -> Unit) {
 
 @Composable
 fun InviteSomeoneWithPicturesContent() {
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = MaterialTheme.appColors.sentMessage,
+
+  InvitationCardView(
+    mainImageResource = MR.images.ic_invitation_card_one_time_link,
+    iconResource = MR.images.ic_repeat_one,
+    title = stringResource(MR.strings.create_private_1_time_link),
+    description = stringResource(MR.strings.contact_can_use_link_or_scan_qr),
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
       .clickable {
-        ModalManager.start.showModalCloseable { close ->
-          OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
-        }
+      ModalManager.start.showModalCloseable { close ->
+        OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
       }
-  ) {
-    Image(
-      painterResource(MR.images.ic_invitation_card_one_time_link),
-      contentDescription = null,
-      contentScale = ContentScale.FillWidth,
-      modifier = Modifier.fillMaxWidth()
-    )
-  }
-
-  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-
-  Row(
-    Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      painterResource(MR.images.ic_repeat_one),
-      contentDescription = null,
-      modifier = Modifier.size(20.dp),
-      tint = MaterialTheme.colors.secondary
-    )
-    Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-    Column {
-      Text(
-        stringResource(MR.strings.create_private_1_time_link),
-        style = MaterialTheme.typography.h3.copy(fontWeight = FontWeight.Bold),
-      )
-      Text(
-        stringResource(MR.strings.contact_can_use_link_or_scan_qr),
-        style = MaterialTheme.typography.body2,
-        color = MaterialTheme.colors.secondary
-      )
     }
-  }
+  )
 
-  Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
+  Spacer(Modifier.height(DEFAULT_PADDING))
 
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = MaterialTheme.appColors.sentMessage,
+  InvitationCardView(
+    mainImageResource = MR.images.ic_invitation_card_public_address,
+    iconResource = MR.images.ic_qr_code,
+    title = stringResource(MR.strings.create_public_simplex_address),
+    description = stringResource(MR.strings.public_link_for_social_media_email_or_website),
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
@@ -100,40 +72,7 @@ fun InviteSomeoneWithPicturesContent() {
           OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
         }
       }
-  ) {
-    Image(
-      painterResource(MR.images.ic_invitation_card_public_address),
-      contentDescription = null,
-      contentScale = ContentScale.FillWidth,
-      modifier = Modifier.fillMaxWidth()
-    )
-  }
-
-  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-
-  Row(
-    Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 24.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      painterResource(MR.images.ic_qr_code),
-      contentDescription = null,
-      modifier = Modifier.size(20.dp),
-      tint = MaterialTheme.colors.secondary
-    )
-    Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-    Column {
-      Text(
-        stringResource(MR.strings.create_public_simplex_address),
-        style = MaterialTheme.typography.h3.copy(fontWeight = FontWeight.Bold),
-      )
-      Text(
-        stringResource(MR.strings.public_link_for_social_media_email_or_website),
-        style = MaterialTheme.typography.body2,
-        color = MaterialTheme.colors.secondary
-      )
-    }
-  }
+  )
 }
 
 @Preview

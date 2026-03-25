@@ -2,12 +2,16 @@ package chat.simplex.common.views.invitation_redesign
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -39,55 +43,56 @@ fun ModalData.ConnectViewLinkOrQrModal(rhId: Long?, close: () -> Unit) {
       connectProgressManager.cancelConnectProgress()
     }
   }
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .verticalScroll(rememberScrollState()),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Spacer(Modifier.height(24.dp))
 
-  ModalView(close) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxWidth().background(MaterialTheme.colors.background),
-      horizontalAlignment = Alignment.CenterHorizontally
+    Image(
+      painterResource(MR.images.ic_invitation_connect_link),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.size(160.dp)
+    )
+
+    Spacer(Modifier.height(24.dp))
+
+    SectionView(
+      title = stringResource(MR.strings.paste_the_link_you_received).uppercase(),
+      headerBottomPadding = 0.dp
     ) {
-      Spacer(Modifier.height(24.dp))
+      ConnectPasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
+    }
 
-      Image(
-        painterResource(MR.images.ic_invitation_connect_link),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier
-          .size(200.dp)
-          .padding(horizontal = DEFAULT_PADDING)
-      )
+    if (appPlatform.isAndroid) {
+      Spacer(Modifier.height(10.dp))
 
-      Spacer(Modifier.height(24.dp))
-
-      SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
-        ConnectPasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
-      }
-
-      if (appPlatform.isAndroid) {
-        Spacer(Modifier.height(10.dp))
-
-        SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
-          Box(
-            Modifier
-              .fillMaxWidth()
-              .padding(horizontal = DEFAULT_PADDING)
-              .clip(RoundedCornerShape(24.dp))
-          ) {
-            QRCodeScanner(showQRCodeScanner) { text ->
-              val linkVerified = strIsSimplexLink(text)
-              if (!linkVerified) {
-                AlertManager.shared.showAlertMsg(
-                  title = generalGetString(MR.strings.invalid_qr_code),
-                  text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
-                )
-              }
-              connectFromScanner(rhId, text, close)
-            }
+      SectionView(
+        title = stringResource(MR.strings.or_scan_qr_code).uppercase(),
+        headerBottomPadding = 0.dp
+      ) {
+        QRCodeScanner(
+          showQRCodeScanner = showQRCodeScanner,
+          padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+          clipShape = RoundedCornerShape(12.dp)
+        ) { text ->
+          val linkVerified = strIsSimplexLink(text)
+          if (!linkVerified) {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.invalid_qr_code),
+              text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
+            )
           }
+          connectFromScanner(rhId, text, close)
         }
       }
-
-      SectionBottomSpacer()
     }
+    SectionBottomSpacer()
+    SectionSpacer()
   }
 }
 
@@ -113,27 +118,19 @@ private fun ConnectPasteLinkView(rhId: Long?, pastedLink: MutableState<String>, 
     }) {
       Box(
         Modifier
-          .weight(1f)
-          .background(MaterialTheme.colors.background)
-          .padding(8.dp),
+          .fillMaxWidth()
+          .clip(RoundedCornerShape(12.dp))
+          .background(MaterialTheme.colors.background),
         contentAlignment = Alignment.Center
       ) {
-        Box(
-          Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colors.surface),
-          contentAlignment = Alignment.Center
-        ) {
-          Text(
-            stringResource(MR.strings.tap_to_paste_link),
-            modifier = Modifier.padding(vertical = 16.dp),
-            color = MaterialTheme.colors.secondary,
-            fontSize = 18.sp
-          )
-          if (connectProgressManager.showConnectProgress != null) {
-            CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
-          }
+        Text(
+          stringResource(MR.strings.tap_to_paste_link),
+          modifier = Modifier.padding(vertical = 12.dp),
+          color = Color.LightGray,
+          fontSize = 16.sp
+        )
+        if (connectProgressManager.showConnectProgress != null) {
+          CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
         }
       }
     }

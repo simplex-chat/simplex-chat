@@ -14,7 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -44,6 +45,7 @@ import java.util.concurrent.*
 actual fun QRCodeScanner(
   showQRCodeScanner: MutableState<Boolean>,
   padding: PaddingValues,
+  clipShape: Shape,
   onBarcode: suspend (String) -> Boolean
 ) {
   val context = LocalContext.current
@@ -66,7 +68,7 @@ actual fun QRCodeScanner(
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
     val modifier = Modifier
       .padding(padding)
-      .clipToBounds()
+      .clip(clipShape)
       .widthIn(max = 400.dp)
       .aspectRatio(1f)
     val showScanner = remember { showQRCodeScanner }

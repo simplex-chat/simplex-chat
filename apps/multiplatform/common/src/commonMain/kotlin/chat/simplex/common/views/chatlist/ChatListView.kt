@@ -147,29 +147,46 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  Box(Modifier.fillMaxSize()) {
-    if (oneHandUI.value) {
-      ChatListWithLoadingScreen(searchText, listState)
-      Column(Modifier.align(Alignment.BottomCenter)) {
-        ChatListToolbar(
-          userPickerState,
-          listState,
-          stopped,
-          setPerformLA,
-        )
-      }
-    } else {
-      ChatListWithLoadingScreen(searchText, listState)
-      Column {
-        ChatListToolbar(
-          userPickerState,
-          listState,
-          stopped,
-          setPerformLA,
-        )
-      }
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        NewChatSheetFloatingButton(oneHandUI, stopped)
+  val connectSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+  val connectSheetScope = rememberCoroutineScope()
+  val onConnectClick: () -> Unit = { connectSheetScope.launch { connectSheetState.show() } }
+
+  ModalBottomSheetLayout(
+    scrimColor = Color.Black.copy(alpha = 0.12F),
+    sheetState = connectSheetState,
+    sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
+    sheetContent = {
+      ModalData().ConnectViewLinkOrQrModal(
+        rhId = chatModel.currentRemoteHost.value?.remoteHostId,
+        close = { connectSheetScope.launch { connectSheetState.hide() } }
+      )
+    }
+  ) {
+    Box(Modifier.fillMaxSize()) {
+      if (oneHandUI.value) {
+        ChatListWithLoadingScreen(searchText, listState, onConnectClick)
+        Column(Modifier.align(Alignment.BottomCenter)) {
+          ChatListToolbar(
+            userPickerState,
+            listState,
+            stopped,
+            setPerformLA,
+          )
+        }
+      } else {
+        ChatListWithLoadingScreen(searchText, listState, onConnectClick)
+        Column {
+          ChatListToolbar(
+            userPickerState,
+            listState,
+            stopped,
+            setPerformLA,
+          )
+        }
+        if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+          NewChatSheetFloatingButton(oneHandUI, stopped)
+        }
       }
     }
   }
@@ -288,11 +305,11 @@ private fun AddressCreationCard() {
 }
 
 @Composable
-private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState, onConnectClick: () -> Unit) {
   if (!chatModel.desktopNoUserNoRemote) {
-    ChatList(searchText = searchText, listState)
+    EmptyChatListView(onConnectClick)
+    return
   }
-  EmptyChatListView()
 
   if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
     if (chatModel.chatRunning.value == null) {
@@ -302,7 +319,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
         color = MaterialTheme.colors.secondary
       )
     } else {
-      EmptyChatListView()
+      EmptyChatListView(onConnectClick)
     }
   }
 }
@@ -427,7 +444,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
               .size(33.dp * fontSizeSqrtMultiplier)
           ) {
             Icon(
-              painterResource(MR.images.ic_edit_filled),
+              painterResource(MR.images.ic_add),
               stringResource(MR.strings.add_contact_or_create_group),
               Modifier.size(sp16),
               tint = Color.White
