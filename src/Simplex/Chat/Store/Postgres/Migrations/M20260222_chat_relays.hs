@@ -75,6 +75,8 @@ down_m20260222_chat_relays :: Text
 down_m20260222_chat_relays =
   T.pack
     [r|
+UPDATE group_members SET member_role = 'observer' WHERE member_role = 'relay';
+
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 ALTER TABLE groups

@@ -86,6 +86,8 @@ ALTER TABLE chat_items ADD COLUMN msg_signed TEXT;
 down_m20260222_chat_relays :: Query
 down_m20260222_chat_relays =
   [sql|
+UPDATE group_members SET member_role = 'observer' WHERE member_role = 'relay';
+
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 ALTER TABLE groups DROP COLUMN use_relays;
