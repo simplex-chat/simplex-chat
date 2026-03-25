@@ -72,33 +72,24 @@ simplex-directory-service \
 
 ---
 
-## Running Your Own Website
+## Hosting the Directory Page
 
-The bot writes `listing.json`, `promoted.json`, and group images to `--web-folder` (updated every 5 minutes or on group approval).
+The `web/` folder has a ready-to-use directory page — serve it with any static web server. No build step needed. Dark mode follows system preference. `directory.js` is a symlink to `website/src/js/directory.js` so it stays in sync.
 
-**Step 1 — point `--web-folder` at the website output directory:**
+The file must be served under a URL path starting with `/directory` (e.g. `http://example.com/directory.html` or `http://example.com/directory/`) — `directory.js` skips initialisation otherwise.
+
+By default the page shows the official SimpleX directory at `https://directory.simplex.chat/data/`. To use your own bot's data instead, change this line near the bottom of `directory.js`:
+```js
+const simplexDirectoryDataURL = 'https://your-domain.example/data/';
+```
+
+Then run the bot with `--web-folder` pointing to that path. The bot writes `listing.json`, `promoted.json`, and group images there (refreshed every 5 minutes or on approval):
 ```sh
 simplex-directory-service \
   --super-users 2:alice \
   --database /path/to/db \
-  --web-folder /path/to/simplex-chat/website/_site/directory-data
+  --web-folder /var/www/your-domain.example/data
 ```
-
-**Step 2 — switch the data URL in `website/src/js/directory.js`.** The file contains two URL definitions (around line 484); comment out the production one and uncomment the localhost one:
-```js
-// const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
-const simplexDirectoryDataURL = 'http://localhost:8080/directory-data/';
-```
-
-**Step 3 — build the website and host `_site/` with a static server:**
-```sh
-# from the website/ directory:
-./run.sh              # runs web.sh (copies assets, npm install, full build) then starts eleventy dev server
-```
-
-For production self-hosting, serve the generated `website/_site/` directory with any static web server (nginx, Caddy, Apache, etc.) rather than using the eleventy dev server. Point the server's root at `_site/` and ensure `directory-data/` within it is writable by the bot process.
-
-> **Note:** Re-running `./run.sh` or `npm run build` will overwrite `_site/`. Generate the bot's listing files with `--web-folder` **after** the build, or store them outside `_site/` and symlink/alias the path in your web server config.
 
 ---
 
