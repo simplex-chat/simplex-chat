@@ -97,7 +97,7 @@ updatedServersTest = describe "validate user servers" $ do
         ( ops'',
           saveSrvs $ take 3 simplexChatSMPServers <> [newUserServer "smp://abcd@smp.example.im"],
           saveSrvs $ map (presetServer True) $ L.take 3 defaultXFTPServers,
-          saveCRelays $ take 2 simplexChatRelays <> [newChatRelay "custom_relay" ["example.im"] customRelayAddr]
+          saveRelays $ take 2 simplexChatRelays <> [newChatRelay "custom_relay" ["example.im"] customRelayAddr]
         )
     [op1, op2, op3] <- pure $ map updatedUserServers uss
     [p1, p2] <- pure operators -- presets
@@ -114,12 +114,12 @@ updatedServersTest = describe "validate user servers" $ do
       _ -> False
     saveOps = zipWith (\i -> second ((\(ASO _ op) -> op {operatorId = DBEntityId i}) <$>)) [1 ..]
     saveSrvs = zipWith (\i srv -> srv {serverId = DBEntityId i}) [1 ..]
-    saveCRelays = zipWith (\i relay -> relay {chatRelayId = DBEntityId i}) [1 ..]
+    saveRelays = zipWith (\i relay -> relay {chatRelayId = DBEntityId i}) [1 ..]
     sameServers preset op = do
       map srvHost (pServers SPSMP preset) `shouldBe` map srvHost' (servers' SPSMP op)
       map srvHost (pServers SPXFTP preset) `shouldBe` map srvHost' (servers' SPXFTP op)
-    sameRelays PresetOperator {chatRelays = presetCRelays} op =
-      map chatRelayAddress presetCRelays `shouldBe` map relayAddr' (chatRelays' op)
+    sameRelays PresetOperator {chatRelays = presetRelays} op =
+      map chatRelayAddress presetRelays `shouldBe` map relayAddr' (chatRelays' op)
     srvHost' (AUS _ s) = srvHost s
     relayAddr' (AUCR _ r) = chatRelayAddress r
     relayName' (AUCR _ UserChatRelay {name}) = name

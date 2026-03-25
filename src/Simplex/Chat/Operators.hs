@@ -394,9 +394,9 @@ updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpSe
   UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp', chatRelays = cRelays'}
   where
     stored = map (AUS SDBStored)
-    storedCRelays = map (AUCR SDBStored)
+    storedRelays = map (AUCR SDBStored)
     (smp', xftp', cRelays') = case presetOp_ of
-      Nothing -> (stored smpServers, stored xftpServers, storedCRelays chatRelays)
+      Nothing -> (stored smpServers, stored xftpServers, storedRelays chatRelays)
       Just presetOp -> (updated SPSMP smpServers, updated SPXFTP xftpServers, updatedRelays chatRelays)
         where
           updated :: forall p. UserProtocol p => SProtocolType p -> [UserServer p] -> [AUserServer p]
@@ -413,13 +413,15 @@ updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpSe
               userServer :: NewUserServer p -> AUserServer p
               userServer srv@UserServer {server} = maybe (AUS SDBNew srv) (AUS SDBStored) (M.lookup server storedSrvs)
           updatedRelays :: [UserChatRelay] -> [AUserChatRelay]
-          updatedRelays relays = map userRelay presetCRelays <> storedCRelays (filter customRelay relays)
+          updatedRelays relays = map userRelay presetRelays <> storedRelays (filter customRelay relays)
             where
-              presetCRelays :: [NewUserChatRelay]
-              presetCRelays = let PresetOperator {chatRelays = cr} = presetOp in cr
               customRelay :: UserChatRelay -> Bool
               customRelay UserChatRelay {preset, address} =
-                not preset && not (any (sameShortLinkContact address . chatRelayAddress) presetCRelays)
+                not preset && not (any (sameShortLinkContact address . chatRelayAddress) presetRelays)
+              presetRelays :: [NewUserChatRelay]
+              presetRelays =
+                let PresetOperator {chatRelays = crs} = presetOp
+                 in crs
               userRelay :: NewUserChatRelay -> AUserChatRelay
               userRelay relay@UserChatRelay {address} =
                 maybe (AUCR SDBNew relay) (AUCR SDBStored) $
