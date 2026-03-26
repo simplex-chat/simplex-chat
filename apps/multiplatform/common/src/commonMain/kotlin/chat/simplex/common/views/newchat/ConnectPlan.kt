@@ -599,7 +599,7 @@ fun showPrepareGroupAlert(
       ProfileImage(
         size = alertProfileImageSize,
         image = groupShortLinkData.groupProfile.image,
-        icon = if (isChannel) MR.images.ic_bigtop_updates else MR.images.ic_supervised_user_circle_filled
+        icon = if (isChannel) MR.images.ic_bigtop_updates_padded else MR.images.ic_supervised_user_circle_filled
       )
     },
     subtitle = subscriberCount,
