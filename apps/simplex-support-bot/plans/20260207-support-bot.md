@@ -1,5 +1,36 @@
 # SimpleX Support Bot — Product Specification
 
+## Table of Contents
+
+1. [Principles](#principles)
+2. [User Flows](#user-flows)
+   - [Step 1 — Welcome](#step-1--welcome-on-connect-no-choices-no-friction)
+   - [Step 2 — After first message](#step-2--after-user-sends-first-message)
+   - [Step 3 — /grok](#step-3--grok-grok-mode)
+   - [Step 4 — /team](#step-4--team-team-mode-one-way-gate)
+3. [Team Group — Live Dashboard](#team-group--live-dashboard)
+   - [Card format](#card-format)
+   - [Card examples](#card-examples)
+   - [Card lifecycle](#notes-on-card-lifecycle)
+4. [User Flow — Detailed](#user-flow-detailed)
+   - [Connection](#connection)
+   - [First message](#first-message)
+   - [Commands](#commands)
+   - [Team replies](#team-replies)
+   - [One-way gate](#one-way-gate)
+   - [Customer leaving](#customer-leaving)
+5. [Grok Agent Architecture](#grok-agent-architecture)
+   - [Two profiles, one process](#two-profiles-one-process)
+   - [Startup: bot↔Grok contact](#startup-establishing-the-botgrok-contact)
+   - [Per-conversation: joining a group](#per-conversation-how-grok-joins-a-group)
+   - [Per-message: ongoing conversation](#per-message-ongoing-grok-conversation)
+   - [Grok removal](#grok-removal)
+6. [Persistent State](#persistent-state)
+7. [Team Group Setup](#team-group-setup)
+8. [Commands Reference](#commands-reference)
+
+---
+
 ## Principles
 
 - **Opt-in**: Grok is never used unless the user explicitly chooses it.
@@ -7,7 +38,9 @@
 - **Minimal friction**: No upfront choices or setup — the user just sends their question.
 - **Ultimate transparency**: The user always knows whether they are talking to a bot, Grok, or a human, and what happens with their messages.
 
-## Step 1 — Welcome (on connect, no choices, no friction)
+## User Flows
+
+### Step 1 — Welcome (on connect, no choices, no friction)
 
 Bot sends:
 > Hello! Feel free to ask any question about SimpleX Chat.
@@ -17,7 +50,7 @@ Bot sends:
 
 No mention of Grok, no choices. User simply types their question. Messages are forwarded to the team — never to any third party.
 
-## Step 2 — After user sends first message
+### Step 2 — After user sends first message
 
 Bot replies:
 > Your message is forwarded to the team. A reply may take up to 24 hours.
@@ -28,7 +61,7 @@ On weekends, the bot says "48 hours" instead of "24 hours".
 
 The bot creates a card for this conversation in the team group dashboard.
 
-## Step 3 — `/grok` (Grok mode)
+### Step 3 — `/grok` (Grok mode)
 
 Bot replies:
 > *You are now chatting with Grok. You can send questions in any language.* Your message(s) have been forwarded.
@@ -38,7 +71,7 @@ Grok is added as a separate participant so the user can differentiate bot messag
 
 Grok is prompted as a privacy expert and support assistant who knows SimpleX Chat apps, network, design choices, and trade-offs. It gives concise, mobile-friendly answers — brief numbered steps for how-to questions, 1–2 sentence explanations for design questions. For criticism, it briefly acknowledges the concern and explains the design choice. It avoids filler and markdown formatting. Relevant documentation pages and links are injected into the context by the bot.
 
-## Step 4 — `/team` (Team mode, one-way gate)
+### Step 4 — `/team` (Team mode, one-way gate)
 
 Bot adds the first configured team member to the support group as Owner and replies:
 > A team member has been added and will reply within 24 hours. You can keep describing your issue — they will see the full conversation.
@@ -51,7 +84,9 @@ If `/team` is clicked again after a team member was already added:
 **One-way gate:** once a team member sends their first text message in the customer group, Grok is removed. From the moment a team member joins the group, `/grok` is permanently disabled and replies with:
 > You are now in team mode. A team member will reply to your message.
 
-## Team group — live dashboard
+---
+
+## Team Group — Live Dashboard
 
 The team group is **not a conversation stream**. It is a live dashboard of all active support conversations. The bot maintains exactly one message (a "card") per active conversation. Whenever anything changes — a new customer message, a state transition, an agent joining — the bot **deletes the existing card and posts a new one**. The group's message list is therefore always a current snapshot: scroll up to see everything open right now.
 
@@ -185,7 +220,9 @@ Team · alex
 - The card is **not deleted** when a conversation is resolved — it remains in the group until the bot restarts or a retention policy is added. (Resolved state TBD.)
 - Cards appear at the **bottom of the group** in posting order, so the most recently updated card is always last.
 
-## User flow (detailed)
+---
+
+## User Flow (Detailed)
 
 This section describes every event that can occur in a customer conversation, in order, from the bot's perspective.
 
@@ -215,11 +252,7 @@ Each subsequent message updates the card — icon, wait time, message preview. T
 
 ### Team replies
 
-When a team member sends a text message in the customer group, the bot records `lastEventFrom = "team"` in `groupPendingInfo` and immediately resends the card. The icon changes from 👋 to 💬, signalling to other team members that this conversation is being handled.
-
-When the customer subsequently replies, `lastEventFrom` becomes `"customer"` and `groupLastActive` is updated. The card is resent again: if the customer has been waiting less than 2 hours the icon is 👋; if more than 2 hours it escalates to ⏰.
-
-This means `groupPendingInfo` is the sole source of truth for whether the team has replied since the customer's last message. It is persisted so the distinction survives a bot restart (see Persistent state).
+When a team member sends a text message in the customer group, the bot immediately resends the card. The icon (👋 vs 💬 vs ⏰) is derived from recent chat history: if the most recent message in the group is from the customer, they are waiting; if from the team, the team is waiting. Wait time reflects the most recent unanswered message.
 
 ### One-way gate
 
@@ -229,76 +262,74 @@ The gate has two distinct moments:
 
 ### Customer leaving
 
-When a customer leaves the group (or is disconnected), the bot cleans up all in-memory and persisted state for that group: Grok maps, message counters, pending info, last-active timestamp. The conversation card in the team group is not automatically removed (TBD).
+When a customer leaves the group (or is disconnected), the bot cleans up all in-memory state for that group. The conversation card in the team group is not automatically removed (TBD).
 
 ---
 
-## Grok agent architecture
+## Grok Agent Architecture
 
-Grok is not a service call hidden behind the bot's account. It is a **second SimpleX Chat process** with its own user profile, its own SQLite database, and its own network identity. The customer sees messages from "Grok AI" as a real group participant — not from the support bot. This is what makes Grok transparent to the user.
+Grok is not a service call hidden behind the bot's account. It is a **second user profile** within the same SimpleX Chat process and database. The customer sees messages from "Grok AI" as a real group participant — not from the support bot. This is what makes Grok transparent to the user.
 
-### Two processes, one bot
+### Two profiles, one process
 
-The bot process runs two `ChatApi` instances side by side:
+The bot process runs a single `ChatApi` instance with **two user profiles**:
 
-- **`mainChat`** — the support bot's account ("Ask SimpleX Team"). Hosts all business groups, communicates with customers, communicates with the team group, and controls group membership.
-- **`grokChat`** — the Grok agent's account ("Grok AI"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok AI identity.
+- **Main profile** — the support bot's account ("Ask SimpleX Team"). Hosts all business groups, communicates with customers, communicates with the team group, and controls group membership.
+- **Grok profile** — the Grok agent's account ("Grok AI"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok AI identity.
 
-Both instances live in the same process and share memory through the `SupportBot` class. Only `mainChat` does the Grok API calls; `grokChat` only sends the resulting responses into the group.
+Before each API call, the bot switches to the appropriate profile via `apiSetActiveUser(userId)`. All profile-switching and API calls are serialized through a mutex to prevent interleaving.
+
+Only the main profile does the Grok API calls; the Grok profile only sends the resulting responses into groups.
 
 ### Startup: establishing the bot↔Grok contact
 
-On first run (no state file), the bot must establish a SimpleX contact between `mainChat` and `grokChat`:
+On first run (no state file), the bot must establish a SimpleX contact between the main and Grok profiles:
 
-1. `mainChat` creates a one-time invite link
-2. `grokChat` connects to it as a regular contact
+1. Main profile creates a one-time invite link
+2. Grok profile connects to it
 3. The bot waits up to 60 seconds for `contactConnected` to fire
 4. The resulting `grokContactId` is written to the state file
 
-On subsequent runs, the bot looks up `grokContactId` from the state file and verifies it still exists in `mainChat`'s contact list. If not (e.g., database was wiped), the contact is re-established.
+On subsequent runs, the bot looks up `grokContactId` from the state file and verifies it still exists in the main profile's contact list. If not (e.g., database was wiped), the contact is re-established.
 
 ### Per-conversation: how Grok joins a group
 
 When a customer sends `/grok`:
 
-1. `mainChat.apiAddMember(groupId, grokContactId, Member)` — the main bot invites the Grok contact to the customer's business group
-2. The `member.memberId` (a stable group-scoped ID) is stored in `pendingGrokJoins: memberId → mainGroupId`
-3. `grokChat` receives a `receivedGroupInvitation` event and auto-accepts via `grokChat.apiJoinGroup(grokGroupId)`
-4. `grokGroupMap` is updated: `mainGroupId → grokLocalGroupId`. The two accounts see the same physical group under different local IDs; this map bridges them.
-5. `grokChat` fires `connectedToGroupMember` once fully joined, resolving a 30-second promise in `activateGrok`
-6. The bot calls the Grok HTTP API with all prior customer messages as the initial context (so Grok has the full conversation history, not just the most recent message)
-7. The response is sent via `grokChat.apiSendTextMessage([Group, grokLocalGroupId], response)` — visible to the customer as a message from "Grok AI"
-8. The team group card is updated to reflect the Grok response
+1. Main profile: `apiAddMember(groupId, grokContactId, Member)` — the main bot invites the Grok contact to the customer's business group
+2. The `member.memberId` is stored in `pendingGrokJoins: memberId → mainGroupId`
+3. Grok profile receives a `receivedGroupInvitation` event and auto-accepts via `apiJoinGroup(grokLocalGroupId)`
+4. The `grokLocalGroupId` (the Grok profile's local ID for this group) is stored in the main group's **customData** via `apiSetGroupCustomData(mainGroupId, {grokLocalGroupId})` — the main and Grok profiles see the same physical group under different local IDs; customData bridges them across restarts
+5. Grok profile fires `connectedToGroupMember` once fully joined, resolving a 30-second promise
+6. The bot calls the Grok HTTP API with all prior customer messages as the initial context
+7. The response is sent via the Grok profile: `apiSendTextMessage([Group, grokLocalGroupId], response)` — visible to the customer as a message from "Grok AI"
+8. The team group card is updated
 
 ### Per-message: ongoing Grok conversation
 
 After the initial response, every subsequent customer text message:
 1. Triggers a card update in the team group
-2. Triggers a `grokApi.chat(history, text)` call — history is rebuilt each time by reading the last 100 messages from the Grok agent's view of the group (`grokChat.apiGetChat(grokLocalGroupId, 100)`) and mapping Grok's messages to `assistant` role and the customer's messages to `user` role
-3. The response is sent from `grokChat` into the group; the team group card is updated
-
-### The double group ID problem
-
-SimpleX assigns local group IDs per account. The same group has a different numeric ID in `mainChat` (e.g. `42`) and in `grokChat` (e.g. `7`). The `grokGroupMap` (`mainGroupId → grokLocalGroupId`) and `reverseGrokMap` (`grokLocalGroupId → mainGroupId`) translate between the two namespaces. Both maps are persisted so a restart doesn't lose active Grok conversations.
+2. Triggers a Grok API call — history is rebuilt each time by reading the last 100 messages from the Grok profile's view of the group and mapping Grok's messages to `assistant` role and the customer's messages to `user` role
+3. The response is sent from the Grok profile into the group; the team group card is updated
 
 ### Grok removal
 
-Grok is removed from the group (via `mainChat.apiRemoveMembers`) in three cases:
+Grok is removed from the group (via main profile `apiRemoveMembers`) in three cases:
 1. Team member sends their first text message in the customer group
 2. Grok API or join fails — graceful fallback, bot notifies the customer
 3. Customer leaves the group
 
-On removal, `cleanupGrokMaps` deletes both map entries and persists the change.
+On removal, the `grokLocalGroupId` is cleared from the group's customData.
 
 ---
 
-## Persistent state
+## Persistent State
 
 The bot writes a single JSON file (`{dbPrefix}_state.json`) that survives restarts. This section explains what is in it, why each piece is there, and what breaks without it.
 
 ### Why a state file at all?
 
-SimpleX Chat's own database stores the full message history and group membership, but it does not store the bot's derived knowledge — things like "which local group ID does Grok see for customer group 42?" or "when did this customer first contact us?". That knowledge exists only in the bot's memory and must be written to disk to survive a restart.
+SimpleX Chat's own database stores the full message history and group membership, but it does not store the bot's derived knowledge — things like which team group was created on first run, or which contact is the established bot↔Grok link. All other derived state (message counts, timestamps, last sender) is re-derived from chat history or group metadata on demand.
 
 ### What is persisted and why
 
@@ -306,39 +337,34 @@ SimpleX Chat's own database stores the full message history and group membership
 |-----|------|---------------|------------------------|
 | `teamGroupId` | number | The bot creates the team group on first run; subsequent runs must find the same group | Bot creates a new empty team group on every restart; all team members lose their dashboard |
 | `grokContactId` | number | Establishing a bot↔Grok contact takes up to 60 seconds and is a one-time setup | Every restart requires a 60-second re-connection; if it fails the bot exits |
-| `grokGroupMap` | {mainGroupId: grokGroupId} | Bridges the two accounts' different local IDs for the same group | Any conversation where Grok was active when the bot restarted can no longer receive Grok responses; Grok is stranded in the group |
-| `groupLastActive` | {groupId: timestamp} | Records the last customer message time per group | Dashboard card wait times cannot be computed accurately after restart |
-| `groupMetadata` | {groupId: {firstContact, msgCount, customerName}} | Accumulated data that grows over the life of a conversation | Message counters reset to 1 after restart; "first contact" timestamp is lost; dashboard cards show wrong elapsed times |
-| `groupPendingInfo` | {groupId: {lastEventFrom, lastEventType, lastEventTimestamp, lastMessageFrom}} | Tracks who sent the last event so the card icon (👋 vs 💬 vs ⏰) can be computed correctly | After restart, the bot knows the state (QUEUE/GROK/TEAM) from live group membership, but cannot tell whether the team has replied since the customer's last message. All TEAM conversations show 👋 until the next event arrives to re-establish the distinction. |
+
+User profile IDs (`mainUserId`, `grokUserId`) are **not** persisted — they are resolved at startup by calling `apiListUsers()` and matching by display name (the bot creates both profiles with known names).
 
 ### What is NOT persisted and why
 
-| State | Why ephemeral |
-|-------|---------------|
-| `welcomeCompleted` | Rebuilt on demand: `isFirstCustomerMessage` scans chat history for the queue/grok/team confirmation texts. Cheap enough that persistence adds no value. |
-| `pendingGrokJoins` | In-flight during the 30-second Grok join window only. If the bot restarts during this window, the join either completes or the 30-second timeout has long passed. |
-| `pendingOwnerRole` | Set between invite and connect, typically a few seconds. If lost, the owner role isn't set, but the team member can still participate as a Member. |
-| `pendingTeamDMs` | Messages queued to greet team members. Lost on restart; the DM is simply not sent. |
-| `grokJoinResolvers`, `grokFullyConnected` | Pure async synchronisation primitives. Always empty at startup. |
-
-### Pruning on restore
-
-Not all persisted state is loaded unconditionally on restart:
-
-- **`groupLastActive`** entries older than 48 hours are discarded — they fall outside the window of any bulk-invite command and would only accumulate indefinitely
+| State | Where it lives instead |
+|-------|----------------------|
+| `grokLocalGroupId` (per group) | Stored in the group's customData via `apiSetGroupCustomData` |
+| Last customer message time | Derived from most recent customer message in chat history |
+| Message count | Derived from customer message count in chat history |
+| Customer name | Always available from the group's display name |
+| Who sent last message | Derived from recent chat history |
+| `welcomeCompleted` | Rebuilt on demand: `isFirstCustomerMessage` scans recent history |
+| `pendingGrokJoins` | In-flight during the 30-second join window only |
+| `pendingOwnerRole` | Set between invite and connect, typically a few seconds |
+| `pendingTeamDMs` | Messages queued to greet team members — simply not sent if lost |
+| `grokJoinResolvers`, `grokFullyConnected` | Pure async synchronisation primitives — always empty at startup |
 
 ### Failure modes
 
 If the state file is deleted or corrupted:
 - A new team group is created. Team members must re-join it.
 - The bot↔Grok contact is re-established (60-second startup delay).
-- All active Grok conversations lose their group mapping. Grok remains in those groups as a silent, disconnected participant until the customer or team removes it.
-- Message counters and first-contact timestamps reset. Dashboard cards show artificially low counts and short elapsed times.
-- Card icons for TEAM conversations degrade to 👋 (no reply yet) until the next event in each conversation arrives, because the bot can no longer tell whether the team has replied since the customer's last message. QUEUE and GROK icons are unaffected — their urgency is derived from `groupLastActive` and live group membership, both of which survive the restart.
+- Groups where Grok was active lose their `grokLocalGroupId` from customData (unless re-written on Grok rejoin). Grok remains in those groups as a silent participant until the customer or team removes it.
 
 ---
 
-## Team group setup
+## Team Group Setup
 
 ### Group creation
 
@@ -362,7 +388,9 @@ Until team members are configured, `/team` commands from customers cannot add an
 
 ---
 
-## Customer commands
+## Commands Reference
+
+### Customer commands
 
 | Command | Available | Effect |
 |---------|-----------|--------|
@@ -371,7 +399,7 @@ Until team members are configured, `/team` commands from customers cannot add an
 
 **Unrecognized commands** are treated as normal messages in the current mode.
 
-## Team commands (in team group only)
+### Team commands (in team group only)
 
 | Command | Effect |
 |---------|--------|
