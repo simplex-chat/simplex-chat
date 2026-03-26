@@ -1241,7 +1241,7 @@ fun BoxScope.ChatInfoToolbar(
       }
       // Call button always in toolbar; tap opens Audio/Video call submenu
       if (canStartCall) {
-        barButtons.add {
+        barButtons.add(0) {
           IconButton({ showCallMenu.value = true }) {
             Icon(painterResource(MR.images.ic_call_500), null, tint = MaterialTheme.colors.primary)
           }
