@@ -2556,4 +2556,5 @@
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Przestaniesz otrzymywać wiadomości z tego czatu. Historia czatu zostanie zachowana.</string>
     <string name="info_row_connection_failed">Połączenie nie powiodło się</string>
     <string name="member_info_member_failed">niepowodzenie</string>
+    <string name="down_migration_warning_chat_relays">Jeśli dołączyłeś do kanałów lub je utworzyłeś, przestaną one działać na stałe.</string>
 </resources>
