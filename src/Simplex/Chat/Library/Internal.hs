@@ -1323,7 +1323,7 @@ updatePublicGroupData user gInfo
       pure gInfo'
   | otherwise = pure gInfo
 
--- TODO [relays] owner: set owners on updating link data
+-- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
 groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo

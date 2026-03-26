@@ -2062,7 +2062,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPOk groupSLinkInfo_ groupSLinkData ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
-            <> [viewJSON groupSLinkData] -- | testView] -- TODO [relays] disable link data output in cli (uncomment testView)
+            <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]

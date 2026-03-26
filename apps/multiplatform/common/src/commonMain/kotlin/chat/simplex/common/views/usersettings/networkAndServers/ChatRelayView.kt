@@ -62,7 +62,6 @@ fun validRelayAddress(address: String): Boolean {
     (parsedMd.first().format as Format.SimplexLink).linkType == SimplexLinkType.relay
 }
 
-// TODO [relays] TBC matching relay to operator by domain (relay address can be hosted on operator server)
 fun addChatRelay(
   relay: UserChatRelay,
   userServers: MutableState<List<UserOperatorServers>>,

@@ -737,6 +737,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink memberKey
                 | memberRole' membership == GROwner && isRelay m -> do
+                    -- TODO [relays] owner: retrieve relay key for group and relay profile from relay link
+                    -- TODO   - getAgentConnShortLinkAsync -> current logic is continuation
                     withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
                       liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
@@ -3626,11 +3628,10 @@ runRelayRequestWorker a Worker {doWork} = do
                   pure ()
                 createRelayLink :: GroupInfo -> CM ShortLinkContact
                 createRelayLink gi@GroupInfo {groupProfile} = do
-                  -- TODO [relays] relay: set relay link data
-                  -- TODO   - link data: relay key for group, relay identity (profile, certificate, relay identity key)
-                  -- TODO   - starting role should be communicated in protocol from owner to relays
+                  -- TODO [relays] relay: set relay key for group, relay profile as link data
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
+                  -- TODO [relays] starting role should be communicated in protocol from owner to relays
                   subRole <- asks $ channelSubscriberRole . config
                   let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
                       userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
@@ -3647,5 +3648,3 @@ runRelayRequestWorker a Worker {doWork} = do
             acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink memberKey = do
               ownerMember <- withStore $ \db -> getHostMember db vr user groupId
               void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId reqChatVRange relayLink memberKey
-              -- TODO [relays] relay: group invite accepted event, chat item (?)
-              pure ()

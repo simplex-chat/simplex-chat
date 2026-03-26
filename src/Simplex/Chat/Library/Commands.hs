@@ -2161,9 +2161,7 @@ processChatCommand vr nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    -- TODO [relays] relay: address creation
-    -- TODO   - add relay key, identity to link data
-    -- TODO   - validate short link is created (returned by agent)
+    -- TODO [relays] relay: add relay profile, identity, key to link data?
     let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]
