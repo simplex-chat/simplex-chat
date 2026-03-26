@@ -8741,7 +8741,7 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="Upgrade" xml:space="preserve" approved="no">
         <source>Upgrade</source>
-        <target state="translated">Upgrade</target>
+        <target state="translated">Zaktualizuj</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Upgrade address" xml:space="preserve" approved="no">
