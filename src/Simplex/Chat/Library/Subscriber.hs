@@ -1115,7 +1115,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
             CFGetRelayDataAccept -> do
               let GroupMember {memberId = MemberId expectedMemberId} = m
-              -- TODO [relays] owner: TBC "failed" RelayStatus?
               if linkEntityId == Just expectedMemberId
                 then do
                   relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
@@ -1127,7 +1126,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     (m', relay) <- setRelayLinkAccepted db vr user m (MemberKey relayKey) relayProfile
                     pure (confId, m', relay)
                   allowAgentConnectionAsync user conn confId XOk
-                else messageError "relay link: relay member ID mismatch"
+                else
+                  -- TODO [relays] owner: TBC "failed" RelayStatus?
+                  messageError "relay link: relay member ID mismatch"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
