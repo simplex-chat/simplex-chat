@@ -227,14 +227,14 @@ struct AddChannelView: View {
         // Round-robin across shuffled groups to distribute relays across operators.
         var groups = operatorGroups + customRelays.map { [$0] }
         groups.shuffle()
-        var index = 0
-        while selected.count < maxRelays && index < (groups.map(\.count).max() ?? 0) {
-            for relays in groups {
-                if index < relays.count && selected.count < maxRelays {
-                    selected.append(relays[index])
+        let maxDepth = groups.map(\.count).max() ?? 0
+        for depth in 0..<maxDepth {
+            for group in groups {
+                if depth < group.count {
+                    selected.append(group[depth])
+                    if selected.count >= maxRelays { return selected }
                 }
             }
-            index += 1
         }
         return selected
     }
