@@ -1467,7 +1467,6 @@ getRelayConfId db m =
 
 updateRelayMemberData :: DB.Connection -> User -> GroupMember -> Maybe MemberId -> C.PublicKeyEd25519 -> Profile -> ExceptT StoreError IO ()
 updateRelayMemberData db user m memberId_ relayKey profile = do
-  let groupMemberId = groupMemberId' m
   currentTs <- liftIO getCurrentTime
   liftIO $ case memberId_ of
     Just mId ->
@@ -1478,7 +1477,7 @@ updateRelayMemberData db user m memberId_ relayKey profile = do
           SET member_id = ?, member_pub_key = ?, updated_at = ?
           WHERE group_member_id = ?
         |]
-        (mId, relayKey, currentTs, groupMemberId)
+        (mId, relayKey, currentTs, groupMemberId' m)
     Nothing ->
       DB.execute
         db
@@ -1487,7 +1486,7 @@ updateRelayMemberData db user m memberId_ relayKey profile = do
           SET member_pub_key = ?, updated_at = ?
           WHERE group_member_id = ?
         |]
-        (relayKey, currentTs, groupMemberId)
+        (relayKey, currentTs, groupMemberId' m)
   void $ updateMemberProfile db user m profile
 
 setGroupInProgressDone :: DB.Connection -> GroupInfo -> IO ()
