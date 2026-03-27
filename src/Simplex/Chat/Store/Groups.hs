@@ -1441,17 +1441,17 @@ setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink
     (relayLink, relayKey, currentTs, groupMemberId)
   pure relay {relayStatus = RSAccepted, relayLink = Just relayLink}
 
-setRelayConfId :: DB.Connection -> GroupRelay -> ConfirmationId -> ShortLinkContact -> IO ()
-setRelayConfId db GroupRelay {groupRelayId} confId relayLink = do
+setRelayConfId :: DB.Connection -> GroupMember -> ConfirmationId -> ShortLinkContact -> IO ()
+setRelayConfId db m confId relayLink = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE group_relays
       SET conf_id = ?, relay_link = ?, updated_at = ?
-      WHERE group_relay_id = ?
+      WHERE group_member_id = ?
     |]
-    (confId, relayLink, currentTs, groupRelayId)
+    (confId, relayLink, currentTs, groupMemberId' m)
 
 getRelayConfId :: DB.Connection -> GroupMember -> ExceptT StoreError IO ConfirmationId
 getRelayConfId db m =

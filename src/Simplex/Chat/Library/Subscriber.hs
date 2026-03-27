@@ -737,9 +737,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink
                 | memberRole' membership == GROwner && isRelay m -> do
-                    withStore $ \db -> do
-                      relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      liftIO $ setRelayConfId db relay confId relayLink
+                    withStore' $ \db -> setRelayConfId db m confId relayLink
                     void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
