@@ -1122,7 +1122,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Just RelayShortLinkData {relayProfile = p} -> pure p
                 Nothing -> throwChatError $ CEException "relay link: no relay link data"
               (storedConfId, relay@GroupRelay {relayLink = relayLink_}) <- withStore $ \db -> do
-                confId <- getRelayConfId db (groupMemberId' m)
+                confId <- getRelayConfId db m
                 relay <- getGroupRelayByGMId db (groupMemberId' m)
                 pure (confId, relay)
               storedRelayLink <- maybe (throwChatError $ CEException "relay link: no stored relay link") pure relayLink_

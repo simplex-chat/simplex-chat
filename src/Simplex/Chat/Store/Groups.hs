@@ -1453,9 +1453,9 @@ setRelayConfId db GroupRelay {groupRelayId} confId relayLink = do
     |]
     (confId, relayLink, currentTs, groupRelayId)
 
-getRelayConfId :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO ConfirmationId
-getRelayConfId db groupMemberId =
-  ExceptT . firstRow fromOnly (SEGroupRelayNotFoundByMemberId groupMemberId) $
+getRelayConfId :: DB.Connection -> GroupMember -> ExceptT StoreError IO ConfirmationId
+getRelayConfId db m =
+  ExceptT . firstRow fromOnly (SEGroupRelayNotFoundByMemberId $ groupMemberId' m) $
     DB.query
       db
       [sql|
@@ -1463,7 +1463,7 @@ getRelayConfId db groupMemberId =
         FROM group_relays
         WHERE group_member_id = ? AND conf_id IS NOT NULL
       |]
-      (Only groupMemberId)
+      (Only (groupMemberId' m))
 
 updateRelayMemberData :: DB.Connection -> User -> GroupMember -> Maybe MemberId -> C.PublicKeyEd25519 -> Profile -> ExceptT StoreError IO ()
 updateRelayMemberData db user m memberId_ relayKey profile = do
