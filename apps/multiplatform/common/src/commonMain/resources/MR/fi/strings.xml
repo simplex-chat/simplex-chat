@@ -346,11 +346,11 @@
     <string name="delete_after">Poista jälkeen</string>
     <string name="ttl_hour">%d tunti</string>
     <string name="custom_time_unit_days">päivää</string>
-    <string name="error_saving_xftp_servers">Virhe XFTP-palvelimien tallentamisessa</string>
+    <string name="error_saving_xftp_servers">Virhe Data-palvelimien tallentamisessa</string>
     <string name="failed_to_create_user_duplicate_title">Päällekkäinen näyttönimi!</string>
     <string name="failed_to_create_user_title">Virhe profiilin luomisessa!</string>
-    <string name="error_loading_smp_servers">Virhe SMP-palvelimia ladattaessa</string>
-    <string name="error_loading_xftp_servers">Virhe XFTP-palvelimia ladattaessa</string>
+    <string name="error_loading_smp_servers">Virhe Packet-palvelimia ladattaessa</string>
+    <string name="error_loading_xftp_servers">Virhe Data-palvelimia ladattaessa</string>
     <string name="failed_to_active_user_title">Virhe profiilin vaihdossa!</string>
     <string name="error_joining_group">Virhe ryhmään liittymisessä</string>
     <string name="error_deleting_user">Virhe käyttäjäprofiilin poistamisessa</string>
@@ -377,7 +377,7 @@
     <string name="import_theme">Tuo teema</string>
     <string name="thousand_abbreviation">t</string>
     <string name="server_error">virhe</string>
-    <string name="error_saving_smp_servers">Virhe SMP-palvelimien tallentamisessa</string>
+    <string name="error_saving_smp_servers">Virhe Packet-palvelimien tallentamisessa</string>
     <string name="simplex_link_mode_full">Koko linkki</string>
     <string name="error_setting_network_config">Virhe verkkoasetuksia päivitettäessä</string>
     <string name="failed_to_parse_chat_title">Keskustelun lataaminen epäonnistui</string>
@@ -630,7 +630,7 @@
     <string name="set_passcode">Aseta pääsykoodi</string>
     <string name="simplex_link_mode">SimpleX-linkit</string>
     <string name="simplex_link_mode_browser_warning">Linkin avaaminen selaimessa voi heikentää yhteyden yksityisyyttä ja turvallisuutta. Epäluotetut SimpleX-linkit näkyvät punaisina.</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Varmista, että SMP-palvelinosoitteet ovat oikeassa muodossa, rivieroteltuina ja että ne eivät ole päällekkäisiä.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Varmista, että Packet-palvelinosoitteet ovat oikeassa muodossa, rivieroteltuina ja että ne eivät ole päällekkäisiä.</string>
     <string name="sender_cancelled_file_transfer">Lähettäjä peruutti tiedoston siirron.</string>
     <string name="periodic_notifications">Säännölliset ilmoitukset</string>
     <string name="simplex_service_notification_text">Viestejä vastaanotetaan…</string>
@@ -777,7 +777,7 @@
     <string name="scan_QR_code">Skannaa QR-koodi</string>
     <string name="learn_more">Lue lisää</string>
     <string name="is_verified">%s on vahvistettu</string>
-    <string name="smp_servers">SMP-palvelimet</string>
+    <string name="smp_servers">Packet-palvelimet</string>
     <string name="group_welcome_preview">Esikatselu</string>
     <string name="network_options_save">Tallenna</string>
     <string name="network_option_seconds_label">sek</string>
@@ -889,7 +889,7 @@
     <string name="alert_text_msg_bad_hash">Edellisen viestin tarkiste on erilainen.</string>
     <string name="v4_4_live_messages">Live-viestit</string>
     <string name="v4_6_hidden_chat_profiles_descr">Suojaa keskusteluprofiilisi salasanalla!</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Varmista, että XFTP-palvelinosoitteet ovat oikeassa muodossa, rivieroteltuina ja että ne eivät ole päällekkäisiä.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Varmista, että Data-palvelinosoitteet ovat oikeassa muodossa, rivieroteltuina ja että ne eivät ole päällekkäisiä.</string>
     <string name="ntf_channel_messages">SimpleX Chat -viestit</string>
     <string name="ntf_channel_calls">SimpleX Chat -puhelut</string>
     <string name="notification_preview_mode_message_desc">Näytä kontakti ja viesti</string>
@@ -1019,7 +1019,7 @@
     <string name="voice_messages_prohibited">Ääniviestit kielletty!</string>
     <string name="smp_servers_per_user">Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille</string>
     <string name="smp_servers_use_server">Käytä palvelinta</string>
-    <string name="xftp_servers">XFTP-palvelimet</string>
+    <string name="xftp_servers">Data-palvelimet</string>
     <string name="smp_servers_your_server">Palvelimesi</string>
     <string name="smp_servers_your_server_address">Palvelimesi osoite</string>
     <string name="enable_automatic_deletion_message">Tätä toimintoa ei voi kumota - valittua aikaisemmin lähetetyt ja vastaanotetut viestit poistetaan. Tämä voi kestää useita minuutteja.</string>
@@ -1114,8 +1114,8 @@
     <string name="scan_qr_to_connect_to_contact">Kontaktisi voi muodostaa yhteyden skannaamalla QR-koodin tai käyttämällä sovelluksessa olevaa linkkiä.</string>
     <string name="you_can_accept_or_reject_connection">Kun ihmiset pyytävät yhteyden muodostamista, voit hyväksyä tai hylätä sen.</string>
     <string name="your_settings">Asetuksesi</string>
-    <string name="your_SMP_servers">SMP-palvelimesi</string>
-    <string name="your_XFTP_servers">XFTP-palvelimesi</string>
+    <string name="your_SMP_servers">Packet-palvelimesi</string>
+    <string name="your_XFTP_servers">Data-palvelimesi</string>
     <string name="use_simplex_chat_servers__question">Käytä SimpleX Chat palvelimia\?</string>
     <string name="theme_colors_section_title">KÄYTTÖLIITTYMÄN VÄRIT</string>
     <string name="update_network_session_mode_question">Päivitä kuljetuksen eristystila\?</string>

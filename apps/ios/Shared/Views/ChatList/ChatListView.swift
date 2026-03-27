@@ -127,7 +127,7 @@ struct UserPickerSheetView: View {
                 ss.servers.serverErrors
             ) {
                 showAlert(
-                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    title: NSLocalizedString("Save routers?", comment: "alert title"),
                     buttonTitle: NSLocalizedString("Save", comment: "alert button"),
                     buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
                     cancelButton: true
@@ -231,8 +231,8 @@ struct ChatListView: View {
         }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
-                title: Text("Reconnect servers?"),
-                message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
+                title: Text("Reconnect routers?"),
+                message: Text("Reconnect all connected routers to force message delivery. It uses additional traffic."),
                 primaryButton: .default(Text("Ok")) {
                     Task {
                         do {

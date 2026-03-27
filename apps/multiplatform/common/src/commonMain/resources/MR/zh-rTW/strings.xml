@@ -243,8 +243,8 @@
     <string name="deleted_description">已刪除</string>
     <string name="marked_deleted_description">已標記為已刪除</string>
     <string name="simplex_link_mode_browser_warning">在瀏覽器中開啟連結可能會有隱私疑慮和不確定性。不受 SimpleX 信任的連結會顯示紅色。</string>
-    <string name="error_saving_smp_servers">儲存 SMP 伺服器時出錯</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">請確保 SMP 伺服器連結是正確的格式，每行也分隔且不重複。</string>
+    <string name="error_saving_smp_servers">儲存 Packet 伺服器時出錯</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">請確保 Packet 伺服器連結是正確的格式，每行也分隔且不重複。</string>
     <string name="error_setting_network_config">更新網路配置時出錯</string>
     <string name="failed_to_parse_chat_title">聊天載入失敗</string>
     <string name="failed_to_parse_chats_title">多個聯絡人載入失敗</string>
@@ -482,7 +482,7 @@
     <string name="smp_servers_invalid_address">無效的伺服器地址！</string>
     <string name="smp_servers_per_user">此伺服器用於你目前的個人檔案</string>
     <string name="use_simplex_chat_servers__question">使用 SimpleX Chat 伺服器？</string>
-    <string name="your_SMP_servers">你的 SMP 伺服器</string>
+    <string name="your_SMP_servers">你的 Packet 伺服器</string>
     <string name="using_simplex_chat_servers">目前使用 SimpleX Chat 伺服器。</string>
     <string name="how_to">如何</string>
     <string name="configure_ICE_servers">配置 ICE 伺服器</string>
@@ -536,7 +536,7 @@
     <string name="database_passphrase_and_export">資料庫密碼和匯出</string>
     <string name="send_us_an_email">傳送電郵</string>
     <string name="chat_lock">SimpleX 鎖定</string>
-    <string name="smp_servers">SMP 伺服器</string>
+    <string name="smp_servers">Packet 伺服器</string>
     <string name="smp_servers_preset_address">預設伺服器地址</string>
     <string name="smp_servers_test_server">測試伺服器</string>
     <string name="smp_servers_test_servers">測試多個伺服器</string>
@@ -1006,10 +1006,10 @@
     <string name="developer_options">資料庫 IDs 和傳輸隔離選項。</string>
     <string name="downgrade_and_open_chat">降級和開啟對話</string>
     <string name="profile_password">個人檔案密碼</string>
-    <string name="error_saving_xftp_servers">儲存 XFTP 伺服器時出錯</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">請確保 XFTP 伺服器連結格式正確，隔行顯示且不重複。</string>
-    <string name="error_loading_smp_servers">加載 SMP 伺服器時出錯</string>
-    <string name="error_loading_xftp_servers">加載 XFTP 伺服器時出錯</string>
+    <string name="error_saving_xftp_servers">儲存 Data 伺服器時出錯</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">請確保 Data 伺服器連結格式正確，隔行顯示且不重複。</string>
+    <string name="error_loading_smp_servers">加載 Packet 伺服器時出錯</string>
+    <string name="error_loading_xftp_servers">加載 Data 伺服器時出錯</string>
     <string name="smp_server_test_create_file">建立檔案</string>
     <string name="error_xftp_test_server_auth">伺服器需要認證後才能上載，檢查密碼</string>
     <string name="smp_server_test_compare_file">對比檔案</string>
@@ -1078,7 +1078,7 @@
 \n在 v5.1中可用"</string>
     <string name="allow_your_contacts_to_call">允許你的聯絡人與你進行通話。</string>
     <string name="smp_server_test_upload_file">上載檔案</string>
-    <string name="xftp_servers">XFTP 伺服器</string>
+    <string name="xftp_servers">Data 伺服器</string>
     <string name="la_lock_mode_system">系統認證</string>
     <string name="la_could_not_be_verified">你未能通過認證；請再試一次。</string>
     <string name="you_can_turn_on_lock">你可以透過設定啟用 SimpleX 鎖定。</string>
@@ -1087,7 +1087,7 @@
 \n當一些錯誤出現或你的連結被破壞時會發生。</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d 條訊息解密失敗。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用SOCKS 代理伺服器</string>
-    <string name="your_XFTP_servers">你的 XFTP 伺服器</string>
+    <string name="your_XFTP_servers">你的 Data 伺服器</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d 條訊息已跳過。</string>
     <string name="v5_0_large_files_support">影片和檔案和最大上限為1gb</string>
     <string name="gallery_video_button">影片</string>
@@ -1269,7 +1269,7 @@
     <string name="permissions_camera">相機</string>
     <string name="choose_file_title">選擇一個檔案</string>
     <string name="migrate_from_device_archive_and_upload">封存並上載</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">你的所有聯絡人、對話和檔案將被安全加密並切塊上載到你設定的 XFTP 中繼</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">你的所有聯絡人、對話和檔案將被安全加密並切塊上載到你設定的 Data 中繼</string>
     <string name="migrate_from_device_archiving_database">正在儲存資料庫</string>
     <string name="migrate_from_device_cancel_migration">取消遷移</string>
     <string name="snd_conn_event_ratchet_sync_started">與 %s 協調加密中…</string>
@@ -1323,13 +1323,13 @@
     <string name="v5_3_encrypt_local_files_descr">應用程式將為新的本機檔案（影片除外）加密。</string>
     <string name="migrate_from_device_check_connection_and_try_again">檢查你的網路連接並重試</string>
     <string name="all_users">所有個人檔案</string>
-    <string name="smp_servers_configured">已設定的 SMP 伺服器</string>
+    <string name="smp_servers_configured">已設定的 Packet 伺服器</string>
     <string name="settings_section_title_chat_theme">聊天主題</string>
     <string name="info_view_call_button">通話</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">允許降級</string>
     <string name="network_smp_proxy_mode_always_description">始終使用私密路由。</string>
     <string name="chat_database_exported_title">以導出聊天資料庫</string>
-    <string name="xftp_servers_configured">已設定的 XFTP 伺服器</string>
+    <string name="xftp_servers_configured">已設定的 Data 伺服器</string>
     <string name="color_mode">色彩模式</string>
     <string name="deleted_chats">已儲存的聯絡人</string>
     <string name="privacy_media_blur_radius">模糊媒體</string>
@@ -1739,8 +1739,8 @@
     <string name="migrate_to_device_database_init">正在準備下載</string>
     <string name="only_delete_conversation">只刪除對話</string>
     <string name="paste_link">貼上連結</string>
-    <string name="smp_servers_other">其他 SMP 伺服器</string>
-    <string name="xftp_servers_other">其他 XFTP 伺服器</string>
+    <string name="smp_servers_other">其他 Packet 伺服器</string>
+    <string name="xftp_servers_other">其他 Data 伺服器</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">請讓你的聯絡人啟用通話。</string>
     <string name="v5_6_picture_in_picture_calls">畫中畫通話</string>
     <string name="migrate_from_device_or_share_this_file_link">或安全分享此文件連結</string>
@@ -1907,7 +1907,7 @@
     <string name="address_settings">地址設定</string>
     <string name="operator_added_message_servers">已新增訊息伺服器</string>
     <string name="non_content_uri_alert_text">你分享了一個無效的檔案路徑。請將此問題報告給應用程式開發者。</string>
-    <string name="file_not_approved_descr">如果沒有 Tor 或 VPN，你的 IP 位址將對以下 XFTP 中繼可見：\n%1$s。</string>
+    <string name="file_not_approved_descr">如果沒有 Tor 或 VPN，你的 IP 位址將對以下 Data 中繼可見：\n%1$s。</string>
     <string name="app_was_crashed">檢視已崩潰</string>
     <string name="add_short_link">新增短連結</string>
     <string name="rcv_group_event_member_accepted">接受了 %1$s</string>
@@ -2005,7 +2005,7 @@
     <string name="rcv_group_event_1_member_connected">%s 已連接</string>
     <string name="saved_message_title">已儲存訊息</string>
     <string name="v5_6_safer_groups">更安全的群組</string>
-    <string name="xftp_server">XFTP 伺服器</string>
+    <string name="xftp_server">Data 伺服器</string>
     <string name="change_list">變更清單</string>
     <string name="smp_servers_new_server">新伺服器</string>
     <string name="save_list">儲存清單</string>
@@ -2030,7 +2030,7 @@
     <string name="upload_errors">上載錯誤</string>
     <string name="migrate_from_device_uploading_archive">正在上載封存</string>
     <string name="migrate_from_device_start_chat">開始聊天</string>
-    <string name="smp_server">SMP 伺服器</string>
+    <string name="smp_server">Packet 伺服器</string>
     <string name="servers_info_transport_sessions_section_header">傳輸工作階段</string>
     <string name="sync_connection_question">修復連接？</string>
     <string name="servers_info_subscriptions_total">總計</string>

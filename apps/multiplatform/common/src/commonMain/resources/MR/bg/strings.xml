@@ -603,9 +603,9 @@
     <string name="error_importing_database">Грешка при импортиране на базата данни</string>
     <string name="error_removing_member">Грешка при отстраняване на член</string>
     <string name="error_saving_group_profile">Грешка при запазване на профила на групата</string>
-    <string name="error_loading_smp_servers">Грешка при зареждане на SMP сървъри</string>
-    <string name="error_loading_xftp_servers">Грешка при зареждане на XFTP сървъри</string>
-    <string name="error_saving_smp_servers">Грешка при запазване на SMP сървърите</string>
+    <string name="error_loading_smp_servers">Грешка при зареждане на Packet сървъри</string>
+    <string name="error_loading_xftp_servers">Грешка при зареждане на Data сървъри</string>
+    <string name="error_saving_smp_servers">Грешка при запазване на Packet сървърите</string>
     <string name="error_joining_group">Грешка при присъединяване към група</string>
     <string name="error_loading_details">Грешка при зареждане на подробности</string>
     <string name="error_receiving_file">Грешка при получаване на файл</string>
@@ -613,7 +613,7 @@
     <string name="error_saving_user_password">Грешка при запазване на потребителска парола</string>
     <string name="error_starting_chat">Грешка при стартиране на чата</string>
     <string name="error_stopping_chat">Грешка при спиране на чата</string>
-    <string name="error_saving_xftp_servers">Грешка при запазване на XFTP сървърите</string>
+    <string name="error_saving_xftp_servers">Грешка при запазване на Data сървърите</string>
     <string name="error_sending_message">Грешка при изпращане на съобщение</string>
     <string name="error_setting_address">Грешка при задаване на адрес</string>
     <string name="failed_to_active_user_title">Грешка при смяна на профил!</string>
@@ -938,8 +938,8 @@
     <string name="thousand_abbreviation">х</string>
     <string name="opening_database">Отваряне на база данни…</string>
     <string name="live">НА ЖИВО</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Уверете се, че адресите на SMP сървъра са в правилен формат, разделени на редове и не са дублирани.</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Уверете се, че адресите на XFTP сървъра са в правилен формат, разделени на редове и не са дублирани.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Уверете се, че адресите на Packet сървъра са в правилен формат, разделени на редове и не са дублирани.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Уверете се, че адресите на Data сървъра са в правилен формат, разделени на редове и не са дублирани.</string>
     <string name="marked_deleted_description">маркирано като изтрито</string>
     <string name="moderated_description">модерирано</string>
     <string name="moderated_item_description">модерирано от %s</string>
@@ -1037,7 +1037,7 @@
     <string name="icon_descr_address">SimpleX Адрес</string>
     <string name="image_descr_simplex_logo">SimpleX Лого</string>
     <string name="icon_descr_simplex_team">SimpleX Екип</string>
-    <string name="smp_servers">SMP сървъри</string>
+    <string name="smp_servers">Packet сървъри</string>
     <string name="share_address_with_contacts_question">Сподели адреса с контактите\?</string>
     <string name="share_link">Сподели линк</string>
     <string name="share_with_contacts">Сподели с контактите</string>
@@ -1204,11 +1204,11 @@
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">SimpleX адрес</string>
     <string name="smp_servers_use_server_for_new_conn">Използвай за нови връзки</string>
-    <string name="your_XFTP_servers">Вашите XFTP сървъри</string>
+    <string name="your_XFTP_servers">Вашите Data сървъри</string>
     <string name="use_simplex_chat_servers__question">Използвай сървърите на SimpleX Chat\?</string>
     <string name="using_simplex_chat_servers">Използват се сървърите на SimpleX Chat.</string>
     <string name="your_ICE_servers">Вашите ICE сървъри</string>
-    <string name="your_SMP_servers">Вашите SMP сървъри</string>
+    <string name="your_SMP_servers">Вашите Packet сървъри</string>
     <string name="network_socks_toggle_use_socks_proxy">Използвай SOCKS прокси</string>
     <string name="network_enable_socks">Използвай SOCKS прокси\?</string>
     <string name="network_disable_socks">Използване на директна интернет връзка\?</string>
@@ -1307,7 +1307,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Можете да <font color="#0088ff">се свържете с разработчиците на SimpleX Chat, за да задавате въпроси и да получавате актуализации</font>;.]]></string>
     <string name="contact_wants_to_connect_with_you">иска да се свърже с вас!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Можете също да се свържете, като натиснете върху линка. Ако се отвори в браузъра, натиснете върху бутона <b>Отваряне в мобилно приложение</b>.]]></string>
-    <string name="xftp_servers">XFTP сървъри</string>
+    <string name="xftp_servers">Data сървъри</string>
     <string name="update_network_session_mode_question">Актуализиране на режима на изолация на транспорта\?</string>
     <string name="your_current_profile">Вашият текущ профил</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX сървърите не могат да видят вашия профил.</string>
@@ -1656,7 +1656,7 @@
     <string name="migrate_from_device_error_deleting_database">Грешка при изтриване на база данни</string>
     <string name="migrate_from_device_stopping_chat">Спиране на чата</string>
     <string name="migrate_from_device_chat_should_be_stopped">За да продължите, чатът трябва да бъде спрян.</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Всички ваши контакти, разговори и файлове ще бъдат сигурно криптирани и качени на парчета в конфигурираните XFTP релета.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Всички ваши контакти, разговори и файлове ще бъдат сигурно криптирани и качени на парчета в конфигурираните Data релета.</string>
     <string name="migrate_from_device_uploading_archive">Архивът се качва</string>
     <string name="migrate_from_device_try_again">Можете да опитате още веднъж.</string>
     <string name="migrate_from_device_creating_archive_link">Създаване на архивен линк</string>
@@ -1763,7 +1763,7 @@
     <string name="color_primary_variant2">Допълнителен акцент 2</string>
     <string name="no_media_servers_configured_for_private_routing">Няма сървъри за получаване на файлове.</string>
     <string name="private_routing_error">Грешка при поверително рутиране</string>
-    <string name="file_not_approved_descr">Без Tor или VPN вашият IP адрес ще бъде видим за тези XFTP релета:\n%1$s.</string>
+    <string name="file_not_approved_descr">Без Tor или VPN вашият IP адрес ще бъде видим за тези Data релета:\n%1$s.</string>
     <string name="forward_alert_title_messages_to_forward">Препращане на %1$s съобщението(ята)?</string>
     <string name="forward_multiple">Препращане на съобщенията…</string>
     <string name="compose_forward_messages_n">Препращане на %1$s съобщения</string>
@@ -1773,7 +1773,7 @@
     <string name="operator_use_for_messages_private_routing">За поверителното рутиране</string>
     <string name="smp_proxy_error_connecting">Грешка при свързване към препращащият сървър %1$s. Моля, опитайте по-късно.</string>
     <string name="private_routing_show_message_status">Покажи състоянието на съобщението</string>
-    <string name="private_routing_explanation">За да защити вашия IP адрес, поверително рутиране използва вашите SMP сървъри за доставяне на съобщения.</string>
+    <string name="private_routing_explanation">За да защити вашия IP адрес, поверително рутиране използва вашите Packet сървъри за доставяне на съобщения.</string>
     <string name="forward_alert_forward_messages_without_files">Препращане на съобщенията без файловете?</string>
     <string name="network_smp_proxy_mode_unknown">Неизвестни сървъри</string>
     <string name="settings_section_title_files">ФАЙЛОВЕ</string>
@@ -1855,14 +1855,14 @@
     <string name="servers_info_reconnect_server_message">Свържете отново сървъра, за да принудите доставката на съобщенията. Това използва допълнителен трафик.</string>
     <string name="servers_info_reset_stats_alert_error_title">Грешка при нулиране на статистиката</string>
     <string name="scan_paste_link">Сканирай / Постави линк</string>
-    <string name="xftp_servers_configured">Конфигурирани XFTP сървъри</string>
+    <string name="xftp_servers_configured">Конфигурирани Data сървъри</string>
     <string name="appearance_font_size">Размер на шрифта</string>
     <string name="share_text_message_status">Статус на съобщението: %s</string>
     <string name="chat_theme_set_default_theme">Задай тема по подразбиране</string>
     <string name="v5_8_safe_files_descr">Потвърди файлове от неизвестни сървъри.</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Изпратени съобщения</string>
     <string name="error_initializing_web_view">Грешка при стартиране на WebView. Актуализирайте системата си до новата версия. Моля, свържете се с разработчиците.\nГрешка: %s</string>
-    <string name="xftp_servers_other">Други XFTP сървъри</string>
+    <string name="xftp_servers_other">Други Data сървъри</string>
     <string name="appearance_zoom">Мащабиране</string>
     <string name="chat_theme_apply_to_all_modes">Всички цветови режими</string>
     <string name="chat_theme_apply_to_light_mode">Светъл режим</string>
@@ -1936,8 +1936,8 @@
     <string name="servers_info_detailed_statistics_receive_errors">Получени грешки</string>
     <string name="remote_ctrl_connection_stopped_desc">Моля, проверете дали мобилното и настолното устройство са свързани към една и съща локална мрежа и дали защитната стена на настолното устройство позволява връзката.\nМоля, споделете всички други проблеми с разработчиците.</string>
     <string name="temporary_file_error">Временна файлова грешка</string>
-    <string name="smp_servers_configured">Конфигурирани SMP сървъри</string>
-    <string name="smp_servers_other">Други SMP сървъри</string>
+    <string name="smp_servers_configured">Конфигурирани Packet сървъри</string>
+    <string name="smp_servers_other">Други Packet сървъри</string>
     <string name="v5_8_message_delivery">Подобрена доставка на съобщения</string>
     <string name="attempts_label">опити</string>
     <string name="expired_label">изтекли</string>
@@ -1947,11 +1947,11 @@
     <string name="acknowledgement_errors">Грешки при потвърждението</string>
     <string name="connections">Връзки</string>
     <string name="servers_info_starting_from">Започвайки от %s.</string>
-    <string name="xftp_server">XFTP сървър</string>
+    <string name="xftp_server">Data сървър</string>
     <string name="sent_directly">Изпратени директно</string>
     <string name="sent_via_proxy">Изпратени чрез прокси</string>
     <string name="proxied">Чрез прокси</string>
-    <string name="smp_server">SMP сървър</string>
+    <string name="smp_server">Packet сървър</string>
     <string name="send_errors">Изпрати грешки</string>
     <string name="other_errors">други грешки</string>
     <string name="decryption_errors">грешки при декриптиране</string>

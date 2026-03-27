@@ -67,7 +67,7 @@ struct GroupProfileView: View {
                     }
                 }
             } footer: {
-                Text("Group profile is stored on members' devices, not on the servers.")
+                Text("Group profile is stored on members' devices, not on the routers.")
             }
 
             Section {

@@ -209,11 +209,11 @@ func serverErrorAlertMessage(_ addr: String) -> String {
 }
 
 func proxyErrorAlertMessage(_ addr: String) -> String {
-    String.localizedStringWithFormat(NSLocalizedString("Error connecting to forwarding server %@. Please try later.", comment: "alert message"), serverHostname(addr))
+    String.localizedStringWithFormat(NSLocalizedString("Error connecting to forwarding router %@. Please try later.", comment: "alert message"), serverHostname(addr))
 }
 
 func proxyDestinationErrorAlertMessage(proxyServer: String, destServer: String) -> String {
-    String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: "alert message"), serverHostname(proxyServer), serverHostname(destServer))
+    String.localizedStringWithFormat(NSLocalizedString("Forwarding router %@ failed to connect to destination router %@. Please try later.", comment: "alert message"), serverHostname(proxyServer), serverHostname(destServer))
 }
 
 // Spec: spec/api.md#chatApiSendCmd
@@ -1070,7 +1070,7 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
     case let .errorAgent(.SMP(_, .BLOCKED(info))):
         Alert(
             title: Text("Connection blocked"),
-            message: Text("Connection is blocked by server operator:\n\(info.reason.text)"),
+            message: Text("Connection is blocked by router operator:\n\(info.reason.text)"),
             primaryButton: .default(Text("Ok")),
             secondaryButton: .default(Text("How it works")) {
                 DispatchQueue.main.async {
@@ -1523,9 +1523,9 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             let fIds = fileIdsToApprove
             await MainActor.run {
                 showAlert(
-                    title: NSLocalizedString("Unknown servers!", comment: "alert title"),
+                    title: NSLocalizedString("Unknown routers!", comment: "alert title"),
                     message: (
-                        String.localizedStringWithFormat(NSLocalizedString("Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.", comment: "alert message"), srvs) +
+                        String.localizedStringWithFormat(NSLocalizedString("Without Tor or VPN, your IP address will be visible to these data routers: %@.", comment: "alert message"), srvs) +
                         (otherErrsStr != "" ? "\n\n" + String.localizedStringWithFormat(NSLocalizedString("Other file errors:\n%@", comment: "alert message"), otherErrsStr) : "")
                     ),
                     buttonTitle: NSLocalizedString("Download", comment: "alert button"),
@@ -2894,7 +2894,7 @@ private struct UserResponse: Decodable {
 
 private func showClientNotice(_ server: String, _ preset: Bool, _ expiresAt: Date?) {
     DispatchQueue.main.async {
-        var message = "Server: \(server).\nConditions of use violation notice received from \(preset ? "preset" : "this") server.\nNo IDs shared, see How it works."
+        var message = "Router: \(server).\nConditions of use violation notice received from \(preset ? "preset" : "this") router.\nNo IDs shared, see How it works."
         if let expiresAt {
             message += "\n\nNew addresses can be created after \(expiresAt.formatted(date: .abbreviated, time: .shortened))."
         }

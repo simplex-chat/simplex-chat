@@ -32,7 +32,7 @@ struct NewServerView: View {
         })
         .alert(isPresented: $showTestFailure) {
             Alert(
-                title: Text("Server test failed!"),
+                title: Text("Router test failed!"),
                 message: Text(testFailure?.localizedDescription ?? "")
             )
         }
@@ -55,7 +55,7 @@ struct NewServerView: View {
                         .padding(-6)
                 } header: {
                     HStack {
-                        Text("Your server address")
+                        Text("Your router address")
                             .foregroundColor(theme.colors.secondary)
                         if !valid {
                             Spacer()
@@ -75,9 +75,9 @@ struct NewServerView: View {
     }
 
     private func useServerSection(_ valid: Bool) -> some View {
-        Section(header: Text("Use server").foregroundColor(theme.colors.secondary)) {
+        Section(header: Text("Use router").foregroundColor(theme.colors.secondary)) {
             HStack {
-                Button("Test server") {
+                Button("Test router") {
                     testing = true
                     serverToEdit.tested = nil
                     Task {
@@ -130,20 +130,20 @@ func addServer(
             dismiss()
             if let op = matchingOperator {
                 showAlert(
-                    NSLocalizedString("Operator server", comment: "alert title"),
-                    message: String.localizedStringWithFormat(NSLocalizedString("Server added to operator %@.", comment: "alert message"), op.tradeName)
+                    NSLocalizedString("Operator router", comment: "alert title"),
+                    message: String.localizedStringWithFormat(NSLocalizedString("Router added to operator %@.", comment: "alert message"), op.tradeName)
                 )
             }
         } else { // Shouldn't happen
             dismiss()
-            showAlert(NSLocalizedString("Error adding server", comment: "alert title"))
+            showAlert(NSLocalizedString("Error adding router", comment: "alert title"))
         }
     } else {
         dismiss()
         if server.server.trimmingCharacters(in: .whitespaces) != "" {
             showAlert(
-                NSLocalizedString("Invalid server address!", comment: "alert title"),
-                message: NSLocalizedString("Check server address and try again.", comment: "alert title")
+                NSLocalizedString("Invalid router address!", comment: "alert title"),
+                message: NSLocalizedString("Check router address and try again.", comment: "alert title")
             )
         }
     }

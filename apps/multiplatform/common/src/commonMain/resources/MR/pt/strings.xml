@@ -74,7 +74,7 @@
     <string name="connect_via_link_verb">Conectar</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Você está conectado ao servidor usado para receber mensagens deste contacto.</string>
     <string name="sender_you_pronoun">você</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor XFTP estão no formato correto, separados por linhas e não estão duplicados.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor Data estão no formato correto, separados por linhas e não estão duplicados.</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
     <string name="error_smp_test_certificate">Possivelmente, a impressão digital do certificado no endereço do servidor está incorreta</string>
     <string name="enter_passphrase_notification_title">A senha é necessária</string>
@@ -161,7 +161,7 @@
     <string name="send_live_message_desc">Enviar uma mensagem ao vivo - ela será atualizada para o(s) destinatário(s) à medida que você a digita</string>
     <string name="info_row_local_name">Nome local</string>
     <string name="lock_mode">Modo de bloqueio</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor SMP estão no formato correto, separados por linhas e não estão duplicados.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor Packet estão no formato correto, separados por linhas e não estão duplicados.</string>
     <string name="make_private_connection">Fazer uma conexão privada</string>
     <string name="make_profile_private">Tornar o perfil privado!</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor WebRTC ICE estão no formato correto, separados por linhas e não estão duplicados.</string>
@@ -495,7 +495,7 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">Você não irá perder os seus contatos se eliminar o seu endereço mais tarde.</string>
     <string name="you_can_hide_or_mute_user_profile">Você pode esconder ou silenciar um perfil de utilizador - pressione-o para o menu.</string>
     <string name="icon_descr_video_on">Vídeo ligado</string>
-    <string name="xftp_servers">Servidores XFTP</string>
+    <string name="xftp_servers">Servidores Data</string>
     <string name="contact_wants_to_connect_via_call"> %1$s  quer conectar-se consigo via</string>
     <string name="join_group_button">Junte-se</string>
     <string name="leave_group_button">Sair</string>
@@ -722,7 +722,7 @@
     <string name="search_verb">Pesquisar</string>
     <string name="la_mode_off">Desativado</string>
     <string name="error_smp_test_failed_at_step">O teste falhou na etapa %s.</string>
-    <string name="smp_servers">Servidor SMP</string>
+    <string name="smp_servers">Servidor Packet</string>
     <string name="smp_servers_test_server">Servidor de teste</string>
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
     <string name="stop_chat_question">Parar conversa?</string>
@@ -923,10 +923,10 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Você será conectado quando o dispositivo do seu contacto estiver online, por favor aguarde ou volte mais tarde!</string>
     <string name="disconnect_remote_host">Desconectar</string>
     <string name="app_check_for_updates_disabled">Desativado</string>
-    <string name="your_XFTP_servers">Os seus servidores XFTP</string>
+    <string name="your_XFTP_servers">Os seus servidores Data</string>
     <string name="you_control_your_chat">Você controla a conversa!</string>
     <string name="you_can_still_view_conversation_with_contact">Você poderá ver a conversa com %1$s na lista de conversas.</string>
-    <string name="your_SMP_servers">Os seus servidores SMP</string>
+    <string name="your_SMP_servers">Os seus servidores Packet</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Você pode usar markdown para formatar mensagens:</string>
     <string name="you_can_still_send_messages_to_contact">Você poderá enviar mensagens para %1$s através das conversas Eliminadas.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">O seu contacto precisa de estar online para a ligação ser completada.
@@ -960,7 +960,7 @@
     <string name="abort_switch_receiving_address_desc">Mudança de endereço será cancelada. Antigo endereço de recebimento será usado.</string>
     <string name="allow_calls_question">Permitir ligações?</string>
     <string name="servers_info_subscriptions_connections_subscribed">Conexões ativas</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Todos os seus contatos, conversas e arquivos serão encriptados e enviados em chunks para relays XFTP configurados.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Todos os seus contatos, conversas e arquivos serão encriptados e enviados em chunks para relays Data configurados.</string>
     <string name="n_other_file_errors">%1$d erro(s) de outro arquivo.</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s mensagens não encaminhadas</string>
     <string name="network_smp_proxy_mode_always">Sempre</string>

@@ -66,8 +66,8 @@
     <string name="simplex_link_mode_description">توصیف</string>
     <string name="simplex_link_mode_full">لینک کامل</string>
     <string name="simplex_link_mode">لینک‌های SimpleX</string>
-    <string name="error_saving_smp_servers">خطا در ذخیره کردن سرورهای SMP</string>
-    <string name="error_saving_xftp_servers">خطا در ذخیره کردن سرورهای XFTP</string>
+    <string name="error_saving_smp_servers">خطا در ذخیره کردن سرورهای Packet</string>
+    <string name="error_saving_xftp_servers">خطا در ذخیره کردن سرورهای Data</string>
     <string name="encryption_renegotiation_error">خطای تجدید مذاکره رمزنگاری</string>
     <string name="connection_local_display_name">اتصال %1$d</string>
     <string name="display_name_connection_established">اتصال برقرار شد</string>
@@ -82,7 +82,7 @@
     <string name="simplex_link_invitation">دعوت یک بار مصرف SimpleX</string>
     <string name="display_name_connecting">در حال اتصال…</string>
     <string name="simplex_link_mode_browser_warning">باز کردن لینک در مرورگر ممکن است حریم خصوصی و امنیت اتصال را کاهش دهد. لینک‌های SimpleX غیر قابل اعتماد به رنگ قرمز خواهند بود.</string>
-    <string name="error_loading_xftp_servers">خطا در بارگیری سرورهای XFTP</string>
+    <string name="error_loading_xftp_servers">خطا در بارگیری سرورهای Data</string>
     <string name="failed_to_create_user_title">خطا در ایجاد پروفایل!</string>
     <string name="failed_to_active_user_title">خطا در تعویض پروفایل!</string>
     <string name="connection_timeout">توقف اتصال</string>
@@ -94,7 +94,7 @@
     <string name="sender_cancelled_file_transfer">فرستنده انتقال فایل را لغو کرد.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">شما از قبل به %1$s متصل هستید.</string>
     <string name="connection_error_auth">خطا در اتصال (تصدیق)</string>
-    <string name="error_loading_smp_servers">خطا در بارگیری سرورهای SMP</string>
+    <string name="error_loading_smp_servers">خطا در بارگیری سرورهای Packet</string>
     <string name="failed_to_parse_chats_title">عدم موفقیت در بارگیری چت‌ها</string>
     <string name="contact_developers">لطفا برنامه را به‌روزرسانی کنید و با توسعه‌دهندگان تماس بگیرید.</string>
     <string name="failed_to_create_user_duplicate_title">نام نمایشی همسان!</string>
@@ -106,13 +106,13 @@
     <string name="contact_already_exists">مخاطب از قبل وجود دارد</string>
     <string name="invalid_connection_link">لینک اتصال نامعتبر</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">لطفا بررسی کنید که از لینک صحیح استفاده کردید یا از مخاطبتان بخواهید لینک دیگری برایتان بفرستد.</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور SMP صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور Packet صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
     <string name="error_setting_network_config">خطا در به‌روزرسانی پیکربندی شبکه</string>
     <string name="failed_to_parse_chat_title">عدم موفقیت در بارگیری چت</string>
     <string name="failed_to_create_user_invalid_title">نام نمایشی نامعتبر!</string>
     <string name="failed_to_create_user_duplicate_desc">شما یک پروفایل چت با نام نمایشی یکسان دارید، لطفا نام دیگری انتخاب کنید.</string>
     <string name="error_creating_address">خطا در ایجاد نشانی</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور XFTP صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور Data صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
     <string name="error_accepting_contact_request">خطا در پذیرش درخواست مخاطب</string>
     <string name="sender_may_have_deleted_the_connection_request">فرستنده ممکن است درخواست اتصال را حذف کرده باشد.</string>
     <string name="error_deleting_note_folder">خطا در حذف یادداشت‌های خصوصی</string>
@@ -479,7 +479,7 @@
     <string name="how_to_use_your_servers">چگونه از سرورهای خود استفاده کنید</string>
     <string name="image_descr_link_preview">تصویر پیش‌نمایش لینک</string>
     <string name="your_chat_profiles">پروفایل‌های چت شما</string>
-    <string name="smp_servers">سرورهای SMP</string>
+    <string name="smp_servers">سرورهای Packet</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat را برای ترمینال نصب کنید</string>
     <string name="star_on_github">در GitHub ستاره بدهید</string>
     <string name="contribute">همکاری کنید</string>
@@ -526,7 +526,7 @@
     <string name="mark_code_verified">علامت‌گذاری به عنوان تایید شده</string>
     <string name="is_not_verified">%s تایید نشده است</string>
     <string name="to_verify_compare">برای تایید رمزنگاری انتها به انتها، روی دستگاه‌های خود، کد را با مخاطبتان مقایسه(یا اسکن) کنید.</string>
-    <string name="your_XFTP_servers">سرورهای XFTP شما</string>
+    <string name="your_XFTP_servers">سرورهای Data شما</string>
     <string name="how_to">روش استفاده</string>
     <string name="using_simplex_chat_servers">در حال استفاده از سرورهای SimpleX Chat.</string>
     <string name="configure_ICE_servers">تنظیم سرورهای ICE</string>
@@ -545,8 +545,8 @@
     <string name="smp_servers_test_failed">عدم موفقیت آزمایش سرور!</string>
     <string name="smp_servers_test_some_failed">برخی از سرورها در تست ناموفق بودند:</string>
     <string name="smp_servers_scan_qr">اسکن کد QR سرور</string>
-    <string name="your_SMP_servers">سرورهای SMP شما</string>
-    <string name="xftp_servers">سرورهای XFTP</string>
+    <string name="your_SMP_servers">سرورهای Packet شما</string>
+    <string name="xftp_servers">سرورهای Data</string>
     <string name="use_simplex_chat_servers__question">از سرورهای SimpleX Chat استفاده شود؟</string>
     <string name="saved_ICE_servers_will_be_removed">سرورهای WebRTC ICE ذخیره شده حذف خواهند شد.</string>
     <string name="your_ICE_servers">سرورهای ICE شما</string>
@@ -1547,7 +1547,7 @@
     <string name="migrate_to_device_downloading_archive">در حال بارگیری آرشیو</string>
     <string name="migrate_from_device_error_exporting_archive">خطا در اکسپورت پایگاه داده چت</string>
     <string name="migrate_from_device_error_saving_settings">خطا در ذخیره تنظیمات</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">تمام مخاطبان، مکالمات و فایل‌های شما به صورت امن، رمزنگاری و به صورت بسته‌های داده به واسطه‌های XFTP تنظیم شده، بارگذاری خواهند شد.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">تمام مخاطبان، مکالمات و فایل‌های شما به صورت امن، رمزنگاری و به صورت بسته‌های داده به واسطه‌های Data تنظیم شده، بارگذاری خواهند شد.</string>
     <string name="connected_mobile">موبایل متصل شد</string>
     <string name="v4_2_group_links_desc">مدیران می‌توانند لینک‌ها را برای پیوستن به گروه‌ها ایجاد کنند.</string>
     <string name="disconnect_remote_hosts">قطع اتصال موبایل‌ها</string>
@@ -1578,7 +1578,7 @@
     <string name="network_smp_proxy_fallback_prohibit_description">پیام‌ها مستقیما فرستاده نشود، حتی اگر سرور مقصد شما از مسیریابی خصوصی پشتیبانی نکند.</string>
     <string name="update_network_smp_proxy_fallback_question">گزینه پس‌رفت مسیریابی پیام</string>
     <string name="private_routing_show_message_status">نمایش وضعیت پیام</string>
-    <string name="private_routing_explanation">برای محافظت از نشانی IP شما، مسیریابی خصوصی از سرورهای SMP شما به منظور تحویل پیام‌ها استفاده می‌کند.</string>
+    <string name="private_routing_explanation">برای محافظت از نشانی IP شما، مسیریابی خصوصی از سرورهای Packet شما به منظور تحویل پیام‌ها استفاده می‌کند.</string>
     <string name="settings_section_title_private_message_routing">مسیریابی پیام خصوصی</string>
     <string name="network_smp_proxy_mode_private_routing">مسیردهی خصوصی</string>
     <string name="v4_3_improved_server_configuration">تنظیمات سرور بهبودیافته</string>
@@ -1781,7 +1781,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">این اپلیکیشن از شما می‌خواهد که دانلودها از سرورهای فایل ناشناخته را تأیید کنید (به جز .onion یا زمانی که پروکسی SOCKS فعال باشد).</string>
     <string name="settings_section_title_files">فایل‌ها</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون Tor یا VPN، نشانی IP شما برای سرورهای فایل قابل رویت خواهد بود.</string>
-    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود:
+    <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های Data قابل رویت خواهد بود:
 \n%1$s.</string>
     <string name="message_queue_info_none">هیچ</string>
     <string name="v5_8_message_delivery">تحویل پیام بهبود یافته</string>
@@ -1998,8 +1998,8 @@
     <string name="or_to_share_privately">یا به‌طور خصوصی به اشتراک بگذارید</string>
     <string name="other_label">سایر</string>
     <string name="other_errors">سایر خطاها</string>
-    <string name="smp_servers_other">سایر سرورهای SMP</string>
-    <string name="xftp_servers_other">سایر سرورهای XFTP</string>
+    <string name="smp_servers_other">سایر سرورهای Packet</string>
+    <string name="xftp_servers_other">سایر سرورهای Data</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">عبارت عبور در کی‌استور قابل خواندن نیست، لطفاً آن را به‌صورت دستی وارد کنید. این ممکن است پس از یک به‌روزرسانی سیستم که با برنامه سازگار نیست، اتفاق افتاده باشد. اگر این مورد نیست، لطفاً با توسعه‌دهندگان تماس بگیرید.</string>
     <string name="restore_passphrase_can_not_be_read_desc">عبارت عبور در مخزن کلید قابل خواندن نیست. این ممکن است پس از به‌روزرسانی سیستم که با برنامه سازگار نیست، اتفاق افتاده باشد. اگر این طور نیست، لطفا با توسعه دهندگان تماس بگیرید.</string>
     <string name="network_proxy_password">کلمه عبور</string>
@@ -2107,7 +2107,7 @@
     <string name="v6_1_better_security_descr">پروتکل‌های SimpleX توسط Trail of Bits بررسی شده‌اند.</string>
     <string name="size">اندازه</string>
     <string name="app_check_for_updates_button_skip">نادیده گرفتن این نسخه</string>
-    <string name="smp_server">سرور SMP</string>
+    <string name="smp_server">سرور Packet</string>
     <string name="network_socks_proxy">پروکسی SOCKS</string>
     <string name="privacy_media_blur_radius_soft">نرم</string>
     <string name="chat_database_exported_not_all_files">برخی از فایل(ها) اکسپورت نشدند</string>
@@ -2181,8 +2181,8 @@
     <string name="onboarding_network_operators_conditions_will_be_accepted">شرایط برای اپراتورهای فعال پس از ۳۰ روز پذیرفته خواهد شد.</string>
     <string name="operator_conditions_will_be_accepted_on">شرایط در: %s پذیرفته خواهد شد.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">شرایط به‌طور خودکار برای اپراتورهای فعال در: %s پذیرفته خواهد شد.</string>
-    <string name="smp_servers_configured">سرورهای SMP پیکربندی‌شده</string>
-    <string name="xftp_servers_configured">سرورهای XFTP پیکربندی‌شده</string>
+    <string name="smp_servers_configured">سرورهای Packet پیکربندی‌شده</string>
+    <string name="xftp_servers_configured">سرورهای Data پیکربندی‌شده</string>
     <string name="onboarding_conditions_configure_server_operators">پیکربندی اپراتورهای سرور</string>
     <string name="servers_info_connected_servers_section_header">سرورهای متصل شده</string>
     <string name="sync_connection_desc">اتصال نیاز به تجدید مذاکره رمزنگاری دارد.</string>
@@ -2463,7 +2463,7 @@
     <string name="operator_website">وب‌سایت</string>
     <string name="address_welcome_message">پیام خوش‌آمدگویی</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">زمانی که بیش از یک اپراتور فعال است، هیچ‌کدام از آن‌ها فراداده‌ای برای فهمیدن اینکه چه کسی با چه کسی ارتباط برقرار می‌کند، ندارند.</string>
-    <string name="xftp_server">سرور XFTP</string>
+    <string name="xftp_server">سرور Data</string>
     <string name="privacy_chat_list_open_links_yes">بله</string>
     <string name="snd_group_event_member_accepted">شما این عضو را پذیرفتید</string>
     <string name="servers_info_proxied_servers_section_footer">شما به این سرورها متصل نیستید. از مسیریابی خصوصی برای ارسال پیام‌ها به آن‌ها استفاده می‌شود.</string>
