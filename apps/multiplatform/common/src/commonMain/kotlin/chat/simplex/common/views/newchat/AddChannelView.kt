@@ -115,7 +115,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
         creationInProgress.value = true
         withBGApi {
           try {
-            val enabledRelays = getEnabledRelays()
+            val enabledRelays = chooseRandomRelays()
             val relayIds = enabledRelays.mapNotNull { it.chatRelayId }
             if (relayIds.isEmpty()) {
               withContext(Dispatchers.Main) {
@@ -159,12 +159,42 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
   }
 }
 
-private suspend fun getEnabledRelays(): List<UserChatRelay> {
+private const val maxRelays = 3
+
+private suspend fun chooseRandomRelays(): List<UserChatRelay> {
   val servers = getUserServers(rh = null) ?: return emptyList()
-  val all = servers.flatMap { op ->
-    op.chatRelays.filter { it.enabled && !it.deleted && it.chatRelayId != null }
+  // Operator relays are grouped per operator; custom relays (null operator)
+  // are treated independently to maximize trust distribution.
+  val operatorGroups = mutableListOf<List<UserChatRelay>>()
+  var customRelays = mutableListOf<UserChatRelay>()
+  for (op in servers) {
+    val relays = op.chatRelays.filter { it.enabled && !it.deleted && it.chatRelayId != null }
+    if (relays.isEmpty()) continue
+    if (op.operator != null) {
+      operatorGroups.add(relays.shuffled())
+    } else {
+      customRelays = relays.shuffled().toMutableList()
+    }
   }
-  return all.shuffled().take(3)
+  val selected = mutableListOf<UserChatRelay>()
+  // Prefer at least one custom relay when available -
+  // user's own infrastructure for trust distribution.
+  if (customRelays.isNotEmpty()) {
+    selected.add(customRelays.removeAt(0))
+    if (selected.size >= maxRelays) return selected
+  }
+  // Round-robin across shuffled groups to distribute relays across operators.
+  val groups = (operatorGroups + customRelays.map { listOf(it) }).shuffled()
+  val maxDepth = groups.maxOfOrNull { it.size } ?: 0
+  for (depth in 0 until maxDepth) {
+    for (group in groups) {
+      if (depth < group.size) {
+        selected.add(group[depth])
+        if (selected.size >= maxRelays) return selected
+      }
+    }
+  }
+  return selected
 }
 
 private suspend fun checkHasRelays(): Boolean {
