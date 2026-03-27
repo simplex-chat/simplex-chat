@@ -346,11 +346,20 @@ alert action
 swipe action */
 "Accept" = "Akceptuj";
 
+/* alert action */
+"Accept as member" = "Zaakceptuj jako członka";
+
+/* alert action */
+"Accept as observer" = "Zaakceptuj jako obserwatora";
+
 /* No comment provided by engineer. */
 "Accept conditions" = "Zaakceptuj warunki";
 
 /* No comment provided by engineer. */
 "Accept connection request?" = "Zaakceptować prośbę o połączenie?";
+
+/* alert title */
+"Accept contact request" = "Zaakceptuj prośby o kontakt";
 
 /* notification body */
 "Accept contact request from %@?" = "Zaakceptuj prośbę o kontakt od %@?";
@@ -358,6 +367,9 @@ swipe action */
 /* alert action
 swipe action */
 "Accept incognito" = "Akceptuj incognito";
+
+/* alert title */
+"Accept member" = "Zaakceptuj członka";
 
 /* call status */
 "accepted call" = "zaakceptowane połączenie";
@@ -385,6 +397,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Add list" = "Dodaj listę";
+
+/* placeholder for sending contact request */
+"Add message" = "Dodaj wiadomość";
 
 /* No comment provided by engineer. */
 "Add profile" = "Dodaj profil";
@@ -504,6 +519,9 @@ swipe action */
 "All reports will be archived for you." = "Wszystkie raporty zostaną dla Ciebie zarchiwizowane.";
 
 /* No comment provided by engineer. */
+"All servers" = "Wszystkie serwery";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Wszystkie Twoje kontakty pozostaną połączone.";
 
 /* No comment provided by engineer. */
@@ -526,6 +544,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow downgrade" = "Zezwól na obniżenie wersji";
+
+/* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "Zezwalaj na pliki i media tylko wtedy, gdy Twój kontakt na to pozwala.";
 
 /* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Zezwalaj na nieodwracalne usuwanie wiadomości tylko wtedy, gdy Twój kontakt Ci na to pozwoli. (24 godziny)";
@@ -577,6 +598,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Zezwól swoim kontaktom na wysyłanie znikających wiadomości.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "Pozwól kontaktom wysyłać pliki i media.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Zezwól swoim kontaktom na wysyłanie wiadomości głosowych.";
@@ -756,6 +780,9 @@ swipe action */
 "Better groups" = "Lepsze grupy";
 
 /* No comment provided by engineer. */
+"Better groups performance" = "Lepsze działanie grup";
+
+/* No comment provided by engineer. */
 "Better message dates." = "Lepsze daty wiadomości.";
 
 /* No comment provided by engineer. */
@@ -766,6 +793,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Better notifications" = "Lepsze powiadomienia";
+
+/* No comment provided by engineer. */
+"Better privacy and security" = "Lepsza prywatność i bezpieczeństwo";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Lepsze zabezpieczenia ✅";
@@ -817,6 +847,9 @@ marked deleted chat item preview text */
 "bold" = "pogrubiona";
 
 /* No comment provided by engineer. */
+"Bot" = "Bot";
+
+/* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Zarówno Ty, jak i Twój kontakt możecie dodawać reakcje wiadomości.";
 
 /* No comment provided by engineer. */
@@ -827,6 +860,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Zarówno Ty, jak i Twój kontakt możecie wysyłać znikające wiadomości.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Zarówno Ty, jak i Twój kontakt możecie wysyłać pliki i media.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Zarówno Ty, jak i Twój kontakt możecie wysyłać wiadomości głosowe.";
@@ -1559,7 +1595,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Usunąć wiadomość?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Usuń wiadomości";
 
 /* No comment provided by engineer. */
@@ -2876,7 +2913,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Rola członka zostanie zmieniona na \"%@\". Członek otrzyma nowe zaproszenie.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Członek zostanie usunięty z grupy - nie można tego cofnąć!";
 
 /* No comment provided by engineer. */
@@ -3711,7 +3748,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Serwer przekaźnikowy chroni Twój adres IP, ale może obserwować czas trwania połączenia.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Usuń";
 
 /* No comment provided by engineer. */
@@ -3723,7 +3760,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Usuń członka";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Usunąć członka?";
 
 /* No comment provided by engineer. */

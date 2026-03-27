@@ -1695,15 +1695,69 @@ export interface ComposedMessage {
   mentions: {[key: string]: number} // string : int64
 }
 
-export enum ConnStatus {
-  New = "new",
-  Prepared = "prepared",
-  Joined = "joined",
-  Requested = "requested",
-  Accepted = "accepted",
-  Snd_ready = "snd-ready",
-  Ready = "ready",
-  Deleted = "deleted",
+export type ConnStatus = 
+  | ConnStatus.New
+  | ConnStatus.Prepared
+  | ConnStatus.Joined
+  | ConnStatus.Requested
+  | ConnStatus.Accepted
+  | ConnStatus.SndReady
+  | ConnStatus.Ready
+  | ConnStatus.Deleted
+  | ConnStatus.Failed
+
+export namespace ConnStatus {
+  export type Tag = 
+    | "new"
+    | "prepared"
+    | "joined"
+    | "requested"
+    | "accepted"
+    | "sndReady"
+    | "ready"
+    | "deleted"
+    | "failed"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface New extends Interface {
+    type: "new"
+  }
+
+  export interface Prepared extends Interface {
+    type: "prepared"
+  }
+
+  export interface Joined extends Interface {
+    type: "joined"
+  }
+
+  export interface Requested extends Interface {
+    type: "requested"
+  }
+
+  export interface Accepted extends Interface {
+    type: "accepted"
+  }
+
+  export interface SndReady extends Interface {
+    type: "sndReady"
+  }
+
+  export interface Ready extends Interface {
+    type: "ready"
+  }
+
+  export interface Deleted extends Interface {
+    type: "deleted"
+  }
+
+  export interface Failed extends Interface {
+    type: "failed"
+    connError: string
+  }
 }
 
 export enum ConnType {
@@ -2227,6 +2281,7 @@ export type Format =
   | Format.StrikeThrough
   | Format.Snippet
   | Format.Secret
+  | Format.Small
   | Format.Colored
   | Format.Uri
   | Format.HyperLink
@@ -2243,6 +2298,7 @@ export namespace Format {
     | "strikeThrough"
     | "snippet"
     | "secret"
+    | "small"
     | "colored"
     | "uri"
     | "hyperLink"
@@ -2274,6 +2330,10 @@ export namespace Format {
 
   export interface Secret extends Interface {
     type: "secret"
+  }
+
+  export interface Small extends Interface {
+    type: "small"
   }
 
   export interface Colored extends Interface {

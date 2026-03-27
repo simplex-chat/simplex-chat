@@ -562,6 +562,14 @@ fun GroupMemberInfoLayout(
       }
     }
 
+    val connFailedErr = member.activeConn?.connFailedErr
+    if (connFailedErr != null) {
+      SectionDividerSpaced()
+      SectionView {
+        InfoRow(stringResource(MR.strings.info_row_connection_failed), connFailedErr)
+      }
+    }
+
     if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
       ModeratorDestructiveSection()
     } else {

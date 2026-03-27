@@ -5,6 +5,7 @@
 //  Created by Evgeny on 26/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import UserNotifications
 import OSLog
@@ -22,6 +23,7 @@ let nseSuspendSchedule: SuspendSchedule = (2, 4)
 
 let fastNSESuspendSchedule: SuspendSchedule = (1, 1)
 
+// Spec: spec/services/notifications.md#NSENotificationData
 public enum NSENotificationData {
     case connectionEvent(_ user: User, _ connEntity: ConnectionEntity)
     case contactConnected(_ user: any UserLike, _ contact: Contact)
@@ -76,6 +78,7 @@ public enum NSENotificationData {
 // Once the last thread in the process completes processing chat controller is suspended, and the database is closed, to avoid
 // background crashes and contention for database with the application (both UI and background fetch triggered either on schedule
 // or when background notification is received.
+// Spec: spec/services/notifications.md#NSEThreads
 class NSEThreads {
     static let shared = NSEThreads()
     private let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
@@ -238,6 +241,7 @@ class NSEThreads {
 // NotificationEntities for the same connection across multiple NSE instances (NSEThreads) are processed sequentially, so that the earliest NSE instance receives the earliest messages.
 // The reason for this complexity is to process all required messages within allotted 30 seconds,
 // accounting for the possibility that multiple notifications may be delivered concurrently. 
+// Spec: spec/services/notifications.md#NotificationEntity
 struct NotificationEntity {
     var ntfConn: NtfConn
     var entityId: ChatId
@@ -279,6 +283,7 @@ struct NotificationEntity {
 // Each didReceive is called in its own thread, but multiple calls can be made in one process, and, empirically, there is never
 // more than one process of notification service extension exists at a time.
 // Soon after notification service delivers the last notification it is either suspended or terminated.
+// Spec: spec/services/notifications.md#NotificationService
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
     // served as notification if no message attempts (msgBestAttemptNtf) could be produced
@@ -291,6 +296,7 @@ class NotificationService: UNNotificationServiceExtension {
     var appSubscriber: AppSubscriber?
     var returnedSuspension = false
 
+    // Spec: spec/services/notifications.md#didReceive
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("DEBUGGING: NotificationService.didReceive")
         let receivedNtf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
@@ -594,6 +600,7 @@ class NotificationService: UNNotificationServiceExtension {
         serviceBestAttemptNtf = ntf
     }
 
+    // Spec: spec/services/notifications.md#deliverBestAttemptNtf
     private func deliverBestAttemptNtf(urgent: Bool = false) {
         logger.debug("NotificationService.deliverBestAttemptNtf urgent: \(urgent) expectingMoreMessages: \(self.expectingMoreMessages)")
         if let handler = contentHandler, urgent || !expectingMoreMessages {
@@ -770,6 +777,7 @@ class NotificationService: UNNotificationServiceExtension {
 }
 
 // nseStateGroupDefault must not be used in NSE directly, only via this singleton
+// Spec: spec/services/notifications.md#NSEChatState
 class NSEChatState {
     static let shared = NSEChatState()
     private var value_ = NSEState.created
@@ -824,6 +832,7 @@ var networkConfig: NetCfg = getNetCfg()
 
 // startChat uses semaphore startLock to ensure that only one didReceive thread can start chat controller
 // Subsequent calls to didReceive will be waiting on semaphore and won't start chat again, as it will be .active
+    // Spec: spec/services/notifications.md#startChat-NSE
 func startChat() -> DBMigrationResult? {
     logger.debug("NotificationService: startChat")
     // only skip creating if there is chat controller
@@ -848,6 +857,7 @@ func startChat() -> DBMigrationResult? {
     }
 }
 
+    // Spec: spec/services/notifications.md#doStartChat
 func doStartChat() -> DBMigrationResult? {
     logger.debug("NotificationService: doStartChat")
     haskell_init_nse()
@@ -940,6 +950,7 @@ func chatSuspended() {
 
 // A single loop is used per Notification service extension process to receive and process all messages depending on the NSE state
 // If the extension is not active yet, or suspended/suspending, or the app is running, the notifications will not be received.
+    // Spec: spec/services/notifications.md#receiveMessages
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
     while true {
@@ -988,6 +999,7 @@ private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
 @inline(__always)
+    // Spec: spec/services/notifications.md#receivedMsgNtf
 func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)? {
     logger.debug("NotificationService receivedMsgNtf: \(res.responseType)")
     switch res {

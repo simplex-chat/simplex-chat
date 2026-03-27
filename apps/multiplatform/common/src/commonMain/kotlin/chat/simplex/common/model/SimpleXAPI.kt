@@ -90,6 +90,7 @@ enum class SimplexLinkMode {
   }
 }
 
+// Spec: spec/state.md#AppPreferences
 class AppPreferences {
   // deprecated, remove in 2024
   private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
@@ -491,6 +492,7 @@ private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
   private var chatCtrl: ChatCtrl? = -1
+  // Spec: spec/state.md#appPrefs
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
   val messagesChannel: Channel<API> = Channel()
@@ -654,6 +656,7 @@ object ChatController {
     chatModel.updateChatTags(rhId)
   }
 
+  // Spec: spec/api.md#startReceiver
   private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
     if (receiverJob != null || chatCtrl == null) return
@@ -797,6 +800,7 @@ object ChatController {
     return null
   }
 
+  // Spec: spec/api.md#sendCmd
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
     val ctrl = otherCtrl ?: chatCtrl ?: throw Exception("Controller is not initialized")
 
@@ -821,6 +825,7 @@ object ChatController {
     }
   }
 
+  // Spec: spec/api.md#recvMsg
   fun recvMsg(ctrl: ChatCtrl): API? {
     val rStr = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
     return if (rStr == "") {
@@ -2559,6 +2564,7 @@ object ChatController {
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
+  // Spec: spec/api.md#processReceivedMsg
   private suspend fun processReceivedMsg(msg: API) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val rhId = msg.rhId
@@ -3519,6 +3525,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 }
 
 // ChatCommand
+// Spec: spec/api.md#CC
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
@@ -4150,9 +4157,11 @@ class UpdatedMessage(val msgContent: MsgContent, val mentions: Map<String, Long>
 @Serializable
 class ChatTagData(val emoji: String?, val text: String)
 
+// Spec: spec/api.md#ArchiveConfig
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
 
+// Spec: spec/database.md#DBEncryptionConfig
 @Serializable
 class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
@@ -5960,6 +5969,7 @@ val yaml = Yaml(configuration = YamlConfiguration(
   codePointLimit = 5500000,
 ))
 
+// Spec: spec/api.md#API
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = APISerializer::class)
 sealed class API {
@@ -6099,6 +6109,7 @@ private fun <T> decodeObject(deserializer: DeserializationStrategy<T>, obj: Json
   runCatching { json.decodeFromJsonElement(deserializer, obj!!) }.getOrNull()
 
 // ChatResponse
+// Spec: spec/api.md#CR
 @Serializable
 sealed class CR {
   @Serializable @SerialName("activeUser") class ActiveUser(val user: User): CR()
@@ -6958,6 +6969,7 @@ data class RemoteFile(
   val fileSource: CryptoFile
 )
 
+// Spec: spec/api.md#ChatError
 @Serializable
 sealed class ChatError {
   val string: String get() = when (this) {
@@ -7641,6 +7653,7 @@ sealed class RCErrorType {
   @Serializable @SerialName("syntax") data class SYNTAX(val syntaxErr: String): RCErrorType()
 }
 
+// Spec: spec/database.md#ArchiveError
 @Serializable
 sealed class ArchiveError {
   val string: String get() = when (this) {
@@ -7722,6 +7735,7 @@ sealed class RemoteCtrlError {
   @Serializable @SerialName("protocolError") object ProtocolError: RemoteCtrlError()
 }
 
+// Spec: spec/services/notifications.md#NotificationsMode
 enum class NotificationsMode() {
   OFF, PERIODIC, SERVICE, /*INSTANT - for Firebase notifications */;
 

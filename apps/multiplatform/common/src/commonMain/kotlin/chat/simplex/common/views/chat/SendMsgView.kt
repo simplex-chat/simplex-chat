@@ -31,6 +31,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
 import java.net.URI
 
+// Spec: spec/client/compose.md#SendMsgView
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,

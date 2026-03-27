@@ -153,6 +153,7 @@ fun MarkdownText (
             is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
             is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }
+            is Format.Small -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Colored -> withStyle(ft.format.style) { append(ft.text) }
             is Format.Secret -> {
               val ftStyle = ft.format.style

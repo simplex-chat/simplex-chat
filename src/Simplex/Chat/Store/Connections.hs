@@ -71,6 +71,9 @@ getChatLockEntity db agentConnId = do
       ExceptT . firstRow fromOnly (SEInternalError "group member connection group_id not found") $
         DB.query db "SELECT group_id FROM group_members WHERE group_member_id = ?" (Only groupMemberId)
 
+-- TODO consider whether ConnFailed connections should be excluded:
+-- - from receiving: getConnectionEntity, getContactConnEntityByConnReqHash
+-- - from subscribing: getContactConnsToSub, getUCLConnsToSub, getMemberConnsToSub, getPendingConnsToSub
 getConnectionEntity :: DB.Connection -> VersionRangeChat -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_

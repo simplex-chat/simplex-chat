@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 
+// Spec: spec/services/theme.md#DefaultTheme
 public enum DefaultTheme: String, Codable, Equatable {
     case LIGHT
     case DARK
@@ -39,6 +40,7 @@ public enum DefaultThemeMode: String, Codable {
     case dark
 }
 
+// Spec: spec/services/theme.md#Colors
 public class Colors: ObservableObject, NSCopying, Equatable {
     @Published public var primary: Color
     @Published public var primaryVariant: Color
@@ -84,6 +86,7 @@ public class Colors: ObservableObject, NSCopying, Equatable {
     public func clone() -> Colors { copy() as! Colors }
 }
 
+// Spec: spec/services/theme.md#AppColors
 public class AppColors: ObservableObject, NSCopying, Equatable {
     @Published public var title: Color
     @Published public var primaryVariant2: Color
@@ -135,6 +138,7 @@ public class AppColors: ObservableObject, NSCopying, Equatable {
     }
 }
 
+// Spec: spec/services/theme.md#AppWallpaper
 public class AppWallpaper: ObservableObject, NSCopying, Equatable {
     public static func == (lhs: AppWallpaper, rhs: AppWallpaper) -> Bool {
         lhs.background == rhs.background &&
@@ -222,6 +226,7 @@ public enum ThemeColor {
     }
 }
 
+// Spec: spec/services/theme.md#ThemeColors
 public struct ThemeColors: Codable, Equatable, Hashable {
     public var primary: String? = nil
     public var primaryVariant: String? = nil
@@ -293,6 +298,7 @@ public struct ThemeColors: Codable, Equatable, Hashable {
     }
 }
 
+// Spec: spec/services/theme.md#ThemeWallpaper
 public struct ThemeWallpaper: Codable, Equatable, Hashable {
     public var preset: String?
     public var scale: Float?
@@ -375,6 +381,7 @@ public struct ThemeWallpaper: Codable, Equatable, Hashable {
 
 /// If you add new properties, make sure they serialized to YAML correctly, see:
 /// encodeThemeOverrides()
+// Spec: spec/services/theme.md#ThemeOverrides
 public struct ThemeOverrides: Codable, Equatable, Hashable {
     public var themeId: String = UUID().uuidString
     public var base: DefaultTheme
@@ -559,6 +566,7 @@ extension [ThemeOverrides] {
 
 }
 
+// Spec: spec/services/theme.md#ThemeModeOverrides
 public struct ThemeModeOverrides: Codable, Hashable {
     public var light: ThemeModeOverride? = nil
     public var dark: ThemeModeOverride? = nil
@@ -573,6 +581,7 @@ public struct ThemeModeOverrides: Codable, Hashable {
     }
 }
 
+// Spec: spec/services/theme.md#ThemeModeOverride
 public struct ThemeModeOverride: Codable, Equatable, Hashable {
     public var mode: DefaultThemeMode// = CurrentColors.base.mode
     public var colors: ThemeColors = ThemeColors()
