@@ -1087,7 +1087,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
             CFGetRelayDataJoin -> do
-              -- Update relay member with verified key, memberId and profile from link
+              -- Update relay member with key, memberId and profile from link
               relayLinkData_ <- liftIO $ decodeLinkUserData cData
               case (relayLinkData_, linkEntityId) of
                 (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
