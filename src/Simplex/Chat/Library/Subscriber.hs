@@ -1128,7 +1128,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   allowAgentConnectionAsync user conn confId XOk
                   toView $ CEvtGroupRelayUpdated user gInfo m' relay
                 else
-                  -- TODO [relays] owner: TBC "failed" RelayStatus?
+                  -- TODO [relays] owner: TBC failed RelayStatus?
                   messageError "relay link: relay member ID mismatch"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
