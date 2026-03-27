@@ -2071,14 +2071,15 @@ processChatCommand vr nm = \case
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
             r <- tryAllErrors $ do
               (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
-              liftIO (decodeLinkUserData cData) >>= \case
-                Just RelayShortLinkData {relayProfile = p} ->
-                  withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId <$> linkEntityId) relayKey p
-                Nothing -> throwChatError $ CEException "relay link: no relay link data"
+              relayLinkData_ <- liftIO $ decodeLinkUserData cData
+              case (relayLinkData_, linkEntityId) of
+                (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+                  withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+                _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               let cReq = linkConnReq fd
                   relayLinkToConnect = CCLink cReq (Just relayLink)
               void $ connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
-            -- Re-read member to get updated activeConn
+            -- Re-read member to get updated activeConn and updated data (from updateRelayMemberData)
             relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
             pure (relayLink, relayMember', r)
           retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
