@@ -180,7 +180,7 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
   // Prefer at least one custom relay when available -
   // user's own infrastructure for trust distribution.
   if (customRelays.isNotEmpty()) {
-    selected.add(customRelays.removeFirst())
+    selected.add(customRelays.removeAt(0))
     if (selected.size >= maxRelays) return selected
   }
   // Round-robin across shuffled groups to distribute relays across operators.
