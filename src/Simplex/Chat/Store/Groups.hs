@@ -88,7 +88,7 @@ module Simplex.Chat.Store.Groups
     updateRelayStatus,
     updateRelayStatusFromTo,
     setRelayLinkAccepted,
-    setRelayConfId,
+    setRelayLinkConfId,
     getRelayConfId,
     updateRelayMemberData,
     setGroupInProgressDone,
@@ -1420,29 +1420,31 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayLinkAccepted :: DB.Connection -> GroupRelay -> ShortLinkContact -> C.PublicKeyEd25519 -> IO GroupRelay
-setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink relayKey = do
-  currentTs <- getCurrentTime
-  DB.execute
+setRelayLinkAccepted :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
+setRelayLinkAccepted db vr user m (MemberKey relayKey) profile = do
+  let gmId = groupMemberId' m
+  currentTs <- liftIO getCurrentTime
+  liftIO $ DB.execute
     db
     [sql|
       UPDATE group_relays
-      SET relay_link = ?, relay_status = ?, updated_at = ?
-      WHERE group_relay_id = ?
+      SET relay_status = ?, updated_at = ?
+      WHERE group_member_id = ?
     |]
-    (relayLink, RSAccepted, currentTs, groupRelayId)
-  DB.execute
+    (RSAccepted, currentTs, gmId)
+  liftIO $ DB.execute
     db
     [sql|
       UPDATE group_members
-      SET relay_link = ?, member_pub_key = ?, updated_at = ?
+      SET member_pub_key = ?, updated_at = ?
       WHERE group_member_id = ?
     |]
-    (relayLink, relayKey, currentTs, groupMemberId)
-  pure relay {relayStatus = RSAccepted, relayLink = Just relayLink}
+    (relayKey, currentTs, gmId)
+  void $ updateMemberProfile db user m profile
+  (,) <$> getGroupMemberById db vr user gmId <*> getGroupRelayByGMId db gmId
 
-setRelayConfId :: DB.Connection -> GroupMember -> ConfirmationId -> ShortLinkContact -> IO ()
-setRelayConfId db m confId relayLink = do
+setRelayLinkConfId :: DB.Connection -> GroupMember -> ConfirmationId -> ShortLinkContact -> IO ()
+setRelayLinkConfId db m confId relayLink = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1452,6 +1454,14 @@ setRelayConfId db m confId relayLink = do
       WHERE group_member_id = ?
     |]
     (confId, relayLink, currentTs, groupMemberId' m)
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET relay_link = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (relayLink, currentTs, groupMemberId' m)
 
 getRelayConfId :: DB.Connection -> GroupMember -> ExceptT StoreError IO ConfirmationId
 getRelayConfId db m =

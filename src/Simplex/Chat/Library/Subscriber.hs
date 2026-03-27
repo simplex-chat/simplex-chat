@@ -737,7 +737,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink
                 | memberRole' membership == GROwner && isRelay m -> do
-                    withStore' $ \db -> setRelayConfId db m confId relayLink
+                    withStore' $ \db -> setRelayLinkConfId db m confId relayLink
                     void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
@@ -1115,21 +1115,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
             CFGetRelayDataAccept -> do
               let GroupMember {memberId = MemberId expectedMemberId} = m
-              unless (linkEntityId == Just expectedMemberId) $
-                messageError "relay link: relay member ID mismatch"
-              relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
-                Just RelayShortLinkData {relayProfile = p} -> pure p
-                Nothing -> throwChatError $ CEException "relay link: no relay link data"
-              (storedConfId, relay@GroupRelay {relayLink = relayLink_}) <- withStore $ \db -> do
-                confId <- getRelayConfId db m
-                relay <- getGroupRelayByGMId db (groupMemberId' m)
-                pure (confId, relay)
-              storedRelayLink <- maybe (throwChatError $ CEException "relay link: no stored relay link") pure relayLink_
-              withStore $ \db -> do
-                liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                void $ liftIO $ setRelayLinkAccepted db relay storedRelayLink relayKey
-                void $ updateMemberProfile db user m relayProfile
-              allowAgentConnectionAsync user conn storedConfId XOk
+              -- TODO [relays] owner: TBC "failed" RelayStatus?
+              if linkEntityId == Just expectedMemberId
+                then do
+                  relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
+                    Just RelayShortLinkData {relayProfile = p} -> pure p
+                    Nothing -> throwChatError $ CEException "relay link: no relay link data"
+                  (confId, _m', _relay) <- withStore $ \db -> do
+                    confId <- getRelayConfId db m
+                    liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                    (m', relay) <- setRelayLinkAccepted db vr user m (MemberKey relayKey) relayProfile
+                    pure (confId, m', relay)
+                  allowAgentConnectionAsync user conn confId XOk
+                else messageError "relay link: relay member ID mismatch"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
