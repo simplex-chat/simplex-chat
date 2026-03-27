@@ -83,6 +83,7 @@ export namespace CEvt {
     | "memberBlockedForAll"
     | "groupMemberUpdated"
     | "groupLinkDataUpdated"
+    | "groupRelayUpdated"
     | "rcvFileDescrReady"
     | "rcvFileComplete"
     | "sndFileCompleteXFTP"
