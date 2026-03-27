@@ -1090,10 +1090,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case cmdFunction of
             CFGetRelayLinkOnJoin -> do
               -- Update relay member with verified key, memberId and profile from link
-              withStore' $ \db -> updateRelayMemberData db (groupMemberId' m) (MemberId <$> linkEntityId) relayKey
-              relayProfile_ <- liftIO $ decodeLinkUserData cData
-              forM_ relayProfile_ $ \RelayShortLinkData {relayProfile = p} ->
-                void $ withStore $ \db -> updateMemberProfile db user m p
+              liftIO (decodeLinkUserData cData) >>= \case
+                Just RelayShortLinkData {relayProfile = p} ->
+                  withStore $ \db -> updateRelayMemberData db user m (MemberId <$> linkEntityId) relayKey p
+                Nothing -> throwChatError $ CEException "relay link: no relay link data"
               case cReq of
                 CRContactUri crData@ConnReqUriData {crClientData} -> do
                   let pqSup = PQSupportOff
