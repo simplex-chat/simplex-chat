@@ -1120,12 +1120,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
                     Just RelayShortLinkData {relayProfile = p} -> pure p
                     Nothing -> throwChatError $ CEException "relay link: no relay link data"
-                  (confId, _m', _relay) <- withStore $ \db -> do
+                  (confId, m', relay) <- withStore $ \db -> do
                     confId <- getRelayConfId db m
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                     (m', relay) <- setRelayLinkAccepted db vr user m (MemberKey relayKey) relayProfile
                     pure (confId, m', relay)
                   allowAgentConnectionAsync user conn confId XOk
+                  toView $ CEvtGroupRelayUpdated user gInfo m' relay
                 else
                   -- TODO [relays] owner: TBC "failed" RelayStatus?
                   messageError "relay link: relay member ID mismatch"
