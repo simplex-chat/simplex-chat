@@ -10,7 +10,6 @@ import Foundation
 import SwiftUI
 import AVKit
 import SwiftyGif
-import LinkPresentation
 
 public func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     if let file = file, file.loaded {
@@ -428,40 +427,138 @@ private var imageCache: NSCache<NSString, UIImage> = {
     return cache
 }()
 
-public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
-    logger.debug("getLinkMetadata: fetching URL preview")
-    LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
-        if let e = error {
-            logger.error("Error retrieving link metadata: \(e.localizedDescription)")
-        }
-        if let metadata = metadata,
-           let imageProvider = metadata.imageProvider,
-           imageProvider.canLoadObject(ofClass: UIImage.self) {
-            imageProvider.loadObject(ofClass: UIImage.self){ object, error in
-                var linkPreview: LinkPreview? = nil
-                if let error = error {
-                    logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
-                } else {
-                    if let image = object as? UIImage,
-                       let resized = resizeImageToStrSizeSync(image, maxDataSize: 14000),
-                       let title = metadata.title,
-                       let uri = metadata.originalURL {
-                        linkPreview = LinkPreview(uri: uri.absoluteString, title: title, image: resized)
-                    }
-                }
-                cb(linkPreview)
-            }
-        } else {
-            logger.error("Could not load link preview image")
-            cb(nil)
+private let linkPreviewImageSuffixes: Set<String> = [".jpg", ".jpeg", ".png", ".ico", ".webp", ".gif"]
+private let defaultRequestTimeout: TimeInterval = 10
+private let maxHtmlSize = 100_000
+private let xcomUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0"
+
+private func extractMetaProperty(_ html: String, _ property: String) -> String? {
+    guard let metaRegex = try? NSRegularExpression(pattern: "<meta\\s[^>]*>", options: .caseInsensitive),
+          let propertyRegex = try? NSRegularExpression(pattern: "property\\s*=\\s*[\"']([^\"']*)[\"']", options: .caseInsensitive),
+          let contentRegex = try? NSRegularExpression(pattern: "content\\s*=\\s*[\"']([^\"']*)[\"']", options: .caseInsensitive)
+    else { return nil }
+    let range = NSRange(html.startIndex..., in: html)
+    let matches = metaRegex.matches(in: html, range: range)
+    for match in matches {
+        guard let tagRange = Range(match.range, in: html) else { continue }
+        let tag = String(html[tagRange])
+        let tagNSRange = NSRange(tag.startIndex..., in: tag)
+        if let propMatch = propertyRegex.firstMatch(in: tag, range: tagNSRange),
+           let propRange = Range(propMatch.range(at: 1), in: tag),
+           tag[propRange] == property,
+           let contentMatch = contentRegex.firstMatch(in: tag, range: tagNSRange),
+           let contentRange = Range(contentMatch.range(at: 1), in: tag) {
+            return decodeHTMLEntities(String(tag[contentRange]))
         }
     }
+    return nil
+}
+
+private func extractHTMLTitle(_ html: String) -> String? {
+    guard let regex = try? NSRegularExpression(pattern: "<title[^>]*>([^<]*)</title>", options: .caseInsensitive) else { return nil }
+    let range = NSRange(html.startIndex..., in: html)
+    if let match = regex.firstMatch(in: html, range: range),
+       let titleRange = Range(match.range(at: 1), in: html) {
+        let title = decodeHTMLEntities(String(html[titleRange])).trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty ? nil : title
+    }
+    return nil
+}
+
+private func extractIconHref(_ html: String) -> String? {
+    guard let linkRegex = try? NSRegularExpression(pattern: "<link\\s[^>]*>", options: .caseInsensitive),
+          let relRegex = try? NSRegularExpression(pattern: "rel\\s*=\\s*[\"']([^\"']*)[\"']", options: .caseInsensitive),
+          let hrefRegex = try? NSRegularExpression(pattern: "href\\s*=\\s*[\"']([^\"']*)[\"']", options: .caseInsensitive)
+    else { return nil }
+    let range = NSRange(html.startIndex..., in: html)
+    let matches = linkRegex.matches(in: html, range: range)
+    for match in matches {
+        guard let tagRange = Range(match.range, in: html) else { continue }
+        let tag = String(html[tagRange])
+        let tagNSRange = NSRange(tag.startIndex..., in: tag)
+        if let relMatch = relRegex.firstMatch(in: tag, range: tagNSRange),
+           let relRange = Range(relMatch.range(at: 1), in: tag),
+           tag[relRange].contains("icon"),
+           let hrefMatch = hrefRegex.firstMatch(in: tag, range: tagNSRange),
+           let hrefRange = Range(hrefMatch.range(at: 1), in: tag) {
+            return String(tag[hrefRange])
+        }
+    }
+    return nil
+}
+
+private func decodeHTMLEntities(_ s: String) -> String {
+    s.replacingOccurrences(of: "&amp;", with: "&")
+     .replacingOccurrences(of: "&lt;", with: "<")
+     .replacingOccurrences(of: "&gt;", with: ">")
+     .replacingOccurrences(of: "&quot;", with: "\"")
+     .replacingOccurrences(of: "&#39;", with: "'")
+     .replacingOccurrences(of: "&apos;", with: "'")
+}
+
+private func normalizeImageUri(_ baseURL: URL, _ imageUri: String) -> String {
+    if imageUri.hasPrefix("http") {
+        return imageUri
+    }
+    guard let scheme = baseURL.scheme, let host = baseURL.host else {
+        return imageUri
+    }
+    let base = "\(scheme)://\(host)"
+    if imageUri.hasPrefix("/") {
+        return base + imageUri
+    }
+    let path = baseURL.path
+    if path.hasSuffix("/") {
+        return base + path + imageUri
+    }
+    if let lastSlash = path.lastIndex(of: "/") {
+        return base + path[...lastSlash] + imageUri
+    }
+    return base + "/" + imageUri
 }
 
 public func getLinkPreview(for url: URL) async -> LinkPreview? {
-    await withCheckedContinuation { cont in
-        getLinkPreview(url: url) { cont.resume(returning: $0) }
+    do {
+        let lowercasedPath = url.path.lowercased()
+        var title: String
+        var imageURL: URL
+
+        if linkPreviewImageSuffixes.contains(where: { lowercasedPath.hasSuffix($0) }) {
+            title = url.lastPathComponent
+            imageURL = url
+        } else {
+            var request = URLRequest(url: url, timeoutInterval: defaultRequestTimeout)
+            if url.absoluteString.hasPrefix("https://x.com/") {
+                request.setValue(xcomUserAgent, forHTTPHeaderField: "User-Agent")
+            }
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let truncated = data.count > maxHtmlSize ? data.prefix(maxHtmlSize) : data
+            let html = String(data: truncated, encoding: .utf8) ?? String(data: truncated, encoding: .isoLatin1) ?? ""
+            guard !html.isEmpty else { return nil }
+
+            guard let parsedTitle = extractMetaProperty(html, "og:title") ?? extractHTMLTitle(html) else { return nil }
+            title = parsedTitle
+
+            guard let imageUriStr = extractMetaProperty(html, "og:image") ?? extractIconHref(html) else { return nil }
+            let normalizedUri = normalizeImageUri(url, imageUriStr)
+            guard let parsedImageURL = URL(string: normalizedUri) else { return nil }
+            imageURL = parsedImageURL
+        }
+
+        let imageRequest = URLRequest(url: imageURL, timeoutInterval: defaultRequestTimeout)
+        let (imageData, _) = try await URLSession.shared.data(for: imageRequest)
+        guard let image = UIImage(data: imageData) else { return nil }
+        guard let resized = resizeImageToStrSizeSync(image, maxDataSize: 14000) else { return nil }
+
+        return LinkPreview(uri: url.absoluteString, title: title, image: resized)
+    } catch {
+        logger.error("getLinkPreview error: \(error.localizedDescription)")
+        return nil
     }
+}
+
+public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
+    Task { cb(await getLinkPreview(for: url)) }
 }
 
 private let squareToCircleRatio = 0.935
