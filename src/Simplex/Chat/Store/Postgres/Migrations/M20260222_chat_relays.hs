@@ -42,7 +42,8 @@ ALTER TABLE groups
   ADD COLUMN shared_group_id BYTEA,
   ADD COLUMN root_priv_key BYTEA,
   ADD COLUMN root_pub_key BYTEA,
-  ADD COLUMN member_priv_key BYTEA;
+  ADD COLUMN member_priv_key BYTEA,
+  ADD COLUMN public_member_count BIGINT;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
 
@@ -63,12 +64,19 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 ALTER TABLE group_members
   ADD COLUMN relay_link BYTEA,
   ADD COLUMN member_pub_key BYTEA;
+
+ALTER TABLE messages ADD COLUMN msg_chat_binding TEXT;
+ALTER TABLE messages ADD COLUMN msg_signatures BYTEA;
+
+ALTER TABLE chat_items ADD COLUMN msg_signed TEXT;
 |]
 
 down_m20260222_chat_relays :: Text
 down_m20260222_chat_relays =
   T.pack
     [r|
+UPDATE group_members SET member_role = 'observer' WHERE member_role = 'relay';
+
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 ALTER TABLE groups
@@ -84,7 +92,8 @@ ALTER TABLE groups
   DROP COLUMN shared_group_id,
   DROP COLUMN root_priv_key,
   DROP COLUMN root_pub_key,
-  DROP COLUMN member_priv_key;
+  DROP COLUMN member_priv_key,
+  DROP COLUMN public_member_count;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 
@@ -101,4 +110,9 @@ DROP TABLE chat_relays;
 ALTER TABLE group_members
   DROP COLUMN relay_link,
   DROP COLUMN member_pub_key;
+
+ALTER TABLE messages DROP COLUMN msg_chat_binding;
+ALTER TABLE messages DROP COLUMN msg_signatures;
+
+ALTER TABLE chat_items DROP COLUMN msg_signed;
 |]

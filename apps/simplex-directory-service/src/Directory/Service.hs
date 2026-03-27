@@ -674,7 +674,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let gmId = groupMemberId' m
           sendComposedMessages cc (SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False) [MCText rjctNotice]
           sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
-            Right (CRUserDeletedMembers _ _ (_ : _) _) -> do
+            Right (CRUserDeletedMembers _ _ (_ : _) _ _) -> do
               atomically $ TM.delete gmId $ pendingCaptchas env
               logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
             r -> logError $ "unexpected remove member response: " <> tshow r

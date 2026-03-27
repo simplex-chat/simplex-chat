@@ -20,6 +20,7 @@ markdownTests :: Spec
 markdownTests = do
   textFormat
   secretText
+  textSmall
   textColor
   textWithUri
   textWithHyperlink
@@ -130,6 +131,35 @@ secretText = describe "secret text" do
   it "ignored internal markdown" do
     "snippet: `this is #secret_text#`"
       <==> "snippet: " <> markdown Snippet "this is #secret_text#"
+
+small :: Text -> Markdown
+small = markdown Small
+
+textSmall :: Spec
+textSmall = describe "text small" do
+  it "correct markdown" do
+    "this is !- small! text"
+      <==> "this is " <> small "small" <> " text"
+    "!- small! text"
+      <==> small "small" <> " text"
+    "this is !- small!"
+      <==> "this is " <> small "small"
+    " !- small! text"
+      <==> " " <> small "small" <> " text"
+    "this is !- small! "
+      <==> "this is " <> small "small" <> " "
+  it "ignored as markdown" do
+    "this is !- unformatted ! text"
+      <==> "this is !- unformatted ! text"
+    "this is !-  unformatted! text"
+      <==> "this is !-  unformatted! text"
+    "this is!- unformatted! text"
+      <==> "this is!- unformatted! text"
+    "this is !- unformatted text"
+      <==> "this is !- unformatted text"
+  it "ignored internal markdown" do
+    "this is !- long *small* (not bold)! text"
+      <==> "this is " <> small "long *small* (not bold)" <> " text"
 
 red :: Text -> Markdown
 red = markdown (colored Red)

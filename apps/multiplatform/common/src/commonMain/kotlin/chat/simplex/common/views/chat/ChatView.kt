@@ -178,7 +178,8 @@ fun ChatView(
             contentFilter.value = null
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
-            if (chatsCtx.secondaryContextFilter == null) {
+            val cInfo = activeChat.value?.chatInfo
+            if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
               updateAvailableContent(chatRh, activeChat, availableContent)
             }
             if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
@@ -198,6 +199,24 @@ fun ChatView(
               withContext(Dispatchers.Main) {
                 chatModel.chatAgentConnId.value = null
                 chatModel.chatSubStatus.value = null
+              }
+            }
+            if (cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays) {
+              withBGApi {
+                setGroupMembers(chatRh, cInfo.groupInfo, chatModel)
+                if (cInfo.groupInfo.membership.memberRole == GroupMemberRole.Owner) {
+                  val relays = chatModel.controller.apiGetGroupRelays(cInfo.groupInfo.groupId)
+                  withContext(Dispatchers.Main) {
+                    ChannelRelaysModel.set(cInfo.groupInfo.groupId, relays)
+                  }
+                } else {
+                  val gInfo = chatModel.controller.apiGetUpdatedGroupLinkData(chatRh, cInfo.groupInfo.groupId)
+                  if (gInfo != null) {
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateGroup(chatRh, gInfo)
+                    }
+                  }
+                }
               }
             }
           }
@@ -357,6 +376,7 @@ fun ChatView(
               chatModel.groupMembers.value = emptyList()
               chatModel.groupMembersIndexes.value = emptyMap()
               chatModel.membersLoaded.value = false
+              ChannelRelaysModel.reset()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -487,7 +507,7 @@ fun ChatView(
                 }
                 ModalManager.end.showModalCloseable(true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close, close)
+                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
                   }
                 }
               }
@@ -757,7 +777,8 @@ fun ChatView(
               searchText.value = ""
               contentFilter.value = null
               // Update available content types when search closes
-              if (chatsCtx.secondaryContextFilter == null) {
+              val cInfo = activeChat.value?.chatInfo
+              if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
                 updateAvailableContent(chatRh, activeChat, availableContent)
               }
             },
@@ -808,7 +829,7 @@ fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableCon
   withBGApi {
     Log.e(TAG, "updateAvailableContent")
     val chatInfo = activeChat.value?.chatInfo
-    if (chatInfo == null) return@withBGApi
+    if (chatInfo == null || chatInfo !is ChatInfo.Direct && chatInfo !is ChatInfo.Group && chatInfo !is ChatInfo.Local) return@withBGApi
     val types = chatModel.controller.apiGetChatContentTypes(chatRh, chatInfo.chatType, chatInfo.apiId, null)
     if (activeChat.value?.chatInfo?.id != chatInfo.id) return@withBGApi
     if (types == null) {
@@ -840,10 +861,14 @@ private fun connectingText(chatInfo: ChatInfo): String? {
       }
 
     is ChatInfo.Group ->
-      when (chatInfo.groupInfo.membership.memberStatus) {
-        GroupMemberStatus.MemUnknown -> if (chatInfo.groupInfo.preparedGroup?.connLinkStartedConnection == true) generalGetString(MR.strings.group_connection_pending) else null
-        GroupMemberStatus.MemAccepted -> generalGetString(MR.strings.group_connection_pending)
-        else -> null
+      if (chatInfo.groupInfo.useRelays) {
+        null
+      } else {
+        when (chatInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemUnknown -> if (chatInfo.groupInfo.preparedGroup?.connLinkStartedConnection == true) generalGetString(MR.strings.group_connection_pending) else null
+          GroupMemberStatus.MemAccepted -> generalGetString(MR.strings.group_connection_pending)
+          else -> null
+        }
       }
 
     else -> null
@@ -1426,6 +1451,10 @@ fun BoxScope.ChatInfoToolbar(
   }
 }
 
+fun subscriberCountStr(count: Long): String =
+  if (count == 1L) String.format(generalGetString(MR.strings.channel_subscriber_count_singular), count)
+  else String.format(generalGetString(MR.strings.channel_subscriber_count_plural), count)
+
 @Composable
 fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
   Row(
@@ -1452,6 +1481,17 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
       if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
           cInfo.fullName,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
+      val channelSubscriberCount = (cInfo as? ChatInfo.Group)?.let { g ->
+        if (g.groupInfo.useRelays) g.groupInfo.groupSummary.publicMemberCount?.takeIf { it > 0 } else null
+      }
+      if (channelSubscriberCount != null) {
+        Text(
+          subscriberCountStr(channelSubscriberCount),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
           maxLines = 1, overflow = TextOverflow.Ellipsis
         )
       }
@@ -1942,6 +1982,89 @@ fun BoxScope.ChatItemsList(
                   }
                 }
               }
+            } else if (cItem.chatDir is CIDirection.ChannelRcv) {
+              if (showAvatar) {
+                Column(
+                  Modifier
+                    .padding(top = 8.dp)
+                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                    .fillMaxWidth()
+                    .then(swipeableModifier),
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  horizontalAlignment = Alignment.Start
+                ) {
+                  @Composable
+                  fun ChannelNameAndRole() {
+                    Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
+                      Text(
+                        chatInfo.groupInfo.chatViewName,
+                        Modifier
+                          .padding(start = (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + DEFAULT_PADDING_HALF)
+                          .weight(1f, false),
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colors.secondary,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1
+                      )
+                      val chatItemTail = remember { appPreferences.chatItemTail.state }
+                      val style = shapeStyle(cItem, chatItemTail.value, itemSeparation.largeGap, true)
+                      val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
+                      Text(
+                        generalGetString(MR.strings.channel_role_label),
+                        Modifier.padding(start = DEFAULT_PADDING_HALF * 1.5f, end = DEFAULT_PADDING_HALF + if (tailRendered) msgTailWidthDp else 0.dp),
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colors.secondary,
+                        maxLines = 1
+                      )
+                    }
+                  }
+
+                  @Composable
+                  fun Item() {
+                    ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
+                      androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                        SelectedListItem(Modifier, cItem.id, selectedChatItems)
+                      }
+                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                        Box(Modifier.clickable { showChatInfo() }) {
+                          ProfileImage(
+                            MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier,
+                            chatInfo.groupInfo.image,
+                            chatInfo.groupInfo.chatIconName,
+                            backgroundColor = MaterialTheme.colors.background
+                          )
+                        }
+                        Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
+                          ChatItemViewShortHand(cItem, itemSeparation, range, false)
+                        }
+                      }
+                    }
+                  }
+                  if (cItem.content.showMemberName) {
+                    DependentLayout(Modifier, CHAT_BUBBLE_LAYOUT_ID) {
+                      ChannelNameAndRole()
+                      Item()
+                    }
+                  } else {
+                    Item()
+                  }
+                }
+              } else {
+                ChatItemBox {
+                  AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                    SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                  }
+                  Row(
+                    Modifier
+                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
+                      .then(swipeableOrSelectionModifier)
+                  ) {
+                    ChatItemViewShortHand(cItem, itemSeparation, range)
+                  }
+                }
+              }
             } else {
               ChatItemBox {
                 AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
@@ -2015,13 +2138,14 @@ fun BoxScope.ChatItemsList(
           val groupInfo = chatInfo.groupInfo
           when (groupInfo.businessChat?.chatType) {
             null -> {
+              val isChannel = groupInfo.useRelays
               if (groupInfo.nextConnectPrepared) {
-                generalGetString(MR.strings.chat_banner_join_group)
+                generalGetString(if (isChannel) MR.strings.chat_banner_join_channel else MR.strings.chat_banner_join_group)
               } else {
                 when (groupInfo.membership.memberStatus) {
-                  GroupMemberStatus.MemInvited -> generalGetString(MR.strings.chat_banner_join_group)
-                  GroupMemberStatus.MemCreator -> generalGetString(MR.strings.chat_banner_your_group)
-                  else -> generalGetString(MR.strings.chat_banner_group)
+                  GroupMemberStatus.MemInvited -> generalGetString(if (isChannel) MR.strings.chat_banner_join_channel else MR.strings.chat_banner_join_group)
+                  GroupMemberStatus.MemCreator -> generalGetString(if (isChannel) MR.strings.chat_banner_your_channel else MR.strings.chat_banner_your_group)
+                  else -> generalGetString(if (isChannel) MR.strings.chat_banner_channel else MR.strings.chat_banner_group)
                 }
               }
             }
@@ -3475,6 +3599,8 @@ private fun getItemSeparation(chatItem: ChatItem, prevItem: ChatItem?): ItemSepa
 
   val sameMemberAndDirection = if (prevItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
     chatItem.chatDir.groupMember.groupMemberId == prevItem.chatDir.groupMember.groupMemberId
+  } else if (chatItem.chatDir is CIDirection.ChannelRcv && prevItem.chatDir is CIDirection.ChannelRcv) {
+    true
   } else chatItem.chatDir.sent == prevItem.chatDir.sent
   val largeGap = !sameMemberAndDirection || (abs(prevItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 
@@ -3492,12 +3618,26 @@ private fun getItemSeparationLargeGap(chatItem: ChatItem, nextItem: ChatItem?): 
 
   val sameMemberAndDirection = if (nextItem.chatDir is GroupRcv && chatItem.chatDir is GroupRcv) {
     chatItem.chatDir.groupMember.groupMemberId == nextItem.chatDir.groupMember.groupMemberId
+  } else if (chatItem.chatDir is CIDirection.ChannelRcv && nextItem.chatDir is CIDirection.ChannelRcv) {
+    true
   } else chatItem.chatDir.sent == nextItem.chatDir.sent
   return !sameMemberAndDirection || (abs(nextItem.meta.createdAt.epochSeconds - chatItem.meta.createdAt.epochSeconds) >= 60)
 }
 
-private fun shouldShowAvatar(current: ChatItem, older: ChatItem?) =
-  current.chatDir is CIDirection.GroupRcv && (older == null || (older.chatDir !is CIDirection.GroupRcv || older.chatDir.groupMember.memberId != current.chatDir.groupMember.memberId))
+private fun shouldShowAvatar(current: ChatItem, older: ChatItem?): Boolean {
+  val oldIsGroupRcv = older?.chatDir is CIDirection.GroupRcv || older?.chatDir is CIDirection.ChannelRcv
+  val sameMember = when {
+    older?.chatDir is CIDirection.GroupRcv && current.chatDir is CIDirection.GroupRcv ->
+      older.chatDir.groupMember.memberId == current.chatDir.groupMember.memberId
+    older?.chatDir is CIDirection.ChannelRcv && current.chatDir is CIDirection.ChannelRcv -> true
+    else -> false
+  }
+  return when {
+    current.chatDir is CIDirection.GroupRcv -> older == null || !oldIsGroupRcv || !sameMember
+    current.chatDir is CIDirection.ChannelRcv -> older == null || !oldIsGroupRcv || !sameMember
+    else -> false
+  }
+}
 
 
 @Preview/*(

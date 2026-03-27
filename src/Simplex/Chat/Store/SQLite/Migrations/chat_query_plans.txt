@@ -148,7 +148,7 @@ Query:
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
                   g.business_chat, g.business_member_id, g.customer_member_id,
                   g.use_relays, g.relay_own_status,
-                  g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+                  g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
                   g.shared_group_id, g.root_priv_key, g.root_pub_key, g.member_priv_key,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -349,9 +349,9 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: 
               INSERT INTO group_members
                 ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
-                  user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
+                  user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
@@ -652,9 +652,9 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
             INSERT INTO messages (
-              msg_sent, chat_msg_event, msg_body, connection_id, group_id,
+              msg_sent, chat_msg_event, msg_body, msg_chat_binding, msg_signatures, connection_id, group_id,
               shared_msg_id, shared_msg_id_user, created_at, updated_at
-            ) VALUES (?,?,?,?,?,?,?,?,?)
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
 
@@ -1171,9 +1171,9 @@ Query:
           INSERT INTO group_members
             (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
             member_restriction, invited_by, invited_by_group_member_id,
-            user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+            user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 SEARCH group_relays USING COVERING INDEX idx_group_relays_group_member_id (group_member_id=?)
@@ -1215,8 +1215,8 @@ Query:
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1224,16 +1224,16 @@ Query:
           INSERT INTO groups
             (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at,
-             shared_group_id, root_priv_key, root_pub_key, member_priv_key)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             shared_group_id, root_priv_key, root_pub_key, member_priv_key, public_member_count)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
 Query: 
           INSERT INTO messages
-            (msg_sent, chat_msg_event, msg_body, broker_ts, created_at, updated_at, connection_id, group_id,
+            (msg_sent, chat_msg_event, msg_body, msg_chat_binding, msg_signatures, broker_ts, created_at, updated_at, connection_id, group_id,
              shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1257,7 +1257,7 @@ Query:
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol
           FROM chat_items i
@@ -1274,7 +1274,7 @@ Query:
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- CIMeta forwardedByMember, showGroupAsSender
@@ -1327,7 +1327,7 @@ Query:
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- DirectQuote
@@ -1382,6 +1382,14 @@ INDEX 1
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 INDEX 2
 SEARCH users USING INDEX sqlite_autoindex_users_1 (contact_id=?)
+
+Query: 
+          SELECT COUNT(1) FROM group_members
+          WHERE group_id = ? AND member_role = ?
+            AND member_status IN (?,?,?,?,?,?,?)
+        
+Plan:
+SEARCH group_members USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 
 Query: 
           SELECT agent_conn_id FROM (
@@ -3224,7 +3232,7 @@ Query:
         SELECT
           t.delivery_task_id,
           t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, t.message_from_channel
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, msg.msg_chat_binding, msg.msg_signatures, t.message_from_channel
         FROM delivery_tasks t
         JOIN messages msg ON msg.message_id = t.message_id
         JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -3664,7 +3672,7 @@ SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT pgm.message_id, m.shared_msg_id, m.msg_body
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_chat_binding, m.msg_signatures
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
@@ -3910,6 +3918,18 @@ Query:
       
 Plan:
 SCAN group_members
+
+Query: 
+        UPDATE group_members
+        SET member_role = ?,
+            member_status = ?,
+            peer_chat_min_version = ?,
+            peer_chat_max_version = ?,
+            updated_at = ?
+        WHERE user_id = ? AND group_member_id = ?
+      
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         UPDATE groups
@@ -4464,12 +4484,12 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, show_group_as_sender, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, show_group_as_sender, msg_signed, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4901,7 +4921,7 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
-      SET relay_link = ?, updated_at = ?
+      SET relay_link = ?, member_pub_key = ?, updated_at = ?
       WHERE group_member_id = ?
     
 Plan:
@@ -5115,7 +5135,7 @@ Query:
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       g.shared_group_id, g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -5151,7 +5171,7 @@ Query:
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       g.shared_group_id, g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -5180,7 +5200,7 @@ Query:
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       g.shared_group_id, g.root_priv_key, g.root_pub_key, g.member_priv_key,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -5500,6 +5520,22 @@ Query:
 Plan:
 SEARCH i USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
+
+Query: 
+    SELECT gr.group_relay_id, gr.group_member_id,
+           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           gr.relay_status, gr.relay_link
+    FROM group_relays gr
+    JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
+   JOIN group_members m ON m.group_member_id = gr.group_member_id
+                   WHERE gr.group_id = ?
+                     AND m.member_status = ?
+                     AND gr.relay_status IN (?,?)
+             
+Plan:
+SEARCH gr USING INDEX idx_group_relays_group_id (group_id=?)
+SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
@@ -6623,6 +6659,10 @@ Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id 
 Plan:
 SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 
+Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?
+Plan:
+SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
+
 Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
@@ -6642,6 +6682,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT member_status FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
 
 Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?
 Plan:
@@ -6674,6 +6718,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT summary_current_members_count FROM groups WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?
 Plan:
@@ -6911,7 +6959,7 @@ Query: UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?
+Query: UPDATE group_members SET xgrplinkmem_received = ?, member_pub_key = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -6959,6 +7007,10 @@ Query: UPDATE groups SET members_require_attention=1 WHERE group_id=?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -6991,7 +7043,7 @@ Query: UPDATE groups SET user_member_profile_sent_at = ? WHERE user_id = ? AND g
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?
+Query: UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, public_member_count = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

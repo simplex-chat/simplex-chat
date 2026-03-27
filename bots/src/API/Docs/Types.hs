@@ -307,6 +307,7 @@ chatTypesDocsData =
     (sti @MsgFilter, STEnum, "MF", [], "", ""),
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
+    (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -319,6 +320,7 @@ chatTypesDocsData =
     (sti @Profile, STRecord, "", [], "", ""),
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
     (sti @ProxyError, STUnion, "", [], "", ""),
+    (sti @PublicGroupData, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
     (sti @RcvConnEvent, STUnion, "RCE", [], "", ""),
@@ -506,6 +508,7 @@ deriving instance Generic MsgErrorType
 deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
+deriving instance Generic MsgSigStatus
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
@@ -518,6 +521,7 @@ deriving instance Generic PreparedGroup
 deriving instance Generic Profile
 deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
+deriving instance Generic PublicGroupData
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent

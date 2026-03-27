@@ -109,6 +109,7 @@ enum ChatCommand: ChatCmdProtocol {
     case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
+    case apiGetUpdatedGroupLinkData(groupId: Int64)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case apiContactQueueInfo(contactId: Int64)
@@ -306,6 +307,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id, scope: nil)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
+            case let .apiGetUpdatedGroupLinkData(groupId): return "/_get group link data #\(groupId)"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case let .apiContactQueueInfo(contactId): return "/_queue info @\(contactId)"
@@ -494,6 +496,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
+            case .apiGetUpdatedGroupLinkData: return "apiGetUpdatedGroupLinkData"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .apiContactQueueInfo: return "apiContactQueueInfo"
@@ -673,6 +676,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
+    case groupInfo(user: UserRef, groupInfo: GroupInfo)
     case groupMemberInfo(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
     case queueInfo(user: UserRef, rcvMsgInfo: RcvMsgInfo?, queueInfo: ServerQueueInfo)
     case contactSwitchStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
@@ -706,6 +710,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .chatItemTTL: "chatItemTTL"
         case .networkConfig: "networkConfig"
         case .contactInfo: "contactInfo"
+        case .groupInfo: "groupInfo"
         case .groupMemberInfo: "groupMemberInfo"
         case .queueInfo: "queueInfo"
         case .contactSwitchStarted: "contactSwitchStarted"
@@ -741,6 +746,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
         case let .networkConfig(networkConfig): return String(describing: networkConfig)
         case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
+        case let .groupInfo(u, groupInfo): return withUser(u, "groupInfo: \(String(describing: groupInfo))")
         case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
         case let .queueInfo(u, rcvMsgInfo, queueInfo):
             let msgInfo = if let info = rcvMsgInfo { encodeJSON(info) } else { "none" }
@@ -1104,7 +1110,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case joinedGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
-    case groupLinkRelaysUpdated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+    case groupLinkDataUpdated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay], relaysChanged: Bool)
     case newMemberContactReceivedInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     // receiving file events
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
@@ -1181,7 +1187,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .joinedGroupMember: "joinedGroupMember"
         case .connectedToGroupMember: "connectedToGroupMember"
         case .groupUpdated: "groupUpdated"
-        case .groupLinkRelaysUpdated: "groupLinkRelaysUpdated"
+        case .groupLinkDataUpdated: "groupLinkDataUpdated"
         case .newMemberContactReceivedInv: "newMemberContactReceivedInv"
         case .rcvFileAccepted: "rcvFileAccepted"
         case .rcvFileAcceptedSndCancelled: "rcvFileAcceptedSndCancelled"
@@ -1262,7 +1268,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
-        case let .groupLinkRelaysUpdated(u, groupInfo, groupLink, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)")
+        case let .groupLinkDataUpdated(u, groupInfo, groupLink, groupRelays, relaysChanged): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)\nrelaysChanged: \(relaysChanged)")
         case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
         case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
         case .rcvFileAcceptedSndCancelled: return noDetails
@@ -1807,10 +1813,6 @@ enum UserServersError: Decodable {
             case .smp: return globalSMPError
             case .xftp: return globalXFTPError
             }
-        case let .duplicateChatRelayName(duplicateChatRelay):
-            return String.localizedStringWithFormat(NSLocalizedString("Duplicate chat relay name: %@", comment: "servers error"), duplicateChatRelay)
-        case let .duplicateChatRelayAddress(_, duplicateAddress):
-            return String.localizedStringWithFormat(NSLocalizedString("Duplicate chat relay address: %@", comment: "servers error"), duplicateAddress)
         default: return nil
         }
     }

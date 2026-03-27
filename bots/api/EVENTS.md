@@ -38,7 +38,7 @@ This file is generated automatically.
   - [MemberAcceptedByOther](#memberacceptedbyother)
   - [MemberBlockedForAll](#memberblockedforall)
   - [GroupMemberUpdated](#groupmemberupdated)
-  - [GroupLinkRelaysUpdated](#grouplinkrelaysupdated)
+  - [GroupLinkDataUpdated](#grouplinkdataupdated)
 
 [File events](#file-events)
 - Main events
@@ -301,6 +301,7 @@ Group profile or preferences updated.
 - fromGroup: [GroupInfo](./TYPES.md#groupinfo)
 - toGroup: [GroupInfo](./TYPES.md#groupinfo)
 - member_: [GroupMember](./TYPES.md#groupmember)?
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -330,6 +331,7 @@ Member (or bot user's) group role changed.
 - member: [GroupMember](./TYPES.md#groupmember)
 - fromRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -345,6 +347,7 @@ Another member is removed from the group.
 - byMember: [GroupMember](./TYPES.md#groupmember)
 - deletedMember: [GroupMember](./TYPES.md#groupmember)
 - withMessages: bool
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -358,6 +361,7 @@ Another member left the group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -372,6 +376,7 @@ Bot user was removed from the group.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
 - withMessages: bool
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -385,6 +390,7 @@ Group was deleted by the owner (not bot user).
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -428,6 +434,7 @@ Another member blocked for all members.
 - byMember: [GroupMember](./TYPES.md#groupmember)
 - member: [GroupMember](./TYPES.md#groupmember)
 - blocked: bool
+- msgSigned: [MsgSigStatus](./TYPES.md#msgsigstatus)?
 
 ---
 
@@ -446,16 +453,17 @@ Another group member profile updated.
 ---
 
 
-### GroupLinkRelaysUpdated
+### GroupLinkDataUpdated
 
-Group link relays updated.
+Group link data updated.
 
 **Record type**:
-- type: "groupLinkRelaysUpdated"
+- type: "groupLinkDataUpdated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+- relaysChanged: bool
 
 ---
 

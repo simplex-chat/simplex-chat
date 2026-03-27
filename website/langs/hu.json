@@ -313,5 +313,6 @@
     "messengers-comparison-section-list-point-5": "A kétlépcsős kulcscsere nem követelmény a biztonsági kód ellenőrzéséhez.",
     "messengers-comparison-section-list-point-6": "A kvantumbiztos kulcscsere „ritka” &mdash; csak a racsnis lépések egy részét védi.",
     "navbar-token": "Token",
-    "navbar-old-site": "Régi oldal"
+    "navbar-old-site": "Régi oldal",
+    "send-file": "Fájl küldése"
 }

@@ -795,6 +795,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
+  msgSigned?: MsgSigStatus
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -2299,6 +2300,7 @@ export type Format =
   | Format.StrikeThrough
   | Format.Snippet
   | Format.Secret
+  | Format.Small
   | Format.Colored
   | Format.Uri
   | Format.HyperLink
@@ -2315,6 +2317,7 @@ export namespace Format {
     | "strikeThrough"
     | "snippet"
     | "secret"
+    | "small"
     | "colored"
     | "uri"
     | "hyperLink"
@@ -2346,6 +2349,10 @@ export namespace Format {
 
   export interface Secret extends Interface {
     type: "secret"
+  }
+
+  export interface Small extends Interface {
+    type: "small"
   }
 
   export interface Colored extends Interface {
@@ -2699,6 +2706,7 @@ export namespace GroupRootKey {
 
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
+  publicGroupData?: PublicGroupData
 }
 
 export interface GroupShortLinkInfo {
@@ -2709,6 +2717,7 @@ export interface GroupShortLinkInfo {
 
 export interface GroupSummary {
   currentMembers: number // int64
+  publicMemberCount?: number // int64
 }
 
 export interface GroupSupportChat {
@@ -3021,6 +3030,11 @@ export enum MsgReceiptStatus {
   BadMsgHash = "badMsgHash",
 }
 
+export enum MsgSigStatus {
+  Verified = "verified",
+  SignedNoKey = "signedNoKey",
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3195,6 +3209,10 @@ export namespace ProxyError {
   export interface NO_SESSION extends Interface {
     type: "NO_SESSION"
   }
+}
+
+export interface PublicGroupData {
+  publicMemberCount: number // int64
 }
 
 export type RCErrorType = 
@@ -3452,6 +3470,7 @@ export type RcvGroupEvent =
   | RcvGroupEvent.MemberCreatedContact
   | RcvGroupEvent.MemberProfileUpdated
   | RcvGroupEvent.NewMemberPendingReview
+  | RcvGroupEvent.MsgBadSignature
 
 export namespace RcvGroupEvent {
   export type Tag = 
@@ -3471,6 +3490,7 @@ export namespace RcvGroupEvent {
     | "memberCreatedContact"
     | "memberProfileUpdated"
     | "newMemberPendingReview"
+    | "msgBadSignature"
 
   interface Interface {
     type: Tag
@@ -3554,6 +3574,10 @@ export namespace RcvGroupEvent {
 
   export interface NewMemberPendingReview extends Interface {
     type: "newMemberPendingReview"
+  }
+
+  export interface MsgBadSignature extends Interface {
+    type: "msgBadSignature"
   }
 }
 

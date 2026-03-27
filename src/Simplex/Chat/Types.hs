@@ -57,6 +57,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromText
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
@@ -531,7 +532,8 @@ groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
 data GroupSummary = GroupSummary
-  { currentMembers :: Int64
+  { currentMembers :: Int64,
+    publicMemberCount :: Maybe Int64
   }
   deriving (Eq, Show)
 
@@ -891,11 +893,23 @@ data IntroInvitation = IntroInvitation
   }
   deriving (Eq, Show)
 
+newtype MemberKey = MemberKey C.PublicKeyEd25519
+  deriving (Eq, Show)
+  deriving newtype (StrEncoding)
+
+instance FromJSON MemberKey where
+  parseJSON = strParseJSON "MemberKey"
+
+instance ToJSON MemberKey where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
     v :: Maybe ChatVersionRange,
-    profile :: Profile
+    profile :: Profile,
+    memberKey :: Maybe MemberKey
   }
   deriving (Eq, Show)
 
@@ -1084,7 +1098,7 @@ data NewGroupMember = NewGroupMember
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
   deriving (Eq, Ord, Show)
-  deriving newtype (FromField)
+  deriving newtype (Encoding, FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m
 
@@ -2023,7 +2037,7 @@ $(JQ.deriveToJSON defaultJSON ''GroupSummary)
 
 instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
-  omittedField = Just GroupSummary {currentMembers = 0}
+  omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
 

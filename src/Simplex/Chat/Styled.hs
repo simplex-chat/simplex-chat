@@ -75,6 +75,7 @@ sgr = \case
   StrikeThrough -> [SetSwapForegroundBackground True]
   Colored (FormatColor c) -> [SetColor Foreground Vivid c]
   Secret -> [SetColor Foreground Dull Black, SetColor Background Dull Black]
+  Small -> [SetConsoleIntensity FaintIntensity]
   _ -> []
 
 unStyle :: StyledString -> String

@@ -278,7 +278,7 @@ data ChatCommand
   | SetUserContactReceipts UserMsgReceiptSettings
   | APISetUserGroupReceipts UserId UserMsgReceiptSettings
   | SetUserGroupReceipts UserMsgReceiptSettings
-  | APISetUserAutoAcceptMemberContacts UserId Bool
+  | APISetUserAutoAcceptMemberContacts {userId :: UserId, onOff :: Bool}
   | SetUserAutoAcceptMemberContacts Bool
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
@@ -365,6 +365,8 @@ data ChatCommand
   | APISetConnectionAlias {connectionId :: Int64, localAlias :: LocalAlias}
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
+  | APISetGroupCustomData {groupId :: GroupId, customData :: Maybe CustomData}
+  | APISetContactCustomData {contactId :: ContactId, customData :: Maybe CustomData}
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
@@ -425,6 +427,7 @@ data ChatCommand
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
   | APIContactInfo ContactId
   | APIGroupInfo GroupId
+  | APIGetUpdatedGroupLinkData {groupId :: GroupId}
   | APIGroupMemberInfo GroupId GroupMemberId
   | APIContactQueueInfo ContactId
   | APIGroupMemberQueueInfo GroupId GroupMemberId
@@ -705,7 +708,7 @@ data ChatResponse
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
-  | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
+  | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
@@ -734,7 +737,7 @@ data ChatResponse
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
-  | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
+  | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo, msgSigned :: Bool}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   -- TODO add chatItem :: AChatItem
@@ -754,9 +757,9 @@ data ChatResponse
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
-  | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
-  | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole, msgSigned :: Bool}
+  | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool, msgSigned :: Bool}
+  | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember, msgSigned :: Bool}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
@@ -854,21 +857,21 @@ data ChatEvent
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
-  | CEvtGroupLinkRelaysUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CEvtGroupLinkDataUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay], relaysChanged :: Bool}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
   | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CEvtMemberAcceptedByOther {user :: User, groupInfo :: GroupInfo, acceptingMember :: GroupMember, member :: GroupMember}
-  | CEvtMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
-  | CEvtMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
+  | CEvtMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole, msgSigned :: Maybe MsgSigStatus}
+  | CEvtMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool, msgSigned :: Maybe MsgSigStatus}
   | CEvtConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
-  | CEvtDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool}
-  | CEvtDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool}
-  | CEvtLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool, msgSigned :: Maybe MsgSigStatus}
+  | CEvtDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool, msgSigned :: Maybe MsgSigStatus}
+  | CEvtLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, msgSigned :: Maybe MsgSigStatus}
   | CEvtUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
-  | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember} -- there is the same command response
+  | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, msgSigned :: Maybe MsgSigStatus}
+  | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember, msgSigned :: Maybe MsgSigStatus} -- there is the same command response
   | CEvtAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CEvtNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CEvtNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}

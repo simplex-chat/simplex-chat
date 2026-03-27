@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -6,6 +7,10 @@
 
 module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
+    BatchMode (..),
+    encodeBatchElement,
+    encodeFwdElement,
+    encodeBinaryBatch,
     batchMessages,
     batchDeliveryTasks1,
   )
@@ -22,75 +27,94 @@ import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types (VersionRangeChat)
+import Simplex.Messaging.Encoding (Large (..), smpEncode, smpEncodeList)
+
+data BatchMode = BMJson | BMBinary
+  deriving (Eq, Show)
+
+-- | Encode a batch element with optional signature prefix.
+-- Dual of elementP's '/'/'{'cases.
+encodeBatchElement :: Maybe SignedMsg -> ByteString -> ByteString
+encodeBatchElement Nothing body = body
+encodeBatchElement (Just SignedMsg {chatBinding, signatures}) body =
+  "/" <> smpEncode (chatBinding, signatures) <> body
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
--- | Batches SndMessages in [Either ChatError SndMessage] into batches of ByteStrings in form of JSON arrays.
+-- | Batches SndMessages in [Either ChatError SndMessage] into batches of ByteStrings.
+-- BMJson mode: JSON arrays like [msg1,msg2,...]
+-- BMBinary mode: Binary format =<count>(<len:2><body>)*
 -- Preserves original errors in the list.
--- Does not check if the resulting batch is a valid JSON.
--- If a single element is passed, it is returned as is (a JSON string).
+-- If a single element is passed, it is returned as is.
 -- If an element exceeds maxLen, it is returned as ChatError.
-batchMessages :: Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
-batchMessages maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
+-- Elements are encoded with signature prefix via encodeBatchElement.
+batchMessages :: BatchMode -> Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
+batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
   where
-    msgBatch batch = Right (MsgBatch (encodeMessages batch) batch)
-    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [SndMessage], Int, Int)
-    addToBatch (Left err) acc = (Left err : addBatch acc, [], 0, 0) -- step over original error
-    addToBatch (Right msg@SndMessage {msgBody}) acc@(batches, batch, len, n)
-      | batchLen <= maxLen = (batches, msg : batch, len', n + 1)
-      | msgLen <= maxLen = (addBatch acc, [msg], msgLen, 1)
-      | otherwise = (errLarge msg : addBatch acc, [], 0, 0)
+    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int)
+    addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
+    addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
+      | batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
+      | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
+      | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        msgLen = B.length msgBody
-        len'
-          | n == 0 = msgLen
-          | otherwise = msgLen + len + 1 -- 1 accounts for comma
-        batchLen
-          | n == 0 = len'
-          | otherwise = len' + 2 -- 2 accounts for opening and closing brackets
+        body = encodeBatchElement signedMsg_ msgBody
+        msgLen = B.length body
+        len' = len + msgLen
+        n' = n + 1
         errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
-    addBatch :: ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
-    addBatch (batches, batch, _, n) = if n == 0 then batches else msgBatch batch : batches
-    encodeMessages :: [SndMessage] -> ByteString
-    encodeMessages = \case
-      [] -> mempty
-      [msg] -> body msg
-      msgs -> B.concat ["[", B.intercalate "," (map body msgs), "]"]
-    body SndMessage {msgBody} = msgBody
+    addBatch :: ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
+    addBatch (batches, bodies, msgs, _, n)
+      | n == 0 = batches
+      | otherwise =
+          let encoded = encodeBatch mode bodies
+           in Right (MsgBatch encoded msgs) : batches
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
+-- Always uses binary batch format for relay groups.
 batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
-batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
+batchDeliveryTasks1 _vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
     addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageDeliveryTask -> ([ByteString], [Int64], [Int64], Int, Int)
     addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
-      -- too large: skip msgBody, record taskId in largeTaskIds
+      -- too large: skip, record taskId in largeTaskIds
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
-      | batchLen <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
-      -- doesn’t fit: stop adding further messages
+      -- batch overhead: '=' + count (2) + 2-byte length prefix per element
+      | len' + (n + 1) * 2 + 2 <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      -- doesn't fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, fwdSender, brokerTs, chatMessage} = task
-        msgBody =
-          let (memberId_, memberName_) = case fwdSender of
-                FwdMember mid mname -> (Just mid, Just mname)
-                FwdChannel -> (Nothing, Nothing)
-              fwdEvt = XGrpMsgForward memberId_ memberName_ chatMessage brokerTs
-              cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
-           in chatMsgToBody cm
+        MessageDeliveryTask {taskId, fwdSender, brokerTs = fwdBrokerTs, verifiedMsg} = task
+        msgBody = encodeFwdElement GrpMsgForward {fwdSender, fwdBrokerTs} verifiedMsg
         msgLen = B.length msgBody
-        len'
-          | n == 0 = msgLen
-          | otherwise = msgLen + len + 1 -- 1 accounts for comma
-        batchLen
-          | n == 0 = len'
-          | otherwise = len' + 2 -- 2 accounts for opening and closing brackets
+        len' = len + msgLen
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
     toResult (msgBodies, taskIds, largeTaskIds, _, _) =
-      (encodeMessages (reverse msgBodies), reverse taskIds, reverse largeTaskIds)
-    encodeMessages :: [ByteString] -> ByteString
-    encodeMessages = \case
-      [] -> mempty
-      [msg] -> msg
-      msgs -> B.concat ["[", B.intercalate "," msgs, "]"]
+      let encoded = encodeBinaryBatch (reverse msgBodies)
+       in (encoded, reverse taskIds, reverse largeTaskIds)
+
+-- | Encode a batch element for relay groups: ><GrpMsgForward>[/<sigs>]<body>.
+encodeFwdElement :: GrpMsgForward -> VerifiedMsg 'Json -> ByteString
+encodeFwdElement fwd verifiedMsg = ">" <> smpEncode fwd <> encodeBatchElement signedMsg_ msgBody
+  where
+    (_, signedMsg_, msgBody) = verifiedMsgParts verifiedMsg
+
+encodeBatch :: BatchMode -> [ByteString] -> ByteString
+encodeBatch _ [] = mempty
+encodeBatch _ [msg] = msg
+encodeBatch BMJson msgs = B.concat ["[", B.intercalate "," msgs, "]"]
+encodeBatch BMBinary msgs = B.cons '=' $ smpEncodeList (map Large msgs)
+
+-- Always uses batch format (no single-element shortcut) since elements may have F prefix.
+encodeBinaryBatch :: [ByteString] -> ByteString
+encodeBinaryBatch [] = mempty
+encodeBinaryBatch msgs = B.cons '=' $ smpEncodeList (map Large msgs)
+
+-- Returns length the batch would have if encoded.
+-- `len` - the total length of all `n` encoded elements (including signature prefixes)
+batchLen :: BatchMode -> Int -> Int -> Int
+batchLen _ _ 0 = 0
+batchLen _ len 1 = len
+batchLen BMJson len n = len + n + 1 -- (n - 1) commas + 2 brackets
+batchLen BMBinary len n = len + n * 2 + 2 -- 2-byte length prefix per element + '=' + count

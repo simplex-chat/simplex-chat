@@ -512,6 +512,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     showGroupAsSender :: ShowGroupAsSender,
+    msgSigned :: Maybe MsgSigStatus,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -519,12 +520,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgSigStatus -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
       hasLink = BoolDef hasLink_
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgSigned, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
@@ -555,6 +556,7 @@ dummyMeta itemId ts itemText =
       editable = False,
       forwardedByMember = Nothing,
       showGroupAsSender = False,
+      msgSigned = Nothing,
       createdAt = ts,
       updatedAt = ts
     }
@@ -1149,23 +1151,22 @@ type ChatItemTs = UTCTime
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    signedMsg_ :: Maybe SignedMsg
   }
   deriving (Show)
 
 data NewRcvMessage e = NewRcvMessage
   { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody,
+    verifiedMsg :: VerifiedMsg e,
     brokerTs :: UTCTime
   }
-  deriving (Show)
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
-    msgBody :: MsgBody,
-    authorMember :: Maybe GroupMemberId,
+    msgSigned :: Maybe MsgSigStatus,
     forwardedByMember :: Maybe GroupMemberId
   }
 

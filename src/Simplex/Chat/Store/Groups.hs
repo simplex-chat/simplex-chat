@@ -81,6 +81,7 @@ module Simplex.Chat.Store.Groups
     getGroupRelayById,
     getGroupRelayByGMId,
     getGroupRelays,
+    getConnectedGroupRelays,
     createRelayForOwner,
     getCreateRelayForMember,
     createRelayConnection,
@@ -100,7 +101,11 @@ module Simplex.Chat.Store.Groups
     getMemberInvitation,
     createMemberConnection,
     createMemberConnectionAsync,
+    updatePreparedRelayedGroup,
+    updatePublicMemberCount,
+    setPublicMemberCount,
     updateGroupMemberKeys,
+    updateRelayGroupKeys,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     updateGroupMemberAccepted,
@@ -149,6 +154,8 @@ module Simplex.Chat.Store.Groups
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
+    createLinkOwnerMember,
+    updatePreparedChannelMember,
     updateUnknownMemberAnnounced,
     updateUserMemberProfileSentAt,
     setGroupCustomData,
@@ -190,7 +197,7 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), InvitationId, UserId)
+import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
@@ -328,8 +335,8 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
   pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> Maybe Profile -> Bool -> MemberId -> Maybe GroupKeys -> ExceptT StoreError IO GroupInfo
-createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays memberId groupKeys = ExceptT $ do
+createNewGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> Maybe Profile -> Bool -> MemberId -> Maybe GroupKeys -> Maybe Int64 -> ExceptT StoreError IO GroupInfo
+createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays memberId groupKeys publicMemberCount_ = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
@@ -360,11 +367,11 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
           INSERT INTO groups
             (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at,
-             shared_group_id, root_priv_key, root_pub_key, member_priv_key)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             shared_group_id, root_priv_key, root_pub_key, member_priv_key, public_member_count)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (BI useRelays, BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
-            :. (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_)
+            :. (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_, publicMemberCount_)
         )
       insertedRowId db
     let memberPubKey = C.publicKey . memberPrivKey <$> groupKeys
@@ -390,7 +397,7 @@ createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays 
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
-          groupSummary = GroupSummary 1,
+          groupSummary = GroupSummary {currentMembers = 1, publicMemberCount = publicMemberCount_},
           customData = Nothing,
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing,
@@ -444,9 +451,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
-          -- TODO [member keys] inviting host should generate its keys in public groups
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing Nothing currentTs hostVRange
-          -- TODO [member keys] relay should pass key received via XMember
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId Nothing currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
           pure
@@ -469,7 +474,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
-                  groupSummary = GroupSummary 2,
+                  groupSummary = GroupSummary {currentMembers = 2, publicMemberCount = Nothing},
                   customData = Nothing,
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing,
@@ -589,11 +594,11 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
-createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole = do
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
-  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing currentTs
+  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs
   hostMemberId_ <-
     if useRelays
       then pure Nothing
@@ -802,11 +807,11 @@ createGroupViaLink'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business False Nothing currentTs
+    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business False Nothing Nothing currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
-    -- TODO [member keys] can this be used with public groups? if yes member keys need to be added
+    -- TODO [member keys] this is currently not used with public groups. If it needs to be used, member keys need to be added
     void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId Nothing currentTs vr
     liftIO $ setViaGroupLinkUri db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
@@ -829,8 +834,8 @@ createGroupViaLink'
             )
           insertedRowId db
 
-createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Bool -> Maybe RelayStatus -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
-createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus currentTs = ExceptT $ do
+createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Bool -> Maybe RelayStatus -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
+createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus publicMemberCount_ currentTs = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission} = groupProfile
   withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
     liftIO $ do
@@ -851,10 +856,10 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus c
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus))
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_))
       groupId <- insertedRowId db
       pure (groupId, localDisplayName)
 
@@ -1087,14 +1092,16 @@ getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (groupId, memberId)
 
-getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Maybe ContactName -> GroupMemberRole -> ExceptT StoreError IO (GroupMember, Bool)
-getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole = do
+getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ContactName -> GroupMemberRole -> Bool -> ExceptT StoreError IO (Maybe (GroupMember, Bool))
+getCreateUnknownGMByMemberId db vr user gInfo memberId memberName unknownMemberRole allowCreate = do
   liftIO (runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
-    Right m -> pure (m, False)
-    Left (SEGroupMemberNotFoundByMemberId _) -> do
-      let name = fromMaybe (nameFromMemberId memberId) memberName
-      m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
-      pure (m, True)
+    Right m -> pure $ Just (m, False)
+    Left (SEGroupMemberNotFoundByMemberId _)
+      | allowCreate -> do
+          let name = if T.null memberName then nameFromMemberId memberId else memberName
+          m <- createNewUnknownGroupMember db vr user gInfo memberId name unknownMemberRole
+          pure $ Just (m, True)
+      | otherwise -> pure Nothing
     Left e -> throwError e
 
 getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
@@ -1291,6 +1298,20 @@ getGroupRelays db GroupInfo {groupId} =
       (groupRelayQuery <> " WHERE gr.group_id = ?")
       (Only groupId)
 
+getConnectedGroupRelays :: DB.Connection -> GroupInfo -> IO [GroupRelay]
+getConnectedGroupRelays db GroupInfo {groupId} =
+  map toGroupRelay
+    <$> DB.query
+      db
+      ( groupRelayQuery
+          <> [sql| JOIN group_members m ON m.group_member_id = gr.group_member_id
+                   WHERE gr.group_id = ?
+                     AND m.member_status = ?
+                     AND gr.relay_status IN (?,?)
+             |]
+      )
+      (groupId, GSMemConnected, RSAccepted, RSActive)
+
 groupRelayQuery :: Query
 groupRelayQuery =
   [sql|
@@ -1396,8 +1417,8 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayLinkAccepted :: DB.Connection -> GroupRelay -> ShortLinkContact -> IO GroupRelay
-setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink = do
+setRelayLinkAccepted :: DB.Connection -> GroupRelay -> ShortLinkContact -> MemberKey -> IO GroupRelay
+setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink (MemberKey k) = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1411,10 +1432,10 @@ setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink
     db
     [sql|
       UPDATE group_members
-      SET relay_link = ?, updated_at = ?
+      SET relay_link = ?, member_pub_key = ?, updated_at = ?
       WHERE group_member_id = ?
     |]
-    (relayLink, currentTs, groupMemberId)
+    (relayLink, k, currentTs, groupMemberId)
   pure relay {relayStatus = RSAccepted, relayLink = Just relayLink}
 
 setGroupInProgressDone :: DB.Connection -> GroupInfo -> IO ()
@@ -1440,7 +1461,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           groupPreferences = Nothing,
           memberAdmission = Nothing
         }
-  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) currentTs
+  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId
   ownerMemberId <- insertOwner_ currentTs groupId
@@ -1519,7 +1540,7 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo 
               :. (minV, maxV)
           )
 
-createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
+createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> Maybe MemberKey -> ExceptT StoreError IO (GroupMemberId, MemberId)
 createJoiningMember
   db
   gVar
@@ -1531,7 +1552,8 @@ createJoiningMember
   cReqMemberId_
   welcomeMsgId_
   memberRole
-  memberStatus = do
+  memberStatus
+  memberKey_ = do
     currentTs <- liftIO getCurrentTime
     ExceptT . withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
       liftIO $
@@ -1558,6 +1580,7 @@ createJoiningMember
       checkMemberNotExists memberId = do
         exists <- liftIO $ fromOnly . head <$> DB.query db "SELECT EXISTS (SELECT 1 FROM group_members WHERE group_id = ? AND member_id = ?)" (groupId, memberId)
         when exists $ throwError SEDuplicateMemberId
+      memberPubKey_ = (\(MemberKey k) -> k) <$> memberKey_
       insertMember_ ldn profileId memberId currentTs = do
         indexInGroup <- getUpdateNextIndexInGroup_ db groupId
         liftIO $
@@ -1566,12 +1589,12 @@ createJoiningMember
             [sql|
               INSERT INTO group_members
                 ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
-                  user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
+                  user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
             ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, memberStatus, Binary B.empty, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-                :. (userId, ldn, Nothing :: (Maybe Int64), profileId, cReqXContactId_, welcomeMsgId_, currentTs, currentTs)
+                :. (userId, ldn, Nothing :: (Maybe Int64), profileId, memberPubKey_, cReqXContactId_, welcomeMsgId_, currentTs, currentTs)
                 :. (minV, maxV)
             )
 
@@ -1695,17 +1718,78 @@ createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentCon
   Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 currentTs subMode
   setCommandConnId db user cmdId connId
 
-updateGroupMemberKeys :: DB.Connection -> GroupId -> ByteString -> C.PublicKeyEd25519 -> C.PrivateKeyEd25519 -> GroupMemberId -> IO ()
-updateGroupMemberKeys db groupId sharedGroupId rootPubKey memberPrivKey membershipGMId = do
+-- Set group link info, incognito profile, membership keys before connecting to relays.
+-- This is called once before connecting to relays, unlike createConnReqConnection -> setPreparedGroupLinkInfo_,
+-- which is used in single-connection flows.
+updatePreparedRelayedGroup ::
+  DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Profile ->
+  Maybe ByteString -> C.PublicKeyEd25519 -> C.PrivateKeyEd25519 -> Maybe Int64 ->
+  ExceptT StoreError IO GroupInfo
+updatePreparedRelayedGroup db vr user@User {userId} gInfo cReq cReqHash incognitoProfile linkEntityId rootPubKey memberPrivKey publicMemberCount_ = do
+  currentTs <- liftIO getCurrentTime
+  customUserProfileId <- liftIO $ mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
+  liftIO $ setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId publicMemberCount_ currentTs
+  liftIO $ updateGroupMemberKeys db (groupId' gInfo) linkEntityId rootPubKey memberPrivKey (groupMemberId' $ membership gInfo)
+  getGroupInfo db vr user (groupId' gInfo)
+
+updatePublicMemberCount :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ExceptT StoreError IO GroupInfo
+updatePublicMemberCount db vr user GroupInfo {groupId} = do
+  liftIO $ do
+    totalCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
+      (DB.query db "SELECT summary_current_members_count FROM groups WHERE group_id = ?" (Only groupId))
+    relayCount <- fromMaybe 0 <$> maybeFirstRow fromOnly
+      (DB.query
+        db
+        [sql|
+          SELECT COUNT(1) FROM group_members
+          WHERE group_id = ? AND member_role = ?
+            AND member_status IN (?,?,?,?,?,?,?)
+        |]
+        (groupId, GRRelay, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator))
+    let publicCount = max 0 (totalCount - relayCount) :: Int64
+    currentTs <- getCurrentTime
+    DB.execute db "UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?" (publicCount, currentTs, groupId)
+  getGroupInfo db vr user groupId
+
+setPublicMemberCount :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Int64 -> ExceptT StoreError IO GroupInfo
+setPublicMemberCount db vr user GroupInfo {groupId} publicCount = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $ DB.execute db "UPDATE groups SET public_member_count = ?, updated_at = ? WHERE group_id = ?" (publicCount, currentTs, groupId)
+  getGroupInfo db vr user groupId
+
+updateGroupMemberKeys :: DB.Connection -> GroupId -> Maybe ByteString -> C.PublicKeyEd25519 -> C.PrivateKeyEd25519 -> GroupMemberId -> IO ()
+updateGroupMemberKeys db groupId linkEntityId rootPubKey memberPrivKey membershipGMId = do
   currentTs <- getCurrentTime
   DB.execute
     db
     "UPDATE groups SET shared_group_id = ?, root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?"
-    (sharedGroupId, rootPubKey, memberPrivKey, currentTs, groupId)
+    (Binary <$> linkEntityId, rootPubKey, memberPrivKey, currentTs, groupId)
   DB.execute
     db
     "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
     (C.publicKey memberPrivKey, currentTs, membershipGMId)
+
+updateRelayGroupKeys :: DB.Connection -> User -> GroupInfo -> Maybe ByteString -> C.PublicKeyEd25519 -> C.PrivateKeyEd25519 -> [OwnerAuth] -> ExceptT StoreError IO ()
+updateRelayGroupKeys db user gInfo linkEntityId rootPubKey memberPrivKey owners = do
+  currentTs <- liftIO getCurrentTime
+  let membershipGMId = groupMemberId' $ membership gInfo
+  liftIO $ do
+    DB.execute
+      db
+      "UPDATE groups SET shared_group_id = ?, root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?"
+      (Binary <$> linkEntityId, rootPubKey, memberPrivKey, currentTs, groupId' gInfo)
+    DB.execute
+      db
+      "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
+      (C.publicKey memberPrivKey, currentTs, membershipGMId)
+  -- TODO [relays] relay: if not found, create owner record (multi-owner)
+  forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
+    ownerGMId <- getGroupMemberIdViaMemberId db user gInfo (MemberId ownerId)
+    liftIO $
+      DB.execute
+        db
+        "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
+        (ownerKey, currentTs, ownerGMId)
 
 updateGroupMemberStatus :: DB.Connection -> UserId -> GroupMember -> GroupMemberStatus -> IO ()
 updateGroupMemberStatus db userId GroupMember {groupMemberId} = updateGroupMemberStatusById db userId groupMemberId
@@ -1838,7 +1922,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile,
+    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memRestriction,
@@ -1852,6 +1936,7 @@ createNewMember_
     let invitedById = fromInvitedBy userContactId invitedBy
         activeConn = Nothing
         memberChatVRange@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
+        memberPubKey = (\(MemberKey k) -> k) <$> memKey
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId
     liftIO $
       DB.execute
@@ -1860,13 +1945,13 @@ createNewMember_
           INSERT INTO group_members
             (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
             member_restriction, invited_by, invited_by_group_member_id,
-            user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+            user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty)
             :. (memRestriction, invitedById, memInvitedByGroupMemberId)
-            :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
+            :. (userId, localDisplayName, memberContactId, memberContactProfileId, memberPubKey, createdAt, createdAt)
             :. (minV, maxV)
         )
     groupMemberId <- liftIO $ insertedRowId db
@@ -1892,8 +1977,7 @@ createNewMember_
           createdAt,
           updatedAt = createdAt,
           supportChat = Nothing,
-          -- TODO [member keys] is it used with relay/public groups?
-          memberPubKey = Nothing,
+          memberPubKey,
           relayLink = Nothing
         }
 
@@ -2004,7 +2088,7 @@ createIntroReMember
   db
   user
   gInfo
-  memInfo@(MemberInfo _ _ _ memberProfile)
+  memInfo@(MemberInfo _ _ _ memberProfile _)
   memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2019,7 +2103,7 @@ createIntroReMemberConn
   _host@GroupMember {memberContactId, activeConn}
   reMember@GroupMember {groupMemberId}
   chatV
-  (MemberInfo _ _ memChatVRange _)
+  (MemberInfo _ _ memChatVRange _ _)
   (groupCmdId, groupAgentConnId)
   subMode = do
     let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
@@ -2767,13 +2851,14 @@ getXGrpLinkMemReceived db mId =
   ExceptT . firstRow fromOnlyBI (SEGroupMemberNotFound mId) $
     DB.query db "SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?" (Only mId)
 
-setXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> Bool -> IO ()
-setXGrpLinkMemReceived db mId xGrpLinkMemReceived = do
+setXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> Bool -> Maybe MemberKey -> IO ()
+setXGrpLinkMemReceived db mId xGrpLinkMemReceived memberKey_ = do
   currentTs <- getCurrentTime
+  let k = (\(MemberKey k') -> k') <$> memberKey_
   DB.execute
     db
-    "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
-    (BI xGrpLinkMemReceived, currentTs, mId)
+    "UPDATE group_members SET xgrplinkmem_received = ?, member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
+    (BI xGrpLinkMemReceived, k, currentTs, mId)
 
 createNewUnknownGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Text -> GroupMemberRole -> ExceptT StoreError IO GroupMember
 createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId memberName unknownMemberRole = do
@@ -2800,8 +2885,57 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   where
     VersionRange minV maxV = vr
 
+createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
+createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId ownerKey = do
+  currentTs <- liftIO getCurrentTime
+  let memberProfile = profileFromName $ nameFromMemberId memberId
+  (localDisplayName, profileId) <- createNewMemberProfile_ db user memberProfile currentTs
+  indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        INSERT INTO group_members
+          ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
+            user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
+            peer_chat_min_version, peer_chat_max_version)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      |]
+      ( (groupId, indexInGroup, memberId, GROwner, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
+          :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, ownerKey, currentTs, currentTs)
+          :. (minV, maxV)
+      )
+  groupMemberId <- liftIO $ insertedRowId db
+  getGroupMemberById db vr user groupMemberId
+  where
+    VersionRange minV maxV = vr
+
+-- member_pub_key is not updated here — introduced members are owners
+-- whose keys are loaded from link data (trusted out-of-band).
+-- Updating from an in-band message would allow a compromised relay to substitute keys.
+updatePreparedChannelMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
+updatePreparedChannelMember db vr user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} = do
+  _ <- updateMemberProfile db user member profile
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET member_role = ?,
+            member_status = ?,
+            peer_chat_min_version = ?,
+            peer_chat_max_version = ?,
+            updated_at = ?
+        WHERE user_id = ? AND group_member_id = ?
+      |]
+      (memberRole, GSMemIntroduced, minV, maxV, currentTs, userId, groupMemberId)
+  getGroupMemberById db vr user groupMemberId
+  where
+    VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
+
 updateUnknownMemberAnnounced :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} status = do
+updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile, memberKey} status = do
   _ <- updateMemberProfile db user unknownMember profile
   currentTs <- liftIO getCurrentTime
   liftIO $
@@ -2815,15 +2949,17 @@ updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMemb
             invited_by_group_member_id = ?,
             peer_chat_min_version = ?,
             peer_chat_max_version = ?,
+            member_pub_key = ?,
             updated_at = ?
         WHERE user_id = ? AND group_member_id = ?
       |]
       ( (memberRole, GCPostMember, status, groupMemberId' invitingMember)
-          :. (minV, maxV, currentTs, userId, groupMemberId)
+          :. (minV, maxV, memberPubKey_, currentTs, userId, groupMemberId)
       )
   getGroupMemberById db vr user groupMemberId
   where
     VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
+    memberPubKey_ = (\(MemberKey k) -> k) <$> memberKey
 
 updateUserMemberProfileSentAt :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateUserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =

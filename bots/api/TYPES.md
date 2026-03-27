@@ -125,6 +125,7 @@ This file is generated automatically.
 - [MsgFilter](#msgfilter)
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
+- [MsgSigStatus](#msgsigstatus)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -136,6 +137,7 @@ This file is generated automatically.
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
+- [PublicGroupData](#publicgroupdata)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
 - [RcvConnEvent](#rcvconnevent)
@@ -780,6 +782,7 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
+- msgSigned: [MsgSigStatus](#msgsigstatus)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -1999,6 +2002,9 @@ Snippet:
 Secret:
 - type: "secret"
 
+Small:
+- type: "small"
+
 Colored:
 - type: "colored"
 - color: [Color](#color)
@@ -2414,6 +2420,7 @@ Public:
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
+- publicGroupData: [PublicGroupData](#publicgroupdata)?
 
 
 ---
@@ -2432,6 +2439,7 @@ Public:
 
 **Record type**:
 - currentMembers: int64
+- publicMemberCount: int64?
 
 
 ---
@@ -2720,6 +2728,15 @@ Unknown:
 
 ---
 
+## MsgSigStatus
+
+**Enum type**:
+- "verified"
+- "signedNoKey"
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -2887,6 +2904,14 @@ BASIC_AUTH:
 
 NO_SESSION:
 - type: "NO_SESSION"
+
+
+---
+
+## PublicGroupData
+
+**Record type**:
+- publicMemberCount: int64
 
 
 ---
@@ -3124,6 +3149,9 @@ MemberProfileUpdated:
 
 NewMemberPendingReview:
 - type: "newMemberPendingReview"
+
+MsgBadSignature:
+- type: "msgBadSignature"
 
 
 ---

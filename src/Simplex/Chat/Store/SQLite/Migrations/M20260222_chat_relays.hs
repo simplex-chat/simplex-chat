@@ -56,6 +56,7 @@ ALTER TABLE groups ADD COLUMN shared_group_id BLOB;
 ALTER TABLE groups ADD COLUMN root_priv_key BLOB;
 ALTER TABLE groups ADD COLUMN root_pub_key BLOB;
 ALTER TABLE groups ADD COLUMN member_priv_key BLOB;
+ALTER TABLE groups ADD COLUMN public_member_count INTEGER;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
 
@@ -75,11 +76,18 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
 ALTER TABLE group_members ADD COLUMN relay_link BLOB;
 ALTER TABLE group_members ADD COLUMN member_pub_key BLOB;
+
+ALTER TABLE messages ADD COLUMN msg_chat_binding TEXT;
+ALTER TABLE messages ADD COLUMN msg_signatures BLOB;
+
+ALTER TABLE chat_items ADD COLUMN msg_signed TEXT;
 |]
 
 down_m20260222_chat_relays :: Query
 down_m20260222_chat_relays =
   [sql|
+UPDATE group_members SET member_role = 'observer' WHERE member_role = 'relay';
+
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 ALTER TABLE groups DROP COLUMN use_relays;
@@ -98,6 +106,7 @@ ALTER TABLE groups DROP COLUMN shared_group_id;
 ALTER TABLE groups DROP COLUMN root_priv_key;
 ALTER TABLE groups DROP COLUMN root_pub_key;
 ALTER TABLE groups DROP COLUMN member_priv_key;
+ALTER TABLE groups DROP COLUMN public_member_count;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 
@@ -113,4 +122,9 @@ DROP TABLE chat_relays;
 
 ALTER TABLE group_members DROP COLUMN relay_link;
 ALTER TABLE group_members DROP COLUMN member_pub_key;
+
+ALTER TABLE messages DROP COLUMN msg_chat_binding;
+ALTER TABLE messages DROP COLUMN msg_signatures;
+
+ALTER TABLE chat_items DROP COLUMN msg_signed;
 |]

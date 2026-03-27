@@ -221,6 +221,7 @@ export namespace CR {
     type: "groupDeletedUser"
     user: T.User
     groupInfo: T.GroupInfo
+    msgSigned: boolean
   }
 
   export interface GroupLink extends Interface {
@@ -276,6 +277,7 @@ export namespace CR {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
+    msgSigned: boolean
   }
 
   export interface GroupsList extends Interface {
@@ -310,6 +312,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     blocked: boolean
+    msgSigned: boolean
   }
 
   export interface MembersRoleUser extends Interface {
@@ -318,6 +321,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     toRole: T.GroupMemberRole
+    msgSigned: boolean
   }
 
   export interface NewChatItems extends Interface {
@@ -411,6 +415,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     withMessages: boolean
+    msgSigned: boolean
   }
 
   export interface UserProfileUpdated extends Interface {
