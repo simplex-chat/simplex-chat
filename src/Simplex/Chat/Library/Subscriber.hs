@@ -740,7 +740,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
                       liftIO $ setRelayConfId db relay confId relayLink
-                    void $ getAgentConnShortLinkAsync user CFGetRelayLinkOnAccept (Just conn') relayLink
+                    void $ getAgentConnShortLinkAsync user CFGetRelayDataAccept (Just conn') relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
@@ -1088,7 +1088,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       LDATA FixedLinkData {linkConnReq = cReq, rootKey = relayKey, linkEntityId} cData ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
-            CFGetRelayLinkOnJoin -> do
+            CFGetRelayDataJoin -> do
               -- Update relay member with verified key, memberId and profile from link
               liftIO (decodeLinkUserData cData) >>= \case
                 Just RelayShortLinkData {relayProfile = p} ->
@@ -1114,7 +1114,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       dm <- encodeConnInfo $ XMember profileToSend membershipMemId (MemberKey memberPubKey)
                       subMode <- chatReadVar subscriptionMode
                       void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
-            CFGetRelayLinkOnAccept -> do
+            CFGetRelayDataAccept -> do
               let GroupMember {memberId = MemberId expectedMemberId} = m
               unless (linkEntityId == Just expectedMemberId) $
                 messageError "relay link: relay member ID mismatch"

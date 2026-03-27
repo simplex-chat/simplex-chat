@@ -2067,6 +2067,7 @@ processChatCommand vr nm = \case
             _ -> False
           connectToRelay gInfo' relayLink = do
             gVar <- asks random
+            -- Save relayLink to re-use relay member record on retry (check by relayLink)
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
             r <- tryAllErrors $ do
               (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
@@ -2085,7 +2086,7 @@ processChatCommand vr nm = \case
               deleteAgentConnectionAsync $ aConnId conn
               withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
             subMode <- chatReadVar subscriptionMode
-            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayLinkOnJoin Nothing relayLink
+            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db vr user groupId
