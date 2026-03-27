@@ -165,7 +165,7 @@ struct AddChannelView: View {
         creationInProgress = true
         Task {
             do {
-                let enabledRelays = try await getEnabledRelays()
+                let enabledRelays = try await chooseRandomRelays()
                 let relayIds = enabledRelays.compactMap { $0.chatRelayId }
                 guard !relayIds.isEmpty else {
                     await MainActor.run {
@@ -201,7 +201,7 @@ struct AddChannelView: View {
         }
     }
 
-    private func getEnabledRelays() async throws -> [UserChatRelay] {
+    private func chooseRandomRelays() async throws -> [UserChatRelay] {
         let servers = try await getUserServers()
         // Operator relays are grouped per operator; custom relays (nil operator)
         // are treated independently to maximize trust distribution.
