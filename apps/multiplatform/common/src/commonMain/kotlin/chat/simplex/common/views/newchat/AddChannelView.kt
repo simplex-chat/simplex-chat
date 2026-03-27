@@ -159,6 +159,8 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
   }
 }
 
+private const val maxRelays = 3
+
 private suspend fun chooseRandomRelays(): List<UserChatRelay> {
   val servers = getUserServers(rh = null) ?: return emptyList()
   // Operator relays are grouped per operator; custom relays (null operator)
@@ -174,12 +176,12 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
       customRelays = relays.shuffled().toMutableList()
     }
   }
-  val maxRelays = 3
   val selected = mutableListOf<UserChatRelay>()
   // Prefer at least one custom relay when available -
   // user's own infrastructure for trust distribution.
   if (customRelays.isNotEmpty()) {
     selected.add(customRelays.removeFirst())
+    if (selected.size >= maxRelays) return selected
   }
   // Round-robin across shuffled groups to distribute relays across operators.
   val groups = (operatorGroups + customRelays.map { listOf(it) }).shuffled()

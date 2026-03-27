@@ -201,6 +201,8 @@ struct AddChannelView: View {
         }
     }
 
+    private let maxRelays = 3
+
     private func chooseRandomRelays() async throws -> [UserChatRelay] {
         let servers = try await getUserServers()
         // Operator relays are grouped per operator; custom relays (nil operator)
@@ -216,13 +218,13 @@ struct AddChannelView: View {
                 customRelays = relays.shuffled()
             }
         }
-        let maxRelays = 3
         var selected: [UserChatRelay] = []
         // Prefer at least one custom relay when available -
         // user's own infrastructure for trust distribution.
         if let relay = customRelays.first {
             selected.append(relay)
             customRelays.removeFirst()
+            if selected.count >= maxRelays { return selected }
         }
         // Round-robin across shuffled groups to distribute relays across operators.
         var groups = operatorGroups + customRelays.map { [$0] }
