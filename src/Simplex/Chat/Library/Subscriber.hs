@@ -1102,7 +1102,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       let chatV = agentToChatVersion agentV
                           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
                           cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
-                      -- Update connection with data derived from cReq, now available after getAgentConnShortLinkAsync
+                      -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let GroupMember {memberId = membershipMemId} = membership
                           incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
