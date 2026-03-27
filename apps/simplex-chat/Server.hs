@@ -28,7 +28,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Transport.Server (runLocalTCPServer)
+import Simplex.Messaging.Transport.Server (SocketState, newSocketState, runTCPServerSocket, startTCPServer)
 import Simplex.Messaging.Util (raceAny_)
 import UnliftIO.Exception
 import UnliftIO.STM
@@ -68,11 +68,12 @@ instance ToJSON (CSRBody r) => ToJSON (ChatSrvResponse r) where
   toJSON = $(JQ.mkToJSON defaultJSON ''ChatSrvResponse)
 
 simplexChatServer :: ServiceName -> ChatConfig -> ChatOpts -> IO ()
-simplexChatServer chatPort cfg opts =
-  simplexChatCore cfg opts . const $ runChatServer defaultChatServerConfig {chatPort}
+simplexChatServer chatPort cfg opts@ChatOpts {chatServerHost} =
+  simplexChatCore cfg opts . const $ runChatServer defaultChatServerConfig {chatPort, chatHost = chatServerHost}
 
 data ChatServerConfig = ChatServerConfig
   { chatPort :: ServiceName,
+    chatHost :: Maybe HostName,
     clientQSize :: Natural
   }
 
@@ -80,6 +81,7 @@ defaultChatServerConfig :: ChatServerConfig
 defaultChatServerConfig =
   ChatServerConfig
     { chatPort = "5225",
+      chatHost = Just "127.0.0.1",
       clientQSize = 1
     }
 
@@ -95,9 +97,10 @@ newChatServerClient qSize = do
   pure ChatClient {rcvQ, sndQ}
 
 runChatServer :: ChatServerConfig -> ChatController -> IO ()
-runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
+runChatServer ChatServerConfig {chatPort, chatHost, clientQSize} cc = do
   started <- newEmptyTMVarIO
-  runLocalTCPServer started chatPort $ \sock -> do
+  ss <- newSocketState
+  runTCPServerSocket ss started (startTCPServer started chatHost chatPort) $ \sock -> do
     ws <- liftIO $ getConnection sock
     c <- atomically $ newChatServerClient clientQSize
     putStrLn "client connected"
