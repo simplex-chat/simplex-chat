@@ -54,6 +54,7 @@ CREATE TABLE group_relays(
   chat_relay_id BIGINT NOT NULL REFERENCES chat_relays ON DELETE CASCADE,
   relay_status TEXT NOT NULL,
   relay_link BYTEA,
+  conf_id BYTEA,
   created_at TEXT NOT NULL DEFAULT (now()),
   updated_at TEXT NOT NULL DEFAULT (now())
 );

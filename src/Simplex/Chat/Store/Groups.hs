@@ -88,6 +88,9 @@ module Simplex.Chat.Store.Groups
     updateRelayStatus,
     updateRelayStatusFromTo,
     setRelayLinkAccepted,
+    setRelayConfId,
+    getRelayConfId,
+    updateRelayMemberData,
     setGroupInProgressDone,
     createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
@@ -197,7 +200,7 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ConfirmationId, ConnId, CreatedConnLink (..), InvitationId, OwnerAuth (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Agent.Store.Entity (DBEntityId)
@@ -1417,8 +1420,8 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayLinkAccepted :: DB.Connection -> GroupRelay -> ShortLinkContact -> MemberKey -> IO GroupRelay
-setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink (MemberKey k) = do
+setRelayLinkAccepted :: DB.Connection -> GroupRelay -> ShortLinkContact -> C.PublicKeyEd25519 -> IO GroupRelay
+setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink relayKey = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1435,8 +1438,55 @@ setRelayLinkAccepted db relay@GroupRelay {groupRelayId, groupMemberId} relayLink
       SET relay_link = ?, member_pub_key = ?, updated_at = ?
       WHERE group_member_id = ?
     |]
-    (relayLink, k, currentTs, groupMemberId)
+    (relayLink, relayKey, currentTs, groupMemberId)
   pure relay {relayStatus = RSAccepted, relayLink = Just relayLink}
+
+setRelayConfId :: DB.Connection -> GroupRelay -> ConfirmationId -> ShortLinkContact -> IO ()
+setRelayConfId db GroupRelay {groupRelayId} confId relayLink = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_relays
+      SET conf_id = ?, relay_link = ?, updated_at = ?
+      WHERE group_relay_id = ?
+    |]
+    (confId, relayLink, currentTs, groupRelayId)
+
+getRelayConfId :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO ConfirmationId
+getRelayConfId db groupMemberId =
+  ExceptT . firstRow fromOnly (SEGroupRelayNotFoundByMemberId groupMemberId) $
+    DB.query
+      db
+      [sql|
+        SELECT conf_id
+        FROM group_relays
+        WHERE group_member_id = ? AND conf_id IS NOT NULL
+      |]
+      (Only groupMemberId)
+
+updateRelayMemberData :: DB.Connection -> GroupMemberId -> Maybe MemberId -> C.PublicKeyEd25519 -> IO ()
+updateRelayMemberData db groupMemberId memberId_ relayKey = do
+  currentTs <- getCurrentTime
+  case memberId_ of
+    Just mId ->
+      DB.execute
+        db
+        [sql|
+          UPDATE group_members
+          SET member_id = ?, member_pub_key = ?, updated_at = ?
+          WHERE group_member_id = ?
+        |]
+        (mId, relayKey, currentTs, groupMemberId)
+    Nothing ->
+      DB.execute
+        db
+        [sql|
+          UPDATE group_members
+          SET member_pub_key = ?, updated_at = ?
+          WHERE group_member_id = ?
+        |]
+        (relayKey, currentTs, groupMemberId)
 
 setGroupInProgressDone :: DB.Connection -> GroupInfo -> IO ()
 setGroupInProgressDone db GroupInfo {groupId} = do
@@ -2851,14 +2901,13 @@ getXGrpLinkMemReceived db mId =
   ExceptT . firstRow fromOnlyBI (SEGroupMemberNotFound mId) $
     DB.query db "SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?" (Only mId)
 
-setXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> Bool -> Maybe MemberKey -> IO ()
-setXGrpLinkMemReceived db mId xGrpLinkMemReceived memberKey_ = do
+setXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> Bool -> IO ()
+setXGrpLinkMemReceived db mId xGrpLinkMemReceived = do
   currentTs <- getCurrentTime
-  let k = (\(MemberKey k') -> k') <$> memberKey_
   DB.execute
     db
-    "UPDATE group_members SET xgrplinkmem_received = ?, member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
-    (BI xGrpLinkMemReceived, k, currentTs, mId)
+    "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
+    (BI xGrpLinkMemReceived, currentTs, mId)
 
 createNewUnknownGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Text -> GroupMemberRole -> ExceptT StoreError IO GroupMember
 createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId memberName unknownMemberRole = do

@@ -1032,7 +1032,7 @@ acceptBusinessJoinRequestAsync
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
 
-acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> MemberKey -> CM (GroupInfo, GroupMember)
+acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> CM (GroupInfo, GroupMember)
 acceptRelayJoinRequestAsync
   user
   uclId
@@ -1040,9 +1040,8 @@ acceptRelayJoinRequestAsync
   _ownerMember@GroupMember {groupMemberId}
   cReqInvId
   cReqChatVRange
-  relayLink
-  memberKey = do
-    let msg = XGrpRelayAcpt relayLink memberKey
+  relayLink = do
+    let msg = XGrpRelayAcpt relayLink
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
@@ -2448,11 +2447,11 @@ setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientDa
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
-getAgentConnShortLinkAsync :: User -> ShortLinkContact -> CM (CommandId, ConnId)
-getAgentConnShortLinkAsync user shortLink = do
+getAgentConnShortLinkAsync :: User -> CommandFunction -> Maybe Connection -> ShortLinkContact -> CM (CommandId, ConnId)
+getAgentConnShortLinkAsync user cmdFunc conn_ shortLink = do
   shortLink' <- restoreShortLink' shortLink
-  cmdId <- withStore' $ \db -> createCommand db user Nothing CFGetShortLink
-  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) shortLink'
+  cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) cmdFunc
+  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) shortLink'
   pure (cmdId, connId)
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()

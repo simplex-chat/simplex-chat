@@ -735,15 +735,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              XGrpRelayAcpt relayLink memberKey
+              XGrpRelayAcpt relayLink
                 | memberRole' membership == GROwner && isRelay m -> do
-                    -- TODO [relays] owner: retrieve relay key for group and relay profile from relay link
-                    -- TODO   - getAgentConnShortLinkAsync -> current logic is continuation
                     withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                      void $ liftIO $ setRelayLinkAccepted db relay relayLink memberKey
-                    allowAgentConnectionAsync user conn' confId XOk
+                      liftIO $ setRelayConfId db relay confId relayLink
+                    void $ getAgentConnShortLinkAsync user CFGetRelayLinkOnAccept (Just conn') relayLink
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
@@ -868,11 +865,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
             where
               sendXGrpLinkMem gInfo'' = do
-                let GroupInfo {membership = membership'} = gInfo''
-                    incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
+                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
                     profileToSend = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
-                    memberKey = MemberKey <$> memberPubKey membership'
-                void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend memberKey) groupId
+                void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             notifyMemberConnected gInfo m Nothing
@@ -970,7 +965,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' (Just m'') sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> Nothing <$ xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
               XInfo p -> fmap ctx <$> xInfoMember gInfo' m'' p msg brokerTs
-              XGrpLinkMem p memberKey -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p memberKey
+              XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpMemNew memInfo msgScope -> fmap ctx <$> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> Nothing <$ xGrpMemIntro gInfo' m'' memInfo memRestrictions_
@@ -1090,30 +1085,52 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
               sendGroupAutoReply mc connReq_
-      LDATA FixedLinkData {linkConnReq = cReq} _cData ->
-        -- [async agent commands] CFGetConnShortLink continuation - join relay connection with resolved link
+      LDATA FixedLinkData {linkConnReq = cReq, rootKey = relayKey, linkEntityId} cData ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
-            CFGetShortLink -> case cReq of
-              CRContactUri crData@ConnReqUriData {crClientData} -> do
-                let pqSup = PQSupportOff
-                lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
-                  Nothing -> throwChatError CEInvalidConnReq
-                  Just (agentV, _) -> do
-                    let chatV = agentToChatVersion agentV
-                        groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-                        cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
-                    -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
-                    withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
-                    let GroupMember {memberId = membershipMemId} = membership
-                        incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
-                        profileToSend = userProfileInGroup user gInfo incognitoProfile
-                    memberPubKey <- case groupKeys gInfo of
-                      Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
-                      Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
-                    dm <- encodeConnInfo $ XMember profileToSend membershipMemId (MemberKey memberPubKey)
-                    subMode <- chatReadVar subscriptionMode
-                    void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
+            CFGetRelayLinkOnJoin -> do
+              -- Update relay member with verified key, memberId and profile from link
+              withStore' $ \db -> updateRelayMemberData db (groupMemberId' m) (MemberId <$> linkEntityId) relayKey
+              relayProfile_ <- liftIO $ decodeLinkUserData cData
+              forM_ relayProfile_ $ \RelayShortLinkData {relayProfile = p} ->
+                void $ withStore $ \db -> updateMemberProfile db user m p
+              case cReq of
+                CRContactUri crData@ConnReqUriData {crClientData} -> do
+                  let pqSup = PQSupportOff
+                  lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+                    Nothing -> throwChatError CEInvalidConnReq
+                    Just (agentV, _) -> do
+                      let chatV = agentToChatVersion agentV
+                          groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+                          cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
+                      -- Update connection with data derived from cReq, now available after getAgentConnShortLinkAsync
+                      withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
+                      let GroupMember {memberId = membershipMemId} = membership
+                          incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
+                          profileToSend = userProfileInGroup user gInfo incognitoProfile
+                      memberPubKey <- case groupKeys gInfo of
+                        Just GroupKeys {memberPrivKey} -> pure $ C.publicKey memberPrivKey
+                        Nothing -> throwChatError $ CEInternalError "no group keys for channel membership"
+                      dm <- encodeConnInfo $ XMember profileToSend membershipMemId (MemberKey memberPubKey)
+                      subMode <- chatReadVar subscriptionMode
+                      void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
+            CFGetRelayLinkOnAccept -> do
+              let GroupMember {memberId = MemberId expectedMemberId} = m
+              unless (linkEntityId == Just expectedMemberId) $
+                messageError "relay link: relay member ID mismatch"
+              relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
+                Just RelayShortLinkData {relayProfile = p} -> pure p
+                Nothing -> throwChatError $ CEException "relay link: no relay link data"
+              (storedConfId, relay@GroupRelay {relayLink = relayLink_}) <- withStore $ \db -> do
+                confId <- getRelayConfId db (groupMemberId' m)
+                relay <- getGroupRelayByGMId db (groupMemberId' m)
+                pure (confId, relay)
+              storedRelayLink <- maybe (throwChatError $ CEException "relay link: no stored relay link") pure relayLink_
+              withStore $ \db -> do
+                liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                void $ liftIO $ setRelayLinkAccepted db relay storedRelayLink relayKey
+                void $ updateMemberProfile db user m relayProfile
+              allowAgentConnectionAsync user conn storedConfId XOk
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
@@ -2404,13 +2421,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       void $ processMemberProfileUpdate gInfo m p' (Just (msg, brokerTs))
       pure $ memberEventDeliveryScope m
 
-    xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> Maybe MemberKey -> CM ()
-    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' memberKey_ = do
+    xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
+    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
           m' <- processMemberProfileUpdate gInfo m p' Nothing
-          withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True memberKey_
+          withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
           let connectedIncognito = memberIncognito membership
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
@@ -3598,53 +3615,52 @@ runRelayRequestWorker a Worker {doWork} = do
           -- Check if relay link already exists (recovery case)
           case groupLink_ of
             Right GroupLink {connLinkContact = CCLink _ sLnk_} ->
-              case (sLnk_, memberPubKey $ membership gInfo) of
-                (Just sLnk, Just k) -> acceptOwnerConnection rrd gInfo sLnk (MemberKey k)
-                (Nothing, _) -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
-                (_, Nothing) -> throwChatError $ CEException "processRelayRequest: no member key"
+              case sLnk_ of
+                Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
+                Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
             Left _ -> do
-              (gInfo', sLnk, memberKey) <- getLinkDataCreateRelayLink rrd gInfo
-              acceptOwnerConnection rrd gInfo' sLnk memberKey
+              (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd gInfo
+              acceptOwnerConnection rrd gInfo' sLnk
           where
-            getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact, MemberKey)
+            getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
               (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp} -> do
                   validateGroupProfile gp
-                  gVar <- asks random
-                  (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+                  ((_, memberPrivKey), sLnk) <- createRelayLink gInfo
                   gInfo' <- withStore $ \db -> do
                     void $ updateGroupProfile db user gInfo gp
                     updateRelayGroupKeys db user gInfo linkEntityId rootKey memberPrivKey owners
                     getGroupInfo db vr user groupId
-                  sLnk <- createRelayLink gInfo'
-                  pure (gInfo', sLnk, MemberKey $ C.publicKey memberPrivKey)
+                  pure (gInfo', sLnk)
               where
                 validateGroupProfile :: GroupProfile -> CM ()
                 validateGroupProfile _groupProfile = do
                   -- TODO [relays] relay: validate group profile, verify owner's signature
                   pure ()
-                createRelayLink :: GroupInfo -> CM ShortLinkContact
-                createRelayLink gi@GroupInfo {groupProfile} = do
-                  -- TODO [relays] relay: set relay key for group, relay profile as link data
+                createRelayLink :: GroupInfo -> CM (C.KeyPairEd25519, ShortLinkContact)
+                createRelayLink gi = do
+                  let GroupInfo {membership = relayMem} = gi
+                      GroupMember {memberId = relayMemId, memberProfile = relayLP} = relayMem
+                      MemberId relayMemberIdBS = relayMemId
+                      userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile relayLP}
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
                   -- TODO [relays] starting role should be communicated in protocol from owner to relays
                   subRole <- asks $ channelSubscriberRole . config
-                  let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
-                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-                      crClientData = encodeJSON $ CRDataGroup groupLinkId
-                  (connId, (ccLink, _serviceId)) <- withAgent $ \a' -> createConnection a' NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
+                  let crClientData = encodeJSON $ CRDataGroup groupLinkId
+                  (connId, (Just sigKeys, ccLink, _serviceId)) <- withAgent $ \a' -> createConnection a' NRMBackground (aUserId user) (Just relayMemberIdBS) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
                   ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
                   sLnk <- case toShortLinkContact ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
                   gVar <- asks random
                   void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode
-                  pure sLnk
-            acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> MemberKey -> CM ()
-            acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink memberKey = do
+                  pure (sigKeys, sLnk)
+            acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
+            acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink = do
               ownerMember <- withStore $ \db -> getHostMember db vr user groupId
-              void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId reqChatVRange relayLink memberKey
+              void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId reqChatVRange relayLink
