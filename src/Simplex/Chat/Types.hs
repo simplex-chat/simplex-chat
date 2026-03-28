@@ -121,7 +121,6 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
--- TODO [relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -1856,7 +1855,8 @@ data CommandFunction
   | CFAckMessage -- not used
   | CFDeleteConn -- not used
   | CFSetShortLink
-  | CFGetShortLink
+  | CFGetRelayDataJoin
+  | CFGetRelayDataAccept
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1875,7 +1875,8 @@ instance TextEncoding CommandFunction where
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
     "set_short_link" -> Just CFSetShortLink
-    "get_short_link" -> Just CFGetShortLink
+    "get_relay_data_join" -> Just CFGetRelayDataJoin
+    "get_relay_data_accept" -> Just CFGetRelayDataAccept
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1888,7 +1889,8 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
     CFSetShortLink -> "set_short_link"
-    CFGetShortLink -> "get_short_link"
+    CFGetRelayDataJoin -> "get_relay_data_join"
+    CFGetRelayDataAccept -> "get_relay_data_accept"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1902,7 +1904,8 @@ commandExpectedResponse = \case
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   CFSetShortLink -> t LINK_
-  CFGetShortLink -> t LDATA_
+  CFGetRelayDataJoin -> t LDATA_
+  CFGetRelayDataAccept -> t LDATA_
   where
     t = AEvtTag SAEConn
 
