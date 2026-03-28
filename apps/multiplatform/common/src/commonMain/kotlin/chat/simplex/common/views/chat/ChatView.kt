@@ -753,7 +753,9 @@ fun ChatView(
             changeNtfsState = { enabled, currentValue -> toggleNotifications(chatRh, chatInfo, enabled, chatModel, currentValue) },
             onSearchValueChanged = onSearchValueChanged,
             closeSearch = {
-              onSearchValueChanged("")
+              if (chatModel.openAroundItemId.value == null) {
+                onSearchValueChanged("")
+              }
               showSearch.value = false
               searchText.value = ""
               contentFilter.value = null
