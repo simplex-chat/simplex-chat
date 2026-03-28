@@ -2385,6 +2385,7 @@ Known:
 - groupLink: string?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+- sharedGroupId: string?
 
 
 ---
