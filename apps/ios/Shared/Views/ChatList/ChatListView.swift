@@ -65,12 +65,49 @@ enum ActiveFilter: Identifiable, Equatable {
 
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
+    @Published var networkSettings: NetworkSettings = NetworkSettings.defaults
+    
+    public func saveNetCfg() -> Bool {
+        do {
+            let netCfg = networkSettings.netCfg
+            let netProxy = networkSettings.netProxy
+            try setNetworkConfig(netCfg)
+            networkSettings.currentNetCfg = netCfg
+            setNetCfg(netCfg, networkProxy: netCfg.socksProxy != nil ? netProxy : nil)
+            networkSettings.currentNetProxy = netProxy
+            networkProxyDefault.set(netProxy)
+            return true
+        } catch let error {
+            let err = responseError(error)
+            showAlert(
+                NSLocalizedString("Error updating settings", comment: "alert title"),
+                message: responseError(error)
+            )
+            
+            logger.error("\(err)")
+            return false
+        }
+    }
 }
 
 struct ServerSettings {
     public var currUserServers: [UserOperatorServers]
     public var userServers: [UserOperatorServers]
     public var serverErrors: [UserServersError]
+}
+
+struct NetworkSettings {
+    public var currentNetCfg: NetCfg
+    public var netCfg: NetCfg
+    public var currentNetProxy: NetworkProxy
+    public var netProxy: NetworkProxy
+    
+    static let defaults = NetworkSettings(
+        currentNetCfg: NetCfg.defaults,
+        netCfg: NetCfg.defaults,
+        currentNetProxy: networkProxyDefault.get(),
+        netProxy: networkProxyDefault.get()
+    )
 }
 
 struct UserPickerSheetView: View {
@@ -121,15 +158,30 @@ struct UserPickerSheetView: View {
             )
         }
         .onDisappear {
+            let advancedNetworkCanBeSaved = advancedNetworkSettingsCanBeSaved(ss.networkSettings)
+            let advancedNetworkSaveText = NSLocalizedString("Save and reconnect", comment: "alert button")
+            
             if serversCanBeSaved(
                 ss.servers.currUserServers,
                 ss.servers.userServers,
                 ss.servers.serverErrors
             ) {
                 showAlert(
-                    title: NSLocalizedString("Save servers?", comment: "alert title"),
-                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                    buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
+                    title: NSLocalizedString(advancedNetworkCanBeSaved ? "Save servers and network settings?" : "Save servers?", comment: "alert title"),
+                    buttonTitle: advancedNetworkCanBeSaved ? NSLocalizedString("Save", comment: "alert button"): advancedNetworkSaveText,
+                    buttonAction: {
+                        saveServers($ss.servers.currUserServers, $ss.servers.userServers)
+                        if advancedNetworkCanBeSaved {
+                            _ = ss.saveNetCfg()
+                        }
+                    },
+                    cancelButton: true
+                )
+            } else if (advancedNetworkCanBeSaved) {
+                showAlert(
+                    title: NSLocalizedString("Update network settings?", comment: "alert title"),
+                    buttonTitle: advancedNetworkSaveText,
+                    buttonAction: { _ = ss.saveNetCfg() },
                     cancelButton: true
                 )
             }
