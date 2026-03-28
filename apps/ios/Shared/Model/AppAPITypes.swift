@@ -1111,7 +1111,6 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
     case groupLinkDataUpdated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay], relaysChanged: Bool)
-    case groupRelayUpdated(user: UserRef, groupInfo: GroupInfo, member: GroupMember, groupRelay: GroupRelay)
     case newMemberContactReceivedInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     // receiving file events
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
@@ -1189,7 +1188,6 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .connectedToGroupMember: "connectedToGroupMember"
         case .groupUpdated: "groupUpdated"
         case .groupLinkDataUpdated: "groupLinkDataUpdated"
-        case .groupRelayUpdated: "groupRelayUpdated"
         case .newMemberContactReceivedInv: "newMemberContactReceivedInv"
         case .rcvFileAccepted: "rcvFileAccepted"
         case .rcvFileAcceptedSndCancelled: "rcvFileAcceptedSndCancelled"
@@ -1271,7 +1269,6 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
         case let .groupLinkDataUpdated(u, groupInfo, groupLink, groupRelays, relaysChanged): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)\nrelaysChanged: \(relaysChanged)")
-        case let .groupRelayUpdated(u, groupInfo, member, groupRelay): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\ngroupRelay: \(groupRelay)")
         case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
         case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
         case .rcvFileAcceptedSndCancelled: return noDetails

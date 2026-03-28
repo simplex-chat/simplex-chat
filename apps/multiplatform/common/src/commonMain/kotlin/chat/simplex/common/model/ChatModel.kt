@@ -88,13 +88,6 @@ object ChannelRelaysModel {
     this.groupRelays.addAll(groupRelays)
   }
 
-  fun updateRelay(groupInfo: GroupInfo, relay: GroupRelay) {
-    if (groupId.value == groupInfo.groupId) {
-      val i = groupRelays.indexOfFirst { it.groupRelayId == relay.groupRelayId }
-      if (i >= 0) groupRelays[i] = relay
-    }
-  }
-
   fun reset() {
     groupId.value = null
     groupRelays.clear()

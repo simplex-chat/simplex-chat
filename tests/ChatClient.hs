@@ -210,7 +210,7 @@ testCfg =
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
       tbqSize = 16,
-      channelSubscriberRole = GRMember, -- starting role is GRMember to test members sending messages
+      channelSubscriberRole = GRMember,
       confirmMigrations = MCYesUp
     }
 

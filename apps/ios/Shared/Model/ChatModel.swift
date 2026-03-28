@@ -343,13 +343,6 @@ class ChannelRelaysModel: ObservableObject {
         self.groupRelays = groupRelays
     }
 
-    func updateRelay(_ groupInfo: GroupInfo, _ relay: GroupRelay) {
-        if groupId == groupInfo.groupId,
-           let i = groupRelays.firstIndex(where: { $0.groupRelayId == relay.groupRelayId }) {
-            groupRelays[i] = relay
-        }
-    }
-
     func reset() {
         groupId = nil
         groupRelays = []

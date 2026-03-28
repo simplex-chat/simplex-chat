@@ -172,6 +172,7 @@ struct GroupMemberInfoView: View {
                         let label: LocalizedStringKey = groupInfo.useRelays ? "Channel" : groupInfo.businessChat == nil ? "Group" : "Chat"
                         infoRow(label, groupInfo.displayName)
 
+                        // TODO [relays] review: role changing is not supported for channels currently
                         if !groupInfo.useRelays, let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
                                 ForEach(roles) { role in
@@ -636,7 +637,7 @@ struct GroupMemberInfoView: View {
                     }
                 }
                 // TODO [relays] removing relay should also remove its link from group link data;
-                // TODO   - removing last relay should be prohibited or show warning
+                // removing last relay should be prohibited or show warning
                 if canRemove && mem.memberRole != .relay {
                     if mem.memberStatus == .memRemoved || mem.memberStatus == .memLeft {
                         deleteMemberMessagesButton(mem)

@@ -39,7 +39,6 @@ This file is generated automatically.
   - [MemberBlockedForAll](#memberblockedforall)
   - [GroupMemberUpdated](#groupmemberupdated)
   - [GroupLinkDataUpdated](#grouplinkdataupdated)
-  - [GroupRelayUpdated](#grouprelayupdated)
 
 [File events](#file-events)
 - Main events
@@ -465,20 +464,6 @@ Group link data updated.
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 - relaysChanged: bool
-
----
-
-
-### GroupRelayUpdated
-
-Group relay member updated.
-
-**Record type**:
-- type: "groupRelayUpdated"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-- member: [GroupMember](./TYPES.md#groupmember)
-- groupRelay: [GroupRelay](./TYPES.md#grouprelay)
 
 ---
 

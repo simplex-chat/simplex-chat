@@ -30,7 +30,6 @@ export type ChatEvent =
   | CEvt.MemberBlockedForAll
   | CEvt.GroupMemberUpdated
   | CEvt.GroupLinkDataUpdated
-  | CEvt.GroupRelayUpdated
   | CEvt.RcvFileDescrReady
   | CEvt.RcvFileComplete
   | CEvt.SndFileCompleteXFTP
@@ -83,7 +82,6 @@ export namespace CEvt {
     | "memberBlockedForAll"
     | "groupMemberUpdated"
     | "groupLinkDataUpdated"
-    | "groupRelayUpdated"
     | "rcvFileDescrReady"
     | "rcvFileComplete"
     | "sndFileCompleteXFTP"
@@ -314,14 +312,6 @@ export namespace CEvt {
     groupLink: T.GroupLink
     groupRelays: T.GroupRelay[]
     relaysChanged: boolean
-  }
-
-  export interface GroupRelayUpdated extends Interface {
-    type: "groupRelayUpdated"
-    user: T.User
-    groupInfo: T.GroupInfo
-    member: T.GroupMember
-    groupRelay: T.GroupRelay
   }
 
   export interface RcvFileDescrReady extends Interface {

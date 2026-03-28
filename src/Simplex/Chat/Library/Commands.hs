@@ -1841,7 +1841,7 @@ processChatCommand vr nm = \case
     let userData = contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
         userLinkData = UserInvLinkData userData
     -- TODO [certs rcv]
-    (connId, (_, ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) Nothing True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
+    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
@@ -1883,7 +1883,7 @@ processChatCommand vr nm = \case
               | short = Just $ UserInvLinkData $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
               | otherwise = Nothing
         -- TODO [certs rcv]
-        (agConnId, (_, ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) Nothing True False SCMInvitation userLinkData_ Nothing IKPQOn subMode
+        (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation userLinkData_ Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
         conn' <- withFastStore' $ \db -> do
           deleteConnectionRecord db user connId
@@ -2067,19 +2067,18 @@ processChatCommand vr nm = \case
             _ -> False
           connectToRelay gInfo' relayLink = do
             gVar <- asks random
+            -- TODO [relays] member: set relay profile before/during connection
+            -- TODO   - on fetching relay link data? (-> relay should add profile to relay link)
+            -- TODO   - or update upon connection, as in regular prepared groups
+            -- TODO     (current logic mimics insertHost_ from createPreparedGroup)
             -- Save relayLink to re-use relay member record on retry (check by relayLink)
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
             r <- tryAllErrors $ do
-              (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
-              relayLinkData_ <- liftIO $ decodeLinkUserData cData
-              case (relayLinkData_, linkEntityId) of
-                (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
-                  withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
-                _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
+              (fd, _cData) <- getShortLinkConnReq nm user relayLink
               let cReq = linkConnReq fd
                   relayLinkToConnect = CCLink cReq (Just relayLink)
               void $ connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
-            -- Re-read member to get updated activeConn and updated data (from updateRelayMemberData)
+            -- Re-read member to get updated activeConn
             relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
             pure (relayLink, relayMember', r)
           retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
@@ -2087,7 +2086,7 @@ processChatCommand vr nm = \case
               deleteAgentConnectionAsync $ aConnId conn
               withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
             subMode <- chatReadVar subscriptionMode
-            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
+            newConnIds <- getAgentConnShortLinkAsync user relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db vr user groupId
@@ -2162,11 +2161,13 @@ processChatCommand vr nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    -- TODO [relays] relay: add relay profile, identity, key to link data?
+    -- TODO [relays] relay: address creation
+    -- TODO   - add relay key, identity to link data
+    -- TODO   - validate short link is created (returned by agent)
     let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]
-    (connId, (_, ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) Nothing True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
+    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     let ccLink'' = if isTrue userChatRelay then createdRelayLink ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode
@@ -2432,7 +2433,7 @@ processChatCommand vr nm = \case
         gVar <- asks random
         subMode <- chatReadVar subscriptionMode
         -- TODO [certs rcv]
-        (agentConnId, (_, CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) Nothing True False SCMInvitation Nothing Nothing IKPQOff subMode
+        (agentConnId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
         member <- withFastStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -2856,7 +2857,7 @@ processChatCommand vr nm = \case
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
         crClientData = encodeJSON $ CRDataGroup groupLinkId
     -- TODO [certs rcv]
-    (connId, (_, ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) Nothing True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
+    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
     gVar <- asks random
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
@@ -2897,7 +2898,7 @@ processChatCommand vr nm = \case
         subMode <- chatReadVar subscriptionMode
         -- TODO PQ should negotitate contact connection with PQSupportOn?
         -- TODO [certs rcv]
-        (connId, (_, CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) Nothing True False SCMInvitation Nothing Nothing IKPQOff subMode
+        (connId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
