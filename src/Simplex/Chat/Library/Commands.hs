@@ -2026,7 +2026,7 @@ processChatCommand vr nm = \case
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         -- Validate link entity ID matches group profile's sharedGroupId (relay groups must have both)
         forM_ groupSLinkData_ $ \GroupShortLinkData {groupProfile = GroupProfile {sharedGroupId}} ->
-          unless (B64UrlByteString <$> linkEntityId == sharedGroupId) $
+          unless ((B64UrlByteString <$> linkEntityId) == sharedGroupId) $
             throwChatError CEInvalidConnReq
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_

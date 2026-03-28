@@ -676,8 +676,8 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      groupKeys = toGroupKeys groupKeysRow
-      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission, groupLink, sharedGroupId = (\GroupKeys {sharedGroupId = s} -> s) <$> groupKeys}
+      (sharedGroupId, groupKeys) = toGroupKeys groupKeysRow
+      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission, groupLink, sharedGroupId}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
@@ -689,12 +689,14 @@ toPreparedGroup = \case
     Just PreparedGroup {connLinkToConnect = CCLink fullLink shortLink_, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
   _ -> Nothing
 
-toGroupKeys :: GroupKeysRow -> Maybe GroupKeys
+toGroupKeys :: GroupKeysRow -> (Maybe B64UrlByteString, Maybe GroupKeys)
 toGroupKeys = \case
   (Just sharedGroupId, rootPrivKey_, rootPubKey_, Just memberPrivKey) ->
-    (\grk -> GroupKeys {sharedGroupId, groupRootKey = grk, memberPrivKey})
-      <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
-  _ -> Nothing
+    ( Just sharedGroupId,
+      (\grk -> GroupKeys {sharedGroupId, groupRootKey = grk, memberPrivKey})
+        <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
+    )
+  _ -> (Nothing, Nothing)
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink)) =
