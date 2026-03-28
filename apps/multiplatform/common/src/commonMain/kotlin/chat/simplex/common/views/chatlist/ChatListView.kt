@@ -34,6 +34,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.invitation_redesign.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -147,29 +148,46 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  Box(Modifier.fillMaxSize()) {
-    if (oneHandUI.value) {
-      ChatListWithLoadingScreen(searchText, listState)
-      Column(Modifier.align(Alignment.BottomCenter)) {
-        ChatListToolbar(
-          userPickerState,
-          listState,
-          stopped,
-          setPerformLA,
-        )
-      }
-    } else {
-      ChatListWithLoadingScreen(searchText, listState)
-      Column {
-        ChatListToolbar(
-          userPickerState,
-          listState,
-          stopped,
-          setPerformLA,
-        )
-      }
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        NewChatSheetFloatingButton(oneHandUI, stopped)
+  val connectSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+  val connectSheetScope = rememberCoroutineScope()
+  val onConnectClick: () -> Unit = { connectSheetScope.launch { connectSheetState.show() } }
+
+  ModalBottomSheetLayout(
+    scrimColor = Color.Black.copy(alpha = 0.12F),
+    sheetState = connectSheetState,
+    sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
+    sheetContent = {
+      ModalData().ConnectViewLinkOrQrModal(
+        rhId = chatModel.currentRemoteHost.value?.remoteHostId,
+        close = { connectSheetScope.launch { connectSheetState.hide() } }
+      )
+    }
+  ) {
+    Box(Modifier.fillMaxSize()) {
+      if (oneHandUI.value) {
+        ChatListWithLoadingScreen(searchText, listState, onConnectClick)
+        Column(Modifier.align(Alignment.BottomCenter)) {
+          ChatListToolbar(
+            userPickerState,
+            listState,
+            stopped,
+            setPerformLA,
+          )
+        }
+      } else {
+        ChatListWithLoadingScreen(searchText, listState, onConnectClick)
+        Column {
+          ChatListToolbar(
+            userPickerState,
+            listState,
+            stopped,
+            setPerformLA,
+          )
+        }
+        if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+          NewChatSheetFloatingButton(oneHandUI, stopped)
+        }
       }
     }
   }
@@ -288,16 +306,22 @@ private fun AddressCreationCard() {
 }
 
 @Composable
-private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState, onConnectClick: () -> Unit) {
   if (!chatModel.desktopNoUserNoRemote) {
-    ChatList(searchText = searchText, listState)
+    EmptyChatListView(onConnectClick)
+    return
   }
+
   if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-    Text(
-      stringResource(
-        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
-      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
-    )
+    if (chatModel.chatRunning.value == null) {
+      Text(
+        stringResource(MR.strings.loading_chats),
+        Modifier.align(Alignment.Center),
+        color = MaterialTheme.colors.secondary
+      )
+    } else {
+      EmptyChatListView(onConnectClick)
+    }
   }
 }
 
@@ -421,7 +445,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
               .size(33.dp * fontSizeSqrtMultiplier)
           ) {
             Icon(
-              painterResource(MR.images.ic_edit_filled),
+              painterResource(MR.images.ic_add),
               stringResource(MR.strings.add_contact_or_create_group),
               Modifier.size(sp16),
               tint = Color.White
@@ -755,6 +779,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val connectBannerCardShown = remember { appPrefs.connectBannerCardShown.state }
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -833,7 +858,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       } }
       ChatListNavLinkView(chat, nextChatSelected)
     }
-    if (!oneHandUICardShown.value || !addressCreationCardShown.value) {
+    if (!oneHandUICardShown.value || !addressCreationCardShown.value || !connectBannerCardShown.value) {
       item {
         ChatListFeatureCards()
       }
@@ -909,8 +934,12 @@ private fun ChatListFeatureCards() {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val connectBannerCardShown = remember { appPrefs.connectBannerCardShown.state }
 
   Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    if (!connectBannerCardShown.value) {
+      ConnectBannerCard()
+    }
     if (!oneHandUICardShown.value && !oneHandUI.value) {
       ToggleChatListCard()
     }

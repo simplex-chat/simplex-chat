@@ -83,26 +83,31 @@ fun AddGroupLayout(
   val focusRequester = remember { FocusRequester() }
   val incognito = remember { mutableStateOf(incognitoPref.get()) }
 
-    ModalBottomSheetLayout(
-      scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.imePadding(),
-      sheetContent = {
-        GetImageBottomSheet(
-          chosenImage,
-          onImageChange = { bitmap -> profileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
-          hideBottomSheet = {
-            scope.launch { bottomSheetModalState.hide() }
-          })
-      },
-      sheetState = bottomSheetModalState,
-      sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-    ) {
-      ModalView(close = close) {
-        ColumnWithScrollBar {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
+  ModalBottomSheetLayout(
+    scrimColor = Color.Black.copy(alpha = 0.12F),
+    modifier = Modifier.imePadding(),
+    sheetContent = {
+      GetImageBottomSheet(
+        chosenImage,
+        onImageChange = { bitmap -> profileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
+        hideBottomSheet = {
+          scope.launch { bottomSheetModalState.hide() }
+        })
+    },
+    sheetState = bottomSheetModalState,
+    sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+  ) {
+    ModalView(close = close) {
+      ColumnWithScrollBar {
+        AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
+
+        Row(
+          modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING * 3),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
           Box(
             Modifier
-              .fillMaxWidth()
+              .weight(1f)
               .padding(bottom = 24.dp),
             contentAlignment = Alignment.Center
           ) {
@@ -116,57 +121,67 @@ fun AddGroupLayout(
               }
             }
           }
-          Row(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-              stringResource(MR.strings.group_display_name_field),
-              fontSize = 16.sp
-            )
-            if (!isValidDisplayName(displayName.value.trim())) {
-              Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-              IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
-                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
-              }
+
+          Image(
+            painterResource(MR.images.ic_invitation_create_group),
+            contentDescription = null,
+            modifier = Modifier.weight(1f)
+          )
+        }
+
+        Row(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          Text(
+            stringResource(MR.strings.group_display_name_field),
+            fontSize = 16.sp
+          )
+          if (!isValidDisplayName(displayName.value.trim())) {
+            Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+            IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
+              Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
             }
           }
-          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
-          }
-          Spacer(Modifier.height(8.dp))
+        }
+        Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+        }
+        Spacer(Modifier.height(8.dp))
 
-          SettingsActionItem(
-            painterResource(MR.images.ic_check),
-            stringResource(MR.strings.create_group_button),
-            click = {
-              createGroup(incognito.value, GroupProfile(
+        SettingsActionItem(
+          painterResource(MR.images.ic_check),
+          stringResource(MR.strings.create_group_button),
+          click = {
+            createGroup(
+              incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),
                 fullName = "",
                 shortDescr = null,
                 image = profileImage.value,
                 groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
-              ))
-            },
-            textColor = MaterialTheme.colors.primary,
-            iconColor = MaterialTheme.colors.primary,
-            disabled = !canCreateProfile(displayName.value)
-          )
+              )
+            )
+          },
+          textColor = MaterialTheme.colors.primary,
+          iconColor = MaterialTheme.colors.primary,
+          disabled = !canCreateProfile(displayName.value)
+        )
 
-          IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
+        IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
 
-          SectionTextFooter(
-            buildAnnotatedString {
-              append(sharedProfileInfo(chatModel, incognito.value))
-              append("\n")
-              append(annotatedStringResource(MR.strings.group_is_decentralized))
-            }
-          )
-
-          LaunchedEffect(Unit) {
-            delay(1000)
-            focusRequester.requestFocus()
+        SectionTextFooter(
+          buildAnnotatedString {
+            append(sharedProfileInfo(chatModel, incognito.value))
+            append("\n")
+            append(annotatedStringResource(MR.strings.group_is_decentralized))
           }
+        )
+
+        LaunchedEffect(Unit) {
+          delay(1000)
+          focusRequester.requestFocus()
         }
       }
     }
+  }
 }
 
 fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())
