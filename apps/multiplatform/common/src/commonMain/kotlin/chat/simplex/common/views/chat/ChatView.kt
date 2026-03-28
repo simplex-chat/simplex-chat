@@ -972,7 +972,7 @@ fun ChatLayout(
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-                  setReaction, showItemDetails, markItemsRead, markChatRead, closeSearch, remember { { onComposed(it) } }, developerTools, showViaProxy,
+                  setReaction, showItemDetails, markItemsRead, markChatRead, closeSearch, remember { { onComposed(it) } }, developerTools, showViaProxy, contentFilter,
                 )
               }
               if (chatInfo is ChatInfo.Group && composeState.value.message.text.isNotEmpty()) {
@@ -1697,7 +1697,8 @@ fun BoxScope.ChatItemsList(
   closeSearch: () -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
-  showViaProxy: Boolean
+  showViaProxy: Boolean,
+  contentFilter: State<ContentFilter?> = remember { mutableStateOf(null) }
 ) {
   val chatInfo = chat.chatInfo
   val loadingTopItems = remember { mutableStateOf(false) }
@@ -1717,7 +1718,7 @@ fun BoxScope.ChatItemsList(
     }
   }
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
-  val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() } }
+  val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() || contentFilter.value != null } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
   val mergedItems = remember {
