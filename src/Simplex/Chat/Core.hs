@@ -53,11 +53,15 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
     run db@ChatDatabase {chatStore} = do
       u_ <- getSelectActiveUser chatStore
       let backgroundMode = maintenance
-      cc <- newChatController db u_ cfg opts backgroundMode
-      forM_ (preStartHook chatHooks) ($ cc)
-      u <- maybe (noMaintenance >> createActiveUser cc createBot) pure u_
-      unless testView $ putStrLn $ "Current user: " <> userStr u
-      runSimplexChat opts u cc chat
+      newChatController db u_ cfg opts backgroundMode >>= \case
+        Left e -> do
+          putStrLn $ "Error starting chat: " <> show e
+          exitFailure
+        Right cc -> do
+          forM_ (preStartHook chatHooks) ($ cc)
+          u <- maybe (noMaintenance >> createActiveUser cc createBot) pure u_
+          unless testView $ putStrLn $ "Current user: " <> userStr u
+          runSimplexChat opts u cc chat
     noMaintenance = when maintenance $ do
       putStrLn "exiting: no active user in maintenance mode"
       exitFailure
@@ -105,9 +109,9 @@ getSelectActiveUser st = do
 
 createActiveUser :: ChatController -> Maybe CreateBotOpts -> IO User
 createActiveUser cc = \case
-  Just CreateBotOpts {botDisplayName, allowFiles} -> do
+  Just CreateBotOpts {botDisplayName, allowFiles, clientService} -> do
     let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
-    createUser exitFailure $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
+    createUser exitFailure clientService $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
   Nothing -> do
     putStrLn
       "No user profiles found, it will be created now.\n\
@@ -118,10 +122,10 @@ createActiveUser cc = \case
   where
     loop = do
       displayName <- T.pack <$> getWithPrompt "display name"
-      createUser loop $ mkProfile displayName
+      createUser loop False $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
-    createUser onError p =
-      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False}) 0 `runReaderT` cc >>= \case
+    createUser onError clientService p =
+      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, clientService = BoolDef clientService}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 

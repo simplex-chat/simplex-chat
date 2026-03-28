@@ -123,7 +123,7 @@ createChatDatabase chatDbOpts migrationConfig = runExceptT $ do
   agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False []) migrationConfig
   pure ChatDatabase {chatStore, agentStore}
 
-newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
+newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO (Either AgentErrorType ChatController)
 newChatController
   ChatDatabase {chatStore, agentStore}
   user
@@ -133,8 +133,6 @@ newChatController
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
         config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable, confirmMigrations = confirmMigrations'}
-        firstTime = dbNew chatStore
-    currentUser <- newTVarIO user
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op
@@ -142,84 +140,87 @@ newChatController
     agentSMP <- randomServerCfgs "agent SMP servers" SPSMP opDomains rndSrvs
     agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
     let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
-    currentRemoteHost <- newTVarIO Nothing
     servers <- withTransaction chatStore $ \db -> agentServers db config randomPresetServers randomAgentServers
-    smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
-    agentAsync <- newTVarIO Nothing
-    random <- liftIO C.newRandom
-    eventSeq <- newTVarIO 0
-    inputQ <- newTBQueueIO tbqSize
-    outputQ <- newTBQueueIO tbqSize
-    subscriptionMode <- newTVarIO SMSubscribe
-    chatLock <- newEmptyTMVarIO
-    entityLocks <- TM.emptyIO
-    sndFiles <- newTVarIO M.empty
-    rcvFiles <- newTVarIO M.empty
-    currentCalls <- TM.emptyIO
-    localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
-    multicastSubscribers <- newTMVarIO 0
-    remoteSessionSeq <- newTVarIO 0
-    remoteHostSessions <- TM.emptyIO
-    remoteHostsFolder <- newTVarIO Nothing
-    remoteCtrlSession <- newTVarIO Nothing
-    filesFolder <- newTVarIO optFilesFolder
-    chatStoreChanged <- newTVarIO False
-    deliveryTaskWorkers <- TM.emptyIO
-    deliveryJobWorkers <- TM.emptyIO
-    expireCIThreads <- TM.emptyIO
-    expireCIFlags <- TM.emptyIO
-    cleanupManagerAsync <- newTVarIO Nothing
-    timedItemThreads <- TM.emptyIO
-    chatActivated <- newTVarIO True
-    showLiveItems <- newTVarIO False
-    encryptLocalFiles <- newTVarIO False
-    tempDirectory <- newTVarIO optTempDirectory
-    assetsDirectory <- newTVarIO Nothing
-    contactMergeEnabled <- newTVarIO True
-    pure
-      ChatController
-        { firstTime,
-          currentUser,
-          randomPresetServers,
-          randomAgentServers,
-          currentRemoteHost,
-          smpAgent,
-          agentAsync,
-          chatStore,
-          chatStoreChanged,
-          random,
-          eventSeq,
-          inputQ,
-          outputQ,
-          subscriptionMode,
-          chatLock,
-          entityLocks,
-          sndFiles,
-          rcvFiles,
-          currentCalls,
-          localDeviceName,
-          multicastSubscribers,
-          remoteSessionSeq,
-          remoteHostSessions,
-          remoteHostsFolder,
-          remoteCtrlSession,
-          config,
-          filesFolder,
-          deliveryTaskWorkers,
-          deliveryJobWorkers,
-          expireCIThreads,
-          expireCIFlags,
-          cleanupManagerAsync,
-          timedItemThreads,
-          chatActivated,
-          showLiveItems,
-          encryptLocalFiles,
-          tempDirectory,
-          assetsDirectory,
-          logFilePath = logFile,
-          contactMergeEnabled
-        }
+    runExceptT (getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode)
+      >>= mapM (mkChatController config randomPresetServers randomAgentServers)
     where
+      mkChatController config randomPresetServers randomAgentServers smpAgent = do
+        currentUser <- newTVarIO user
+        currentRemoteHost <- newTVarIO Nothing
+        agentAsync <- newTVarIO Nothing
+        random <- liftIO C.newRandom
+        eventSeq <- newTVarIO 0
+        inputQ <- newTBQueueIO tbqSize
+        outputQ <- newTBQueueIO tbqSize
+        subscriptionMode <- newTVarIO SMSubscribe
+        chatLock <- newEmptyTMVarIO
+        entityLocks <- TM.emptyIO
+        sndFiles <- newTVarIO M.empty
+        rcvFiles <- newTVarIO M.empty
+        currentCalls <- TM.emptyIO
+        localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
+        multicastSubscribers <- newTMVarIO 0
+        remoteSessionSeq <- newTVarIO 0
+        remoteHostSessions <- TM.emptyIO
+        remoteHostsFolder <- newTVarIO Nothing
+        remoteCtrlSession <- newTVarIO Nothing
+        filesFolder <- newTVarIO optFilesFolder
+        chatStoreChanged <- newTVarIO False
+        deliveryTaskWorkers <- TM.emptyIO
+        deliveryJobWorkers <- TM.emptyIO
+        expireCIThreads <- TM.emptyIO
+        expireCIFlags <- TM.emptyIO
+        cleanupManagerAsync <- newTVarIO Nothing
+        timedItemThreads <- TM.emptyIO
+        chatActivated <- newTVarIO True
+        showLiveItems <- newTVarIO False
+        encryptLocalFiles <- newTVarIO False
+        tempDirectory <- newTVarIO optTempDirectory
+        assetsDirectory <- newTVarIO Nothing
+        contactMergeEnabled <- newTVarIO True
+        pure
+          ChatController
+            { firstTime = dbNew chatStore,
+              currentUser,
+              randomPresetServers,
+              randomAgentServers,
+              currentRemoteHost,
+              smpAgent,
+              agentAsync,
+              chatStore,
+              chatStoreChanged,
+              random,
+              eventSeq,
+              inputQ,
+              outputQ,
+              subscriptionMode,
+              chatLock,
+              entityLocks,
+              sndFiles,
+              rcvFiles,
+              currentCalls,
+              localDeviceName,
+              multicastSubscribers,
+              remoteSessionSeq,
+              remoteHostSessions,
+              remoteHostsFolder,
+              remoteCtrlSession,
+              config,
+              filesFolder,
+              deliveryTaskWorkers,
+              deliveryJobWorkers,
+              expireCIThreads,
+              expireCIFlags,
+              cleanupManagerAsync,
+              timedItemThreads,
+              chatActivated,
+              showLiveItems,
+              encryptLocalFiles,
+              tempDirectory,
+              assetsDirectory,
+              logFilePath = logFile,
+              contactMergeEnabled
+            }
       presetServers' :: PresetServers
       presetServers' = presetServers {operators = operators', netCfg = netCfg'}
         where
@@ -251,7 +252,8 @@ newChatController
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains, presetServers = L.toList allPresetServers}
+        let useServices = M.fromList $ map (\User {agentUserId = AgentUserId uId, clientService} -> (uId, isTrue clientService)) users
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, useServices, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

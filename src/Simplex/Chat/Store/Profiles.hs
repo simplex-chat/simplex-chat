@@ -20,7 +20,6 @@ module Simplex.Chat.Store.Profiles
     UserMsgReceiptSettings (..),
     UserContactLink (..),
     GroupLinkInfo (..),
-    createUserRecord,
     createUserRecordAt,
     getUsersInfo,
     getUsers,
@@ -37,6 +36,7 @@ module Simplex.Chat.Store.Profiles
     getUserFileInfo,
     deleteUserRecord,
     updateUserPrivacy,
+    updateClientService,
     updateAllContactReceipts,
     updateUserContactReceipts,
     updateUserGroupReceipts,
@@ -125,11 +125,8 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
-createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
-
-createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
-createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
+createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
+createUserRecordAt db (AgentUserId auId) clientService Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
@@ -139,8 +136,8 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDe
     order <- getNextActiveOrder db
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?,?)"
-      (auId, displayName, BI activeUser, order, BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, currentTs, currentTs)
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, client_service, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?,?,?)"
+      ((auId, displayName, BI activeUser, order, BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI clientService) :. (currentTs, currentTs))
     userId <- insertedRowId db
     DB.execute
       db
@@ -157,7 +154,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDe
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI clientService, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -274,6 +271,17 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
     (hashSalt viewPwdHash :. (BI showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
+
+updateClientService :: DB.Connection -> UserId -> Bool -> IO ()
+updateClientService db userId enable =
+  DB.execute
+    db
+    [sql|
+      UPDATE users
+      SET client_service = ?
+      WHERE user_id = ?
+    |]
+    (BI enable, userId)
 
 updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
 updateAllContactReceipts db onOff =

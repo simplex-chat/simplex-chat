@@ -73,7 +73,8 @@ data CoreChatOpts = CoreChatOpts
 
 data CreateBotOpts = CreateBotOpts
   { botDisplayName :: Text,
-    allowFiles :: Bool
+    allowFiles :: Bool,
+    clientService :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -383,6 +384,11 @@ chatOptsP appDir defaultDbName = do
       ( long "create-bot-allow-files"
           <> help "Flag for created bot to allow files (only allowed together with --create-bot option)"
       )
+  createBotClientService <-
+    switch
+      ( long "create-bot-client-service"
+          <> help "Flag for created bot to use client service certificate"
+      )
   pure
     ChatOpts
       { coreOptions,
@@ -398,9 +404,10 @@ chatOptsP appDir defaultDbName = do
         muteNotifications,
         markRead,
         createBot = case createBotDisplayName of
-          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles}
+          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles, clientService = createBotClientService}
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
+            | createBotClientService -> error "--create-bot-client-service option requires --create-bot-name option"
             | otherwise -> Nothing
       }
 
