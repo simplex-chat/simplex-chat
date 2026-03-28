@@ -50,7 +50,6 @@ func validRelayAddress(_ address: String) -> Bool {
     }
 }
 
-// TODO [relays] TBC matching relay to operator by domain (relay address can be hosted on operator server)
 func addChatRelay(
     _ relay: UserChatRelay,
     _ userServers: Binding<[UserOperatorServers]>,

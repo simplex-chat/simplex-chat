@@ -2993,6 +2993,13 @@ object ChatController {
             }
           }
         }
+      is CR.GroupRelayUpdated ->
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            ChannelRelaysModel.updateRelay(r.groupInfo, r.groupRelay)
+          }
+        }
       is CR.NewMemberContactReceivedInv ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
@@ -6301,6 +6308,7 @@ sealed class CR {
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
   @Serializable @SerialName("groupLinkDataUpdated") class GroupLinkDataUpdated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>, val relaysChanged: Boolean): CR()
+  @Serializable @SerialName("groupRelayUpdated") class GroupRelayUpdated(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val groupRelay: GroupRelay): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
   @Serializable @SerialName("groupLink") class CRGroupLink(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
   @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: UserRef, val groupInfo: GroupInfo): CR()
@@ -6486,6 +6494,7 @@ sealed class CR {
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupUpdated -> "groupUpdated"
     is GroupLinkDataUpdated -> "groupLinkDataUpdated"
+    is GroupRelayUpdated -> "groupRelayUpdated"
     is GroupLinkCreated -> "groupLinkCreated"
     is CRGroupLink -> "groupLink"
     is GroupLinkDeleted -> "groupLinkDeleted"
@@ -6664,6 +6673,7 @@ sealed class CR {
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
     is GroupLinkDataUpdated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays\nrelaysChanged: $relaysChanged")
+    is GroupRelayUpdated -> withUser(user, "groupInfo: $groupInfo\nmember: $member\ngroupRelay: $groupRelay")
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
     is CRGroupLink -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
     is GroupLinkDeleted -> withUser(user, json.encodeToString(groupInfo))
