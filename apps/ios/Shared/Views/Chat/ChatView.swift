@@ -903,6 +903,7 @@ struct ChatView: View {
                             selectedChatItems: $selectedChatItems,
                             forwardedChatItems: $forwardedChatItems,
                             searchText: $searchText,
+                            contentFilter: $contentFilter,
                             closeKeyboardAndRun: closeKeyboardAndRun
                         )
                     }
@@ -1669,6 +1670,7 @@ struct ChatView: View {
         @Binding var forwardedChatItems: [ChatItem]
 
         @Binding var searchText: String
+        @Binding var contentFilter: ContentFilter?
         var closeKeyboardAndRun: (@escaping () -> Void) -> Void
 
         @State private var allowMenu: Bool = true
@@ -1826,7 +1828,7 @@ struct ChatView: View {
 
         private var searchIsNotBlank: Bool {
             get {
-                searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                (searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || contentFilter != nil
             }
         }
 
