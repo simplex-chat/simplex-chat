@@ -269,7 +269,9 @@ mobileChatOpts dbOptions =
       muteNotifications = True,
       markRead = False,
       createBot = Nothing,
-      maintenance = True
+      maintenance = True,
+      optExportArchive = Nothing,
+      optImportArchive = Nothing
     }
 
 defaultMobileConfig :: ChatConfig
