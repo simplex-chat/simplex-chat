@@ -2024,6 +2024,10 @@ processChatCommand vr nm = \case
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+        -- Validate link entity ID matches group profile's sharedGroupId (relay groups must have both)
+        forM_ groupSLinkData_ $ \GroupShortLinkData {groupProfile = GroupProfile {sharedGroupId}} ->
+          unless (B64UrlByteString <$> linkEntityId == sharedGroupId) $
+            throwChatError CEInvalidConnReq
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
         -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
@@ -2382,11 +2386,13 @@ processChatCommand vr nm = \case
       prepareGroupLink user = do
         gVar <- asks random
         groupLinkId <- GroupLinkId <$> drgRandomBytes 16
-        sharedGroupId <- drgRandomBytes 24
         subMode <- chatReadVar subscriptionMode
-        let crClientData = encodeJSON $ CRDataGroup groupLinkId
-        -- prepare link with sharedGroupId as linkEntityId (no server request)
-        ((_, rootPrivKey), ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) (Just sharedGroupId) True (Just crClientData)
+        -- generate root key pair; entity ID = sha256(rootPubKey) — see docs/rfcs/2026-03-28-group-identity-binding.md
+        rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
+            crClientData = encodeJSON $ CRDataGroup groupLinkId
+        -- prepare link with entityId as linkEntityId (no server request)
+        (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True (Just crClientData)
         ccLink' <- createdChannelLink <$> shortenCreatedLink ccLink
         sLnk <- case toShortLinkContact ccLink' of
           Just sl -> pure sl
@@ -2394,12 +2400,12 @@ processChatCommand vr nm = \case
         -- generate owner key, OwnerAuth signed by root key
         memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
         (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
-        let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
+        let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk, sharedGroupId = Just $ B64UrlByteString entityId}
             userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
-        let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+        let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
               subRole <- asks $ channelSubscriberRole . config
@@ -5086,7 +5092,7 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, groupLink = Nothing, groupPreferences, memberAdmission = Nothing}
+      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, groupLink = Nothing, groupPreferences, memberAdmission = Nothing, sharedGroupId = Nothing}
     memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
     shortDescrP = do
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""

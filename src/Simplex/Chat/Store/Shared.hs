@@ -676,11 +676,11 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission, groupLink}
+      groupKeys = toGroupKeys groupKeysRow
+      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission, groupLink, sharedGroupId = (\GroupKeys {sharedGroupId = s} -> s) <$> groupKeys}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      groupKeys = toGroupKeys groupKeysRow
    in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri, groupKeys}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
