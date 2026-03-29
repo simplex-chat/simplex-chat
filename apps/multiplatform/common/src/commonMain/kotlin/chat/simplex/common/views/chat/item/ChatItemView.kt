@@ -10,6 +10,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -109,6 +110,7 @@ fun ChatItemView(
   showTimestamp: Boolean,
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
+  swipeOffset: Float = 0f,
 ) {
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
@@ -799,6 +801,16 @@ fun ChatItemView(
         }
         if (!cItem.chatDir.sent) {
           GoToItemButton(false, bubbleHovered)
+        }
+        val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
+            cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
+        if (canReply && swipeOffset < 0) {
+          Icon(
+            painterResource(MR.images.ic_reply),
+            contentDescription = null,
+            modifier = Modifier.padding(start = 8.dp).size(18.dp).alpha(minOf(1f, -swipeOffset / 30f)),
+            tint = MaterialTheme.colors.secondary
+          )
         }
       }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
