@@ -5,7 +5,7 @@
 "_italic_" = "\\_dőlt_";
 
 /* No comment provided by engineer. */
-"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- kapcsolódás a [könyvtár szolgáltatáshoz](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- kézbesítési jelentések (legfeljebb 20 tag).\n- gyorsabb és stabilabb.";
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- kapcsolódás a [könyvtárszolgáltatáshoz](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.";
 
 /* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabilabb üzenetkézbesítés.\n- picit továbbfejlesztett csoportok.\n- és még sok más!";
@@ -513,6 +513,9 @@ swipe action */
 "all members" = "összes tag";
 
 /* No comment provided by engineer. */
+"All messages" = "Összes üzenet";
+
+/* No comment provided by engineer. */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Az összes üzenet és fájl **végpontok közötti titkosítással**, a közvetlen üzenetek továbbá kvantumbiztos titkosítással is rendelkeznek.";
 
 /* No comment provided by engineer. */
@@ -733,6 +736,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Hang- és videóhívások";
+
+/* No comment provided by engineer. */
+"Audio call" = "Hanghívás";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "hanghívás (végpontok között NEM titkosított)";
@@ -1177,7 +1183,7 @@ set passcode view */
 "Compare security codes with your contacts." = "Biztonsági kódok összehasonlítása a partnerekével.";
 
 /* No comment provided by engineer. */
-"complete" = "befejezett";
+"complete" = "kész";
 
 /* No comment provided by engineer. */
 "Completed" = "Elkészült";
@@ -1729,6 +1735,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Delete member message?" = "Törli a tag üzenetét?";
+
+/* No comment provided by engineer. */
+"Delete member messages" = "Tag üzeneteinek törlése";
+
+/* alert title */
+"Delete member messages?" = "Törli a tag üzeneteit?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Törli az üzenetet?";
@@ -2566,6 +2578,9 @@ snd error text */
 "Files and media prohibited!" = "A fájlok és a médiatartalmak küldése le van tiltva!";
 
 /* No comment provided by engineer. */
+"Filter" = "Szűrő";
+
+/* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Olvasatlan és kedvenc csevegésekre való szűrés.";
 
 /* No comment provided by engineer. */
@@ -2839,7 +2854,7 @@ snd error text */
 "How to use it" = "Használati útmutató";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Hogyan használja a saját kiszolgálóit";
+"How to use your servers" = "Útmutató a saját kiszolgálók beállításához és használatához";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Magyar kezelőfelület";
@@ -2867,6 +2882,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Image will be received when your contact is online, please wait or check later!" = "A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!";
+
+/* No comment provided by engineer. */
+"Images" = "Képek";
 
 /* No comment provided by engineer. */
 "Immediately" = "Azonnal";
@@ -3052,6 +3070,9 @@ snd error text */
 "Invite friends" = "Barátok meghívása";
 
 /* No comment provided by engineer. */
+"Invite member" = "Tag meghívása";
+
+/* No comment provided by engineer. */
 "Invite members" = "Tagok meghívása";
 
 /* No comment provided by engineer. */
@@ -3204,6 +3225,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Linked desktops" = "Társított számítógépek";
 
+/* No comment provided by engineer. */
+"Links" = "Hivatkozások";
+
 /* swipe action */
 "List" = "Lista";
 
@@ -3296,6 +3320,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member is deleted - can't accept request" = "A tag törölve lett – nem lehet elfogadni a kérést";
+
+/* alert message */
+"Member messages will be deleted - this cannot be undone!" = "A tag üzenetei törölve lesznek – ez a művelet nem vonható vissza!";
 
 /* chat feature */
 "Member reports" = "Tagok jelentései";
@@ -3463,7 +3490,7 @@ snd error text */
 "Migrating database archive…" = "Adatbázis-archívum átköltöztetése…";
 
 /* No comment provided by engineer. */
-"Migration complete" = "Átköltöztetés befejezve";
+"Migration complete" = "Átköltöztetés kész";
 
 /* No comment provided by engineer. */
 "Migration error:" = "Átköltöztetési hiba:";
@@ -3472,7 +3499,7 @@ snd error text */
 "Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "Sikertelen átköltöztetés. Koppintson a **Kihagyás** beállításra a jelenlegi adatbázis használatának folytatásához. Jelentse a problémát az alkalmazás fejlesztőinek csevegésben vagy e-mailben [chat@simplex.chat](mailto:chat@simplex.chat).";
 
 /* No comment provided by engineer. */
-"Migration is completed" = "Az átköltöztetés befejeződött";
+"Migration is completed" = "Az átköltöztetés elkészült";
 
 /* No comment provided by engineer. */
 "Migrations:" = "Átköltöztetések:";
@@ -4086,7 +4113,7 @@ new chat action */
 "Please wait for group moderators to review your request to join the group." = "Várja meg, amíg a csoport moderátorai áttekintik a csoporthoz való csatlakozási kérését.";
 
 /* token info */
-"Please wait for token activation to complete." = "Várjon, amíg a token aktiválása befejeződik.";
+"Please wait for token activation to complete." = "Várjon, amíg a token aktiválása elkészül.";
 
 /* token info */
 "Please wait for token to be registered." = "Várjon a token regisztrálására.";
@@ -4383,6 +4410,9 @@ swipe action */
 
 /* alert action */
 "Remove" = "Eltávolítás";
+
+/* alert action */
+"Remove and delete messages" = "Eltávolítás és az üzeneteinek törlése";
 
 /* No comment provided by engineer. */
 "Remove archive?" = "Eltávolítja az archívumot?";
@@ -4692,7 +4722,22 @@ chat item action */
 "Search bar accepts invitation links." = "A keresősáv elfogadja a meghívási hivatkozásokat.";
 
 /* No comment provided by engineer. */
+"Search files" = "Fájlok keresése";
+
+/* No comment provided by engineer. */
+"Search images" = "Képek keresése";
+
+/* No comment provided by engineer. */
+"Search links" = "Hivatkozások keresése";
+
+/* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Keresés vagy SimpleX-hivatkozás beillesztése";
+
+/* No comment provided by engineer. */
+"Search videos" = "Videók keresése";
+
+/* No comment provided by engineer. */
+"Search voice messages" = "Hangüzenetek keresése";
 
 /* network option */
 "sec" = "mp";
@@ -5898,6 +5943,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "A videó akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!";
+
+/* No comment provided by engineer. */
+"Videos" = "Videók";
 
 /* No comment provided by engineer. */
 "Videos and files up to 1gb" = "Videók és fájlok legfeljebb 1GB méretig";
