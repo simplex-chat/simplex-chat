@@ -2021,6 +2021,10 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Bağlantı hatası (DOĞRULAMA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection failed" xml:space="preserve">
+        <source>Connection failed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
         <source>Connection is blocked by server operator:
 %@</source>
@@ -4330,6 +4334,10 @@ Hata: %2$@</target>
         <source>If you enter your self-destruct passcode while opening the app:</source>
         <target>Uygulamayı açarken kendi kendini imha eden şifrenizi girerseniz:</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve">
+        <source>If you joined or created channels, they will stop working permanently.</source>
+        <note>down migration warning</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
         <source>If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app).</source>
@@ -10114,6 +10122,10 @@ pref value</note>
       <trans-unit id="expired" xml:space="preserve">
         <source>expired</source>
         <target>süresi dolmuş</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="failed" xml:space="preserve">
+        <source>failed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">

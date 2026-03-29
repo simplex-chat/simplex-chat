@@ -257,7 +257,7 @@
 "`a + b`" = "\\`a + b`";
 
 /* email text */
-"<p>Hi!</p>\n<p><a href=\"%@\">Connect to me via SimpleX Chat</a></p>" = "<p>¡Hola!</p>\n<p><a href=\"%@\"> Conecta conmigo a través de SimpleX Chat</a></p>";
+"<p>Hi!</p>\n<p><a href=\"%@\">Connect to me via SimpleX Chat</a></p>" = "<p>¡Hola!</p>\n<p><a href=\"%@\">Conecta conmigo a través de SimpleX Chat</a></p>";
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~strike~";
@@ -513,6 +513,9 @@ swipe action */
 "all members" = "todos los miembros";
 
 /* No comment provided by engineer. */
+"All messages" = "Todos los mensajes";
+
+/* No comment provided by engineer. */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Todos los mensajes y archivos son enviados **cifrados de extremo a extremo** y con seguridad de cifrado postcuántico en mensajes directos.";
 
 /* No comment provided by engineer. */
@@ -733,6 +736,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Llamadas y videollamadas";
+
+/* No comment provided by engineer. */
+"Audio call" = "Llamada";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "llamada (sin cifrar)";
@@ -1731,6 +1737,12 @@ swipe action */
 "Delete member message?" = "¿Eliminar el mensaje de miembro?";
 
 /* No comment provided by engineer. */
+"Delete member messages" = "Eliminar mensajes del miembro";
+
+/* alert title */
+"Delete member messages?" = "¿Eliminar mensajes del miembro?";
+
+/* No comment provided by engineer. */
 "Delete message?" = "¿Eliminar mensaje?";
 
 /* alert action
@@ -2566,6 +2578,9 @@ snd error text */
 "Files and media prohibited!" = "¡Archivos y multimedia no permitidos!";
 
 /* No comment provided by engineer. */
+"Filter" = "Filtro";
+
+/* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Filtra chats no leídos y favoritos.";
 
 /* No comment provided by engineer. */
@@ -2869,6 +2884,9 @@ snd error text */
 "Image will be received when your contact is online, please wait or check later!" = "La imagen se recibirá cuando el contacto esté en línea, ¡por favor espera o revisa más tarde!";
 
 /* No comment provided by engineer. */
+"Images" = "Imágenes";
+
+/* No comment provided by engineer. */
 "Immediately" = "Inmediatamente";
 
 /* No comment provided by engineer. */
@@ -3052,6 +3070,9 @@ snd error text */
 "Invite friends" = "Invitar amigos";
 
 /* No comment provided by engineer. */
+"Invite member" = "Invitar miembro";
+
+/* No comment provided by engineer. */
 "Invite members" = "Invitar miembros";
 
 /* No comment provided by engineer. */
@@ -3204,6 +3225,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Linked desktops" = "Ordenadores enlazados";
 
+/* No comment provided by engineer. */
+"Links" = "Enlaces";
+
 /* swipe action */
 "List" = "Lista";
 
@@ -3296,6 +3320,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member is deleted - can't accept request" = "Miembro eliminado, no puede aceptar solicitudes";
+
+/* alert message */
+"Member messages will be deleted - this cannot be undone!" = "Los mensajes del miembro serán eliminados. ¡No puede deshacerse!";
 
 /* chat feature */
 "Member reports" = "Informes de miembros";
@@ -3939,7 +3966,7 @@ new chat action */
 "Or securely share this file link" = "O comparte de forma segura este enlace al archivo";
 
 /* No comment provided by engineer. */
-"Or show this code" = "O muestra el código QR";
+"Or show this code" = "O muestra este código";
 
 /* No comment provided by engineer. */
 "Or to share privately" = "O para compartir en privado";
@@ -4384,6 +4411,9 @@ swipe action */
 /* alert action */
 "Remove" = "Eliminar";
 
+/* alert action */
+"Remove and delete messages" = "Eliminar miembro y sus mensajes";
+
 /* No comment provided by engineer. */
 "Remove archive?" = "¿Eliminar archivo?";
 
@@ -4692,7 +4722,22 @@ chat item action */
 "Search bar accepts invitation links." = "La barra de búsqueda acepta enlaces de invitación.";
 
 /* No comment provided by engineer. */
+"Search files" = "Buscar archivos";
+
+/* No comment provided by engineer. */
+"Search images" = "Buscar imágenes";
+
+/* No comment provided by engineer. */
+"Search links" = "Buscar enlaces";
+
+/* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Buscar o pegar enlace SimpleX";
+
+/* No comment provided by engineer. */
+"Search videos" = "Buscar vídeos";
+
+/* No comment provided by engineer. */
+"Search voice messages" = "Buscar mensajes de voz";
 
 /* network option */
 "sec" = "seg";
@@ -5687,7 +5732,7 @@ report reason */
 "Unmute" = "Activar audio";
 
 /* No comment provided by engineer. */
-"unprotected" = "con IP desprotegida";
+"unprotected" = "desprotegida";
 
 /* swipe action */
 "Unread" = "No leído";
@@ -5898,6 +5943,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "El vídeo se recibirá cuando el contacto esté en línea, por favor espera o revisa más tarde.";
+
+/* No comment provided by engineer. */
+"Videos" = "Vídeos";
 
 /* No comment provided by engineer. */
 "Videos and files up to 1gb" = "Vídeos y archivos de hasta 1Gb";
