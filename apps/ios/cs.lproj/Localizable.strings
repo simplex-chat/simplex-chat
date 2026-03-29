@@ -251,7 +251,7 @@
 "`a + b`" = "\\`a + b`";
 
 /* email text */
-"<p>Hi!</p>\n<p><a href=\"%@\">Connect to me via SimpleX Chat</a></p>" = "<p>Ahoj!</p>\n<p><a href=\"%@\">Připojte se ke mne přez SimpleX Chat</a></p>";
+"<p>Hi!</p>\n<p><a href=\"%@\">Connect to me via SimpleX Chat</a></p>" = "<p>Ahoj!</p>\n<p><a href=\"%@\">Připojte se ke mne přes SimpleX Chat</a></p>";
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~stávka~";
