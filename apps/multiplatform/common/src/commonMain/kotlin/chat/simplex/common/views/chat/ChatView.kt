@@ -1940,18 +1940,15 @@ fun BoxScope.ChatItemsList(
           if (chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
               if (showAvatar) {
-                Box(
+                Column(
                   Modifier
                     .padding(top = 8.dp)
                     .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
                     .fillMaxWidth()
+                    .then(swipeableModifier),
+                  verticalArrangement = Arrangement.spacedBy(4.dp),
+                  horizontalAlignment = Alignment.Start
                 ) {
-                  ReplyIcon(Modifier.align(Alignment.CenterEnd))
-                  Column(
-                    Modifier.then(swipeableModifier),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.Start
-                  ) {
                   @Composable
                   fun MemberNameAndRole(range: State<IntRange?>) {
                     Row(Modifier.padding(bottom = 2.dp).graphicsLayer { translationX = selectionOffset.toPx() }, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1996,7 +1993,10 @@ fun BoxScope.ChatItemsList(
                       androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                         SelectedListItem(Modifier, cItem.id, selectedChatItems)
                       }
-                      Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
+                      Row(
+                        Modifier.graphicsLayer { translationX = selectionOffset.toPx() },
+                        verticalAlignment = Alignment.CenterVertically
+                      ) {
                         val member = cItem.chatDir.groupMember
                         Box(Modifier.clickable { showMemberInfo(chatInfo.groupInfo, member) }) {
                           MemberImage(member)
@@ -2004,6 +2004,7 @@ fun BoxScope.ChatItemsList(
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
                           ChatItemViewShortHand(cItem, itemSeparation, range, false)
                         }
+                        ReplyIcon()
                       }
                     }
                   }
@@ -2015,24 +2016,21 @@ fun BoxScope.ChatItemsList(
                   } else {
                     Item()
                   }
-                  }
                 }
               } else {
                 ChatItemBox {
                   AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                     SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                   }
-                  Box(
-                    Modifier.padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                  Row(
+                    Modifier
+                      .padding(start = 8.dp + (MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier) + 4.dp, end = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(66.dp, start = false))
+                      .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
+                      .then(swipeableOrSelectionModifier),
+                    verticalAlignment = Alignment.CenterVertically
                   ) {
-                    ReplyIcon(Modifier.align(Alignment.CenterEnd))
-                    Row(
-                      Modifier
-                        .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
-                        .then(swipeableOrSelectionModifier)
-                    ) {
-                      ChatItemViewShortHand(cItem, itemSeparation, range)
-                    }
+                    ChatItemViewShortHand(cItem, itemSeparation, range)
+                    ReplyIcon()
                   }
                 }
               }
@@ -2041,17 +2039,15 @@ fun BoxScope.ChatItemsList(
                 AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
-                Box(
-                  Modifier.padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
+                Row(
+                  Modifier
+                    .padding(start = if (voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(104.dp, start = true), end = 12.dp)
+                    .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
+                    .then(if (selectionVisible) Modifier else swipeableModifier),
+                  verticalAlignment = Alignment.CenterVertically
                 ) {
-                  ReplyIcon(Modifier.align(Alignment.CenterEnd))
-                  Box(
-                    Modifier
-                      .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
-                      .then(if (selectionVisible) Modifier else swipeableModifier)
-                  ) {
-                    ChatItemViewShortHand(cItem, itemSeparation, range)
-                  }
+                  ChatItemViewShortHand(cItem, itemSeparation, range)
+                  ReplyIcon()
                 }
               }
             }
@@ -2061,20 +2057,18 @@ fun BoxScope.ChatItemsList(
                 SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
               }
 
-              Box(
-                Modifier.padding(
-                  start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
-                  end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
-                )
+              Row(
+                Modifier
+                  .padding(
+                    start = if (sent && !voiceWithTransparentBack) adjustTailPaddingOffset(76.dp, start = true) else 12.dp,
+                    end = if (sent || voiceWithTransparentBack) 12.dp else adjustTailPaddingOffset(76.dp, start = false),
+                  )
+                  .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
+                  .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier),
+                verticalAlignment = Alignment.CenterVertically
               ) {
-                ReplyIcon(Modifier.align(Alignment.CenterEnd))
-                Box(
-                  Modifier
-                    .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
-                    .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
-                ) {
-                  ChatItemViewShortHand(cItem, itemSeparation, range)
-                }
+                ChatItemViewShortHand(cItem, itemSeparation, range)
+                ReplyIcon()
               }
             }
           }
