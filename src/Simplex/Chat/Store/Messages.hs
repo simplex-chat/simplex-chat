@@ -1674,6 +1674,15 @@ getGroupMinUnreadId_ db user g scopeInfo_ contentFilter =
     baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
     orderLimit = " ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1"
 
+-- max viewed item: received read or sent (any item_status != CISRcvNew)
+getGroupMaxViewedItemId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
+getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter =
+  fmap join . maybeFirstRow fromOnly $
+    queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status != ? " baseQuery orderLimit
+  where
+    baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
+    orderLimit = " ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1"
+
 getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Int, Int)
 getGroupUnreadCount_ db user g scopeInfo_ contentFilter =
   head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status = ? " baseQuery ""
@@ -1711,15 +1720,6 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFil
           (userId, groupId, GCSTMemberSupport_, groupMemberId' <$> m, CISRcvNew)
     (Just _scope, Just _mcTag) ->
       throwError $ SEInternalError "group scope and content filter are not supported together"
-
--- max viewed item: received read or sent (any item_status != CISRcvNew)
-getGroupMaxViewedItemId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
-getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter =
-  fmap join . maybeFirstRow fromOnly $
-    queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status != ? " baseQuery orderLimit
-  where
-    baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
-    orderLimit = " ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1"
 
 getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO NavigationInfo
 getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
