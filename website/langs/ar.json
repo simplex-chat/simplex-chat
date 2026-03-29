@@ -200,7 +200,7 @@
     "simplex-private-section-header": "ما الذي يجعل SimpleX <span class=\"gradient-text\"> خصوصيًّا</span>",
     "privacy-matters-section-subheader": "الحفاظ على خصوصية بياناتك الوصفية &mdash; <span class=\"text-active-blue\">مع مَن تتحدث</span> &mdash; يحميك من:",
     "simplex-network-1-overlay-linktext": "مشاكل شبكات P2P",
-    "simplex-network-section-desc": "يوفر Simplex Chat أفضل خصوصية من خلال الجمع بين مزايا P2P والشبكات الاتحادية.",
+    "simplex-network-section-desc": "يوفر SimpleX Chat أفضل خصوصية من خلال الجمع بين مزايا P2P والشبكات الاتحادية.",
     "simplex-network-1-desc": "يتم إرسال جميع الرسائل عبر الخوادم، مما يوفر خصوصية أفضل للبيانات الوصفية وتسليمًا موثوقًا للرسائل غير المتزامنة، مع تجنب الكثير",
     "simplex-network-2-header": "على عكس الشبكات الاتحادية",
     "simplex-network-3-desc": "توفر الخوادم <span class=\"text-active-blue\"> قوائم انتظار أحادية الاتجاه</span> لتوصيل المستخدمين، لكن ليس لديهم رؤية للرسم البياني لاتصال الشبكة &mdash; إلا للمستخدمين فقط.",
