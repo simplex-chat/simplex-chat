@@ -1922,6 +1922,18 @@ fun BoxScope.ChatItemsList(
           val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
           val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
+          // Reply icon revealed on swipe
+          val swipeOffset = dismissState.offset.value
+          val swipeThreshold = with(LocalDensity.current) { 30.dp.toPx() }
+          Icon(
+            painterResource(MR.images.ic_reply),
+            contentDescription = null,
+            tint = MaterialTheme.colors.secondary,
+            modifier = Modifier
+              .align(Alignment.CenterEnd)
+              .padding(end = 12.dp)
+              .alpha(((-swipeOffset) / swipeThreshold).coerceIn(0f, 1f))
+          )
           if (chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
               if (showAvatar) {
