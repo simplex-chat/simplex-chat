@@ -1849,7 +1849,7 @@ fun BoxScope.ChatItemsList(
       }
 
       @Composable
-      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true) {
+      fun ChatItemViewShortHand(cItem: ChatItem, itemSeparation: ItemSeparation, range: State<IntRange?>, fillMaxWidth: Boolean = true, swipeOffset: Float = 0f) {
         tryOrShowError("${cItem.id}ChatItem", error = {
           CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
         }) {
@@ -1863,7 +1863,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp, swipeOffset = swipeOffset)
         }
       }
 
@@ -1922,18 +1922,6 @@ fun BoxScope.ChatItemsList(
           val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
           val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
-          // Reply icon revealed on swipe
-          val swipeOffset = dismissState.offset.value
-          val swipeThreshold = with(LocalDensity.current) { 30.dp.toPx() }
-          Icon(
-            painterResource(MR.images.ic_reply),
-            contentDescription = null,
-            tint = MaterialTheme.colors.secondary,
-            modifier = Modifier
-              .align(Alignment.CenterEnd)
-              .padding(end = 12.dp)
-              .alpha(((-swipeOffset) / swipeThreshold).coerceIn(0f, 1f))
-          )
           if (chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
               if (showAvatar) {
@@ -1996,7 +1984,7 @@ fun BoxScope.ChatItemsList(
                           MemberImage(member)
                         }
                         Box(modifier = Modifier.padding(top = 2.dp, start = 4.dp).chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)) {
-                          ChatItemViewShortHand(cItem, itemSeparation, range, false)
+                          ChatItemViewShortHand(cItem, itemSeparation, range, false, dismissState.offset.value)
                         }
                       }
                     }
@@ -2021,7 +2009,7 @@ fun BoxScope.ChatItemsList(
                       .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                       .then(swipeableOrSelectionModifier)
                   ) {
-                    ChatItemViewShortHand(cItem, itemSeparation, range)
+                    ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value)
                   }
                 }
               }
@@ -2036,7 +2024,7 @@ fun BoxScope.ChatItemsList(
                     .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                     .then(if (selectionVisible) Modifier else swipeableModifier)
                 ) {
-                  ChatItemViewShortHand(cItem, itemSeparation, range)
+                  ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value)
                 }
               }
             }
@@ -2054,7 +2042,7 @@ fun BoxScope.ChatItemsList(
                   .chatItemOffset(cItem, itemSeparation.largeGap, revealed = revealed.value)
                   .then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
               ) {
-                ChatItemViewShortHand(cItem, itemSeparation, range)
+                ChatItemViewShortHand(cItem, itemSeparation, range, swipeOffset = dismissState.offset.value)
               }
             }
           }
