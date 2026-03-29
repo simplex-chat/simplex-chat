@@ -1677,6 +1677,7 @@ struct ChatView: View {
         @State private var markedRead = false
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
+        @State private var swipeOffset: CGFloat = 0
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -2011,33 +2012,70 @@ struct ChatView: View {
 
         func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            return VStack(alignment: alignment.horizontal, spacing: 3) {
-                HStack {
-                    if ci.chatDir.sent {
-                        goToItemButton(true)
+            let live = composeState.liveMessage != nil
+            let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil
+            return ZStack(alignment: .trailing) {
+                // Reply icon revealed on swipe
+                Image(systemName: "arrowshape.turn.up.left.fill")
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(Circle().fill(Color.accentColor))
+                    .opacity(min(1, -swipeOffset / 30))
+                    .offset(x: swipeOffset + 50)
+                VStack(alignment: alignment.horizontal, spacing: 3) {
+                    HStack {
+                        if ci.chatDir.sent {
+                            goToItemButton(true)
+                        }
+                        ChatItemView(
+                            chat: chat,
+                            im: im,
+                            chatItem: ci,
+                            scrollToItem: scrollToItem,
+                            scrollToItemId: $scrollToItemId,
+                            maxWidth: maxWidth,
+                            allowMenu: $allowMenu
+                        )
+                        .environment(\.revealed, revealed)
+                        .environment(\.showTimestamp, itemSeparation.timestamp)
+                        .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
+                        .contextMenu { menu(ci, range, live: live) }
+                        .accessibilityLabel("")
+                        if !ci.chatDir.sent {
+                            goToItemButton(false)
+                        }
                     }
-                    ChatItemView(
-                        chat: chat,
-                        im: im,
-                        chatItem: ci,
-                        scrollToItem: scrollToItem,
-                        scrollToItemId: $scrollToItemId,
-                        maxWidth: maxWidth,
-                        allowMenu: $allowMenu
-                    )
-                    .environment(\.revealed, revealed)
-                    .environment(\.showTimestamp, itemSeparation.timestamp)
-                    .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
-                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
-                    .accessibilityLabel("")
-                    if !ci.chatDir.sent {
-                        goToItemButton(false)
+                    if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
+                        chatItemReactions(ci)
+                            .padding(.bottom, 4)
                     }
                 }
-                if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
-                    chatItemReactions(ci)
-                        .padding(.bottom, 4)
-                }
+                .offset(x: swipeOffset)
+                .gesture(
+                    DragGesture(minimumDistance: 15)
+                        .onChanged { value in
+                            guard canReply else { return }
+                            let x = value.translation.width
+                            if x < 0 {
+                                swipeOffset = max(x * 0.6, -80)
+                            }
+                        }
+                        .onEnded { _ in
+                            if swipeOffset < -50 {
+                                withAnimation {
+                                    if composeState.editing {
+                                        composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
+                                    } else {
+                                        composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                                    }
+                                }
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }
+                            withAnimation(.spring(response: 0.25)) {
+                                swipeOffset = 0
+                            }
+                        }
+                )
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
