@@ -367,5 +367,6 @@
     "file-proto-p-2": "Der für die Dateiverschlüsselung genutzte Schlüssel befindet sich ausschließlich im Hash‑Fragment der URL &mdash; Ihr Browser sendet ihn niemals an einen Server. Es gibt drei Verschlüsselungsebenen: TLS‑Transport, empfängerbezogene Verschlüsselung (ein eindeutiger, flüchtiger Schlüssel pro Transfer) und Ende‑zu‑Ende‑Verschlüsselung der Datei.",
     "file-proto-h-4": "Unabhängig voneinander arbeitende Datenrouter",
     "file-proto-p-4": "Wenn die Datei in Fragmente aufgeteilt wurde, wird sie über Netzwerkrouter übertragen, die von unabhängigen Parteien betrieben werden. Kein Betreiber kann die tatsächliche Dateigröße oder den Dateinamen sehen. Selbst wenn ein Router kompromittiert wird, sieht er nur verschlüsselte Fragmente fester Größe. Die Fragmente werden von den Netzwerkroutern für etwa 48 Stunden zwischengespeichert.",
-    "file-proto-spec": "Lesen Sie die XFTP‑Protokollspezifikation durch →"
+    "file-proto-spec": "Lesen Sie die XFTP‑Protokollspezifikation durch →",
+    "send-file": "Datei senden"
 }

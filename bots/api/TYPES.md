@@ -1987,6 +1987,9 @@ Snippet:
 Secret:
 - type: "secret"
 
+Small:
+- type: "small"
+
 Colored:
 - type: "colored"
 - color: [Color](#color)

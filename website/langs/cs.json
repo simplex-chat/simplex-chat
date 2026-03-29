@@ -367,5 +367,6 @@
     "file-proto-h-4": "Nezávislé směrovače dat",
     "file-proto-spec": "Přečtěte si specifikaci XFTP protokolu →",
     "file-proto-p-2": "Šifrovací klíč souboru je obsažen pouze v části hash adresy URL – váš prohlížeč jej nikdy neodesílá na server. Existují 3 úrovně šifrování: přenos přes protokol TLS, šifrování pro každého příjemce (jedinečný dočasný klíč pro každý přenos) a šifrování souborů typu end-to-end.",
-    "file-proto-p-4": "Když je soubor rozdělen na části, je odeslán přes síťové směrovače provozované nezávislými stranami. Žádný operátor nemůže vidět aktuální velikost nebo jméno souboru. I kdyby byl směrovač ohrožen, může vidět pouze šifrované části s pevně stanovenou velikosti. Části souboru jsou v mezipaměti síťových směrovačů uchovávány přibližně 48 hodin."
+    "file-proto-p-4": "Když je soubor rozdělen na části, je odeslán přes síťové směrovače provozované nezávislými stranami. Žádný operátor nemůže vidět aktuální velikost nebo jméno souboru. I kdyby byl směrovač ohrožen, může vidět pouze šifrované části s pevně stanovenou velikosti. Části souboru jsou v mezipaměti síťových směrovačů uchovávány přibližně 48 hodin.",
+    "send-file": "Odeslat soubor"
 }

@@ -367,5 +367,6 @@
     "file-proto-p-2": "A fájl titkosítási kulcsa csak a webcím kivonattöredékében található – a böngésző soha nem küldi el azt a kiszolgálónak. A fájlok háromrétegű titkosítással rendelkeznek: TLS-átviteli, címzettenkénti (egyedi, ideiglenes kulcs átvitelenként) és végpontok közötti titkosítással.",
     "file-proto-h-4": "Független útválasztók",
     "file-proto-p-4": "Amikor a fájl töredékekre oszlik, akkor a független felek által üzemeltetett hálózati útválasztókon keresztül kerül továbbításra. Egyetlen üzemeltető sem láthatja a fájl tényleges méretét és nevét. Még ha egy útválasztó biztonsága meg is sérül, csak a rögzített méretű titkosított töredékeket „láthatja”. A fájltöredékeket a hálózati útválasztók körülbelül 48 órán át tárolják a gyorsítótárban.",
-    "file-proto-spec": "Olvassa el az XFTP-protokoll leírását →"
+    "file-proto-spec": "Olvassa el az XFTP-protokoll leírását →",
+    "send-file": "Fájl küldése"
 }

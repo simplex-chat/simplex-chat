@@ -313,5 +313,6 @@
     "messengers-comparison-section-list-point-5": "A troca de chaves de dois fatores é opcional por meio da verificação do código de segurança.",
     "messengers-comparison-section-list-point-6": "O acordo de chaves pós-quântico é 'esparso' &mdash; ele protege apenas algumas das etapas da catraca (ratchet).",
     "navbar-old-site": "Site antigo",
-    "index-directory-users-group-title": "Grupos de usuários do SimpleX"
+    "index-directory-users-group-title": "Grupos de usuários do SimpleX",
+    "send-file": "Enviar arquivo"
 }

@@ -367,5 +367,6 @@
     "file-proto-p-2": "Klucz szyfrowania plików znajduje się wyłącznie we fragmencie skrótu adresu URL – przeglądarka nigdy nie wysyła go do serwera. Istnieją trzy warstwy szyfrowania: transport TLS, szyfrowanie po-odbiorcy (unikalny klucz tymczasowy dla każdego transferu) oraz szyfrowanie plików typu end-to-end.",
     "file-proto-h-4": "Niezależne routery danych",
     "file-proto-p-4": "Gdy plik jest dzielony na fragmenty, jest on wysyłany przez routery sieciowe obsługiwane przez niezależne podmioty. Żaden operator nie może zobaczyć rzeczywistego rozmiaru ani nazwy pliku. Nawet jeśli router zostanie naruszony, może on zobaczyć tylko zaszyfrowane fragmenty o stałym rozmiarze. Fragmenty plików są przechowywane w pamięci podręcznej routerów sieciowych przez około 48 godzin.",
-    "file-proto-spec": "Zapoznaj się ze specyfikacją protokołu XFTP →"
+    "file-proto-spec": "Zapoznaj się ze specyfikacją protokołu XFTP →",
+    "send-file": "Wyślij plik"
 }

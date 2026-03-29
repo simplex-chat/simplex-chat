@@ -533,32 +533,51 @@ struct ChatView: View {
             case let .direct(contact):
                 HStack {
                     let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                    let canStartCall = callsPrefEnabled && contact.ready && contact.active && chatModel.activeCall == nil
                     if let call = chatModel.activeCall, call.contact.id == cInfo.id {
                         endCallButton(call)
-                    } else {
-                        contentFilterMenu(withLabel: false)
-                    }
-                    Menu {
-                        if callsPrefEnabled && chatModel.activeCall == nil {
+                    } else if canStartCall {
+                        // Call button always in toolbar; tap opens Audio/Video submenu
+                        Menu {
                             Button {
                                 CallController.shared.startCall(contact, .audio)
                             } label: {
                                 Label("Audio call", systemImage: "phone")
                             }
-                            .disabled(!contact.ready || !contact.active)
                             Button {
                                 CallController.shared.startCall(contact, .video)
                             } label: {
                                 Label("Video call", systemImage: "video")
                             }
-                            .disabled(!contact.ready || !contact.active)
+                        } label: {
+                            Image(systemName: "phone")
                         }
-                        if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                            contentFilterMenu(withLabel: true)
-                        }
+                    } else if chatModel.activeCall == nil {
+                        // Calls unavailable: show filter button in place of call button
+                        contentFilterMenu(withLabel: false)
+                    }
+                    Menu {
                         searchButton()
                         ToggleNtfsButton(chat: chat)
                             .disabled(!contact.ready || !contact.active)
+                        // Filter options in menu when call button is shown (or during any active call)
+                        if !availableContent.isEmpty && (canStartCall || chatModel.activeCall != nil) {
+                            Divider()
+                            ForEach(availableContent, id: \.self) { type in
+                                Button {
+                                    setContentFilter(type)
+                                } label: {
+                                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                                }
+                            }
+                            if contentFilter != nil {
+                                Button {
+                                    closeSearch()
+                                } label: {
+                                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                                }
+                            }
+                        }
                     } label: {
                         Image(systemName: "ellipsis")
                     }
@@ -591,7 +610,26 @@ struct ChatView: View {
                 }
             case .local:
                 HStack {
-                    contentFilterMenu(withLabel: false)
+                    if !availableContent.isEmpty {
+                        Menu {
+                            ForEach(availableContent, id: \.self) { type in
+                                Button {
+                                    setContentFilter(type)
+                                } label: {
+                                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                                }
+                            }
+                            if contentFilter != nil {
+                                Button {
+                                    closeSearch()
+                                } label: {
+                                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
+                    }
                     searchButton()
                 }
             default:
@@ -865,6 +903,7 @@ struct ChatView: View {
                             selectedChatItems: $selectedChatItems,
                             forwardedChatItems: $forwardedChatItems,
                             searchText: $searchText,
+                            contentFilter: $contentFilter,
                             closeKeyboardAndRun: closeKeyboardAndRun
                         )
                     }
@@ -1631,6 +1670,7 @@ struct ChatView: View {
         @Binding var forwardedChatItems: [ChatItem]
 
         @Binding var searchText: String
+        @Binding var contentFilter: ContentFilter?
         var closeKeyboardAndRun: (@escaping () -> Void) -> Void
 
         @State private var allowMenu: Bool = true
@@ -1788,7 +1828,7 @@ struct ChatView: View {
 
         private var searchIsNotBlank: Bool {
             get {
-                searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                (searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || contentFilter != nil
             }
         }
 
