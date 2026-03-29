@@ -746,8 +746,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
             case chatMsgEvent of
-              XGrpLinkInv glInv -> do
+              XGrpLinkInv glInv@GroupLinkInvitation {groupProfile = GroupProfile {sharedGroupId = rcvGId}} -> do
                 -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
+                let GroupInfo {groupProfile = GroupProfile {sharedGroupId = curGId}} = gInfo
+                when (rcvGId /= curGId) $ messageError "x.grp.link.inv: sharedGroupId mismatch"
                 (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
                 -- [incognito] send saved profile
                 incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
@@ -3054,8 +3056,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CEvtGroupDeleted user gInfo'' {membership = membership {memberStatus = GSMemGroupDeleted}} m' msgSigned
 
     xGrpInfo :: GroupInfo -> GroupMember -> GroupProfile -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpInfo g@GroupInfo {groupProfile = p, businessChat} m@GroupMember {memberRole} p' msg@RcvMessage {msgSigned} brokerTs
+    xGrpInfo g@GroupInfo {groupProfile = p@GroupProfile {sharedGroupId = gId}, businessChat} m@GroupMember {memberRole} p'@GroupProfile {sharedGroupId = gId'} msg@RcvMessage {msgSigned} brokerTs
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions" $> Nothing
+      | useRelays' g && gId' /= gId = messageError "x.grp.info: sharedGroupId cannot be changed" $> Nothing
+      | not (useRelays' g) && isJust gId' = messageError "x.grp.info: sharedGroupId not allowed in p2p groups" $> Nothing
       | otherwise = do
           case businessChat of
             Nothing -> unless (p == p') $ do
@@ -3233,8 +3237,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           Just sm@SignedMsg {chatBinding, signatures, signedBody}
             | GroupMember {memberPubKey = Just pubKey, memberId} <- member ->
                 case chatBinding of
-                  CBGroup | Just GroupKeys {groupRootKey} <- groupKeys gInfo ->
-                    let prefix = smpEncode chatBinding <> smpEncode (groupRootPubKey groupRootKey, memberId)
+                  CBGroup | Just GroupKeys {sharedGroupId} <- groupKeys gInfo ->
+                    let prefix = smpEncode chatBinding <> smpEncode (sharedGroupId, memberId)
                      in signed MSSVerified <$ guard (all (\(MsgSignature KRMember sig) -> C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (prefix <> signedBody)) signatures)
                   _ -> signed MSSSignedNoKey <$ guard signatureOptional
             | otherwise -> signed MSSSignedNoKey <$ guard (signatureOptional || unverifiedAllowed membership member tag)
@@ -3609,7 +3613,9 @@ runRelayRequestWorker a Worker {doWork} = do
               (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
-                Just GroupShortLinkData {groupProfile = gp} -> do
+                Just GroupShortLinkData {groupProfile = gp@GroupProfile {sharedGroupId}} -> do
+                  unless ((B64UrlByteString <$> linkEntityId) == sharedGroupId) $
+                    throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile sharedGroupId"
                   validateGroupProfile gp
                   gVar <- asks random
                   (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar

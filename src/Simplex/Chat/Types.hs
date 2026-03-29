@@ -151,7 +151,7 @@ data NewUser = NewUser
 
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
-  deriving newtype (FromField)
+  deriving newtype (FromField, Encoding)
 
 instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField $ Binary m
 
@@ -764,7 +764,8 @@ data GroupProfile = GroupProfile
     image :: Maybe ImageData,
     groupLink :: Maybe ShortLinkContact,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission
+    memberAdmission :: Maybe GroupMemberAdmission,
+    sharedGroupId :: Maybe B64UrlByteString -- group identity = sha256(genesis root key), immutable
   }
   deriving (Eq, Show)
 
