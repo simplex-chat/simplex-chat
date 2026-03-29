@@ -26,6 +26,14 @@
                 </a>
             </li>
 
+            {# <hr>
+
+            <li class="nav-link {% if active_file %}active{% endif %}">
+                <a href="/file/">
+                    <span class="nav-link-text">{{ "file" | i18n({}, lang) | safe }}</span>
+                </a>
+            </li> #}
+
             <hr>
 
             <li class="nav-link">
@@ -134,7 +142,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('vouchers' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('vouchers' not in page.url) and ('file' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}
@@ -210,6 +218,20 @@ function iconToggle () {
     moonIcon.classList.toggle('hidden');
 }
 
+function updateThemeColor() {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(document.body).backgroundColor);
+    const navbar = document.querySelector('header#navbar');
+    if (navbar && navbar.classList.contains('open')) {
+        navbar.style.transition = 'none';
+        navbar.classList.remove('open');
+        setTimeout(() => {
+            navbar.classList.add('open');
+            setTimeout(() => navbar.style.transition = '', 0);
+        }, 0);
+    }
+}
+
 function themeCheck() {
     if (userTheme === 'dark' || (!userTheme && systemTheme)) {
         document.documentElement.classList.add('dark');
@@ -224,6 +246,7 @@ function themeCheck() {
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
     }
+    updateThemeColor();
 }
 themeCheck();
 
@@ -243,6 +266,7 @@ function themeSwitch () {
         }
         iconToggle();
     }
+    updateThemeColor();
 }
 
 const nav = document.querySelector('header#navbar');
