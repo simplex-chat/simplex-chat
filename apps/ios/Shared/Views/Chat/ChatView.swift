@@ -2056,7 +2056,7 @@ struct ChatView: View {
                             guard canReply else { return }
                             let x = value.translation.width
                             if x < 0 {
-                                swipeOffset = max(x * 0.63, -80)
+                                swipeOffset = max(x * 0.63, -63)
                             }
                         }
                         .onEnded { _ in
