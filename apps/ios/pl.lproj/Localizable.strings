@@ -958,7 +958,7 @@ marked deleted chat item preview text */
 "Can't message member" = "Nie można wysłać wiadomości do członka";
 
 /* No comment provided by engineer. */
-"can't send messages" = "nie mogę wysłać wiadomości";
+"can't send messages" = "nie można wysłać wiadomości";
 
 /* alert action
 alert button
@@ -4499,7 +4499,7 @@ swipe action */
 "Report violation: only group moderators will see it." = "Zgłoś naruszenie: zobaczą je tylko moderatorzy grupy.";
 
 /* report in notification */
-"Report: %@" = "Zgłoś: %@";
+"Report: %@" = "Zgłoszenie: %@";
 
 /* No comment provided by engineer. */
 "Reporting messages to moderators is prohibited." = "Zgłaszanie wiadomości moderatorom jest zabronione.";
@@ -4722,13 +4722,13 @@ chat item action */
 "Search bar accepts invitation links." = "Pasek wyszukiwania akceptuje linki zaproszenia.";
 
 /* No comment provided by engineer. */
-"Search files" = "Szukaj pliki";
+"Search files" = "Szukaj plików";
 
 /* No comment provided by engineer. */
-"Search images" = "Szukaj zdjęcia";
+"Search images" = "Szukaj zdjęć";
 
 /* No comment provided by engineer. */
-"Search links" = "Szukaj linki";
+"Search links" = "Szukaj linków";
 
 /* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Wyszukaj lub wklej link SimpleX";
@@ -4737,7 +4737,7 @@ chat item action */
 "Search videos" = "Szukaj wideo";
 
 /* No comment provided by engineer. */
-"Search voice messages" = "Poszukaj wiadomości głosowych";
+"Search voice messages" = "Szukaj wiadomości głosowych";
 
 /* network option */
 "sec" = "sek";
@@ -5756,7 +5756,7 @@ report reason */
 "Update settings?" = "Zaktualizować ustawienia?";
 
 /* No comment provided by engineer. */
-"Updated conditions" = "Warunki aktualizacji";
+"Updated conditions" = "Zaktualizowane warunki";
 
 /* rcv group event chat item */
 "updated group profile" = "zaktualizowano profil grupy";

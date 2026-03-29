@@ -2446,11 +2446,11 @@
     <string name="admission_stage_review_descr">Przejrzyj członków przed przyjęciem (pukanie).</string>
     <string name="save_admission_question">Zapisać ustawienia wstępu?</string>
     <string name="save_list">Zapisz listę</string>
-    <string name="placeholder_search_files">Szukaj pliki</string>
-    <string name="placeholder_search_images">Szukaj zdjęcia</string>
-    <string name="placeholder_search_links">Szukaj linki</string>
+    <string name="placeholder_search_files">Szukaj plików</string>
+    <string name="placeholder_search_images">Szukaj zdjęć</string>
+    <string name="placeholder_search_links">Szukaj linków</string>
     <string name="placeholder_search_videos">Szukaj wideo</string>
-    <string name="placeholder_search_voice_messages">Poszukaj wiadomości głosowych</string>
+    <string name="placeholder_search_voice_messages">Szukaj wiadomości głosowych</string>
     <string name="onboarding_select_network_operators_to_use">Wybierz operatora sieci</string>
     <string name="compose_view_send_contact_request_alert_question">Wysłać prośbę o kontakt?</string>
     <string name="v6_3_reports">Wyślij prywatne zgłoszenia</string>
