@@ -3899,6 +3899,10 @@ processChatCommand vr nm = \case
                 let FixedLinkData {linkConnReq = cReq, linkEntityId} = fd
                     linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, sharedGroupId = B64UrlByteString <$> linkEntityId}
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                -- Validate link entity ID matches group profile's sharedGroupId
+                forM_ groupSLinkData_ $ \GroupShortLinkData {groupProfile = GroupProfile {sharedGroupId}} ->
+                  unless ((B64UrlByteString <$> linkEntityId) == sharedGroupId) $
+                    throwChatError CEInvalidConnReq
                 plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_
                 pure (con cReq, plan)
             where
