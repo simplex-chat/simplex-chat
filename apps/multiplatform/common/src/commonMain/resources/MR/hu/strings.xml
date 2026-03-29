@@ -233,7 +233,7 @@
     <string name="receipts_section_contacts">Partnerek</string>
     <string name="connection_error">Kapcsolódási hiba</string>
     <string name="alert_title_contact_connection_pending">A partnere még nem kapcsolódott!</string>
-    <string name="v5_3_discover_join_groups_descr">- kapcsolódás könyvtár szolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
+    <string name="v5_3_discover_join_groups_descr">- kapcsolódás a könyvtárszolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
     <string name="contribute">Közreműködés</string>
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX-cím létrehozása</string>
@@ -2524,4 +2524,5 @@
     <string name="content_filter_voice_messages">Hangüzenetek</string>
     <string name="info_row_connection_failed">Nem sikerült létrehozni a kapcsolatot</string>
     <string name="member_info_member_failed">sikertelen</string>
+    <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
 </resources>

@@ -2213,7 +2213,7 @@
     <string name="temporary_file_error">Chyba dočasného souboru</string>
     <string name="servers_info_transport_sessions_section_header">Přesunout sezení</string>
     <string name="network_option_tcp_connection">TCP připojení</string>
-    <string name="operator_use_operator_toggle_description">Použité servery</string>
+    <string name="operator_use_operator_toggle_description">Použít servery</string>
     <string name="use_servers_of_operator_x">Použit %s</string>
     <string name="operator_use_for_messages_receiving">Pro příjem</string>
     <string name="color_mode_system">Systém</string>
@@ -2517,7 +2517,7 @@
     <string name="cant_send_commands_alert_text">Pro odeslání příkazů musíte být připojen.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Pro použití jiného profilu po pokusu o připojení, smažte chat a znovu použijte odkaz.</string>
     <string name="v6_4_1_short_address_update">Aktualizovat vaši adresu</string>
-    <string name="share_profile_via_link_alert_confirm">Povýšení</string>
+    <string name="share_profile_via_link_alert_confirm">Povýšit</string>
     <string name="share_profile_via_link">Povýšit adresu?</string>
     <string name="upgrade_group_link">Povýšit odkaz skupiny</string>
     <string name="share_group_profile_via_link">Povýšit odkaz skupiny?</string>
@@ -2547,4 +2547,7 @@
     <string name="content_filter_videos">Videa</string>
     <string name="content_filter_voice_messages">Hlasové zprávy</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Nejste připojen k serveru, který se používá k přijímání zpráv z tohoto připojení (bez předplatného).</string>
+    <string name="info_row_connection_failed">Připojení selhalo</string>
+    <string name="member_info_member_failed">selhal</string>
+    <string name="down_migration_warning_chat_relays">Pokud jste se připojili k nějakým kanálům nebo je vytvořili, přestanou trvale fungovat.</string>
 </resources>

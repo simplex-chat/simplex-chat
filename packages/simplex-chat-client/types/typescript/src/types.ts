@@ -2281,6 +2281,7 @@ export type Format =
   | Format.StrikeThrough
   | Format.Snippet
   | Format.Secret
+  | Format.Small
   | Format.Colored
   | Format.Uri
   | Format.HyperLink
@@ -2297,6 +2298,7 @@ export namespace Format {
     | "strikeThrough"
     | "snippet"
     | "secret"
+    | "small"
     | "colored"
     | "uri"
     | "hyperLink"
@@ -2328,6 +2330,10 @@ export namespace Format {
 
   export interface Secret extends Interface {
     type: "secret"
+  }
+
+  export interface Small extends Interface {
+    type: "small"
   }
 
   export interface Colored extends Interface {
