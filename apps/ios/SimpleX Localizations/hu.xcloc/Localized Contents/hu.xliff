@@ -4312,7 +4312,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="How to use your servers" xml:space="preserve">
         <source>How to use your servers</source>
-        <target>Útmutató a saját kiszolgálók beállításához és használatához</target>
+        <target>Hogyan használja a saját kiszolgálóit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hungarian interface" xml:space="preserve">

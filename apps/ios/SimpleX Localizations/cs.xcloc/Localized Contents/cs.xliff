@@ -495,7 +495,7 @@ time interval</note>
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
         <target>&lt;p&gt;Ahoj!&lt;/p&gt;
-&lt;p&gt;&lt;a href="%@"&gt;Připojte se ke mne přez SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
+&lt;p&gt;&lt;a href="%@"&gt; Připojte se ke mne přes SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">

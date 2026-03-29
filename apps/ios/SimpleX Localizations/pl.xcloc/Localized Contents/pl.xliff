@@ -6768,7 +6768,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Report: %@" xml:space="preserve">
         <source>Report: %@</source>
-        <target>Zgłoś: %@</target>
+        <target>Zgłoszenie: %@</target>
         <note>report in notification</note>
       </trans-unit>
       <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve">
@@ -7099,17 +7099,17 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Search files" xml:space="preserve">
         <source>Search files</source>
-        <target>Szukaj pliki</target>
+        <target>Szukaj plików</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search images" xml:space="preserve">
         <source>Search images</source>
-        <target>Szukaj zdjęcia</target>
+        <target>Szukaj zdjęć</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search links" xml:space="preserve">
         <source>Search links</source>
-        <target>Szukaj linki</target>
+        <target>Szukaj linków</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -7124,7 +7124,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Search voice messages" xml:space="preserve">
         <source>Search voice messages</source>
-        <target>Poszukaj wiadomości głosowych</target>
+        <target>Szukaj wiadomości głosowych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -8739,7 +8739,7 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
-        <target>Warunki aktualizacji</target>
+        <target>Zaktualizowane warunki</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -9854,7 +9854,7 @@ marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="can't send messages" xml:space="preserve">
         <source>can't send messages</source>
-        <target>nie mogę wysłać wiadomości</target>
+        <target>nie można wysłać wiadomości</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
