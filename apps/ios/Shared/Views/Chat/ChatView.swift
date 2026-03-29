@@ -2056,11 +2056,11 @@ struct ChatView: View {
                             guard canReply else { return }
                             let x = value.translation.width
                             if x < 0 {
-                                swipeOffset = max(x * 0.6, -80)
+                                swipeOffset = max(x * 0.63, -80)
                             }
                         }
                         .onEnded { _ in
-                            if swipeOffset < -50 {
+                            if swipeOffset < -44 {
                                 withAnimation {
                                     if composeState.editing {
                                         composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
