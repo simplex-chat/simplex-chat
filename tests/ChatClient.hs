@@ -605,6 +605,8 @@ xftpServerConfig =
             privateKeyFile = "tests/fixtures/tls/server.key",
             certificateFile = "tests/fixtures/tls/server.crt"
           },
+      httpCredentials = Nothing,
+      webStaticPath = Nothing,
       xftpServerVRange = supportedFileServerVRange,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,

@@ -114,6 +114,7 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
 expect fun SetupClipboardListener()
 
 // maximum image file size to be auto-accepted
+// Spec: spec/services/files.md#MAX_IMAGE_SIZE
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
 const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
@@ -128,6 +129,8 @@ const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
+
+expect fun clearImageCaches()
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
 expect suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
@@ -422,6 +425,7 @@ fun deleteAppFiles() {
   } catch (e: java.lang.Exception) {
     Log.e(TAG, "Util deleteAppFiles error: ${e.stackTraceToString()}")
   }
+  clearImageCaches()
 }
 
 fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in bytes

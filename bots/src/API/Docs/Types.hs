@@ -240,7 +240,7 @@ chatTypesDocsData =
     (sti @ConnectionErrorType, STUnion, "", [], "", ""),
     (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], "", ""),
     (sti @ConnectionPlan, STUnion, "CP", [], "", ""),
-    (sti @ConnStatus, (STEnum' $ consSep "Conn" '-'), "", [], "", ""),
+    (sti @ConnStatus, STUnion, "Conn", [], "", ""),
     (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", [], "", ""),
     (sti @Contact, STRecord, "", [], "", ""),
     (sti @ContactAddressPlan, STUnion, "CAP", [], "", ""),

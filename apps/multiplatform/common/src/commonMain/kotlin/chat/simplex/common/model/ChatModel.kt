@@ -81,6 +81,7 @@ val connectProgressManager = ConnectProgressManager
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
+// Spec: spec/state.md#ChatModel
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
@@ -334,6 +335,7 @@ object ChatModel {
     }
   }
 
+  // Spec: spec/state.md#ChatsContext
   class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItems], [removeAllAndNotify], [clearAndNotify] and so on.
@@ -1321,6 +1323,7 @@ interface SomeChat {
   val updatedAt: Instant
 }
 
+// Spec: spec/state.md#Chat
 @Serializable @Stable
 data class Chat(
   val remoteHostId: Long?,
@@ -1362,6 +1365,7 @@ data class Chat(
       true
     }
 
+  // Spec: spec/state.md#ChatStats
   @Serializable
   data class ChatStats(
     val unreadCount: Int = 0,
@@ -1382,6 +1386,7 @@ data class Chat(
   }
 }
 
+// Spec: spec/state.md#ChatInfo
 @Serializable
 sealed class ChatInfo: SomeChat, NamedChat {
 
@@ -1898,6 +1903,12 @@ data class Connection(
 
   val connInactive: Boolean
     get() = quotaErrCounter >= 5 // quotaErrInactiveCount in core
+
+  val connFailedErr: String?
+    get() = when (connStatus) {
+      is ConnStatus.Failed -> connStatus.connError
+      else -> null
+    }
 
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
@@ -2633,25 +2644,27 @@ class PendingContactConnection(
 }
 
 @Serializable
-enum class ConnStatus {
-  @SerialName("new") New,
-  @SerialName("prepared") Prepared,
-  @SerialName("joined") Joined,
-  @SerialName("requested") Requested,
-  @SerialName("accepted") Accepted,
-  @SerialName("snd-ready") SndReady,
-  @SerialName("ready") Ready,
-  @SerialName("deleted") Deleted;
+sealed class ConnStatus {
+  @Serializable @SerialName("new") object New: ConnStatus()
+  @Serializable @SerialName("prepared") object Prepared: ConnStatus()
+  @Serializable @SerialName("joined") object Joined: ConnStatus()
+  @Serializable @SerialName("requested") object Requested: ConnStatus()
+  @Serializable @SerialName("accepted") object Accepted: ConnStatus()
+  @Serializable @SerialName("sndReady") object SndReady: ConnStatus()
+  @Serializable @SerialName("ready") object Ready: ConnStatus()
+  @Serializable @SerialName("deleted") object Deleted: ConnStatus()
+  @Serializable @SerialName("failed") class Failed(val connError: String): ConnStatus()
 
   val initiated: Boolean? get() = when (this) {
-    New -> true
-    Prepared -> false
-    Joined -> false
-    Requested -> true
-    Accepted -> true
-    SndReady -> null
-    Ready -> null
-    Deleted -> null
+    is New -> true
+    is Prepared -> false
+    is Joined -> false
+    is Requested -> true
+    is Accepted -> true
+    is SndReady -> null
+    is Ready -> null
+    is Deleted -> null
+    is Failed -> null
   }
 }
 
@@ -4350,6 +4363,7 @@ sealed class Format {
   @Serializable @SerialName("strikeThrough") class StrikeThrough: Format()
   @Serializable @SerialName("snippet") class Snippet: Format()
   @Serializable @SerialName("secret") class Secret: Format()
+  @Serializable @SerialName("small") class Small: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("hyperLink") class HyperLink(val showText: String?, val linkUri: String): Format()
@@ -4371,6 +4385,7 @@ sealed class Format {
     is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
     is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
+    is Small -> SpanStyle(fontSize = MaterialTheme.typography.body2.fontSize, color = MaterialTheme.colors.secondary)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is HyperLink -> linkStyle

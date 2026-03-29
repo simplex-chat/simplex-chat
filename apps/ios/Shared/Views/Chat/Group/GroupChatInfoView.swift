@@ -5,12 +5,14 @@
 //  Created by JRoberts on 14.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
 let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
+// Spec: spec/client/chat-view.md#GroupChatInfoView
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -453,7 +455,9 @@ struct GroupChatInfoView: View {
         }
 
         private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
-            if member.activeConn?.connDisabled ?? false {
+            if case .failed = member.activeConn?.connStatus {
+                return "failed"
+            } else if member.activeConn?.connDisabled ?? false {
                 return "disabled"
             } else if member.activeConn?.connInactive ?? false {
                 return "inactive"

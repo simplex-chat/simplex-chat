@@ -5,6 +5,7 @@
 //  Created by JRoberts on 25.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
@@ -185,6 +186,12 @@ struct GroupMemberInfoView: View {
                             }
                             smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
                             smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer }, theme.colors.secondary)
+                        }
+                    }
+
+                    if let connFailedErr = member.activeConn?.connFailedErr {
+                        Section {
+                            infoRow("Connection failed", connFailedErr)
                         }
                     }
 

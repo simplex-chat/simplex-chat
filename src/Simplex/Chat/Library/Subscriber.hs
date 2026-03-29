@@ -71,7 +71,7 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork_, withWorkItems)
+import Simplex.Messaging.Agent.Client (getAgentWorker, temporaryOrHostError, waitForWork, withWork_, withWorkItems)
 import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -366,19 +366,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         processUserContactRequest agentMessage entity conn uc
   where
     updateConnStatus :: ConnectionEntity -> CM ConnectionEntity
-    updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
+    updateConnStatus acEntity = case agentMsgConnStatus (entityConnection acEntity) agentMessage of
       Just connStatus -> do
         let conn = (entityConnection acEntity) {connStatus}
         withStore' $ \db -> updateConnectionStatus db conn connStatus
         pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
 
-    agentMsgConnStatus :: AEvent e -> Maybe ConnStatus
-    agentMsgConnStatus = \case
+    agentMsgConnStatus :: Connection -> AEvent e -> Maybe ConnStatus
+    agentMsgConnStatus Connection {connStatus = cs} = \case
       JOINED True _ -> Just ConnSndReady
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
+      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnFailed (tshow err)
       _ -> Nothing
 
     processCONFpqSupport :: Connection -> PQSupport -> CM Connection
@@ -700,8 +701,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> Maybe GroupLinkId -> CM ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} groupLinkId = do
-                    currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-                    let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                    let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+                        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
                         groupInv =
                           GroupInvitation
                             { fromMember = MemberIdRole userMemberId userRole,
@@ -942,8 +943,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               pure $ NewMessageDeliveryTask {messageId = msgId, jobScope, messageFromChannel = False}
           checkSendRcpt :: [AChatMessage] -> CM Bool
           checkSendRcpt aMsgs = do
-            currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-            let GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
+            let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
+                GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
             pure $
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
                 && any aChatMsgHasReceipt aMsgs
@@ -1054,6 +1055,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ERR err -> do
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        when (isConnFailed $ connStatus conn) $
+          toView $ CEvtGroupMemberUpdated user gInfo m m
       -- TODO add debugging output
       _ -> pure ()
       where

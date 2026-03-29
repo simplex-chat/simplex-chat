@@ -334,13 +334,22 @@ quoteContent mc qmc ciFile_
     qTextOrFile = if T.null qText then qFileName else qText
 
 prohibitedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature
-prohibitedGroupContent gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
-  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
+prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
+  | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
   | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
   | isNothing scopeInfo && prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
+    hostApprovalVoice
+      | sent = userRole >= GRAdmin && sendApprovalPhase
+      | otherwise = memberCategory m == GCHostMember && hostApprovalPhase
+    hostApprovalPhase = case scopeInfo of
+      Just (GCSIMemberSupport Nothing) -> memberStatus mem == GSMemPendingApproval
+      _ -> False
+    sendApprovalPhase = case scopeInfo of
+      Just (GCSIMemberSupport (Just scopeMem)) -> memberStatus scopeMem == GSMemPendingApproval
+      _ -> False
     -- admins cannot send reports, non-admins cannot receive reports
     badReportUser
       | sent = userRole >= GRModerator
@@ -924,11 +933,9 @@ acceptGroupJoinRequestAsync
   incognitoProfile = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    ((groupMemberId, memberId), currentMemCount) <- withStore $ \db ->
-      liftM2
-        (,)
-        (createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus)
-        (liftIO $ getGroupCurrentMembersCount db user gInfo)
+    (groupMemberId, memberId) <- withStore $ \db ->
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
+    let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
@@ -2031,7 +2038,7 @@ memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember 
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted || memberStatus == GSMemRejected -> Nothing
+        | connDisabled conn || connStatus == ConnDeleted || isConnFailed connStatus || memberStatus == GSMemRejected -> Nothing
         | connInactive conn -> Just MSAPending
         | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
         | otherwise -> pendingOrForwarded

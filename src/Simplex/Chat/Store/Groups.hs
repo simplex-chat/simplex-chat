@@ -68,7 +68,6 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupRelays,
     getGroupMembersForExpiration,
-    getGroupCurrentMembersCount,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
@@ -1099,20 +1098,6 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
               |]
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
-
-getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
-getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
-  statuses :: [GroupMemberStatus] <-
-    map fromOnly
-      <$> DB.query
-        db
-        [sql|
-          SELECT member_status
-          FROM group_members
-          WHERE group_id = ? AND user_id = ?
-        |]
-        (groupId, userId)
-  pure $ length $ filter memberCurrent' statuses
 
 getGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
 getGroupInvitation db vr user groupId =

@@ -35,6 +35,7 @@ import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 @Composable
 fun ChatPreviewView(
   chat: Chat,

@@ -42,6 +42,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+// Spec: spec/client/navigation.md#AppScreen
 @Composable
 fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
@@ -78,6 +79,7 @@ fun AppScreen() {
   }
 }
 
+// Spec: spec/client/navigation.md#MainScreen
 @Composable
 fun MainScreen() {
   val chatModel = ChatModel
@@ -289,6 +291,7 @@ fun AndroidWrapInCallLayout(content: @Composable () -> Unit) {
   }
 }
 
+// Spec: spec/client/navigation.md#AndroidScreen
 @Composable
 fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
@@ -402,6 +405,7 @@ fun EndPartOfScreen() {
   ModalManager.end.showInView()
 }
 
+// Spec: spec/client/navigation.md#DesktopScreen
 @Composable
 fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {

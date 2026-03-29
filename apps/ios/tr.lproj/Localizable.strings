@@ -1733,7 +1733,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Mesaj silinsin mi?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Mesajları sil";
 
 /* No comment provided by engineer. */
@@ -3293,10 +3294,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Üye rolü \"%@\" olarak değiştirilecektir. Ve üye yeni bir davetiye alacaktır.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Üye sohbetten kaldırılacak - bu geri alınamaz!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Üye gruptan çıkarılacaktır - bu geri alınamaz!";
 
 /* alert message */
@@ -4362,7 +4363,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Yönlendirici sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Sil";
 
 /* No comment provided by engineer. */
@@ -4377,7 +4378,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Kişiyi sil";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Kişi silinsin mi?";
 
 /* No comment provided by engineer. */

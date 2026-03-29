@@ -943,7 +943,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Poista viesti?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Poista viestit";
 
 /* No comment provided by engineer. */
@@ -1869,7 +1870,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Jäsenen rooli muutetaan muotoon \"%@\". Jäsen saa uuden kutsun.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
 
 /* No comment provided by engineer. */
@@ -2398,13 +2399,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Välityspalvelin suojaa IP-osoitteesi, mutta se voi tarkkailla puhelun kestoa.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Poista";
 
 /* No comment provided by engineer. */
 "Remove member" = "Poista jäsen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Poista jäsen?";
 
 /* No comment provided by engineer. */

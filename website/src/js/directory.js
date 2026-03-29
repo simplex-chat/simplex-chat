@@ -246,6 +246,13 @@ function displayEntries(entries) {
         textContainer.appendChild(memberCountElement);
       }
 
+      if (entryType?.admission?.review === "all") {
+        const knockingElement = document.createElement('p');
+        knockingElement.textContent = 'New members are reviewed by admins';
+        knockingElement.className = 'text-sm';
+        textContainer.appendChild(knockingElement);
+      }
+
       const imgLinkElement = document.createElement('a');
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {
@@ -432,6 +439,9 @@ function renderMarkdown(fts) {
           break;
         case 'secret':
           html += `<span class="secret">${escapeHtml(text)}</span>`;
+          break;
+        case 'small':
+          html += `<span class="small-text">${escapeHtml(text)}</span>`;
           break;
         case 'colored':
           html += `<span class="${format.color}">${escapeHtml(text)}</span>`;

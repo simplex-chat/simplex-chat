@@ -859,4 +859,6 @@
     <string name="callstatus_connecting">Tilslutning af opkald …</string>
     <string name="icon_descr_call_connecting">Tilslutning af opkald</string>
     <string name="group_member_status_introduced">Tilslutning (introduceret)</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Vælg <i>Overfør fra en anden enhed</i> på den nye enhed og scan QR-koden.]]></string>
+    <string name="migrate_from_another_device">Overfør fra en anden enhed</string>
 </resources>

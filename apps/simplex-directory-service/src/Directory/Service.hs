@@ -20,11 +20,14 @@ where
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.STM
+import Control.Exception (SomeException, try)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import qualified Data.Attoparsec.Text as A
 import Data.Bifunctor (first)
+import Data.Either (fromRight)
 import Data.List (find, intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -51,7 +54,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Protocol (MsgContent (..), memberSupportVoiceVersion)
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -63,13 +66,15 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
+import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (eitherToMaybe, raceAny_, safeDecodeUtf8, tshow, unlessM, (<$$>))
-import System.Directory (getAppUserDataDirectory)
+import System.Directory (getAppUserDataDirectory, removeFile)
 import System.Exit (exitFailure)
 import System.Process (readProcess)
+import Text.Read (readMaybe)
 
 data GroupProfileUpdate
   = GPNoServiceLink
@@ -97,10 +102,13 @@ data ServiceState = ServiceState
     updateListingsJob :: TMVar ChatController
   }
 
+data CaptchaMode = CMText | CMAudio
+
 data PendingCaptcha = PendingCaptcha
   { captchaText :: Text,
     sentAt :: UTCTime,
-    attempts :: Int
+    attempts :: Int,
+    captchaMode :: CaptchaMode
   }
 
 captchaLength :: Int
@@ -318,6 +326,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           notifyAdminUsers msg
           logError msg
     groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
+    knockingStr :: Maybe GroupMemberAdmission -> [Text]
+    knockingStr = \case
+      Just GroupMemberAdmission {review = Just MCAll} -> ["New members are reviewed by admins"]
+      _ -> []
     groupNameDescr GroupProfile {displayName = n, fullName = fn, shortDescr = sd_} =
       n <> maybe "" (\d' -> " (" <> d' <> ")") descr
       where
@@ -477,9 +489,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
         sameProfile
-          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d}
-          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d'} =
-            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d')
+          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma}
+          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma'} =
+            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma'
         groupLinkAdded gr byMember =
           getDuplicateGroup toGroup >>= \case
             Left e -> notifyOwner gr $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
@@ -524,9 +536,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   checkRolesSendToApprove gr' n'
               where
                 onlyLinkChanged
-                  GroupProfile {displayName = dn, fullName = fn, shortDescr = sd, image = i, description = d}
-                  GroupProfile {displayName = dn', fullName = fn', shortDescr = sd', image = i', description = d'} =
-                    dn == dn' && fn == fn' && i == i' && sd == sd' && (T.words . T.replace linkBefore "" <$> d) == (T.words . T.replace linkNow "" <$> d')
+                  GroupProfile {displayName = dn, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma}
+                  GroupProfile {displayName = dn', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma'} =
+                    dn == dn' && fn == fn' && i == i' && sd == sd' && ma == ma' && (T.words . T.replace linkBefore "" <$> d) == (T.words . T.replace linkNow "" <$> d')
             GPServiceLinkError -> logError $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
@@ -555,32 +567,61 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     dePendingMember :: GroupInfo -> GroupMember -> IO ()
     dePendingMember g@GroupInfo {groupProfile = GroupProfile {displayName}} m
-      | memberRequiresCaptcha a m = sendMemberCaptcha g m Nothing captchaNotice 0
+      | memberRequiresCaptcha a m = sendMemberCaptcha g m Nothing captchaNotice 0 CMText
       | otherwise = approvePendingMember a g m
       where
         a = groupMemberAcceptance g
-        captchaNotice = "Captcha is generated by SimpleX Directory service.\n\n*Send captcha text* to join the group " <> displayName <> "."
+        captchaNotice =
+          "Captcha is generated by SimpleX Directory service.\n\n*Send captcha text* to join the group " <> displayName <> "."
+            <> if canSendVoiceCaptcha g m then "\nSend /audio to receive a voice captcha." else ""
 
-    sendMemberCaptcha :: GroupInfo -> GroupMember -> Maybe ChatItemId -> Text -> Int -> IO ()
-    sendMemberCaptcha GroupInfo {groupId} m quotedId noticeText prevAttempts = do
+    sendMemberCaptcha :: GroupInfo -> GroupMember -> Maybe ChatItemId -> Text -> Int -> CaptchaMode -> IO ()
+    sendMemberCaptcha GroupInfo {groupId} m quotedId noticeText prevAttempts mode = do
       s <- getCaptchaStr captchaLength ""
-      mc <- getCaptcha s
       sentAt <- getCurrentTime
-      let captcha = PendingCaptcha {captchaText = T.pack s, sentAt, attempts = prevAttempts + 1}
+      let captcha = PendingCaptcha {captchaText = T.pack s, sentAt, attempts = prevAttempts + 1, captchaMode = mode}
       atomically $ TM.insert gmId captcha $ pendingCaptchas env
-      sendCaptcha mc
+      case mode of
+        CMAudio -> do
+          mc <- getCaptchaContent s
+          sendComposedMessages_ cc sendRef [(quotedId, MCText noticeText), (Nothing, mc)]
+          sendVoiceCaptcha sendRef s
+        CMText -> do
+          mc <- getCaptchaContent s
+          sendComposedMessages_ cc sendRef [(quotedId, MCText noticeText), (Nothing, mc)]
       where
-        getCaptcha s = case captchaGenerator opts of
-          Nothing -> pure textMsg
-          Just script -> content <$> readProcess script [s] ""
-          where
-            textMsg = MCText $ T.pack s
-            content r = case T.lines $ T.pack r of
-              [] -> textMsg
-              "" : _ -> textMsg
-              img : _ -> MCImage "" $ ImageData img
-        sendCaptcha mc = sendComposedMessages_ cc (SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)) [(quotedId, MCText noticeText), (Nothing, mc)]
+        sendRef = SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)
         gmId = groupMemberId' m
+
+    sendVoiceCaptcha :: SendRef -> String -> IO ()
+    sendVoiceCaptcha sendRef s =
+      forM_ (voiceCaptchaGenerator opts) $ \script ->
+        void . forkIO $ do
+          voiceResult <- try $ readProcess script [s] "" :: IO (Either SomeException String)
+          case voiceResult of
+            Right r -> case lines r of
+              (filePath : durationStr : _)
+                | not (null filePath), Just duration <- readMaybe durationStr -> do
+                    sendComposedMessageFile cc sendRef Nothing (MCVoice "" duration) (CF.plain filePath)
+                    void (try $ removeFile filePath :: IO (Either SomeException ()))
+              _ -> logError "voice captcha generator: unexpected output"
+            Left e -> logError $ "voice captcha generator error: " <> tshow e
+
+    getCaptchaContent :: String -> IO MsgContent
+    getCaptchaContent s = case captchaGenerator opts of
+      Nothing -> pure $ MCText $ T.pack s
+      Just script -> content <$> readProcess script [s] ""
+      where
+        content r = case T.lines $ T.pack r of
+          [] -> textMsg
+          "" : _ -> textMsg
+          img : _ -> MCImage "" $ ImageData img
+        textMsg = MCText $ T.pack s
+
+    canSendVoiceCaptcha :: GroupInfo -> GroupMember -> Bool
+    canSendVoiceCaptcha gInfo m =
+      isJust (voiceCaptchaGenerator opts)
+        && (groupFeatureUserAllowed SGFVoice gInfo || supportsVersion m memberSupportVoiceVersion)
 
     approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()
     approvePendingMember a g@GroupInfo {groupId} m@GroupMember {memberProfile = LocalProfile {displayName, image}} = do
@@ -598,16 +639,38 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     dePendingMemberMsg :: GroupInfo -> GroupMember -> ChatItemId -> Text -> IO ()
     dePendingMemberMsg g@GroupInfo {groupId, groupProfile = GroupProfile {displayName = n}} m@GroupMember {memberProfile = LocalProfile {displayName}} ciId msgText
       | memberRequiresCaptcha a m = do
-          ts <- getCurrentTime
-          atomically (TM.lookup (groupMemberId' m) $ pendingCaptchas env) >>= \case
-            Just PendingCaptcha {captchaText, sentAt, attempts}
-              | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired $ attempts - 1
-              | matchCaptchaStr captchaText msgText -> do
-                  sendComposedMessages_ cc (SRGroup groupId $ Just $ GCSMemberSupport (Just $ groupMemberId' m)) [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
-                  approvePendingMember a g m
-              | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
-              | otherwise -> sendMemberCaptcha g m (Just ciId) (wrongCaptcha attempts) attempts
-            Nothing -> sendMemberCaptcha g m (Just ciId) noCaptcha 0
+          let gmId = groupMemberId' m
+              sendRef = SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)
+              -- /audio is matched as text, not as DirectoryCmd, because it is only valid
+              -- in group context at captcha stage, while DirectoryCmd is for DM commands.
+              isAudioCmd = T.strip msgText == "/audio"
+              cmd = fromRight (ADC SDRUser DCUnknownCommand) $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.strip msgText
+          atomically (TM.lookup gmId $ pendingCaptchas env) >>= \case
+            Nothing
+              | isAudioCmd && canSendVoiceCaptcha g m -> sendMemberCaptcha g m (Just ciId) noCaptcha 0 CMAudio
+              | isAudioCmd -> sendComposedMessages_ cc sendRef [(Just ciId, MCText voiceCaptchaUnavailable)]
+              | otherwise -> sendMemberCaptcha g m (Just ciId) noCaptcha 0 CMText
+            Just pc@PendingCaptcha {captchaText, sentAt, attempts, captchaMode}
+              | isAudioCmd ->
+                  if canSendVoiceCaptcha g m
+                    then case captchaMode of
+                      CMText -> do
+                        atomically $ TM.insert gmId pc {captchaMode = CMAudio} $ pendingCaptchas env
+                        sendVoiceCaptcha sendRef (T.unpack captchaText)
+                      CMAudio ->
+                        sendComposedMessages_ cc sendRef [(Just ciId, MCText audioAlreadyEnabled)]
+                    else sendComposedMessages_ cc sendRef [(Just ciId, MCText voiceCaptchaUnavailable)]
+              | otherwise -> case cmd of
+                  ADC SDRUser (DCSearchGroup _) -> do
+                    ts <- getCurrentTime
+                    if
+                      | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired (attempts - 1) captchaMode
+                      | matchCaptchaStr captchaText msgText -> do
+                          sendComposedMessages_ cc sendRef [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
+                          approvePendingMember a g m
+                      | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
+                      | otherwise -> sendMemberCaptcha g m (Just ciId) (wrongCaptcha attempts) attempts captchaMode
+                  _ -> sendComposedMessages_ cc sendRef [(Just ciId, MCText unknownCommand)]
       | otherwise = approvePendingMember a g m
       where
         a = groupMemberAcceptance g
@@ -619,11 +682,21 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               atomically $ TM.delete gmId $ pendingCaptchas env
               logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
             r -> logError $ "unexpected remove member response: " <> tshow r
+        captchaExpired :: Text
         captchaExpired = "Captcha expired, please try again."
+        wrongCaptcha :: Int -> Text
         wrongCaptcha attempts
           | attempts == maxCaptchaAttempts - 1 = "Incorrect text, please try again - this is your last attempt."
           | otherwise = "Incorrect text, please try again."
+        noCaptcha :: Text
         noCaptcha = "Unexpected message, please try again."
+        audioAlreadyEnabled :: Text
+        audioAlreadyEnabled = "Audio captcha is already enabled."
+        voiceCaptchaUnavailable :: Text
+        voiceCaptchaUnavailable = "Voice captcha is not available - please update SimpleX Chat to v6.5+ or use text captcha."
+        unknownCommand :: Text
+        unknownCommand = "Unknown command, please enter captcha text."
+        tooManyAttempts :: Text
         tooManyAttempts = "Too many failed attempts, you can't join group."
 
     memberRequiresCaptcha :: DirectoryMemberAcceptance -> GroupMember -> Bool
@@ -639,8 +712,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
       withAdminUsers $ \cId -> do
-        sendComposedMessage' cc cId Nothing msg
-        sendMessage' cc cId $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
+        let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
+        sendComposedMessages cc (SRDirect cId) [msg, approveCmd]
 
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {groupId, membership = GroupMember {memberRole = serviceRole}} ctId contactRole = do
@@ -927,10 +1000,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary = GroupSummary {currentMembers}}, _) =
+            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary = GroupSummary {currentMembers}}, _) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
-                  text = showId <> groupInfoText p <> "\n" <> membersStr
+                  text = T.unlines $ [showId <> groupInfoText p, membersStr] ++ knockingStr memberAdmission
                in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
             moreMsg = (Nothing, MCText $ "Send /next for " <> tshow moreGroups <> " more result(s).")
 
@@ -1112,14 +1185,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| map groupMessage gs'
       where
         groupMessage ((g, gr), ct_) =
-          let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary} = g
+          let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary} = g
               GroupReg {userGroupRegId, groupRegStatus} = gr
               useGroupId = if isAdmin then groupId else userGroupRegId
               statusStr = "Status: " <> groupRegStatusText groupRegStatus
               membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
               ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
-              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr, cmds]
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockingStr memberAdmission ++ [cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
