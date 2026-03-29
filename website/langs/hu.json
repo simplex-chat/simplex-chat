@@ -168,7 +168,7 @@
     "privacy-matters-section-label": "Győződjön meg arról, hogy az üzenetváltó-alkalmazás amit használ nem fér hozzá az adataihoz!",
     "simplex-private-section-header": "Mitől lesz a SimpleX <span class=\"gradient-text\">privát</span>",
     "simplex-network-section-header": "SimpleX <span class=\"gradient-text\">hálózat</span>",
-    "simplex-network-section-desc": "A Simplex Chat a P2P- és a föderált hálózatok előnyeinek kombinálásával biztosítja a legjobb adatvédelmet.",
+    "simplex-network-section-desc": "A SimpleX Chat a P2P- és a föderált hálózatok előnyeinek kombinálásával biztosítja a legjobb adatvédelmet.",
     "simplex-network-1-desc": "Minden üzenet a kiszolgálókon keresztül kerül elküldésre, ami jobb metaadat-védelmet és megbízható aszinkron üzenetkézbesítést biztosít, miközben elkerülhető a sok",
     "simplex-network-2-header": "A föderált hálózatokkal ellentétben",
     "simplex-network-2-desc": "A SimpleX továbbítókiszolgálói NEM tárolnak felhasználói profilokat, kapcsolatokat és kézbesített üzeneteket, NEM kapcsolódnak egymáshoz, és NINCS kiszolgálójegyzék.",
@@ -364,7 +364,7 @@
     "file-proto-h-1": "Nincs szükség felhasználói fiókra",
     "file-proto-p-1": "Minden fájldarab új, véletlenszerű kulcsot használ. Az útválasztóknak nincsenek „felhasználóik” vagy „fájljaik” – rögzített méretű titkosított fájldarabokat továbbítanak.",
     "file-proto-h-2": "Háromrétegű titkosítás a böngészőben",
-    "file-proto-p-2": "A fájl titkosítási kulcsa csak a webcím kivonattöredékében található – a böngésző soha nem küldi el azt a kiszolgálónak. A fájlok háromrétegű titkosítással rendelkeznek: TLS-átviteli, címzettenkénti (egyedi, ideiglenes kulcs átvitelenként) és végpontok közötti tikosítással.",
+    "file-proto-p-2": "A fájl titkosítási kulcsa csak a webcím kivonattöredékében található – a böngésző soha nem küldi el azt a kiszolgálónak. A fájlok háromrétegű titkosítással rendelkeznek: TLS-átviteli, címzettenkénti (egyedi, ideiglenes kulcs átvitelenként) és végpontok közötti titkosítással.",
     "file-proto-h-4": "Független útválasztók",
     "file-proto-p-4": "Amikor a fájl töredékekre oszlik, akkor a független felek által üzemeltetett hálózati útválasztókon keresztül kerül továbbításra. Egyetlen üzemeltető sem láthatja a fájl tényleges méretét és nevét. Még ha egy útválasztó biztonsága meg is sérül, csak a rögzített méretű titkosított töredékeket „láthatja”. A fájltöredékeket a hálózati útválasztók körülbelül 48 órán át tárolják a gyorsítótárban.",
     "file-proto-spec": "Olvassa el az XFTP-protokoll leírását →"

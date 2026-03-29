@@ -213,7 +213,7 @@
     "privacy-matters-section-header": "Miksi yksityisyys on <span class='gradient-text'>tärkeää</span>",
     "tap-to-close": "Napauta sulkeaksesi",
     "simplex-network-section-header": "SimpleX <span class='gradient-text'>Verkko</span>",
-    "simplex-network-section-desc": "Simplex Chat tarjoaa parhaan yksityisyyden yhdistämällä P2P-verkkojen ja liitettävien verkkojen edut.",
+    "simplex-network-section-desc": "SimpleX Chat tarjoaa parhaan yksityisyyden yhdistämällä P2P-verkkojen ja liitettävien verkkojen edut.",
     "simplex-network-1-desc": "Kaikki viestit lähetetään palvelimien kautta, mikä sekä parantaa metatietojen yksityisyyttä että mahdollistaa luotettavan asynkronisen viestien toimituksen, samalla välttäen monia",
     "simplex-network-2-header": "Toisin kuin liitettävät verkot",
     "simplex-network-3-desc": "palvelimet tarjoavat <span class='text-active-blue'>yksisuuntaisia jonopalveluja</span> yhdistääkseen käyttäjät, mutta niillä ei ole näkyvyyttä verkon yhteyskarttaan &mdash; ainoastaan käyttäjillä on.",

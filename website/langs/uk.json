@@ -202,7 +202,7 @@
     "simplex-private-section-header": "Що робить SimpleX <span class='gradient-text'>конфіденційним</span>",
     "tap-to-close": "Торкніться, щоб закрити",
     "simplex-network-section-header": "SimpleX <span class='gradient-text'>Network</span>",
-    "simplex-network-section-desc": "Simplex Chat надає найкращу конфіденційність, поєднуючи переваги P2P та федеративних мереж.",
+    "simplex-network-section-desc": "SimpleX Chat надає найкращу конфіденційність, поєднуючи переваги P2P та федеративних мереж.",
     "simplex-network-1-desc": "Всі повідомлення відправляються через сервери, що забезпечує кращу конфіденційність метаданих та надійну асинхронну доставку повідомлень, уникаючи багатьох",
     "simplex-network-1-header": "На відміну від мереж P2P",
     "simplex-network-1-overlay-linktext": "проблем P2P-мереж",
