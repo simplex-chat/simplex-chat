@@ -1299,11 +1299,10 @@ getDirectChatAround' db user ct@Contact {contactId} contentFilter aroundId count
 
 getDirectChatInitial_ :: DB.Connection -> User -> Contact -> Maybe MsgContentTag -> Int -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
 getDirectChatInitial_ db user ct contentFilter count = do
-  liftIO (getContactMinUnreadId_ db user ct) >>= \case
-    Just minUnreadItemId -> do
-      unreadCount <- liftIO $ getContactUnreadCount_ db user ct
-      let stats = emptyChatStats {unreadCount, minUnreadItemId}
-      getDirectChatAround' db user ct contentFilter minUnreadItemId count "" stats
+  liftIO (getContactMaxViewedItemId_ db user ct >>= maybe (getContactMinUnreadId_ db user ct) (pure . Just)) >>= \case
+    Just pivotId -> do
+      stats <- liftIO $ getContactStats_ db user ct
+      getDirectChatAround' db user ct contentFilter pivotId count "" stats
     Nothing -> (,Just $ NavigationInfo 0 0) <$> getDirectChatLast_ db user ct contentFilter count ""
 
 getContactStats_ :: DB.Connection -> User -> Contact -> IO ChatStats
@@ -1322,6 +1321,21 @@ getContactMinUnreadId_ db User {userId} Contact {contactId} =
         FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
         ORDER BY created_at ASC, chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, contactId, CISRcvNew)
+
+-- max viewed item: received read or sent (any item_status != CISRcvNew)
+getContactMaxViewedItemId_ :: DB.Connection -> User -> Contact -> IO (Maybe ChatItemId)
+getContactMaxViewedItemId_ db User {userId} Contact {contactId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_status != ?
+        ORDER BY created_at DESC, chat_item_id DESC
         LIMIT 1
       |]
       (userId, contactId, CISRcvNew)
@@ -1629,11 +1643,10 @@ getGroupChatAround' db user g scopeInfo contentFilter aroundId count search stat
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatInitial_ db user g scopeInfo_ contentFilter count = do
-  getGroupMinUnreadId_ db user g scopeInfo_ contentFilter >>= \case
-    Just minUnreadItemId -> do
-      unreadCounts <- getGroupUnreadCount_ db user g scopeInfo_ Nothing
-      stats <- liftIO $ getStats minUnreadItemId unreadCounts
-      getGroupChatAround' db user g scopeInfo_ contentFilter minUnreadItemId count "" stats
+  (getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter >>= maybe (getGroupMinUnreadId_ db user g scopeInfo_ contentFilter) (pure . Just)) >>= \case
+    Just pivotId -> do
+      stats <- getGroupStats_ db user g scopeInfo_
+      getGroupChatAround' db user g scopeInfo_ contentFilter pivotId count "" stats
     Nothing -> do
       stats <- liftIO $ getStats 0 (0, 0)
       (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g scopeInfo_ contentFilter count "" stats
@@ -1691,6 +1704,39 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFil
         DB.query
           db
           (baseQuery <> " AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND item_status = ? " <> orderLimit)
+          (userId, groupId, GCSTMemberSupport_, groupMemberId' <$> m, CISRcvNew)
+    (Just _scope, Just _mcTag) ->
+      throwError $ SEInternalError "group scope and content filter are not supported together"
+
+-- max viewed item: received read or sent (any item_status != CISRcvNew)
+getGroupMaxViewedItemId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
+getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter =
+  fmap join . maybeFirstRow fromOnly $
+    queryViewedGroupItems db user g scopeInfo_ contentFilter baseQuery orderLimit
+  where
+    baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
+    orderLimit = " ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1"
+
+queryViewedGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> Query -> ExceptT StoreError IO [r]
+queryViewedGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter baseQuery orderLimit =
+  case (scopeInfo_, contentFilter) of
+    (Nothing, Nothing) ->
+      liftIO $
+        DB.query
+          db
+          (baseQuery <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status != ? " <> orderLimit)
+          (userId, groupId, CISRcvNew)
+    (Nothing, Just mcTag) ->
+      liftIO $
+        DB.query
+          db
+          (baseQuery <> " AND msg_content_tag = ? AND item_status != ? " <> orderLimit)
+          (userId, groupId, mcTag, CISRcvNew)
+    (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
+      liftIO $
+        DB.query
+          db
+          (baseQuery <> " AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND item_status != ? " <> orderLimit)
           (userId, groupId, GCSTMemberSupport_, groupMemberId' <$> m, CISRcvNew)
     (Just _scope, Just _mcTag) ->
       throwError $ SEInternalError "group scope and content filter are not supported together"
