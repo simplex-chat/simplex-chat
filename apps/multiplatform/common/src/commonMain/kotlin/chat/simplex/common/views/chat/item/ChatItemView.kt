@@ -300,8 +300,11 @@ fun ChatItemView(
     }
 
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        val bubbleInteractionSource = remember { MutableInteractionSource() }
+      val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
+          cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
+      Box {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          val bubbleInteractionSource = remember { MutableInteractionSource() }
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
         if (cItem.chatDir.sent) {
           GoToItemButton(true, bubbleHovered)
@@ -802,13 +805,12 @@ fun ChatItemView(
         if (!cItem.chatDir.sent) {
           GoToItemButton(false, bubbleHovered)
         }
-        val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
-            cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
+        }
         if (canReply && swipeOffset < 0) {
           Icon(
             painterResource(MR.images.ic_reply),
             contentDescription = null,
-            modifier = Modifier.padding(start = 8.dp).size(18.dp).alpha(minOf(1f, -swipeOffset / 30f)),
+            modifier = Modifier.align(Alignment.CenterEnd).offset(x = 26.dp).size(18.dp).alpha(minOf(1f, -swipeOffset / 30f)),
             tint = MaterialTheme.colors.secondary
           )
         }
