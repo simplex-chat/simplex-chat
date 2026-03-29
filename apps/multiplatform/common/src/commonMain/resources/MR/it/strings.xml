@@ -2559,6 +2559,6 @@
     <string name="content_filter_voice_messages">Messaggi vocali</string>
     <string name="content_filter_menu_item">Filtro</string>
     <string name="info_row_connection_failed">Connessione fallita</string>
-    <string name="member_info_member_failed">fallita</string>
+    <string name="member_info_member_failed">fallito</string>
     <string name="down_migration_warning_chat_relays">Se sei dentro canali o ne hai creati, essi smetteranno di funzionare definitivamente.</string>
 </resources>
