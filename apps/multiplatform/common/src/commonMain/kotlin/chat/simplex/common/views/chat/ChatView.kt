@@ -1933,7 +1933,7 @@ fun BoxScope.ChatItemsList(
               contentDescription = null,
               tint = MaterialTheme.colors.secondary,
               modifier = modifier
-                .offset { IntOffset((swipeOffset + iconOffset).toInt(), 0) }
+                .offset { IntOffset(iconOffset.toInt(), 0) }
                 .alpha(((-swipeOffset) / opacityDivisor).coerceIn(0f, 1f))
             )
           }
