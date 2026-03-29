@@ -1886,7 +1886,7 @@ fun BoxScope.ChatItemsList(
         val swipeableModifier = SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
-          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+          swipeDistance = with(LocalDensity.current) { 42.dp.toPx() },
         )
         val sent = cItem.chatDir.sent
 
@@ -1924,15 +1924,16 @@ fun BoxScope.ChatItemsList(
           val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
           // Reply icon revealed on swipe
           val swipeOffset = dismissState.offset.value
-          val swipeThreshold = with(LocalDensity.current) { 30.dp.toPx() }
+          val iconOffset = with(LocalDensity.current) { 40.dp.toPx() }
+          val opacityDivisor = with(LocalDensity.current) { 30.dp.toPx() }
           Icon(
             painterResource(MR.images.ic_reply),
             contentDescription = null,
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
               .align(Alignment.CenterEnd)
-              .offset { IntOffset((swipeOffset + swipeThreshold * 1.5f).toInt(), 0) }
-              .alpha(((-swipeOffset) / swipeThreshold).coerceIn(0f, 1f))
+              .offset { IntOffset((swipeOffset + iconOffset).toInt(), 0) }
+              .alpha(((-swipeOffset) / opacityDivisor).coerceIn(0f, 1f))
           )
           if (chatInfo is ChatInfo.Group) {
             if (cItem.chatDir is CIDirection.GroupRcv) {
