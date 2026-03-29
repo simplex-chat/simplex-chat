@@ -1931,7 +1931,7 @@ fun BoxScope.ChatItemsList(
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
               .align(Alignment.CenterEnd)
-              .padding(end = 12.dp)
+              .offset { IntOffset((swipeOffset + swipeThreshold * 1.5f).toInt(), 0) }
               .alpha(((-swipeOffset) / swipeThreshold).coerceIn(0f, 1f))
           )
           if (chatInfo is ChatInfo.Group) {
