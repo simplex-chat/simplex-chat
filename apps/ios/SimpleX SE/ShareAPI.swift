@@ -68,6 +68,7 @@ func apiSendMessages(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
             scope: chatInfo.groupChatScope(),
+            sendAsGroup: chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false,
             live: false,
             ttl: nil,
             composedMessages: composedMessages
@@ -124,7 +125,7 @@ enum SEChatCommand: ChatCmdProtocol {
     case apiSetEncryptLocalFiles(enable: Bool)
     case apiGetChats(userId: Int64)
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
-    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     
     var cmdString: String {
         switch self {
@@ -140,10 +141,11 @@ enum SEChatCommand: ChatCmdProtocol {
         case let .apiCreateChatItems(noteFolderId, composedMessages):
             let msgs = encodeJSON(composedMessages)
             return "/_create *\(noteFolderId) json \(msgs)"
-        case let .apiSendMessages(type, id, scope, live, ttl, composedMessages):
+        case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages):
             let msgs = encodeJSON(composedMessages)
             let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-            return "/_send \(ref(type, id, scope: scope)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            let asGroup = sendAsGroup ? "(as_group=on)" : ""
+            return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
         }
     }
     

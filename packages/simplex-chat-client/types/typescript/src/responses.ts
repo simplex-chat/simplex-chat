@@ -27,6 +27,8 @@ export type ChatResponse =
   | CR.GroupLinkCreated
   | CR.GroupLinkDeleted
   | CR.GroupCreated
+  | CR.PublicGroupCreated
+  | CR.GroupRelays
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
@@ -78,6 +80,8 @@ export namespace CR {
     | "groupLinkCreated"
     | "groupLinkDeleted"
     | "groupCreated"
+    | "publicGroupCreated"
+    | "groupRelays"
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
@@ -217,6 +221,7 @@ export namespace CR {
     type: "groupDeletedUser"
     user: T.User
     groupInfo: T.GroupInfo
+    msgSigned: boolean
   }
 
   export interface GroupLink extends Interface {
@@ -245,6 +250,21 @@ export namespace CR {
     groupInfo: T.GroupInfo
   }
 
+  export interface PublicGroupCreated extends Interface {
+    type: "publicGroupCreated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelays extends Interface {
+    type: "groupRelays"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupRelays: T.GroupRelay[]
+  }
+
   export interface GroupMembers extends Interface {
     type: "groupMembers"
     user: T.User
@@ -257,6 +277,7 @@ export namespace CR {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
+    msgSigned: boolean
   }
 
   export interface GroupsList extends Interface {
@@ -291,6 +312,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     blocked: boolean
+    msgSigned: boolean
   }
 
   export interface MembersRoleUser extends Interface {
@@ -299,6 +321,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     toRole: T.GroupMemberRole
+    msgSigned: boolean
   }
 
   export interface NewChatItems extends Interface {
@@ -392,6 +415,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     withMessages: boolean
+    msgSigned: boolean
   }
 
   export interface UserProfileUpdated extends Interface {

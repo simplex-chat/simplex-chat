@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,9 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -170,12 +167,14 @@ toTypeInfo tr =
       _ -> TIType (simpleType tr)
     simpleType tr' = primitiveToLower $ case tyConName (typeRepTyCon tr') of
       "AgentUserId" -> ST TInt64 []
+      "DBEntityId'" -> ST TInt64 []
       "Integer" -> ST TInt64 []
       "Version" -> ST TInt []
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
+      "UserChatRelay'" -> ST "UserChatRelay" []
       "CChatItem" -> ST "ChatItem" []
       "FormatColor" -> ST "Color" []
       "CustomData" -> ST "JSONObject" []
@@ -210,6 +209,8 @@ toTypeInfo tr =
         "MemberId",
         "Text",
         "MREmojiChar",
+        "PrivateKey",
+        "PublicKey",
         "ProtocolServer",
         "SbKey",
         "SharedMsgId",

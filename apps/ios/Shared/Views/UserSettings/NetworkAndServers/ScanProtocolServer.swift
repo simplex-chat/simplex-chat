@@ -15,6 +15,7 @@ struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
+    @Binding var serverWarnings: [UserServersWarning]
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -36,7 +37,7 @@ struct ScanProtocolServer: View {
         case let .success(r):
             var server: UserServer = .empty
             server.server = r.string
-            addServer(server, $userServers, $serverErrors, dismiss)
+            addServer(server, $userServers, $serverErrors, $serverWarnings, dismiss)
         case let .failure(e):
             logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
@@ -48,7 +49,8 @@ struct ScanProtocolServer_Previews: PreviewProvider {
     static var previews: some View {
         ScanProtocolServer(
             userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
-            serverErrors: Binding.constant([])
+            serverErrors: Binding.constant([]),
+            serverWarnings: Binding.constant([])
         )
     }
 }

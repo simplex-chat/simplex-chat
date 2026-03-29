@@ -47,6 +47,7 @@ fun OperatorView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?
 ) {
@@ -57,7 +58,7 @@ fun OperatorView(
   LaunchedEffect(userServers) {
     snapshotFlow { userServers.value }
       .collect { updatedServers ->
-        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors, serverWarnings = serverWarnings)
       }
   }
 
@@ -68,9 +69,10 @@ fun OperatorView(
         currUserServers,
         userServers,
         serverErrors,
+        serverWarnings,
         operatorIndex,
         navigateToProtocolView = { serverIndex, server, protocol ->
-          navigateToProtocolView(userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+          navigateToProtocolView(userServers, serverErrors, serverWarnings, operatorIndex, rhId, serverIndex, server, protocol)
         },
         currentUser,
         rhId,
@@ -87,6 +89,7 @@ fun OperatorView(
 fun navigateToProtocolView(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?,
   serverIndex: Int,
@@ -100,6 +103,7 @@ fun navigateToProtocolView(
       serverProtocol = protocol,
       userServers = userServers,
       serverErrors = serverErrors,
+      serverWarnings = serverWarnings,
       onDelete = {
         if (protocol == ServerProtocol.SMP) {
           deleteSMPServer(userServers, operatorIndex, serverIndex)
@@ -130,11 +134,42 @@ fun navigateToProtocolView(
   }
 }
 
+fun navigateToChatRelayView(
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
+  operatorIndex: Int,
+  relayIndex: Int,
+  relay: UserChatRelay,
+  rhId: Long?
+) {
+  ModalManager.start.showCustomModal { close ->
+    ChatRelayView(
+      relay = relay,
+      onDelete = {
+        deleteChatRelay(userServers, operatorIndex, relayIndex)
+        close()
+      },
+      onUpdate = { updatedRelay ->
+        userServers.value = userServers.value.toMutableList().apply {
+          this[operatorIndex] = this[operatorIndex].copy(
+            chatRelays = this[operatorIndex].chatRelays.toMutableList().apply {
+              this[relayIndex] = updatedRelay
+            }
+          )
+        }
+      },
+      close = close
+    )
+  }
+}
+
 @Composable
 fun OperatorViewLayout(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   navigateToProtocolView: (Int, UserServer, ServerProtocol) -> Unit,
   currentUser: User?,
@@ -170,14 +205,20 @@ fun OperatorViewLayout(
         currUserServers = currUserServers,
         userServers = userServers,
         serverErrors = serverErrors,
+        serverWarnings = serverWarnings,
         operatorIndex = operatorIndex,
         rhId = rhId
       )
     }
     val serversErr = globalServersError(serverErrors.value)
+    val serversWarn = globalServersWarning(serverWarnings.value)
     if (serversErr != null) {
       SectionCustomFooter {
         ServersErrorFooter(serversErr)
+      }
+    } else if (serversWarn != null) {
+      SectionCustomFooter {
+        ServersWarningFooter(serversWarn)
       }
     } else {
       val footerText = when (val c = operator.conditionsAcceptance) {
@@ -194,6 +235,22 @@ fun OperatorViewLayout(
     }
 
     if (operator.enabled) {
+      if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
+        val duplicateRelayNames = findDuplicateRelayNames(serverErrors.value)
+        val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
+          userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
+            if (!relay.deleted) {
+              ChatRelayViewLink(relay, duplicateRelayNames, duplicateRelayAddresses) {
+                navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, index, relay, rhId)
+              }
+            }
+          }
+        }
+        SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
+      }
+
       if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.operator_use_for_messages).uppercase()) {
@@ -458,6 +515,7 @@ private fun UseOperatorToggle(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?
 ) {
@@ -485,6 +543,7 @@ private fun UseOperatorToggle(
                     currUserServers = currUserServers,
                     userServers = userServers,
                     serverErrors = serverErrors,
+                    serverWarnings = serverWarnings,
                     operatorIndex = operatorIndex,
                     rhId = rhId,
                     close = close
@@ -510,6 +569,7 @@ private fun SingleOperatorUsageConditionsView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?,
   close: () -> Unit

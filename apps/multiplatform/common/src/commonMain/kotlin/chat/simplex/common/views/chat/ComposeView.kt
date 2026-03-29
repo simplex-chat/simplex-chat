@@ -30,8 +30,13 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.group.hostFromRelayLink
+import chat.simplex.common.views.chat.group.relayConnStatus
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.RelayProgressIndicator
+import chat.simplex.common.views.newchat.RelayStatusIndicator
+import chat.simplex.common.views.newchat.relayDisplayName
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.*
@@ -490,6 +495,7 @@ fun ComposeView(
         type = cInfo.chatType,
         id = cInfo.apiId,
         scope = cInfo.groupChatScope(),
+        sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
         live = live,
         ttl = ttl,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
@@ -588,15 +594,19 @@ fun ComposeView(
     val mc = checkLinkPreview()
     sending()
     val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
-    val groupInfo = chatModel.controller.apiConnectPreparedGroup(
+    val result = chatModel.controller.apiConnectPreparedGroup(
       rh = chat.remoteHostId,
       groupId = chat.chatInfo.apiId,
       incognito = incognito,
       msg = mc
     )
-    if (groupInfo != null) {
+    if (result != null) {
+      val (groupInfo, relayResults) = result
       withContext(Dispatchers.Main) {
         chatsCtx.updateGroup(chat.remoteHostId, groupInfo)
+        chatModel.channelRelayHostnames.remove(groupInfo.groupId)
+        chatModel.groupMembers.value = relayResults.map { it.relayMember }
+        chatModel.populateGroupMembersIndexes()
         clearState()
       }
     } else {
@@ -616,6 +626,7 @@ fun ComposeView(
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         toScope = chat.chatInfo.groupChatScope(),
+        sendAsGroup = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
         fromScope = fromChatInfo.groupChatScope(),
@@ -1353,7 +1364,7 @@ fun ComposeView(
     icon: ImageResource,
     connect: () -> Unit
   ) {
-    var modifier = Modifier.height(60.dp).fillMaxWidth()
+    var modifier = Modifier.height(57.dp).fillMaxWidth()
     modifier = if (composeState.value.inProgress) modifier else modifier.clickable(onClick = { connect() })
     Box(
       modifier,
@@ -1374,7 +1385,7 @@ fun ComposeView(
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
-      if (composeState.value.progressByTimeout) {
+      if (composeState.value.progressByTimeout && chat.chatInfo.groupInfo_?.useRelays != true) {
         Box(
           Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING_HALF),
           contentAlignment = Alignment.CenterEnd
@@ -1442,14 +1453,45 @@ fun ComposeView(
     composeState.value = composeState.value.copy(progressByTimeout = newProgressByTimeout)
   }
 
+  val relayListExpanded = remember { mutableStateOf(false) }
+
   Column {
     val currentUser = chatModel.currentUser.value
-    if (chat.chatInfo.nextConnectPrepared && currentUser != null) {
+    if (chat.chatInfo.nextConnectPrepared && !composeState.value.inProgress && currentUser != null) {
       ComposeContextProfilePickerView(
         rhId = rhId,
         chat = chat,
         currentUser = currentUser
       )
+    }
+
+    val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo
+    if (gInfo != null && gInfo.useRelays
+      && gInfo.membership.memberStatus !in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+    ) {
+      if (gInfo.membership.memberRole == GroupMemberRole.Owner) {
+        val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
+        val failedCount = relays.count { relayMemberConnFailed(chatModel, it) != null }
+        val activeCount = relays.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
+        if (relays.isNotEmpty() && activeCount < relays.size) {
+          OwnerChannelRelayBar(chatModel, relays, activeCount, failedCount, relayListExpanded)
+        }
+      } else {
+        val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
+        val relayMembers = chatModel.groupMembers.value
+          .filter { it.memberRole == GroupMemberRole.Relay }
+          .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
+        val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
+        val connectedCount = relayMembers.count { it.activeConn?.connStatus == ConnStatus.Ready }
+        val deletedCount = relayMembers.count { it.activeConn?.connStatus == ConnStatus.Deleted }
+        val failedCount = relayMembers.count { it.activeConn?.connFailedErr != null }
+        val errorCount = deletedCount + failedCount
+        val resolvedCount = connectedCount + deletedCount
+        val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
+        if (total > 0 && (!showProgress || resolvedCount < total)) {
+          SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, errorCount, total, showProgress, relayListExpanded)
+        }
+      }
     }
 
     if (
@@ -1506,9 +1548,10 @@ fun ComposeView(
       Divider()
       if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
         if (chat.chatInfo.groupInfo.businessChat == null) {
+          val isChannel = chat.chatInfo.groupInfo.useRelays
           ConnectButtonView(
-            text = stringResource(MR.strings.compose_view_join_group),
-            icon = MR.images.ic_group_filled,
+            text = stringResource(if (isChannel) MR.strings.compose_view_join_channel else MR.strings.compose_view_join_group),
+            icon = if (isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group_filled,
             connect = { withApi { connectPreparedGroup() } }
           )
         } else {
@@ -1579,9 +1622,187 @@ fun ComposeView(
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           AttachmentAndCommandsButtons()
-          SendMsgView_(disableSendButton = disableSendButton)
+          val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
+            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner) generalGetString(MR.strings.compose_view_broadcast)
+            else null
+          }
+          SendMsgView_(disableSendButton = disableSendButton, placeholder = broadcastPlaceholder)
         }
       }
     }
   }
 }
+
+@Composable
+private fun OwnerChannelRelayBar(
+  chatModel: ChatModel,
+  relays: List<GroupRelay>,
+  activeCount: Int,
+  failedCount: Int,
+  relayListExpanded: MutableState<Boolean>
+) {
+  val total = relays.size
+  val sorted = relays.sortedBy { relayDisplayName(it) }
+  Column(Modifier.background(MaterialTheme.colors.surface)) {
+    RelayBarHeader(relayListExpanded) {
+      if (activeCount + failedCount < total) {
+        RelayProgressIndicator(active = activeCount, total = total)
+      }
+      val statusText = if (failedCount > 0) {
+        String.format(generalGetString(MR.strings.relay_bar_active_with_failures), activeCount, total, failedCount)
+      } else {
+        String.format(generalGetString(MR.strings.relay_bar_active), activeCount, total)
+      }
+      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
+    }
+    if (relayListExpanded.value) {
+      sorted.forEach { relay ->
+        val failedErr = relayMemberConnFailed(chatModel, relay)
+        RelayBarDetailRow(
+          onClick = if (failedErr != null) {
+            {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.relay_connection_failed),
+                text = failedErr
+              )
+            }
+          } else null
+        ) {
+          Text(
+            relayDisplayName(relay),
+            color = MaterialTheme.colors.secondary,
+            fontSize = 12.sp
+          )
+          Spacer(Modifier.weight(1f))
+          RelayStatusIndicator(relay.relayStatus, connFailed = failedErr != null)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun SubscriberChannelRelayBar(
+  hostnames: List<String>,
+  relayMembers: List<GroupMember>,
+  connectedCount: Int,
+  errorCount: Int,
+  total: Int,
+  showProgress: Boolean,
+  relayListExpanded: MutableState<Boolean>
+) {
+  Column(Modifier.background(MaterialTheme.colors.surface)) {
+    RelayBarHeader(relayListExpanded) {
+      if (showProgress && connectedCount + errorCount < total) {
+        RelayProgressIndicator(active = connectedCount, total = total)
+      }
+      val statusText = if (showProgress) {
+        if (errorCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_connected_with_errors), connectedCount, total, errorCount)
+        } else {
+          String.format(generalGetString(MR.strings.relay_bar_connected), connectedCount, total)
+        }
+      } else {
+        String.format(generalGetString(MR.strings.relay_bar_count), total)
+      }
+      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
+    }
+    if (relayListExpanded.value) {
+      if (relayMembers.isEmpty()) {
+        hostnames.forEach { relay ->
+          RelayBarDetailRow {
+            Text(
+              String.format(generalGetString(MR.strings.via_relay_hostname), hostFromRelayLink(relay)),
+              color = MaterialTheme.colors.secondary,
+              fontSize = 12.sp
+            )
+            Spacer(Modifier.weight(1f))
+          }
+        }
+      } else {
+        relayMembers.forEach { m ->
+          val host = m.relayLink?.let { hostFromRelayLink(it) }
+          val failedErr = m.activeConn?.connFailedErr
+          RelayBarDetailRow(
+            onClick = if (failedErr != null) {
+              {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.relay_connection_failed),
+                  text = failedErr
+                )
+              }
+            } else null
+          ) {
+            Text(
+              String.format(generalGetString(MR.strings.via_relay_hostname), host ?: m.chatViewName),
+              color = MaterialTheme.colors.secondary,
+              fontSize = 12.sp
+            )
+            Spacer(Modifier.weight(1f))
+            val (statusText, statusColor) = relayConnStatus(m)
+            androidx.compose.foundation.Canvas(Modifier.size(8.dp)) {
+              drawCircle(color = statusColor)
+            }
+            Spacer(Modifier.width(4.dp))
+            Text(statusText, color = MaterialTheme.colors.secondary, fontSize = 12.sp)
+            if (failedErr != null) {
+              Spacer(Modifier.width(4.dp))
+              Icon(
+                painterResource(MR.images.ic_error),
+                contentDescription = null,
+                tint = MaterialTheme.colors.primary,
+                modifier = Modifier.size(14.dp)
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun RelayBarHeader(
+  expanded: MutableState<Boolean>,
+  content: @Composable RowScope.() -> Unit
+) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .clickable { expanded.value = !expanded.value }
+      .padding(start = 12.dp, end = DEFAULT_PADDING_HALF, top = 8.dp, bottom = if (expanded.value) 4.dp else 8.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    content()
+    Icon(
+      painterResource(if (expanded.value) MR.images.ic_chevron_down else MR.images.ic_chevron_up),
+      contentDescription = null,
+      tint = MaterialTheme.colors.secondary,
+      modifier = Modifier.size(20.dp)
+    )
+  }
+}
+
+@Composable
+private fun RelayBarDetailRow(
+  onClick: (() -> Unit)? = null,
+  content: @Composable RowScope.() -> Unit
+) {
+  val modifier = Modifier
+    .fillMaxWidth()
+    .padding(horizontal = 12.dp, vertical = 2.dp)
+  Row(
+    modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    content()
+  }
+}
+
+private fun relayMemberConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
+  return chatModel.groupMembers.value
+    .firstOrNull { it.groupMemberId == relay.groupMemberId }
+    ?.activeConn?.connFailedErr
+}
+

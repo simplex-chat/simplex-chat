@@ -37,6 +37,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent
@@ -73,14 +74,18 @@ defaultChatConfig =
                     smp = simplexChatSMPServers,
                     useSMP = 4,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    chatRelays = simplexChatRelays,
+                    useChatRelays = 2
                   },
                 PresetOperator
                   { operator = Just operatorFlux,
                     smp = fluxSMPServers,
                     useSMP = 3,
                     xftp = fluxXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    chatRelays = [],
+                    useChatRelays = 0
                   }
               ],
             ntf = _defaultNtfServers,
@@ -109,6 +114,7 @@ defaultChatConfig =
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
+      channelSubscriberRole = GRObserver,
       deviceNameForRemote = "",
       remoteCompression = True,
       chatHooks = defaultChatHooks
@@ -166,9 +172,11 @@ newChatController
     chatStoreChanged <- newTVarIO False
     deliveryTaskWorkers <- TM.emptyIO
     deliveryJobWorkers <- TM.emptyIO
+    relayRequestWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
+    relayGroupLinkChecksAsync <- newTVarIO Nothing
     timedItemThreads <- TM.emptyIO
     chatActivated <- newTVarIO True
     showLiveItems <- newTVarIO False
@@ -207,9 +215,11 @@ newChatController
           filesFolder,
           deliveryTaskWorkers,
           deliveryJobWorkers,
+          relayRequestWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,
+          relayGroupLinkChecksAsync,
           timedItemThreads,
           chatActivated,
           showLiveItems,
@@ -240,7 +250,9 @@ newChatController
                 smp = map newUserServer smpSrvs,
                 useSMP = 0,
                 xftp = map newUserServer xftpSrvs,
-                useXFTP = 0
+                useXFTP = 0,
+                chatRelays = [],
+                useChatRelays = 0
               }
       randomServerCfgs :: UserProtocol p => String -> SProtocolType p -> [(Text, ServerOperator)] -> [PresetOperator] -> IO (NonEmpty (ServerCfg p))
       randomServerCfgs name p opDomains rndSrvs =
@@ -261,7 +273,8 @@ newChatController
           getServers ops opDomains user' = do
             smpSrvs <- getProtocolServers db SPSMP user'
             xftpSrvs <- getProtocolServers db SPXFTP user'
-            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs)
+            chatRelays <- getChatRelays db user'
+            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs, chatRelays)
             ts <- getCurrentTime
             uss' <- mapM (setUserServers' db user' ts . updatedUserServers) uss
             let auId = aUserId user'

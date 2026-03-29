@@ -45,7 +45,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String)
     case apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?)
     case apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
-    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     case apiCreateChatTag(tag: ChatTagData)
     case apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64])
     case apiDeleteChatTag(tagId: Int64)
@@ -61,7 +61,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiChatItemReaction(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64, add: Bool, reaction: MsgReaction)
     case apiGetReactionMembers(userId: Int64, groupId: Int64, itemId: Int64, reaction: MsgReaction)
     case apiPlanForwardChatItems(fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64])
-    case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
+    case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -70,6 +70,8 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetNtfConns(nonce: String, encNtfInfo: String)
     case apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq])
     case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
+    case apiNewPublicGroup(userId: Int64, incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile)
+    case apiGetGroupRelays(groupId: Int64)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
@@ -107,6 +109,7 @@ enum ChatCommand: ChatCmdProtocol {
     case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
+    case apiGetUpdatedGroupLinkData(groupId: Int64)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case apiContactQueueInfo(contactId: Int64)
@@ -126,7 +129,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connLink: String)
     case apiPrepareContact(userId: Int64, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData)
-    case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData)
+    case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData)
     case apiChangePreparedContactUser(contactId: Int64, newUserId: Int64)
     case apiChangePreparedGroupUser(groupId: Int64, newUserId: Int64)
     case apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent?)
@@ -230,10 +233,11 @@ enum ChatCommand: ChatCmdProtocol {
                 return "/_get chat \(chatId)\(scopeRef(scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
             case let .apiGetChatContentTypes(chatId, scope): return "/_get content types \(chatId)\(scopeRef(scope))"
             case let .apiGetChatItemInfo(type, id, scope, itemId): return "/_get item info \(ref(type, id, scope: scope)) \(itemId)"
-            case let .apiSendMessages(type, id, scope, live, ttl, composedMessages):
+            case let .apiSendMessages(type, id, scope, sendAsGroup, live, ttl, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_send \(ref(type, id, scope: scope)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+                let asGroup = sendAsGroup ? "(as_group=on)" : ""
+                return "/_send \(ref(type, id, scope: scope))\(asGroup) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
             case let .apiCreateChatTag(tag): return "/_create tag \(encodeJSON(tag))"
             case let .apiSetChatTags(type, id, tagIds): return "/_tags \(ref(type, id, scope: nil)) \(tagIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiDeleteChatTag(tagId): return "/_delete tag \(tagId)"
@@ -252,9 +256,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiChatItemReaction(type, id, scope, itemId, add, reaction): return "/_reaction \(ref(type, id, scope: scope)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
             case let .apiGetReactionMembers(userId, groupId, itemId, reaction): return "/_reaction members \(userId) #\(groupId) \(itemId) \(encodeJSON(reaction))"
             case let .apiPlanForwardChatItems(type, id, scope, itemIds): return "/_forward plan \(ref(type, id, scope: scope)) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
-            case let .apiForwardChatItems(toChatType, toChatId, toScope, fromChatType, fromChatId, fromScope, itemIds, ttl):
+            case let .apiForwardChatItems(toChatType, toChatId, toScope, sendAsGroup, fromChatType, fromChatId, fromScope, itemIds, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_forward \(ref(toChatType, toChatId, scope: toScope)) \(ref(fromChatType, fromChatId, scope: fromScope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
+                let asGroup = sendAsGroup ? " as_group=on" : ""
+                return "/_forward \(ref(toChatType, toChatId, scope: toScope))\(asGroup) \(ref(fromChatType, fromChatId, scope: fromScope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -263,6 +268,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiGetNtfConns(nonce, encNtfInfo): return "/_ntf conns \(nonce) \(encNtfInfo)"
             case let .apiGetConnNtfMessages(connMsgReqs): return "/_ntf conn messages \(connMsgReqs.map { $0.cmdString }.joined(separator: ","))"
             case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
+            case let .apiNewPublicGroup(userId, incognito, relayIds, groupProfile): return "/_public group \(userId) incognito=\(onOff(incognito)) \(relayIds.map(String.init).joined(separator: ",")) \(encodeJSON(groupProfile))"
+            case let .apiGetGroupRelays(groupId): return "/_get relays #\(groupId)"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
@@ -300,6 +307,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id, scope: nil)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
+            case let .apiGetUpdatedGroupLinkData(groupId): return "/_get group link data #\(groupId)"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case let .apiContactQueueInfo(contactId): return "/_queue info @\(contactId)"
@@ -329,7 +337,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connLink): return "/_connect plan \(userId) \(connLink)"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData): return "/_prepare contact \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") \(encodeJSON(contactShortLinkData))"
-            case let .apiPrepareGroup(userId, connLink, groupShortLinkData): return "/_prepare group \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") \(encodeJSON(groupShortLinkData))"
+            case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData): return "/_prepare group \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") direct=\(onOff(directLink)) \(encodeJSON(groupShortLinkData))"
             case let .apiChangePreparedContactUser(contactId, newUserId): return "/_set contact user @\(contactId) \(newUserId)"
             case let .apiChangePreparedGroupUser(groupId, newUserId): return "/_set group user #\(groupId) \(newUserId)"
             case let .apiConnectPreparedContact(contactId, incognito, mc): return "/_connect contact @\(contactId) incognito=\(onOff(incognito))\(maybeContent(mc))"
@@ -449,6 +457,8 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGetNtfConns: return "apiGetNtfConns"
             case .apiGetConnNtfMessages: return "apiGetConnNtfMessages"
             case .apiNewGroup: return "apiNewGroup"
+            case .apiNewPublicGroup: return "apiNewPublicGroup"
+            case .apiGetGroupRelays: return "apiGetGroupRelays"
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
             case .apiAcceptMember: return "apiAcceptMember"
@@ -486,6 +496,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
+            case .apiGetUpdatedGroupLinkData: return "apiGetUpdatedGroupLinkData"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .apiContactQueueInfo: return "apiContactQueueInfo"
@@ -660,11 +671,12 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
     case userServers(user: UserRef, userServers: [UserOperatorServers])
-    case userServersValidation(user: UserRef, serverErrors: [UserServersError])
+    case userServersValidation(user: UserRef, serverErrors: [UserServersError], serverWarnings: [UserServersWarning])
     case usageConditions(usageConditions: UsageConditions, conditionsText: String, acceptedConditions: UsageConditions?)
     case chatItemTTL(user: UserRef, chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
+    case groupInfo(user: UserRef, groupInfo: GroupInfo)
     case groupMemberInfo(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
     case queueInfo(user: UserRef, rcvMsgInfo: RcvMsgInfo?, queueInfo: ServerQueueInfo)
     case contactSwitchStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
@@ -698,6 +710,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .chatItemTTL: "chatItemTTL"
         case .networkConfig: "networkConfig"
         case .contactInfo: "contactInfo"
+        case .groupInfo: "groupInfo"
         case .groupMemberInfo: "groupMemberInfo"
         case .queueInfo: "queueInfo"
         case .contactSwitchStarted: "contactSwitchStarted"
@@ -728,11 +741,12 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
         case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
         case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
-        case let .userServersValidation(u, serverErrors): return withUser(u, "serverErrors: \(String(describing: serverErrors))")
+        case let .userServersValidation(u, serverErrors, serverWarnings): return withUser(u, "serverErrors: \(String(describing: serverErrors))\nserverWarnings: \(String(describing: serverWarnings))")
         case let .usageConditions(usageConditions, _, acceptedConditions): return "usageConditions: \(String(describing: usageConditions))\nacceptedConditions: \(String(describing: acceptedConditions))"
         case let .chatItemTTL(u, chatItemTTL): return withUser(u, String(describing: chatItemTTL))
         case let .networkConfig(networkConfig): return String(describing: networkConfig)
         case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
+        case let .groupInfo(u, groupInfo): return withUser(u, "groupInfo: \(String(describing: groupInfo))")
         case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
         case let .queueInfo(u, rcvMsgInfo, queueInfo):
             let msgInfo = if let info = rcvMsgInfo { encodeJSON(info) } else { "none" }
@@ -779,7 +793,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case startedConnectionToContact(user: UserRef, contact: Contact)
-    case startedConnectionToGroup(user: UserRef, groupInfo: GroupInfo)
+    case startedConnectionToGroup(user: UserRef, groupInfo: GroupInfo, relayResults: [RelayConnectionResult])
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
@@ -900,7 +914,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
         case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
         case let .startedConnectionToContact(u, contact): return withUser(u, String(describing: contact))
-        case let .startedConnectionToGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .startedConnectionToGroup(u, groupInfo, relayResults): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nrelayResults: \(String(describing: relayResults))")
         case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
         case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
         }
@@ -911,6 +925,8 @@ enum ChatResponse1: Decodable, ChatAPIResult {
 enum ChatResponse2: Decodable, ChatAPIResult {
     // group responses
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
+    case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+    case groupRelays(user: UserRef, groupInfo: GroupInfo, groupRelays: [GroupRelay])
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
     case userDeletedMembers(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], withMessages: Bool)
@@ -961,6 +977,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     var responseType: String {
         switch self {
         case .groupCreated: "groupCreated"
+        case .publicGroupCreated: "publicGroupCreated"
+        case .groupRelays: "groupRelays"
         case .sentGroupInvitation: "sentGroupInvitation"
         case .userAcceptedGroupSent: "userAcceptedGroupSent"
         case .userDeletedMembers: "userDeletedMembers"
@@ -1007,6 +1025,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     var details: String {
         switch self {
         case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .publicGroupCreated(u, groupInfo, groupLink, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)")
+        case let .groupRelays(u, groupInfo, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupRelays: \(groupRelays)")
         case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
         case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
         case let .userDeletedMembers(u, groupInfo, members, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\nwithMessages: \(withMessages)")
@@ -1086,10 +1106,11 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case deletedMember(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember, withMessages: Bool)
     case leftMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case groupDeleted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
-    case userJoinedGroup(user: UserRef, groupInfo: GroupInfo)
+    case userJoinedGroup(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
     case joinedGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
+    case groupLinkDataUpdated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay], relaysChanged: Bool)
     case newMemberContactReceivedInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     // receiving file events
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
@@ -1166,6 +1187,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .joinedGroupMember: "joinedGroupMember"
         case .connectedToGroupMember: "connectedToGroupMember"
         case .groupUpdated: "groupUpdated"
+        case .groupLinkDataUpdated: "groupLinkDataUpdated"
         case .newMemberContactReceivedInv: "newMemberContactReceivedInv"
         case .rcvFileAccepted: "rcvFileAccepted"
         case .rcvFileAcceptedSndCancelled: "rcvFileAcceptedSndCancelled"
@@ -1242,10 +1264,11 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .deletedMember(u, groupInfo, byMember, deletedMember, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)\nwithMessages: \(withMessages)")
         case let .leftMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .groupDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-        case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .userJoinedGroup(u, groupInfo, _): return withUser(u, String(describing: groupInfo))
         case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
+        case let .groupLinkDataUpdated(u, groupInfo, groupLink, groupRelays, relaysChanged): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)\nrelaysChanged: \(relaysChanged)")
         case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
         case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
         case .rcvFileAcceptedSndCancelled: return noDetails
@@ -1284,6 +1307,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
 struct NewUser: Encodable {
     var profile: Profile?
     var pastTimestamp: Bool
+    var userChatRelay: Bool = false
 }
 
 enum ChatPagination {
@@ -1331,8 +1355,14 @@ enum ContactAddressPlan: Decodable, Hashable {
     case contactViaAddress(contact: Contact)
 }
 
+public struct GroupShortLinkInfo: Decodable, Hashable {
+    public var direct: Bool
+    public var groupRelays: [String]
+    public var sharedGroupId: String?
+}
+
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkData_: GroupShortLinkData?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)
@@ -1712,6 +1742,7 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
     var `operator`: ServerOperator?
     var smpServers: [UserServer]
     var xftpServers: [UserServer]
+    var chatRelays: [UserChatRelay]
 
     var id: String {
         if let op = self.operator {
@@ -1741,14 +1772,20 @@ struct UserOperatorServers: Identifiable, Equatable, Codable {
     static var sampleData1 = UserOperatorServers(
         operator: ServerOperator.sampleData1,
         smpServers: [UserServer.sampleData.preset],
-        xftpServers: [UserServer.sampleData.xftpPreset]
+        xftpServers: [UserServer.sampleData.xftpPreset],
+        chatRelays: []
     )
 
     static var sampleDataNilOperator = UserOperatorServers(
         operator: nil,
         smpServers: [UserServer.sampleData.preset],
-        xftpServers: [UserServer.sampleData.xftpPreset]
+        xftpServers: [UserServer.sampleData.xftpPreset],
+        chatRelays: []
     )
+}
+
+public enum UserServersWarning: Decodable {
+    case noChatRelays(user: UserRef?)
 }
 
 enum UserServersError: Decodable {
@@ -1756,6 +1793,8 @@ enum UserServersError: Decodable {
     case storageMissing(protocol: ServerProtocol, user: UserRef?)
     case proxyMissing(protocol: ServerProtocol, user: UserRef?)
     case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
+    case duplicateChatRelayName(duplicateChatRelay: String)
+    case duplicateChatRelayAddress(duplicateChatRelay: String, duplicateAddress: String)
 
     var globalError: String? {
         switch self {
@@ -1911,6 +1950,11 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
         case enabled
         case deleted
     }
+}
+
+struct RelayConnectionResult: Decodable {
+    var relayMember: GroupMember
+    var relayError: ChatError?
 }
 
 enum ProtocolTestStep: String, Decodable, Equatable {
