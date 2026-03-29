@@ -57,6 +57,7 @@ fun SendMsgView(
   updateLiveMessage: (suspend () -> Unit)? = null,
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
+  onEscape: () -> Unit = {},
   onFilesPasted: (List<URI>) -> Unit,
   onMessageChange: (ComposeMessage) -> Unit,
   textStyle: MutableState<TextStyle>,
@@ -85,6 +86,7 @@ fun SendMsgView(
       showVoiceButton,
       onMessageChange,
       editPrevMessage,
+      onEscape,
       onFilesPasted,
       focusRequester
     ) {
