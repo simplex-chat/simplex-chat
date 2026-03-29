@@ -351,6 +351,13 @@ struct ChatView: View {
 
                 if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
+                } else if let viewedIdx = mergedItems.boxedValue.items.firstIndex(where: { !$0.hasUnread() }) {
+                    // scroll to first unread after last viewed item (items reversed: 0 = newest)
+                    if viewedIdx > 0 {
+                        scrollView.scrollToItem(viewedIdx - 1)
+                    } else {
+                        scrollView.scrollToBottom()
+                    }
                 } else if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
                     scrollView.scrollToItem(unreadIndex)
                 } else {

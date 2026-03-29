@@ -1753,7 +1753,17 @@ fun BoxScope.ChatItemsList(
   val hoveredItemId = remember { mutableStateOf(null as Long?) }
   val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, resetListState.value, saver = LazyListState.Saver) {
     val openAroundItemId = chatModel.openAroundItemId.value
-    val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: mergedItems.value.items.indexOfLast { it.hasUnread() }
+    val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: run {
+      // scroll to first unread after last viewed item (items reversed: 0 = newest)
+      val viewedIdx = mergedItems.value.items.indexOfFirst { !it.hasUnread() }
+      if (viewedIdx > 0) {
+        viewedIdx - 1
+      } else if (viewedIdx < 0) {
+        mergedItems.value.items.indexOfLast { it.hasUnread() }
+      } else {
+        0 // viewed is bottom item, scroll to bottom
+      }
+    }
     val reportsState = reportsListState
     if (openAroundItemId != null) {
       highlightedItems.value += openAroundItemId
