@@ -4394,7 +4394,7 @@ swipe action */
 "Remove" = "移除";
 
 /* alert action */
-"Remove and delete messages" = "删除消息";
+"Remove and delete messages" = "移除并删除消息";
 
 /* No comment provided by engineer. */
 "Remove archive?" = "删除存档？";

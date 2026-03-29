@@ -4978,7 +4978,7 @@ To jest twój link do grupy %@!</target>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
-        <target>Przyjmij członka</target>
+        <target>Przyjmowanie członków</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member inactive" xml:space="preserve">
@@ -7514,7 +7514,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Set member admission" xml:space="preserve">
         <source>Set member admission</source>
-        <target>Przyjmij członka</target>
+        <target>Ustaw przyjmowanie członków</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set message expiration in chats." xml:space="preserve">
@@ -8774,7 +8774,7 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">
         <source>Upgrade link</source>
-        <target>Link aktualizacji</target>
+        <target>Uaktualnij link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade your address" xml:space="preserve">
@@ -9124,7 +9124,7 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
         <source>Welcome your contacts 👋</source>
-        <target>Powitaj swoje kontakty👋</target>
+        <target>Powitaj swoje kontakty 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">

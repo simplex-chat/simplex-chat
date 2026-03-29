@@ -6648,7 +6648,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove and delete messages" xml:space="preserve">
         <source>Remove and delete messages</source>
-        <target>删除消息</target>
+        <target>移除并删除消息</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Remove archive?" xml:space="preserve">

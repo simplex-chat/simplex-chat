@@ -3307,7 +3307,7 @@ snd error text */
 "member %@ changed to %@" = "członek %1$@ zmieniony na %2$@";
 
 /* No comment provided by engineer. */
-"Member admission" = "Przyjmij członka";
+"Member admission" = "Przyjmowanie członków";
 
 /* rcv group event chat item */
 "member connected" = "połączony";
@@ -4986,7 +4986,7 @@ chat item action */
 "Set it instead of system authentication." = "Ustaw go zamiast uwierzytelniania systemowego.";
 
 /* No comment provided by engineer. */
-"Set member admission" = "Przyjmij członka";
+"Set member admission" = "Ustaw przyjmowanie członków";
 
 /* No comment provided by engineer. */
 "Set message expiration in chats." = "Ustaw datę wygaśnięcia wiadomości na czatach.";
@@ -5783,7 +5783,7 @@ report reason */
 "Upgrade group link?" = "Uaktualnić link do grupy?";
 
 /* No comment provided by engineer. */
-"Upgrade link" = "Link aktualizacji";
+"Upgrade link" = "Uaktualnij link";
 
 /* No comment provided by engineer. */
 "Upgrade your address" = "Zaktualizuj swój adres";
@@ -6029,7 +6029,7 @@ report reason */
 "Welcome message is too long" = "Wiadomość powitalna jest zbyt długa";
 
 /* No comment provided by engineer. */
-"Welcome your contacts 👋" = "Powitaj swoje kontakty👋";
+"Welcome your contacts 👋" = "Powitaj swoje kontakty 👋";
 
 /* No comment provided by engineer. */
 "What's new" = "Co nowego";

@@ -2428,7 +2428,7 @@
     <string name="report_compose_reason_header_profile">Zgłoś profil członka: będą go widzieć tylko moderatorzy grupy.</string>
     <string name="report_compose_reason_header_other">Zgłoś inne: zobaczą to tylko moderatorzy grupy.</string>
     <string name="report_reason_alert_title">Jaki jest powód zgłoszenia?</string>
-    <string name="notification_group_report">Zgłoś: %s</string>
+    <string name="notification_group_report">Zgłoszenie: %s</string>
     <string name="chat_list_group_reports">Zgłoszenia</string>
     <string name="report_sent_alert_title">Zgłoszenia wysłane do moderatorów</string>
     <string name="report_compose_reason_header_spam">Zgłoś spam: tylko moderatorzy grupy będą to widzieć.</string>
