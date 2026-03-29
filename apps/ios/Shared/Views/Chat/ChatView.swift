@@ -2015,13 +2015,11 @@ struct ChatView: View {
             let live = composeState.liveMessage != nil
             let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil
             return ZStack(alignment: .trailing) {
-                // Reply icon revealed on swipe
-                Image(systemName: "arrowshape.turn.up.left.fill")
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Circle().fill(Color.accentColor))
+                Image(systemName: "arrowshape.turn.up.left")
+                    .font(.system(size: 18))
+                    .foregroundColor(.secondary)
                     .opacity(min(1, -swipeOffset / 30))
-                    .offset(x: swipeOffset + 50)
+                    .offset(x: swipeOffset + 45)
                 VStack(alignment: alignment.horizontal, spacing: 3) {
                     HStack {
                         if ci.chatDir.sent {
@@ -2051,8 +2049,9 @@ struct ChatView: View {
                     }
                 }
                 .offset(x: swipeOffset)
-                .gesture(
-                    DragGesture(minimumDistance: 15)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 10)
                         .onChanged { value in
                             guard canReply else { return }
                             let x = value.translation.width
