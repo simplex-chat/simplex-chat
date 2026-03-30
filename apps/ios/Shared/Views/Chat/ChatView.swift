@@ -578,8 +578,8 @@ struct ChatView: View {
                 HStack {
                     contentFilterMenu(withLabel: false)
                     Menu {
-                        if groupInfo.canAddMembers && !groupInfo.useRelays {
-                            if (chat.chatInfo.incognito) {
+                        if groupInfo.canAddMembers {
+                            if chat.chatInfo.incognito {
                                 groupLinkButton()
                                     .appSheet(isPresented: $showGroupLinkSheet) {
                                         GroupLinkView(
@@ -590,7 +590,7 @@ struct ChatView: View {
                                             creatingGroup: false
                                         )
                                     }
-                            } else {
+                            } else if !groupInfo.useRelays {
                                 addMembersButton()
                             }
                         }
