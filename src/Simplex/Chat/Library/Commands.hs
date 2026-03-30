@@ -2070,18 +2070,19 @@ processChatCommand vr nm = \case
             _ -> False
           connectToRelay gInfo' relayLink = do
             gVar <- asks random
-            -- TODO [relays] member: set relay profile before/during connection
-            -- TODO   - on fetching relay link data? (-> relay should add profile to relay link)
-            -- TODO   - or update upon connection, as in regular prepared groups
-            -- TODO     (current logic mimics insertHost_ from createPreparedGroup)
             -- Save relayLink to re-use relay member record on retry (check by relayLink)
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
             r <- tryAllErrors $ do
-              (fd, _cData) <- getShortLinkConnReq nm user relayLink
+              (fd@FixedLinkData {rootKey = relayKey, linkEntityId}, cData) <- getShortLinkConnReq nm user relayLink
+              relayLinkData_ <- liftIO $ decodeLinkUserData cData
+              case (relayLinkData_, linkEntityId) of
+                (Just RelayShortLinkData {relayProfile = p}, Just entityId) ->
+                  withFastStore $ \db -> updateRelayMemberData db user relayMember (MemberId entityId) (MemberKey relayKey) p
+                _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
               let cReq = linkConnReq fd
                   relayLinkToConnect = CCLink cReq (Just relayLink)
               void $ connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
-            -- Re-read member to get updated activeConn
+            -- Re-read member to get updated activeConn and updated data (from updateRelayMemberData)
             relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
             pure (relayLink, relayMember', r)
           retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
@@ -2089,7 +2090,7 @@ processChatCommand vr nm = \case
               deleteAgentConnectionAsync $ aConnId conn
               withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
             subMode <- chatReadVar subscriptionMode
-            newConnIds <- getAgentConnShortLinkAsync user relayLink
+            newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         hostMember <- withFastStore $ \db -> getHostMember db vr user groupId
@@ -2164,9 +2165,7 @@ processChatCommand vr nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    -- TODO [relays] relay: address creation
-    -- TODO   - add relay key, identity to link data
-    -- TODO   - validate short link is created (returned by agent)
+    -- TODO [relays] relay: add relay profile, identity, key to link data?
     let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]

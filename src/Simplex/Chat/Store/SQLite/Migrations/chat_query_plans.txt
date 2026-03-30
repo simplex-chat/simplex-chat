@@ -3483,6 +3483,14 @@ Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT conf_id
+        FROM group_relays
+        WHERE group_member_id = ? AND conf_id IS NOT NULL
+      
+Plan:
+SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
+
+Query: 
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
@@ -3917,6 +3925,14 @@ Query:
         UPDATE group_members
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+      
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        UPDATE group_members
+        SET member_id = ?, member_pub_key = ?, updated_at = ?
+        WHERE group_member_id = ?
       
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -4891,6 +4907,14 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
+      SET member_pub_key = ?, updated_at = ?
+      WHERE group_member_id = ?
+    
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE group_members
       SET member_relations_vector = ?, updated_at = ?
       WHERE group_member_id = ?
     
@@ -4931,7 +4955,7 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
-      SET relay_link = ?, member_pub_key = ?, updated_at = ?
+      SET relay_link = ?, updated_at = ?
       WHERE group_member_id = ?
     
 Plan:
@@ -4974,11 +4998,19 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_relays
-      SET relay_link = ?, relay_status = ?, updated_at = ?
-      WHERE group_relay_id = ?
+      SET conf_id = ?, relay_link = ?, updated_at = ?
+      WHERE group_member_id = ?
     
 Plan:
-SEARCH group_relays USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
+
+Query: 
+      UPDATE group_relays
+      SET relay_status = ?, updated_at = ?
+      WHERE group_member_id = ?
+    
+Plan:
+SEARCH group_relays USING INDEX idx_group_relays_group_member_id (group_member_id=?)
 
 Query: 
       UPDATE group_snd_item_statuses
@@ -6973,7 +7005,7 @@ Query: UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE group_members SET xgrplinkmem_received = ?, member_pub_key = ?, updated_at = ? WHERE group_member_id = ?
+Query: UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
