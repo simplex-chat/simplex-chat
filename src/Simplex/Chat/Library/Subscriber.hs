@@ -3647,22 +3647,25 @@ runRelayRequestWorker a Worker {doWork} = do
                   pure ()
                 createRelayLink :: GroupInfo -> CM (C.KeyPairEd25519, ShortLinkContact)
                 createRelayLink gi = do
-                  let GroupInfo {membership = relayMem} = gi
-                      GroupMember {memberId = relayMemId, memberProfile = relayLP} = relayMem
-                      MemberId relayMemberIdBS = relayMemId
-                      userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile relayLP}
-                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+                  let GroupInfo {membership} = gi
+                      GroupMember {memberId = MemberId relayMemId, memberProfile = p} = membership
+                  gVar <- asks random
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
-                  -- TODO [relays] starting role should be communicated in protocol from owner to relays
-                  subRole <- asks $ channelSubscriberRole . config
+                  sigKeys@(_, _) <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
-                  (connId, (Just sigKeys, ccLink, _serviceId)) <- withAgent $ \a' -> createConnection a' NRMBackground (aUserId user) (Just relayMemberIdBS) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
+                  -- prepare link with relayMemId as linkEntityId (no server request)
+                  (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) sigKeys relayMemId True (Just crClientData)
                   ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
                   sLnk <- case toShortLinkContact ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
-                  gVar <- asks random
+                  let userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile p}
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+                  -- create connection with prepared link (single network call)
+                  connId <- withAgent $ \a -> createConnectionForLink a NRMBackground (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
+                  -- TODO [relays] starting role should be communicated in protocol from owner to relays
+                  subRole <- asks $ channelSubscriberRole . config
                   void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode
                   pure (sigKeys, sLnk)
             acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
