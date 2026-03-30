@@ -96,12 +96,13 @@ struct CIImageView: View {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: w)
+                        .scaledToFill()
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             } else {
-                SwiftyGif(image: img)
-                        .frame(width: w, height: w * img.size.height / img.size.width)
-                        .scaledToFit()
+                SwiftyGif(image: img, contentMode: .scaleAspectFill)
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             }
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 loadingIndicator()
