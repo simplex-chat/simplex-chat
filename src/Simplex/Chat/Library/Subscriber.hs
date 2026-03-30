@@ -3652,7 +3652,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   gVar <- asks random
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
-                  sigKeys@(_, _) <- liftIO $ atomically $ C.generateKeyPair gVar
+                  sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
                   (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) sigKeys relayMemId True (Just crClientData)
