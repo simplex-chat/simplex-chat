@@ -17,9 +17,12 @@ struct CILinkView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
             if let uiImage = imageFromBase64(linkPreview.image) {
+                let maxH = UIScreen.main.bounds.width * 2.33
                 Image(uiImage: uiImage)
                     .resizable()
-                    .scaledToFit()
+                    .scaledToFill()
+                    .frame(maxHeight: maxH)
+                    .clipped()
                     .modifier(PrivacyBlur(blurred: $blurred))
                     .if(!blurred) { v in
                         v.simultaneousGesture(TapGesture().onEnded {

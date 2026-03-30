@@ -181,11 +181,12 @@ struct CIVideoView: View {
 
     private func videoView(_ player: AVPlayer, _ url: URL, _ file: CIFile, _ preview: UIImage, _ duration: Int) -> some View {
         let w = preview.size.width <= preview.size.height ? maxWidth * 0.75 : maxWidth
+        let maxH = w * 2.33
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
-                .frame(width: w, height: w * preview.size.height / preview.size.width)
+                .frame(width: w, height: min(w * preview.size.height / preview.size.width, maxH))
                 .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
