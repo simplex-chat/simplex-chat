@@ -187,7 +187,8 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
-                .frame(width: w, height: w * preview.size.height / preview.size.width)
+                .frame(width: w, height: w * heightRatio(preview.size))
+                .clipped()
                 .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
@@ -315,8 +316,9 @@ struct CIVideoView: View {
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
-            .scaledToFit()
-            .frame(width: w)
+            .scaledToFill()
+            .frame(width: w, height: w * heightRatio(img.size))
+            .clipped()
             .modifier(PrivacyBlur(blurred: $blurred))
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 fileStatusIcon()

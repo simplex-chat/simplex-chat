@@ -3790,7 +3790,7 @@ object MsgReactionSerializer : KSerializer<MsgReaction> {
       when(val t = json["type"]?.jsonPrimitive?.content ?: "") {
         "emoji" -> {
           val msgReaction = try {
-            val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
+            val emoji = decoder.json.decodeFromString<MREmojiChar>(json["emoji"].toString())
             MsgReaction.Emoji(emoji)
           } catch (e: Throwable) {
             MsgReaction.Unknown(t, json)
@@ -4232,7 +4232,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         when (t) {
           "text" -> MsgContent.MCText(text)
           "link" -> {
-            val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
+            val preview = decoder.json.decodeFromString<LinkPreview>(json["preview"].toString())
             MsgContent.MCLink(text, preview)
           }
           "image" -> {
@@ -4250,11 +4250,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           }
           "file" -> MsgContent.MCFile(text)
           "report" -> {
-            val reason = Json.decodeFromString<ReportReason>(json["reason"].toString())
+            val reason = decoder.json.decodeFromString<ReportReason>(json["reason"].toString())
             MsgContent.MCReport(text, reason)
           }
           "chat" -> {
-            val chatLink = Json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
+            val chatLink = decoder.json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
             MsgContent.MCChat(text, chatLink)
           }
           else -> MsgContent.MCUnknown(t, text, json)
