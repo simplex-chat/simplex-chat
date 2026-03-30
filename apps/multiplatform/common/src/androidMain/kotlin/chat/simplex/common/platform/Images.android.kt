@@ -21,12 +21,19 @@ import java.net.URI
 import kotlin.math.min
 import kotlin.math.sqrt
 
+private const val MAX_IMAGE_DIMENSION = 4320
+
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
   return try {
     val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
+    if (options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outWidth <= 0 || options.outHeight <= 0) {
+      return errorBitmap.asImageBitmap()
+    }
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
   } catch (e: Exception) {
     Log.e(TAG, "base64ToBitmap error: $e")
