@@ -1,184 +1,216 @@
 # Desktop Text Selection Plan
 
 ## Goal
-Implement cross-message text selection on desktop (Compose Multiplatform) that:
-1. Works like browser selection (click+drag, with auto-scroll)
-2. Copies text with timestamps and sender names
-3. Shows visual highlight on all selected elements (messages, names, timestamps, dates)
-4. Shows copy button on mouse release
-5. Selection persists across scroll
+Cross-message text selection on desktop (Compose Multiplatform):
+1. Click+drag to select message text, with auto-scroll
+2. Only message text is selectable (no timestamps, names, quotes, dates — like Telegram web)
+3. Ctrl+C and copy button
+4. Selection persists across scroll
 
-## Architecture Overview
+## Architecture
 
-### Core Idea
-- **Overlay** on top of LazyColumnWithScrollBar handles drag detection
-- Overlay uses `PointerEventPass.Initial` to observe without consuming
-- Only consumes pointer move/drag events after drag threshold exceeded
-- Scroll wheel events are **never consumed** — they pass through to LazyColumn
-- Selection state is a **continuously-resolved map** of `(itemId, elementType) → CapturedText`
-  with `charRange`, recomputed on every pointer move and scroll event
-- Window coordinates are ephemeral input for computing the resolved map; the map is
-  the real selection state and is what rendering reads
-- Text elements draw their own highlights using `TextLayoutResult.getPathForRange()`
-- **Item eviction disabled** during active selection (our trimming; LazyColumn's own
-  virtualization is handled by eager capture)
-- **Auto-scroll** when pointer near viewport edge during drag, direction-aware
+### Selection State: Continuously Resolved Map
 
-### Selection State Model
-
-No two-phase "dragging vs resolved" distinction. Selection is always a resolved map:
+Selection state is always a resolved map of `itemId → CapturedText`.
+Recomputed on every pointer move and every scroll event.
 
 ```kotlin
-data class CapturedText(
-    val itemId: Long,
-    val elementType: SelectableElementType,
-    val yPosition: Float,
-    val text: String,
-    val charRange: IntRange
-)
-
-// The selection state — always item-based, always current:
-val captured: MutableMap<Pair<Long, SelectableElementType>, CapturedText>
+val captured: MutableStateMap<Long, CapturedText>
 ```
 
-On every `updateSelection()` call (triggered by pointer move OR scroll change):
-1. Recompute which visible participants are in range from current coordinates
-2. **Remove** entries for items no longer in range (selection shrunk)
-3. **Update** char ranges for items still in range (endpoint moved)
-4. **Add** entries for newly-in-range items (selection grew)
-5. Items that scrolled out of view: their entry stays (participant gone, can't recompute,
-   but captured text is still valid)
+Each entry has:
+- `highlightRange: IntRange` — in AnnotatedString space, for `getPathForRange()`
+- `text: String` — clean message text substring, for copy
 
-Rendering reads `captured[myId to myType]?.charRange` — no coordinate comparison during render.
+Window coordinates (`SelectionCoords`) are ephemeral input for computing the map.
+Rendering reads the map directly — no coordinate comparison during render.
 
-### Coordinate System (VERIFIED)
+On every `updateSelection()`:
+- Visible participants in range → add/update
+- Visible participants out of range → remove
+- Scrolled-out participants → keep existing capture
 
-All coordinates are in **window space** during drag computation:
-- Overlay tracks its position via `onGloballyPositioned { positionInWindow = it.positionInWindow() }`
-- Overlay transforms pointer events: `windowPos = positionInWindow + localPointerPos`
-- Items report bounds via `onGloballyPositioned { bounds = it.boundsInWindow() }`
+### Participant Registration
+
+Each selectable text composable registers a `SelectionParticipant` on composition
+and unregisters on disposal.
+
+Registration sites (2 total):
+- `CIMarkdownText` in FramedItemView.kt — covers all text messages, voice-with-text,
+  forwarded, quoted, live messages excluded
+- `EmojiItemView` — emoji-only messages (desktop implementation is plain `Text()`,
+  line 20 of EmojiItemView.desktop.kt; heart emoji renders as `Image` — skip selection
+  for that special case only)
+
+NOT registration sites (verified):
+- `CIVoiceView` — only called when `cItem.content.text.isEmpty()` (ChatItemView.kt:575).
+  Voice messages with text go through `framedItemView()` → CIMarkdownText.
+
+### Reserve Space Exclusion
+
+MarkdownText appends invisible reserve text (transparent timestamp + status icons)
+at the end of the AnnotatedString for layout spacing. This must NOT be selectable.
+
+**Minimal change**: MarkdownText receives a `MutableIntState` and writes the content
+end offset before appending reserve text:
+
+```kotlin
+// Inside buildAnnotatedString, after all content spans:
+selectableEnd?.intValue = this.length  // ONE LINE
+
+if (meta?.isLive == true) { append(typingIndicator(...)) }
+if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+```
+
+The participant clamps all offsets to `0..selectableEnd`. Highlight stops before
+invisible reserve. Copy text excludes it.
+
+### AnnotatedString Access
+
+The participant needs the AnnotatedString's plain text for accurate substring extraction
+(because mentions may change display length vs ci.text). MarkdownText writes it to a
+shared state AFTER `buildAnnotatedString` returns:
+
+```kotlin
+// New parameter in MarkdownText:
+annotatedTextState: MutableState<String>? = null
+
+// AFTER buildAnnotatedString:
+val annotatedText = buildAnnotatedString { ... }
+annotatedTextState?.value = annotatedText.text  // .text is documented AnnotatedString API
+```
+
+The participant reads `annotatedTextState.value.substring(clampedStart, clampedEnd)` for copy.
+Fallback: `ci.text` if state is empty.
+
+### Overlay
+
+Overlay sits on top of LazyColumnWithScrollBar. Uses `PointerEventPass.Initial`
+to observe pointer events without consuming. Only consumes after drag threshold
+(differentiates click from drag).
+
+Scroll wheel events are NEVER consumed — pass through to LazyColumn.
+
+### Selection Lifecycle
+
+- **Click without drag**: Does nothing. Selection is NOT cleared. Links work via pass-through.
+- **New drag**: Clears any existing selection, starts new one (`startSelection` calls `captured.clear()`).
+- **Right-click**: Does nothing to selection. `contextMenuOpenDetector` handles it independently.
+  No need to detect mouse button — we simply never clear on non-drag pointer-up.
+- **Ctrl+C**: Copies selected text to clipboard.
+- **Copy button**: Appears after drag ends when `captured.isNotEmpty()`. Has explicit dismiss.
+- **Dismiss**: Copy button dismiss clears selection. Or starting a new drag clears it.
+
+This avoids needing `PointerEvent.button` API (not used in codebase, availability uncertain).
+
+### Coordinate System
+
+All coordinates in window space during drag computation:
+- Overlay: `positionInWindow()` + local pointer → window coords
+- Items: `boundsInWindow()` → window coords
 - `calculateRangeForElement` adjusts X by `bounds.left` for `getOffsetForPosition`
 
-Window coordinates are consistent within a single frame. After scroll, items have new
-`boundsInWindow()` values, so re-calling `updateSelection()` with the same pointer position
-produces correct results against the new item positions.
+Consistent within a frame. After scroll, items have new `boundsInWindow()`,
+so `updateSelection()` with same pointer position produces correct new results.
 
-### Bidirectional Selection (Core Design, Not Edge Case)
+### Bidirectional Drag (Core Design)
 
-Users drag in any direction, change direction mid-drag, and reverse past the anchor point.
+Users drag any direction, reverse past anchor, shrink and grow selection.
 
-`SelectionCoords`:
-- `startY/startX` = anchor (where click happened, never changes during drag)
-- `endY/endX` = current pointer position (changes on every move)
+- `startY/startX` = anchor (click point, never changes)
+- `endY/endX` = current pointer
 - `topY = minOf(startY, endY)`, `bottomY = maxOf(startY, endY)` — always correct
-- `topX/bottomX` flip based on `isReversed` — preserves anchor character
+- `topX/bottomX` flip via `isReversed` — preserves anchor character on reversal
 
-When user reverses past anchor:
+On reversal past anchor:
 - Anchor item transitions from "first" to "last" (or vice versa)
 - Its char range recomputes correctly because `bottomX = startX` when reversed
-- Items that were selected get removed from captured map when they fall outside
-  the new `topY..bottomY` range
+- Items that fall outside new range are removed from captured
 
 ### Auto-Scroll During Drag
 
-When pointer is near the viewport edge **in the direction of drag**, auto-scroll the list.
-
 **Direction-aware**: Only the edge you're dragging toward triggers auto-scroll.
-- `endY > startY` (dragging down) → only bottom edge auto-scrolls
-- `endY < startY` (dragging up) → only top edge auto-scrolls
-- The opposite edge is inert — prevents unwanted scroll when selecting a few items
-  near the top/bottom of the viewport
+- `endY > startY` → bottom edge only
+- `endY < startY` → top edge only
+- Opposite edge is inert
 
-**Implementation**: A coroutine loop during drag:
-```kotlin
-// Inside SelectionOverlay, during active drag
-while (isDragging) {
-    val edgeDistance = if (draggingDown) {
-        viewportBottom - lastPointerY  // distance to bottom edge
-    } else {
-        lastPointerY - viewportTop     // distance to top edge
-    }
+Implementation: coroutine loop at ~60fps calling `listState.scrollBy(delta)`.
 
-    if (edgeDistance < AUTO_SCROLL_ZONE) {
-        val speed = lerp(MIN_SCROLL_SPEED, MAX_SCROLL_SPEED, 1f - edgeDistance / AUTO_SCROLL_ZONE)
-        listState.scrollBy(if (draggingDown) speed else -speed)
-        // After scroll, items moved — re-evaluate selection with same pointer position
-        selectionManager.updateSelection(lastPointerWindowY, lastPointerWindowX)
-    }
-    delay(16) // ~60fps
-}
-```
+**Sign with `reverseLayout = true`**: The LazyColumn has `reverseLayout = true`
+(ChatView.kt:2204). `scrollBy(positive)` in reversed layout scrolls toward higher
+indices (older messages, visually upward). To scroll DOWN visually (toward newer messages),
+use `scrollBy(negative)`. So:
+- Dragging down → `scrollBy(-speed)` (brings newer messages into view from below)
+- Dragging up → `scrollBy(speed)` (brings older messages into view from above)
 
-After `listState.scrollBy()`:
-- Items recompose with new `boundsInWindow()` positions
-- `updateSelection()` with same pointer coords intersects different items now
-- Selection naturally extends as new items scroll into view
-- Existing captured entries for scrolled-out items are preserved
+This is the OPPOSITE of what a non-reversed layout would need. Must verify empirically
+as first test — if wrong, flip the sign.
+
+After `scrollBy()`:
+- `firstVisibleItemScrollOffset` changes → `snapshotFlow` fires
+- `updateSelection(lastPointerY, lastPointerX)` re-evaluates with new item positions
+- Selection extends naturally
+
+Auto-scroll does NOT call `updateSelection` directly after `scrollBy` — it relies on
+the `snapshotFlow` which fires after layout completes, ensuring `boundsInWindow()` is current.
 
 ### Mouse Wheel During Drag
 
-User holds mouse button and scrolls wheel. Pointer stays still, content moves.
+Overlay does NOT consume scroll events. They pass through to LazyColumn.
+Same `snapshotFlow { firstVisibleItemScrollOffset }` fires → `updateSelection(lastPointerY, lastPointerX)`.
 
-The overlay does NOT consume scroll wheel events (only pointer move/drag events via
-`change.consume()`). Scroll events pass through to LazyColumn.
+### Item Loading (Verified — Just Works)
 
-After wheel scroll, we need to re-evaluate selection. A `snapshotFlow` on scroll state
-triggers `updateSelection()` with the last known pointer position:
-
+`PreloadItems` (ChatView.kt:2576) reacts to:
 ```kotlin
-// In the composable hosting the overlay
-LaunchedEffect(selectionManager) {
-    snapshotFlow { listState.value.firstVisibleItemScrollOffset }
-        .collect {
-            if (selectionManager.isSelecting) {
-                selectionManager.updateSelection(
-                    selectionManager.lastPointerWindowY,
-                    selectionManager.lastPointerWindowX
-                )
-            }
-        }
-}
-```
-
-This ensures the captured map stays current even when the user scrolls without moving the pointer.
-
-### Item Loading During Scroll (VERIFIED — Just Works)
-
-Item loading (pagination) is triggered reactively via:
-```kotlin
-// ChatView.kt line 2576
 snapshotFlow { listState.value.firstVisibleItemIndex }
-    .distinctUntilChanged()
-    .collect { firstVisibleIndex ->
-        preloadItemsBefore(...)
-        preloadItemsAfter(...)
-        loadLastItems(...)
-    }
 ```
+Both `scrollBy()` and mouse wheel change this. Loading pipeline fires automatically.
+New items compose → register → `captureIfInRange()`. No special handling needed.
 
-This reacts to `firstVisibleItemIndex` changes, not to scroll events directly.
-Both auto-scroll (`listState.scrollBy()`) and mouse wheel scroll change
-`firstVisibleItemIndex`, so the existing loading pipeline fires automatically.
+### Eviction Prevention
 
-New items loaded → composed → register as participants → `register()` calls
-`captureIfInRange()` → captured if within current selection. No special handling needed.
+Our custom trimming in `ChatItemsLoader.kt` disabled during selection:
+`allowedTrimming = !selectionActive` (line 186).
+
+LazyColumn's own virtualization still disposes far-off items, but their text
+is already captured in the map.
 
 ### Platform Gate
-All selection code is gated on `appPlatform.isDesktop`. Mobile uses native selection.
 
-### API Verification (DONE)
-- `TextLayoutResult.getPathForRange(start, end)` — confirmed, returns `Path` for drawing
-- `PointerEventPass.Initial` — confirmed: observe without consuming, events flow to children
-- `LayoutCoordinates.boundsInWindow()` / `positionInWindow()` — confirmed, absolute window coords
-- `Modifier.drawBehind` — confirmed: executes after layout, before content draw
-- Scroll wheel events are separate from pointer move events in Compose — overlay can consume
-  one without affecting the other
+All selection code gated on `appPlatform.isDesktop`.
+
+### Swipe-to-Reply on Desktop
+
+`SwipeToDismissModifier` (ChatView.kt:1896) is currently applied unconditionally.
+Gate on platform: `if (appPlatform.isDesktop) Modifier else swipeableModifier`.
+This is an explicit change, not a side effect of overlay consuming drags.
+
+### RTL Text
+
+The design never assumes text direction. `getOffsetForPosition()` and `getPathForRange()`
+are bidi-aware. MarkdownText already switches `LocalLayoutDirection` (TextItemView.kt:82-97).
+Must be tested with actual RTL text as part of initial testing, not deferred.
+
+### API Verification (Done)
+
+- `TextLayoutResult.getPathForRange(start, end)` — returns `Path` for highlight
+- `PointerEventPass.Initial` — observe without consuming, events flow to children
+- `LayoutCoordinates.boundsInWindow()` — absolute window coordinates
+- `Modifier.drawBehind` — executes after layout, before content draw
+- Material `Text()` does NOT have `onTextLayout` — must use `BasicText()` wrapper
+- `contextMenuOpenDetector` (right-click) — independent modifier, non-consuming,
+  won't conflict with overlay
+- Scroll wheel events are separate from pointer events
+- Desktop `EmojiText` is plain `Text()` (EmojiItemView.desktop.kt:20) — can use `BasicText`
 
 ---
 
-## File Changes
+## Files
 
-### 1. NEW FILE: `common/src/commonMain/kotlin/chat/simplex/common/views/chat/TextSelection.kt`
+### NEW: `TextSelection.kt`
+
+`common/src/commonMain/kotlin/chat/simplex/common/views/chat/TextSelection.kt`
 
 ```kotlin
 package chat.simplex.common.views.chat
@@ -207,28 +239,18 @@ data class SelectionCoords(
 
 data class CapturedText(
     val itemId: Long,
-    val elementType: SelectableElementType,
     val yPosition: Float,
-    val text: String,
-    val charRange: IntRange
+    val highlightRange: IntRange,
+    val text: String
 )
-
-enum class SelectableElementType {
-    MESSAGE_CONTENT,
-    SENDER_NAME,
-    TIMESTAMP,
-    QUOTE_CONTENT,
-    QUOTE_SENDER,
-    DATE_SEPARATOR
-}
 
 interface SelectionParticipant {
     val itemId: Long
-    val elementType: SelectableElementType
     fun getYBounds(): ClosedFloatingPointRange<Float>?
     fun getTextLayoutResult(): TextLayoutResult?
-    fun getText(): String
-    fun calculateSelectionRange(coords: SelectionCoords): IntRange?
+    fun getSelectableEnd(): Int
+    fun getAnnotatedText(): String
+    fun calculateHighlightRange(coords: SelectionCoords): IntRange?
 }
 
 class SelectionManager {
@@ -238,19 +260,15 @@ class SelectionManager {
     var isSelecting by mutableStateOf(false)
         private set
 
-    /** Used by ChatItemsLoader to disable trimming. */
     val selectionActive: Boolean get() = coords != null
 
-    /** Last pointer position in window coords — used for re-evaluation on scroll. */
     var lastPointerWindowY: Float = 0f
         private set
     var lastPointerWindowX: Float = 0f
         private set
 
     private val participants = mutableListOf<SelectionParticipant>()
-
-    /** The resolved selection state. Always current, always item-based. */
-    val captured = mutableStateMapOf<Pair<Long, SelectableElementType>, CapturedText>()
+    val captured = mutableStateMapOf<Long, CapturedText>()
 
     fun register(participant: SelectionParticipant) {
         participants.add(participant)
@@ -259,7 +277,6 @@ class SelectionManager {
 
     fun unregister(participant: SelectionParticipant) {
         participants.remove(participant)
-        // Do NOT remove from captured — text already captured survives disposal
     }
 
     fun startSelection(startY: Float, startX: Float) {
@@ -280,7 +297,6 @@ class SelectionManager {
 
     fun endSelection() {
         isSelecting = false
-        // coords and captured remain for highlight display + copy
     }
 
     fun clearSelection() {
@@ -289,121 +305,81 @@ class SelectionManager {
         captured.clear()
     }
 
-    /**
-     * Recompute captured map from all visible participants.
-     * - Visible and in range: add/update
-     * - Visible and NOT in range: remove
-     * - Not visible (unregistered): keep existing capture
-     */
     private fun recomputeAll() {
         val c = coords ?: return
-        val visibleIds = mutableSetOf<Pair<Long, SelectableElementType>>()
+
+        // First pass: identify all visible participants and whether they're in range
+        val visibleInRange = mutableMapOf<Long, SelectionParticipant>()
+        val visibleOutOfRange = mutableSetOf<Long>()
 
         for (p in participants) {
-            val key = p.itemId to p.elementType
-            visibleIds.add(key)
-            recomputeParticipant(p, c)
+            val bounds = p.getYBounds()
+            if (bounds != null && bounds.start <= c.bottomY && bounds.endInclusive >= c.topY) {
+                visibleInRange[p.itemId] = p
+            } else {
+                visibleOutOfRange.add(p.itemId)
+            }
         }
 
-        // Remove entries for visible participants that are no longer in selection
-        // (but keep entries for non-visible participants — they scrolled out)
-        captured.keys.removeAll { key ->
-            key in visibleIds && key !in captured
+        // Remove captured entries for visible participants that are now out of range
+        visibleOutOfRange.forEach { captured.remove(it) }
+
+        // Update/add captured entries for visible participants in range
+        for ((_, p) in visibleInRange) {
+            recomputeParticipant(p, c)
         }
-        // The above has a subtle issue — let's be explicit:
-        val toRemove = mutableListOf<Pair<Long, SelectableElementType>>()
-        for (key in captured.keys) {
-            if (key in visibleIds) {
-                // Participant is visible — check if still in range
-                val p = participants.find { it.itemId == key.first && it.elementType == key.second }
-                if (p != null) {
-                    val bounds = p.getYBounds()
-                    if (bounds == null || bounds.start > c.bottomY || bounds.endInclusive < c.topY) {
-                        toRemove.add(key)
-                    }
-                }
-            }
-            // If key NOT in visibleIds → participant scrolled out → keep capture
-        }
-        toRemove.forEach { captured.remove(it) }
     }
 
     private fun recomputeParticipant(participant: SelectionParticipant, coords: SelectionCoords) {
         val bounds = participant.getYBounds() ?: return
-        val key = participant.itemId to participant.elementType
-
-        if (bounds.start > coords.bottomY || bounds.endInclusive < coords.topY) {
-            // Out of range — will be cleaned up by recomputeAll if visible
-            return
-        }
-
-        val range = participant.calculateSelectionRange(coords) ?: return
-        val fullText = participant.getText()
-        val clampedStart = range.first.coerceIn(0, fullText.length)
-        val clampedEnd = range.last.coerceIn(0, fullText.length)
+        val highlightRange = participant.calculateHighlightRange(coords) ?: return
+        val selectableEnd = participant.getSelectableEnd()
+        val clampedStart = highlightRange.first.coerceIn(0, selectableEnd)
+        val clampedEnd = highlightRange.last.coerceIn(0, selectableEnd)
         if (clampedStart >= clampedEnd) return
 
-        captured[key] = CapturedText(
+        val annotatedText = participant.getAnnotatedText()
+        val text = if (clampedEnd <= annotatedText.length) {
+            annotatedText.substring(clampedStart, clampedEnd)
+        } else {
+            annotatedText.substring(clampedStart.coerceAtMost(annotatedText.length))
+        }
+
+        captured[participant.itemId] = CapturedText(
             itemId = participant.itemId,
-            elementType = participant.elementType,
             yPosition = bounds.start,
-            text = fullText.substring(clampedStart, clampedEnd),
-            charRange = clampedStart until clampedEnd
+            highlightRange = clampedStart until clampedEnd,
+            text = text
         )
     }
 
     fun getSelectedText(): String {
         return captured.values
             .sortedBy { it.yPosition }
-            .groupBy { it.itemId }
-            .values
-            .joinToString("\n") { elements ->
-                val date = elements.find { it.elementType == SelectableElementType.DATE_SEPARATOR }?.text
-                val timestamp = elements.find { it.elementType == SelectableElementType.TIMESTAMP }?.text ?: ""
-                val sender = elements.find { it.elementType == SelectableElementType.SENDER_NAME }?.text ?: ""
-                val content = elements.find { it.elementType == SelectableElementType.MESSAGE_CONTENT }?.text ?: ""
-
-                if (date != null) {
-                    date
-                } else {
-                    buildString {
-                        if (timestamp.isNotEmpty()) append("[$timestamp] ")
-                        if (sender.isNotEmpty()) append("$sender: ")
-                        append(content)
-                    }.trim()
-                }
-            }
+            .joinToString("\n") { it.text }
     }
 
-    /**
-     * Query selection for rendering. Returns charRange from captured map if present.
-     * No coordinate comparison — uses the resolved map directly.
-     */
-    fun getSelectionRange(itemId: Long, elementType: SelectableElementType): IntRange? {
-        return captured[itemId to elementType]?.charRange
+    fun getHighlightRange(itemId: Long): IntRange? {
+        return captured[itemId]?.highlightRange
     }
 }
 
-/**
- * Shared helper: compute char range for a text element given its bounds, layout, and selection coords.
- * Used by all participant types that have TextLayoutResult.
- */
 fun calculateRangeForElement(
     bounds: Rect?,
     layout: TextLayoutResult?,
-    text: String,
+    selectableEnd: Int,
     coords: SelectionCoords
 ): IntRange? {
     bounds ?: return null
     layout ?: return null
-    if (text.isEmpty()) return null
+    if (selectableEnd <= 0) return null
 
     val isFirst = bounds.top <= coords.topY && bounds.bottom > coords.topY
     val isLast = bounds.top < coords.bottomY && bounds.bottom >= coords.bottomY
     val isMiddle = bounds.top > coords.topY && bounds.bottom < coords.bottomY
 
     return when {
-        isMiddle -> 0 until text.length
+        isMiddle -> 0 until selectableEnd
         isFirst && isLast -> {
             val s = layout.getOffsetForPosition(Offset(coords.topX - bounds.left, coords.topY - bounds.top))
             val e = layout.getOffsetForPosition(Offset(coords.bottomX - bounds.left, coords.bottomY - bounds.top))
@@ -411,7 +387,7 @@ fun calculateRangeForElement(
         }
         isFirst -> {
             val s = layout.getOffsetForPosition(Offset(coords.topX - bounds.left, coords.topY - bounds.top))
-            s until text.length
+            s until selectableEnd
         }
         isLast -> {
             val e = layout.getOffsetForPosition(Offset(coords.bottomX - bounds.left, coords.bottomY - bounds.top))
@@ -426,7 +402,9 @@ val LocalSelectionManager = staticCompositionLocalOf<SelectionManager?> { null }
 
 ---
 
-### 2. NEW FILE: `common/src/desktopMain/kotlin/chat/simplex/common/views/chat/SelectionOverlay.kt`
+### NEW: `SelectionOverlay.kt`
+
+`common/src/desktopMain/kotlin/chat/simplex/common/views/chat/SelectionOverlay.kt`
 
 ```kotlin
 package chat.simplex.common.views.chat
@@ -461,7 +439,7 @@ fun SelectionOverlay(
     val scope = rememberCoroutineScope()
     var autoScrollJob by remember { mutableStateOf<Job?>(null) }
 
-    // Re-evaluate selection on scroll changes (handles mouse wheel during drag)
+    // Re-evaluate selection on scroll (handles mouse wheel and auto-scroll)
     LaunchedEffect(selectionManager) {
         snapshotFlow { listState.value.firstVisibleItemScrollOffset }
             .collect {
@@ -486,7 +464,8 @@ fun SelectionOverlay(
             .pointerInput(selectionManager) {
                 awaitEachGesture {
                     val down = awaitPointerEvent(PointerEventPass.Initial)
-                    val localStart = down.changes.first().position
+                    val firstChange = down.changes.first()
+                    val localStart = firstChange.position
                     val windowStart = localStart + positionInWindow
                     var totalDrag = Offset.Zero
                     var isDragging = false
@@ -500,9 +479,10 @@ fun SelectionOverlay(
                             autoScrollJob = null
                             if (isDragging) {
                                 selectionManager.endSelection()
-                            } else {
-                                selectionManager.clearSelection()
                             }
+                            // Non-drag pointer up: do nothing to selection.
+                            // Selection persists. Links/right-click work via pass-through.
+                            // New drag clears old selection in startSelection().
                             break
                         }
 
@@ -526,32 +506,28 @@ fun SelectionOverlay(
                             } else {
                                 windowPos.y - viewportTop
                             }
-                            val shouldAutoScroll = edgeDistance < AUTO_SCROLL_ZONE_PX
-                                    && edgeDistance >= 0
+                            val shouldAutoScroll = edgeDistance in 0f..AUTO_SCROLL_ZONE_PX
 
                             if (shouldAutoScroll && autoScrollJob?.isActive != true) {
                                 autoScrollJob = scope.launch {
                                     while (isActive && selectionManager.isSelecting) {
-                                        val currentEdge = if (draggingDown) {
+                                        val curEdge = if (draggingDown) {
                                             viewportBottom - selectionManager.lastPointerWindowY
                                         } else {
                                             selectionManager.lastPointerWindowY - viewportTop
                                         }
-                                        if (currentEdge >= AUTO_SCROLL_ZONE_PX) break
+                                        if (curEdge >= AUTO_SCROLL_ZONE_PX) break
 
                                         val speed = lerp(
                                             MIN_SCROLL_SPEED, MAX_SCROLL_SPEED,
-                                            1f - (currentEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
+                                            1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
                                         )
-                                        listState.value.scrollBy(
-                                            if (draggingDown) speed else -speed
-                                        )
-                                        // After scroll, items moved — re-evaluate
-                                        selectionManager.updateSelection(
-                                            selectionManager.lastPointerWindowY,
-                                            selectionManager.lastPointerWindowX
-                                        )
-                                        delay(16) // ~60fps
+                                        // reverseLayout = true:
+                                        // drag down (toward newer) = scrollBy(-speed)
+                                        // drag up (toward older) = scrollBy(speed)
+                                        // VERIFY EMPIRICALLY — if wrong, flip sign
+                                        listState.value.scrollBy(if (draggingDown) -speed else speed)
+                                        delay(16)
                                     }
                                 }
                             } else if (!shouldAutoScroll) {
@@ -571,231 +547,387 @@ private fun lerp(start: Float, stop: Float, fraction: Float): Float =
 
 ---
 
-### 3. MODIFY: `ChatItemsLoader.kt` — Disable eviction during selection
+### MODIFY: `TextItemView.kt`
 
-**Line 175-186: Add `selectionActive` parameter:**
-
-```kotlin
-private fun removeDuplicatesAndModifySplitsOnBeforePagination(
-  unreadAfterItemId: StateFlow<Long>,
-  newItems: SnapshotStateList<ChatItem>,
-  newIds: Set<Long>,
-  splits: StateFlow<List<Long>>,
-  visibleItemIndexesNonReversed: () -> IntRange,
-  selectionActive: Boolean = false  // NEW
-): ModifiedSplits {
-  // ...
-  var allowedTrimming = !selectionActive  // CHANGED: was `true`
-```
-
-**Line 90: Pass selectionActive at call site:**
+#### MarkdownText (line 59): add parameters
 
 ```kotlin
-val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) =
-    removeDuplicatesAndModifySplitsOnBeforePagination(
-        unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed,
-        selectionActive = chatState.selectionActive  // NEW
-    )
-```
-
-**Threading**: Add `var selectionActive: Boolean = false` to `ChatModel.ChatsContext.chatState`.
-SelectionManager writes it on start/clear.
-
----
-
-### 4. MODIFY: `TextItemView.kt`
-
-#### 4a. ClickableText — add selectionRange and highlight (line 313-369)
-
-**Add parameter:**
-```kotlin
-fun ClickableText(
-  text: AnnotatedString,
-  modifier: Modifier = Modifier,
-  style: TextStyle = TextStyle.Default,
-  selectionRange: IntRange? = null,  // NEW
-  // ... rest unchanged
-```
-
-**Add highlight before BasicText (around line 357):**
-```kotlin
-  val selectionHighlight = if (selectionRange != null) {
-    Modifier.drawBehind {
-      layoutResult.value?.let { result ->
-        if (selectionRange.first < selectionRange.last && selectionRange.last <= text.length) {
-          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last), SelectionHighlightColor)
-        }
-      }
-    }
-  } else Modifier
-
-  BasicText(
-    text = text,
-    modifier = modifier.then(selectionHighlight).then(pressIndicator),
-    // ... rest unchanged
-  )
-```
-
-#### 4b. MarkdownText — add parameters (line 59)
-
-```kotlin
-fun MarkdownText (
-  // ... existing params ...
-  prefix: AnnotatedString? = null,
-  selectionRange: IntRange? = null,             // NEW
-  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null  // NEW
+fun MarkdownText(
+    // ... existing params ...
+    prefix: AnnotatedString? = null,
+    selectableEnd: MutableIntState? = null,            // NEW
+    annotatedTextState: MutableState<String>? = null,  // NEW
+    selectionRange: IntRange? = null,                  // NEW
+    onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null  // NEW
 )
 ```
 
-#### 4c. Handle all three render paths
+#### Inside `buildAnnotatedString` (BOTH paths — lines 129-139 and 145-257):
 
-**Line 140** — plain text, no formatting: replace `Text()` with `SelectableText()` (see 4d).
+After all content appended, before typing indicator and reserve:
 
-**Line 260** — formatted with links: add `selectionRange` to `ClickableText()` call,
-propagate `onTextLayoutResult`.
+```kotlin
+// ... all formatted text / plain text content done ...
 
-**Line 306** — formatted, no links: replace `Text()` with `SelectableText()`.
+selectableEnd?.intValue = this.length  // NEW — must be INSIDE builder, before reserve
 
-#### 4d. NEW: SelectableText wrapper
+if (meta?.isLive == true) {
+    append(typingIndicator(meta.recent, typingIdx))
+}
+if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+```
+
+This goes in BOTH the `formattedText == null` path (line ~137) and the
+`formattedText != null` path (line ~253).
+
+AFTER each `buildAnnotatedString` returns (OUTSIDE the builder), set annotatedTextState.
+This must be done in BOTH the `formattedText == null` path AND `formattedText != null` path:
+```kotlin
+val annotatedText = buildAnnotatedString { ... }
+annotatedTextState?.value = annotatedText.text  // NEW — OUTSIDE builder, uses .text API
+```
+
+#### ClickableText (line 313): add `selectionRange`
+
+```kotlin
+fun ClickableText(
+    text: AnnotatedString,
+    modifier: Modifier = Modifier,
+    style: TextStyle = TextStyle.Default,
+    selectionRange: IntRange? = null,  // NEW
+    // ... rest unchanged
+```
+
+Add highlight before BasicText (line 357):
+```kotlin
+val selectionHighlight = if (selectionRange != null) {
+    Modifier.drawBehind {
+        layoutResult.value?.let { result ->
+            if (selectionRange.first < selectionRange.last && selectionRange.last <= text.length) {
+                drawPath(result.getPathForRange(selectionRange.first, selectionRange.last), SelectionHighlightColor)
+            }
+        }
+    }
+} else Modifier
+
+BasicText(
+    text = text,
+    modifier = modifier.then(selectionHighlight).then(pressIndicator),
+    // ... rest unchanged
+)
+```
+
+#### Three render paths:
+
+**Line 140** (plain text, `formattedText == null`):
+- When `meta?.isLive == true`: keep `Text()` (needs `inlineContent` for typing indicator).
+  Live messages are excluded from selection anyway.
+- Otherwise: replace with `SelectableText()` (see below).
+
+**Line 260** (formatted with links): add `selectionRange` to `ClickableText()` call,
+propagate `onTextLayoutResult`:
+```kotlin
+ClickableText(annotatedText, style = style,
+    modifier = modifier.pointerHoverIcon(icon.value),
+    selectionRange = selectionRange,
+    // ... existing params ...
+    onTextLayout = { /* existing */ onTextLayoutResult?.invoke(it) },
+    // ...
+)
+```
+
+**Line 306** (formatted, no links): replace with `SelectableText()`.
+
+#### NEW: `SelectableText` wrapper
+
+Replaces plain `Text()` at lines 140 and 306. Used exactly at these 2 sites.
 
 ```kotlin
 @Composable
 private fun SelectableText(
-  text: AnnotatedString,
-  style: TextStyle,
-  modifier: Modifier = Modifier,
-  maxLines: Int = Int.MAX_VALUE,
-  overflow: TextOverflow = TextOverflow.Clip,
-  selectionRange: IntRange? = null,
-  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null,
-  inlineContent: Map<String, InlineTextContent> = mapOf()
+    text: AnnotatedString,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+    selectionRange: IntRange? = null,
+    onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
-  val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val highlight = if (selectionRange != null) {
-    Modifier.drawBehind {
-      layoutResult.value?.let { result ->
-        if (selectionRange.first < selectionRange.last && selectionRange.last <= text.length) {
-          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last), SelectionHighlightColor)
+    val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+    val highlight = if (selectionRange != null) {
+        Modifier.drawBehind {
+            layoutResult.value?.let { result ->
+                if (selectionRange.first < selectionRange.last && selectionRange.last <= text.length) {
+                    drawPath(result.getPathForRange(selectionRange.first, selectionRange.last), SelectionHighlightColor)
+                }
+            }
         }
-      }
-    }
-  } else Modifier
+    } else Modifier
 
-  BasicText(
-    text = text,
-    modifier = modifier.then(highlight),
-    style = style,
-    maxLines = maxLines,
-    overflow = overflow,
-    onTextLayout = {
-      layoutResult.value = it
-      onTextLayoutResult?.invoke(it)
-    }
-  )
+    BasicText(
+        text = text,
+        modifier = modifier.then(highlight),
+        style = style,
+        maxLines = maxLines,
+        overflow = overflow,
+        onTextLayout = {
+            layoutResult.value = it
+            onTextLayoutResult?.invoke(it)
+        }
+    )
 }
 ```
 
+**Note**: `BasicText` does not support `inlineContent`. This is why the live message
+path (line 140 with `meta?.isLive == true`) keeps `Text()`. Live messages are excluded
+from selection (`ci.meta.isLive != true` check in participant registration).
+
 ---
 
-### 5. MODIFY: `FramedItemView.kt` — Participant registration for message content
+### MODIFY: `FramedItemView.kt` — CIMarkdownText participant
 
-CIMarkdownText (lines 359-385):
+Lines 359-385. Full replacement:
 
 ```kotlin
 @Composable
 fun CIMarkdownText(
-  // ... existing params ...
+    chatsCtx: ChatModel.ChatsContext,
+    ci: ChatItem,
+    chat: Chat,
+    chatTTL: Int?,
+    linkMode: SimplexLinkMode,
+    uriHandler: UriHandler?,
+    onLinkLongClick: (link: String) -> Unit = {},
+    showViaProxy: Boolean,
+    showTimestamp: Boolean,
+    prefix: AnnotatedString? = null
 ) {
-  val selectionManager = LocalSelectionManager.current
-  val boundsState = remember { mutableStateOf<Rect?>(null) }
-  val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val chatInfo = chat.chatInfo
-  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+    val selectionManager = LocalSelectionManager.current
+    val boundsState = remember { mutableStateOf<Rect?>(null) }
+    val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+    val selectableEnd = remember { mutableIntStateOf(Int.MAX_VALUE) }
+    val annotatedTextState = remember { mutableStateOf("") }
+    val chatInfo = chat.chatInfo
+    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
 
-  if (selectionManager != null) {
-    val participant = remember(ci.id) {
-      object : SelectionParticipant {
-        override val itemId = ci.id
-        override val elementType = SelectableElementType.MESSAGE_CONTENT
-        override fun getYBounds() = boundsState.value?.let { it.top..it.bottom }
-        override fun getTextLayoutResult() = layoutResultState.value
-        override fun getText() = text
-        override fun calculateSelectionRange(coords: SelectionCoords) =
-            calculateRangeForElement(boundsState.value, layoutResultState.value, getText(), coords)
-      }
+    // Register participant (desktop only, not live messages)
+    if (selectionManager != null && ci.meta.isLive != true) {
+        val currentText = rememberUpdatedState(text)
+        val participant = remember(ci.id) {
+            object : SelectionParticipant {
+                override val itemId = ci.id
+                override fun getYBounds() = boundsState.value?.let { it.top..it.bottom }
+                override fun getTextLayoutResult() = layoutResultState.value
+                override fun getSelectableEnd() = selectableEnd.intValue
+                override fun getAnnotatedText(): String {
+                    val at = annotatedTextState.value
+                    return if (at.isNotEmpty()) at else currentText.value
+                }
+                override fun calculateHighlightRange(coords: SelectionCoords) =
+                    calculateRangeForElement(
+                        boundsState.value, layoutResultState.value,
+                        selectableEnd.intValue, coords
+                    )
+            }
+        }
+        DisposableEffect(participant) {
+            selectionManager.register(participant)
+            onDispose { selectionManager.unregister(participant) }
+        }
     }
-    DisposableEffect(participant) {
-      selectionManager.register(participant)
-      onDispose { selectionManager.unregister(participant) }
+
+    val highlightRange = selectionManager?.getHighlightRange(ci.id)
+
+    Box(
+        Modifier
+            .padding(vertical = 7.dp, horizontal = 12.dp)
+            .onGloballyPositioned { boundsState.value = it.boundsInWindow() }
+    ) {
+        MarkdownText(
+            text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
+            sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) {
+                { msg -> sendCommandMsg(chatsCtx, chat, msg) }
+            } else null,
+            meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+            mentions = ci.mentions, userMemberId = when {
+                chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+                else -> null
+            },
+            uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick,
+            showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
+            selectableEnd = selectableEnd,
+            annotatedTextState = annotatedTextState,
+            selectionRange = highlightRange,
+            onTextLayoutResult = { layoutResultState.value = it }
+        )
     }
-  }
-
-  // Rendering reads from resolved map — no coordinate comparison
-  val selectionRange = selectionManager?.getSelectionRange(ci.id, SelectableElementType.MESSAGE_CONTENT)
-
-  Box(
-    Modifier
-      .padding(vertical = 7.dp, horizontal = 12.dp)
-      .onGloballyPositioned { boundsState.value = it.boundsInWindow() }
-  ) {
-    MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
-      // ... existing params ...
-      selectionRange = selectionRange,
-      onTextLayoutResult = { layoutResultState.value = it }
-    )
-  }
 }
 ```
 
 ---
 
-### 6. MODIFY: `ChatView.kt`
+### MODIFY: `EmojiItemView.kt` — participant for emoji messages
 
-#### 6a. Provide SelectionManager and overlay
-
-Around line 965:
+The common `EmojiItemView` composable (EmojiItemView.kt:20-28) contains:
 ```kotlin
-Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-  val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
-  CompositionLocalProvider(
-    LocalSelectionManager provides selectionManager,
-    LocalBringIntoViewSpec provides object : BringIntoViewSpec {
-      override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
-    }
-  ) {
-    ChatItemsList(...)
-
-    // Overlay on top of list, after it in Z-order
-    if (appPlatform.isDesktop && selectionManager != null) {
-      SelectionOverlay(selectionManager, listState)
-    }
-  }
+Column(...) {
+    EmojiText(chatItem.content.text)
+    CIMetaView(...)
+}
 ```
 
-#### 6b. Sender name participant (MemberNameAndRole, line 1948)
+Desktop `EmojiText` (EmojiItemView.desktop.kt:15-22) renders:
+- Heart emoji: `Image(...)` — skip selection (no text to select)
+- All others: `Text(s, style = ...)` — selectable
 
-Register participant, render `Modifier.background(SelectionHighlightColor)` when
-`selectionManager.getSelectionRange(cItem.id, SENDER_NAME) != null`.
-Full selection only (no partial char selection for names).
+**Change for desktop** (EmojiItemView.desktop.kt):
+Replace `Text()` with `SelectableText()` for non-heart emoji path. Add participant
+registration in the common `EmojiItemView` composable:
 
-#### 6c. Timestamp participant (CIMetaView)
+```kotlin
+@Composable
+fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
+    val selectionManager = LocalSelectionManager.current
+    val boundsState = remember { mutableStateOf<Rect?>(null) }
+    val emojiText = chatItem.content.text.trim()
+    val currentEmojiText = rememberUpdatedState(emojiText)
 
-Same pattern as sender name. Full selection only.
+    if (selectionManager != null) {
+        val participant = remember(chatItem.id) {
+            object : SelectionParticipant {
+                override val itemId = chatItem.id
+                override fun getYBounds() = boundsState.value?.let { it.top..it.bottom }
+                override fun getTextLayoutResult() = null // full selection only
+                override fun getSelectableEnd() = currentEmojiText.value.length
+                override fun getAnnotatedText() = currentEmojiText.value
+                override fun calculateHighlightRange(coords: SelectionCoords): IntRange? {
+                    val bounds = boundsState.value ?: return null
+                    return if (bounds.top <= coords.bottomY && bounds.bottom >= coords.topY)
+                        0 until currentEmojiText.value.length
+                    else null
+                }
+            }
+        }
+        DisposableEffect(participant) {
+            selectionManager.register(participant)
+            onDispose { selectionManager.unregister(participant) }
+        }
+    }
 
-#### 6d. Date separator participant (DateSeparator)
+    val isSelected = selectionManager?.getHighlightRange(chatItem.id) != null
 
-Same pattern. Use `itemId = -date.epochSeconds` for unique ID.
+    Column(
+        Modifier
+            .padding(vertical = 8.dp, horizontal = 12.dp)
+            .onGloballyPositioned { boundsState.value = it.boundsInWindow() },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(if (isSelected) Modifier.background(SelectionHighlightColor) else Modifier) {
+            EmojiText(chatItem.content.text)
+        }
+        CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+    }
+}
+```
 
-#### 6e. Copy button (after FloatingButtons, ~line 2270)
+Emoji uses `Modifier.background()` for highlight (full selection, no partial character).
+`onGloballyPositioned` on the Column captures bounds for Y range check.
+
+---
+
+### MODIFY: `ChatItemsLoader.kt` — eviction prevention
+
+Line 175: add parameter:
+```kotlin
+private fun removeDuplicatesAndModifySplitsOnBeforePagination(
+    // ... existing params ...
+    selectionActive: Boolean = false  // NEW
+): ModifiedSplits {
+```
+
+Line 186: `var allowedTrimming = !selectionActive`
+
+Line 90 (call site): pass `selectionActive = chatState.selectionActive`
+
+Thread `selectionActive` from SelectionManager through ChatState:
+add `var selectionActive: Boolean = false` to `ChatModel.ChatsContext.chatState`.
+Connected via `LaunchedEffect` in ChatView.kt (see ChatView.kt section above).
+SelectionManager writes it in `startSelection` (true) and `clearSelection` (false).
+
+---
+
+### MODIFY: `ChatView.kt`
+
+#### Hoist `listState` to outer scope
+
+Move `listState` creation from inside ChatItemsList (line 1754) to the Box at line 965.
+`listState` is currently:
+```kotlin
+val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value,
+    resetListState.value, saver = LazyListState.Saver) { ... })
+```
+The `chatInfo.id`, `searchValueIsEmpty`, `resetListState` are available at the outer scope.
+Pass `listState` down to ChatItemsList as a parameter.
+
+#### Provide SelectionManager (around line 965)
+
+`selectionManager` MUST be defined BEFORE the Box so it's in scope for `onPreviewKeyEvent`:
+
+```kotlin
+val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
+val listState = // ... hoisted from ChatItemsList ...
+
+// Sync selectionActive to ChatState for eviction prevention in ChatItemsLoader
+LaunchedEffect(selectionManager) {
+    if (selectionManager != null) {
+        snapshotFlow { selectionManager.selectionActive }
+            .collect { chatsCtx.chatState.selectionActive = it }
+    }
+}
+
+Box(
+    Modifier
+        .fillMaxSize()
+        .onPreviewKeyEvent { event ->
+            if (selectionManager != null && selectionManager.captured.isNotEmpty()
+                && event.isCtrlPressed && event.key == Key.C
+                && event.type == KeyEventType.KeyDown
+            ) {
+                clipboard.setText(AnnotatedString(selectionManager.getSelectedText()))
+                true
+            } else false
+        },
+    contentAlignment = Alignment.BottomCenter
+) {
+    CompositionLocalProvider(
+        LocalSelectionManager provides selectionManager,
+        LocalBringIntoViewSpec provides ...
+    ) {
+        ChatItemsList(..., listState = listState)
+
+        if (appPlatform.isDesktop && selectionManager != null) {
+            SelectionOverlay(selectionManager, listState)
+        }
+    }
+}
+```
+
+#### Gate SwipeToDismiss on desktop (line 1896)
+
+```kotlin
+val swipeableModifier = if (appPlatform.isDesktop)
+    Modifier
+else
+    SwipeToDismissModifier(state = dismissState, ...)
+```
+
+#### Copy button (after FloatingButtons, ~line 2270)
 
 ```kotlin
 if (appPlatform.isDesktop) {
     val manager = LocalSelectionManager.current
-    if (manager != null && !manager.captured.isEmpty() && !manager.isSelecting) {
-        val clipboard = LocalClipboardManager.current
+    if (manager != null && manager.captured.isNotEmpty() && !manager.isSelecting) {
         SelectionCopyButton(
-            coords = manager.coords!!,
             onCopy = {
                 clipboard.setText(AnnotatedString(manager.getSelectedText()))
                 manager.clearSelection()
@@ -806,145 +938,153 @@ if (appPlatform.isDesktop) {
 }
 ```
 
+#### SelectionCopyButton definition (in TextSelection.kt or ChatView.kt)
+
+```kotlin
+@Composable
+fun SelectionCopyButton(onCopy: () -> Unit, onDismiss: () -> Unit) {
+    // Floating pill-shaped button near FloatingButtons area.
+    // Dismiss happens when: user starts a new drag (startSelection clears),
+    // or user clicks Copy (onCopy calls clearSelection).
+    // onDismiss is called by a click-outside scrim or explicit close button if needed.
+    Row(
+        Modifier
+            .padding(8.dp)
+            .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
+            .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
+            .clickable { onCopy() }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(painterResource(MR.images.ic_content_copy), null, Modifier.size(16.dp), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.width(6.dp))
+        Text(stringResource(MR.strings.copy_verb), color = MaterialTheme.colors.primary)
+    }
+}
+```
+
 ---
 
-## Call Chain Diagrams
+## Call Chains
 
-### Drag → Highlight (continuous resolution)
+### Drag → Highlight
 
 ```
-Pointer move during drag
-       │
-       ▼
-SelectionOverlay: change.consume(), convert to window coords
-       │
-       ▼
-selectionManager.updateSelection(windowY, windowX)
-       │
-       ├─ coords updated
-       ├─ recomputeAll():
-       │    for each visible participant:
-       │      in range? → compute charRange → update captured map
-       │      out of range? → remove from captured
-       │    scrolled-out entries → untouched
-       │
-       ▼
-captured map is mutableStateMapOf → triggers recomposition
-       │
-       ▼
-CIMarkdownText: selectionRange = manager.getSelectionRange(myId, MESSAGE_CONTENT)
-       │                          (reads captured map, no coordinate math)
-       ▼
-MarkdownText → ClickableText/SelectableText
-       │
-       ▼
-drawBehind { getPathForRange(charRange) → drawPath(highlight) }
+Pointer down on overlay
+  → awaitPointerEvent(PointerEventPass.Initial) — observe, don't consume
+  → pointer moves, totalDrag > touchSlop
+    → selectionManager.startSelection(windowY, windowX) — clears any existing selection
+    → change.consume() — children stop receiving drag events
+    → subsequent moves: selectionManager.updateSelection(windowY, windowX)
+      → recomputeAll():
+          visible + in range → compute highlightRange, capture text
+          visible + out of range → remove from captured
+          not visible → keep existing
+      → captured (mutableStateMapOf) changes → recomposition
+        → CIMarkdownText: manager.getHighlightRange(ci.id) → IntRange
+          → MarkdownText → ClickableText/SelectableText
+            → drawBehind { getPathForRange(highlightRange) }
 ```
 
 ### Auto-scroll
 
 ```
-Pointer near viewport bottom edge, dragging downward
-       │
-       ▼
-autoScrollJob launched (coroutine loop at ~60fps)
-       │
-       ▼
-listState.scrollBy(speed)   ──────────────────────────────────┐
-       │                                                       │
-       ▼                                                       ▼
-Items move (new boundsInWindow)              firstVisibleItemIndex changes
-       │                                                       │
-       ▼                                                       ▼
-updateSelection(samePointerY, samePointerX)  preloadItemsBefore/After fires
-       │                                     (loads new items from DB)
-       ▼                                                       │
-Intersection with new bounds →                                 ▼
-selection extends to new items              New items compose → register
-                                            → captureIfInRange → captured
+Pointer near viewport edge, dragging toward that edge
+  → autoScrollJob coroutine launched
+    → loop: listState.scrollBy(delta) at ~60fps
+      → firstVisibleItemIndex changes
+        → PreloadItems snapshotFlow fires → loads from DB → new items compose → register
+      → firstVisibleItemScrollOffset changes
+        → snapshotFlow in SelectionOverlay fires
+          → updateSelection(lastPointerY, lastPointerX)
+            → items have new boundsInWindow → captured map extends/updates
 ```
 
 ### Mouse wheel during drag
 
 ```
-User holds mouse button + scrolls wheel
-       │
-       ├─ Scroll event NOT consumed by overlay → reaches LazyColumn → scrolls
-       │
-       ▼
-snapshotFlow { firstVisibleItemScrollOffset } fires
-       │
-       ▼
-selectionManager.updateSelection(lastPointerWindowY, lastPointerWindowX)
-       │
-       ▼
-Items have new boundsInWindow → recomputeAll → captured map updated
+User holds left button + scrolls wheel
+  → scroll event NOT consumed by overlay → reaches LazyColumn → scrolls
+  → firstVisibleItemScrollOffset changes → snapshotFlow fires
+    → updateSelection(lastPointerY, lastPointerX) → recompute with new positions
 ```
 
-### Direction reversal past anchor
+### Direction reversal
 
 ```
-User clicks at Y=500 in item A (char 15), drags to Y=700 (item C)
-  → topY=500, bottomY=700
-  → item A: first (char 15..end), items B: middle (full), item C: last (0..char)
+Click Y=500 item A char 15, drag to Y=700 item C
+  topY=500 bottomY=700 topX=startX bottomX=endX
+  captured: {A: hl=15..end, B: hl=0..end, C: hl=0..charAtEndX}
 
-User reverses to Y=400 (above item A, in item Z)
-  → topY=400, bottomY=500
-  → item Z: first (char..end)
-  → item A: last (0..char 15) — anchor char preserved via bottomX=startX
-  → items B, C: out of range → removed from captured
+Reverse to Y=400 (above A, into item Z)
+  topY=400 bottomY=500 topX=endX bottomX=startX (flipped: isReversed=true)
+  Z: "first" → hl=charAtTopX..selectableEnd
+  A: "last" → hl=0..charAtBottomX (bottomX=startX → original anchor char 15)
+  B, C: out of range → removed from captured
+  captured: {Z: hl=charAtTopX..end, A: hl=0..15}
+```
+
+### Click on link (no selection interference)
+
+```
+Pointer down on overlay
+  → awaitPointerEvent(Initial) — observed, NOT consumed
+  → pointer up without exceeding touchSlop
+    → isDragging = false → no clearSelection, no endSelection
+    → event was never consumed → passes through to children
+    → combinedClickable on ChatItemView sees full down→up sequence
+      → onClick fires → link handler invoked
 ```
 
 ---
 
-## Testing Checklist
+## Verify Before First Test
 
-1. [ ] Single message partial selection highlights correct characters
-2. [ ] Multi-message selection highlights all messages in range
-3. [ ] Selection highlight follows styled text (bold, italic, links) correctly
-4. [ ] Sender names highlight when in selection range
-5. [ ] Timestamps highlight when in selection range
-6. [ ] Date separators highlight when in selection range
-7. [ ] Copy produces formatted text: `[timestamp] sender: message`
-8. [ ] Click on links still works (not consumed by overlay)
-9. [ ] Long click context menu still works
-10. [ ] Right click context menu still works
-11. [ ] Scroll wheel during active drag extends selection correctly
-12. [ ] Auto-scroll when dragging to bottom edge (downward drag only)
-13. [ ] Auto-scroll when dragging to top edge (upward drag only)
-14. [ ] Auto-scroll does NOT trigger at opposite edge
-15. [ ] Auto-scroll loads additional items from DB as they come into view
-16. [ ] Direction reversal: drag down then up past anchor works
-17. [ ] Direction reversal: selection shrinks correctly (items removed from captured)
-18. [ ] Selection persists after drag ends (highlight stays, copy button shows)
-19. [ ] Click elsewhere clears selection
-20. [ ] Items scrolling into view during selection get captured
-21. [ ] Items eviction (our trimming) disabled during selection
-22. [ ] Works with RTL text
-23. [ ] Works with multi-line messages
-24. [ ] Works with emoji-only messages
+1. **Auto-scroll sign**: Run with `scrollBy(-speed)` for dragging down. If content
+   scrolls wrong direction, flip to `scrollBy(speed)`. One-line change.
+
+2. **`onPreviewKeyEvent` receives Ctrl+C**: The outer Box must be in the key event
+   propagation path. Verify by logging.
+
+3. **`boundsInWindow()` consistency**: Log overlay pointer window coords and item
+   boundsInWindow for the same physical position. Must match.
 
 ---
 
-## Decisions (Resolved)
+## Deferred (Explicit)
 
-1. **Timestamps/sender names**: Separately highlighted (WYSIWYG)
-2. **Date separators**: Selectable with highlight
-3. **Selection + scroll**: Persists, auto-scroll supported, eviction disabled
-4. **Selection state model**: Continuously resolved map, no two-phase
-5. **Bidirectional drag**: Core design, anchor preserved on reversal
-6. **Auto-scroll direction**: Only the edge you're dragging toward
-7. **Quote selection**: Defer to later phase
+- Quote content selection
+- Date separator selection
+- Sender name / timestamp selection
+- Chat event text selection ("Alice joined the group")
+- Copy button positioning relative to visible selected items after scroll
 
 ---
 
-## Implementation Order
+## Testing (All v1)
 
-1. **Phase 1**: TextSelection.kt + SelectionOverlay.kt + highlight on single message
-2. **Phase 2**: Multi-message + participant registration in CIMarkdownText
-3. **Phase 3**: Copy button + `getSelectedText()`
-4. **Phase 4**: Sender name, timestamp, date separator participants
-5. **Phase 5**: Eviction prevention in ChatItemsLoader.kt
-6. **Phase 6**: Auto-scroll during drag
-7. **Phase 7**: Mouse wheel during drag (snapshotFlow re-evaluation)
-8. **Phase 8**: Polish (RTL, color tuning, edge cases)
+1. Single message partial character selection
+2. Multi-message selection with highlights
+3. Highlight stops before invisible reserve space (no highlight on timestamp area)
+4. Copy produces clean text (no invisible chars, no timestamps)
+5. Ctrl+C copies selected text
+6. Copy button appears after drag and works
+7. Click on links not consumed by overlay
+8. Long click context menu works
+9. Right-click doesn't affect selection
+10. Scroll wheel during active drag extends selection
+11. Auto-scroll bottom edge (downward drag only)
+12. Auto-scroll top edge (upward drag only)
+13. No auto-scroll at opposite edge
+14. Auto-scroll triggers item loading from DB
+15. Direction reversal past anchor preserves anchor character
+16. Selection shrinks on reverse (items removed from captured)
+17. Selection persists after drag end and across scroll
+18. New drag clears previous selection
+19. Emoji-only message fully selectable
+20. Live messages excluded from selection
+21. Edited messages reflect current text (rememberUpdatedState)
+22. Swipe-to-reply disabled on desktop
+23. RTL text selection and highlight
+24. Multi-line message selection
+25. Mentions with different display length selected correctly
