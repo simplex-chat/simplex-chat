@@ -4276,7 +4276,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         when (t) {
           "text" -> MsgContent.MCText(text)
           "link" -> {
-            val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
+            val preview = decoder.json.decodeFromString<LinkPreview>(json["preview"].toString())
             MsgContent.MCLink(text, preview)
           }
           "image" -> {
