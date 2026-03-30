@@ -746,16 +746,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
             case chatMsgEvent of
-              XGrpLinkInv glInv@GroupLinkInvitation {groupProfile = GroupProfile {sharedGroupId = rcvGId}} -> do
-                -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
-                let GroupInfo {groupProfile = GroupProfile {sharedGroupId = curGId}} = gInfo
-                when (rcvGId /= curGId) $ messageError "x.grp.link.inv: sharedGroupId mismatch"
-                (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
-                -- [incognito] send saved profile
-                incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-                let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-                allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
-                toView $ CEvtGroupLinkConnecting user gInfo' m'
+              XGrpLinkInv glInv@GroupLinkInvitation {groupProfile = GroupProfile {sharedGroupId = rcvGId}}
+                | let GroupInfo {groupProfile = GroupProfile {sharedGroupId = curGId}} = gInfo, rcvGId == curGId -> do
+                    -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
+                    (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
+                    -- [incognito] send saved profile
+                    incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
+                    let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+                    allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
+                    toView $ CEvtGroupLinkConnecting user gInfo' m'
+                | otherwise -> messageError "x.grp.link.inv: sharedGroupId mismatch"
               XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
                 (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersRejected db vr user gInfo m glRjct
                 toView $ CEvtGroupLinkConnecting user gInfo' m'
