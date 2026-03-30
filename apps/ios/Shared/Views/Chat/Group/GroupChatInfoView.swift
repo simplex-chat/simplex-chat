@@ -90,6 +90,17 @@ struct GroupChatInfoView: View {
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
+                    if groupInfo.useRelays && groupInfo.membership.memberIncognito {
+                        Section(header: Text("Incognito").foregroundColor(theme.colors.secondary)) {
+                            HStack {
+                                Text("Your random profile")
+                                Spacer()
+                                Text(groupInfo.membership.chatViewName)
+                                    .foregroundStyle(.indigo)
+                            }
+                        }
+                    }
+
                     if groupInfo.useRelays {
                         Section {
                             // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
