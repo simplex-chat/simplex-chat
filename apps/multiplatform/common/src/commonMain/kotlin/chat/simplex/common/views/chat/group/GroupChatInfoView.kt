@@ -5,6 +5,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
+import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -532,6 +533,16 @@ fun ModalData.GroupChatInfoLayout(
       }
 
       SectionSpacer()
+
+      if (groupInfo.useRelays && groupInfo.membership.memberIncognito) {
+        SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+          SectionItemViewSpaceBetween {
+            Text(generalGetString(MR.strings.incognito_random_profile))
+            Text(groupInfo.membership.chatViewName, color = Indigo)
+          }
+        }
+        SectionDividerSpaced()
+      }
 
       var anyTopSectionRowShow = false
       if (groupInfo.useRelays) {
