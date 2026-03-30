@@ -437,7 +437,7 @@ fun PriorityLayout(
   ) { measureable, constraints ->
     // Find important element which should tell what max width other elements can use
     // Expecting only one such element. Can be less than one but not more
-    // Constrain max image height to prevent crashes and scroll issues from images with extreme aspect ratios
+    // Max image height for chat item display, taller images are cropped
     val maxImageHeight = (constraints.maxWidth * 2.33f).toInt().coerceAtMost(constraints.maxHeight)
     val imageConstraints = constraints.copy(maxHeight = maxImageHeight)
     val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(imageConstraints)

@@ -92,17 +92,16 @@ struct CIImageView: View {
 
     private func imageView(_ img: UIImage) -> some View {
         let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
-        let maxH = w * 2.33
         return ZStack(alignment: .topTrailing) {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: w, height: min(w * img.size.height / img.size.width, maxH))
+                        .frame(width: w, height: w * heightRatio(img.size))
                         .clipped()
             } else {
-                SwiftyGif(image: img)
-                        .frame(width: w, height: min(w * img.size.height / img.size.width, maxH))
+                SwiftyGif(image: img, contentMode: .scaleAspectFill)
+                        .frame(width: w, height: w * heightRatio(img.size))
                         .clipped()
             }
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
