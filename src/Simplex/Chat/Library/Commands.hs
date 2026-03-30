@@ -2369,6 +2369,7 @@ processChatCommand vr nm = \case
     g <- asks random
     memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
     gInfo <- newGroup user incognito gProfile False memberId Nothing Nothing
+    createNewGroupItems user gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewGroup userId incognito gProfile
@@ -2378,6 +2379,7 @@ processChatCommand vr nm = \case
     (gLink, groupRelays) <- setupLink gInfo `catchAllErrors` \e -> do
       deleteInProgressGroup user gInfo
       throwError e
+    createNewGroupItems user gInfo
     pure $ CRPublicGroupCreated user gInfo gLink groupRelays
     where
       prepareGroupLink :: User -> CM (GroupProfile, MemberId, GroupKeys, GroupInfo -> CM (GroupLink, [GroupRelay]))
@@ -3709,12 +3711,13 @@ processChatCommand vr nm = \case
       checkValidName displayName
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-      gInfo <- withFastStore $ \db -> createNewGroup db vr user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
+      withFastStore $ \db -> createNewGroup db vr user gProfile incognitoProfile useRelays memberId groupKeys_ publicMemberCount_
+    createNewGroupItems :: User -> GroupInfo -> CM ()
+    createNewGroupItems user gInfo = do
       let cd = CDGroupSnd gInfo Nothing
       createInternalChatItem user cd CIChatBanner (Just epochStart)
       createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
       createGroupFeatureItems user cd CISndGroupFeature gInfo
-      pure gInfo
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
     sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
