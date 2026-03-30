@@ -3655,7 +3655,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   sigKeys <- liftIO $ atomically $ C.generateKeyPair gVar
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
-                  (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) sigKeys relayMemId True (Just crClientData)
+                  (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData)
                   ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
                   sLnk <- case toShortLinkContact ccLink' of
                     Just sl -> pure sl
@@ -3663,7 +3663,7 @@ runRelayRequestWorker a Worker {doWork} = do
                   let userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile p}
                       userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
                   -- create connection with prepared link (single network call)
-                  connId <- withAgent $ \a -> createConnectionForLink a NRMBackground (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
+                  connId <- withAgent $ \a' -> createConnectionForLink a' NRMBackground (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
                   -- TODO [relays] starting role should be communicated in protocol from owner to relays
                   subRole <- asks $ channelSubscriberRole . config
                   void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode
