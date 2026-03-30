@@ -579,7 +579,7 @@ struct ChatView: View {
                     contentFilterMenu(withLabel: false)
                     Menu {
                         if groupInfo.canAddMembers {
-                            if chat.chatInfo.incognito {
+                            if chat.chatInfo.incognito || groupInfo.useRelays {
                                 groupLinkButton()
                                     .appSheet(isPresented: $showGroupLinkSheet) {
                                         GroupLinkView(
@@ -590,7 +590,7 @@ struct ChatView: View {
                                             creatingGroup: false
                                         )
                                     }
-                            } else if !groupInfo.useRelays {
+                            } else {
                                 addMembersButton()
                             }
                         }
