@@ -34,7 +34,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     reader.setInput(stream)
     val width = reader.getWidth(0)
     val height = reader.getHeight(0)
-    if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || width <= 0 || height <= 0) {
+    if (width <= 0 || height <= 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION || height > width * 256) {
       reader.dispose()
       return errorBitmap()
     }

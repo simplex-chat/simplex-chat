@@ -31,7 +31,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
     val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
-    if (options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outWidth <= 0 || options.outHeight <= 0) {
+    if (options.outWidth <= 0 || options.outHeight <= 0 || options.outWidth > MAX_IMAGE_DIMENSION || options.outHeight > MAX_IMAGE_DIMENSION || options.outHeight > options.outWidth * 256) {
       return errorBitmap.asImageBitmap()
     }
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
