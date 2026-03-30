@@ -1282,18 +1282,18 @@ fun BoxScope.ChatInfoToolbar(
     is ChatInfo.Group -> {
       // Add members / group link moved to menu
       if (chatInfo.groupInfo.canAddMembers) {
-        if (chatInfo.incognito || chatInfo.groupInfo.useRelays) {
-          menuItems.add {
-            ItemAction(stringResource(MR.strings.group_link), painterResource(MR.images.ic_add_link), onClick = {
-              showMenu.value = false
-              openGroupLink(chatInfo.groupInfo)
-            })
-          }
-        } else {
+        if (!chatInfo.incognito && !chatInfo.groupInfo.useRelays) {
           menuItems.add {
             ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), onClick = {
               showMenu.value = false
               addMembers(chatInfo.groupInfo)
+            })
+          }
+        } else {
+          menuItems.add {
+            ItemAction(stringResource(MR.strings.group_link), painterResource(MR.images.ic_add_link), onClick = {
+              showMenu.value = false
+              openGroupLink(chatInfo.groupInfo)
             })
           }
         }
