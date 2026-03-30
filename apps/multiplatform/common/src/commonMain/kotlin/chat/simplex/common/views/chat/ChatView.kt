@@ -1281,7 +1281,7 @@ fun BoxScope.ChatInfoToolbar(
     }
     is ChatInfo.Group -> {
       // Add members / group link moved to menu
-      if (chatInfo.groupInfo.canAddMembers) {
+      if (chatInfo.groupInfo.canAddMembers && !chatInfo.groupInfo.useRelays) {
         if (!chatInfo.incognito) {
           menuItems.add {
             ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), onClick = {

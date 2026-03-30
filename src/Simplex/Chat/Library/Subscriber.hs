@@ -2314,6 +2314,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CEvtNewChatItems user [AChatItem SCTGroup (msgDirection @d) cInfo ci]
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> CM ()
+    processGroupInvitation _ct GroupInvitation {groupProfile = GroupProfile {groupLink = Just _}} _msg _msgMeta =
+      messageError "x.grp.inv: can't invite to channel"
     processGroupInvitation ct inv msg msgMeta = do
       let Contact {localDisplayName = c, activeConn} = ct
           GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
