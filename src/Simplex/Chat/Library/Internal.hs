@@ -1055,7 +1055,7 @@ acceptRelayJoinRequestAsync
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
-  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupLink = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupLink = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing, sharedGroupId = Nothing}
 
 introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
@@ -1882,9 +1882,9 @@ createSndMessages idsEvents = do
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
-groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {groupRootKey, memberPrivKey}} evt
+groupMsgSigning gInfo@GroupInfo {membership = GroupMember {memberId}, groupKeys = Just GroupKeys {sharedGroupId, memberPrivKey}} evt
   | useRelays' gInfo && requiresSignature (toCMEventTag evt) =
-      Just $ MsgSigning CBGroup (smpEncode (groupRootPubKey groupRootKey, memberId)) KRMember memberPrivKey
+      Just $ MsgSigning CBGroup (smpEncode (sharedGroupId, memberId)) KRMember memberPrivKey
 groupMsgSigning _ _ = Nothing
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
