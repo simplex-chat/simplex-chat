@@ -1510,7 +1510,8 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           image = Nothing,
           groupLink = Nothing,
           groupPreferences = Nothing,
-          memberAdmission = Nothing
+          memberAdmission = Nothing,
+          sharedGroupId = Nothing
         }
   (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
   -- Store relay request data for recovery
@@ -2278,7 +2279,7 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
           |]
             (Only groupId)
     toGroupProfile (displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission) =
-      GroupProfile {displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission}
+      GroupProfile {displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission, sharedGroupId = Nothing}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do

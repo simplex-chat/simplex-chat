@@ -2674,6 +2674,7 @@ export interface GroupProfile {
   groupLink?: string
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+  sharedGroupId?: string
 }
 
 export interface GroupRelay {

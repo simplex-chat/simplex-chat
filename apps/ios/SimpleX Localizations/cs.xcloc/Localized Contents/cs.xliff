@@ -1924,6 +1924,10 @@ Toto je váš vlastní jednorázový odkaz!</target>
         <target>Chyba spojení (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection failed" xml:space="preserve">
+        <source>Connection failed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
         <source>Connection is blocked by server operator:
 %@</source>
@@ -3650,7 +3654,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Je možné, že otisk certifikátu v adrese serveru je nesprávný</target>
+        <target>Otisk certifikátu v adrese serveru neodpovídá.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
@@ -4037,6 +4041,10 @@ Error: %2$@</source>
         <source>If you enter your self-destruct passcode while opening the app:</source>
         <target>Pokud při otevření aplikace zadáte sebedestrukční heslo:</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve">
+        <source>If you joined or created channels, they will stop working permanently.</source>
+        <note>down migration warning</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
         <source>If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app).</source>
@@ -5205,7 +5213,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
         <source>No user identifiers.</source>
-        <target>Bez uživatelských identifikátorů</target>
+        <target>Bez uživatelských identifikátorů.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -6815,12 +6823,12 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo</target>
+        <target>Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
         <source>Server requires authorization to upload, check password.</source>
-        <target>Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo</target>
+        <target>Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -9274,6 +9282,10 @@ pref value</note>
       </trans-unit>
       <trans-unit id="expired" xml:space="preserve">
         <source>expired</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="failed" xml:space="preserve">
+        <source>failed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">

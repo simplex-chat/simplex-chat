@@ -335,6 +335,13 @@ struct ChatView: View {
 
                 if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
+                } else if let viewedIdx = mergedItems.boxedValue.items.firstIndex(where: { !$0.hasUnread() }) {
+                    // scroll to first unread after last viewed item (items reversed: 0 = newest)
+                    if viewedIdx > 0 {
+                        scrollView.scrollToItem(viewedIdx - 1)
+                    } else {
+                        scrollView.scrollToBottom()
+                    }
                 } else if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
                     scrollView.scrollToItem(unreadIndex)
                 } else {
@@ -518,32 +525,51 @@ struct ChatView: View {
             case let .direct(contact):
                 HStack {
                     let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                    let canStartCall = callsPrefEnabled && contact.ready && contact.active && chatModel.activeCall == nil
                     if let call = chatModel.activeCall, call.contact.id == cInfo.id {
                         endCallButton(call)
-                    } else {
-                        contentFilterMenu(withLabel: false)
-                    }
-                    Menu {
-                        if callsPrefEnabled && chatModel.activeCall == nil {
+                    } else if canStartCall {
+                        // Call button always in toolbar; tap opens Audio/Video submenu
+                        Menu {
                             Button {
                                 CallController.shared.startCall(contact, .audio)
                             } label: {
                                 Label("Audio call", systemImage: "phone")
                             }
-                            .disabled(!contact.ready || !contact.active)
                             Button {
                                 CallController.shared.startCall(contact, .video)
                             } label: {
                                 Label("Video call", systemImage: "video")
                             }
-                            .disabled(!contact.ready || !contact.active)
+                        } label: {
+                            Image(systemName: "phone")
                         }
-                        if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                            contentFilterMenu(withLabel: true)
-                        }
+                    } else if chatModel.activeCall == nil {
+                        // Calls unavailable: show filter button in place of call button
+                        contentFilterMenu(withLabel: false)
+                    }
+                    Menu {
                         searchButton()
                         ToggleNtfsButton(chat: chat)
                             .disabled(!contact.ready || !contact.active)
+                        // Filter options in menu when call button is shown (or during any active call)
+                        if !availableContent.isEmpty && (canStartCall || chatModel.activeCall != nil) {
+                            Divider()
+                            ForEach(availableContent, id: \.self) { type in
+                                Button {
+                                    setContentFilter(type)
+                                } label: {
+                                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                                }
+                            }
+                            if contentFilter != nil {
+                                Button {
+                                    closeSearch()
+                                } label: {
+                                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                                }
+                            }
+                        }
                     } label: {
                         Image(systemName: "ellipsis")
                     }
@@ -576,7 +602,26 @@ struct ChatView: View {
                 }
             case .local:
                 HStack {
-                    contentFilterMenu(withLabel: false)
+                    if !availableContent.isEmpty {
+                        Menu {
+                            ForEach(availableContent, id: \.self) { type in
+                                Button {
+                                    setContentFilter(type)
+                                } label: {
+                                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                                }
+                            }
+                            if contentFilter != nil {
+                                Button {
+                                    closeSearch()
+                                } label: {
+                                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
+                    }
                     searchButton()
                 }
             default:
@@ -869,6 +914,7 @@ struct ChatView: View {
                             selectedChatItems: $selectedChatItems,
                             forwardedChatItems: $forwardedChatItems,
                             searchText: $searchText,
+                            contentFilter: $contentFilter,
                             closeKeyboardAndRun: closeKeyboardAndRun
                         )
                     }
@@ -1639,12 +1685,14 @@ struct ChatView: View {
         @Binding var forwardedChatItems: [ChatItem]
 
         @Binding var searchText: String
+        @Binding var contentFilter: ContentFilter?
         var closeKeyboardAndRun: (@escaping () -> Void) -> Void
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
+        @State private var swipeOffset: CGFloat = 0
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -1803,7 +1851,7 @@ struct ChatView: View {
 
         private var searchIsNotBlank: Bool {
             get {
-                searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                (searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || contentFilter != nil
             }
         }
 
@@ -2053,33 +2101,69 @@ struct ChatView: View {
 
         func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            return VStack(alignment: alignment.horizontal, spacing: 3) {
-                HStack {
-                    if ci.chatDir.sent {
-                        goToItemButton(true)
+            let live = composeState.liveMessage != nil
+            let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil
+            return ZStack(alignment: .trailing) {
+                Image(systemName: "arrowshape.turn.up.left")
+                    .font(.system(size: 18))
+                    .foregroundColor(.secondary)
+                    .opacity(min(1, -swipeOffset / 30))
+                    .offset(x: swipeOffset + 40)
+                VStack(alignment: alignment.horizontal, spacing: 3) {
+                    HStack {
+                        if ci.chatDir.sent {
+                            goToItemButton(true)
+                        }
+                        ChatItemView(
+                            chat: chat,
+                            im: im,
+                            chatItem: ci,
+                            scrollToItem: scrollToItem,
+                            scrollToItemId: $scrollToItemId,
+                            maxWidth: maxWidth,
+                            allowMenu: $allowMenu
+                        )
+                        .environment(\.revealed, revealed)
+                        .environment(\.showTimestamp, itemSeparation.timestamp)
+                        .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
+                        .contextMenu { menu(ci, range, live: live) }
+                        .accessibilityLabel("")
+                        if !ci.chatDir.sent {
+                            goToItemButton(false)
+                        }
                     }
-                    ChatItemView(
-                        chat: chat,
-                        im: im,
-                        chatItem: ci,
-                        scrollToItem: scrollToItem,
-                        scrollToItemId: $scrollToItemId,
-                        maxWidth: maxWidth,
-                        allowMenu: $allowMenu
-                    )
-                    .environment(\.revealed, revealed)
-                    .environment(\.showTimestamp, itemSeparation.timestamp)
-                    .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
-                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
-                    .accessibilityLabel("")
-                    if !ci.chatDir.sent {
-                        goToItemButton(false)
+                    if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
+                        chatItemReactions(ci)
+                            .padding(.bottom, 4)
                     }
                 }
-                if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
-                    chatItemReactions(ci)
-                        .padding(.bottom, 4)
-                }
+                .offset(x: swipeOffset)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 10)
+                        .onChanged { value in
+                            guard canReply else { return }
+                            let x = value.translation.width
+                            if x < 0 {
+                                swipeOffset = max(x * 0.63, -56)
+                            }
+                        }
+                        .onEnded { _ in
+                            if swipeOffset < -42 {
+                                withAnimation {
+                                    if composeState.editing {
+                                        composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
+                                    } else {
+                                        composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                                    }
+                                }
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }
+                            withAnimation(.spring(response: 0.25)) {
+                                swipeOffset = 0
+                            }
+                        }
+                )
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {

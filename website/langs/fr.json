@@ -177,7 +177,7 @@
     "simplex-private-section-header": "Ce qui rend SimpleX <span class='gradient-text'>privé</span>",
     "tap-to-close": "Appuyez pour fermer",
     "simplex-network-section-header": "<span class='gradient-text'>Réseau</span> SimpleX",
-    "simplex-network-section-desc": "Simplex Chat offre la meilleure protection pour votre vie privée en combinant les avantages du P2P et des réseaux fédérés.",
+    "simplex-network-section-desc": "SimpleX Chat offre la meilleure protection pour votre vie privée en combinant les avantages du P2P et des réseaux fédérés.",
     "simplex-network-1-header": "Contrairement aux réseaux P2P",
     "simplex-network-1-desc": "Tous les messages sont envoyés via les serveurs, offrant à la fois une meilleure protection des métadonnées et une livraison asynchrone fiable des messages, tout en évitant de nombreux",
     "simplex-network-1-overlay-linktext": "problèmes des réseaux P2P",

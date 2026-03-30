@@ -510,6 +510,9 @@ swipe action */
 "all members" = "所有成员";
 
 /* No comment provided by engineer. */
+"All messages" = "所有消息";
+
+/* No comment provided by engineer. */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "所有消息和文件均通过**端到端加密**发送；私信以量子安全方式发送。";
 
 /* No comment provided by engineer. */
@@ -730,6 +733,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "语音和视频通话";
+
+/* No comment provided by engineer. */
+"Audio call" = "语音通话";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "语音通话（非端到端加密）";
@@ -1728,6 +1734,9 @@ swipe action */
 "Delete member message?" = "删除成员消息？";
 
 /* No comment provided by engineer. */
+"Delete member messages" = "删除成员消息";
+
+/* No comment provided by engineer. */
 "Delete message?" = "删除消息吗？";
 
 /* alert action
@@ -2560,6 +2569,9 @@ snd error text */
 "Files and media prohibited!" = "禁止文件和媒体！";
 
 /* No comment provided by engineer. */
+"Filter" = "过滤器";
+
+/* No comment provided by engineer. */
 "Filter unread and favorite chats." = "过滤未读和收藏的聊天记录。";
 
 /* No comment provided by engineer. */
@@ -2863,6 +2875,9 @@ snd error text */
 "Image will be received when your contact is online, please wait or check later!" = "图片将在您的联系人在线时收到，请稍等或稍后查看！";
 
 /* No comment provided by engineer. */
+"Images" = "图片";
+
+/* No comment provided by engineer. */
 "Immediately" = "立即";
 
 /* No comment provided by engineer. */
@@ -3046,6 +3061,9 @@ snd error text */
 "Invite friends" = "邀请朋友";
 
 /* No comment provided by engineer. */
+"Invite member" = "邀请成员";
+
+/* No comment provided by engineer. */
 "Invite members" = "邀请成员";
 
 /* No comment provided by engineer. */
@@ -3197,6 +3215,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Linked desktops" = "已链接桌面";
+
+/* No comment provided by engineer. */
+"Links" = "链接";
 
 /* swipe action */
 "List" = "列表";
@@ -4372,6 +4393,9 @@ swipe action */
 /* alert action */
 "Remove" = "移除";
 
+/* alert action */
+"Remove and delete messages" = "移除并删除消息";
+
 /* No comment provided by engineer. */
 "Remove archive?" = "删除存档？";
 
@@ -4677,7 +4701,22 @@ chat item action */
 "Search bar accepts invitation links." = "搜索栏接受邀请链接。";
 
 /* No comment provided by engineer. */
+"Search files" = "搜索文件";
+
+/* No comment provided by engineer. */
+"Search images" = "搜索图片";
+
+/* No comment provided by engineer. */
+"Search links" = "搜索链接";
+
+/* No comment provided by engineer. */
 "Search or paste SimpleX link" = "搜索或粘贴 SimpleX 链接";
+
+/* No comment provided by engineer. */
+"Search videos" = "搜索视频";
+
+/* No comment provided by engineer. */
+"Search voice messages" = "搜索语音消息";
 
 /* network option */
 "sec" = "秒";
@@ -5871,6 +5910,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "视频将在您的联系人在线时收到，请稍等或稍后查看！";
+
+/* No comment provided by engineer. */
+"Videos" = "视频";
 
 /* No comment provided by engineer. */
 "Videos and files up to 1gb" = "最大 1gb 的视频和文件";
