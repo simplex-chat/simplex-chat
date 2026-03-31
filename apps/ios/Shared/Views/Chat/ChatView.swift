@@ -253,6 +253,17 @@ struct ChatView: View {
                 AddGroupMembersView(chat: chat, groupInfo: groupInfo)
             }
         }
+        .appSheet(isPresented: $showGroupLinkSheet) {
+            if case let .group(groupInfo, _) = cInfo {
+                GroupLinkView(
+                    groupId: groupInfo.groupId,
+                    groupLink: $groupLink,
+                    groupLinkMemberRole: $groupLinkMemberRole,
+                    showTitle: true,
+                    creatingGroup: false
+                )
+            }
+        }
         .sheet(isPresented: Binding(
             get: { !forwardedChatItems.isEmpty },
             set: { isPresented in
@@ -581,15 +592,6 @@ struct ChatView: View {
                         if groupInfo.canAddMembers {
                             if chat.chatInfo.incognito || groupInfo.useRelays {
                                 groupLinkButton()
-                                    .appSheet(isPresented: $showGroupLinkSheet) {
-                                        GroupLinkView(
-                                            groupId: groupInfo.groupId,
-                                            groupLink: $groupLink,
-                                            groupLinkMemberRole: $groupLinkMemberRole,
-                                            showTitle: true,
-                                            creatingGroup: false
-                                        )
-                                    }
                             } else {
                                 addMembersButton()
                             }
