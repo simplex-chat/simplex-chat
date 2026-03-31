@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.input.key.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
@@ -963,21 +962,11 @@ fun ChatLayout(
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chat != null) {
-            val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
-            if (selectionManager != null) {
-              LaunchedEffect(selectionManager) {
-                snapshotFlow { selectionManager.selectionState != SelectionState.Idle }
-                  .collect { chatsCtx.chatState.selectionActive = it }
-              }
-            }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
               // disables scrolling to top of chat item on click inside the bubble
-              CompositionLocalProvider(
-                LocalSelectionManager provides selectionManager,
-                LocalBringIntoViewSpec provides object : BringIntoViewSpec {
-                  override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
-                }
-              ) {
+              CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
+                override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
+              }) {
                 ChatItemsList(
                   chatsCtx, remoteHostId, chat, unreadCount, composeState, composeViewHeight, searchValue,
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
@@ -1904,7 +1893,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = if (appPlatform.isDesktop) Modifier else SwipeToDismissModifier(
+        val swipeableModifier = SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
@@ -2205,10 +2194,8 @@ fun BoxScope.ChatItemsList(
     }
   }
 
-  val selectionModifier = SelectionHandler(LocalSelectionManager.current, listState, mergedItems, linkMode)
-
   LazyColumnWithScrollBar(
-    Modifier.align(Alignment.BottomCenter).then(selectionModifier),
+    Modifier.align(Alignment.BottomCenter),
     state = listState.value,
     contentPadding = PaddingValues(
       top = topPaddingToContent,

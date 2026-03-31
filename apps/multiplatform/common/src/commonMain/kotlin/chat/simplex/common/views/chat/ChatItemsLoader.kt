@@ -88,8 +88,7 @@ suspend fun processLoadedChat(
       val (newIds, _) = mapItemsToIds(chat.chatItems)
       val wasSize = newItems.size
       val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) = removeDuplicatesAndModifySplitsOnBeforePagination(
-        unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed,
-        selectionActive = chatState.selectionActive
+        unreadAfterItemId, newItems, newIds, splits, visibleItemIndexesNonReversed
       )
       val insertAt = (indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size).coerceAtLeast(0)
       newItems.addAll(insertAt, chat.chatItems)
@@ -178,14 +177,13 @@ private fun removeDuplicatesAndModifySplitsOnBeforePagination(
   newItems: SnapshotStateList<ChatItem>,
   newIds: Set<Long>,
   splits: StateFlow<List<Long>>,
-  visibleItemIndexesNonReversed: () -> IntRange,
-  selectionActive: Boolean = false
+  visibleItemIndexesNonReversed: () -> IntRange
 ): ModifiedSplits {
   var oldUnreadSplitIndex: Int = -1
   var newUnreadSplitIndex: Int = -1
   val visibleItemIndexes = visibleItemIndexesNonReversed()
   var lastSplitIndexTrimmed = -1
-  var allowedTrimming = !selectionActive
+  var allowedTrimming = true
   var index = 0
   /** keep the newest [TRIM_KEEP_COUNT] items (bottom area) and oldest [TRIM_KEEP_COUNT] items, trim others */
   val trimRange = visibleItemIndexes.last + TRIM_KEEP_COUNT .. newItems.size - TRIM_KEEP_COUNT

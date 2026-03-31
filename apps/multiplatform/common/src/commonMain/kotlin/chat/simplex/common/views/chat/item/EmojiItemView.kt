@@ -1,10 +1,9 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.*
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
@@ -13,46 +12,18 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MREmojiChar
 import chat.simplex.common.ui.theme.EmojiFont
-import chat.simplex.common.views.chat.*
 import java.sql.Timestamp
 
 val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFont)
 val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiFont)
 
 @Composable
-fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean, selectionIndex: Int = -1) {
-  val selectionManager = LocalSelectionManager.current
-  val emojiText = chatItem.content.text.trim()
-
-  if (selectionManager != null && selectionIndex >= 0) {
-    val isAnchor = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    LaunchedEffect(isAnchor.value) {
-      if (!isAnchor.value) return@LaunchedEffect
-      selectionManager.setAnchorOffset(0)
-    }
-
-    val isFocus = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    if (isFocus.value) {
-      LaunchedEffect(Unit) {
-        snapshotFlow { selectionManager.focusWindowY }
-          .collect { selectionManager.updateFocusOffset(emojiText.length) }
-      }
-    }
-  }
-
-  val isSelected = selectionManager?.computeHighlightRange(selectionIndex) != null
-
+fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
   Column(
     Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Box(if (isSelected) Modifier.background(SelectionHighlightColor) else Modifier) {
-      EmojiText(chatItem.content.text)
-    }
+    EmojiText(chatItem.content.text)
     CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   }
 }

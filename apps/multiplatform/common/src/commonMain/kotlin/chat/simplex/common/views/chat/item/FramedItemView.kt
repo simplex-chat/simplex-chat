@@ -20,10 +20,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -368,65 +366,11 @@ fun CIMarkdownText(
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean,
   showTimestamp: Boolean,
-  prefix: AnnotatedString? = null,
-  selectionIndex: Int = -1
+  prefix: AnnotatedString? = null
 ) {
-  val selectionManager = LocalSelectionManager.current
-  val boundsState = remember { mutableStateOf<Rect?>(null) }
-  val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val chatInfo = chat.chatInfo
-  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
-
-  val contentLength = remember(text, ci.formattedText, ci.mentions) {
-    buildMsgAnnotatedString(
-      text = text, formattedText = if (text.isEmpty()) emptyList() else ci.formattedText,
-      sender = null, senderBold = true, prefix = prefix,
-      mentions = ci.mentions, userMemberId = when {
-        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
-        else -> null
-      },
-      toggleSecrets = true, sendCommandMsg = chatInfo.useCommands && chat.chatInfo.sndReady,
-      linkMode = linkMode
-    ).text.length
-  }
-
-  if (selectionManager != null && ci.meta.isLive != true && selectionIndex >= 0) {
-    val isAnchor = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    LaunchedEffect(isAnchor.value) {
-      if (!isAnchor.value) return@LaunchedEffect
-      val bounds = boundsState.value ?: return@LaunchedEffect
-      val layout = layoutResultState.value ?: return@LaunchedEffect
-      val offset = layout.getOffsetForPosition(
-        Offset(selectionManager.focusWindowX - bounds.left, selectionManager.focusWindowY - bounds.top)
-      )
-      selectionManager.setAnchorOffset(offset.coerceAtMost(contentLength))
-    }
-
-    val isFocus = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    if (isFocus.value) {
-      LaunchedEffect(Unit) {
-        snapshotFlow { selectionManager.focusWindowY to selectionManager.focusWindowX }
-          .collect { (py, px) ->
-            val bounds = boundsState.value ?: return@collect
-            val layout = layoutResultState.value ?: return@collect
-            val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
-            selectionManager.updateFocusOffset(offset.coerceAtMost(contentLength))
-          }
-      }
-    }
-  }
-
-  val highlightRange = selectionManager?.computeHighlightRange(selectionIndex)
-
-  Box(
-    Modifier
-      .padding(vertical = 7.dp, horizontal = 12.dp)
-      .onGloballyPositioned { boundsState.value = it.boundsInWindow() }
-  ) {
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
+    val chatInfo = chat.chatInfo
+    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -435,9 +379,7 @@ fun CIMarkdownText(
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
-      selectionRange = highlightRange,
-      onTextLayoutResult = { layoutResultState.value = it }
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
     )
   }
 }

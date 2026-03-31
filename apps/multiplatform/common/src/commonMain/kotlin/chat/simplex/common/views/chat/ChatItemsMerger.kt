@@ -202,9 +202,7 @@ data class ActiveChatState (
   // exclusive
   val unreadAfter: MutableStateFlow<Int> = MutableStateFlow(0),
   // exclusive
-  val unreadAfterNewestLoaded: MutableStateFlow<Int> = MutableStateFlow(0),
-  // Desktop text selection: disable item eviction during active selection
-  @Volatile var selectionActive: Boolean = false
+  val unreadAfterNewestLoaded: MutableStateFlow<Int> = MutableStateFlow(0)
 ) {
   fun moveUnreadAfterItem(toItemId: Long?, nonReversedItems: List<ChatItem>) {
     toItemId ?: return
