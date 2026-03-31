@@ -1441,7 +1441,11 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Label("Group link", systemImage: "link.badge.plus")
+            if case let .group(gInfo, _) = chat.chatInfo, gInfo.useRelays {
+                Label("Channel link", systemImage: "link")
+            } else {
+                Label("Group link", systemImage: "link.badge.plus")
+            }
         }
     }
 

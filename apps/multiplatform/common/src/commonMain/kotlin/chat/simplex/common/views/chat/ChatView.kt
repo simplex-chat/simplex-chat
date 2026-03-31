@@ -1291,10 +1291,14 @@ fun BoxScope.ChatInfoToolbar(
           }
         } else {
           menuItems.add {
-            ItemAction(stringResource(MR.strings.group_link), painterResource(MR.images.ic_add_link), onClick = {
-              showMenu.value = false
-              openGroupLink(chatInfo.groupInfo)
-            })
+            ItemAction(
+              stringResource(if (chatInfo.groupInfo.useRelays) MR.strings.channel_link else MR.strings.group_link),
+              painterResource(if (chatInfo.groupInfo.useRelays) MR.images.ic_link else MR.images.ic_add_link),
+              onClick = {
+                showMenu.value = false
+                openGroupLink(chatInfo.groupInfo)
+              }
+            )
           }
         }
       }
