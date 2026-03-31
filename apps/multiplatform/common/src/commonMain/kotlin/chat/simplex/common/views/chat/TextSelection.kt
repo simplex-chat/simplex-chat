@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -85,7 +86,9 @@ class SelectionManager {
 
     fun register(participant: SelectionParticipant) {
         participants.add(participant)
-        coords?.let { recomputeParticipant(participant, it) }
+        if (selectionState == SelectionState.Selecting) {
+            coords?.let { recomputeParticipant(participant, it) }
+        }
     }
 
     fun unregister(participant: SelectionParticipant) {
@@ -141,7 +144,9 @@ class SelectionManager {
 
     private fun recomputeParticipant(participant: SelectionParticipant, coords: SelectionCoords) {
         val bounds = participant.getYBounds() ?: return
+        Log.d("TextSelection", "recompute item=${participant.itemId} bounds=${bounds.start}..${bounds.endInclusive} coords.topY=${coords.topY} coords.bottomY=${coords.bottomY}")
         val highlightRange = participant.calculateHighlightRange(coords) ?: return
+        Log.d("TextSelection", "  highlightRange=$highlightRange selectableEnd=${participant.getSelectableEnd()}")
         val selectableEnd = participant.getSelectableEnd()
         val clampedStart = highlightRange.first.coerceIn(0, selectableEnd)
         val clampedEnd = highlightRange.last.coerceIn(0, selectableEnd)
@@ -307,6 +312,7 @@ fun BoxScope.SelectionHandler(
 
                     if (!isDragging && totalDrag.getDistance() > touchSlop) {
                         isDragging = true
+                        Log.d("TextSelection", "startSelection: localStart=$localStart posInWindow=$positionInWindow windowStart=$windowStart")
                         manager.startSelection(windowStart.y, windowStart.x) // → Selecting
                         try { focusRequester.requestFocus() } catch (_: Exception) {}
                         change.consume()
