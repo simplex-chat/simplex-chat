@@ -83,30 +83,96 @@ annotatedTextState?.value = annotatedText.text  // .text is documented Annotated
 The participant reads `annotatedTextState.value.substring(clampedStart, clampedEnd)` for copy.
 Fallback: `ci.text` if state is empty.
 
-### Overlay
+### Pointer Handling
 
-Overlay sits on top of LazyColumnWithScrollBar. Uses `PointerEventPass.Initial`
-to observe pointer events without consuming. Only consumes after drag threshold
-(differentiates click from drag).
+Selection pointer handler is a `pointerInput` modifier on the LazyColumnWithScrollBar
+modifier chain (parent of content, NOT a sibling overlay). Uses `PointerEventPass.Initial`
+to observe before children. All handler logic is in `SelectionHandler` composable
+(TextSelection.kt) which returns the Modifier and emits the copy button.
 
-Scroll wheel events are NEVER consumed — pass through to LazyColumn.
+Scroll wheel and hover events are never processed — skipped immediately.
 
-### Selection Lifecycle
+### Selection State Machine
 
-- **Click without drag**: Does nothing. Selection is NOT cleared. Links work via pass-through.
-- **New drag**: Clears any existing selection, starts new one (`startSelection` calls `captured.clear()`).
-- **Right-click**: Does nothing to selection. `contextMenuOpenDetector` handles it independently.
-  No need to detect mouse button — we simply never clear on non-drag pointer-up.
-- **Ctrl+C**: Copies selected text to clipboard.
-- **Copy button**: Appears after drag ends when `captured.isNotEmpty()`. Has explicit dismiss.
-- **Dismiss**: Copy button dismiss clears selection. Or starting a new drag clears it.
+Three explicit states:
 
-This avoids needing `PointerEvent.button` API (not used in codebase, availability uncertain).
+```
+         drag threshold
+  Idle ─────────────────→ Selecting
+   ↑                          │
+   │ click                    │ pointer up
+   │                          ▼
+   ←──────────────────── Selected
+```
+
+```kotlin
+enum class SelectionState { Idle, Selecting, Selected }
+
+// Derived from existing fields:
+val state: SelectionState get() = when {
+    isSelecting -> Selecting
+    captured.isNotEmpty() -> Selected
+    else -> Idle
+}
+```
+
+### Pointer Handler Behavior Per State
+
+The handler starts each gesture by waiting for a pointer event. Non-press events
+(hover, scroll) are skipped immediately (`return@awaitEachGesture`).
+
+For press events, the current state is captured at gesture start (`wasSelected`)
+and not re-read mid-gesture. Behavior depends on this captured state:
+
+**Idle state** (no selection exists):
+- Down event: NOT consumed → passes through to children (links, context menus)
+- Drag threshold exceeded: consume, → Selecting
+- Pointer up without drag: do nothing → children handle the click
+
+**Selecting state** (drag in progress):
+- Pointer move: update selection coords, consume
+- Pointer up: → Selected
+
+**Selected state** (selection exists, drag finished):
+- Down event: CONSUMED → prevents children from firing links/menus
+- Drag threshold exceeded: clear old selection, start new → Selecting
+- Pointer up without drag: clear selection → Idle
+- Hover/scroll: skipped, selection persists
+
+Key insight: consuming the down event in Selected state prevents link activation
+on click-to-clear. In Idle state, not consuming allows links/menus to work normally.
+
+### Ctrl+C / Cmd+C
+
+Handled via `onKeyEvent` on the LazyColumn modifier (inside `SelectionHandler`).
+Checks both `isCtrlPressed` (Windows/Linux) and `isMetaPressed` (Mac).
+Focus is requested to the LazyColumn area when selection starts (`focusRequester.requestFocus()`).
+When user taps compose box, focus moves there — Ctrl+C goes to compose box's handler.
+
+### Copy Button
+
+Emitted by `SelectionHandler` in BoxScope. Visible when `state == Selected`.
+Copies text to clipboard without clearing selection (user may want to copy again).
+Selection clears on click in chat area or on starting a new drag.
+
+### Selection Lifecycle Summary
+
+- **Hover/scroll in any state**: Ignored by handler, passes through to LazyColumn.
+- **Click in Idle**: Passes through — links, context menus, long-click all work.
+- **Drag from Idle**: New selection → Selecting → pointer up → Selected.
+- **Click in Selected**: Consumes click, clears selection → Idle.
+- **Drag from Selected**: Consumes, clears old, starts new → Selecting.
+- **Right-click**: May arrive as a press event. In Idle state: not consumed,
+  `contextMenuOpenDetector` on the bubble handles it. In Selected state: consumed,
+  clears selection (same as left click). Needs empirical verification — if right-click
+  should preserve selection, filter by button in the handler.
+- **Ctrl+C / Cmd+C**: Copies selected text when LazyColumn has focus.
+- **Copy button click**: Copies selected text (works regardless of focus).
 
 ### Coordinate System
 
 All coordinates in window space during drag computation:
-- Overlay: `positionInWindow()` + local pointer → window coords
+- Handler: `positionInWindow()` + local pointer → window coords
 - Items: `boundsInWindow()` → window coords
 - `calculateRangeForElement` adjusts X by `bounds.left` for `getOffsetForPosition`
 

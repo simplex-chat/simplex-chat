@@ -966,7 +966,7 @@ fun ChatLayout(
             val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
             if (selectionManager != null) {
               LaunchedEffect(selectionManager) {
-                snapshotFlow { selectionManager.selectionActive }
+                snapshotFlow { selectionManager.selectionState != SelectionState.Idle }
                   .collect { chatsCtx.chatState.selectionActive = it }
               }
             }

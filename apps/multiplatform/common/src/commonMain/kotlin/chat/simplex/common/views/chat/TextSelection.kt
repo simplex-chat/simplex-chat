@@ -66,14 +66,14 @@ interface SelectionParticipant {
     fun calculateHighlightRange(coords: SelectionCoords): IntRange?
 }
 
+enum class SelectionState { Idle, Selecting, Selected }
+
 class SelectionManager {
+    var selectionState by mutableStateOf(SelectionState.Idle)
+        private set
+
     var coords by mutableStateOf<SelectionCoords?>(null)
         private set
-
-    var isSelecting by mutableStateOf(false)
-        private set
-
-    val selectionActive: Boolean get() = coords != null
 
     var lastPointerWindowY: Float = 0f
         private set
@@ -94,7 +94,7 @@ class SelectionManager {
 
     fun startSelection(startY: Float, startX: Float) {
         coords = SelectionCoords(startY, startX, startY, startX)
-        isSelecting = true
+        selectionState = SelectionState.Selecting
         lastPointerWindowY = startY
         lastPointerWindowX = startX
         captured.clear()
@@ -109,12 +109,12 @@ class SelectionManager {
     }
 
     fun endSelection() {
-        isSelecting = false
+        selectionState = SelectionState.Selected
     }
 
     fun clearSelection() {
         coords = null
-        isSelecting = false
+        selectionState = SelectionState.Idle
         captured.clear()
     }
 
@@ -236,7 +236,7 @@ fun BoxScope.SelectionHandler(
     LaunchedEffect(manager) {
         snapshotFlow { listState.value.firstVisibleItemScrollOffset }
             .collect {
-                if (manager.isSelecting) {
+                if (manager.selectionState == SelectionState.Selecting) {
                     manager.updateSelection(
                         manager.lastPointerWindowY,
                         manager.lastPointerWindowX
@@ -246,7 +246,7 @@ fun BoxScope.SelectionHandler(
     }
 
     // Copy button
-    if (manager.captured.isNotEmpty() && !manager.isSelecting) {
+    if (manager.selectionState == SelectionState.Selected) {
         SelectionCopyButton(
             onCopy = {
                 clipboard.setText(AnnotatedString(manager.getSelectedText()))
@@ -258,7 +258,7 @@ fun BoxScope.SelectionHandler(
         .focusRequester(focusRequester)
         .focusable()
         .onKeyEvent { event ->
-            if (manager.captured.isNotEmpty()
+            if (manager.selectionState == SelectionState.Selected
                 && (event.isCtrlPressed || event.isMetaPressed)
                 && event.key == Key.C
                 && event.type == KeyEventType.KeyDown
@@ -277,6 +277,11 @@ fun BoxScope.SelectionHandler(
             awaitEachGesture {
                 val down = awaitPointerEvent(PointerEventPass.Initial)
                 val firstChange = down.changes.first()
+                if (!firstChange.pressed) return@awaitEachGesture // skip hover, scroll
+
+                val wasSelected = manager.selectionState == SelectionState.Selected
+                if (wasSelected) firstChange.consume() // prevent link/menu activation on click-to-clear
+
                 val localStart = firstChange.position
                 val windowStart = localStart + positionInWindow
                 var totalDrag = Offset.Zero
@@ -290,11 +295,11 @@ fun BoxScope.SelectionHandler(
                         autoScrollJob?.cancel()
                         autoScrollJob = null
                         if (isDragging) {
-                            manager.endSelection()
-                        } else if (manager.captured.isNotEmpty()) {
-                            // Click without drag clears selection
-                            manager.clearSelection()
+                            manager.endSelection() // Selecting → Selected
+                        } else if (wasSelected) {
+                            manager.clearSelection() // Selected → Idle
                         }
+                        // Idle + click: do nothing, event passed through to children
                         break
                     }
 
@@ -302,7 +307,7 @@ fun BoxScope.SelectionHandler(
 
                     if (!isDragging && totalDrag.getDistance() > touchSlop) {
                         isDragging = true
-                        manager.startSelection(windowStart.y, windowStart.x)
+                        manager.startSelection(windowStart.y, windowStart.x) // → Selecting
                         try { focusRequester.requestFocus() } catch (_: Exception) {}
                         change.consume()
                     }
@@ -323,7 +328,7 @@ fun BoxScope.SelectionHandler(
 
                         if (shouldAutoScroll && autoScrollJob?.isActive != true) {
                             autoScrollJob = scope.launch {
-                                while (isActive && manager.isSelecting) {
+                                while (isActive && manager.selectionState == SelectionState.Selecting) {
                                     val curEdge = if (draggingDown) {
                                         viewportBottom - manager.lastPointerWindowY
                                     } else {
@@ -331,13 +336,8 @@ fun BoxScope.SelectionHandler(
                                     }
                                     if (curEdge >= AUTO_SCROLL_ZONE_PX) break
 
-                                    val speed = lerp(
-                                        MIN_SCROLL_SPEED, MAX_SCROLL_SPEED,
-                                        1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
-                                    )
-                                    // reverseLayout = true:
-                                    // drag down (toward newer) = scrollBy(-speed)
-                                    // drag up (toward older) = scrollBy(speed)
+                                    val fraction = 1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
+                                    val speed = MIN_SCROLL_SPEED + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * fraction
                                     listState.value.scrollBy(if (draggingDown) -speed else speed)
                                     delay(16)
                                 }
@@ -369,6 +369,3 @@ private fun BoxScope.SelectionCopyButton(onCopy: () -> Unit) {
         Text(generalGetString(MR.strings.copy_verb), color = MaterialTheme.colors.primary)
     }
 }
-
-private fun lerp(start: Float, stop: Float, fraction: Float): Float =
-    start + (stop - start) * fraction
