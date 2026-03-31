@@ -3,20 +3,36 @@ package chat.simplex.common.views.chat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
+import kotlinx.coroutines.*
 
 val SelectionHighlightColor = Color(0x4D0066FF)
 
@@ -192,11 +208,156 @@ fun calculateRangeForElement(
 
 val LocalSelectionManager = staticCompositionLocalOf<SelectionManager?> { null }
 
+private const val AUTO_SCROLL_ZONE_PX = 40f
+private const val MIN_SCROLL_SPEED = 2f
+private const val MAX_SCROLL_SPEED = 20f
+
+/**
+ * Composable that installs selection effects and returns a Modifier for the LazyColumn.
+ * Also emits the copy button UI in the BoxScope.
+ */
 @Composable
-fun SelectionCopyButton(onCopy: () -> Unit) {
+fun BoxScope.SelectionHandler(
+    manager: SelectionManager?,
+    listState: State<LazyListState>
+): Modifier {
+    if (manager == null || !appPlatform.isDesktop) return Modifier
+
+    val touchSlop = LocalViewConfiguration.current.touchSlop
+    val clipboard = LocalClipboardManager.current
+    val focusRequester = remember { FocusRequester() }
+    var positionInWindow by remember { mutableStateOf(Offset.Zero) }
+    var viewportTop by remember { mutableStateOf(0f) }
+    var viewportBottom by remember { mutableStateOf(0f) }
+    val scope = rememberCoroutineScope()
+    var autoScrollJob by remember { mutableStateOf<Job?>(null) }
+
+    // Re-evaluate selection on scroll (handles mouse wheel and auto-scroll)
+    LaunchedEffect(manager) {
+        snapshotFlow { listState.value.firstVisibleItemScrollOffset }
+            .collect {
+                if (manager.isSelecting) {
+                    manager.updateSelection(
+                        manager.lastPointerWindowY,
+                        manager.lastPointerWindowX
+                    )
+                }
+            }
+    }
+
+    // Copy button
+    if (manager.captured.isNotEmpty() && !manager.isSelecting) {
+        SelectionCopyButton(
+            onCopy = {
+                clipboard.setText(AnnotatedString(manager.getSelectedText()))
+            }
+        )
+    }
+
+    return Modifier
+        .focusRequester(focusRequester)
+        .focusable()
+        .onKeyEvent { event ->
+            if (manager.captured.isNotEmpty()
+                && (event.isCtrlPressed || event.isMetaPressed)
+                && event.key == Key.C
+                && event.type == KeyEventType.KeyDown
+            ) {
+                clipboard.setText(AnnotatedString(manager.getSelectedText()))
+                true
+            } else false
+        }
+        .onGloballyPositioned {
+            positionInWindow = it.positionInWindow()
+            val bounds = it.boundsInWindow()
+            viewportTop = bounds.top
+            viewportBottom = bounds.bottom
+        }
+        .pointerInput(manager) {
+            awaitEachGesture {
+                val down = awaitPointerEvent(PointerEventPass.Initial)
+                val firstChange = down.changes.first()
+                val localStart = firstChange.position
+                val windowStart = localStart + positionInWindow
+                var totalDrag = Offset.Zero
+                var isDragging = false
+
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    val change = event.changes.first()
+
+                    if (!change.pressed) {
+                        autoScrollJob?.cancel()
+                        autoScrollJob = null
+                        if (isDragging) {
+                            manager.endSelection()
+                        } else if (manager.captured.isNotEmpty()) {
+                            // Click without drag clears selection
+                            manager.clearSelection()
+                        }
+                        break
+                    }
+
+                    totalDrag += change.positionChange()
+
+                    if (!isDragging && totalDrag.getDistance() > touchSlop) {
+                        isDragging = true
+                        manager.startSelection(windowStart.y, windowStart.x)
+                        try { focusRequester.requestFocus() } catch (_: Exception) {}
+                        change.consume()
+                    }
+
+                    if (isDragging) {
+                        val windowPos = change.position + positionInWindow
+                        manager.updateSelection(windowPos.y, windowPos.x)
+                        change.consume()
+
+                        // Auto-scroll: direction-aware
+                        val draggingDown = windowPos.y > windowStart.y
+                        val edgeDistance = if (draggingDown) {
+                            viewportBottom - windowPos.y
+                        } else {
+                            windowPos.y - viewportTop
+                        }
+                        val shouldAutoScroll = edgeDistance in 0f..AUTO_SCROLL_ZONE_PX
+
+                        if (shouldAutoScroll && autoScrollJob?.isActive != true) {
+                            autoScrollJob = scope.launch {
+                                while (isActive && manager.isSelecting) {
+                                    val curEdge = if (draggingDown) {
+                                        viewportBottom - manager.lastPointerWindowY
+                                    } else {
+                                        manager.lastPointerWindowY - viewportTop
+                                    }
+                                    if (curEdge >= AUTO_SCROLL_ZONE_PX) break
+
+                                    val speed = lerp(
+                                        MIN_SCROLL_SPEED, MAX_SCROLL_SPEED,
+                                        1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
+                                    )
+                                    // reverseLayout = true:
+                                    // drag down (toward newer) = scrollBy(-speed)
+                                    // drag up (toward older) = scrollBy(speed)
+                                    listState.value.scrollBy(if (draggingDown) -speed else speed)
+                                    delay(16)
+                                }
+                            }
+                        } else if (!shouldAutoScroll) {
+                            autoScrollJob?.cancel()
+                            autoScrollJob = null
+                        }
+                    }
+                }
+            }
+        }
+}
+
+@Composable
+private fun BoxScope.SelectionCopyButton(onCopy: () -> Unit) {
     Row(
         Modifier
-            .padding(8.dp)
+            .align(Alignment.BottomCenter)
+            .padding(bottom = 8.dp)
             .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
             .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
             .clickable { onCopy() }
@@ -208,3 +369,6 @@ fun SelectionCopyButton(onCopy: () -> Unit) {
         Text(generalGetString(MR.strings.copy_verb), color = MaterialTheme.colors.primary)
     }
 }
+
+private fun lerp(start: Float, stop: Float, fraction: Float): Float =
+    start + (stop - start) * fraction
