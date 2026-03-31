@@ -34,7 +34,7 @@ var focusWindowY by mutableStateOf(0f)   // pointer Y in window coords
 var focusWindowX by mutableStateOf(0f)   // pointer X in window coords
 ```
 
-No captured map. No eager text extraction. No window-coordinate-based range.
+No captured map. No eager text extraction.
 Indices are stable across scroll. Text extracted at copy time from live data.
 
 ### State Machine
@@ -48,28 +48,27 @@ Indices are stable across scroll. Text extracted at copy time from live data.
    ←──────────────────── Selected
 ```
 
-### What Each Item Has
-
-Each selectable item (CIMarkdownText, EmojiItemView) maintains:
-- `boundsState: MutableState<Rect?>` — from `onGloballyPositioned` (added by us)
-- `layoutResultState: MutableState<TextLayoutResult?>` — from `onTextLayoutResult` (added by us)
-- `contentLength: Int` — computed once during composition from `buildMsgAnnotatedString(...).text.length`
-
-`contentLength` is needed for clamping char offsets in anchor/focus resolution
-(preventing offsets from landing in the invisible reserve area).
-Highlight range clamping is separate — done inside MarkdownText using its own
-`contentAnnotated.text.length`. Computed once per composition, cached in a local val.
-
 ### Pointer Handler (on LazyColumn Modifier)
 
-The `SelectionHandler` composable returns a Modifier applied to LazyColumnWithScrollBar.
-Contains `pointerInput`, `onGloballyPositioned`, `focusRequester`, `focusable`, `onKeyEvent`.
+`SelectionHandler` composable (BoxScope extension) returns a Modifier for
+LazyColumnWithScrollBar. Contains `pointerInput`, `onGloballyPositioned`,
+`focusRequester`, `focusable`, `onKeyEvent`.
 
 On every pointer move during Selecting:
 1. Updates `focusWindowY/X`
 2. Uses `listState.layoutInfo.visibleItemsInfo` to find item at pointer Y → updates `range.endIndex`
 
 Index resolution uses LazyListState directly — no map, no registration.
+
+### Pointer Handler Behavior Per State
+
+Non-press events (hover, scroll) skipped: `return@awaitEachGesture`.
+State captured at gesture start (`wasSelected`).
+
+**Idle**: Down not consumed. Links/menus work. Drag threshold → Selecting.
+**Selecting**: Pointer move → update focusWindowY/X, resolve endIndex via listState.
+  Pointer up → Selected.
+**Selected**: Down consumed (prevents link activation). Click → Idle. Drag → new Selecting.
 
 ### Anchor Char Offset Resolution
 
@@ -87,7 +86,7 @@ LaunchedEffect(isAnchor.value) {
     val offset = layout.getOffsetForPosition(
         Offset(manager.focusWindowX - bounds.left, manager.focusWindowY - bounds.top)
     )
-    manager.setAnchorOffset(offset.coerceAtMost(contentLength))
+    manager.setAnchorOffset(offset)
 }
 ```
 
@@ -109,7 +108,7 @@ if (isFocus.value) {
                 val bounds = boundsState.value ?: return@collect
                 val layout = layoutResultState.value ?: return@collect
                 val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
-                manager.updateFocusOffset(offset.coerceAtMost(contentLength))
+                manager.updateFocusOffset(offset)
             }
     }
 }
@@ -125,13 +124,13 @@ Each item computes highlight via derivedStateOf:
 
 ```kotlin
 val highlightRange = remember(myIndex) {
-    derivedStateOf { manager.computeHighlightRange(myIndex) }
+    derivedStateOf { highlightedRange(manager.range, myIndex) }
 }
 ```
 
-`computeHighlightRange` logic:
+`highlightedRange` is a standalone function:
 ```kotlin
-fun computeHighlightRange(index: Int): IntRange? {
+fun highlightedRange(range: SelectionRange?, index: Int): IntRange? {
     val r = range ?: return null
     val lo = minOf(r.startIndex, r.endIndex)
     val hi = maxOf(r.startIndex, r.endIndex)
@@ -141,111 +140,86 @@ fun computeHighlightRange(index: Int): IntRange? {
     val endOff = if (forward) r.endOffset else r.startOffset
     return when {
         index == lo && index == hi -> minOf(startOff, endOff) until maxOf(startOff, endOff)
-        index == lo -> startOff until Int.MAX_VALUE   // clamped by MarkdownText to content length
+        index == lo -> startOff until Int.MAX_VALUE   // clamped by MarkdownText
         index == hi -> 0 until endOff
-        else -> 0 until Int.MAX_VALUE                 // fully selected, clamped by MarkdownText
+        else -> 0 until Int.MAX_VALUE                 // clamped by MarkdownText
     }
 }
 ```
 
 derivedStateOf only triggers recomposition when the RESULT changes for this item.
 Middle items don't recompose as range extends. Only boundary items recompose.
-MarkdownText clamps open-ended ranges to `contentAnnotated.text.length` internally.
 
 ### Highlight Drawing
 
-Same as current: `getPathForRange(range.first, range.last + 1)` in `drawBehind`
-on BasicText. Off-by-one fixed: `range.last + 1` because IntRange.last is inclusive,
-getPathForRange end is exclusive.
+`getPathForRange(range.first, range.last + 1)` in `drawBehind` on BasicText.
+`range.last + 1` because IntRange.last is inclusive, getPathForRange end is exclusive.
+
+Gated on `selectionRange != null`:
+- When null (Android, or desktop without selection): original `Text()` used, no drawBehind.
+- When non-null: `SelectableText` (BasicText + drawBehind + onTextLayout) or
+  `ClickableText` with added drawBehind.
+
+### Reserve Space Exclusion
+
+MarkdownText's `buildAnnotatedString` appends invisible reserve text after message
+content. A local `var selectableEnd` is set to `this.length` inside `buildAnnotatedString`
+right before reserve is appended. Used to clamp `selectionRange` before passing
+downstream to rendering:
+
+```kotlin
+var selectableEnd = 0
+val annotatedText = buildAnnotatedString {
+    // ... content ...
+    selectableEnd = this.length
+    // ... typing indicator, reserve ...
+}
+val clampedRange = selectionRange?.let { it.first until minOf(it.last, selectableEnd) }
+// pass clampedRange to ClickableText/SelectableText
+```
+
+`selectableEnd` is local to MarkdownText. Not passed upstream.
+`highlightedRange` uses `Int.MAX_VALUE` for open-ended ranges;
+MarkdownText resolves them to the actual content boundary.
 
 ### Copy
 
-#### Extracted function: `buildMsgAnnotatedString`
+#### `displayText` function
 
-The `buildAnnotatedString` block inside MarkdownText is extracted into a standalone
-function, placed right next to MarkdownText in TextItemView.kt. The extraction is
-surgical — the code body is moved verbatim, all variables it reads from scope become
-parameters with the SAME names, so the diff shows no code changes inside the block.
+Non-composable function placed right next to MarkdownText in TextItemView.kt.
+Computes the displayed text from `formattedText`, handling only the few Format
+types that change the displayed string. All other formats use `ft.text` unchanged.
+Used only at copy time.
 
 ```kotlin
-fun buildMsgAnnotatedString(
-    text: CharSequence,
-    formattedText: List<FormattedText>?,
-    sender: String?,
-    senderBold: Boolean,
-    prefix: AnnotatedString?,
-    mentions: Map<String, CIMention>?,
-    userMemberId: String?,
-    toggleSecrets: Boolean,
-    sendCommandMsg: Boolean,
-    linkMode: SimplexLinkMode
-): AnnotatedString = buildAnnotatedString {
-    appendSender(this, sender, senderBold)
-    if (prefix != null) append(prefix)
-    if (formattedText == null) {
-        if (text is String) append(text)
-        else if (text is AnnotatedString) append(text)
-    } else {
-        // Exact same formatted text loop as current MarkdownText,
-        // moved verbatim. Handles all Format types.
+// Must be coordinated with MarkdownText — same text transformations for:
+// Mention, HyperLink, SimplexLink, Command
+fun displayText(
+    ci: ChatItem,
+    linkMode: SimplexLinkMode,
+    sendCommandMsg: Boolean
+): String {
+    val formattedText = ci.formattedText
+    if (formattedText == null) return ci.text
+    return formattedText.joinToString("") { ft ->
+        when (ft.format) {
+            is Format.Mention -> { /* resolve display name from ci.mentions */ }
+            is Format.HyperLink -> ft.format.showText ?: ft.text
+            is Format.SimplexLink -> { /* showText or description + viaHosts */ }
+            is Format.Command -> if (sendCommandMsg) "/${ft.format.commandStr}" else ft.text
+            else -> ft.text
+        }
     }
 }
 ```
 
-Handles BOTH paths (formattedText null and non-null) in one function.
-
-EXCLUDES: `inlineContent`, typing indicator, reserve, `showSecrets` state.
-- `showSecrets` is local composition state (which secrets user revealed).
-  Not passed — secrets render as hidden in the extracted function.
-  MarkdownText overrides this for rendering by passing its local `showSecrets`.
-  For copy, hidden secrets are copied as-is (privacy-safe default).
-
-MarkdownText calls it, then wraps with rendering concerns:
-```kotlin
-val contentAnnotated = buildMsgAnnotatedString(text, formattedText, sender, ...)
-val contentLength = contentAnnotated.text.length
-val fullAnnotated = buildAnnotatedString {
-    append(contentAnnotated)
-    if (meta?.isLive == true) { append(typingIndicator(...)) }
-    if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
-}
-// Clamp selectionRange to contentLength before passing to drawBehind
-```
-
-For rendering with revealed secrets: MarkdownText builds the secret spans
-differently (using its local showSecrets map). This means the rendering path
-cannot simply reuse the extracted function as-is for the secret case — it
-needs to override the secret handling. Options:
-a) Pass `showSecrets` as parameter (default empty for copy, actual map for rendering)
-b) MarkdownText post-processes the result to reveal secrets
-c) Accept that rendering still builds its own AnnotatedString for the secret case
-
-Option (a) is cleanest — add `showSecrets: Map<String, Boolean> = emptyMap()`
-as parameter with empty default. Rendering passes the actual map. Copy passes nothing.
-
-Updated signature:
-```kotlin
-fun buildMsgAnnotatedString(
-    text: CharSequence,
-    formattedText: List<FormattedText>?,
-    sender: String?,
-    senderBold: Boolean,
-    prefix: AnnotatedString?,
-    mentions: Map<String, CIMention>?,
-    userMemberId: String?,
-    toggleSecrets: Boolean,
-    showSecrets: Map<String, Boolean> = emptyMap(),
-    sendCommandMsg: Boolean,
-    linkMode: SimplexLinkMode
-): AnnotatedString
-```
+MarkdownText gets a corresponding comment noting these transformations must match.
 
 #### Copy text extraction
 
-At copy time, call `buildMsgAnnotatedString` for each item and take `.text`:
-
+On SelectionManager:
 ```kotlin
-fun getSelectedText(items: List<MergedItem>): String {
+fun getSelectedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
     val r = range ?: return ""
     val lo = minOf(r.startIndex, r.endIndex)
     val hi = maxOf(r.startIndex, r.endIndex)
@@ -253,7 +227,8 @@ fun getSelectedText(items: List<MergedItem>): String {
     val startOff = if (forward) r.startOffset else r.endOffset
     val endOff = if (forward) r.endOffset else r.startOffset
     return (lo..hi).mapNotNull { idx ->
-        val text = items.getOrNull(idx)?.getDisplayText() ?: return@mapNotNull null
+        val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
+        val text = displayText(ci, linkMode, sendCommandMsg = false)
         when {
             idx == lo && idx == hi -> text.substring(
                 startOff.coerceAtMost(text.length),
@@ -266,24 +241,6 @@ fun getSelectedText(items: List<MergedItem>): String {
     }.joinToString("\n")
 }
 ```
-
-Where `getDisplayText()` calls `buildMsgAnnotatedString(...).text` with the
-item's ChatItem fields. One function, used for both rendering and copy.
-No stored text state. No map. No `annotatedTextState`.
-
-Chat-level parameters for copy (`linkMode`, `userMemberId`, `sendCommandMsg` flag)
-are passed to `getSelectedText` from the call site (SelectionHandler), which has
-access to chat context via the composable scope.
-
-### Pointer Handler Behavior Per State
-
-Non-press events (hover, scroll) skipped: `return@awaitEachGesture`.
-State captured at gesture start (`wasSelected`).
-
-**Idle**: Down not consumed. Links/menus work. Drag threshold → Selecting.
-**Selecting**: Pointer move → update focusWindowY/X, resolve endIndex via listState.
-  Pointer up → Selected.
-**Selected**: Down consumed (prevents link activation). Click → Idle. Drag → new Selecting.
 
 ### Auto-Scroll
 
@@ -299,20 +256,15 @@ Scroll event passes through to LazyColumn (not consumed by handler).
 
 ### Ctrl+C / Cmd+C
 
-`onKeyEvent` on LazyColumn modifier. Focus requested on selection start.
-Checks `isCtrlPressed || isMetaPressed`. Extracts text from live data at copy time.
+`onKeyEvent` on LazyColumn modifier (inside SelectionHandler's returned Modifier).
+Focus requested on selection start. When user taps compose box, focus moves there —
+Ctrl+C goes to compose box handler. Copy button works regardless of focus.
+Checks `isCtrlPressed || isMetaPressed`.
 
 ### Copy Button
 
 Emitted by SelectionHandler in BoxScope. Visible in Selected state.
 Copies without clearing. Click in chat clears selection.
-
-### Reserve Space Exclusion
-
-MarkdownText calls `buildMsgAnnotatedString` for content, then appends typing indicator
-and reserve. It knows the content length (`contentAnnotated.text.length`) and clamps
-`selectionRange` internally before passing to drawBehind. No `selectableEnd` parameter
-needed — the information stays inside MarkdownText.
 
 ### Eviction Prevention
 
@@ -355,132 +307,104 @@ unless range changes, which it doesn't in Selected state).
 
 ---
 
-## Changes From Current State
+## Changes From Master
 
-The current implementation has: SelectionManager with captured map, SelectionParticipant
-interface, coordinate-based recomputeAll, annotatedTextState, selectableEnd MutableIntState.
-Below describes what changes in each file to reach the target design.
+### NEW: TextSelection.kt
+
+New file: `common/src/commonMain/kotlin/chat/simplex/common/views/chat/TextSelection.kt`
+
+Contains:
+- `SelectionRange(startIndex, startOffset, endIndex, endOffset)` data class
+- `SelectionState` enum (Idle, Selecting, Selected)
+- `SelectionManager` — holds `selectionState`, `range`, `focusWindowY/X` (mutableStateOf),
+  methods: `startSelection`, `setAnchorOffset`, `updateFocusIndex`, `updateFocusOffset`,
+  `endSelection`, `clearSelection`, `getSelectedText(items, linkMode)`
+- `highlightedRange(range, index)` standalone function
+- `LocalSelectionManager` CompositionLocal
+- `SelectionHandler` composable (BoxScope extension, returns Modifier for LazyColumn):
+  pointer input with state machine, auto-scroll, focus management, Ctrl+C/Cmd+C, copy button
+- `SelectionCopyButton` composable
+- `resolveIndexAtY` helper for pointer → item index via listState
 
 ### TextItemView.kt
 
-**Extract `buildMsgAnnotatedString`** (new function, right next to MarkdownText):
-- Move the `buildAnnotatedString` body from MarkdownText into standalone function
-- Surgical extraction: code verbatim, scope variables become parameters with SAME names
-- EXCLUDES: inlineContent, typing indicator, reserve — those stay in MarkdownText
-- Returns AnnotatedString (not String) — reused for both rendering and copy
+**Add `displayText` function** right next to MarkdownText, with comment that it
+must be coordinated with MarkdownText's text transformations. Takes `ChatItem`,
+`linkMode`, `sendCommandMsg`. Used only by `getSelectedText` at copy time.
 
-**MarkdownText parameter changes** (remove 2, keep 2 of the 4 we added):
-- Remove `selectableEnd: MutableIntState?` — clamping now internal
-- Remove `annotatedTextState: MutableState<String>?` — copy uses extracted function
-- Keep `selectionRange: IntRange?` — needed for highlight
-- Keep `onTextLayoutResult: ((TextLayoutResult) -> Unit)?` — needed for focus char offset
+**Add comment to MarkdownText** noting `displayText` must match its text transformations.
 
-**MarkdownText internal change**:
-- Call `buildMsgAnnotatedString(...)` to get content AnnotatedString
-- Wrap with typing indicator + reserve: `buildAnnotatedString { append(contentAnnotated); ... }`
-- Compute `contentLength = contentAnnotated.text.length`
-- Clamp `selectionRange` to `0..contentLength` before passing to drawBehind
-- Remove `selectableEnd?.intValue = this.length` (2 places)
-- Remove `annotatedTextState?.value = annotatedText.text` (2 places)
-- For rendering with secrets: pass local `showSecrets` map to `buildMsgAnnotatedString`
+**Add 2 parameters to MarkdownText**:
+- `selectionRange: IntRange? = null`
+- `onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null`
 
-**SelectableText, ClickableText highlight** — unchanged (already correct with `range.last + 1`)
+**Inside MarkdownText** — local `var selectableEnd` set in both `buildAnnotatedString`
+blocks (1 line each, right before typing indicator / reserve). Clamp selectionRange:
+```kotlin
+val clampedRange = selectionRange?.let { it.first until minOf(it.last, selectableEnd) }
+```
 
-### TextSelection.kt — rewrite
+**Rendering** — gated on `clampedRange != null`:
+- `Text()` call sites (2): `if (clampedRange != null) SelectableText(...) else Text(...)`
+  Original `Text(...)` call unchanged.
+- `ClickableText` call: add `selectionRange = clampedRange`,
+  add `onTextLayout = { onTextLayoutResult?.invoke(it) }`
 
-**Remove entirely:**
-- `SelectionCoords` data class
-- `CapturedText` data class
-- `SelectionParticipant` interface
-- `captured` map
-- `recomputeAll()`, `recomputeParticipant()`
-- `calculateRangeForElement()` function
-- `getHighlightRange(itemId)` — replaced by `computeHighlightRange(index)`
+**Add `selectionRange` parameter to `ClickableText`**, add `drawBehind` highlight
+with `getPathForRange(range.first, range.last + 1)` before BasicText.
 
-**Keep (already correct):**
-- `SelectionState` enum (Idle, Selecting, Selected)
-- `SelectionCopyButton` composable
-- `SelectionHandler` composable structure (returns Modifier, emits copy button)
-- Pointer handler state machine (Idle/Selecting/Selected behavior)
-- Auto-scroll logic
-- Scroll snapshotFlow re-evaluation
+**Add `SelectableText` private composable** — BasicText + drawBehind highlight +
+onTextLayout. Used only when `selectionRange != null`. On Android, never reached.
 
-**Add/replace:**
-- `SelectionRange(startIndex, startOffset, endIndex, endOffset)` data class
-- `selectionState: SelectionState` — mutableStateOf (already exists)
-- `range: SelectionRange?` — mutableStateOf, replaces `coords`
-- `focusWindowY/X` — mutableStateOf (were plain Floats, need observable for snapshotFlow)
-- `computeHighlightRange(index): IntRange?` — returns range or null, uses Int.MAX_VALUE for open ends
-- `getSelectedText(items)` — calls `buildMsgAnnotatedString(...).text` per item at copy time
-- `startSelection(startIndex)`, `updateFocusIndex(index)`, `setAnchorOffset(offset)`,
-  `updateFocusOffset(offset)`, `endSelection()`, `clearSelection()`
-
-**SelectionHandler changes:**
-- Pointer move: update `focusWindowY/X`, resolve index via `listState.layoutInfo.visibleItemsInfo`
-- Remove `recomputeAll` / `updateSelection` calls — replaced by `updateFocusIndex`
-- Auto-scroll: after `scrollBy`, re-resolve index via listState
-- Scroll snapshotFlow: re-resolve index via listState
-- Copy button: call `getSelectedText(items)` at click time
+**MarkdownText is NOT restructured.** No code moved, no branches regrouped.
 
 ### FramedItemView.kt — CIMarkdownText
 
-**Remove:**
-- `annotatedTextState` and its `remember`
-- `selectableEnd` MutableIntState and its `remember`
-- `SelectionParticipant` anonymous object
-- `DisposableEffect` for register/unregister
-- `selectionManager?.getHighlightRange(ci.id)` call
+**Add `selectionIndex: Int = -1` parameter.**
 
-**Keep:**
-- `selectionManager = LocalSelectionManager.current`
-- `boundsState` — needed for focus/anchor char offset resolution
-- `layoutResultState` — needed for focus/anchor char offset resolution
+**Add** (gated on `selectionManager != null && selectionIndex >= 0 && !ci.meta.isLive`):
+- `boundsState: MutableState<Rect?>` — from `onGloballyPositioned` on the Box
+- `layoutResultState: MutableState<TextLayoutResult?>` — from `onTextLayoutResult`
+- `isAnchor` derivedStateOf + LaunchedEffect (resolves anchor offset once)
+- `isFocus` derivedStateOf + LaunchedEffect with snapshotFlow (resolves focus offset)
+- `highlightRange` via `derivedStateOf { highlightedRange(manager.range, selectionIndex) }`
 
-**Add:**
-- Item index parameter (passed from ChatView)
-- `contentLength` — computed once: `buildMsgAnnotatedString(text, ci.formattedText, ...).text.length`
-  Used to clamp anchor/focus char offsets. Recomputed only when item recomposes.
-- `highlightRange` via `derivedStateOf { manager.computeHighlightRange(myIndex) }`
-- `isAnchor` derivedStateOf + LaunchedEffect (resolves anchor offset once, clamps to contentLength)
-- `isFocus` derivedStateOf + LaunchedEffect with snapshotFlow (resolves focus offset, clamps to contentLength)
-
-**MarkdownText call changes:**
-- Remove `selectableEnd = selectableEnd`
-- Remove `annotatedTextState = annotatedTextState`
-- Keep `selectionRange = highlightRange` (source changes from getHighlightRange to derivedStateOf)
-- Keep `onTextLayoutResult = { layoutResultState.value = it }`
+**MarkdownText call**: add `selectionRange = highlightRange`,
+`onTextLayoutResult = { layoutResultState.value = it }`
 
 ### EmojiItemView.kt
 
-**Remove:**
-- `SelectionParticipant` anonymous object
-- `DisposableEffect` for register/unregister
-- `currentEmojiText` rememberUpdatedState
-- `selectionManager?.getHighlightRange(chatItem.id)` call
+**Add `selectionIndex: Int = -1` parameter.**
 
-**Keep:**
-- `selectionManager = LocalSelectionManager.current`
-- `boundsState` — for focus/anchor resolution
-
-**Add:**
-- Item index parameter
-- `isSelected` via `derivedStateOf { manager.computeHighlightRange(myIndex) != null }`
-- `isAnchor`/`isFocus` effects (same pattern as CIMarkdownText, but full-selection only)
+**Add** (gated on `selectionManager != null && selectionIndex >= 0`):
+- `isAnchor`/`isFocus` LaunchedEffects (full-selection only: offset 0 / emojiText.length)
+- `isSelected` via `derivedStateOf { highlightedRange(manager.range, selectionIndex) != null }`
+- Highlight via `Modifier.background(SelectionHighlightColor)` when selected
 
 ### ChatView.kt
 
-**Beyond current diff:**
-- Pass item index from `itemsIndexed` through to CIMarkdownText and EmojiItemView
-- The index passes through: `ChatViewListItem` → `ChatItemViewShortHand` → `ChatItemView`
-  (item/ChatItemView.kt) → `FramedItemView` → `CIMarkdownText`. Each function gets
-  a new `selectionIndex: Int` parameter. This is 4-5 function signatures changed,
-  but each change is one line (add parameter, pass through).
-- Pass merged items list reference to SelectionHandler for copy text extraction
-- Pass chat context (linkMode, userMemberId) to SelectionHandler for copy
+- Create `SelectionManager`, provide via `LocalSelectionManager`
+- `SelectionHandler` returns Modifier applied to LazyColumnWithScrollBar
+- Pass `selectionIndex` from `itemsIndexed` through the call chain:
+  `ChatViewListItem` → `ChatItemViewShortHand` → `ChatItemView` (item/) →
+  `FramedItemView` → `CIMarkdownText`. Each gets `selectionIndex: Int = -1` param.
+- Same for EmojiItemView path
+- Gate SwipeToDismiss on desktop: `if (appPlatform.isDesktop) Modifier else swipeableModifier`
+- Sync `selectionState != Idle` to `chatState.selectionActive` via LaunchedEffect
 
-### ChatItemsLoader.kt, ChatItemsMerger.kt — no change
+### ChatItemsLoader.kt
 
-Already correct: `selectionActive` field and `allowedTrimming` gating.
+- `removeDuplicatesAndModifySplitsOnBeforePagination`: add `selectionActive: Boolean = false` param
+- `allowedTrimming = !selectionActive`
+- Call site passes `chatState.selectionActive`
+
+### ChatItemsMerger.kt
+
+- `ActiveChatState`: add `@Volatile var selectionActive: Boolean = false`
+
+### ChatModel.kt — no change
+
+### MarkdownHelpView.kt — no change
 
 ---
 
