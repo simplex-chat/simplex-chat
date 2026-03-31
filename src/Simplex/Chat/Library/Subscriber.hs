@@ -2314,36 +2314,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CEvtNewChatItems user [AChatItem SCTGroup (msgDirection @d) cInfo ci]
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> CM ()
-    processGroupInvitation _ct GroupInvitation {groupProfile = GroupProfile {groupLink = Just _}} _msg _msgMeta =
-      messageError "x.grp.inv: can't invite to channel"
-    processGroupInvitation ct inv msg msgMeta = do
-      let Contact {localDisplayName = c, activeConn} = ct
-          GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
-      forM_ activeConn $ \Connection {connId, connChatVersion, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
-        when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
-        when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
-        -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-        (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
-        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
-        let GroupMember {groupMemberId, memberId = membershipMemId} = membership
-        if sameGroupLinkId groupLinkId groupLinkId'
-          then do
-            subMode <- chatReadVar subscriptionMode
-            dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-            connIds <- joinAgentConnectionAsync user Nothing True connRequest dm subMode
-            withStore' $ \db -> do
-              setViaGroupLinkUri db groupId connId
-              createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
-              updateGroupMemberStatusById db userId hostId GSMemAccepted
-              updateGroupMemberStatus db userId membership GSMemAccepted
-            toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
-          else do
-            let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-            (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
-            withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
-            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
-            toView $ CEvtReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
+    processGroupInvitation ct inv msg msgMeta
+      | isJust groupLink || isJust sharedGroupId = messageError "x.grp.inv: can't invite to channel"
+      | otherwise = do
+          let Contact {localDisplayName = c, activeConn} = ct
+              GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
+          forM_ activeConn $ \Connection {connId, connChatVersion, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
+            when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
+            when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
+            -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
+            (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+            let GroupMember {groupMemberId, memberId = membershipMemId} = membership
+            if sameGroupLinkId groupLinkId groupLinkId'
+              then do
+                subMode <- chatReadVar subscriptionMode
+                dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+                connIds <- joinAgentConnectionAsync user Nothing True connRequest dm subMode
+                withStore' $ \db -> do
+                  setViaGroupLinkUri db groupId connId
+                  createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
+                  updateGroupMemberStatusById db userId hostId GSMemAccepted
+                  updateGroupMemberStatus db userId membership GSMemAccepted
+                toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
+              else do
+                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+                (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
+                withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
+                toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
+                toView $ CEvtReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
       where
+        GroupInvitation {groupProfile = GroupProfile {groupLink, sharedGroupId}} = inv
         brokerTs = metaBrokerTs msgMeta
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
