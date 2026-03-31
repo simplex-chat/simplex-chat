@@ -253,6 +253,18 @@ struct ChatView: View {
                 AddGroupMembersView(chat: chat, groupInfo: groupInfo)
             }
         }
+        .appSheet(isPresented: $showGroupLinkSheet) {
+            if case let .group(groupInfo, _) = cInfo {
+                GroupLinkView(
+                    groupId: groupInfo.groupId,
+                    groupLink: $groupLink,
+                    groupLinkMemberRole: $groupLinkMemberRole,
+                    showTitle: true,
+                    creatingGroup: false,
+                    isChannel: groupInfo.useRelays
+                )
+            }
+        }
         .sheet(isPresented: Binding(
             get: { !forwardedChatItems.isEmpty },
             set: { isPresented in
@@ -579,17 +591,8 @@ struct ChatView: View {
                     contentFilterMenu(withLabel: false)
                     Menu {
                         if groupInfo.canAddMembers {
-                            if (chat.chatInfo.incognito) {
+                            if chat.chatInfo.incognito || groupInfo.useRelays {
                                 groupLinkButton()
-                                    .appSheet(isPresented: $showGroupLinkSheet) {
-                                        GroupLinkView(
-                                            groupId: groupInfo.groupId,
-                                            groupLink: $groupLink,
-                                            groupLinkMemberRole: $groupLinkMemberRole,
-                                            showTitle: true,
-                                            creatingGroup: false
-                                        )
-                                    }
                             } else {
                                 addMembersButton()
                             }
@@ -1438,7 +1441,11 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Label("Group link", systemImage: "link.badge.plus")
+            if case let .group(gInfo, _) = chat.chatInfo, gInfo.useRelays {
+                Label("Channel link", systemImage: "link")
+            } else {
+                Label("Group link", systemImage: "link.badge.plus")
+            }
         }
     }
 

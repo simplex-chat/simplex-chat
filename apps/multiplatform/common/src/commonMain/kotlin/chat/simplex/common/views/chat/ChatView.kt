@@ -1282,7 +1282,7 @@ fun BoxScope.ChatInfoToolbar(
     is ChatInfo.Group -> {
       // Add members / group link moved to menu
       if (chatInfo.groupInfo.canAddMembers) {
-        if (!chatInfo.incognito) {
+        if (!chatInfo.incognito && !chatInfo.groupInfo.useRelays) {
           menuItems.add {
             ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), onClick = {
               showMenu.value = false
@@ -1291,10 +1291,14 @@ fun BoxScope.ChatInfoToolbar(
           }
         } else {
           menuItems.add {
-            ItemAction(stringResource(MR.strings.group_link), painterResource(MR.images.ic_add_link), onClick = {
-              showMenu.value = false
-              openGroupLink(chatInfo.groupInfo)
-            })
+            ItemAction(
+              stringResource(if (chatInfo.groupInfo.useRelays) MR.strings.channel_link else MR.strings.group_link),
+              painterResource(if (chatInfo.groupInfo.useRelays) MR.images.ic_link else MR.images.ic_add_link),
+              onClick = {
+                showMenu.value = false
+                openGroupLink(chatInfo.groupInfo)
+              }
+            )
           }
         }
       }
@@ -3169,7 +3173,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
     ModalManager.end.showModalCloseable(true) {
-      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null)
+      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays)
     }
   }
 }

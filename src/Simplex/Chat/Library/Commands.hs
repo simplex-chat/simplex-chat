@@ -2425,9 +2425,10 @@ processChatCommand vr nm = \case
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
-    assertDirectAllowed user MDSnd contact XGrpInv_
     let Group gInfo members = group
         Contact {localDisplayName = cName} = contact
+    when (useRelays' gInfo) $ throwCmdError "can't invite contact to channel"
+    assertDirectAllowed user MDSnd contact XGrpInv_
     assertUserGroupRole gInfo $ max GRAdmin memRole
     -- [incognito] forbid to invite contact to whom user is connected incognito
     when (contactConnIncognito contact) $ throwChatError CEContactIncognitoCantInvite
