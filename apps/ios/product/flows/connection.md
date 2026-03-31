@@ -138,7 +138,7 @@ Establishing contact between two SimpleX Chat users. SimpleX uses no user identi
 | `Contact` | `SimpleXChat/ChatTypes.swift` | Full contact model with profile, connection status, preferences |
 | `UserContactRequest` | `SimpleXChat/ChatTypes.swift` | Incoming contact request awaiting acceptance |
 | `ChatType` | `SimpleXChat/ChatTypes.swift` | `.direct`, `.group`, `.local`, `.contactRequest`, `.contactConnection` |
-| `GroupShortLinkInfo` | `Shared/Model/AppAPITypes.swift` | Contains `direct: Bool`, `groupRelays: [String]`, `sharedGroupId: String?`; transient data returned by prepare |
+| `GroupShortLinkInfo` | `Shared/Model/AppAPITypes.swift` | Contains `direct: Bool`, `groupRelays: [String]`, `publicGroupId: String?`; transient data returned by prepare |
 | `RelayConnectionResult` | `Shared/Model/AppAPITypes.swift` | Contains `relayMember: GroupMember`, `relayError: ChatError?`; per-relay join outcome |
 
 ## Error Cases

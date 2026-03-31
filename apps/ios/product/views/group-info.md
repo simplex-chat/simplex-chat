@@ -138,7 +138,7 @@ The top section splits into a channel-specific branch:
 
 | Element | Owner | Non-owner |
 |---|---|---|
-| Channel link | NavigationLink "Channel link" to `GroupLinkView` | Inline QR code (`SimpleXLinkQRCode`) + "Share link" button (if `groupProfile.groupLink` exists) |
+| Channel link | NavigationLink "Channel link" to `GroupLinkView` | Inline QR code (`SimpleXLinkQRCode`) + "Share link" button (if `groupProfile.publicGroup?.groupLink` exists) |
 | Members | NavigationLink "Owners & subscribers" to `ChannelMembersView` | NavigationLink "Owners" to `ChannelMembersView` |
 | Relays | NavigationLink "Chat relays" to `ChannelRelaysView` | NavigationLink "Chat relays" to `ChannelRelaysView` |
 

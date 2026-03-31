@@ -2164,13 +2164,25 @@ data class PreparedGroup (
 data class GroupRef(val groupId: Long, val localDisplayName: String)
 
 @Serializable
+enum class GroupType {
+  @SerialName("channel") Channel
+}
+
+@Serializable
+data class PublicGroupProfile(
+  val groupType: GroupType,
+  val groupLink: String,
+  val publicGroupId: String
+)
+
+@Serializable
 data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
   override val shortDescr: String?,
   val description: String? = null,
   override val image: String? = null,
-  val groupLink: String? = null,
+  val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null

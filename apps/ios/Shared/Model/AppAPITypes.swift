@@ -1361,7 +1361,7 @@ enum ContactAddressPlan: Decodable, Hashable {
 public struct GroupShortLinkInfo: Decodable, Hashable {
     public var direct: Bool
     public var groupRelays: [String]
-    public var sharedGroupId: String?
+    public var publicGroupId: String?
 }
 
 enum GroupLinkPlan: Decodable, Hashable {

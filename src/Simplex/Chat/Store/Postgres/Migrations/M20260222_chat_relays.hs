@@ -39,13 +39,15 @@ ALTER TABLE groups
   ADD COLUMN relay_request_peer_chat_max_version INTEGER,
   ADD COLUMN relay_request_failed SMALLINT DEFAULT 0,
   ADD COLUMN relay_request_err_reason TEXT,
-  ADD COLUMN shared_group_id BYTEA,
   ADD COLUMN root_priv_key BYTEA,
   ADD COLUMN root_pub_key BYTEA,
   ADD COLUMN member_priv_key BYTEA,
   ADD COLUMN public_member_count BIGINT;
 
-ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
+ALTER TABLE group_profiles
+  ADD COLUMN group_type TEXT,
+  ADD COLUMN group_link BYTEA,
+  ADD COLUMN public_group_id BYTEA;
 
 CREATE TABLE group_relays(
   group_relay_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -90,13 +92,15 @@ ALTER TABLE groups
   DROP COLUMN relay_request_peer_chat_max_version,
   DROP COLUMN relay_request_failed,
   DROP COLUMN relay_request_err_reason,
-  DROP COLUMN shared_group_id,
   DROP COLUMN root_priv_key,
   DROP COLUMN root_pub_key,
   DROP COLUMN member_priv_key,
   DROP COLUMN public_member_count;
 
-ALTER TABLE group_profiles DROP COLUMN group_link;
+ALTER TABLE group_profiles
+  DROP COLUMN group_type,
+  DROP COLUMN group_link,
+  DROP COLUMN public_group_id;
 
 DROP INDEX idx_group_relays_group_id;
 DROP INDEX idx_group_relays_group_member_id;

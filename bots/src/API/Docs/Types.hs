@@ -291,6 +291,7 @@ chatTypesDocsData =
     (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
+    (sti @GroupType, STEnum, "GT", [], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
@@ -321,6 +322,7 @@ chatTypesDocsData =
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
     (sti @ProxyError, STUnion, "", [], "", ""),
     (sti @PublicGroupData, STRecord, "", [], "", ""),
+    (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
     (sti @RcvConnEvent, STUnion, "RCE", [], "", ""),
@@ -484,6 +486,7 @@ deriving instance Generic GroupProfile
 deriving instance Generic GroupRelay
 deriving instance Generic GroupShortLinkData
 deriving instance Generic GroupShortLinkInfo
+deriving instance Generic GroupType
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
 deriving instance Generic HandshakeError
@@ -522,6 +525,7 @@ deriving instance Generic Profile
 deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
 deriving instance Generic PublicGroupData
+deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent

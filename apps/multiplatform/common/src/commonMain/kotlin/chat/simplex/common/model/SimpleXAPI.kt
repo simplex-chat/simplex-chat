@@ -4548,7 +4548,7 @@ data class RelayConnectionResult(
 data class GroupShortLinkInfo(
   val direct: Boolean,
   val groupRelays: List<String>,
-  val sharedGroupId: String? = null
+  val publicGroupId: String? = null
 )
 
 @Serializable
