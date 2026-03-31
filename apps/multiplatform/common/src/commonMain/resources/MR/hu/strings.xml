@@ -618,7 +618,7 @@
     <string name="la_immediately">Azonnal</string>
     <string name="files_and_media_prohibited">A fájlok és a médiatartalmak küldése le van tiltva!</string>
     <string name="hide_profile">Profil elrejtése</string>
-    <string name="how_to_use_your_servers">Hogyan használja a saját kiszolgálóit</string>
+    <string name="how_to_use_your_servers">Útmutató a saját kiszolgálók használatához</string>
     <string name="v5_2_favourites_filter">Csevegési üzenetek gyorsabb megtalálása</string>
     <string name="import_theme">Téma importálása</string>
     <string name="import_theme_error">Hiba történt a téma importálásakor</string>
@@ -2524,5 +2524,5 @@
     <string name="content_filter_voice_messages">Hangüzenetek</string>
     <string name="info_row_connection_failed">Nem sikerült létrehozni a kapcsolatot</string>
     <string name="member_info_member_failed">sikertelen</string>
-    <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
+    <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
 </resources>
