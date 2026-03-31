@@ -2205,7 +2205,7 @@ fun BoxScope.ChatItemsList(
     }
   }
 
-  val selectionModifier = SelectionHandler(LocalSelectionManager.current, listState)
+  val selectionModifier = SelectionHandler(LocalSelectionManager.current, listState, mergedItems, linkMode)
 
   LazyColumnWithScrollBar(
     Modifier.align(Alignment.BottomCenter).then(selectionModifier),

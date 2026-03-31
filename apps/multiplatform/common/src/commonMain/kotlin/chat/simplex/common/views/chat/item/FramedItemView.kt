@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -367,42 +368,59 @@ fun CIMarkdownText(
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean,
   showTimestamp: Boolean,
-  prefix: AnnotatedString? = null
+  prefix: AnnotatedString? = null,
+  selectionIndex: Int = -1
 ) {
   val selectionManager = LocalSelectionManager.current
   val boundsState = remember { mutableStateOf<Rect?>(null) }
   val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val selectableEnd = remember { mutableIntStateOf(Int.MAX_VALUE) }
-  val annotatedTextState = remember { mutableStateOf("") }
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
 
-  if (selectionManager != null && ci.meta.isLive != true) {
-    val currentText = rememberUpdatedState(text)
-    val participant = remember(ci.id) {
-      object : SelectionParticipant {
-        override val itemId = ci.id
-        override fun getYBounds() = boundsState.value?.let { it.top..it.bottom }
-        override fun getTextLayoutResult() = layoutResultState.value
-        override fun getSelectableEnd() = selectableEnd.intValue
-        override fun getAnnotatedText(): String {
-          val at = annotatedTextState.value
-          return if (at.isNotEmpty()) at else currentText.value
-        }
-        override fun calculateHighlightRange(coords: SelectionCoords) =
-          calculateRangeForElement(
-            boundsState.value, layoutResultState.value,
-            selectableEnd.intValue, coords
-          )
-      }
+  val contentLength = remember(text, ci.formattedText, ci.mentions) {
+    buildMsgAnnotatedString(
+      text = text, formattedText = if (text.isEmpty()) emptyList() else ci.formattedText,
+      sender = null, senderBold = true, prefix = prefix,
+      mentions = ci.mentions, userMemberId = when {
+        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+        else -> null
+      },
+      toggleSecrets = true, sendCommandMsg = chatInfo.useCommands && chat.chatInfo.sndReady,
+      linkMode = linkMode
+    ).text.length
+  }
+
+  if (selectionManager != null && ci.meta.isLive != true && selectionIndex >= 0) {
+    val isAnchor = remember(selectionIndex) {
+      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
     }
-    DisposableEffect(participant) {
-      selectionManager.register(participant)
-      onDispose { selectionManager.unregister(participant) }
+    LaunchedEffect(isAnchor.value) {
+      if (!isAnchor.value) return@LaunchedEffect
+      val bounds = boundsState.value ?: return@LaunchedEffect
+      val layout = layoutResultState.value ?: return@LaunchedEffect
+      val offset = layout.getOffsetForPosition(
+        Offset(selectionManager.focusWindowX - bounds.left, selectionManager.focusWindowY - bounds.top)
+      )
+      selectionManager.setAnchorOffset(offset.coerceAtMost(contentLength))
+    }
+
+    val isFocus = remember(selectionIndex) {
+      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+    }
+    if (isFocus.value) {
+      LaunchedEffect(Unit) {
+        snapshotFlow { selectionManager.focusWindowY to selectionManager.focusWindowX }
+          .collect { (py, px) ->
+            val bounds = boundsState.value ?: return@collect
+            val layout = layoutResultState.value ?: return@collect
+            val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
+            selectionManager.updateFocusOffset(offset.coerceAtMost(contentLength))
+          }
+      }
     }
   }
 
-  val highlightRange = selectionManager?.getHighlightRange(ci.id)
+  val highlightRange = selectionManager?.computeHighlightRange(selectionIndex)
 
   Box(
     Modifier
@@ -418,8 +436,6 @@ fun CIMarkdownText(
         else -> null
       },
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
-      selectableEnd = selectableEnd,
-      annotatedTextState = annotatedTextState,
       selectionRange = highlightRange,
       onTextLayoutResult = { layoutResultState.value = it }
     )

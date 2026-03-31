@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,39 +20,34 @@ val largeEmojiFont: TextStyle = TextStyle(fontSize = 48.sp, fontFamily = EmojiFo
 val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiFont)
 
 @Composable
-fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
+fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean, selectionIndex: Int = -1) {
   val selectionManager = LocalSelectionManager.current
-  val boundsState = remember { mutableStateOf<Rect?>(null) }
-  val currentEmojiText = rememberUpdatedState(chatItem.content.text.trim())
+  val emojiText = chatItem.content.text.trim()
 
-  if (selectionManager != null) {
-    val participant = remember(chatItem.id) {
-      object : SelectionParticipant {
-        override val itemId = chatItem.id
-        override fun getYBounds() = boundsState.value?.let { it.top..it.bottom }
-        override fun getTextLayoutResult() = null
-        override fun getSelectableEnd() = currentEmojiText.value.length
-        override fun getAnnotatedText() = currentEmojiText.value
-        override fun calculateHighlightRange(coords: SelectionCoords): IntRange? {
-          val bounds = boundsState.value ?: return null
-          return if (bounds.top <= coords.bottomY && bounds.bottom >= coords.topY)
-            0 until currentEmojiText.value.length
-          else null
-        }
-      }
+  if (selectionManager != null && selectionIndex >= 0) {
+    val isAnchor = remember(selectionIndex) {
+      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
     }
-    DisposableEffect(participant) {
-      selectionManager.register(participant)
-      onDispose { selectionManager.unregister(participant) }
+    LaunchedEffect(isAnchor.value) {
+      if (!isAnchor.value) return@LaunchedEffect
+      selectionManager.setAnchorOffset(0)
+    }
+
+    val isFocus = remember(selectionIndex) {
+      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+    }
+    if (isFocus.value) {
+      LaunchedEffect(Unit) {
+        snapshotFlow { selectionManager.focusWindowY }
+          .collect { selectionManager.updateFocusOffset(emojiText.length) }
+      }
     }
   }
 
-  val isSelected = selectionManager?.getHighlightRange(chatItem.id) != null
+  val isSelected = selectionManager?.computeHighlightRange(selectionIndex) != null
 
   Column(
-    Modifier
-      .padding(vertical = 8.dp, horizontal = 12.dp)
-      .onGloballyPositioned { boundsState.value = it.boundsInWindow() },
+    Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(if (isSelected) Modifier.background(SelectionHighlightColor) else Modifier) {

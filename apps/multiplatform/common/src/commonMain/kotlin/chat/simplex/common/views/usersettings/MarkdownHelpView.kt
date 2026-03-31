@@ -3,7 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
@@ -38,7 +38,7 @@ fun MarkdownHelpView() {
     Row {
       MdSyntax("!1 $colored!")
       Text(buildAnnotatedString {
-        withStyle(Format.Colored(FormatColor.red).style) { append(colored) }
+        withStyle(Format.Colored(FormatColor.red).style(MaterialTheme.colors, MaterialTheme.typography)) { append(colored) }
         append(" (")
         appendColor(this, "1", FormatColor.red, ", ")
         appendColor(this, "2", FormatColor.green, ", ")
@@ -52,7 +52,7 @@ fun MarkdownHelpView() {
       MdSyntax("#$secret#")
       SelectionContainer {
         Text(buildAnnotatedString {
-          withStyle(Format.Secret().style) { append(secret) }
+          withStyle(Format.Secret().style(MaterialTheme.colors, MaterialTheme.typography)) { append(secret) }
         })
       }
     }
@@ -72,14 +72,14 @@ fun MdFormat(markdown: String, example: String, format: Format) {
   Row {
     MdSyntax(markdown)
     Text(buildAnnotatedString {
-      withStyle(format.style) { append(example) }
+      withStyle(format.style(MaterialTheme.colors, MaterialTheme.typography)) { append(example) }
     })
   }
 }
 
 @Composable
 fun appendColor(b: AnnotatedString.Builder, s: String, c: FormatColor, after: String) {
-  b.withStyle(Format.Colored(c).style) { append(s)}
+  b.withStyle(Format.Colored(c).style(MaterialTheme.colors, MaterialTheme.typography)) { append(s)}
   b.append(after)
 }
 

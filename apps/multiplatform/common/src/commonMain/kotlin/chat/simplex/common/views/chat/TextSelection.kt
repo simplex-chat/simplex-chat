@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
@@ -26,10 +25,10 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.platform.Log
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.views.chat.item.buildMsgAnnotatedString
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -37,35 +36,12 @@ import kotlinx.coroutines.*
 
 val SelectionHighlightColor = Color(0x4D0066FF)
 
-@Stable
-data class SelectionCoords(
-    val startY: Float,
-    val startX: Float,
-    val endY: Float,
-    val endX: Float
-) {
-    val isReversed: Boolean get() = startY > endY
-    val topY: Float get() = minOf(startY, endY)
-    val bottomY: Float get() = maxOf(startY, endY)
-    val topX: Float get() = if (isReversed) endX else startX
-    val bottomX: Float get() = if (isReversed) startX else endX
-}
-
-data class CapturedText(
-    val itemId: Long,
-    val yPosition: Float,
-    val highlightRange: IntRange,
-    val text: String
+data class SelectionRange(
+    val startIndex: Int,
+    val startOffset: Int,
+    val endIndex: Int,
+    val endOffset: Int
 )
-
-interface SelectionParticipant {
-    val itemId: Long
-    fun getYBounds(): ClosedFloatingPointRange<Float>?
-    fun getTextLayoutResult(): TextLayoutResult?
-    fun getSelectableEnd(): Int
-    fun getAnnotatedText(): String
-    fun calculateHighlightRange(coords: SelectionCoords): IntRange?
-}
 
 enum class SelectionState { Idle, Selecting, Selected }
 
@@ -73,42 +49,30 @@ class SelectionManager {
     var selectionState by mutableStateOf(SelectionState.Idle)
         private set
 
-    var coords by mutableStateOf<SelectionCoords?>(null)
+    var range by mutableStateOf<SelectionRange?>(null)
         private set
 
-    var lastPointerWindowY: Float = 0f
-        private set
-    var lastPointerWindowX: Float = 0f
-        private set
+    var focusWindowY by mutableStateOf(0f)
+    var focusWindowX by mutableStateOf(0f)
 
-    private val participants = mutableListOf<SelectionParticipant>()
-    val captured = mutableStateMapOf<Long, CapturedText>()
-
-    fun register(participant: SelectionParticipant) {
-        participants.add(participant)
-        if (selectionState == SelectionState.Selecting) {
-            coords?.let { recomputeParticipant(participant, it) }
-        }
-    }
-
-    fun unregister(participant: SelectionParticipant) {
-        participants.remove(participant)
-    }
-
-    fun startSelection(startY: Float, startX: Float) {
-        coords = SelectionCoords(startY, startX, startY, startX)
+    fun startSelection(startIndex: Int) {
+        range = SelectionRange(startIndex, 0, startIndex, 0)
         selectionState = SelectionState.Selecting
-        lastPointerWindowY = startY
-        lastPointerWindowX = startX
-        captured.clear()
     }
 
-    fun updateSelection(endY: Float, endX: Float) {
-        val current = coords ?: return
-        coords = current.copy(endY = endY, endX = endX)
-        lastPointerWindowY = endY
-        lastPointerWindowX = endX
-        recomputeAll()
+    fun setAnchorOffset(offset: Int) {
+        val r = range ?: return
+        range = r.copy(startOffset = offset, endOffset = offset)
+    }
+
+    fun updateFocusIndex(index: Int) {
+        val r = range ?: return
+        range = r.copy(endIndex = index)
+    }
+
+    fun updateFocusOffset(offset: Int) {
+        val r = range ?: return
+        range = r.copy(endOffset = offset)
     }
 
     fun endSelection() {
@@ -116,115 +80,70 @@ class SelectionManager {
     }
 
     fun clearSelection() {
-        coords = null
+        range = null
         selectionState = SelectionState.Idle
-        captured.clear()
     }
 
-    private fun recomputeAll() {
-        val c = coords ?: return
-        val visibleInRange = mutableMapOf<Long, SelectionParticipant>()
-        val visibleOutOfRange = mutableSetOf<Long>()
+    fun computeHighlightRange(index: Int): IntRange? {
+        val r = range ?: return null
+        val lo = minOf(r.startIndex, r.endIndex)
+        val hi = maxOf(r.startIndex, r.endIndex)
+        if (index < lo || index > hi) return null
+        val forward = r.startIndex <= r.endIndex
+        val startOff = if (forward) r.startOffset else r.endOffset
+        val endOff = if (forward) r.endOffset else r.startOffset
+        return when {
+            index == lo && index == hi -> minOf(startOff, endOff) until maxOf(startOff, endOff)
+            index == lo -> startOff until Int.MAX_VALUE
+            index == hi -> 0 until endOff
+            else -> 0 until Int.MAX_VALUE
+        }
+    }
 
-        for (p in participants) {
-            val bounds = p.getYBounds()
-            if (bounds != null && bounds.start <= c.bottomY && bounds.endInclusive >= c.topY) {
-                visibleInRange[p.itemId] = p
-            } else {
-                visibleOutOfRange.add(p.itemId)
+    fun getSelectedText(
+        items: List<MergedItem>,
+        linkMode: SimplexLinkMode
+    ): String {
+        val r = range ?: return ""
+        val lo = minOf(r.startIndex, r.endIndex)
+        val hi = maxOf(r.startIndex, r.endIndex)
+        val forward = r.startIndex <= r.endIndex
+        val startOff = if (forward) r.startOffset else r.endOffset
+        val endOff = if (forward) r.endOffset else r.startOffset
+        return (lo..hi).mapNotNull { idx ->
+            val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
+            val text = buildMsgAnnotatedString(
+                text = ci.text, formattedText = ci.formattedText,
+                sender = null, senderBold = false, prefix = null,
+                mentions = ci.mentions, userMemberId = null,
+                toggleSecrets = false, sendCommandMsg = false, linkMode = linkMode
+            ).text
+            when {
+                idx == lo && idx == hi -> text.substring(
+                    startOff.coerceAtMost(text.length),
+                    endOff.coerceAtMost(text.length)
+                )
+                idx == lo -> text.substring(startOff.coerceAtMost(text.length))
+                idx == hi -> text.substring(0, endOff.coerceAtMost(text.length))
+                else -> text
             }
-        }
-
-        visibleOutOfRange.forEach { captured.remove(it) }
-
-        for ((_, p) in visibleInRange) {
-            recomputeParticipant(p, c)
-        }
-    }
-
-    private fun recomputeParticipant(participant: SelectionParticipant, coords: SelectionCoords) {
-        val bounds = participant.getYBounds() ?: return
-        Log.d("TextSelection", "recompute item=${participant.itemId} bounds=${bounds.start}..${bounds.endInclusive} coords.topY=${coords.topY} coords.bottomY=${coords.bottomY}")
-        val highlightRange = participant.calculateHighlightRange(coords) ?: return
-        Log.d("TextSelection", "  highlightRange=$highlightRange selectableEnd=${participant.getSelectableEnd()}")
-        val selectableEnd = participant.getSelectableEnd()
-        val clampedStart = highlightRange.first.coerceIn(0, selectableEnd)
-        val clampedEnd = highlightRange.last.coerceIn(0, selectableEnd)
-        if (clampedStart >= clampedEnd) return
-
-        val annotatedText = participant.getAnnotatedText()
-        val text = if (clampedEnd <= annotatedText.length) {
-            annotatedText.substring(clampedStart, clampedEnd)
-        } else {
-            annotatedText.substring(clampedStart.coerceAtMost(annotatedText.length))
-        }
-
-        captured[participant.itemId] = CapturedText(
-            itemId = participant.itemId,
-            yPosition = bounds.start,
-            highlightRange = clampedStart until clampedEnd,
-            text = text
-        )
-    }
-
-    fun getSelectedText(): String {
-        return captured.values
-            .sortedBy { it.yPosition }
-            .joinToString("\n") { it.text }
-    }
-
-    fun getHighlightRange(itemId: Long): IntRange? {
-        return captured[itemId]?.highlightRange
-    }
-}
-
-fun calculateRangeForElement(
-    bounds: Rect?,
-    layout: TextLayoutResult?,
-    selectableEnd: Int,
-    coords: SelectionCoords
-): IntRange? {
-    bounds ?: return null
-    layout ?: return null
-    if (selectableEnd <= 0) return null
-
-    val isFirst = bounds.top <= coords.topY && bounds.bottom > coords.topY
-    val isLast = bounds.top < coords.bottomY && bounds.bottom >= coords.bottomY
-    val isMiddle = bounds.top > coords.topY && bounds.bottom < coords.bottomY
-
-    return when {
-        isMiddle -> 0 until selectableEnd
-        isFirst && isLast -> {
-            val s = layout.getOffsetForPosition(Offset(coords.topX - bounds.left, coords.topY - bounds.top))
-            val e = layout.getOffsetForPosition(Offset(coords.bottomX - bounds.left, coords.bottomY - bounds.top))
-            minOf(s, e) until maxOf(s, e)
-        }
-        isFirst -> {
-            val s = layout.getOffsetForPosition(Offset(coords.topX - bounds.left, coords.topY - bounds.top))
-            s until selectableEnd
-        }
-        isLast -> {
-            val e = layout.getOffsetForPosition(Offset(coords.bottomX - bounds.left, coords.bottomY - bounds.top))
-            0 until e
-        }
-        else -> null
+        }.joinToString("\n")
     }
 }
 
 val LocalSelectionManager = staticCompositionLocalOf<SelectionManager?> { null }
 
+
 private const val AUTO_SCROLL_ZONE_PX = 40f
 private const val MIN_SCROLL_SPEED = 2f
 private const val MAX_SCROLL_SPEED = 20f
 
-/**
- * Composable that installs selection effects and returns a Modifier for the LazyColumn.
- * Also emits the copy button UI in the BoxScope.
- */
 @Composable
 fun BoxScope.SelectionHandler(
     manager: SelectionManager?,
-    listState: State<LazyListState>
+    listState: State<LazyListState>,
+    mergedItems: State<MergedItems>,
+    linkMode: SimplexLinkMode
 ): Modifier {
     if (manager == null || !appPlatform.isDesktop) return Modifier
 
@@ -237,15 +156,13 @@ fun BoxScope.SelectionHandler(
     val scope = rememberCoroutineScope()
     var autoScrollJob by remember { mutableStateOf<Job?>(null) }
 
-    // Re-evaluate selection on scroll (handles mouse wheel and auto-scroll)
+    // Re-evaluate focus index on scroll during active drag
     LaunchedEffect(manager) {
         snapshotFlow { listState.value.firstVisibleItemScrollOffset }
             .collect {
                 if (manager.selectionState == SelectionState.Selecting) {
-                    manager.updateSelection(
-                        manager.lastPointerWindowY,
-                        manager.lastPointerWindowX
-                    )
+                    val idx = resolveIndexAtY(listState.value, manager.focusWindowY - positionInWindow.y)
+                    if (idx != null) manager.updateFocusIndex(idx)
                 }
             }
     }
@@ -254,7 +171,7 @@ fun BoxScope.SelectionHandler(
     if (manager.selectionState == SelectionState.Selected) {
         SelectionCopyButton(
             onCopy = {
-                clipboard.setText(AnnotatedString(manager.getSelectedText()))
+                clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
             }
         )
     }
@@ -268,7 +185,7 @@ fun BoxScope.SelectionHandler(
                 && event.key == Key.C
                 && event.type == KeyEventType.KeyDown
             ) {
-                clipboard.setText(AnnotatedString(manager.getSelectedText()))
+                clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
                 true
             } else false
         }
@@ -282,10 +199,10 @@ fun BoxScope.SelectionHandler(
             awaitEachGesture {
                 val down = awaitPointerEvent(PointerEventPass.Initial)
                 val firstChange = down.changes.first()
-                if (!firstChange.pressed) return@awaitEachGesture // skip hover, scroll
+                if (!firstChange.pressed) return@awaitEachGesture
 
                 val wasSelected = manager.selectionState == SelectionState.Selected
-                if (wasSelected) firstChange.consume() // prevent link/menu activation on click-to-clear
+                if (wasSelected) firstChange.consume()
 
                 val localStart = firstChange.position
                 val windowStart = localStart + positionInWindow
@@ -300,11 +217,10 @@ fun BoxScope.SelectionHandler(
                         autoScrollJob?.cancel()
                         autoScrollJob = null
                         if (isDragging) {
-                            manager.endSelection() // Selecting → Selected
+                            manager.endSelection()
                         } else if (wasSelected) {
-                            manager.clearSelection() // Selected → Idle
+                            manager.clearSelection()
                         }
-                        // Idle + click: do nothing, event passed through to children
                         break
                     }
 
@@ -312,15 +228,26 @@ fun BoxScope.SelectionHandler(
 
                     if (!isDragging && totalDrag.getDistance() > touchSlop) {
                         isDragging = true
-                        Log.d("TextSelection", "startSelection: localStart=$localStart posInWindow=$positionInWindow windowStart=$windowStart")
-                        manager.startSelection(windowStart.y, windowStart.x) // → Selecting
+                        val localY = firstChange.position.y
+                        val idx = resolveIndexAtY(listState.value, localY)
+                        if (idx != null) {
+                            manager.startSelection(idx)
+                            manager.focusWindowY = windowStart.y
+                            manager.focusWindowX = windowStart.x
+                        }
                         try { focusRequester.requestFocus() } catch (_: Exception) {}
                         change.consume()
                     }
 
                     if (isDragging) {
                         val windowPos = change.position + positionInWindow
-                        manager.updateSelection(windowPos.y, windowPos.x)
+                        manager.focusWindowY = windowPos.y
+                        manager.focusWindowX = windowPos.x
+
+                        val localY = change.position.y
+                        val idx = resolveIndexAtY(listState.value, localY)
+                        if (idx != null) manager.updateFocusIndex(idx)
+
                         change.consume()
 
                         // Auto-scroll: direction-aware
@@ -336,9 +263,9 @@ fun BoxScope.SelectionHandler(
                             autoScrollJob = scope.launch {
                                 while (isActive && manager.selectionState == SelectionState.Selecting) {
                                     val curEdge = if (draggingDown) {
-                                        viewportBottom - manager.lastPointerWindowY
+                                        viewportBottom - manager.focusWindowY
                                     } else {
-                                        manager.lastPointerWindowY - viewportTop
+                                        manager.focusWindowY - viewportTop
                                     }
                                     if (curEdge >= AUTO_SCROLL_ZONE_PX) break
 
@@ -356,6 +283,13 @@ fun BoxScope.SelectionHandler(
                 }
             }
         }
+}
+
+private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
+    val visibleItems = listState.layoutInfo.visibleItemsInfo
+    return visibleItems.find { item ->
+        localY >= item.offset && localY < item.offset + item.size
+    }?.index
 }
 
 @Composable

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,6 +57,123 @@ private fun typingIndicator(recent: Boolean, typingIdx: Int): AnnotatedString = 
 private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
+fun buildMsgAnnotatedString(
+  text: CharSequence,
+  formattedText: List<FormattedText>?,
+  sender: String?,
+  senderBold: Boolean,
+  prefix: AnnotatedString?,
+  mentions: Map<String, CIMention>?,
+  userMemberId: String?,
+  toggleSecrets: Boolean,
+  showSecrets: Map<String, Boolean> = emptyMap(),
+  sendCommandMsg: Boolean,
+  linkMode: SimplexLinkMode,
+  colors: Colors? = null,
+  typography: Typography? = null
+): AnnotatedString = buildAnnotatedString {
+  fun styled(format: Format, content: () -> Unit) {
+    val s = if (colors != null && typography != null) format.style(colors, typography) else null
+    if (s != null) withStyle(s) { content() } else content()
+  }
+  appendSender(this, sender, senderBold)
+  if (prefix != null) append(prefix)
+  if (formattedText == null) {
+    if (text is String) append(text)
+    else if (text is AnnotatedString) append(text)
+  } else {
+    for ((i, ft) in formattedText.withIndex()) {
+      if (ft.format == null) append(ft.text)
+      else when(ft.format) {
+        is Format.Bold, is Format.Italic, is Format.StrikeThrough, is Format.Snippet,
+        is Format.Small, is Format.Colored -> styled(ft.format) { append(ft.text) }
+        is Format.Secret -> {
+          if (toggleSecrets) {
+            val key = i.toString()
+            withAnnotation(tag = "SECRET", annotation = key) {
+              if (showSecrets[key] == true) append(ft.text) else styled(ft.format) { append(ft.text) }
+            }
+          } else {
+            styled(ft.format) { append(ft.text) }
+          }
+        }
+        is Format.Mention -> {
+          val mention = mentions?.get(ft.format.memberName)
+          if (mention != null) {
+            if (mention.memberRef != null) {
+              val displayName = mention.memberRef.displayName
+              val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
+                displayName
+              } else {
+                "${mention.memberRef.localAlias} ($displayName)"
+              }
+              val ftStyle = if (colors != null && typography != null) ft.format.style(colors, typography) else null
+              val mentionStyle = if (ftStyle != null && colors != null && mention.memberId == userMemberId) ftStyle.copy(color = colors.primary) else ftStyle
+              if (mentionStyle != null) withStyle(mentionStyle) { append(mentionText(name)) } else append(mentionText(name))
+            } else {
+              styled(ft.format) { append(mentionText(ft.format.memberName)) }
+            }
+          } else {
+            append(ft.text)
+          }
+        }
+        is Format.Command ->
+          if (!sendCommandMsg) {
+            append(ft.text)
+          } else {
+            val cmd = ft.format.commandStr
+            withAnnotation(tag = "COMMAND", annotation = cmd) {
+              styled(ft.format) { append("/$cmd") }
+            }
+          }
+        is Format.Uri -> {
+          val s = ft.text
+          val link = if (s.startsWith("http://") || s.startsWith("https://")) s else "https://$s"
+          withAnnotation(tag = "WEB_URL", annotation = link) {
+            styled(ft.format) { append(ft.text) }
+          }
+        }
+        is Format.HyperLink -> {
+          withAnnotation(tag = "WEB_URL", annotation = ft.format.linkUri) {
+            styled(ft.format) { append(ft.format.showText ?: ft.text) }
+          }
+        }
+        is Format.SimplexLink -> {
+          val link =
+            if (linkMode == SimplexLinkMode.BROWSER && ft.format.showText == null && !ft.text.startsWith("[")) ft.text
+            else ft.format.simplexUri
+          val t = ft.format.showText ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
+          withAnnotation(tag = "SIMPLEX_URL", annotation = link) {
+            if (t == null) {
+              styled(ft.format) { append(ft.text) }
+            } else {
+              val ftStyle = if (colors != null && typography != null) ft.format.style(colors, typography) else null
+              if (ftStyle != null) {
+                withStyle(ftStyle) { append("$t ") }
+                withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(ft.format.viaHosts) }
+              } else {
+                append("$t ")
+                append(ft.format.viaHosts)
+              }
+            }
+          }
+        }
+        is Format.Email -> {
+          withAnnotation(tag = "OTHER_URL", annotation = "mailto:${ft.text}") {
+            styled(ft.format) { append(ft.text) }
+          }
+        }
+        is Format.Phone -> {
+          withAnnotation(tag = "OTHER_URL", annotation = "tel:${ft.text}") {
+            styled(ft.format) { append(ft.text) }
+          }
+        }
+        is Format.Unknown -> append(ft.text)
+      }
+    }
+  }
+}
+
 @Composable
 fun MarkdownText (
   text: CharSequence,
@@ -80,8 +197,6 @@ fun MarkdownText (
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
   prefix: AnnotatedString? = null,
-  selectableEnd: MutableIntState? = null,
-  annotatedTextState: MutableState<String>? = null,
   selectionRange: IntRange? = null,
   onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
@@ -131,135 +246,38 @@ fun MarkdownText (
         }
       )
     }
+    val contentAnnotated = buildMsgAnnotatedString(
+      text = text, formattedText = formattedText, sender = sender, senderBold = senderBold,
+      prefix = prefix, mentions = mentions, userMemberId = userMemberId,
+      toggleSecrets = toggleSecrets, showSecrets = showSecrets,
+      sendCommandMsg = sendCommandMsg != null, linkMode = linkMode,
+      colors = MaterialTheme.colors, typography = MaterialTheme.typography
+    )
+    val contentLength = contentAnnotated.text.length
+    val clampedSelectionRange = selectionRange?.let {
+      it.first until minOf(it.last, contentLength)
+    }
     if (formattedText == null) {
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
-        appendSender(this, sender, senderBold)
-        if (prefix != null) append(prefix)
-        if (text is String) append(text)
-        else if (text is AnnotatedString) append(text)
-        selectableEnd?.intValue = this.length
+        append(contentAnnotated)
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      annotatedTextState?.value = annotatedText.text
       if (meta?.isLive == true) {
         Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
       } else {
-        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = selectionRange, onTextLayoutResult = onTextLayoutResult)
+        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedSelectionRange, onTextLayoutResult = onTextLayoutResult)
       }
     } else {
-      var hasLinks = false
-      var hasSecrets = false
-      var hasCommands = false
+      val hasLinks = formattedText.any { it.format is Format.Uri || it.format is Format.HyperLink || it.format is Format.SimplexLink || it.format is Format.Email || it.format is Format.Phone }
+      val hasSecrets = toggleSecrets && formattedText.any { it.format is Format.Secret }
+      val hasCommands = sendCommandMsg != null && formattedText.any { it.format is Format.Command }
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
-        appendSender(this, sender, senderBold)
-        if (prefix != null) append(prefix)
-        for ((i, ft) in formattedText.withIndex()) {
-          if (ft.format == null) append(ft.text)
-          else when(ft.format) {
-            is Format.Bold -> withStyle(ft.format.style) { append(ft.text) }
-            is Format.Italic -> withStyle(ft.format.style) { append(ft.text) }
-            is Format.StrikeThrough -> withStyle(ft.format.style) { append(ft.text) }
-            is Format.Snippet -> withStyle(ft.format.style) { append(ft.text) }
-            is Format.Small -> withStyle(ft.format.style) { append(ft.text) }
-            is Format.Colored -> withStyle(ft.format.style) { append(ft.text) }
-            is Format.Secret -> {
-              val ftStyle = ft.format.style
-              if (toggleSecrets) {
-                hasSecrets = true
-                val key = i.toString()
-                withAnnotation(tag = "SECRET", annotation = key) {
-                  if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
-                }
-              } else {
-                withStyle(ftStyle) { append(ft.text) }
-              }
-            }
-            is Format.Mention -> {
-              val mention = mentions?.get(ft.format.memberName)
-              if (mention != null) {
-                val ftStyle = ft.format.style
-                if (mention.memberRef != null) {
-                  val displayName = mention.memberRef.displayName
-                  val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
-                    displayName
-                  } else {
-                    "${mention.memberRef.localAlias} ($displayName)"
-                  }
-                  val mentionStyle = if (mention.memberId == userMemberId) ftStyle.copy(color = MaterialTheme.colors.primary) else ftStyle
-                  withStyle(mentionStyle) { append(mentionText(name)) }
-                } else {
-                  withStyle(ftStyle) { append(mentionText(ft.format.memberName)) }
-                }
-              } else {
-                append(ft.text)
-              }
-            }
-            is Format.Command ->
-              if (sendCommandMsg == null) {
-                append(ft.text)
-              } else {
-                hasCommands = true
-                val ftStyle = ft.format.style
-                val cmd = ft.format.commandStr
-                withAnnotation(tag = "COMMAND", annotation = cmd) {
-                  withStyle(ftStyle) { append("/$cmd") }
-                }
-              }
-            is Format.Uri -> {
-              hasLinks = true
-              val ftStyle = Format.linkStyle
-              val s = ft.text
-              val link = if (s.startsWith("http://") || s.startsWith("https://")) s else "https://$s"
-              withAnnotation(tag = "WEB_URL", annotation = link) {
-                withStyle(ftStyle) { append(ft.text) }
-              }
-            }
-            is Format.HyperLink -> {
-              hasLinks = true
-              val ftStyle = Format.linkStyle
-              withAnnotation(tag = "WEB_URL", annotation = ft.format.linkUri) {
-                withStyle(ftStyle) { append(ft.format.showText ?: ft.text) }
-              }
-            }
-            is Format.SimplexLink -> {
-              hasLinks = true
-              val ftStyle = Format.linkStyle
-              val link =
-                if (linkMode == SimplexLinkMode.BROWSER && ft.format.showText == null && !ft.text.startsWith("[")) ft.text
-                else ft.format.simplexUri
-              val t = ft.format.showText ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
-              withAnnotation(tag = "SIMPLEX_URL", annotation = link) {
-                if (t == null) {
-                  withStyle(ftStyle) { append(ft.text) }
-                } else {
-                  withStyle(ftStyle) { append("$t ") }
-                  withStyle(ftStyle.copy(fontStyle = FontStyle.Italic)) { append(ft.format.viaHosts) }
-                }
-              }
-            }
-            is Format.Email -> {
-              hasLinks = true
-              val ftStyle = Format.linkStyle
-              withAnnotation(tag = "OTHER_URL", annotation = "mailto:${ft.text}") {
-                withStyle(ftStyle) { append(ft.text) }
-              }
-            }
-            is Format.Phone -> {
-              hasLinks = true
-              val ftStyle = Format.linkStyle
-              withAnnotation(tag = "OTHER_URL", annotation = "tel:${ft.text}") {
-                withStyle(ftStyle) { append(ft.text) }
-              }
-            }
-            is Format.Unknown -> append(ft.text)
-          }
-        }
-        selectableEnd?.intValue = this.length
+        append(contentAnnotated)
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
@@ -268,7 +286,6 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      annotatedTextState?.value = annotatedText.text
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
         val icon = remember { mutableStateOf(PointerIcon.Default) }
         ClickableText(annotatedText, style = style, selectionRange = selectionRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,

@@ -4379,28 +4379,24 @@ sealed class Format {
   @Serializable @SerialName("phone") class Phone: Format()
   @Serializable @SerialName("unknown") class Unknown: Format()
 
-  val style: SpanStyle @Composable get() = when (this) {
+  fun style(colors: Colors, typography: Typography): SpanStyle = when (this) {
     is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
     is Italic -> SpanStyle(fontStyle = FontStyle.Italic)
     is StrikeThrough -> SpanStyle(textDecoration = TextDecoration.LineThrough)
     is Snippet -> SpanStyle(fontFamily = FontFamily.Monospace)
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
-    is Small -> SpanStyle(fontSize = MaterialTheme.typography.body2.fontSize, color = MaterialTheme.colors.secondary)
-    is Colored -> SpanStyle(color = this.color.uiColor)
-    is Uri -> linkStyle
-    is HyperLink -> linkStyle
-    is SimplexLink -> linkStyle
-    is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
+    is Small -> SpanStyle(fontSize = typography.body2.fontSize, color = colors.secondary)
+    is Colored -> SpanStyle(color = this.color.uiColor(colors))
+    is Uri, is HyperLink, is SimplexLink, is Email, is Phone -> linkStyle(colors)
+    is Command -> SpanStyle(color = colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
-    is Email -> linkStyle
-    is Phone -> linkStyle
     is Unknown -> SpanStyle()
   }
 
   val isSimplexLink = this is SimplexLink
 
   companion object {
-    val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)
+    fun linkStyle(colors: Colors) = SpanStyle(color = colors.primary, textDecoration = TextDecoration.Underline)
   }
 }
 
@@ -4432,15 +4428,15 @@ enum class FormatColor(val color: String) {
   black("black"),
   white("white");
 
-  val uiColor: Color @Composable get() = when (this) {
+  fun uiColor(colors: Colors): Color = when (this) {
     red -> Color.Red
     green -> SimplexGreen
     blue -> SimplexBlue
     yellow -> WarningYellow
     cyan -> Color.Cyan
     magenta -> Color.Magenta
-    black -> MaterialTheme.colors.onBackground
-    white -> MaterialTheme.colors.onBackground
+    black -> colors.onBackground
+    white -> colors.onBackground
   }
 }
 
