@@ -2023,8 +2023,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Kapcsolódási hiba (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection failed" xml:space="preserve">
+      <trans-unit id="Connection failed" xml:space="preserve" approved="no">
         <source>Connection failed</source>
+        <target state="translated">Nem sikerült létrehozni a kapcsolatot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
@@ -4345,8 +4346,9 @@ Hiba: %2$@</target>
         <target>Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve">
+      <trans-unit id="If you joined or created channels, they will stop working permanently." xml:space="preserve" approved="no">
         <source>If you joined or created channels, they will stop working permanently.</source>
+        <target state="translated">Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</target>
         <note>down migration warning</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -10148,8 +10150,9 @@ pref value</note>
         <target>lejárt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="failed" xml:space="preserve">
+      <trans-unit id="failed" xml:space="preserve" approved="no">
         <source>failed</source>
+        <target state="translated">sikertelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
