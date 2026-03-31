@@ -260,7 +260,8 @@ struct ChatView: View {
                     groupLink: $groupLink,
                     groupLinkMemberRole: $groupLinkMemberRole,
                     showTitle: true,
-                    creatingGroup: false
+                    creatingGroup: false,
+                    isChannel: groupInfo.useRelays
                 )
             }
         }
