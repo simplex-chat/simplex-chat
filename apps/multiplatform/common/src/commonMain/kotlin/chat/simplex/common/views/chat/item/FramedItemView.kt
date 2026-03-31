@@ -20,8 +20,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import androidx.compose.ui.geometry.Rect
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -368,9 +369,46 @@ fun CIMarkdownText(
   showTimestamp: Boolean,
   prefix: AnnotatedString? = null
 ) {
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
-    val chatInfo = chat.chatInfo
-    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val selectionManager = LocalSelectionManager.current
+  val boundsState = remember { mutableStateOf<Rect?>(null) }
+  val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+  val selectableEnd = remember { mutableIntStateOf(Int.MAX_VALUE) }
+  val annotatedTextState = remember { mutableStateOf("") }
+  val chatInfo = chat.chatInfo
+  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+
+  if (selectionManager != null && ci.meta.isLive != true) {
+    val currentText = rememberUpdatedState(text)
+    val participant = remember(ci.id) {
+      object : SelectionParticipant {
+        override val itemId = ci.id
+        override fun getYBounds() = boundsState.value?.let { it.top..it.bottom }
+        override fun getTextLayoutResult() = layoutResultState.value
+        override fun getSelectableEnd() = selectableEnd.intValue
+        override fun getAnnotatedText(): String {
+          val at = annotatedTextState.value
+          return if (at.isNotEmpty()) at else currentText.value
+        }
+        override fun calculateHighlightRange(coords: SelectionCoords) =
+          calculateRangeForElement(
+            boundsState.value, layoutResultState.value,
+            selectableEnd.intValue, coords
+          )
+      }
+    }
+    DisposableEffect(participant) {
+      selectionManager.register(participant)
+      onDispose { selectionManager.unregister(participant) }
+    }
+  }
+
+  val highlightRange = selectionManager?.getHighlightRange(ci.id)
+
+  Box(
+    Modifier
+      .padding(vertical = 7.dp, horizontal = 12.dp)
+      .onGloballyPositioned { boundsState.value = it.boundsInWindow() }
+  ) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -379,7 +417,11 @@ fun CIMarkdownText(
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
+      selectableEnd = selectableEnd,
+      annotatedTextState = annotatedTextState,
+      selectionRange = highlightRange,
+      onTextLayoutResult = { layoutResultState.value = it }
     )
   }
 }

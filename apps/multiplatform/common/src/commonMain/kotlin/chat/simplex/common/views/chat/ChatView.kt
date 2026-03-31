@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
@@ -962,11 +963,39 @@ fun ChatLayout(
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chat != null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
+            val selectionClipboard = if (appPlatform.isDesktop) LocalClipboardManager.current else null
+            if (selectionManager != null) {
+              LaunchedEffect(selectionManager) {
+                snapshotFlow { selectionManager.selectionActive }
+                  .collect { chatsCtx.chatState.selectionActive = it }
+              }
+            }
+            Box(
+              Modifier
+                .fillMaxSize()
+                .then(
+                  if (selectionManager != null) {
+                    Modifier.onPreviewKeyEvent { event ->
+                      if (selectionManager.captured.isNotEmpty()
+                        && event.isCtrlPressed && event.key == Key.C
+                        && event.type == KeyEventType.KeyDown
+                      ) {
+                        selectionClipboard?.setText(AnnotatedString(selectionManager.getSelectedText()))
+                        true
+                      } else false
+                    }
+                  } else Modifier
+                ),
+              contentAlignment = Alignment.BottomCenter
+            ) {
               // disables scrolling to top of chat item on click inside the bubble
-              CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
-                override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
-              }) {
+              CompositionLocalProvider(
+                LocalSelectionManager provides selectionManager,
+                LocalBringIntoViewSpec provides object : BringIntoViewSpec {
+                  override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
+                }
+              ) {
                 ChatItemsList(
                   chatsCtx, remoteHostId, chat, unreadCount, composeState, composeViewHeight, searchValue,
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
@@ -1893,7 +1922,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = SwipeToDismissModifier(
+        val swipeableModifier = if (appPlatform.isDesktop) Modifier else SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
@@ -2267,6 +2296,13 @@ fun BoxScope.ChatItemsList(
       }
     }
   }
+  // Desktop text selection overlay — on top of LazyColumn in Z-order
+  if (appPlatform.isDesktop) {
+    val manager = LocalSelectionManager.current
+    if (manager != null) {
+      SelectionOverlay(manager, listState)
+    }
+  }
   FloatingButtons(
     chatsCtx,
     reversedChatItems,
@@ -2287,6 +2323,20 @@ fun BoxScope.ChatItemsList(
     loadMessages
   )
   FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent).align(Alignment.TopCenter), topPaddingToContentPx, mergedItems, listState)
+
+  // Desktop selection copy button
+  if (appPlatform.isDesktop) {
+    val manager = LocalSelectionManager.current
+    if (manager != null && manager.captured.isNotEmpty() && !manager.isSelecting) {
+      val clipboard = LocalClipboardManager.current
+      SelectionCopyButton(
+        onCopy = {
+          clipboard.setText(AnnotatedString(manager.getSelectedText()))
+          manager.clearSelection()
+        }
+      )
+    }
+  }
 
   LaunchedEffect(Unit) {
     snapshotFlow { listState.value.isScrollInProgress }
