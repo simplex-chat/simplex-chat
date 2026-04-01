@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -409,6 +410,7 @@ fun SelectionCopyButton(modifier: Modifier = Modifier, onCopy: () -> Unit) {
         modifier
             .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
             .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable { onCopy() }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
