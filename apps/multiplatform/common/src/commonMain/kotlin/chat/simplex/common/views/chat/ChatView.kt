@@ -1182,25 +1182,6 @@ fun BoxScope.ChatInfoToolbar(
     chatInfo.contact.active &&
     activeCall == null
 
-  // Content filter button: always in bar on desktop and for groups; on Android for direct chats it
-  // goes into the three-dots menu UNLESS calls are unavailable, in which case it appears in the bar
-  if (showContentFilterButton && (appPlatform.isDesktop || chatInfo is ChatInfo.Group ||
-      (appPlatform.isAndroid && chatInfo is ChatInfo.Direct && !canStartCall && activeCall == null))) {
-    val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
-    barButtons.add {
-      IconButton(
-        { showContentFilterMenu.value = true },
-        enabled = enabled
-      ) {
-        Icon(
-          painterResource(MR.images.ic_photo_library),
-          null,
-          tint = MaterialTheme.colors.primary
-        )
-      }
-    }
-  }
-
   // Chat-type specific buttons
   when (chatInfo) {
     is ChatInfo.Local -> {
@@ -1293,6 +1274,26 @@ fun BoxScope.ChatInfoToolbar(
       }
     }
     else -> {}
+  }
+
+  // Content filter button: always in bar on desktop and for groups; on Android for direct chats it
+  // goes into the three-dots menu UNLESS calls are unavailable, in which case it appears in the bar.
+  // Must be after chat-type buttons so call buttons appear before filter during active call.
+  if (showContentFilterButton && (appPlatform.isDesktop || chatInfo is ChatInfo.Group ||
+      (appPlatform.isAndroid && chatInfo is ChatInfo.Direct && !canStartCall && activeCall == null))) {
+    val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
+    barButtons.add {
+      IconButton(
+        { showContentFilterMenu.value = true },
+        enabled = enabled
+      ) {
+        Icon(
+          painterResource(MR.images.ic_photo_library),
+          null,
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    }
   }
 
   val enableNtfs = chatInfo.chatSettings?.enableNtfs
