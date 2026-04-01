@@ -123,7 +123,9 @@ CREATE TABLE group_profiles(
   description TEXT NULL,
   member_admission TEXT,
   short_descr TEXT,
-  group_link BLOB
+  group_type TEXT,
+  group_link BLOB,
+  public_group_id BLOB
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -168,7 +170,6 @@ CREATE TABLE groups(
   relay_request_peer_chat_max_version INTEGER,
   relay_request_failed INTEGER DEFAULT 0,
   relay_request_err_reason TEXT,
-  shared_group_id BLOB,
   root_priv_key BLOB,
   root_pub_key BLOB,
   member_priv_key BLOB,

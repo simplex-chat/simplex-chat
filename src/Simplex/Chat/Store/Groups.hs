@@ -2222,7 +2222,7 @@ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
-updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
+updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission}
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
@@ -2235,19 +2235,24 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         pure $ Right (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
+    (groupType_, groupLink_) = case publicGroup of
+      Just PublicGroupProfile {groupType, groupLink} -> (Just groupType, Just groupLink)
+      Nothing -> (Nothing, Nothing)
     updateGroupProfile_ currentTs =
       DB.execute
         db
         [sql|
           UPDATE group_profiles
-          SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, preferences = ?, member_admission = ?, updated_at = ?
+          SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
+              group_type = ?, group_link = ?,
+              preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
             SELECT group_profile_id
             FROM groups
             WHERE user_id = ? AND group_id = ?
           )
         |]
-        ((newName, fullName, shortDescr, description, image) :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
+        ((newName, fullName, shortDescr, description, image, groupType_, groupLink_) :. (groupPreferences, memberAdmission, currentTs, userId, groupId))
     updateGroup_ ldn currentTs = do
       DB.execute
         db
