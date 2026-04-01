@@ -1,5 +1,7 @@
 # Plan: Agent API — getConnLinkPrivKey
 
+**Date: 2026-04-01**
+
 ## Context
 
 The chat relay test (`APITestChatRelay`) requires the relay to sign a challenge with its address private key (`ShortLinkCreds.linkPrivSigKey`). This key is stored in the agent's database on `RcvQueue` and is not accessible from the chat layer. A new agent API function is needed to retrieve it.

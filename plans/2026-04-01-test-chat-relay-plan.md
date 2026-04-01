@@ -1,5 +1,7 @@
 # Plan: APITestChatRelay — Relay Liveness + Identity Verification
 
+**Date: 2026-04-01**
+
 ## Context
 
 Channel owners configure relays by address but have no way to verify a relay is alive, authentic, or to discover its profile before creating a channel. A broken or impersonated relay means a broken channel.
