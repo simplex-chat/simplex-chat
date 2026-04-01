@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
@@ -66,6 +67,8 @@ class SelectionManager {
     var focusWindowX by mutableStateOf(0f)
     var viewportWidth by mutableStateOf(0f)
     var viewportHeight by mutableStateOf(0f)
+    var focusCharRect by mutableStateOf(Rect.Zero) // X: absolute window, Y: relative to item
+    var listState: State<LazyListState>? = null
     var onCopySelection: (() -> Unit)? = null
 
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
@@ -85,9 +88,10 @@ class SelectionManager {
         range = r.copy(endIndex = index)
     }
 
-    fun updateFocusOffset(offset: Int) {
+    fun updateFocusOffset(offset: Int, charRect: Rect = Rect.Zero) {
         val r = range ?: return
         range = r.copy(endOffset = offset)
+        focusCharRect = charRect
     }
 
     fun endSelection() {
@@ -171,6 +175,7 @@ fun BoxScope.SelectionHandler(
             }
     }
 
+    manager.listState = listState
     manager.onCopySelection = {
         clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
     }

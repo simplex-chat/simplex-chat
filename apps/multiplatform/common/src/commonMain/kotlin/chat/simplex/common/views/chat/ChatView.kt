@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
@@ -1142,18 +1143,26 @@ fun ChatLayout(
             val draggingDown = range.startIndex > range.endIndex
             val gap = with(LocalDensity.current) { 4.dp.toPx() }
             var buttonSize by remember { mutableStateOf(IntSize.Zero) }
-            val x = if (draggingDown) manager.focusWindowX
-                    else (manager.focusWindowX - buttonSize.width).coerceAtLeast(0f)
-            val y = if (draggingDown) manager.focusWindowY + gap
-                    else (manager.focusWindowY - buttonSize.height - gap).coerceAtLeast(0f)
-            val clampedX = x.coerceIn(0f, (manager.viewportWidth - buttonSize.width).coerceAtLeast(0f))
-            val clampedY = y.coerceIn(0f, (manager.viewportHeight - buttonSize.height).coerceAtLeast(0f))
-            SelectionCopyButton(
-              modifier = Modifier
-                .offset { IntOffset(clampedX.toInt(), clampedY.toInt()) }
-                .onSizeChanged { buttonSize = it },
-              onCopy = { manager.onCopySelection?.invoke() }
-            )
+            val ls = manager.listState?.value
+            val itemInfo = ls?.layoutInfo?.visibleItemsInfo?.find { it.index == range.endIndex }
+            if (ls != null && itemInfo != null && manager.focusCharRect != Rect.Zero) {
+              val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
+              val cr = manager.focusCharRect
+              val charX = if (draggingDown) cr.right else cr.left
+              val charY = itemWindowY + if (draggingDown) cr.bottom else cr.top
+              val x = if (draggingDown) charX
+                      else (charX - buttonSize.width).coerceAtLeast(0f)
+              val y = if (draggingDown) charY + gap
+                      else (charY - buttonSize.height - gap).coerceAtLeast(0f)
+              val clampedX = x.coerceIn(0f, (manager.viewportWidth - buttonSize.width).coerceAtLeast(0f))
+              val clampedY = y.coerceIn(0f, (manager.viewportHeight - buttonSize.height).coerceAtLeast(0f))
+              SelectionCopyButton(
+                modifier = Modifier
+                  .offset { IntOffset(clampedX.toInt(), clampedY.toInt()) }
+                  .onSizeChanged { buttonSize = it },
+                onCopy = { manager.onCopySelection?.invoke() }
+              )
+            }
           }
         }
       }

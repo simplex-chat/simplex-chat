@@ -405,8 +405,20 @@ fun CIMarkdownText(
             val bounds = boundsState.value ?: return@collect
             val layout = layoutResultState.value ?: return@collect
             val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
-            Log.e(TAG, "focusOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=($px,$py)")
-            selectionManager.updateFocusOffset(offset)
+            val charBox = layout.getBoundingBox(offset.coerceIn(0, layout.layoutInput.text.length - 1))
+            val ls = selectionManager.listState?.value
+            val itemInfo = ls?.layoutInfo?.visibleItemsInfo?.find { it.index == selectionIndex }
+            val charRect = if (ls != null && itemInfo != null) {
+              val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
+              Rect(
+                left = bounds.left + charBox.left,     // absolute window X
+                top = bounds.top + charBox.top - itemWindowY,    // relative to item Y
+                right = bounds.left + charBox.right,   // absolute window X
+                bottom = bounds.top + charBox.bottom - itemWindowY // relative to item Y
+              )
+            } else Rect.Zero
+            Log.e(TAG, "focusOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=($px,$py) charRect=$charRect")
+            selectionManager.updateFocusOffset(offset, charRect)
           }
       }
     }
