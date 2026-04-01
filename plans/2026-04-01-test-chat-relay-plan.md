@@ -13,7 +13,7 @@ Channel owners configure relays by address but have no way to verify a relay is 
 
 The test can run before any `chat_relays` DB record exists — the UI uses the returned profile to populate the relay name field.
 
-No DB schema changes are needed — `name` remains on `chat_relays`, and the relay profile is returned to the UI only.
+No DB schema changes are needed — `name` column remains in `chat_relays`. The Haskell type `UserChatRelay` changes from `name :: Text` to `relayProfile :: RelayProfile`, wrapping the same DB column.
 
 ---
 
@@ -130,6 +130,68 @@ data RelayTest = RelayTest
 - `rootKey` — from `FixedLinkData`, used to verify relay's signature
 - `result` — `Nothing` = success, `Just failure` = error
 
+### UserChatRelay type change (Operators.hs)
+
+`UserChatRelay'` changes `name :: Text` to `relayProfile :: RelayProfile`:
+
+```haskell
+data UserChatRelay' s = UserChatRelay
+  { chatRelayId :: DBEntityId' s,
+    address :: ShortLinkContact,
+    relayProfile :: RelayProfile,  -- was: name :: Text
+    domains :: [Text],
+    preset :: Bool,
+    tested :: Maybe Bool,
+    enabled :: Bool,
+    deleted :: Bool
+  }
+```
+
+`relayProfile` is non-optional — always present:
+- Before testing: user provides name → `RelayProfile {name = userProvidedName}`
+- After testing: relay's actual profile replaces the user-provided one
+
+No DB migration needed — `name TEXT` column stays in `chat_relays`. The `RelayProfile` wrapper is applied at the Haskell read/write boundary:
+
+**Constructors:**
+```haskell
+-- newChatRelay_ (Operators.hs:341): name parameter wraps into RelayProfile
+newChatRelay_ preset enabled name domains !address =
+  UserChatRelay {chatRelayId = DBNewEntity, address, relayProfile = RelayProfile {name}, domains, ...}
+```
+
+**DB reads** — `toChatRelay` (Profiles.hs:636) and `toGroupRelay` (Groups.hs:1337): wrap `name` column value:
+```haskell
+-- toChatRelay: name from DB → RelayProfile
+  UserChatRelay {chatRelayId, address, relayProfile = RelayProfile {name}, domains = ..., ...}
+```
+
+**DB writes** — `insertChatRelay`, `updateChatRelay`, `undeleteRelay` (Profiles.hs): unwrap `RelayProfile` to get `name` for column:
+```haskell
+-- insertChatRelay: destructure relayProfile
+insertChatRelay db User {userId} ts relay@UserChatRelay {address, relayProfile = RelayProfile {name}, ...} = do
+```
+
+**Validation** — `chatRelayErrs` (Operators.hs:546): uses `name` from `relayProfile` for duplicate checking:
+```haskell
+duplicateErrs_ (AUCR _ UserChatRelay {relayProfile = RelayProfile {name}, address}) = ...
+allNames = map (\(AUCR _ UserChatRelay {relayProfile = RelayProfile {name}}) -> name) cRelays
+```
+
+**View** — `viewChatRelay` (View.hs:1581): uses `name` from `relayProfile`:
+```haskell
+viewChatRelay UserChatRelay {relayProfile = RelayProfile {name}, address, ...} = name <> ...
+```
+
+**`createRelayForOwner`** (Groups.hs:1342): uses `relayProfile` directly instead of `profileFromName name`:
+```haskell
+createRelayForOwner db vr gVar user gInfo UserChatRelay {relayProfile = RelayProfile {name}} = do
+  let memberProfile = profileFromName name
+  ...
+```
+
+**JSON** — `deriveJSON` on `UserChatRelay'` picks up the field rename automatically. The JSON changes from `"name": "bob"` to `"relayProfile": {"name": "bob"}`. Mobile apps need to update their model types accordingly.
+
 ### ChatController field
 
 ```haskell
@@ -199,7 +261,13 @@ Takes a `ShortLinkContact` (`ConnShortLink 'CMContact`) — relay addresses are 
      ["challenge" .= B64UrlByteString challenge]
    ```
 
-### Phase 2: Controller types — RelayTest, RelayTestFailure, commands, response
+### Phase 2: UserChatRelay type change
+
+**Files: `src/Simplex/Chat/Operators.hs`, `src/Simplex/Chat/Store/Profiles.hs`, `src/Simplex/Chat/Store/Groups.hs`, `src/Simplex/Chat/View.hs`**
+
+Change `UserChatRelay'` field `name :: Text` → `relayProfile :: RelayProfile` and update all 10 use sites as described in the Types section above. No DB migration — `name` column stays, `RelayProfile` wraps/unwraps at read/write boundary.
+
+### Phase 3: Controller types — RelayTest, RelayTestFailure, commands, response
 
 **File: `src/Simplex/Chat/Controller.hs`**
 
@@ -228,7 +296,7 @@ Takes a `ShortLinkContact` (`ConnShortLink 'CMContact`) — relay addresses are 
    ```
    Add `chatRelayTests` to the record construction (~line 218).
 
-### Phase 3: Agent API — getConnLinkPrivKey (simplexmq change)
+### Phase 4: Agent API — getConnLinkPrivKey (simplexmq change)
 
 The relay needs to sign the challenge with `ShortLinkCreds.linkPrivSigKey`, which is stored in the agent's DB on `RcvQueue`. The chat layer has no direct access to the key.
 
@@ -249,7 +317,7 @@ This is a local operation (no network IO), so it's synchronous.
 
 **Separate plan file:** `plans/agent-sign-for-address.md`
 
-### Phase 4: Commands.hs — APITestChatRelay handler
+### Phase 5: Commands.hs — APITestChatRelay handler
 
 **File: `src/Simplex/Chat/Library/Commands.hs`**
 
@@ -316,7 +384,7 @@ Key points:
 - `tryAllErrors` (from `Simplex.Messaging.Util`) catches ALL exceptions via `UE.catch`, not just `ChatError`
 - `void $ withAgent $ \a -> joinConnection ...` — discards `(SndQueueSecured, Maybe ClientServiceId)` return
 
-### Phase 5: Subscriber.hs — Event handlers
+### Phase 6: Subscriber.hs — Event handlers
 
 **File: `src/Simplex/Chat/Library/Subscriber.hs`**
 
@@ -388,7 +456,7 @@ xGrpRelayTest invId chatVRange challenge = do
 
 Note: `conn` is the user contact address connection (from `processContactConnMessage` closure). Its `aConnId` is the agent `ConnId` that holds `ShortLinkCreds` with `linkPrivSigKey`. The agent returns `Maybe` — `Nothing` if the connection has no short link credentials (shouldn't happen for a properly configured relay, but handled gracefully — owner will timeout with `RTSWaitResponse`).
 
-### Phase 6: Store — createRelayTestConnection
+### Phase 7: Store — createRelayTestConnection
 
 **File: `src/Simplex/Chat/Store/Direct.hs`**
 
@@ -418,7 +486,7 @@ Pattern: same as `createRelayConnection` (Store/Groups.hs:1388) but `ConnContact
 
 The resulting row has `contact_id = NULL`, `contact_conn_initiated = 0` (column default), `xcontact_id = NULL`, `via_contact_uri = NULL`. This distinguishes it from `createConnReqConnection` rows which always set `contact_conn_initiated = 1`, `xcontact_id`, and `via_contact_uri`.
 
-### Phase 7: APICreateMyAddress — Use RelayAddressLinkData
+### Phase 8: APICreateMyAddress — Use RelayAddressLinkData
 
 **File: `src/Simplex/Chat/Library/Commands.hs`**
 
@@ -437,7 +505,7 @@ let userData = if isTrue userChatRelay
       else contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
 ```
 
-### Phase 8: Test connection cleanup
+### Phase 9: Test connection cleanup
 
 Test connections are `ConnContact` with no entity (`contact_id = NULL`). They should be cleaned up if the test API handler crashes or times out without cleanup.
 
@@ -471,7 +539,7 @@ This uniquely identifies stale test connections. The `contact_conn_initiated = 0
 
 **No new DB column needed.**
 
-### Phase 9: Views (iOS + Android/Desktop)
+### Phase 10: Views (iOS + Android/Desktop)
 
 **iOS:**
 - `apps/ios/Shared/Views/UserSettings/NetworkAndServers/ChatRelayView.swift`
@@ -487,7 +555,7 @@ Changes:
 3. On failure: show error description from `RelayTestFailure`
 4. Show relay status indicator: untested / tested-ok / tested-failed
 
-### Phase 10: View — CRChatRelayTestResult
+### Phase 11: View — CRChatRelayTestResult
 
 **File: `src/Simplex/Chat/View.hs`**
 
@@ -514,7 +582,7 @@ Output examples:
 - Decode failure: `relay test failed at RTSDecodeLink, error: no relay address link data`
 - Link failure: `relay test failed at RTSGetLink, error: ...`
 
-### Phase 11: CLI parsing — TestChatRelay
+### Phase 12: CLI parsing — TestChatRelay
 
 **File: `src/Simplex/Chat/Library/Commands.hs`**
 
@@ -524,7 +592,7 @@ Add CLI parser after `/relays` (~line 4771):
 "/relay test " *> (TestChatRelay <$> strP),
 ```
 
-### Phase 12: Tests
+### Phase 13: Tests
 
 **File: `tests/ChatTests/ChatRelays.hs`**
 
@@ -604,7 +672,7 @@ Or use an existing pattern like `<##.` if available.
 - **Timeout (`RTSWaitResponse`)** — would require the relay to not respond (e.g., by stopping the relay process). The test would take 40 seconds and be fragile. Not practical for a unit test.
 - **Connection error (`RTSConnect`)** — would require the SMP server to be reachable (link data returned) but the connection request to fail. Hard to construct reliably.
 
-Existing tests don't need changes — `name` field unchanged in DB.
+Existing relay config tests (`testGetSetChatRelays`, etc.) need updating for the `relayProfile` type change — CLI output changes from `bob_relay: <link>` to the same (the `name` field is now accessed via `relayProfile`), but the CLI command syntax stays the same (`/relays name=bob_relay <link>`).
 
 ---
 
@@ -613,16 +681,18 @@ Existing tests don't need changes — `name` field unchanged in DB.
 | File | Changes |
 |------|---------|
 | `src/Simplex/Chat/Protocol.hs` | `RelayProfile`, `RelayAddressLinkData`, `XGrpRelayTest` + tags + parsing + encoding |
+| `src/Simplex/Chat/Operators.hs` | `UserChatRelay'`: `name` → `relayProfile :: RelayProfile`; update `newChatRelay_`, validation |
 | `src/Simplex/Chat/Controller.hs` | `RelayTestStep`, `RelayTestFailure`, `RelayTest`, `chatRelayTests`, `APITestChatRelay`, `CRChatRelayTestResult` |
 | `src/Simplex/Chat.hs` | Initialize `chatRelayTests` in `newChatController` |
 | `src/Simplex/Chat/Library/Commands.hs` | `APITestChatRelay` handler, `APICreateMyAddress` relay link data, CLI parsing, `cleanupManager` |
 | `src/Simplex/Chat/Library/Subscriber.hs` | Owner CONF handler pre-check, relay REQ handler `XGrpRelayTest` |
 | `src/Simplex/Chat/Store/Direct.hs` | `createRelayTestConnection` |
-| `src/Simplex/Chat/Store/Profiles.hs` | `getStaleRelayTestConns` (for cleanup) |
-| `src/Simplex/Chat/View.hs` | `CRChatRelayTestResult` case + `viewRelayTestResult` function |
-| `apps/ios/.../ChatRelayView.swift` | Test button + result display |
+| `src/Simplex/Chat/Store/Groups.hs` | `toGroupRelay`, `createRelayForOwner`: wrap/unwrap `RelayProfile` |
+| `src/Simplex/Chat/Store/Profiles.hs` | `toChatRelay`, `insertChatRelay`, `updateChatRelay`, `undeleteRelay`: wrap/unwrap `RelayProfile`; `getStaleRelayTestConns` |
+| `src/Simplex/Chat/View.hs` | `viewChatRelay`: use `relayProfile`; `CRChatRelayTestResult` + `viewRelayTestResult` |
+| `apps/ios/.../ChatRelayView.swift` | `UserChatRelay` model update, test button + result display |
 | `apps/ios/.../AddChannelView.swift` | Test integration |
-| `apps/multiplatform/.../ChatRelayView.kt` | Test button + result display |
+| `apps/multiplatform/.../ChatRelayView.kt` | `UserChatRelay` model update, test button + result display |
 | `apps/multiplatform/.../AddChannelView.kt` | Test integration |
 | `tests/ChatTests/ChatRelays.hs` | `testChatRelayTest` |
 
