@@ -291,7 +291,7 @@ chatTypesDocsData =
     (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
-    (sti @GroupType, STEnum, "GT", [], "", ""),
+    (sti @GroupType, STEnum1, "GT", [], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
