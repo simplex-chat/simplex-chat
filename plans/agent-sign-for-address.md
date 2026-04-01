@@ -31,26 +31,26 @@ getConnLinkPrivKey :: AgentClient -> ConnId -> AE (Maybe C.PrivateKeyEd25519)
    {-# INLINE getConnLinkPrivKey #-}
    ```
 
-3. Add implementation (near `deleteConnShortLink'`, ~line 1081):
+3. Add implementation (near `deleteConnShortLink'`, ~line 1089):
    ```haskell
    getConnLinkPrivKey' :: AgentClient -> ConnId -> AM (Maybe C.PrivateKeyEd25519)
-   getConnLinkPrivKey' c connId =
-     withConnLock c connId "getConnLinkPrivKey" $ do
-       SomeConn _ conn <- withStore c (`getConn` connId)
-       pure $ case conn of
-         ContactConnection _ rq -> linkPrivSigKey <$> shortLink rq
-         RcvConnection _ rq -> linkPrivSigKey <$> shortLink rq
-         _ -> Nothing
+   getConnLinkPrivKey' c connId = do
+     SomeConn _ conn <- withStore c (`getConn` connId)
+     pure $ case conn of
+       ContactConnection _ rq -> linkPrivSigKey <$> shortLink rq
+       RcvConnection _ rq -> linkPrivSigKey <$> shortLink rq
+       _ -> Nothing
    ```
 
-## Key points
+## Design notes
 
 - Local operation (no network IO) — synchronous, fast
-- Uses `withConnLock` for consistency with other conn-level operations (e.g. `deleteConnShortLink'`)
+- No `withConnLock` — this is a pure read with no mutations; the lock would add latency for no benefit. Read-only agent operations like `getConn` don't require the conn lock.
 - Returns `Maybe` — `Nothing` if connection has no short link credentials or is wrong type
-- Handles both `ContactConnection` and `RcvConnection` (both have `RcvQueue` with `shortLink`)
+- Handles both `ContactConnection` and `RcvConnection` (both have `RcvQueue` with `shortLink` field, Store.hs:159)
 - Chat layer signs: `C.sign' privKey challenge`
-- Pattern follows `deleteConnShortLink'` (line 1081) — same conn lookup + pattern match
+- `linkPrivSigKey :: C.PrivateKeyEd25519` on `ShortLinkCreds` (Protocol.hs:1456)
+- `shortLink :: Maybe ShortLinkCreds` on `StoredRcvQueue` (Store.hs:159)
 
 ## Verification
 

@@ -69,22 +69,30 @@ Single constructor used in both directions:
 - **Owner → Relay** (in joinConnection connInfo): `XGrpRelayTest challenge Nothing Nothing`
 - **Relay → Owner** (in acceptContact connInfo): `XGrpRelayTest challenge (Just signature) (Just relayProfile)`
 
-JSON encoding:
+JSON encoding (follows `(.=?)` chain pattern, e.g. `XGrpMemDel`):
 ```haskell
 XGrpRelayTest challenge sig_ profile_ -> o $
-  ("challenge" .= B64UrlByteString challenge)
-  : ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_))
-  ++ ("relayProfile" .=? profile_) []
+  ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_)) $
+  ("relayProfile" .=? profile_)
+  ["challenge" .= B64UrlByteString challenge]
 ```
 
 JSON parsing:
 ```haskell
 XGrpRelayTest_ -> do
   B64UrlByteString challenge <- v .: "challenge"
-  sig_ <- fmap (\(B64UrlByteString s) -> ...) <$> opt "signature"
+  sig_ <- mapM decodeSig =<< opt "signature"
   profile_ <- opt "relayProfile"
   pure $ XGrpRelayTest challenge sig_ profile_
 ```
+
+Where `decodeSig` converts `B64UrlByteString` to `C.Signature 'C.Ed25519`:
+```haskell
+decodeSig :: B64UrlByteString -> Either String (C.Signature 'C.Ed25519)
+decodeSig (B64UrlByteString s) = C.decodeSignature s
+```
+
+Note: `B64UrlByteString` is defined in `Types.hs:151` — add import to Protocol.hs if not already imported.
 
 ### RelayTestError (Controller.hs)
 
@@ -129,11 +137,11 @@ chatRelayTests :: TMap ConnId RelayTest,
 ### ChatCommand
 
 ```haskell
-| APITestChatRelay UserId ConnLinkContact
-| TestChatRelay ConnLinkContact
+| APITestChatRelay UserId ShortLinkContact
+| TestChatRelay ShortLinkContact
 ```
 
-Takes an address (`ConnLinkContact`), not a `chatRelayId` — the relay may not be saved yet.
+Takes a `ShortLinkContact` (`ConnShortLink 'CMContact`) — relay addresses are always short links. This matches `UserChatRelay.address :: ShortLinkContact` and is directly accepted by `getShortLinkConnReq :: ... -> ConnShortLink m -> ...`.
 
 ### ChatResponse
 
@@ -177,18 +185,18 @@ Takes an address (`ConnLinkContact`), not a `chatRelayId` — the relay may not 
    ```haskell
    XGrpRelayTest_ -> do
      B64UrlByteString challenge <- v .: "challenge"
-     sig_ <- decodeSig =<< opt "signature"
+     sig_ <- mapM decodeSig =<< opt "signature"
      profile_ <- opt "relayProfile"
      pure $ XGrpRelayTest challenge sig_ profile_
    ```
-   Where `decodeSig` decodes `Maybe B64UrlByteString` to `Maybe (C.Signature 'C.Ed25519)`.
+   Where `decodeSig (B64UrlByteString s) = C.decodeSignature s`.
 
 9. Add JSON encoding (~line 1351):
    ```haskell
    XGrpRelayTest challenge sig_ profile_ -> o $
-     ("challenge" .= B64UrlByteString challenge)
-     : ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_))
-     ++ ("relayProfile" .=? profile_) []
+     ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_)) $
+     ("relayProfile" .=? profile_)
+     ["challenge" .= B64UrlByteString challenge]
    ```
 
 ### Phase 2: Controller types — RelayTest, RelayTestFailure, commands, response
@@ -199,25 +207,26 @@ Takes an address (`ConnLinkContact`), not a `chatRelayId` — the relay may not 
 
 2. Add `RelayTest` type
 
-3. Add `chatRelayTests :: TMap ConnId RelayTest` field to `ChatController` (after line 252)
+3. Add `chatRelayTests :: TMap ConnId RelayTest` field to `ChatController` (after `relayRequestWorkers`, ~line 252)
 
 4. Uncomment and update `APITestChatRelay` (lines 401-403):
    ```haskell
-   | APITestChatRelay UserId ConnLinkContact
-   | TestChatRelay ConnLinkContact
+   | APITestChatRelay UserId ShortLinkContact
+   | TestChatRelay ShortLinkContact
    ```
 
-5. Add `CRChatRelayTestResult` to `ChatResponse` (after `CRServerTestResult`):
+5. Add `CRChatRelayTestResult` to `ChatResponse` (after `CRServerTestResult`, ~line 667):
    ```haskell
    | CRChatRelayTestResult {user :: User, relayProfile :: Maybe RelayProfile, testFailure :: Maybe RelayTestFailure}
    ```
 
 **File: `src/Simplex/Chat.hs`**
 
-6. Initialize `chatRelayTests` in `newChatController` (after line 175):
+6. Initialize `chatRelayTests` in `newChatController` (after `relayRequestWorkers`, ~line 175):
    ```haskell
    chatRelayTests <- TM.emptyIO
    ```
+   Add `chatRelayTests` to the record construction (~line 218).
 
 ### Phase 3: Agent API — getConnLinkPrivKey (simplexmq change)
 
@@ -244,6 +253,8 @@ This is a local operation (no network IO), so it's synchronous.
 
 **File: `src/Simplex/Chat/Library/Commands.hs`**
 
+Add `import System.Timeout (timeout)`.
+
 Add handler after `APITestProtoServer` (~line 1491):
 
 ```haskell
@@ -264,41 +275,46 @@ APITestChatRelay userId address -> withUserId userId $ \user -> do
           -- Step 3: Generate challenge + prepare connection
           gVar <- asks random
           challenge <- liftIO $ atomically $ C.randomBytes 32 gVar
-          r2 <- tryAllErrors $ do
-            lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
-              Nothing -> throwChatError CEInvalidConnReq
-              Just (agentV, _) -> do
-                let chatV = agentToChatVersion agentV
-                subMode <- chatReadVar subscriptionMode
-                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
-                conn <- withFastStore $ \db -> createRelayTestConnection db vr user connId ConnPrepared chatV subMode
-                -- Register test in TMap
-                testVar <- newEmptyTMVarIO
-                let acId = aConnId conn
-                    relayTest = RelayTest {challenge, rootKey, result = testVar}
-                chatRelayTests_ <- asks chatRelayTests
-                atomically $ TM.insert acId relayTest chatRelayTests_
-                -- Join with challenge
+          lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+            Nothing -> failWithProfile RTSConnect "invalid connection request"
+            Just (agentV, _) -> do
+              let chatV = agentToChatVersion agentV
+              subMode <- chatReadVar subscriptionMode
+              connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+              conn@Connection {connId = dbConnId} <- withFastStore $ \db ->
+                createRelayTestConnection db vr user connId ConnPrepared chatV subMode
+              -- Register test in TMap
+              testVar <- newEmptyTMVarIO
+              let acId = aConnId conn
+                  relayTest = RelayTest {challenge, rootKey, result = testVar}
+              chatRelayTests_ <- asks chatRelayTests
+              atomically $ TM.insert acId relayTest chatRelayTests_
+              -- Join with challenge, wrapped in tryAllErrors for cleanup safety
+              testResult <- tryAllErrors $ do
                 dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing Nothing
-                withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
-                -- Block with 40s timeout
-                testResult <- liftIO $ timeout 40_000_000 $ atomically $ takeTMVar testVar
-                -- Cleanup TMap
-                atomically $ TM.delete acId chatRelayTests_
-                -- Cleanup DB + agent connection
-                withFastStore' $ \db -> deleteConnectionRecord db user (connId conn)
-                deleteAgentConnectionAsync acId
-                pure testResult
-          case r2 of
-            Left e -> failWithProfile RTSConnect (show e)
-            Right Nothing -> failWithProfile RTSWaitResponse "timeout"
-            Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing  -- success
-            Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
+                void $ withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
+                liftIO $ timeout 40_000_000 $ atomically $ takeTMVar testVar
+              -- Cleanup always (even on error)
+              atomically $ TM.delete acId chatRelayTests_
+              withFastStore' $ \db -> deleteConnectionRecord db user dbConnId
+              deleteAgentConnectionAsync acId
+              case testResult of
+                Left e -> failWithProfile RTSConnect (show e)
+                Right Nothing -> failWithProfile RTSWaitResponse "timeout"
+                Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
+                Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
 TestChatRelay address -> withUser $ \User {userId} ->
   processChatCommand vr nm $ APITestChatRelay userId address
 ```
 
 Also add CLI parsing for `TestChatRelay` in the command parser.
+
+Key points:
+- `address :: ShortLinkContact` — passes directly to `getShortLinkConnReq` (no type mismatch)
+- `conn@Connection {connId = dbConnId}` — explicit pattern match avoids `DuplicateRecordFields` ambiguity
+- `tryAllErrors` wraps only the join+wait block; cleanup runs unconditionally after it
+- `tryAllErrors` (from `Simplex.Messaging.Util`) catches ALL exceptions via `UE.catch`, not just `ChatError`
+- `void $ withAgent $ \a -> joinConnection ...` — discards `(SndQueueSecured, Maybe ClientServiceId)` return
 
 ### Phase 5: Subscriber.hs — Event handlers
 
@@ -342,6 +358,8 @@ Nothing -> case agentMsg of
         ...
 ```
 
+Note: `agentConnId` is in scope from the `processAgentMessageConn` closure (Subscriber.hs:354).
+
 #### Relay side: processContactConnMessage REQ handler
 
 Add `XGrpRelayTest` case after `XGrpRelayInv` at line 1247:
@@ -355,10 +373,10 @@ Add `xGrpRelayTest` function near `xGrpRelayInv` (~line 1450):
 ```haskell
 xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
 xGrpRelayTest invId chatVRange challenge = do
-  -- Retrieve private key from address connection's short link creds, sign challenge
+  -- Retrieve private key from address connection's short link creds, sign in chat layer
   privKey_ <- withAgent $ \a -> getConnLinkPrivKey a (aConnId conn)
   case privKey_ of
-    Nothing -> toView $ CEvtChatError Nothing $ ChatError $ CEInternalError "no short link key for relay address"
+    Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
     Just privKey -> do
       let sig = C.sign' privKey challenge
           relayProfile = RelayProfile {name = displayName (fromLocalProfile $ profile' user)}
@@ -369,11 +387,11 @@ xGrpRelayTest invId chatVRange challenge = do
       void $ agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
 ```
 
-Note: The `conn` here is the user contact address connection (from `processContactConnMessage` closure). Its `aConnId` is the agent `ConnId` that holds the `ShortLinkCreds` with `linkPrivSigKey`. The agent returns `Maybe` — `Nothing` if the connection has no short link credentials (shouldn't happen for a properly configured relay address, but handled gracefully).
+Note: `conn` is the user contact address connection (from `processContactConnMessage` closure). Its `aConnId` is the agent `ConnId` that holds `ShortLinkCreds` with `linkPrivSigKey`. The agent returns `Maybe` — `Nothing` if the connection has no short link credentials (shouldn't happen for a properly configured relay, but handled gracefully — owner will timeout with `RTSWaitResponse`).
 
 ### Phase 6: Store — createRelayTestConnection
 
-**File: `src/Simplex/Chat/Store/Direct.hs`** (or `Store/Connections.hs`)
+**File: `src/Simplex/Chat/Store/Direct.hs`**
 
 Add function to create a ConnContact connection without entity:
 
@@ -399,6 +417,8 @@ createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV 
 
 Pattern: same as `createRelayConnection` (Store/Groups.hs:1388) but `ConnContact` type with no `group_member_id`.
 
+The resulting row has `contact_id = NULL`, `contact_conn_initiated = 0` (column default), `xcontact_id = NULL`, `via_contact_uri = NULL`. This distinguishes it from `createConnReqConnection` rows which always set `contact_conn_initiated = 1`, `xcontact_id`, and `via_contact_uri`.
+
 ### Phase 7: APICreateMyAddress — Use RelayAddressLinkData
 
 **File: `src/Simplex/Chat/Library/Commands.hs`**
@@ -420,10 +440,16 @@ let userData = if isTrue userChatRelay
 
 ### Phase 8: Test connection cleanup
 
-Test connections are `ConnContact` with no entity (contact_id = NULL). They should be cleaned up if the test API handler crashes or times out without cleanup.
+Test connections are `ConnContact` with no entity (`contact_id = NULL`). They should be cleaned up if the test API handler crashes or times out without cleanup.
 
-**Option A: cleanupManager step** — add to `cleanupUser` in `cleanupManager`:
+Add `cleanupStaleRelayTestConns` step to `cleanupUser` in `cleanupManager` (after `cleanupInProgressGroups`, ~line 4500):
 
+```haskell
+cleanupStaleRelayTestConns user `catchAllErrors` eToView
+liftIO $ threadDelay' stepDelay
+```
+
+Implementation:
 ```haskell
 cleanupStaleRelayTestConns user = do
   ts <- liftIO getCurrentTime
@@ -438,12 +464,13 @@ Where `getStaleRelayTestConns` queries:
 ```sql
 SELECT agent_conn_id FROM connections
 WHERE user_id = ? AND conn_type = 'contact' AND contact_id IS NULL
-  AND conn_status = 'prepared' AND created_at < ?
+  AND conn_status = 'prepared' AND contact_conn_initiated = 0
+  AND created_at < ?
 ```
 
-This identifies stale test connections: ConnContact with no entity, still in Prepared status, older than 5 minutes. This is safe because normal ConnContact connections always have a contact_id or transition out of Prepared quickly.
+This uniquely identifies stale test connections. The `contact_conn_initiated = 0` discriminator is critical because `createConnReqConnection` (Store/Direct.hs:164) also creates `ConnContact` rows with `contact_id = NULL` and `conn_status = ConnPrepared`, but it always sets `contact_conn_initiated = True` (line 175). Test connections from `createRelayTestConnection` inherit the column default of 0.
 
-**No new DB column needed** — the combination of (ConnContact, NULL contact_id, ConnPrepared, old created_at) uniquely identifies stale test connections.
+**No new DB column needed.**
 
 ### Phase 9: Views (iOS + Android/Desktop)
 
@@ -482,7 +509,7 @@ Changes:
 | `src/Simplex/Chat/Protocol.hs` | `RelayProfile`, `RelayAddressLinkData`, `XGrpRelayTest` + tags + parsing + encoding |
 | `src/Simplex/Chat/Controller.hs` | `RelayTestStep`, `RelayTestFailure`, `RelayTest`, `chatRelayTests`, `APITestChatRelay`, `CRChatRelayTestResult` |
 | `src/Simplex/Chat.hs` | Initialize `chatRelayTests` in `newChatController` |
-| `src/Simplex/Chat/Library/Commands.hs` | `APITestChatRelay` handler, `APICreateMyAddress` relay link data, CLI parsing |
+| `src/Simplex/Chat/Library/Commands.hs` | `APITestChatRelay` handler, `APICreateMyAddress` relay link data, CLI parsing, `cleanupManager` |
 | `src/Simplex/Chat/Library/Subscriber.hs` | Owner CONF handler pre-check, relay REQ handler `XGrpRelayTest` |
 | `src/Simplex/Chat/Store/Direct.hs` | `createRelayTestConnection` |
 | `src/Simplex/Chat/Store/Profiles.hs` | `getStaleRelayTestConns` (for cleanup) |
@@ -504,16 +531,16 @@ Changes:
 - `encodeShortLinkData` (Internal.hs:1351) — encode `RelayAddressLinkData` for link userData
 - `prepareConnectionToJoin` (agent) — prepare agent connection for joining
 - `joinConnection` (agent) — join relay's contact address
-- `encodeConnInfo` (Protocol.hs) — encode `XGrpRelayTest` as connInfo
-- `parseChatMessage` (Protocol.hs) — parse connInfo in CONF handler
+- `encodeConnInfo` (Internal.hs:1929) — encode `XGrpRelayTest` as connInfo
+- `parseChatMessage` (Internal.hs:1563) — parse connInfo in CONF handler
 - `agentAcceptContactAsync` (Internal.hs:2421) — relay accepts test connection
 - `deleteAgentConnectionAsync` (Internal.hs:2428) — cleanup connections
-- `deleteConnectionRecord` (Store/Shared.hs:895) — cleanup DB connection record
-- `getConnLinkPrivKey` (agent) — retrieve linkPrivSigKey from connection's short link creds
-- `C.verify'` (simplexmq Crypto) — verify Ed25519 signature
-- `C.sign'` (simplexmq Crypto) — sign with Ed25519 private key (used in chat layer on relay side)
-- `C.randomBytes` (simplexmq Crypto) — generate random challenge
-- `profileFromName` (Types.hs:701) — NOT used (relay name comes from test result)
+- `deleteConnectionRecord` (Store/Shared.hs:895) — cleanup DB connection record (takes `Int64` DB connection_id)
+- `getConnLinkPrivKey` (agent, new) — retrieve `linkPrivSigKey` from connection's short link creds
+- `C.verify'` (simplexmq Crypto:1270) — `PublicKey a -> Signature a -> ByteString -> Bool`
+- `C.sign'` (simplexmq Crypto:1175) — `PrivateKey a -> ByteString -> Signature a`
+- `C.randomBytes` (simplexmq Crypto:1401) — `Int -> TVar ChaChaDRG -> STM ByteString`
+- `eToView` (Controller.hs:1537) — `ChatError -> CM ()` — report error to view
 
 ---
 
@@ -544,119 +571,60 @@ cabal test simplex-chat-test --test-options='-m "chat relays"'
 ### Pass 1
 
 **Issue: Signature type in JSON** — `C.Signature 'C.Ed25519` is a GADT constructor. Need to verify it has JSON/Encoding instances and can be transmitted in a JSON chat message.
-**Analysis:** `Signature` has `Encoding` instance (`smpEncode = smpEncode . signatureBytes`). For JSON, we need to encode as base64 ByteString. Use `B64UrlByteString` wrapper for JSON encoding, then decode via `C.decodeSignature`.
-**Fix:** In JSON encoding, use `B64UrlByteString . C.signatureBytes` for signature. In parsing, decode `B64UrlByteString` then `C.decodeSignature` to get `Signature 'C.Ed25519`.
+**Analysis:** `Signature` has no native JSON instance. For JSON, encode as base64 ByteString using `B64UrlByteString . C.signatureBytes`. For parsing, decode `B64UrlByteString` then `C.decodeSignature :: ByteString -> Either String (Signature 'C.Ed25519)` (Crypto.hs:849). The `(.=?)` pattern handles `Maybe` — only included when `Just`.
+**Fix:** Encoding uses `B64UrlByteString . C.signatureBytes <$> sig_`. Parsing uses `mapM decodeSig =<< opt "signature"` where `decodeSig (B64UrlByteString s) = C.decodeSignature s`.
 
-**Issue: `connId conn` ambiguity** — In the cleanup code `deleteConnectionRecord db user (connId conn)`, `connId` could refer to the `Connection` field or the agent `ConnId`. The `Connection` type has `connId :: Int64` (DB ID).
-**Analysis:** `deleteConnectionRecord` takes `Int64` (DB connection_id). `connId` from the `Connection` record pattern is the DB ID. This is correct.
-**Fix:** No fix needed, but use explicit destructuring: `conn@Connection {connId = dbConnId}` for clarity.
+**Issue: `DuplicateRecordFields` on `connId`** — `connId :: Int64` appears on `Connection`, `PendingContactConnection`, and `UserContactRequest`. With `DuplicateRecordFields` enabled, `connId conn` won't compile as a field selector.
+**Analysis:** Must use pattern matching. The handler uses `conn@Connection {connId = dbConnId}`.
+**Fix:** Already applied in Phase 4 handler code.
 
-**Issue: `aConnId conn`** — The function `aConnId` extracts the agent ConnId from a `Connection`. Need to verify it exists and works on the `Connection` type from `createRelayTestConnection`.
-**Analysis:** `aConnId` is defined on `Connection` type and accesses `agentConnId` field. `createRelayTestConnection` calls `getConnectionById` which returns a proper `Connection`. This is correct.
+**Issue: `getConnLinkPrivKey` conn access** — In `xGrpRelayTest`, we call `getConnLinkPrivKey a (aConnId conn)` where `conn` is the user contact address connection. Does the agent's `getConn` find it by the correct ConnId?
+**Analysis:** `processContactConnMessage` receives `conn :: Connection` which is the chat-layer connection record. `aConnId conn` gives the agent's `ConnId`. The agent stores `ShortLinkCreds` on the `RcvQueue` of the `ContactConnection` for this `ConnId`. The agent function pattern-matches on `ContactConnection _ rq` and returns `linkPrivSigKey <$> shortLink rq`. This is correct.
 **Fix:** No fix needed.
 
-**Issue: `getConnLinkPrivKey` conn access** — In `xGrpRelayTest`, we call `getConnLinkPrivKey a (aConnId conn)` where `conn` is the user contact address connection. But the `linkPrivSigKey` is on the `RcvQueue` of THIS connection. Does the agent's `getConn` find it by the correct ConnId?
-**Analysis:** `processContactConnMessage` receives `conn :: Connection` which is the chat-layer connection record. `aConnId conn` gives the agent's `ConnId` for this connection. The agent stores `ShortLinkCreds` on the `RcvQueue` of the `ContactConnection` for this `ConnId`. So `getConnLinkPrivKey` looks up the connection, gets the `ContactConnection`'s `RcvQueue`, and returns `linkPrivSigKey <$> shortLink rq`. This is correct.
-**Fix:** No fix needed.
-
-**Issue: `getConnLinkPrivKey` returns Nothing** — If the relay's address connection has no short link credentials, `getConnLinkPrivKey` returns `Nothing`. The relay-side handler logs an error via `toView` and does not accept the test connection.
-**Analysis:** This shouldn't happen for a properly configured relay (creating the address creates short link creds). But it's handled gracefully — the owner will timeout and get `RTSWaitResponse`.
+**Issue: `getConnLinkPrivKey` returns Nothing** — If the relay's address connection has no short link credentials, the relay-side handler logs an error via `eToView` and does not accept the test connection.
+**Analysis:** This shouldn't happen for a properly configured relay (creating the address creates short link creds via `createConnection` in the agent). Handled gracefully — the owner will timeout with `RTSWaitResponse`.
 **Fix:** No fix needed.
 
 **Issue: Test connection routing on relay side** — After the relay accepts the test via `agentAcceptContactAsync`, the agent creates a new connection. Future events on this connection (JOINED, etc.) arrive at `processAgentMessageConn`. Since there's no DB connection record, `getConnectionEntity` will fail with `SEConnectionNotFound`, producing error in `eToView`. This is log noise.
-**Analysis:** Acceptable. The agent will eventually GC the connection. The error is harmless and happens for the relay only. The owner's connection is cleaned up by the handler.
-**Fix:** Document as known behavior. The relay could schedule deletion, but for MVP this is acceptable.
+**Analysis:** Acceptable for MVP. The agent will eventually GC the connection. The error is harmless and happens for the relay only. The owner's connection is cleaned up by the handler.
+**Fix:** Document as known behavior.
 
-**Issue: `tryAllErrors` in CONF handler** — The `tryAllErrors` around `parseChatMessage` catches errors, but if `parseChatMessage` throws, we put the error in the TMVar. But `tryAllErrors` returns `Either ChatError a`, not catching ALL exceptions.
-**Analysis:** `tryAllErrors` catches `ChatError` thrown in `ExceptT`. If `parseChatMessage` throws a different exception type, it would propagate. But `parseChatMessage` uses `throwChatError` / `liftEither`, so it throws `ChatError`.
-**Fix:** No fix needed.
+**Issue: `tryAllErrors` behavior** — Does `tryAllErrors` catch all exceptions or just `ChatError`?
+**Analysis:** `tryAllErrors` (Util.hs:249) uses `UE.catch` which catches `SomeException` — ALL exceptions, not just `ChatError`. It converts via `fromSomeException` into the error type. This is important: if `joinConnection` throws an IO exception, it's still caught and the cleanup runs.
+**Fix:** No fix needed — the behavior is correct.
 
-**Issue: Multiple CONFs** — Could the owner receive multiple CONF events for the same connection? If yes, the second `putTMVar` would block (TMVar already full).
+**Issue: Multiple CONFs** — Could the owner receive multiple CONF events for the same connection? If yes, the second `putTMVar` would block.
 **Analysis:** The SMP protocol sends exactly one CONF per connection. Multiple CONFs would be a protocol violation.
 **Fix:** No fix needed.
 
-**Issue: Cleanup on timeout** — If the timeout fires (40s), the handler deletes the DB connection and agent connection. But the relay's response might arrive AFTER cleanup. The subscriber would then fail on `getConnectionEntity` (connection already deleted). This is harmless — `eToView` absorbs it.
-**Analysis:** Correct. After timeout, the TMap entry is deleted, so even if a late CONF arrives, the pre-check in the CONF handler won't find it in the TMap. It would fall through to the existing flow (`saveConnInfo`), which might fail because the connection has no contact_id. But the connection is already deleted by then, so `getConnectionEntity` fails first.
-**Fix:** No fix needed. The cleanup sequence is: delete TMap entry → delete DB connection → delete agent connection. If a CONF arrives after TMap deletion but before DB deletion, it falls through to existing flow and fails gracefully. If after DB deletion, `getConnectionEntity` fails. Both paths are safe.
+**Issue: Cleanup on timeout** — If the timeout fires (40s), the handler deletes the DB connection and agent connection. But the relay's response might arrive AFTER cleanup.
+**Analysis:** After timeout, the TMap entry is deleted. A late CONF arriving at the subscriber finds no TMap entry, falls through to the existing flow, fails at `getConnectionEntity` (connection deleted). Harmless — `catchAllErrors eToView` absorbs it.
+**Fix:** No fix needed. The cleanup sequence (delete TMap → delete DB → delete agent) is safe in all interleavings.
 
 ### Pass 2
 
-**Issue: `decodeLinkUserData cData`** — This function decodes the `userData` from `ConnLinkData`. For relay addresses using `RelayAddressLinkData`, the cData is `ContactLinkData vr UserContactData{..}`. The `decodeLinkUserData` function decodes from `UserContactData.userData` field. Need to verify `RelayAddressLinkData` is decoded by this function.
-**Analysis:** Looking at Internal.hs:1361, `decodeLinkUserData` uses `JQ.decode` on the userData bytes. It's polymorphic — the caller specifies the expected type via type inference. So `decodeLinkUserData cData :: IO (Maybe RelayAddressLinkData)` should work as long as we have a `FromJSON` instance for `RelayAddressLinkData` (which we do via `deriveJSON`).
-**Fix:** Ensure the type annotation or binding constrains the type correctly in the handler code.
-
-**Issue: `encodeShortLinkData`** — Currently used to encode `ContactShortLinkData`. It wraps the JSON in `UserContactData.userData`. Need to verify it works for `RelayAddressLinkData`.
-**Analysis:** Looking at Internal.hs:1351-1359, `encodeShortLinkData` calls `JQ.encode` on the value and wraps it. It's also polymorphic. It produces `UserContactData` with the encoded value in the `userData` field. This will work for any `ToJSON a`.
+**Issue: `decodeLinkUserData cData`** — For relay addresses, `cData` is `ContactLinkData vr UserContactData{..}`. Does `decodeLinkUserData` decode the right field?
+**Analysis:** `decodeLinkUserData` (Internal.hs:1361) is polymorphic — uses `JQ.decode` on the `userData` bytes from `UserContactData`. The caller constrains the type via the binding `Just RelayAddressLinkData {relayProfile}`. The `FromJSON` instance is provided by `deriveJSON`.
 **Fix:** No fix needed.
 
-**Issue: Cleanup identification query** — `getStaleRelayTestConns` identifies stale test connections by: ConnContact, NULL contact_id, ConnPrepared status, old created_at. Could this match non-test connections?
-**Analysis:** Normal ConnContact connections:
-- `createDirectConnection_` always sets `contact_id` (from `contactId` parameter)
-- `createConnReqConnection` sets `contact_id = NULL` for connection request connections (via contact address). These DO match the pattern! They have `conn_type = ConnContact`, `contact_id = NULL`, and start in `ConnNew` status.
-**Fix:** Hmm, but `ConnPrepared` is different from `ConnNew`. Let me check what status `createConnReqConnection` uses... Looking at Store/Direct.hs:159, `createConnReqConnection` uses `ConnNew`. And `createRelayTestConnection` uses `ConnPrepared`. So the `ConnPrepared` status differentiates test connections from contact request connections. But wait — could other flows create ConnContact with ConnPrepared? Let me check... `prepareConnectionToJoin` creates the agent connection in Prepared state, but the DB connection is created separately. Looking at existing usage of `ConnPrepared` in DB... Actually, `ConnPrepared` is set by `createRelayTestConnection` which we're writing. Other flows that create ConnContact connections don't use `ConnPrepared` — they use `ConnNew` or `ConnJoined`.
-**Fix:** The query is safe. `ConnContact + contact_id IS NULL + ConnPrepared + old` uniquely identifies stale relay test connections.
+**Issue: `encodeShortLinkData`** — Will it work for `RelayAddressLinkData`?
+**Analysis:** `encodeShortLinkData` (Internal.hs:1351) is polymorphic — `J.ToJSON a => a -> UserLinkData`. Uses `J.encode` and wraps in `UserLinkData`. Works for any type with `ToJSON`.
+**Fix:** No fix needed.
 
-**Issue: `tryAllErrors` around the full connect flow** — If `prepareConnectionToJoin` succeeds but `joinConnection` fails, we need to ensure the agent connection is cleaned up. But we're inside `tryAllErrors`, so the error is caught, and we return `Left e`. The agent connection from `prepareConnectionToJoin` would leak.
-**Analysis:** The DB connection from `createRelayTestConnection` would also leak. Both need cleanup on partial failure.
-**Fix:** Add cleanup in the error path. After `createRelayTestConnection`, if subsequent steps fail, ensure both DB and agent connections are cleaned up. Use `onException`/`catchAllErrors` pattern, or structure the code to always cleanup. Actually, the cleanupManager will catch these as stale test connections (ConnPrepared older than 5 min). So even without immediate cleanup, they'll be cleaned up within 30 minutes. For correctness, add explicit cleanup on partial failure.
+**Issue: Cleanup identification query safety** — `getStaleRelayTestConns` uses: `ConnContact + contact_id IS NULL + ConnPrepared + contact_conn_initiated = 0 + old created_at`. Could this match non-test connections?
+**Analysis:** All code paths that create `ConnContact` with `contact_id = NULL`:
+- `createConnReqConnection` (Direct.hs:158): sets `ConnPrepared` (line 164) BUT also sets `contact_conn_initiated = True` (line 175, `BI True`), `xcontact_id`, and `via_contact_uri`. The `contact_conn_initiated = 0` condition excludes these.
+- `createRelayTestConnection` (new): sets `ConnPrepared`, inherits `contact_conn_initiated = 0` default. Matches the query.
+- No other code path creates `ConnContact` with `contact_id = NULL` and `contact_conn_initiated = 0`.
+**Fix:** The query is safe with the `contact_conn_initiated = 0` discriminator.
 
-Revised handler structure:
-```haskell
-connId <- withAgent $ \a -> prepareConnectionToJoin ...
-conn <- withFastStore $ \db -> createRelayTestConnection ...
-let acId = aConnId conn
-    cleanup = do
-      atomically $ TM.delete acId chatRelayTests_
-      withFastStore' $ \db -> deleteConnectionRecord db user (connId conn)
-      deleteAgentConnectionAsync acId
--- Register test in TMap
-...
-atomically $ TM.insert acId relayTest chatRelayTests_
--- Join + wait with cleanup on failure
-r <- (do
-  dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing Nothing
-  withAgent $ \a -> joinConnection ...
-  liftIO $ timeout 40_000_000 $ atomically $ takeTMVar testVar
-  ) `catchAllErrors` (\e -> cleanup >> throwError e)
--- Always cleanup
-cleanup
-pure r
-```
+**Issue: Partial failure cleanup** — If `prepareConnectionToJoin` succeeds but the `withFastStore` for `createRelayTestConnection` fails, the agent connection leaks.
+**Analysis:** The `prepareConnectionToJoin` call happens before the `tryAllErrors` block. If `createRelayTestConnection` throws, we never reach cleanup. The agent connection from `prepareConnectionToJoin` would leak until restart. However, `createRelayTestConnection` is a simple INSERT — it's unlikely to fail. And if it does, `cleanupManager` won't catch it because no DB row was created. The agent-level connection will be cleaned up on agent restart.
+**Fix:** Acceptable for MVP. Could wrap in a broader try-catch, but the failure mode is extremely unlikely and the consequence (one leaked agent connection) is minor.
 
-Wait, but `catchAllErrors` catches `ChatError`, not all exceptions. And we need cleanup to run regardless (success or failure). Better to use a try-finally pattern or just always call cleanup:
-
-```haskell
--- After join + wait (whether success or failure), always cleanup
-testResult <- liftIO $ timeout 40_000_000 $ atomically $ takeTMVar testVar
--- Cleanup always
-atomically $ TM.delete acId chatRelayTests_
-withFastStore' $ \db -> deleteConnectionRecord db user (connId conn)
-deleteAgentConnectionAsync acId
-pure testResult
-```
-
-But this doesn't handle exceptions during `joinConnection`. If `joinConnection` throws, we don't reach cleanup. Need to wrap in `tryAllErrors`:
-
-```haskell
-testResult <- tryAllErrors $ do
-  dm <- encodeConnInfo $ ...
-  withAgent $ \a -> joinConnection ...
-  liftIO $ timeout 40_000_000 $ atomically $ takeTMVar testVar
--- Cleanup always (even on error)
-atomically $ TM.delete acId chatRelayTests_
-withFastStore' $ \db -> deleteConnectionRecord db user (connId conn)
-deleteAgentConnectionAsync acId
-case testResult of
-  Left e -> failWithProfile RTSConnect (show e)
-  Right Nothing -> failWithProfile RTSWaitResponse "timeout"
-  Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
-  Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
-```
-
-This is cleaner. The cleanup runs after both success and failure paths. The `tryAllErrors` ensures `joinConnection` errors are caught.
-
-**Issue: TMap entry leak on exception before join** — If `encodeConnInfo` throws (highly unlikely but possible), the TMap entry persists. Since the connection is deleted, the TMap entry is just dead memory. The cleanupManager doesn't clean TMap entries.
-**Analysis:** The TMap entry is keyed by ConnId. Once the connection is deleted, no event will ever arrive for that ConnId. The entry will persist until the process restarts. This is a minor memory leak, not a correctness issue.
-**Fix:** The cleanup code already deletes the TMap entry: `atomically $ TM.delete acId chatRelayTests_`. This runs after `tryAllErrors`, so even if `encodeConnInfo` throws, the TMap entry is cleaned up. No issue.
+**Issue: `void $ withAgent $ \a -> joinConnection ...`** — The return type of `joinConnection` is `AE (SndQueueSecured, Maybe ClientServiceId)`. Using `void` discards both values.
+**Analysis:** For the test connection, we don't need `SndQueueSecured` or `ClientServiceId`. The `addRelay` function (Commands.hs:3776) uses the return value to update connection status, but the test connection is deleted immediately anyway.
+**Fix:** No fix needed.
 
 Both passes clean. No further issues found.
