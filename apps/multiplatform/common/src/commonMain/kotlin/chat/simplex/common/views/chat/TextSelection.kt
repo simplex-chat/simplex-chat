@@ -100,26 +100,19 @@ class SelectionManager {
         val r = range ?: return ""
         val lo = minOf(r.startIndex, r.endIndex)
         val hi = maxOf(r.startIndex, r.endIndex)
-        val forward = r.startIndex <= r.endIndex
-        val startOff = if (forward) r.startOffset else r.endOffset
-        val endOff = if (forward) r.endOffset else r.startOffset
         return (lo..hi).mapNotNull { idx ->
             val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
+            val sel = selectedRange(range, idx) ?: return@mapNotNull null
             val text = displayText(ci, linkMode, sendCommandMsg = false)
-            when {
-                idx == lo && idx == hi -> text.substring(
-                    startOff.coerceAtMost(text.length),
-                    endOff.coerceAtMost(text.length)
-                )
-                idx == lo -> text.substring(startOff.coerceAtMost(text.length))
-                idx == hi -> text.substring(0, endOff.coerceAtMost(text.length))
-                else -> text
-            }
+            text.substring(
+                sel.first.coerceAtMost(text.length),
+                (sel.last + 1).coerceAtMost(text.length)
+            )
         }.joinToString("\n")
     }
 }
 
-fun highlightedRange(range: SelectionRange?, index: Int): IntRange? {
+fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
     val r = range ?: return null
     val lo = minOf(r.startIndex, r.endIndex)
     val hi = maxOf(r.startIndex, r.endIndex)

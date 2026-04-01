@@ -413,7 +413,7 @@ fun CIMarkdownText(
   }
 
   val highlightRange = if (selectionManager != null && selectionIndex >= 0) {
-    remember(selectionIndex) { derivedStateOf { highlightedRange(selectionManager.range, selectionIndex) } }.value
+    remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) } }.value
   } else null
   if (highlightRange != null) Log.e(TAG, "highlight idx=$selectionIndex range=$highlightRange")
 

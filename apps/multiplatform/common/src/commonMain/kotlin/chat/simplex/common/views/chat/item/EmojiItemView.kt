@@ -47,7 +47,7 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
   }
 
   val isSelected = if (selectionManager != null && selectionIndex >= 0) {
-    remember(selectionIndex) { derivedStateOf { highlightedRange(selectionManager.range, selectionIndex) != null } }.value
+    remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) != null } }.value
   } else false
 
   Column(
