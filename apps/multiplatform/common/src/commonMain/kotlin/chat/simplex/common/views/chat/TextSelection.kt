@@ -68,7 +68,7 @@ class SelectionManager {
 
     fun setAnchorOffset(offset: Int) {
         val r = range ?: return
-        range = r.copy(startOffset = offset, endOffset = offset)
+        range = r.copy(startOffset = offset)
     }
 
     fun updateFocusIndex(index: Int) {
@@ -118,13 +118,16 @@ fun highlightedRange(range: SelectionRange?, index: Int): IntRange? {
     val lo = minOf(r.startIndex, r.endIndex)
     val hi = maxOf(r.startIndex, r.endIndex)
     if (index < lo || index > hi) return null
-    val forward = r.startIndex <= r.endIndex
-    val startOff = if (forward) r.startOffset else r.endOffset
-    val endOff = if (forward) r.endOffset else r.startOffset
     return when {
-        index == lo && index == hi -> if (startOff == endOff) null else minOf(startOff, endOff) until maxOf(startOff, endOff)
-        index == lo -> startOff until Int.MAX_VALUE
-        index == hi -> 0 until endOff
+        index == r.startIndex && index == r.endIndex ->
+            if (r.startOffset == r.endOffset) null
+            else minOf(r.startOffset, r.endOffset) until maxOf(r.startOffset, r.endOffset)
+        index == r.startIndex ->
+            if (r.startIndex > r.endIndex) r.startOffset until Int.MAX_VALUE
+            else 0 until r.startOffset
+        index == r.endIndex ->
+            if (r.endIndex < r.startIndex) 0 until r.endOffset
+            else r.endOffset until Int.MAX_VALUE
         else -> 0 until Int.MAX_VALUE
     }
 }
