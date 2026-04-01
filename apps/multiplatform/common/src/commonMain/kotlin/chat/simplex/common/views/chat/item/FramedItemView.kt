@@ -20,10 +20,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -372,71 +368,11 @@ fun CIMarkdownText(
   showTimestamp: Boolean,
   prefix: AnnotatedString? = null
 ) {
-  val selectionManager = LocalSelectionManager.current
-  val selectionIndex = LocalItemContext.current.selectionIndex
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
 
-  val boundsState = remember { mutableStateOf<Rect?>(null) }
-  val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
-
-  if (selectionManager != null && selectionIndex >= 0 && ci.meta.isLive != true) {
-    val isAnchor = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    LaunchedEffect(isAnchor.value) {
-      if (!isAnchor.value) return@LaunchedEffect
-      val bounds = boundsState.value ?: return@LaunchedEffect
-      val layout = layoutResultState.value ?: return@LaunchedEffect
-      val offset = layout.getOffsetForPosition(
-        Offset(selectionManager.anchorWindowX - bounds.left, selectionManager.anchorWindowY - bounds.top)
-      )
-      Log.e(TAG, "anchorOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=(${selectionManager.anchorWindowX},${selectionManager.anchorWindowY})")
-      selectionManager.setAnchorOffset(offset)
-    }
-
-    val isFocus = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    if (isFocus.value) {
-      LaunchedEffect(Unit) {
-        snapshotFlow { selectionManager.focusWindowY to selectionManager.focusWindowX }
-          .collect { (py, px) ->
-            val bounds = boundsState.value ?: return@collect
-            val layout = layoutResultState.value ?: return@collect
-            val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
-            val charBox = layout.getBoundingBox(offset.coerceIn(0, layout.layoutInput.text.length - 1))
-            val ls = selectionManager.listState?.value
-            val itemInfo = ls?.layoutInfo?.visibleItemsInfo?.find { it.index == selectionIndex }
-            val charRect = if (ls != null && itemInfo != null) {
-              val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
-              Rect(
-                left = bounds.left + charBox.left,     // absolute window X
-                top = bounds.top + charBox.top - itemWindowY,    // relative to item Y
-                right = bounds.left + charBox.right,   // absolute window X
-                bottom = bounds.top + charBox.bottom - itemWindowY // relative to item Y
-              )
-            } else Rect.Zero
-            Log.e(TAG, "focusOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=($px,$py) charRect=$charRect")
-            selectionManager.updateFocusOffset(offset, charRect)
-          }
-      }
-    }
-  }
-
-  val highlightRange = if (selectionManager != null && selectionIndex >= 0) {
-    remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) } }.value
-  } else null
-  if (highlightRange != null) Log.e(TAG, "highlight idx=$selectionIndex range=$highlightRange")
-
-  Box(
-    Modifier
-      .padding(vertical = 7.dp, horizontal = 12.dp)
-      .then(if (selectionManager != null) Modifier.onGloballyPositioned {
-        val pos = it.positionInWindow()
-        boundsState.value = Rect(pos.x, pos.y, pos.x + it.size.width, pos.y + it.size.height)
-      } else Modifier)
-  ) {
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -446,8 +382,8 @@ fun CIMarkdownText(
         else -> null
       },
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
-      selectionRange = highlightRange,
-      onTextLayoutResult = if (selectionManager != null) { { layoutResultState.value = it } } else null
+      selectionRange = selection.highlightRange,
+      onTextLayoutResult = selection.onTextLayoutResult
     )
   }
 }

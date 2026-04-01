@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -138,23 +139,32 @@ class SelectionManager {
     }
 }
 
+// Returns the character range selected within a given item.
+// Offsets are cursor positions (between characters), so the selected characters
+// are those between min and max cursors: range is min..(max - 1).
+// In reversed layout: higher index = higher on screen.
+// startIndex/startOffset = anchor, endIndex/endOffset = focus.
 fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
     val r = range ?: return null
     val lo = minOf(r.startIndex, r.endIndex)
     val hi = maxOf(r.startIndex, r.endIndex)
     if (index < lo || index > hi) return null
     return when {
+        // Single-item selection: characters between the two cursor positions
         index == r.startIndex && index == r.endIndex ->
             if (r.startOffset < 0 || r.endOffset < 0 || r.startOffset == r.endOffset) null
             else minOf(r.startOffset, r.endOffset) .. (maxOf(r.startOffset, r.endOffset) - 1)
+        // Anchor item in multi-item selection: from cursor to end, or from start to cursor
         index == r.startIndex ->
             if (r.startOffset < 0) null
             else if (r.startIndex > r.endIndex) r.startOffset until Int.MAX_VALUE
             else 0 until r.startOffset
+        // Focus item in multi-item selection: symmetric to anchor
         index == r.endIndex ->
             if (r.endOffset < 0) null
             else if (r.endIndex < r.startIndex) 0 until r.endOffset
             else r.endOffset until Int.MAX_VALUE
+        // Interior items: fully selected
         else -> 0 until Int.MAX_VALUE
     }
 }
@@ -278,39 +288,37 @@ fun BoxScope.SelectionHandler(
 
                         change.consume()
 
-                        // Auto-scroll: direction-aware
                         val draggingDown = windowPos.y > windowStart.y
-                        val edgeDistance = if (draggingDown) {
-                            viewportBottom - windowPos.y
-                        } else {
-                            windowPos.y - viewportTop
-                        }
-                        val shouldAutoScroll = edgeDistance in 0f..AUTO_SCROLL_ZONE_PX
-
-                        if (shouldAutoScroll && autoScrollJob?.isActive != true) {
-                            autoScrollJob = scope.launch {
-                                while (isActive && manager.selectionState == SelectionState.Selecting) {
-                                    val curEdge = if (draggingDown) {
-                                        viewportBottom - manager.focusWindowY
-                                    } else {
-                                        manager.focusWindowY - viewportTop
-                                    }
-                                    if (curEdge >= AUTO_SCROLL_ZONE_PX) break
-
-                                    val fraction = 1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
-                                    val speed = MIN_SCROLL_SPEED + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * fraction
-                                    listState.value.scrollBy(if (draggingDown) -speed else speed)
-                                    delay(16)
-                                }
-                            }
-                        } else if (!shouldAutoScroll) {
-                            autoScrollJob?.cancel()
-                            autoScrollJob = null
-                        }
+                        autoScrollJob = updateAutoScroll(
+                            draggingDown, windowPos.y, viewportTop, viewportBottom,
+                            autoScrollJob, scope, manager, listState
+                        )
                     }
                 }
             }
         }
+}
+
+private fun updateAutoScroll(
+    draggingDown: Boolean, pointerY: Float, viewportTop: Float, viewportBottom: Float,
+    currentJob: Job?, scope: CoroutineScope, manager: SelectionManager, listState: State<LazyListState>
+): Job? {
+    val edgeDistance = if (draggingDown) viewportBottom - pointerY else pointerY - viewportTop
+    if (edgeDistance !in 0f..AUTO_SCROLL_ZONE_PX) {
+        currentJob?.cancel()
+        return null
+    }
+    if (currentJob?.isActive == true) return currentJob
+    return scope.launch {
+        while (isActive && manager.selectionState == SelectionState.Selecting) {
+            val curEdge = if (draggingDown) viewportBottom - manager.focusWindowY else manager.focusWindowY - viewportTop
+            if (curEdge >= AUTO_SCROLL_ZONE_PX) break
+            val fraction = 1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
+            val speed = MIN_SCROLL_SPEED + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * fraction
+            listState.value.scrollBy(if (draggingDown) -speed else speed)
+            delay(16)
+        }
+    }
 }
 
 private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
@@ -320,6 +328,79 @@ private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
     }?.index
     Log.e(TAG, "resolveIndexAtY localY=$localY reversedY=$reversedY → index=$idx")
     return idx
+}
+
+class ItemSelection(
+    val highlightRange: IntRange?,
+    val positionModifier: Modifier,
+    val onTextLayoutResult: ((TextLayoutResult) -> Unit)?
+)
+
+// Sets up selection tracking for a text item: anchor/focus offset resolution,
+// highlight range computation, and position/layout result capture.
+@Composable
+fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int, isLive: Boolean): ItemSelection {
+    val boundsState = remember { mutableStateOf<Rect?>(null) }
+    val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    if (selectionManager != null && selectionIndex >= 0 && !isLive) {
+        val isAnchor = remember(selectionIndex) {
+            derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+        }
+        LaunchedEffect(isAnchor.value) {
+            if (!isAnchor.value) return@LaunchedEffect
+            val bounds = boundsState.value ?: return@LaunchedEffect
+            val layout = layoutResultState.value ?: return@LaunchedEffect
+            val offset = layout.getOffsetForPosition(
+                Offset(selectionManager.anchorWindowX - bounds.left, selectionManager.anchorWindowY - bounds.top)
+            )
+            selectionManager.setAnchorOffset(offset)
+        }
+
+        val isFocus = remember(selectionIndex) {
+            derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+        }
+        if (isFocus.value) {
+            LaunchedEffect(Unit) {
+                snapshotFlow { selectionManager.focusWindowY to selectionManager.focusWindowX }
+                    .collect { (py, px) ->
+                        val bounds = boundsState.value ?: return@collect
+                        val layout = layoutResultState.value ?: return@collect
+                        val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
+                        val charBox = layout.getBoundingBox(offset.coerceIn(0, layout.layoutInput.text.length - 1))
+                        val ls = selectionManager.listState?.value
+                        val itemInfo = ls?.layoutInfo?.visibleItemsInfo?.find { it.index == selectionIndex }
+                        val charRect = if (ls != null && itemInfo != null) {
+                            val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
+                            Rect(
+                                left = bounds.left + charBox.left,
+                                top = bounds.top + charBox.top - itemWindowY,
+                                right = bounds.left + charBox.right,
+                                bottom = bounds.top + charBox.bottom - itemWindowY
+                            )
+                        } else Rect.Zero
+                        selectionManager.updateFocusOffset(offset, charRect)
+                    }
+            }
+        }
+    }
+
+    val highlightRange = if (selectionManager != null && selectionIndex >= 0) {
+        remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) } }.value
+    } else null
+
+    val positionModifier = if (selectionManager != null) {
+        Modifier.onGloballyPositioned {
+            val pos = it.positionInWindow()
+            boundsState.value = Rect(pos.x, pos.y, pos.x + it.size.width, pos.y + it.size.height)
+        }
+    } else Modifier
+
+    val onTextLayoutResult: ((TextLayoutResult) -> Unit)? = if (selectionManager != null) {
+        { layoutResultState.value = it }
+    } else null
+
+    return ItemSelection(highlightRange, positionModifier, onTextLayoutResult)
 }
 
 @Composable
