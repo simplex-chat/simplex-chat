@@ -173,6 +173,7 @@ newChatController
     deliveryTaskWorkers <- TM.emptyIO
     deliveryJobWorkers <- TM.emptyIO
     relayRequestWorkers <- TM.emptyIO
+    chatRelayTests <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
@@ -216,6 +217,7 @@ newChatController
           deliveryTaskWorkers,
           deliveryJobWorkers,
           relayRequestWorkers,
+          chatRelayTests,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,

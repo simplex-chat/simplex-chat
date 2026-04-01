@@ -899,3 +899,20 @@ setViaGroupLinkUri db groupId connId = do
 deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
 deleteConnectionRecord db User {userId} cId = do
   DB.execute db "DELETE FROM connections WHERE user_id = ? AND connection_id = ?" (userId, cId)
+
+getStaleRelayTestConns :: DB.Connection -> User -> UTCTime -> IO [ConnId]
+getStaleRelayTestConns db User {userId} cutoffTs =
+  map fromOnly <$>
+    DB.query
+      db
+      [sql|
+        SELECT agent_conn_id FROM connections
+        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL
+          AND conn_status = ? AND contact_conn_initiated = 0
+          AND created_at < ?
+      |]
+      (userId, ConnContact, ConnPrepared, cutoffTs)
+
+deleteConnectionByAgentConnId :: DB.Connection -> User -> ConnId -> IO ()
+deleteConnectionByAgentConnId db User {userId} acId =
+  DB.execute db "DELETE FROM connections WHERE user_id = ? AND agent_conn_id = ?" (userId, acId)

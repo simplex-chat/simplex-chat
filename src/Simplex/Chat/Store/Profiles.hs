@@ -634,7 +634,7 @@ getChatRelays db User {userId} =
 
 toChatRelay :: (DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
 toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
-  UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+  UserChatRelay {chatRelayId, address, relayProfile = RelayProfile {name}, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
 
 getChatRelayById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserChatRelay
 getChatRelayById db User {userId} relayId =
@@ -649,7 +649,7 @@ getChatRelayById db User {userId} relayId =
       (userId, relayId)
 
 insertChatRelay :: DB.Connection -> User -> UTCTime -> NewUserChatRelay -> IO UserChatRelay
-insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains, preset, tested, enabled} = do
+insertChatRelay db User {userId} ts relay@UserChatRelay {address, relayProfile = RelayProfile {name}, domains, preset, tested, enabled} = do
   crId <-
     fromOnly . head
       <$> DB.query
@@ -664,7 +664,7 @@ insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains,
   pure (relay :: NewUserChatRelay) {chatRelayId = DBEntityId crId}
 
 updateChatRelay :: DB.Connection -> UTCTime -> UserChatRelay -> IO ()
-updateChatRelay db ts UserChatRelay {chatRelayId, address, name, domains, preset, tested, enabled} =
+updateChatRelay db ts UserChatRelay {chatRelayId, address, relayProfile = RelayProfile {name}, domains, preset, tested, enabled} =
   DB.execute
     db
     [sql|
@@ -948,7 +948,7 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | otherwise -> Just relay <$ updateChatRelay db ts relay
     -- Un-delete soft-deleted relay, updating name and settings but keeping the address unchanged.
     undeleteRelay :: Int64 -> NewUserChatRelay -> IO ()
-    undeleteRelay existingId UserChatRelay {name = nm, domains, preset, tested, enabled} =
+    undeleteRelay existingId UserChatRelay {relayProfile = RelayProfile {name = nm}, domains, preset, tested, enabled} =
       DB.execute db
         [sql|
           UPDATE chat_relays

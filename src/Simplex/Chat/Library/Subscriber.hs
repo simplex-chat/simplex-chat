@@ -406,15 +406,38 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVersion, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId pqSupport _ connInfo -> do
-          conn' <- processCONFpqSupport conn pqSupport
-          -- [incognito] send saved profile
-          (conn'', gInfo_) <- saveConnInfo conn' connInfo
-          incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = case gInfo_ of
-                Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-                Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
-          -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-          allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
+          chatRelayTests_ <- asks chatRelayTests
+          relayTest_ <- atomically $ TM.lookup agentConnId chatRelayTests_
+          case relayTest_ of
+            Just RelayTest {challenge, rootKey, result = testVar} -> do
+              r <- tryAllErrors $ do
+                ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
+                case chatMsgEvent of
+                  XGrpRelayTest _challenge sig_ ->
+                    case sig_ of
+                      Just sig
+                        | C.verify' rootKey sig challenge ->
+                            atomically $ putTMVar testVar Nothing
+                        | otherwise ->
+                            atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify "invalid signature")
+                      Nothing ->
+                        atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify "no signature in response")
+                  _ ->
+                    atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse "unexpected message type")
+              case r of
+                Left e ->
+                  atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse (show e))
+                Right () -> pure ()
+            Nothing -> do
+              conn' <- processCONFpqSupport conn pqSupport
+              -- [incognito] send saved profile
+              (conn'', gInfo_) <- saveConnInfo conn' connInfo
+              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+              let profileToSend = case gInfo_ of
+                    Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+                    Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
+              -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
           void $ saveConnInfo conn connInfo
@@ -1247,6 +1270,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XMember p joiningMemberId joiningMemberKey -> memberJoinRequestViaRelay invId chatVRange p joiningMemberId joiningMemberKey
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
+          XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       LINK _link auData ->
@@ -1453,6 +1477,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         xGrpRelayInv invId chatVRange groupRelayInv = do
           (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
           lift $ void $ getRelayRequestWorker True
+        xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
+        xGrpRelayTest invId chatVRange challenge = do
+          privKey_ <- withAgent $ \a -> getConnLinkPrivKey a (aConnId conn)
+          case privKey_ of
+            Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
+            Just privKey -> do
+              let sig = C.sign' privKey challenge
+                  msg = XGrpRelayTest challenge (Just sig)
+              subMode <- chatReadVar subscriptionMode
+              chatVR <- chatVersionRange
+              let chatV = chatVR `peerConnChatVersion` chatVRange
+              void $ agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()

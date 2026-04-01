@@ -2562,10 +2562,14 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case rsActive = "active"
 }
 
+public struct RelayProfile: Codable, Equatable, Hashable {
+    public var name: String
+}
+
 public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     public var chatRelayId: Int64?
     public var address: String
-    public var name: String
+    public var relayProfile: RelayProfile
     public var domains: [String]
     public var preset: Bool
     public var tested: Bool?
@@ -2573,10 +2577,15 @@ public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     public var deleted: Bool
     public var createdAt = Date()
 
+    public var name: String {
+        get { relayProfile.name }
+        set { relayProfile.name = newValue }
+    }
+
     public init(chatRelayId: Int64? = nil, address: String, name: String, domains: [String], preset: Bool, tested: Bool? = nil, enabled: Bool, deleted: Bool, createdAt: Date = Date()) {
         self.chatRelayId = chatRelayId
         self.address = address
-        self.name = name
+        self.relayProfile = RelayProfile(name: name)
         self.domains = domains
         self.preset = preset
         self.tested = tested
@@ -2586,7 +2595,7 @@ public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     }
 
     public static func == (l: UserChatRelay, r: UserChatRelay) -> Bool {
-        l.chatRelayId == r.chatRelayId && l.address == r.address && l.name == r.name && l.domains == r.domains &&
+        l.chatRelayId == r.chatRelayId && l.address == r.address && l.relayProfile == r.relayProfile && l.domains == r.domains &&
         l.preset == r.preset && l.tested == r.tested && l.enabled == r.enabled && l.deleted == r.deleted
     }
 
@@ -2595,7 +2604,7 @@ public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     public enum CodingKeys: CodingKey {
         case chatRelayId
         case address
-        case name
+        case relayProfile
         case domains
         case preset
         case tested

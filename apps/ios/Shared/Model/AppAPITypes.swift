@@ -91,6 +91,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiAcceptMemberContact(contactId: Int64)
     case apiTestProtoServer(userId: Int64, server: String)
+    case apiTestChatRelay(userId: Int64, address: String)
     case apiGetServerOperators
     case apiSetServerOperators(operators: [ServerOperator])
     case apiGetUserServers(userId: Int64)
@@ -289,6 +290,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiAcceptMemberContact(contactId): return "/_accept member contact @\(contactId)"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
+            case let .apiTestChatRelay(userId, address): return "/_relay test \(userId) \(address)"
             case .apiGetServerOperators: return "/_operators"
             case let .apiSetServerOperators(operators): return "/_operators \(encodeJSON(operators))"
             case let .apiGetUserServers(userId): return "/_servers \(userId)"
@@ -478,6 +480,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiAcceptMemberContact: return "apiAcceptMemberContact"
             case .apiTestProtoServer: return "apiTestProtoServer"
+            case .apiTestChatRelay: return "apiTestChatRelay"
             case .apiGetServerOperators: return "apiGetServerOperators"
             case .apiSetServerOperators: return "apiSetServerOperators"
             case .apiGetUserServers: return "apiGetUserServers"
@@ -669,6 +672,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     case chatTags(user: UserRef, userTags: [ChatTag])
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
+    case chatRelayTestResult(user: UserRef, relayProfile: RelayProfile?, relayTestFailure: RelayTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
     case userServers(user: UserRef, userServers: [UserOperatorServers])
     case userServersValidation(user: UserRef, serverErrors: [UserServersError], serverWarnings: [UserServersWarning])
@@ -703,6 +707,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .chatTags: "chatTags"
         case .chatItemInfo: "chatItemInfo"
         case .serverTestResult: "serverTestResult"
+        case .chatRelayTestResult: "chatRelayTestResult"
         case .serverOperatorConditions: "serverOperators"
         case .userServers: "userServers"
         case .userServersValidation: "userServersValidation"
@@ -739,6 +744,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
         case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
         case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
+        case let .chatRelayTestResult(u, relayProfile, relayTestFailure): return withUser(u, "relayProfile: \(String(describing: relayProfile))\nresult: \(String(describing: relayTestFailure))")
         case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
         case let .userServers(u, userServers): return withUser(u, "userServers: \(String(describing: userServers))")
         case let .userServersValidation(u, serverErrors, serverWarnings): return withUser(u, "serverErrors: \(String(describing: serverErrors))\nserverWarnings: \(String(describing: serverWarnings))")
@@ -2009,6 +2015,19 @@ struct ProtocolTestFailure: Decodable, Error, Equatable {
             return err + " " + String.localizedStringWithFormat(NSLocalizedString("Error: %@.", comment: "server test error"), String(describing: testError))
         }
     }
+}
+
+public enum RelayTestStep: String, Decodable {
+    case getLink = "GetLink"
+    case decodeLink = "DecodeLink"
+    case connect = "Connect"
+    case waitResponse = "WaitResponse"
+    case verify = "Verify"
+}
+
+public struct RelayTestFailure: Decodable {
+    public var rtfStep: RelayTestStep
+    public var rtfDescription: String
 }
 
 struct MigrationFileLinkData: Codable {

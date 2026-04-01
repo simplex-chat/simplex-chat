@@ -436,6 +436,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
   XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayTest :: ByteString -> Maybe (C.Signature 'C.Ed25519) -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -964,6 +965,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLinkAcpt_ :: CMEventTag 'Json
   XGrpRelayInv_ :: CMEventTag 'Json
   XGrpRelayAcpt_ :: CMEventTag 'Json
+  XGrpRelayTest_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -1020,6 +1022,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLinkAcpt_ -> "x.grp.link.acpt"
     XGrpRelayInv_ -> "x.grp.relay.inv"
     XGrpRelayAcpt_ -> "x.grp.relay.acpt"
+    XGrpRelayTest_ -> "x.grp.relay.test"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -1077,6 +1080,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.link.acpt" -> XGrpLinkAcpt_
         "x.grp.relay.inv" -> XGrpRelayInv_
         "x.grp.relay.acpt" -> XGrpRelayAcpt_
+        "x.grp.relay.test" -> XGrpRelayTest_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -1130,6 +1134,7 @@ toCMEventTag msg = case msg of
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpRelayInv _ -> XGrpRelayInv_
   XGrpRelayAcpt _ -> XGrpRelayAcpt_
+  XGrpRelayTest {} -> XGrpRelayTest_
   XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1282,6 +1287,13 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
       XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
       XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink"
+      XGrpRelayTest_ -> do
+        B64UrlByteString challenge <- p "challenge"
+        sig_ <- traverse decodeSig =<< opt "signature"
+        pure $ XGrpRelayTest challenge sig_
+        where
+          decodeSig :: B64UrlByteString -> Either String (C.Signature 'C.Ed25519)
+          decodeSig (B64UrlByteString s) = C.decodeSignature s
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1349,6 +1361,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
       XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
       XGrpRelayAcpt relayLink -> o ["relayLink" .= relayLink]
+      XGrpRelayTest challenge sig_ -> o $
+        ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_))
+        ["challenge" .= B64UrlByteString challenge]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
@@ -1442,4 +1457,14 @@ data RelayShortLinkData = RelayShortLinkData
   deriving (Show)
 
 $(JQ.deriveJSON defaultJSON ''RelayShortLinkData)
+
+data RelayProfile = RelayProfile {name :: ContactName}
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''RelayProfile)
+
+data RelayAddressLinkData = RelayAddressLinkData {relayProfile :: RelayProfile}
+  deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''RelayAddressLinkData)
 

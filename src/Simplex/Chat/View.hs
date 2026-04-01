@@ -125,6 +125,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRChatContentTypes cts -> [plain $ "Chat content types: " <> T.intercalate ", " (map (safeDecodeUtf8 . strEncode) cts)]
   CRChatTags u tags -> ttyUser u [viewJSON tags]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
+  CRChatRelayTestResult u relayProfile_ relayTestFailure_ -> ttyUser u $ viewRelayTestResult relayProfile_ relayTestFailure_
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
   CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
   CRUserServersValidation {} -> []
@@ -1578,7 +1579,7 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
           ["  Chat relays"] <> map (plain . ("    " <>) . viewChatRelay) cRelays
       | otherwise = []
       where
-        viewChatRelay UserChatRelay {name, address, preset, tested, enabled} = name <> relayAddress <> relayInfo
+        viewChatRelay UserChatRelay {relayProfile = RelayProfile {name}, address, preset, tested, enabled} = name <> relayAddress <> relayInfo
           where
             relayAddress = ": " <> safeDecodeUtf8 (strEncode address)
             relayInfo = if null relayInfo_ then "" else parens $ T.intercalate ", " relayInfo_
@@ -1612,6 +1613,14 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
   _ -> [pName <> " server test passed"]
   where
     pName = protocolName p
+
+viewRelayTestResult :: Maybe RelayProfile -> Maybe RelayTestFailure -> [StyledString]
+viewRelayTestResult relayProfile_ = \case
+  Just RelayTestFailure {rtfStep, rtfDescription} ->
+    ["relay test failed at " <> plain (show rtfStep) <> ", error: " <> plain rtfDescription]
+  Nothing -> case relayProfile_ of
+    Just RelayProfile {name} -> ["relay test passed, profile: " <> plain (T.unpack name)]
+    Nothing -> ["relay test passed"]
 
 viewServerOperators :: [ServerOperator] -> Maybe UsageConditionsAction -> [StyledString]
 viewServerOperators ops ca = map (plain . viewOperator) ops <> maybe [] viewConditionsAction ca

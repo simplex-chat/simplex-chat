@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -31,6 +32,7 @@ module Simplex.Chat.Store.Direct
     createIncognitoProfile,
     createConnReqConnection,
     createRelayMemberConnectionAsync,
+    createRelayTestConnection,
     updateConnLinkData,
     setPreparedGroupStartedConnection,
     getProfileById,
@@ -112,7 +114,7 @@ import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedCon
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Crypto.Ratchet (PQSupport)
+import Simplex.Messaging.Crypto.Ratchet (PQSupport, pattern PQSupportOff)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 #if defined(dbPostgres)
@@ -240,6 +242,26 @@ createRelayMemberConnectionAsync db user@User {userId} gInfo GroupMember {groupM
   setCommandConnId db user cmdId connId
   where
     customUserProfileId_ = localProfileId <$> incognitoMembershipProfile gInfo
+
+createRelayTestConnection :: DB.Connection -> VersionRangeChat -> User -> ConnId -> ConnStatus -> VersionChat -> SubscriptionMode -> ExceptT StoreError IO Connection
+createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV subMode = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        INSERT INTO connections (
+          user_id, agent_conn_id, conn_level, conn_status, conn_type,
+          conn_chat_version, to_subscribe, pq_support, pq_encryption,
+          created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      |]
+      ( (userId, agentConnId, 0 :: Int, connStatus, ConnContact)
+          :. (chatV, BI (subMode == SMOnlyCreate), PQSupportOff, PQSupportOff)
+          :. (currentTs, currentTs)
+      )
+  connId <- liftIO $ insertedRowId db
+  getConnectionById db vr user connId
 
 updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> VersionChat -> PQSupport -> IO ()
 updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ chatV pqSup = do

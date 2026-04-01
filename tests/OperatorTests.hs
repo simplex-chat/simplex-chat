@@ -20,6 +20,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Operators
 import Simplex.Chat.Operators.Presets
+import Simplex.Chat.Protocol (RelayProfile (..))
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
@@ -122,7 +123,7 @@ updatedServersTest = describe "validate user servers" $ do
       map chatRelayAddress presetRelays `shouldBe` map relayAddr' (chatRelays' op)
     srvHost' (AUS _ s) = srvHost s
     relayAddr' (AUCR _ r) = chatRelayAddress r
-    relayName' (AUCR _ UserChatRelay {name}) = name
+    relayName' (AUCR _ UserChatRelay {relayProfile = RelayProfile {name}}) = name
     PresetServers {operators} = presetServers defaultChatConfig
     customRelayAddr = either error id $ strDecode "https://relay.example.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
 
