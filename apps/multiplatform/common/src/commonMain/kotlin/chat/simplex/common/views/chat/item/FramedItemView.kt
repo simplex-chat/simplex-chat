@@ -391,6 +391,7 @@ fun CIMarkdownText(
       val offset = layout.getOffsetForPosition(
         Offset(selectionManager.focusWindowX - bounds.left, selectionManager.focusWindowY - bounds.top)
       )
+      Log.d("TextSelection", "anchorOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=(${selectionManager.focusWindowX},${selectionManager.focusWindowY})")
       selectionManager.setAnchorOffset(offset)
     }
 
@@ -404,6 +405,7 @@ fun CIMarkdownText(
             val bounds = boundsState.value ?: return@collect
             val layout = layoutResultState.value ?: return@collect
             val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
+            Log.d("TextSelection", "focusOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=($px,$py)")
             selectionManager.updateFocusOffset(offset)
           }
       }
@@ -413,6 +415,7 @@ fun CIMarkdownText(
   val highlightRange = if (selectionManager != null && selectionIndex >= 0) {
     remember(selectionIndex) { derivedStateOf { highlightedRange(selectionManager.range, selectionIndex) } }.value
   } else null
+  if (highlightRange != null) Log.d("TextSelection", "highlight idx=$selectionIndex range=$highlightRange")
 
   Box(
     Modifier

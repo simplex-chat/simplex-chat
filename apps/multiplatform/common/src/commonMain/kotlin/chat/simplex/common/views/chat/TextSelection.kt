@@ -27,12 +27,15 @@ import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.chat.item.displayText
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
+
+private const val TAG_SEL = "TextSelection"
 
 val SelectionHighlightColor = Color(0x4D0066FF)
 
@@ -229,6 +232,7 @@ fun BoxScope.SelectionHandler(
                     if (!isDragging && totalDrag.getDistance() > touchSlop) {
                         isDragging = true
                         val idx = resolveIndexAtY(listState.value, localStart.y)
+                        Log.d(TAG_SEL, "dragStart localStart=$localStart windowStart=$windowStart idx=$idx")
                         if (idx != null) {
                             manager.startSelection(idx)
                             manager.focusWindowY = windowStart.y
@@ -244,7 +248,10 @@ fun BoxScope.SelectionHandler(
                         manager.focusWindowX = windowPos.x
 
                         val idx = resolveIndexAtY(listState.value, change.position.y)
-                        if (idx != null) manager.updateFocusIndex(idx)
+                        if (idx != null) {
+                            if (idx != manager.range?.endIndex) Log.d(TAG_SEL, "focusIndexChanged idx=$idx range=${manager.range}")
+                            manager.updateFocusIndex(idx)
+                        }
 
                         change.consume()
 
@@ -284,9 +291,12 @@ fun BoxScope.SelectionHandler(
 }
 
 private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
-    return listState.layoutInfo.visibleItemsInfo.find { item ->
-        localY >= item.offset && localY < item.offset + item.size
+    val reversedY = listState.layoutInfo.viewportEndOffset - localY
+    val idx = listState.layoutInfo.visibleItemsInfo.find { item ->
+        reversedY >= item.offset && reversedY < item.offset + item.size
     }?.index
+    Log.d(TAG_SEL, "resolveIndexAtY localY=$localY reversedY=$reversedY → index=$idx")
+    return idx
 }
 
 @Composable
