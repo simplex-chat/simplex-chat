@@ -84,15 +84,17 @@ JSON parsing:
 ```haskell
 XGrpRelayTest_ -> do
   B64UrlByteString challenge <- v .: "challenge"
-  sig_ <- mapM decodeSig =<< opt "signature"
+  sig_ <- traverse decodeSig =<< opt "signature"
   pure $ XGrpRelayTest challenge sig_
 ```
 
-Where `decodeSig` converts `B64UrlByteString` to `C.Signature 'C.Ed25519`:
+Where `decodeSig` converts `B64UrlByteString` to `Parser (C.Signature 'C.Ed25519)` using `<$?>` (from `Simplex.Messaging.Util`, already imported in Protocol.hs):
 ```haskell
-decodeSig :: B64UrlByteString -> Either String (C.Signature 'C.Ed25519)
-decodeSig (B64UrlByteString s) = C.decodeSignature s
+decodeSig :: B64UrlByteString -> JQ.Parser (C.Signature 'C.Ed25519)
+decodeSig (B64UrlByteString s) = C.decodeSignature <$?> pure s
 ```
+
+`(<$?>) :: MonadFail m => (a -> Either String b) -> m a -> m b` — converts `Either` errors into `MonadFail` failures. `JQ.Parser` has `MonadFail`.
 
 Note: `B64UrlByteString` is defined in `Types.hs:151` — add import to Protocol.hs if not already imported.
 
@@ -249,10 +251,14 @@ Takes a `ShortLinkContact` (`ConnShortLink 'CMContact`) — relay addresses are 
    ```haskell
    XGrpRelayTest_ -> do
      B64UrlByteString challenge <- v .: "challenge"
-     sig_ <- mapM decodeSig =<< opt "signature"
+     sig_ <- traverse decodeSig =<< opt "signature"
      pure $ XGrpRelayTest challenge sig_
    ```
-   Where `decodeSig (B64UrlByteString s) = C.decodeSignature s`.
+   Where:
+   ```haskell
+   decodeSig :: B64UrlByteString -> JQ.Parser (C.Signature 'C.Ed25519)
+   decodeSig (B64UrlByteString s) = C.decodeSignature <$?> pure s
+   ```
 
 9. Add JSON encoding (~line 1351):
    ```haskell
@@ -749,11 +755,11 @@ cabal test simplex-chat-test --test-options='-m "chat relays"'
 
 **Issue: Signature type in JSON** — `C.Signature 'C.Ed25519` is a GADT constructor. Need to verify it has JSON/Encoding instances and can be transmitted in a JSON chat message.
 **Analysis:** `Signature` has no native JSON instance. For JSON, encode as base64 ByteString using `B64UrlByteString . C.signatureBytes`. For parsing, decode `B64UrlByteString` then `C.decodeSignature :: ByteString -> Either String (Signature 'C.Ed25519)` (Crypto.hs:849). The `(.=?)` pattern handles `Maybe` — only included when `Just`.
-**Fix:** Encoding uses `B64UrlByteString . C.signatureBytes <$> sig_`. Parsing uses `mapM decodeSig =<< opt "signature"` where `decodeSig (B64UrlByteString s) = C.decodeSignature s`. No relay profile in message — owner gets it from link data.
+**Fix:** Encoding uses `B64UrlByteString . C.signatureBytes <$> sig_`. Parsing uses `traverse decodeSig =<< opt "signature"` where `decodeSig (B64UrlByteString s) = C.decodeSignature <$?> pure s` (returns `JQ.Parser`, not `Either String`). No relay profile in message — owner gets it from link data.
 
 **Issue: `DuplicateRecordFields` on `connId`** — `connId :: Int64` appears on `Connection`, `PendingContactConnection`, and `UserContactRequest`. With `DuplicateRecordFields` enabled, `connId conn` won't compile as a field selector.
 **Analysis:** Must use pattern matching. The handler uses `conn@Connection {connId = dbConnId}`.
-**Fix:** Already applied in Phase 4 handler code.
+**Fix:** Already applied in Phase 5 handler code.
 
 **Issue: `getConnLinkPrivKey` conn access** — In `xGrpRelayTest`, we call `getConnLinkPrivKey a (aConnId conn)` where `conn` is the user contact address connection. Does the agent's `getConn` find it by the correct ConnId?
 **Analysis:** `processContactConnMessage` receives `conn :: Connection` which is the chat-layer connection record. `aConnId conn` gives the agent's `ConnId`. The agent stores `ShortLinkCreds` on the `RcvQueue` of the `ContactConnection` for this `ConnId`. The agent function pattern-matches on `ContactConnection _ rq` and returns `linkPrivSigKey <$> shortLink rq`. This is correct.
