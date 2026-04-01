@@ -1140,7 +1140,7 @@ fun ChatLayout(
           val manager = LocalSelectionManager.current
           val range = manager?.range
           if (manager != null && manager.selectionState == SelectionState.Selected && manager.onCopySelection != null && range != null) {
-            val draggingDown = range.startIndex > range.endIndex
+            val draggingDown = range.startIndex > range.endIndex || (range.startIndex == range.endIndex && range.startOffset < range.endOffset)
             val gap = with(LocalDensity.current) { 4.dp.toPx() }
             var buttonSize by remember { mutableStateOf(IntSize.Zero) }
             val ls = manager.listState?.value
