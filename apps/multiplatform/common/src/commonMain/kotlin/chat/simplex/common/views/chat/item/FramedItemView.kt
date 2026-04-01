@@ -389,9 +389,9 @@ fun CIMarkdownText(
       val bounds = boundsState.value ?: return@LaunchedEffect
       val layout = layoutResultState.value ?: return@LaunchedEffect
       val offset = layout.getOffsetForPosition(
-        Offset(selectionManager.focusWindowX - bounds.left, selectionManager.focusWindowY - bounds.top)
+        Offset(selectionManager.anchorWindowX - bounds.left, selectionManager.anchorWindowY - bounds.top)
       )
-      Log.e(TAG, "anchorOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=(${selectionManager.focusWindowX},${selectionManager.focusWindowY})")
+      Log.e(TAG, "anchorOffset idx=$selectionIndex offset=$offset bounds=$bounds pointer=(${selectionManager.anchorWindowX},${selectionManager.anchorWindowY})")
       selectionManager.setAnchorOffset(offset)
     }
 
@@ -420,7 +420,10 @@ fun CIMarkdownText(
   Box(
     Modifier
       .padding(vertical = 7.dp, horizontal = 12.dp)
-      .then(if (selectionManager != null) Modifier.onGloballyPositioned { boundsState.value = it.boundsInWindow() } else Modifier)
+      .then(if (selectionManager != null) Modifier.onGloballyPositioned {
+        val pos = it.positionInWindow()
+        boundsState.value = Rect(pos.x, pos.y, pos.x + it.size.width, pos.y + it.size.height)
+      } else Modifier)
   ) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,

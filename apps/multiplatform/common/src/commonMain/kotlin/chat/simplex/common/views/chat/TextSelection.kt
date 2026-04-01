@@ -58,12 +58,18 @@ class SelectionManager {
     var range by mutableStateOf<SelectionRange?>(null)
         private set
 
+    var anchorWindowY by mutableStateOf(0f)
+        private set
+    var anchorWindowX by mutableStateOf(0f)
+        private set
     var focusWindowY by mutableStateOf(0f)
     var focusWindowX by mutableStateOf(0f)
 
-    fun startSelection(startIndex: Int) {
+    fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
         range = SelectionRange(startIndex, -1, startIndex, -1)
         selectionState = SelectionState.Selecting
+        anchorWindowY = anchorY
+        anchorWindowX = anchorX
     }
 
     fun setAnchorOffset(offset: Int) {
@@ -233,7 +239,7 @@ fun BoxScope.SelectionHandler(
                         val idx = resolveIndexAtY(listState.value, localStart.y)
                         Log.e(TAG, "dragStart localStart=$localStart windowStart=$windowStart idx=$idx")
                         if (idx != null) {
-                            manager.startSelection(idx)
+                            manager.startSelection(idx, windowStart.y, windowStart.x)
                             manager.focusWindowY = windowStart.y
                             manager.focusWindowX = windowStart.x
                         }
