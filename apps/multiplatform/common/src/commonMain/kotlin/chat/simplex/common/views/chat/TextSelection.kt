@@ -108,7 +108,7 @@ class SelectionManager {
                 sel.first.coerceAtMost(text.length),
                 (sel.last + 1).coerceAtMost(text.length)
             )
-        }.joinToString("\n")
+        }.reversed().joinToString("\n")
     }
 }
 
