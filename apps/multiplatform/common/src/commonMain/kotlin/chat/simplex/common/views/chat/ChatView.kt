@@ -148,6 +148,7 @@ fun ChatView(
     val showCommandsMenu = rememberSaveable { mutableStateOf(false) }
     val contentFilter = rememberSaveable { mutableStateOf<ContentFilter?>(null) }
     val availableContent = remember { mutableStateOf<List<ContentFilter>>(ContentFilter.initialList) }
+    val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
 
     if (appPlatform.isAndroid) {
       DisposableEffect(Unit) {
@@ -178,6 +179,7 @@ fun ChatView(
             contentFilter.value = null
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
+            selectionManager?.clearSelection()
             val cInfo = activeChat.value?.chatInfo
             if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
               updateAvailableContent(chatRh, activeChat, availableContent)
@@ -227,6 +229,7 @@ fun ChatView(
     val clipboard = LocalClipboardManager.current
     CompositionLocalProvider(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
+      LocalSelectionManager provides selectionManager,
     ) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -962,7 +965,7 @@ fun ChatLayout(
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chat != null) {
-            val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
+            val selectionManager = LocalSelectionManager.current
             if (selectionManager != null) {
               LaunchedEffect(selectionManager) {
                 snapshotFlow { selectionManager.selectionState != SelectionState.Idle }
@@ -972,7 +975,6 @@ fun ChatLayout(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
               // disables scrolling to top of chat item on click inside the bubble
               CompositionLocalProvider(
-                LocalSelectionManager provides selectionManager,
                 LocalBringIntoViewSpec provides object : BringIntoViewSpec {
                   override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
                 }
@@ -1130,6 +1132,16 @@ fun ChatLayout(
                 SupportChatsCountToolbar(chatInfo, reportsCount, supportUnreadCount, withStatusBar = false, showReports, showSupportChats)
               }
             }
+          }
+        }
+        // Desktop selection copy button — last child of outer Box, on top of everything
+        if (appPlatform.isDesktop) {
+          val manager = LocalSelectionManager.current
+          if (manager != null && manager.selectionState == SelectionState.Selected && manager.onCopySelection != null) {
+            SelectionCopyButton(
+              modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = composeViewHeight.value + 8.dp),
+              onCopy = { manager.onCopySelection?.invoke() }
+            )
           }
         }
       }

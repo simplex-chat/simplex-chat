@@ -64,6 +64,7 @@ class SelectionManager {
         private set
     var focusWindowY by mutableStateOf(0f)
     var focusWindowX by mutableStateOf(0f)
+    var onCopySelection: (() -> Unit)? = null
 
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
         range = SelectionRange(startIndex, -1, startIndex, -1)
@@ -168,13 +169,8 @@ fun BoxScope.SelectionHandler(
             }
     }
 
-    // Copy button
-    if (manager.selectionState == SelectionState.Selected) {
-        SelectionCopyButton(
-            onCopy = {
-                clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
-            }
-        )
+    manager.onCopySelection = {
+        clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
     }
 
     return Modifier
@@ -186,7 +182,7 @@ fun BoxScope.SelectionHandler(
                 && event.key == Key.C
                 && event.type == KeyEventType.KeyDown
             ) {
-                clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
+                manager.onCopySelection?.invoke()
                 true
             } else false
         }
@@ -298,11 +294,9 @@ private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
 }
 
 @Composable
-private fun BoxScope.SelectionCopyButton(onCopy: () -> Unit) {
+fun SelectionCopyButton(modifier: Modifier = Modifier, onCopy: () -> Unit) {
     Row(
-        Modifier
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 8.dp)
+        modifier
             .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
             .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
             .clickable { onCopy() }
