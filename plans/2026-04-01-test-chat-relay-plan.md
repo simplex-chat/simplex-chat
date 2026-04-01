@@ -30,7 +30,7 @@ Owner                              SMP Server                         Relay
   |                                    |          REQ with challenge    |
   |                                    |          relay signs challenge |
   |                                    |          with linkPrivSigKey   |
-  |<-- CONF(XGrpRelayTest{signature, relayProfile}) -------------------|
+  |<-- CONF(XGrpRelayTest{signature}) ----------------------------------|
   |    verify: C.verify' rootKey sig challenge                          |
   |    cleanup connections on both sides                                |
 ```
@@ -64,18 +64,19 @@ Stored as `userData` in the relay's contact address short link data. Separate fr
 ### XGrpRelayTest (Protocol.hs)
 
 ```haskell
-XGrpRelayTest :: ByteString -> Maybe (C.Signature 'C.Ed25519) -> Maybe RelayProfile -> ChatMsgEvent 'Json
+XGrpRelayTest :: ByteString -> Maybe (C.Signature 'C.Ed25519) -> ChatMsgEvent 'Json
 ```
 
 Single constructor used in both directions:
-- **Owner → Relay** (in joinConnection connInfo): `XGrpRelayTest challenge Nothing Nothing`
-- **Relay → Owner** (in acceptContact connInfo): `XGrpRelayTest challenge (Just signature) (Just relayProfile)`
+- **Owner → Relay** (in joinConnection connInfo): `XGrpRelayTest challenge Nothing`
+- **Relay → Owner** (in acceptContact connInfo): `XGrpRelayTest challenge (Just signature)`
+
+The relay profile is NOT included — the owner already has it from `RelayAddressLinkData` in the short link's `userData` (retrieved in step 1 via `decodeLinkUserData`).
 
 JSON encoding (follows `(.=?)` chain pattern, e.g. `XGrpMemDel`):
 ```haskell
-XGrpRelayTest challenge sig_ profile_ -> o $
-  ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_)) $
-  ("relayProfile" .=? profile_)
+XGrpRelayTest challenge sig_ -> o $
+  ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_))
   ["challenge" .= B64UrlByteString challenge]
 ```
 
@@ -84,8 +85,7 @@ JSON parsing:
 XGrpRelayTest_ -> do
   B64UrlByteString challenge <- v .: "challenge"
   sig_ <- mapM decodeSig =<< opt "signature"
-  profile_ <- opt "relayProfile"
-  pure $ XGrpRelayTest challenge sig_ profile_
+  pure $ XGrpRelayTest challenge sig_
 ```
 
 Where `decodeSig` converts `B64UrlByteString` to `C.Signature 'C.Ed25519`:
@@ -172,7 +172,7 @@ Takes a `ShortLinkContact` (`ConnShortLink 'CMContact`) — relay addresses are 
    - `deriveJSON`
 
 3. Add `XGrpRelayTest` constructor (after `XGrpRelayAcpt`, ~line 438):
-   - `XGrpRelayTest :: ByteString -> Maybe (C.Signature 'C.Ed25519) -> Maybe RelayProfile -> ChatMsgEvent 'Json`
+   - `XGrpRelayTest :: ByteString -> Maybe (C.Signature 'C.Ed25519) -> ChatMsgEvent 'Json`
 
 4. Add event tag `XGrpRelayTest_` (after `XGrpRelayAcpt_`, ~line 966)
 
@@ -188,16 +188,14 @@ Takes a `ShortLinkContact` (`ConnShortLink 'CMContact`) — relay addresses are 
    XGrpRelayTest_ -> do
      B64UrlByteString challenge <- v .: "challenge"
      sig_ <- mapM decodeSig =<< opt "signature"
-     profile_ <- opt "relayProfile"
-     pure $ XGrpRelayTest challenge sig_ profile_
+     pure $ XGrpRelayTest challenge sig_
    ```
    Where `decodeSig (B64UrlByteString s) = C.decodeSignature s`.
 
 9. Add JSON encoding (~line 1351):
    ```haskell
-   XGrpRelayTest challenge sig_ profile_ -> o $
-     ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_)) $
-     ("relayProfile" .=? profile_)
+   XGrpRelayTest challenge sig_ -> o $
+     ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_))
      ["challenge" .= B64UrlByteString challenge]
    ```
 
@@ -293,7 +291,7 @@ APITestChatRelay userId address -> withUserId userId $ \user -> do
               atomically $ TM.insert acId relayTest chatRelayTests_
               -- Join with challenge, wrapped in tryAllErrors for cleanup safety
               testResult <- tryAllErrors $ do
-                dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing Nothing
+                dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing
                 void $ withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
                 liftIO $ timeout 40_000_000 $ atomically $ takeTMVar testVar
               -- Cleanup always (even on error)
@@ -338,7 +336,7 @@ Nothing -> case agentMsg of
         r <- tryAllErrors $ do
           ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
           case chatMsgEvent of
-            XGrpRelayTest _challenge sig_ _profile_ ->
+            XGrpRelayTest _challenge sig_ ->
               case sig_ of
                 Just sig
                   | C.verify' rootKey sig challenge ->
@@ -367,7 +365,7 @@ Note: `agentConnId` is in scope from the `processAgentMessageConn` closure (Subs
 Add `XGrpRelayTest` case after `XGrpRelayInv` at line 1247:
 
 ```haskell
-XGrpRelayTest challenge _ _ -> xGrpRelayTest invId chatVRange challenge
+XGrpRelayTest challenge _ -> xGrpRelayTest invId chatVRange challenge
 ```
 
 Add `xGrpRelayTest` function near `xGrpRelayInv` (~line 1450):
@@ -381,8 +379,7 @@ xGrpRelayTest invId chatVRange challenge = do
     Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
     Just privKey -> do
       let sig = C.sign' privKey challenge
-          relayProfile = RelayProfile {name = displayName (fromLocalProfile $ profile' user)}
-          msg = XGrpRelayTest challenge (Just sig) (Just relayProfile)
+          msg = XGrpRelayTest challenge (Just sig)
       subMode <- chatReadVar subscriptionMode
       vr <- chatVersionRange
       let chatV = vr `peerConnChatVersion` chatVRange
@@ -574,7 +571,7 @@ cabal test simplex-chat-test --test-options='-m "chat relays"'
 
 **Issue: Signature type in JSON** — `C.Signature 'C.Ed25519` is a GADT constructor. Need to verify it has JSON/Encoding instances and can be transmitted in a JSON chat message.
 **Analysis:** `Signature` has no native JSON instance. For JSON, encode as base64 ByteString using `B64UrlByteString . C.signatureBytes`. For parsing, decode `B64UrlByteString` then `C.decodeSignature :: ByteString -> Either String (Signature 'C.Ed25519)` (Crypto.hs:849). The `(.=?)` pattern handles `Maybe` — only included when `Just`.
-**Fix:** Encoding uses `B64UrlByteString . C.signatureBytes <$> sig_`. Parsing uses `mapM decodeSig =<< opt "signature"` where `decodeSig (B64UrlByteString s) = C.decodeSignature s`.
+**Fix:** Encoding uses `B64UrlByteString . C.signatureBytes <$> sig_`. Parsing uses `mapM decodeSig =<< opt "signature"` where `decodeSig (B64UrlByteString s) = C.decodeSignature s`. No relay profile in message — owner gets it from link data.
 
 **Issue: `DuplicateRecordFields` on `connId`** — `connId :: Int64` appears on `Connection`, `PendingContactConnection`, and `UserContactRequest`. With `DuplicateRecordFields` enabled, `connId conn` won't compile as a field selector.
 **Analysis:** Must use pattern matching. The handler uses `conn@Connection {connId = dbConnId}`.
