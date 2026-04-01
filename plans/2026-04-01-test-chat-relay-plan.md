@@ -487,17 +487,124 @@ Changes:
 3. On failure: show error description from `RelayTestFailure`
 4. Show relay status indicator: untested / tested-ok / tested-failed
 
-### Phase 10: Tests
+### Phase 10: View — CRChatRelayTestResult
+
+**File: `src/Simplex/Chat/View.hs`**
+
+Add `CRChatRelayTestResult` case after `CRServerTestResult` (~line 127):
+
+```haskell
+CRChatRelayTestResult u relayProfile_ testFailure_ -> ttyUser u $ viewRelayTestResult relayProfile_ testFailure_
+```
+
+Add `viewRelayTestResult` function near `viewServerTestResult` (~line 1600):
+
+```haskell
+viewRelayTestResult :: Maybe RelayProfile -> Maybe RelayTestFailure -> [StyledString]
+viewRelayTestResult relayProfile_ = \case
+  Just RelayTestFailure {rtfStep, rtfDescription} ->
+    ["relay test failed at " <> plain (show rtfStep) <> ", error: " <> plain rtfDescription]
+  Nothing -> case relayProfile_ of
+    Just RelayProfile {name} -> ["relay test passed, profile: " <> plain (T.unpack name)]
+    Nothing -> ["relay test passed"]
+```
+
+Output examples:
+- Success: `relay test passed, profile: bob`
+- Decode failure: `relay test failed at RTSDecodeLink, error: no relay address link data`
+- Link failure: `relay test failed at RTSGetLink, error: ...`
+
+### Phase 11: CLI parsing — TestChatRelay
+
+**File: `src/Simplex/Chat/Library/Commands.hs`**
+
+Add CLI parser after `/relays` (~line 4771):
+
+```haskell
+"/relay test " *> (TestChatRelay <$> strP),
+```
+
+### Phase 12: Tests
 
 **File: `tests/ChatTests/ChatRelays.hs`**
 
-1. Add `testRelayChatRelayTest`:
-   - Create relay user, set as chat relay, create address
-   - Owner tests relay address → verify success with relay profile
-   - Owner tests non-existent address → verify SMP error
-   - Owner tests address of non-relay user → verify decode error (no RelayAddressLinkData)
+Add to `chatRelayTests`:
+```haskell
+describe "configure chat relays" $ do
+  ...
+  it "test chat relay" testChatRelayTest
+```
 
-2. Existing tests don't need changes — `name` field unchanged in DB.
+#### Test: `testChatRelayTest`
+
+Single test function covering three scenarios sequentially. Uses alice (owner), bob (relay), and cath (normal user).
+
+```haskell
+testChatRelayTest :: HasCallStack => TestParams -> IO ()
+testChatRelayTest ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        -- Setup: bob (relay) creates address
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+
+        -- Setup: cath (normal user) creates address
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+
+        -- Scenario 1: Happy path — test relay address succeeds
+        -- Concurrent because alice's test command blocks while bob processes REQ
+        concurrentlyN_
+          [ do
+              alice ##> ("/relay test " <> bobSLink)
+              alice <## "relay test passed, profile: bob",
+            -- Bob's side is automatic (subscriber handles XGrpRelayTest)
+            -- but we need to consume any potential output on bob's side
+            pure ()
+          ]
+
+        -- Scenario 2: Non-relay address — cath is not a relay user,
+        -- her address has ContactShortLinkData, not RelayAddressLinkData
+        alice ##> ("/relay test " <> cathSLink)
+        alice <## "relay test failed at RTSDecodeLink, error: no relay address link data"
+
+        -- Scenario 3: Deleted address — bob deletes his address
+        bob ##> "/da"
+        bob <## "Your chat address is deleted - accepted contacts will remain connected."
+        alice ##> ("/relay test " <> bobSLink)
+        -- Exact error message depends on SMP server response, match prefix
+        alice <## startsWith "relay test failed at RTSGetLink, error: "
+```
+
+**Key design decisions:**
+
+1. **One test, three scenarios** — avoids repeating setup (creating users, addresses) across three separate tests while covering happy path + two failure modes.
+
+2. **`concurrentlyN_` for happy path** — alice's `TestChatRelay` command blocks on a TMVar waiting for the relay's response. Bob's subscriber processes the REQ automatically via `xGrpRelayTest`, but the test framework needs both sides to run concurrently. The relay side may produce no visible CLI output (the `xGrpRelayTest` handler doesn't emit events to the view), so the relay branch is `pure ()`.
+
+3. **No concurrency for failure scenarios** — both fail before establishing a connection (at link fetch or decode step), so alice returns immediately with an error.
+
+4. **`startsWith` for SMP error** — the exact SMP error message may vary (network error, connection refused, etc.), so we match only the prefix `"relay test failed at RTSGetLink, error: "`.
+
+5. **Bob's output during happy path** — the relay's subscriber handles `XGrpRelayTest` silently (no `toView` call on success). After accepting, the agent creates a new connection whose subsequent events (JOINED, etc.) hit `getConnectionEntity` → `SEConnectionNotFound` → logged via `eToView`. This log noise may or may not appear as a test output line. If it does, we'd need to consume it in the `concurrentlyN_` bob branch. This needs to be verified during implementation — if bob produces output, add `bob <## ...` to consume it.
+
+**Helper needed:** `startsWith` — matches output lines by prefix. Check if this already exists in test utils:
+
+```haskell
+startsWith :: String -> String -> Bool
+startsWith = isPrefixOf
+```
+
+Or use an existing pattern like `<##.` if available.
+
+#### Scenarios NOT tested (and why):
+
+- **Signature verification failure (`RTSVerify`)** — would require the relay to sign with a wrong key. No mechanism to inject that without modifying the relay's behavior (e.g., a test-only flag). Not worth the complexity.
+- **Timeout (`RTSWaitResponse`)** — would require the relay to not respond (e.g., by stopping the relay process). The test would take 40 seconds and be fragile. Not practical for a unit test.
+- **Connection error (`RTSConnect`)** — would require the SMP server to be reachable (link data returned) but the connection request to fail. Hard to construct reliably.
+
+Existing tests don't need changes — `name` field unchanged in DB.
 
 ---
 
@@ -512,11 +619,12 @@ Changes:
 | `src/Simplex/Chat/Library/Subscriber.hs` | Owner CONF handler pre-check, relay REQ handler `XGrpRelayTest` |
 | `src/Simplex/Chat/Store/Direct.hs` | `createRelayTestConnection` |
 | `src/Simplex/Chat/Store/Profiles.hs` | `getStaleRelayTestConns` (for cleanup) |
+| `src/Simplex/Chat/View.hs` | `CRChatRelayTestResult` case + `viewRelayTestResult` function |
 | `apps/ios/.../ChatRelayView.swift` | Test button + result display |
 | `apps/ios/.../AddChannelView.swift` | Test integration |
 | `apps/multiplatform/.../ChatRelayView.kt` | Test button + result display |
 | `apps/multiplatform/.../AddChannelView.kt` | Test integration |
-| `tests/ChatTests/ChatRelays.hs` | `testRelayChatRelayTest` |
+| `tests/ChatTests/ChatRelays.hs` | `testChatRelayTest` |
 
 **Separate simplexmq change:**
 | `simplexmq/src/Simplex/Messaging/Agent.hs` | `getConnLinkPrivKey` API |
