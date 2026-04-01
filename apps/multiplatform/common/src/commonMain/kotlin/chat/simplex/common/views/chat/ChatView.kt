@@ -1148,17 +1148,17 @@ fun ChatLayout(
             if (ls != null && itemInfo != null && manager.focusCharRect != Rect.Zero) {
               val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
               val cr = manager.focusCharRect
-              val charX = if (draggingDown) cr.right else cr.left
-              val charY = itemWindowY + if (draggingDown) cr.bottom else cr.top
+              val vp = manager.viewportPosition
+              val charX = (if (draggingDown) cr.right else cr.left) - vp.x
+              val charY = itemWindowY + (if (draggingDown) cr.bottom else cr.top) - vp.y
               val x = if (draggingDown) charX
                       else (charX - buttonSize.width).coerceAtLeast(0f)
               val y = if (draggingDown) charY + gap
-                      else (charY - buttonSize.height - gap).coerceAtLeast(0f)
+                      else (charY - buttonSize.height - gap)
               val clampedX = x.coerceIn(0f, (manager.viewportWidth - buttonSize.width).coerceAtLeast(0f))
-              val clampedY = y.coerceIn(0f, (manager.viewportHeight - buttonSize.height).coerceAtLeast(0f))
               SelectionCopyButton(
                 modifier = Modifier
-                  .offset { IntOffset(clampedX.toInt(), clampedY.toInt()) }
+                  .offset { IntOffset(clampedX.toInt(), y.toInt()) }
                   .onSizeChanged { buttonSize = it },
                 onCopy = { manager.onCopySelection?.invoke() }
               )

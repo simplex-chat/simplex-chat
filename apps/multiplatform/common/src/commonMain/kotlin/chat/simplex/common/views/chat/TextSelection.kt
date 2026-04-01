@@ -67,6 +67,7 @@ class SelectionManager {
     var focusWindowX by mutableStateOf(0f)
     var viewportWidth by mutableStateOf(0f)
     var viewportHeight by mutableStateOf(0f)
+    var viewportPosition by mutableStateOf(Offset.Zero)
     var focusCharRect by mutableStateOf(Rect.Zero) // X: absolute window, Y: relative to item
     var listState: State<LazyListState>? = null
     var onCopySelection: (() -> Unit)? = null
@@ -200,6 +201,7 @@ fun BoxScope.SelectionHandler(
             viewportBottom = bounds.bottom
             manager.viewportWidth = bounds.right - bounds.left
             manager.viewportHeight = bounds.bottom - bounds.top
+            manager.viewportPosition = positionInWindow
         }
         .pointerInput(manager) {
             awaitEachGesture {
