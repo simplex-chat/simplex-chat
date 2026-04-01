@@ -172,8 +172,8 @@ fun MarkdownText (
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      val clampedRange = selectionRange?.let { it.first until minOf(it.last, selectableEnd) }
-      if (clampedRange != null) {
+      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
+      if (onTextLayoutResult != null) {
         SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
       } else {
         Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
@@ -297,7 +297,7 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      val clampedRange = selectionRange?.let { it.first until minOf(it.last, selectableEnd) }
+      val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
         val icon = remember { mutableStateOf(PointerIcon.Default) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
@@ -347,7 +347,7 @@ fun MarkdownText (
           onTextLayout = { onTextLayoutResult?.invoke(it) }
         )
       } else {
-        if (clampedRange != null) {
+        if (onTextLayoutResult != null) {
           SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
         } else {
           Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())

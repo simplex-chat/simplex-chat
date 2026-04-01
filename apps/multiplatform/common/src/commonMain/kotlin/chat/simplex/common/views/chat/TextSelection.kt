@@ -127,14 +127,14 @@ fun highlightedRange(range: SelectionRange?, index: Int): IntRange? {
     return when {
         index == r.startIndex && index == r.endIndex ->
             if (r.startOffset < 0 || r.endOffset < 0 || r.startOffset == r.endOffset) null
-            else minOf(r.startOffset, r.endOffset) until maxOf(r.startOffset, r.endOffset)
+            else minOf(r.startOffset, r.endOffset) .. maxOf(r.startOffset, r.endOffset)
         index == r.startIndex ->
             if (r.startOffset < 0) null
             else if (r.startIndex > r.endIndex) r.startOffset until Int.MAX_VALUE
-            else 0 until r.startOffset
+            else 0 .. r.startOffset
         index == r.endIndex ->
             if (r.endOffset < 0) null
-            else if (r.endIndex < r.startIndex) 0 until r.endOffset
+            else if (r.endIndex < r.startIndex) 0 .. r.endOffset
             else r.endOffset until Int.MAX_VALUE
         else -> 0 until Int.MAX_VALUE
     }
