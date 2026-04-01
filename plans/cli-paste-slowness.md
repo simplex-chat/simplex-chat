@@ -1,105 +1,111 @@
-# CLI paste slowness: root cause analysis
+# CLI terminal: event loss root cause analysis
 
-## Problem
+## Two distinct problems
 
-simplex-chat CLI is slow when copy-pasting text to the terminal.
+### Problem 1: Paste — TMVar capacity-1 bottleneck
 
-## Root cause
+When copy-pasting text, the capacity-1 `TMVar` event channel between the keyboard input reader and the consumer loop throttles stdin reading to terminal redraw speed.
 
-The input loop processes exactly one key event per iteration and performs a full terminal redraw after each, with no mechanism to batch pending events.
+**Root cause:** `events <- liftIO newEmptyTMVarIO` (`Platform.hsc:64`). Producer blocks on `putTMVar` after each event until consumer finishes redrawing. Consumer does a full terminal redraw per event (`Input.hs:161`).
 
-`src/Simplex/Chat/Terminal/Input.hs:161`:
-```haskell
-forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
+**Fix:** Replace `TMVar` with `TQueue` in `Platform.hsc` (6 line changes on POSIX, matching changes on Windows). Decouples producer from consumer — stdin is drained at full speed regardless of redraw speed.
+
+See previous analysis in git history for full details on this issue.
+
+---
+
+### Problem 2: Heavy load — `outputQ` backpressure blocks `agentSubscriber`
+
+When the CLI is used as a heavy client (e.g., 1M connections), incoming chat events overwhelm the terminal display, causing cascading backpressure that blocks message acknowledgments and stalls the entire event processing pipeline.
+
+**This is the more severe problem.** It causes actual message loss at the protocol level, not just UI slowness.
+
+## Root cause: bounded `outputQ` + single-threaded `agentSubscriber`
+
+### The queue chain
+
+```
+Network (SMP/XFTP connections)
+  → agent internal queues
+  → subQ (TBQueue, capacity 1024)          ← agent → chat boundary
+  → agentSubscriber (single-threaded)       ← Commands.hs:4167
+  → processAgentMessage                     ← Subscriber.hs:109
+  → toView_ → writeTBQueue outputQ          ← Controller.hs:1528, BLOCKS when full
+  → outputQ (TBQueue, capacity 1024)        ← Chat.hs:152
+  → runTerminalOutput                       ← Output.hs:146
+  → printToTerminal (acquires termLock)     ← Output.hs:298-303
+  → terminal I/O (slow)
 ```
 
-For every single key event the loop:
-1. Reads ONE event from a capacity-1 `TMVar` channel
-2. Processes it (updates `TerminalState`)
-3. Performs a full terminal redraw (`updateInput`) -- hide cursor, set position, rewrite entire input string char by char, erase, restore cursor, show cursor, flush
+All queues are bounded `TBQueue` with default capacity 1024 (`Options.hs:226`). All writes use `writeTBQueue` which **blocks when full** — no events are dropped within the application, but backpressure cascades upstream.
 
-When pasting N characters, the loop runs N times, each time redrawing the growing input string. This is **O(N^2)** total work.
+### The blocking chain under heavy load
 
-## Redraw path
+1. **Terminal I/O is the bottleneck.** `runTerminalOutput` (`Output.hs:146`) reads one event at a time from `outputQ`, acquires `termLock`, prints the message + redraws input, releases lock. Each iteration involves ANSI escape sequences, cursor manipulation, and `flush` syscalls. Throughput: ~hundreds of events/sec at best.
 
-Each `updateInput` call (`Output.hs:308-327`) does:
-```haskell
-hideCursor
-setCursorPosition ...
-putStyled $ Styled [SetColor Foreground Dull White] acPfx
-putString $ prompt <> inputString ts <> " "
-eraseInLine EraseForward
-setCursorPosition ...
-showCursor
-flush
-```
+2. **`outputQ` fills up.** With 1M connections generating events, the arrival rate far exceeds terminal display speed. The 1024-element TBQueue fills in seconds.
 
-`putString` (`TerminalT.hs:67-68`) writes each character individually:
-```haskell
-putString cs = forM_ cs (command . T.PutText . Text.singleton)
-```
+3. **`toView_` blocks.** `Controller.hs:1528`: `writeTBQueue localQ (Nothing, event)` blocks when the queue is full. This call happens inside `processAgentMessage` → `processAgentMessageConn`, which runs within the `agentSubscriber` loop.
 
-Each character generates a separate `Text.hPutStr IO.stdout` call via `termCommand`. For an input string of length K, that's K handle lock/unlock cycles and K `Text.singleton` allocations per redraw.
+4. **`agentSubscriber` blocks — head-of-line blocking.** `Commands.hs:4164-4167`:
+   ```haskell
+   agentSubscriber = do
+     q <- asks $ subQ . smpAgent
+     forever (atomically (readTBQueue q) >>= process)
+   ```
+   Single-threaded. When `process` blocks on `toView_`, ALL events for ALL connections queue up behind it. Events for 1M other connections — including time-critical ACKs, keepalives, and handshakes — are stuck.
 
-Since the input grows from 1 to N characters over N redraws, total characters rendered: **N(N+1)/2**.
+5. **ACKs are never sent.** The message receive path (`Subscriber.hs:1537-1540`) calls `toView` BEFORE `ackMsg`:
+   ```haskell
+   -- Inside withAckMessage's action:
+   saveRcvChatItem' ...        -- save to DB (succeeds)
+   toView $ CEvtNewChatItems ...  -- BLOCKS here (outputQ full)
+   -- returns (withRcpt, shouldDelConns)
 
-## Contributing factors
+   -- After action returns (Subscriber.hs:1396-1397):
+   ackMsg msgMeta ...           -- NEVER REACHED while toView blocks
+   ```
+   The developers explicitly acknowledge this at `Subscriber.hs:122-123`:
+   > *without ACK the message delivery will be stuck*
 
-### 1. TMVar event channel has capacity 1
+6. **`subQ` fills up.** The agent can't deliver events to `subQ` (also capacity 1024) because `agentSubscriber` isn't reading. Agent-level processing stalls.
 
-`Platform.hsc:64`:
-```haskell
-events <- liftIO newEmptyTMVarIO
-```
+7. **Network-level failure.** Connections time out due to unprocessed keepalives and unacknowledged messages. Messages are lost at the protocol level.
 
-The input reader thread blocks after producing each event until the consumer finishes its full redraw cycle. Producer and consumer are in strict lock-step with no pipelining.
+### `termLock` contention worsens the bottleneck
 
-### 2. Double events for common characters
+`termLock` (`Output.hs:55`) is a `TMVar ()` mutex shared between:
+- **Output thread** (`runTerminalOutput` → `printToTerminal`): acquires lock for each displayed message
+- **Input thread** (`receiveFromTTY` → `updateInput`): acquires lock after each keystroke
+- **Live prompt thread** (`blinkLivePrompt` → `updateInputView`): acquires lock every 1 second
 
-The decoder (`Decoder.hs:20-35`) combined with `specialChar` (`Platform.hsc:102-110`) produces TWO events for space, tab, newline, backspace, and delete:
+Under heavy load, the output thread dominates the lock (constant stream of messages). The input thread is starved — user keystrokes are delayed. This also slows the output thread itself (lock contention overhead).
 
-- Space: `CharKey ' '` + `SpaceKey`
-- Tab: `CharKey 'I' ctrlKey` + `TabKey`
-- Newline: `CharKey 'J' ctrlKey` + `EnterKey`
+Note: `withTermLock` (`Output.hs:138-142`) is not exception-safe — no `bracket`/`finally`. If the action throws, the lock leaks and all threads deadlock.
 
-The first event is typically a no-op in `updateTermState` (ctrl-modified CharKey falls to `otherwise -> pure ts`), but still triggers a full `updateInput` redraw.
+### Error reporting also blocks
 
-Every space in pasted text = 2 full redraws instead of 1.
+When `processAgentMessage` encounters an error, the error handler (`Commands.hs:4179`) calls `eToView'` → `toView_` → `writeTBQueue outputQ`. If `outputQ` is already full, even error reporting blocks. There is no escape path.
 
-### 3. Tab triggers blocking DB queries
+## Impact summary
 
-If pasted text contains tab characters, each `TabKey` event runs autocomplete SQL queries synchronously (`Input.hs:237-246`):
-```haskell
-TabKey -> do
-  (pfx, vs) <- autoCompleteVariants user_  -- DB queries here
-```
-
-`autoCompleteVariants` calls `getNameSfxs_` (`Input.hs:328-330`) which runs `withTransaction` against the chat database, blocking the entire input loop.
-
-### 4. No bracketed paste mode
-
-The terminal library does not enable bracketed paste mode (`ESC[?2004h`). If the terminal emulator sends bracket sequences (`ESC[200~` / `ESC[201~`), the decoder silently consumes them with no events. The application has no way to detect paste and handle it as a batch.
-
-## Impact estimate for paste of 500 chars (~20% spaces)
-
-| Metric | Value |
-|--------|-------|
-| Loop iterations | ~600 (500 chars + ~100 extra SpaceKey events) |
-| Total chars written to terminal | ~150,000 (O(N^2)) |
-| `hFlush` syscalls | ~600 |
-| `Text.singleton` allocations | ~150,000 |
-| Handle lock/unlock cycles | ~150,000 |
+| Load level | `outputQ` state | Effect |
+|---|---|---|
+| Light (few connections) | Nearly empty | No issues |
+| Moderate (hundreds) | Partially filled | Occasional display lag |
+| Heavy (thousands+) | Full (1024) | `toView_` blocks → `agentSubscriber` blocks → head-of-line blocking for ALL connections → ACKs delayed → message delivery stuck |
+| Extreme (1M connections) | Permanently full | Cascading failure: all event processing stops, connections time out, messages lost at protocol level |
 
 ## Fix
 
-Batch pending events before redrawing: drain all available events from the channel, apply all state updates, then redraw once. This turns O(N^2) paste into O(N).
+The core fix: **`toView_` must never block the event processing pipeline on terminal display.**
 
-Concretely:
-1. Replace `TMVar` with `TBQueue` (or use `tryTakeTMVar` loop) to allow reading multiple pending events
-2. After `getKey`, loop with `tryTakeTMVar` to collect all pending events before calling `updateInput`
-3. Apply all collected events to `TerminalState` in sequence, then redraw once
+Options (in order of simplicity):
 
-Optional further improvements:
-- Use `putText` instead of `putString` in `updateInput` to avoid per-character `Text.singleton` overhead -- `putText` sends the whole `Text` as a single `PutText` command
-- Filter out no-op events (e.g. `SpaceKey`, ctrl-modified CharKeys that fall through to `pure ts`) before they trigger redraws
-- Enable bracketed paste mode to detect paste and handle it as a single insert operation
+1. **Make `outputQ` unbounded** — replace `TBQueue` with `TQueue` in `Chat.hs:152`. `writeTQueue` never blocks. Events accumulate in memory under heavy load but the event processing pipeline (including ACKs) is never stalled. Tradeoff: unbounded memory growth under sustained heavy load.
+
+2. **Non-blocking write with drop** — use `tryWriteTBQueue` in `toView_`. When `outputQ` is full, drop the display event (or a coalesced summary). ACKs and network processing proceed unblocked. Tradeoff: some events not displayed, but none lost at protocol level.
+
+3. **Separate ACK from display** — restructure `withAckMessage` to send ACK immediately after DB save, before `toView`. This decouples protocol correctness from display. `toView` can still block, but ACKs are always timely. Tradeoff: requires careful restructuring of the message processing path.
+
+4. **Increase queue capacity** — increase `tbqSize` from 1024 to a larger value. Delays the problem but doesn't fix it. Under sustained heavy load, any finite queue eventually fills.
