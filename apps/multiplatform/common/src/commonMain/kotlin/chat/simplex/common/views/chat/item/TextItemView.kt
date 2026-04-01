@@ -10,6 +10,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.views.chat.SelectionHighlightColor
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import kotlinx.coroutines.*
@@ -55,6 +57,35 @@ private fun typingIndicator(recent: Boolean, typingIdx: Int): AnnotatedString = 
 private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
+// Must be coordinated with MarkdownText — same text transformations for:
+// Mention, HyperLink, SimplexLink, Command
+fun displayText(ci: ChatItem, linkMode: SimplexLinkMode, sendCommandMsg: Boolean): String {
+  val formattedText = ci.formattedText
+  if (formattedText == null) return ci.text
+  return formattedText.joinToString("") { ft ->
+    when (ft.format) {
+      is Format.Mention -> {
+        val mention = ci.mentions?.get(ft.format.memberName)
+        if (mention?.memberRef != null) {
+          val name = if (mention.memberRef.localAlias.isNullOrEmpty()) mention.memberRef.displayName
+            else "${mention.memberRef.localAlias} (${mention.memberRef.displayName})"
+          mentionText(name)
+        } else if (mention != null) mentionText(ft.format.memberName)
+        else ft.text
+      }
+      is Format.HyperLink -> ft.format.showText ?: ft.text
+      is Format.SimplexLink -> {
+        val t = ft.format.showText
+          ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
+        if (t != null) "$t ${ft.format.viaHosts}" else ft.text
+      }
+      is Format.Command -> if (sendCommandMsg) "/${ft.format.commandStr}" else ft.text
+      else -> ft.text
+    }
+  }
+}
+
+// Text transformations in this function must match displayText above
 @Composable
 fun MarkdownText (
   text: CharSequence,
@@ -77,7 +108,9 @@ fun MarkdownText (
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
-  prefix: AnnotatedString? = null
+  prefix: AnnotatedString? = null,
+  selectionRange: IntRange? = null,
+  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -126,19 +159,27 @@ fun MarkdownText (
       )
     }
     if (formattedText == null) {
+      var selectableEnd = 0
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
         if (prefix != null) append(prefix)
         if (text is String) append(text)
         else if (text is AnnotatedString) append(text)
+        selectableEnd = this.length
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
         if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+      val clampedRange = selectionRange?.let { it.first until minOf(it.last, selectableEnd) }
+      if (clampedRange != null) {
+        SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+      } else {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+      }
     } else {
+      var selectableEnd = 0
       var hasLinks = false
       var hasSecrets = false
       var hasCommands = false
@@ -247,6 +288,7 @@ fun MarkdownText (
             is Format.Unknown -> append(ft.text)
           }
         }
+        selectableEnd = this.length
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
@@ -255,9 +297,10 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
+      val clampedRange = selectionRange?.let { it.first until minOf(it.last, selectableEnd) }
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
         val icon = remember { mutableStateOf(PointerIcon.Default) }
-        ClickableText(annotatedText, style = style, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
+        ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
               val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
@@ -300,10 +343,15 @@ fun MarkdownText (
             annotatedText.hasStringAnnotations(tag = "WEB_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
                 || annotatedText.hasStringAnnotations(tag = "OTHER_URL", start = offset, end = offset)
-          }
+          },
+          onTextLayout = { onTextLayoutResult?.invoke(it) }
         )
       } else {
-        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        if (clampedRange != null) {
+          SelectableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, selectionRange = clampedRange, onTextLayoutResult = onTextLayoutResult)
+        } else {
+          Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
+        }
       }
     }
   }
@@ -314,6 +362,7 @@ fun ClickableText(
   text: AnnotatedString,
   modifier: Modifier = Modifier,
   style: TextStyle = TextStyle.Default,
+  selectionRange: IntRange? = null,
   softWrap: Boolean = true,
   overflow: TextOverflow = TextOverflow.Clip,
   maxLines: Int = Int.MAX_VALUE,
@@ -354,9 +403,19 @@ fun ClickableText(
     }
   }
 
+  val selectionHighlight = if (selectionRange != null) {
+    Modifier.drawBehind {
+      layoutResult.value?.let { result ->
+        if (selectionRange.first < selectionRange.last && selectionRange.last + 1 <= text.length) {
+          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
+        }
+      }
+    }
+  } else Modifier
+
   BasicText(
     text = text,
-    modifier = modifier.then(pressIndicator),
+    modifier = modifier.then(selectionHighlight).then(pressIndicator),
     style = style,
     softWrap = softWrap,
     overflow = overflow,
@@ -364,6 +423,40 @@ fun ClickableText(
     onTextLayout = {
       layoutResult.value = it
       onTextLayout(it)
+    }
+  )
+}
+
+@Composable
+private fun SelectableText(
+  text: AnnotatedString,
+  style: TextStyle,
+  modifier: Modifier = Modifier,
+  maxLines: Int = Int.MAX_VALUE,
+  overflow: TextOverflow = TextOverflow.Clip,
+  selectionRange: IntRange? = null,
+  onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
+) {
+  val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+  val highlight = if (selectionRange != null) {
+    Modifier.drawBehind {
+      layoutResult.value?.let { result ->
+        if (selectionRange.first < selectionRange.last && selectionRange.last + 1 <= text.length) {
+          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
+        }
+      }
+    }
+  } else Modifier
+
+  BasicText(
+    text = text,
+    modifier = modifier.then(highlight),
+    style = style,
+    maxLines = maxLines,
+    overflow = overflow,
+    onTextLayout = {
+      layoutResult.value = it
+      onTextLayoutResult?.invoke(it)
     }
   )
 }

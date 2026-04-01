@@ -20,8 +20,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -368,9 +372,53 @@ fun CIMarkdownText(
   showTimestamp: Boolean,
   prefix: AnnotatedString? = null
 ) {
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
-    val chatInfo = chat.chatInfo
-    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val selectionManager = LocalSelectionManager.current
+  val selectionIndex = LocalItemContext.current.selectionIndex
+  val chatInfo = chat.chatInfo
+  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+
+  val boundsState = remember { mutableStateOf<Rect?>(null) }
+  val layoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+
+  if (selectionManager != null && selectionIndex >= 0 && ci.meta.isLive != true) {
+    val isAnchor = remember(selectionIndex) {
+      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+    }
+    LaunchedEffect(isAnchor.value) {
+      if (!isAnchor.value) return@LaunchedEffect
+      val bounds = boundsState.value ?: return@LaunchedEffect
+      val layout = layoutResultState.value ?: return@LaunchedEffect
+      val offset = layout.getOffsetForPosition(
+        Offset(selectionManager.focusWindowX - bounds.left, selectionManager.focusWindowY - bounds.top)
+      )
+      selectionManager.setAnchorOffset(offset)
+    }
+
+    val isFocus = remember(selectionIndex) {
+      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+    }
+    if (isFocus.value) {
+      LaunchedEffect(Unit) {
+        snapshotFlow { selectionManager.focusWindowY to selectionManager.focusWindowX }
+          .collect { (py, px) ->
+            val bounds = boundsState.value ?: return@collect
+            val layout = layoutResultState.value ?: return@collect
+            val offset = layout.getOffsetForPosition(Offset(px - bounds.left, py - bounds.top))
+            selectionManager.updateFocusOffset(offset)
+          }
+      }
+    }
+  }
+
+  val highlightRange = if (selectionManager != null && selectionIndex >= 0) {
+    remember(selectionIndex) { derivedStateOf { highlightedRange(selectionManager.range, selectionIndex) } }.value
+  } else null
+
+  Box(
+    Modifier
+      .padding(vertical = 7.dp, horizontal = 12.dp)
+      .then(if (selectionManager != null) Modifier.onGloballyPositioned { boundsState.value = it.boundsInWindow() } else Modifier)
+  ) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -379,7 +427,9 @@ fun CIMarkdownText(
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
+      selectionRange = highlightRange,
+      onTextLayoutResult = if (selectionManager != null) { { layoutResultState.value = it } } else null
     )
   }
 }
