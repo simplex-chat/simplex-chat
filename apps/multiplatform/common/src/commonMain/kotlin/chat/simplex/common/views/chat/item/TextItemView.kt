@@ -406,7 +406,7 @@ fun ClickableText(
   val selectionHighlight = if (selectionRange != null) {
     Modifier.drawBehind {
       layoutResult.value?.let { result ->
-        if (selectionRange.first < selectionRange.last && selectionRange.last + 1 <= text.length) {
+        if (selectionRange.first <= selectionRange.last && selectionRange.last + 1 <= text.length) {
           drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
         }
       }
@@ -441,7 +441,7 @@ private fun SelectableText(
   val highlight = if (selectionRange != null) {
     Modifier.drawBehind {
       layoutResult.value?.let { result ->
-        if (selectionRange.first < selectionRange.last && selectionRange.last + 1 <= text.length) {
+        if (selectionRange.first <= selectionRange.last && selectionRange.last + 1 <= text.length) {
           drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
         }
       }

@@ -110,7 +110,7 @@ class SelectionManager {
         val r = range ?: return IntOffset.Zero
         val ls = listState?.value ?: return IntOffset.Zero
         val itemInfo = ls.layoutInfo.visibleItemsInfo.find { it.index == r.endIndex }
-            ?: return IntOffset(0, -10000)
+            ?: return IntOffset(-10000, -10000)
         val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
         val cr = focusCharRect
         val vp = viewportPosition
@@ -145,7 +145,7 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
     if (index < lo || index > hi) return null
     return when {
         index == r.startIndex && index == r.endIndex ->
-            if (r.startOffset < 0 || r.endOffset < 0 || r.startOffset == r.endOffset) null
+            if (r.startOffset < 0 || r.endOffset < 0) null
             else minOf(r.startOffset, r.endOffset) .. maxOf(r.startOffset, r.endOffset)
         index == r.startIndex ->
             if (r.startOffset < 0) null
