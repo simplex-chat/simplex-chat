@@ -18,16 +18,36 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderEntries('top', bySortPriority, topBtn)
-  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim()));
+
+  applyHash();
+
+  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim(), true));
   liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
+  window.addEventListener('popstate', applyHash);
 
-  function renderEntries(mode, comparator, btn, search = '') {
+  function applyHash() {
+    const hash = location.hash;
+    let search = '';
+    try { if (hash.startsWith('#q=')) search = decodeURIComponent(hash.slice(3)); } catch(e) {}
+    const mode = hash === '#active' ? 'live' : hash === '#new' ? 'new' : 'top';
+    const btn = mode === 'live' ? liveBtn : mode === 'new' ? newBtn : topBtn;
+    const comparator = mode === 'live' ? byActiveAtDesc : mode === 'new' ? byCreatedAtDesc : bySortPriority;
+    if (search) searchInput.value = search;
+    currentSortMode = '';
+    currentSearch = '';
+    currentPage = 1;
+    renderEntries(mode, comparator, btn, search, true);
+  }
+
+  function renderEntries(mode, comparator, btn, search = '', replaceHash = false) {
     if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
-    if (location.hash) location.hash = '';
+    const hash = search ? '#q=' + encodeURIComponent(search) : mode === 'live' ? '#active' : mode === 'new' ? '#new' : '';
+    const url = hash || (location.pathname + location.search);
+    if (replaceHash) history.replaceState(null, '', url);
+    else history.pushState(null, '', url);
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
