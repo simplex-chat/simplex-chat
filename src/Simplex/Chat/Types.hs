@@ -755,15 +755,18 @@ fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
 
-data GroupType = GTChannel
+data GroupType
+  = GTChannel
+  | GTUnknown Text
   deriving (Eq, Show)
 
 instance TextEncoding GroupType where
   textEncode = \case
     GTChannel -> "channel"
-  textDecode = \case
-    "channel" -> Just GTChannel
-    _ -> Nothing
+    GTUnknown tag -> tag
+  textDecode s = Just $ case s of
+    "channel" -> GTChannel
+    tag -> GTUnknown tag
 
 instance FromField GroupType where fromField = fromTextField_ textDecode
 
@@ -2029,7 +2032,12 @@ instance ToField GroupMemberAdmission where
 instance FromField GroupMemberAdmission where
   fromField = fromTextField_ decodeJSON
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "GT") ''GroupType)
+instance FromJSON GroupType where
+  parseJSON = textParseJSON "GroupType"
+
+instance ToJSON GroupType where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
 
 $(JQ.deriveJSON defaultJSON ''PublicGroupProfile)
 

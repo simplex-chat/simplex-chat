@@ -2432,8 +2432,26 @@ public struct GroupRef: Decodable, Hashable {
     var localDisplayName: GroupName
 }
 
-public enum GroupType: String, Codable, Hashable {
+public enum GroupType: Codable, Hashable {
     case channel
+    case unknown(type: String)
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let type = try container.decode(String.self)
+        switch type {
+        case "channel": self = .channel
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .channel: try container.encode("channel")
+        case let .unknown(type): try container.encode(type)
+        }
+    }
 }
 
 public struct PublicGroupProfile: Codable, Hashable {
