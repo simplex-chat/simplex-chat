@@ -1139,30 +1139,16 @@ fun ChatLayout(
         if (appPlatform.isDesktop) {
           val manager = LocalSelectionManager.current
           val range = manager?.range
-          if (manager != null && manager.selectionState == SelectionState.Selected && manager.onCopySelection != null && range != null) {
+          if (manager != null && manager.selectionState == SelectionState.Selected && manager.onCopySelection != null && range != null && manager.focusCharRect != Rect.Zero) {
             val draggingDown = range.startIndex > range.endIndex || (range.startIndex == range.endIndex && range.startOffset < range.endOffset)
             val gap = with(LocalDensity.current) { 4.dp.toPx() }
             var buttonSize by remember { mutableStateOf(IntSize.Zero) }
-            // val ls = manager.listState?.value
-            // val itemInfo = ls?.layoutInfo?.visibleItemsInfo?.find { it.index == range.endIndex }
-            // if (ls != null && itemInfo != null && manager.focusCharRect != Rect.Zero) {
-            //   val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
-            //   val cr = manager.focusCharRect
-            //   val vp = manager.viewportPosition
-            //   val charX = (if (draggingDown) cr.right else cr.left) - vp.x
-            //   val charY = itemWindowY + (if (draggingDown) cr.bottom else cr.top) - vp.y
-            //   val x = if (draggingDown) charX
-            //           else (charX - buttonSize.width).coerceAtLeast(0f)
-            //   val y = if (draggingDown) charY + gap
-            //           else (charY - buttonSize.height - gap)
-            //   val clampedX = x.coerceIn(0f, (manager.viewportWidth - buttonSize.width).coerceAtLeast(0f))
-            //   SelectionCopyButton(
-            //     modifier = Modifier
-            //       .offset { IntOffset(clampedX.toInt(), y.toInt()) }
-            //       .onSizeChanged { buttonSize = it },
-            //     onCopy = { manager.onCopySelection?.invoke() }
-            //   )
-            // }
+            SelectionCopyButton(
+              modifier = Modifier
+                .offset { manager.copyButtonOffset(draggingDown, gap, buttonSize) }
+                .onSizeChanged { buttonSize = it },
+              onCopy = { manager.onCopySelection?.invoke() }
+            )
           }
         }
       }

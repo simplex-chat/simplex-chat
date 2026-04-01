@@ -26,6 +26,8 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -102,6 +104,22 @@ class SelectionManager {
     fun clearSelection() {
         range = null
         selectionState = SelectionState.Idle
+    }
+
+    fun copyButtonOffset(draggingDown: Boolean, gap: Float, buttonSize: IntSize): IntOffset {
+        val r = range ?: return IntOffset.Zero
+        val ls = listState?.value ?: return IntOffset.Zero
+        val itemInfo = ls.layoutInfo.visibleItemsInfo.find { it.index == r.endIndex }
+            ?: return IntOffset(0, -10000)
+        val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
+        val cr = focusCharRect
+        val vp = viewportPosition
+        val charX = (if (draggingDown) cr.right else cr.left) - vp.x
+        val charY = itemWindowY + (if (draggingDown) cr.bottom else cr.top) - vp.y
+        val x = if (draggingDown) charX else (charX - buttonSize.width).coerceAtLeast(0f)
+        val y = if (draggingDown) charY + gap else charY - buttonSize.height - gap
+        val clampedX = x.coerceIn(0f, (viewportWidth - buttonSize.width).coerceAtLeast(0f))
+        return IntOffset(clampedX.toInt(), y.toInt())
     }
 
     fun getSelectedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
