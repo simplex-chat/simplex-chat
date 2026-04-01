@@ -2038,7 +2038,7 @@ processChatCommand vr nm = \case
         gVar <- asks random
         (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
         gInfo' <- withFastStore $ \db -> do
-          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile linkEntityId rootKey memberPrivKey publicMemberCount_
+          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
           forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
             void $ createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
@@ -3904,11 +3904,14 @@ processChatCommand vr nm = \case
                 let FixedLinkData {linkConnReq = cReq, linkEntityId} = fd
                     linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                -- Validate link entity ID matches group profile's publicGroupId
-                forM_ groupSLinkData_ $ \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> do
-                  let profilePGId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                  unless ((B64UrlByteString <$> linkEntityId) == profilePGId) $
-                    throwChatError CEInvalidConnReq
+                -- Cross-validate linkEntityId and publicGroupId from profile:
+                -- for channels both must be present and match, for p2p groups both must be absent
+                let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                      fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                  (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                  (Nothing, Nothing) -> pure ()
+                  _ -> throwChatError CEInvalidConnReq
                 plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_
                 pure (con cReq, plan)
             where

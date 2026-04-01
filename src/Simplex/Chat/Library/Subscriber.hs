@@ -746,7 +746,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpLinkInv glInv@GroupLinkInvitation {groupProfile = GroupProfile {publicGroup = rcvPG}}
                 | let GroupInfo {groupProfile = GroupProfile {publicGroup = curPG}} = gInfo
                       pgId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId),
-                  pgId rcvPG == pgId curPG -> do
+                  useRelays' gInfo == isJust rcvPG && pgId rcvPG == pgId curPG -> do
                     -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
                     (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
                     -- [incognito] send saved profile
@@ -3082,7 +3082,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpInfo g@GroupInfo {groupProfile = p@GroupProfile {publicGroup = pg}, businessChat} m@GroupMember {memberRole} p'@GroupProfile {publicGroup = pg'} msg@RcvMessage {msgSigned} brokerTs
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions" $> Nothing
       | let pgId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId),
-        useRelays' g && pgId pg' /= pgId pg = messageError "x.grp.info: publicGroupId cannot be changed" $> Nothing
+        useRelays' g && (isNothing pg' || pgId pg' /= pgId pg) = messageError "x.grp.info: publicGroupId mismatch for channel" $> Nothing
       | not (useRelays' g) && isJust pg' = messageError "x.grp.info: publicGroup not allowed in p2p groups" $> Nothing
       | otherwise = do
           case businessChat of
@@ -3637,14 +3637,15 @@ runRelayRequestWorker a Worker {doWork} = do
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
-                  let profilePGId = fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                  unless ((B64UrlByteString <$> linkEntityId) == profilePGId) $
-                    throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile publicGroupId"
+                  pg <- case (linkEntityId, publicGroup) of
+                    (Just entityId, Just pg@PublicGroupProfile {publicGroupId})
+                      | B64UrlByteString entityId == publicGroupId -> pure pg
+                    _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile publicGroupId"
                   validateGroupProfile gp
                   ((_, memberPrivKey), sLnk) <- createRelayLink gInfo
                   gInfo' <- withStore $ \db -> do
                     void $ updateGroupProfile db user gInfo gp
-                    updateRelayGroupKeys db user gInfo linkEntityId rootKey memberPrivKey owners
+                    updateRelayGroupKeys db user gInfo pg rootKey memberPrivKey owners
                     getGroupInfo db vr user groupId
                   pure (gInfo', sLnk)
               where
