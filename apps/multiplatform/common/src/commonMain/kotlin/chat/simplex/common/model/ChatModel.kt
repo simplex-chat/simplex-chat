@@ -2163,6 +2163,39 @@ data class PreparedGroup (
 @Serializable
 data class GroupRef(val groupId: Long, val localDisplayName: String)
 
+@Serializable(with = GroupTypeSerializer::class)
+sealed class GroupType {
+  @Serializable @SerialName("channel") object Channel: GroupType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): GroupType()
+}
+
+object GroupTypeSerializer : KSerializer<GroupType> {
+  override val descriptor: SerialDescriptor =
+    PrimitiveSerialDescriptor("GroupType", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): GroupType {
+    return when (val value = decoder.decodeString()) {
+      "channel" -> GroupType.Channel
+      else -> GroupType.Unknown(value)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: GroupType) {
+    val stringValue = when (value) {
+      is GroupType.Channel -> "channel"
+      is GroupType.Unknown -> value.type
+    }
+    encoder.encodeString(stringValue)
+  }
+}
+
+@Serializable
+data class PublicGroupProfile(
+  val groupType: GroupType,
+  val groupLink: String,
+  val publicGroupId: String
+)
+
 @Serializable
 data class GroupProfile (
   override val displayName: String,
@@ -2170,7 +2203,7 @@ data class GroupProfile (
   override val shortDescr: String?,
   val description: String? = null,
   override val image: String? = null,
-  val groupLink: String? = null,
+  val publicGroup: PublicGroupProfile? = null,
   override val localAlias: String = "",
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null

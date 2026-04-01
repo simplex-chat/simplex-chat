@@ -109,6 +109,7 @@ This file is generated automatically.
 - [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
+- [GroupType](#grouptype)
 - [HandshakeError](#handshakeerror)
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
@@ -138,6 +139,7 @@ This file is generated automatically.
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
 - [PublicGroupData](#publicgroupdata)
+- [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
 - [RcvConnEvent](#rcvconnevent)
@@ -2199,7 +2201,7 @@ MemberSupport:
 ## GroupKeys
 
 **Record type**:
-- sharedGroupId: string
+- publicGroupId: string
 - groupRootKey: [GroupRootKey](#grouprootkey)
 - memberPrivKey: string
 
@@ -2382,10 +2384,9 @@ Known:
 - shortDescr: string?
 - description: string?
 - image: string?
-- groupLink: string?
+- publicGroup: [PublicGroupProfile](#publicgroupprofile)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
-- sharedGroupId: string?
 
 
 ---
@@ -2431,7 +2432,7 @@ Public:
 **Record type**:
 - direct: bool
 - groupRelays: [string]
-- sharedGroupId: string?
+- publicGroupId: string?
 
 
 ---
@@ -2453,6 +2454,14 @@ Public:
 - memberAttention: int64
 - mentions: int64
 - lastMsgFromMemberTs: UTCTime?
+
+
+---
+
+## GroupType
+
+**Enum type**:
+- "channel"
 
 
 ---
@@ -2913,6 +2922,16 @@ NO_SESSION:
 
 **Record type**:
 - publicMemberCount: int64
+
+
+---
+
+## PublicGroupProfile
+
+**Record type**:
+- groupType: [GroupType](#grouptype)
+- groupLink: string
+- publicGroupId: string
 
 
 ---

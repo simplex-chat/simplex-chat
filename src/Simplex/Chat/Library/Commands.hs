@@ -1686,9 +1686,9 @@ processChatCommand vr nm = \case
   APIGroupInfo gId -> withUser $ \user ->
     CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db vr user gId)
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
-    gInfo@GroupInfo {groupProfile = GroupProfile {groupLink}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    case groupLink of
-      Just sLnk | useRelays' gInfo -> do
+    gInfo@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    case publicGroup of
+      Just PublicGroupProfile {groupLink = sLnk} | useRelays' gInfo -> do
         (_, cData) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
@@ -2024,9 +2024,11 @@ processChatCommand vr nm = \case
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        -- Validate link entity ID matches group profile's sharedGroupId (relay groups must have both)
-        forM_ groupSLinkData_ $ \GroupShortLinkData {groupProfile = GroupProfile {sharedGroupId}} ->
-          unless ((B64UrlByteString <$> linkEntityId) == sharedGroupId) $ throwChatError CEInvalidConnReq
+        -- Validate link entity ID matches group profile's publicGroupId (relay groups must have both)
+        case groupSLinkData_ of
+          Just GroupShortLinkData {groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}}}
+            | (B64UrlByteString <$> linkEntityId) == Just publicGroupId -> pure ()
+          _ -> throwChatError CEInvalidConnReq
         let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
             publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
         -- Prepare group record once before connecting to relays (updatePreparedRelayedGroup):
@@ -2036,7 +2038,7 @@ processChatCommand vr nm = \case
         gVar <- asks random
         (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
         gInfo' <- withFastStore $ \db -> do
-          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile linkEntityId rootKey memberPrivKey publicMemberCount_
+          gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
           forM_ owners $ \OwnerAuth {ownerId, ownerKey} ->
             void $ createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey
@@ -2400,12 +2402,12 @@ processChatCommand vr nm = \case
         -- generate owner key, OwnerAuth signed by root key
         memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
         (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
-        let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk, sharedGroupId = Just $ B64UrlByteString entityId}
+        let groupProfile' = (groupProfile :: GroupProfile) {publicGroup = Just PublicGroupProfile {groupType = GTChannel, groupLink = sLnk, publicGroupId = B64UrlByteString entityId}}
             userData = encodeShortLinkData $ GroupShortLinkData {groupProfile = groupProfile', publicGroupData = Just (PublicGroupData 1)}
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData IKPQOff subMode
-        let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+        let groupKeys = GroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
               subRole <- asks $ channelSubscriberRole . config
@@ -3900,12 +3902,16 @@ processChatCommand vr nm = \case
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, relays})) <- getShortLinkConnReq nm user l'
                 let FixedLinkData {linkConnReq = cReq, linkEntityId} = fd
-                    linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, sharedGroupId = B64UrlByteString <$> linkEntityId}
+                    linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                -- Validate link entity ID matches group profile's sharedGroupId
-                forM_ groupSLinkData_ $ \GroupShortLinkData {groupProfile = GroupProfile {sharedGroupId}} ->
-                  unless ((B64UrlByteString <$> linkEntityId) == sharedGroupId) $
-                    throwChatError CEInvalidConnReq
+                -- Cross-validate linkEntityId and publicGroupId from profile:
+                -- for channels both must be present and match, for p2p groups both must be absent
+                let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                      fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                  (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                  (Nothing, Nothing) -> pure ()
+                  _ -> throwChatError CEInvalidConnReq
                 plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_
                 pure (con cReq, plan)
             where
@@ -5098,7 +5104,7 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, groupLink = Nothing, groupPreferences, memberAdmission = Nothing, sharedGroupId = Nothing}
+      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences, memberAdmission = Nothing}
     memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
     shortDescrP = do
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""

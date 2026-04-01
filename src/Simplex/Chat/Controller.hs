@@ -1014,7 +1014,7 @@ type DirectLink = Bool
 data GroupShortLinkInfo = GroupShortLinkInfo
   { direct :: Bool,
     groupRelays :: [ShortLinkContact],
-    sharedGroupId :: Maybe B64UrlByteString
+    publicGroupId :: Maybe B64UrlByteString
   }
   deriving (Show)
 

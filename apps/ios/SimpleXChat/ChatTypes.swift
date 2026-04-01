@@ -2432,6 +2432,34 @@ public struct GroupRef: Decodable, Hashable {
     var localDisplayName: GroupName
 }
 
+public enum GroupType: Codable, Hashable {
+    case channel
+    case unknown(type: String)
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let type = try container.decode(String.self)
+        switch type {
+        case "channel": self = .channel
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .channel: try container.encode("channel")
+        case let .unknown(type): try container.encode(type)
+        }
+    }
+}
+
+public struct PublicGroupProfile: Codable, Hashable {
+    public var groupType: GroupType
+    public var groupLink: String
+    public var publicGroupId: String
+}
+
 public struct GroupProfile: Codable, NamedChat, Hashable {
     public init(
         displayName: String,
@@ -2439,7 +2467,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         shortDescr: String? = nil,
         description: String? = nil,
         image: String? = nil,
-        groupLink: String? = nil,
+        publicGroup: PublicGroupProfile? = nil,
         groupPreferences: GroupPreferences? = nil,
         memberAdmission: GroupMemberAdmission? = nil
     ) {
@@ -2448,7 +2476,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         self.shortDescr = shortDescr
         self.description = description
         self.image = image
-        self.groupLink = groupLink
+        self.publicGroup = publicGroup
         self.groupPreferences = groupPreferences
         self.memberAdmission = memberAdmission
     }
@@ -2458,7 +2486,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var shortDescr: String?
     public var description: String?
     public var image: String?
-    public var groupLink: String?
+    public var publicGroup: PublicGroupProfile?
     public var groupPreferences: GroupPreferences?
     public var memberAdmission: GroupMemberAdmission?
     public var localAlias: String { "" }

@@ -545,21 +545,22 @@ fun ModalData.GroupChatInfoLayout(
       }
 
       var anyTopSectionRowShow = false
+      val channelLink = groupInfo.groupProfile.publicGroup?.groupLink
       if (groupInfo.useRelays) {
         SectionView {
           if (groupInfo.isOwner && groupLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkButton(manageGroupLink)
-          } else if (groupInfo.groupProfile.groupLink != null) {
+          } else if (channelLink != null) {
             anyTopSectionRowShow = true
-            ChannelLinkQRCodeSection(groupInfo.groupProfile.groupLink!!)
+            ChannelLinkQRCodeSection(channelLink)
           }
           if (groupInfo.isOwner || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
             anyTopSectionRowShow = true
             ChannelMembersButton(chat.remoteHostId, groupInfo, showMemberInfo)
           }
         }
-        if (!groupInfo.isOwner && groupInfo.groupProfile.groupLink != null) {
+        if (!groupInfo.isOwner && channelLink != null) {
           SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))
         }
       } else {

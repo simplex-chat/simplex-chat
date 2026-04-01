@@ -106,7 +106,7 @@ struct GroupChatInfoView: View {
                             // TODO [relays] allow other owners to manage channel link (requires protocol changes to share link ownership)
                             if groupInfo.isOwner && groupLink != nil {
                                 channelLinkButton()
-                            } else if let link = groupInfo.groupProfile.groupLink {
+                            } else if let link = groupInfo.groupProfile.publicGroup?.groupLink {
                                 SimpleXLinkQRCode(uri: link)
                                 Button {
                                     showShareSheet(items: [simplexChatLink(link)])
@@ -118,7 +118,7 @@ struct GroupChatInfoView: View {
                                 channelMembersButton()
                             }
                         } footer: {
-                            if !groupInfo.isOwner && groupInfo.groupProfile.groupLink != nil {
+                            if !groupInfo.isOwner && groupInfo.groupProfile.publicGroup?.groupLink != nil {
                                 Text("You can share a link or a QR code - anybody will be able to join the channel.")
                                     .foregroundColor(theme.colors.secondary)
                             }
