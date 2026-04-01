@@ -1137,9 +1137,21 @@ fun ChatLayout(
         // Desktop selection copy button — last child of outer Box, on top of everything
         if (appPlatform.isDesktop) {
           val manager = LocalSelectionManager.current
-          if (manager != null && manager.selectionState == SelectionState.Selected && manager.onCopySelection != null) {
+          val range = manager?.range
+          if (manager != null && manager.selectionState == SelectionState.Selected && manager.onCopySelection != null && range != null) {
+            val draggingDown = range.startIndex > range.endIndex
+            val gap = with(LocalDensity.current) { 4.dp.toPx() }
+            var buttonSize by remember { mutableStateOf(IntSize.Zero) }
+            val x = if (draggingDown) manager.focusWindowX
+                    else (manager.focusWindowX - buttonSize.width).coerceAtLeast(0f)
+            val y = if (draggingDown) manager.focusWindowY + gap
+                    else (manager.focusWindowY - buttonSize.height - gap).coerceAtLeast(0f)
+            val clampedX = x.coerceIn(0f, (manager.viewportWidth - buttonSize.width).coerceAtLeast(0f))
+            val clampedY = y.coerceIn(0f, (manager.viewportHeight - buttonSize.height).coerceAtLeast(0f))
             SelectionCopyButton(
-              modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = composeViewHeight.value + 8.dp),
+              modifier = Modifier
+                .offset { IntOffset(clampedX.toInt(), clampedY.toInt()) }
+                .onSizeChanged { buttonSize = it },
               onCopy = { manager.onCopySelection?.invoke() }
             )
           }

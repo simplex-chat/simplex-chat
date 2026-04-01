@@ -64,6 +64,8 @@ class SelectionManager {
         private set
     var focusWindowY by mutableStateOf(0f)
     var focusWindowX by mutableStateOf(0f)
+    var viewportWidth by mutableStateOf(0f)
+    var viewportHeight by mutableStateOf(0f)
     var onCopySelection: (() -> Unit)? = null
 
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
@@ -191,6 +193,8 @@ fun BoxScope.SelectionHandler(
             val bounds = it.boundsInWindow()
             viewportTop = bounds.top
             viewportBottom = bounds.bottom
+            manager.viewportWidth = bounds.right - bounds.left
+            manager.viewportHeight = bounds.bottom - bounds.top
         }
         .pointerInput(manager) {
             awaitEachGesture {
