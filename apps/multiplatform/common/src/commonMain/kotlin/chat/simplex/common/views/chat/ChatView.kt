@@ -1156,12 +1156,12 @@ fun ChatLayout(
               val y = if (draggingDown) charY + gap
                       else (charY - buttonSize.height - gap)
               val clampedX = x.coerceIn(0f, (manager.viewportWidth - buttonSize.width).coerceAtLeast(0f))
-              SelectionCopyButton(
-                modifier = Modifier
-                  .offset { IntOffset(clampedX.toInt(), y.toInt()) }
-                  .onSizeChanged { buttonSize = it },
-                onCopy = { manager.onCopySelection?.invoke() }
-              )
+              // SelectionCopyButton(
+              //   modifier = Modifier
+              //     .offset { IntOffset(clampedX.toInt(), y.toInt()) }
+              //     .onSizeChanged { buttonSize = it },
+              //   onCopy = { manager.onCopySelection?.invoke() }
+              // )
             }
           }
         }
