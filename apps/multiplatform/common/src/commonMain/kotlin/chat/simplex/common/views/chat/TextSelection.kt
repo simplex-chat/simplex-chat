@@ -27,15 +27,12 @@ import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.Log
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.displayText
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
-
-private const val TAG_SEL = "TextSelection"
 
 val SelectionHighlightColor = Color(0x4D0066FF)
 
@@ -65,7 +62,7 @@ class SelectionManager {
     var focusWindowX by mutableStateOf(0f)
 
     fun startSelection(startIndex: Int) {
-        range = SelectionRange(startIndex, 0, startIndex, 0)
+        range = SelectionRange(startIndex, -1, startIndex, -1)
         selectionState = SelectionState.Selecting
     }
 
@@ -123,13 +120,15 @@ fun highlightedRange(range: SelectionRange?, index: Int): IntRange? {
     if (index < lo || index > hi) return null
     return when {
         index == r.startIndex && index == r.endIndex ->
-            if (r.startOffset == r.endOffset) null
+            if (r.startOffset < 0 || r.endOffset < 0 || r.startOffset == r.endOffset) null
             else minOf(r.startOffset, r.endOffset) until maxOf(r.startOffset, r.endOffset)
         index == r.startIndex ->
-            if (r.startIndex > r.endIndex) r.startOffset until Int.MAX_VALUE
+            if (r.startOffset < 0) null
+            else if (r.startIndex > r.endIndex) r.startOffset until Int.MAX_VALUE
             else 0 until r.startOffset
         index == r.endIndex ->
-            if (r.endIndex < r.startIndex) 0 until r.endOffset
+            if (r.endOffset < 0) null
+            else if (r.endIndex < r.startIndex) 0 until r.endOffset
             else r.endOffset until Int.MAX_VALUE
         else -> 0 until Int.MAX_VALUE
     }
@@ -232,7 +231,7 @@ fun BoxScope.SelectionHandler(
                     if (!isDragging && totalDrag.getDistance() > touchSlop) {
                         isDragging = true
                         val idx = resolveIndexAtY(listState.value, localStart.y)
-                        Log.d(TAG_SEL, "dragStart localStart=$localStart windowStart=$windowStart idx=$idx")
+                        Log.e(TAG, "dragStart localStart=$localStart windowStart=$windowStart idx=$idx")
                         if (idx != null) {
                             manager.startSelection(idx)
                             manager.focusWindowY = windowStart.y
@@ -249,7 +248,7 @@ fun BoxScope.SelectionHandler(
 
                         val idx = resolveIndexAtY(listState.value, change.position.y)
                         if (idx != null) {
-                            if (idx != manager.range?.endIndex) Log.d(TAG_SEL, "focusIndexChanged idx=$idx range=${manager.range}")
+                            if (idx != manager.range?.endIndex) Log.e(TAG, "focusIndexChanged idx=$idx range=${manager.range}")
                             manager.updateFocusIndex(idx)
                         }
 
@@ -295,7 +294,7 @@ private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
     val idx = listState.layoutInfo.visibleItemsInfo.find { item ->
         reversedY >= item.offset && reversedY < item.offset + item.size
     }?.index
-    Log.d(TAG_SEL, "resolveIndexAtY localY=$localY reversedY=$reversedY → index=$idx")
+    Log.e(TAG, "resolveIndexAtY localY=$localY reversedY=$reversedY → index=$idx")
     return idx
 }
 
