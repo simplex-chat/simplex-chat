@@ -152,14 +152,14 @@ sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
   let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
   execChatCommand' cmd 0 `runReaderT` cc
 
-runTerminalInput :: ChatTerminal -> ChatController -> IO ()
-runTerminalInput ct cc = withChatTerm ct $ do
-  updateInput ct
-  receiveFromTTY cc ct
+runTerminalInput :: ChatTerminal -> ChatController -> TQueue (Key, Modifiers) -> IO ()
+runTerminalInput ct cc keyQ = do
+  updateInputView ct
+  receiveFromTTY keyQ cc ct
 
-receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
-  forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
+receiveFromTTY :: TQueue (Key, Modifiers) -> ChatController -> ChatTerminal -> IO ()
+receiveFromTTY keyQ cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
+  forever $ atomically (readTQueue keyQ) >>= processKey >> updateInputView ct
   where
     processKey :: (Key, Modifiers) -> IO ()
     processKey key = case key of
