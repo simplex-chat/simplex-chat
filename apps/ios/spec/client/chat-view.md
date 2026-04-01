@@ -322,7 +322,7 @@ When `groupInfo.useRelays == true`, [`GroupChatInfoView`](../../Shared/Views/Cha
 
 | Section | Owner | Subscriber |
 |---------|-------|-----------|
-| 1. Links & Members | Channel link (manage via GroupLinkView), Owners & subscribers | Channel link (read-only QR from `groupProfile.groupLink`), Owners |
+| 1. Links & Members | Channel link (manage via GroupLinkView), Owners & subscribers | Channel link (read-only QR from `groupProfile.publicGroup?.groupLink`), Owners |
 | 2. Profile & Welcome | Edit channel profile, Welcome message | Welcome message (if exists) |
 | 3. Theme & TTL | Chat theme, Delete messages after | Chat theme, Delete messages after |
 | 4. Actions | Chat relays, Clear chat, Delete channel | Chat relays, Clear chat, Leave channel |
@@ -343,7 +343,7 @@ Member rows show profile image, display name (with verified shield), connection 
 
 ### Channel Link
 
-Owner sees [`channelLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L605) (navigates to `GroupLinkView` for full link management), guarded by `groupInfo.isOwner && groupLink != nil` — channel links can only be created during channel creation, not from the info view. A TODO marks the need for protocol changes to allow other owners to manage the same channel link. Non-owner sees read-only QR code displaying `groupProfile.groupLink` via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
+Owner sees [`channelLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L605) (navigates to `GroupLinkView` for full link management), guarded by `groupInfo.isOwner && groupLink != nil` — channel links can only be created during channel creation, not from the info view. A TODO marks the need for protocol changes to allow other owners to manage the same channel link. Non-owner sees read-only QR code displaying `groupProfile.publicGroup?.groupLink` via `SimpleXLinkQRCode`. `apiGetGroupLink` is skipped in `onAppear` for non-owner channels.
 
 Groups use separate [`groupLinkButton()`](../../Shared/Views/Chat/Group/GroupChatInfoView.swift#L593) which supports both "Create group link" and "Group link" labels.
 

@@ -458,7 +458,7 @@ groupRootPubKey (GRKPrivate pk) = C.publicKey pk
 groupRootPubKey (GRKPublic pk) = pk
 
 data GroupKeys = GroupKeys
-  { sharedGroupId :: B64UrlByteString,
+  { publicGroupId :: B64UrlByteString,
     groupRootKey :: GroupRootKey,
     memberPrivKey :: C.PrivateKeyEd25519
   }
@@ -755,16 +755,39 @@ fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
 
+data GroupType
+  = GTChannel
+  | GTUnknown Text
+  deriving (Eq, Show)
+
+instance TextEncoding GroupType where
+  textEncode = \case
+    GTChannel -> "channel"
+    GTUnknown tag -> tag
+  textDecode s = Just $ case s of
+    "channel" -> GTChannel
+    tag -> GTUnknown tag
+
+instance FromField GroupType where fromField = fromTextField_ textDecode
+
+instance ToField GroupType where toField = toField . textEncode
+
+data PublicGroupProfile = PublicGroupProfile
+  { groupType :: GroupType,
+    groupLink :: ShortLinkContact,
+    publicGroupId :: B64UrlByteString -- group identity = sha256(genesis root key), immutable
+  }
+  deriving (Eq, Show)
+
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
-    groupLink :: Maybe ShortLinkContact,
+    publicGroup :: Maybe PublicGroupProfile,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission,
-    sharedGroupId :: Maybe B64UrlByteString -- group identity = sha256(genesis root key), immutable
+    memberAdmission :: Maybe GroupMemberAdmission
   }
   deriving (Eq, Show)
 
@@ -2008,6 +2031,15 @@ instance ToField GroupMemberAdmission where
 
 instance FromField GroupMemberAdmission where
   fromField = fromTextField_ decodeJSON
+
+instance FromJSON GroupType where
+  parseJSON = textParseJSON "GroupType"
+
+instance ToJSON GroupType where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupProfile)
 
 $(JQ.deriveJSON defaultJSON ''GroupProfile)
 

@@ -2519,7 +2519,7 @@ export interface GroupInfo {
 }
 
 export interface GroupKeys {
-  sharedGroupId: string
+  publicGroupId: string
   groupRootKey: GroupRootKey
   memberPrivKey: string
 }
@@ -2671,10 +2671,9 @@ export interface GroupProfile {
   shortDescr?: string
   description?: string
   image?: string
-  groupLink?: string
+  publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
-  sharedGroupId?: string
 }
 
 export interface GroupRelay {
@@ -2713,7 +2712,7 @@ export interface GroupShortLinkData {
 export interface GroupShortLinkInfo {
   direct: boolean
   groupRelays: string[]
-  sharedGroupId?: string
+  publicGroupId?: string
 }
 
 export interface GroupSummary {
@@ -2727,6 +2726,10 @@ export interface GroupSupportChat {
   memberAttention: number // int64
   mentions: number // int64
   lastMsgFromMemberTs?: string // ISO-8601 timestamp
+}
+
+export enum GroupType {
+  Channel = "channel",
 }
 
 export enum HandshakeError {
@@ -3214,6 +3217,12 @@ export namespace ProxyError {
 
 export interface PublicGroupData {
   publicMemberCount: number // int64
+}
+
+export interface PublicGroupProfile {
+  groupType: GroupType
+  groupLink: string
+  publicGroupId: string
 }
 
 export type RCErrorType = 
