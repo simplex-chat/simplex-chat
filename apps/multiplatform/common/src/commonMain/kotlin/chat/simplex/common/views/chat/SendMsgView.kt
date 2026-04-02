@@ -313,17 +313,18 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
     val startRecording: () -> Unit = {
-      recState.value = RecordingState.Started(
-        filePath = rec.start { progress: Int?, finished: Boolean ->
-          val state = recState.value
-          if (state is RecordingState.Started && progress != null) {
-            recState.value = if (!finished)
-              RecordingState.Started(state.filePath, progress)
-            else
-              RecordingState.Finished(state.filePath, progress)
-          }
-        },
-      )
+      val filePath = rec.start { progress: Int?, finished: Boolean ->
+        val state = recState.value
+        if (state is RecordingState.Started && progress != null) {
+          recState.value = if (!finished)
+            RecordingState.Started(state.filePath, progress)
+          else
+            RecordingState.Finished(state.filePath, progress)
+        }
+      }
+      if (filePath.isNotEmpty()) {
+        recState.value = RecordingState.Started(filePath = filePath)
+      }
     }
     val interactionSource = interactionSourceWithTapDetection(
       onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },
