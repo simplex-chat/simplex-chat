@@ -4723,7 +4723,7 @@ data class RelayTestFailure(
         rtfError.agentError.brokerErr.networkError is NetworkError.UnknownCAError ->
           err + " " + generalGetString(MR.strings.error_smp_test_certificate)
       else ->
-        err + " " + String.format(generalGetString(MR.strings.error_with_info), rtfError.toString())
+        err + " " + String.format(generalGetString(MR.strings.error_with_info), rtfError.string)
     }
   }
 }

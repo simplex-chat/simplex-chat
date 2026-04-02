@@ -218,6 +218,11 @@ private fun CustomRelay(
       .collect { relay.value = relay.value.copyWithName(it) }
   }
   LaunchedEffect(Unit) {
+    snapshotFlow { relay.value.name }
+      .distinctUntilChanged()
+      .collect { relayName.value = it }
+  }
+  LaunchedEffect(Unit) {
     snapshotFlow { relayAddress.value }
       .distinctUntilChanged()
       .collect { relay.value = relay.value.copy(address = it) }
