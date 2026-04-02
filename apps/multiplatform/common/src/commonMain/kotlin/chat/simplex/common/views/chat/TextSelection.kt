@@ -73,10 +73,13 @@ class SelectionManager {
     var focusWindowX by mutableStateOf(0f)
     var viewportWidth by mutableStateOf(0f)
     var viewportHeight by mutableStateOf(0f)
+    var viewportTop by mutableStateOf(0f)
+    var viewportBottom by mutableStateOf(0f)
     var viewportPosition by mutableStateOf(Offset.Zero)
     var focusCharRect by mutableStateOf(Rect.Zero) // X: absolute window, Y: relative to item
     var listState: State<LazyListState>? = null
     var onCopySelection: (() -> Unit)? = null
+    private var autoScrollJob: Job? = null
 
     fun startSelection(startIndex: Int, anchorY: Float, anchorX: Float) {
         range = SelectionRange(startIndex, -1, startIndex, -1)
@@ -102,6 +105,8 @@ class SelectionManager {
     }
 
     fun endSelection() {
+        autoScrollJob?.cancel()
+        autoScrollJob = null
         selectionState = SelectionState.Selected
     }
 
@@ -131,6 +136,44 @@ class SelectionManager {
         val y = if (draggingDown) charY + gap else charY - buttonSize.height - gap
         val clampedX = x.coerceIn(0f, (viewportWidth - buttonSize.width).coerceAtLeast(0f))
         return IntOffset(clampedX.toInt(), y.toInt())
+    }
+
+    fun startDragSelection(localStart: Offset, windowStart: Offset, focusRequester: FocusRequester) {
+        val ls = listState?.value ?: return
+        val idx = resolveIndexAtY(ls, localStart.y) ?: return
+        startSelection(idx, windowStart.y, windowStart.x)
+        focusWindowY = windowStart.y
+        focusWindowX = windowStart.x
+        try { focusRequester.requestFocus() } catch (_: Exception) {}
+    }
+
+    fun updateDragFocus(windowPos: Offset, localY: Float) {
+        focusWindowY = windowPos.y
+        focusWindowX = windowPos.x
+        val ls = listState?.value ?: return
+        val idx = resolveIndexAtY(ls, localY) ?: return
+        updateFocusIndex(idx)
+    }
+
+    fun updateAutoScroll(draggingDown: Boolean, pointerY: Float, scope: CoroutineScope) {
+        val edgeDistance = if (draggingDown) viewportBottom - pointerY else pointerY - viewportTop
+        if (edgeDistance !in 0f..AUTO_SCROLL_ZONE_PX) {
+            autoScrollJob?.cancel()
+            autoScrollJob = null
+            return
+        }
+        if (autoScrollJob?.isActive == true) return
+        val ls = listState ?: return
+        autoScrollJob = scope.launch {
+            while (isActive && selectionState == SelectionState.Selecting) {
+                val curEdge = if (draggingDown) viewportBottom - focusWindowY else focusWindowY - viewportTop
+                if (curEdge >= AUTO_SCROLL_ZONE_PX) break
+                val fraction = 1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
+                val speed = MIN_SCROLL_SPEED + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * fraction
+                ls.value.scrollBy(if (draggingDown) -speed else speed)
+                delay(16)
+            }
+        }
     }
 
     fun getSelectedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
@@ -195,18 +238,14 @@ fun BoxScope.SelectionHandler(
     val touchSlop = LocalViewConfiguration.current.touchSlop
     val clipboard = LocalClipboardManager.current
     val focusRequester = remember { FocusRequester() }
-    var positionInWindow by remember { mutableStateOf(Offset.Zero) }
-    var viewportTop by remember { mutableStateOf(0f) }
-    var viewportBottom by remember { mutableStateOf(0f) }
     val scope = rememberCoroutineScope()
-    var autoScrollJob by remember { mutableStateOf<Job?>(null) }
 
     // Re-evaluate focus index on scroll during active drag
     LaunchedEffect(manager) {
         snapshotFlow { listState.value.firstVisibleItemScrollOffset }
             .collect {
                 if (manager.selectionState == SelectionState.Selecting) {
-                    val idx = resolveIndexAtY(listState.value, manager.focusWindowY - positionInWindow.y)
+                    val idx = resolveIndexAtY(listState.value, manager.focusWindowY - manager.viewportPosition.y)
                     if (idx != null) manager.updateFocusIndex(idx)
                 }
             }
@@ -231,102 +270,59 @@ fun BoxScope.SelectionHandler(
             } else false
         }
         .onGloballyPositioned {
-            positionInWindow = it.positionInWindow()
+            val pos = it.positionInWindow()
             val bounds = it.boundsInWindow()
-            viewportTop = bounds.top
-            viewportBottom = bounds.bottom
+            manager.viewportTop = bounds.top
+            manager.viewportBottom = bounds.bottom
             manager.viewportWidth = bounds.right - bounds.left
             manager.viewportHeight = bounds.bottom - bounds.top
-            manager.viewportPosition = positionInWindow
+            manager.viewportPosition = pos
         }
         .pointerInput(manager) {
             awaitEachGesture {
-                val down = awaitPointerEvent(PointerEventPass.Initial)
-                val firstChange = down.changes.first()
-                if (!firstChange.pressed) return@awaitEachGesture
-
-                val wasSelected = manager.selectionState == SelectionState.Selected
-                if (wasSelected) firstChange.consume()
-
-                val localStart = firstChange.position
-                val windowStart = localStart + positionInWindow
+                val initialEvent = awaitPointerEvent(PointerEventPass.Initial).changes.first()
+                if (!initialEvent.pressed) return@awaitEachGesture
+                val localStart = initialEvent.position
+                val windowStart = localStart + manager.viewportPosition
+                if (manager.selectionState == SelectionState.Selected) initialEvent.consume()
                 var totalDrag = Offset.Zero
-                var isDragging = false
 
                 while (true) {
-                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                    val change = event.changes.first()
-
-                    if (!change.pressed) {
-                        autoScrollJob?.cancel()
-                        autoScrollJob = null
-                        if (isDragging) {
-                            manager.endSelection()
-                        } else if (wasSelected) {
-                            manager.clearSelection()
+                    val event = awaitPointerEvent(PointerEventPass.Initial).changes.first()
+                    when (manager.selectionState) {
+                        SelectionState.Idle -> {
+                            if (!event.pressed) return@awaitEachGesture
+                            totalDrag += event.positionChange()
+                            if (totalDrag.getDistance() > touchSlop) {
+                                manager.startDragSelection(localStart, windowStart, focusRequester)
+                                event.consume()
+                            }
                         }
-                        break
-                    }
-
-                    totalDrag += change.positionChange()
-
-                    if (!isDragging && totalDrag.getDistance() > touchSlop) {
-                        isDragging = true
-                        val idx = resolveIndexAtY(listState.value, localStart.y)
-                        Log.e(TAG, "dragStart localStart=$localStart windowStart=$windowStart idx=$idx")
-                        if (idx != null) {
-                            manager.startSelection(idx, windowStart.y, windowStart.x)
-                            manager.focusWindowY = windowStart.y
-                            manager.focusWindowX = windowStart.x
+                        SelectionState.Selected -> {
+                            if (!event.pressed) {
+                                manager.clearSelection()
+                                return@awaitEachGesture
+                            }
+                            event.consume()
+                            totalDrag += event.positionChange()
+                            if (totalDrag.getDistance() > touchSlop) {
+                                manager.startDragSelection(localStart, windowStart, focusRequester)
+                            }
                         }
-                        try { focusRequester.requestFocus() } catch (_: Exception) {}
-                        change.consume()
-                    }
-
-                    if (isDragging) {
-                        val windowPos = change.position + positionInWindow
-                        manager.focusWindowY = windowPos.y
-                        manager.focusWindowX = windowPos.x
-
-                        val idx = resolveIndexAtY(listState.value, change.position.y)
-                        if (idx != null) {
-                            if (idx != manager.range?.endIndex) Log.e(TAG, "focusIndexChanged idx=$idx range=${manager.range}")
-                            manager.updateFocusIndex(idx)
+                        SelectionState.Selecting -> {
+                            if (!event.pressed) {
+                                manager.endSelection()
+                                return@awaitEachGesture
+                            }
+                            val windowPos = event.position + manager.viewportPosition
+                            manager.updateDragFocus(windowPos, event.position.y)
+                            event.consume()
+                            manager.updateAutoScroll(windowPos.y > windowStart.y, windowPos.y, scope)
                         }
-
-                        change.consume()
-
-                        val draggingDown = windowPos.y > windowStart.y
-                        autoScrollJob = updateAutoScroll(
-                            draggingDown, windowPos.y, viewportTop, viewportBottom,
-                            autoScrollJob, scope, manager, listState
-                        )
                     }
                 }
             }
         }
-}
-
-private fun updateAutoScroll(
-    draggingDown: Boolean, pointerY: Float, viewportTop: Float, viewportBottom: Float,
-    currentJob: Job?, scope: CoroutineScope, manager: SelectionManager, listState: State<LazyListState>
-): Job? {
-    val edgeDistance = if (draggingDown) viewportBottom - pointerY else pointerY - viewportTop
-    if (edgeDistance !in 0f..AUTO_SCROLL_ZONE_PX) {
-        currentJob?.cancel()
-        return null
-    }
-    if (currentJob?.isActive == true) return currentJob
-    return scope.launch {
-        while (isActive && manager.selectionState == SelectionState.Selecting) {
-            val curEdge = if (draggingDown) viewportBottom - manager.focusWindowY else manager.focusWindowY - viewportTop
-            if (curEdge >= AUTO_SCROLL_ZONE_PX) break
-            val fraction = 1f - (curEdge / AUTO_SCROLL_ZONE_PX).coerceIn(0f, 1f)
-            val speed = MIN_SCROLL_SPEED + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * fraction
-            listState.value.scrollBy(if (draggingDown) -speed else speed)
-            delay(16)
-        }
-    }
 }
 
 private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
