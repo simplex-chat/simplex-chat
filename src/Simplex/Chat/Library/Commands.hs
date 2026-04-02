@@ -1508,7 +1508,7 @@ processChatCommand vr nm = \case
                 let chatV = agentToChatVersion agentV
                 subMode <- chatReadVar subscriptionMode
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
-                conn@Connection {connId = dbConnId} <- withFastStore $ \db ->
+                conn@Connection {connId = testCId} <- withFastStore $ \db ->
                   createRelayTestConnection db vr user connId ConnPrepared chatV subMode
                 challenge <- drgRandomBytes 32
                 testVar <- newEmptyTMVarIO
@@ -1521,7 +1521,7 @@ processChatCommand vr nm = \case
                   void $ withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
                   liftIO $ timeout 40000000 $ atomically $ takeTMVar testVar
                 atomically $ TM.delete acId chatRelayTests_
-                withFastStore' $ \db -> deleteConnectionRecord db user dbConnId
+                withFastStore' $ \db -> deleteConnectionRecord db user testCId
                 deleteAgentConnectionAsync acId
                 case testResult of
                   Left e -> failWithProfile RTSConnect e
