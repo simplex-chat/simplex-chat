@@ -1048,6 +1048,7 @@ export type ChatErrorType =
   | ChatErrorType.ConnectionIncognitoChangeProhibited
   | ChatErrorType.ConnectionUserChangeProhibited
   | ChatErrorType.PeerChatVRangeIncompatible
+  | ChatErrorType.RelayTestError
   | ChatErrorType.InternalError
   | ChatErrorType.Exception
 
@@ -1125,6 +1126,7 @@ export namespace ChatErrorType {
     | "connectionIncognitoChangeProhibited"
     | "connectionUserChangeProhibited"
     | "peerChatVRangeIncompatible"
+    | "relayTestError"
     | "internalError"
     | "exception"
 
@@ -1477,6 +1479,11 @@ export namespace ChatErrorType {
 
   export interface PeerChatVRangeIncompatible extends Interface {
     type: "peerChatVRangeIncompatible"
+  }
+
+  export interface RelayTestError extends Interface {
+    type: "relayTestError"
+    message: string
   }
 
   export interface InternalError extends Interface {
@@ -3591,6 +3598,10 @@ export namespace RcvGroupEvent {
   }
 }
 
+export interface RelayProfile {
+  name: string
+}
+
 export enum RelayStatus {
   New = "new",
   Invited = "invited",
@@ -4641,7 +4652,7 @@ export interface User {
 export interface UserChatRelay {
   chatRelayId: number // int64
   address: string
-  name: string
+  relayProfile: RelayProfile
   domains: string[]
   preset: boolean
   tested?: boolean

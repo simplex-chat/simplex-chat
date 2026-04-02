@@ -148,6 +148,7 @@ This file is generated automatically.
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
+- [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
@@ -1223,6 +1224,10 @@ ConnectionUserChangeProhibited:
 
 PeerChatVRangeIncompatible:
 - type: "peerChatVRangeIncompatible"
+
+RelayTestError:
+- type: "relayTestError"
+- message: string
 
 InternalError:
 - type: "internalError"
@@ -3176,6 +3181,14 @@ MsgBadSignature:
 
 ---
 
+## RelayProfile
+
+**Record type**:
+- name: string
+
+
+---
+
 ## RelayStatus
 
 **Enum type**:
@@ -3920,7 +3933,7 @@ Handshake:
 **Record type**:
 - chatRelayId: int64
 - address: string
-- name: string
+- relayProfile: [RelayProfile](#relayprofile)
 - domains: [string]
 - preset: bool
 - tested: bool?
