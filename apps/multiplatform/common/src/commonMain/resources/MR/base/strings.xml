@@ -2840,7 +2840,7 @@
   <string name="test_relay">Test relay</string>
   <string name="use_for_new_channels">Use for new channels</string>
   <string name="delete_relay">Delete relay</string>
-  <string name="test_relay_to_retrieve_name">**Test relay** to retrieve its name.</string>
+  <string name="test_relay_to_retrieve_name"><![CDATA[<b>Test relay</b> to retrieve its name.]]></string>
   <string name="relay_test_failed_alert">Relay test failed!</string>
   <string name="relay_test_step_get_link">Get link</string>
   <string name="relay_test_step_decode_link">Decode link</string>

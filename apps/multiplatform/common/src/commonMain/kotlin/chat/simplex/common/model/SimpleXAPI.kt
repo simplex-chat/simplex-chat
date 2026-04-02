@@ -6443,6 +6443,7 @@ sealed class CR {
     is ChatTags -> "chatTags"
     is ApiChatItemInfo -> "chatItemInfo"
     is ServerTestResult -> "serverTestResult"
+    is ChatRelayTestResult -> "chatRelayTestResult"
     is ServerOperatorConditions -> "serverOperatorConditions"
     is UserServers -> "userServers"
     is UserServersValidation -> "userServersValidation"
@@ -6622,6 +6623,7 @@ sealed class CR {
     is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
+    is ChatRelayTestResult -> withUser(user, "relayProfile: $relayProfile\ntestFailure: $relayTestFailure")
     is ServerOperatorConditions -> "conditions: ${json.encodeToString(conditions)}"
     is UserServers -> withUser(user, "userServers: ${json.encodeToString(userServers)}")
     is UserServersValidation -> withUser(user, "serverErrors: ${json.encodeToString(serverErrors)}")
