@@ -182,6 +182,7 @@ struct YourServersView: View {
                 TestServersButton(
                     smpServers: $userServers[operatorIndex].smpServers,
                     xftpServers: $userServers[operatorIndex].xftpServers,
+                    chatRelays: $userServers[operatorIndex].chatRelays,
                     testing: $testing
                 )
                 howToButton()
@@ -352,6 +353,7 @@ func deleteChatRelay(
 struct TestServersButton: View {
     @Binding var smpServers: [UserServer]
     @Binding var xftpServers: [UserServer]
+    @Binding var chatRelays: [UserChatRelay]
     @Binding var testing: Bool
 
     var body: some View {
@@ -360,20 +362,24 @@ struct TestServersButton: View {
     }
 
     private var allServersDisabled: Bool {
-        smpServers.allSatisfy { !$0.enabled } && xftpServers.allSatisfy { !$0.enabled }
+        smpServers.allSatisfy { !$0.enabled } &&
+        xftpServers.allSatisfy { !$0.enabled } &&
+        chatRelays.filter({ !$0.deleted }).allSatisfy { !$0.enabled }
     }
 
     private func testServers() {
         resetTestStatus()
         testing = true
         Task {
-            let fs = await runServersTest()
+            let sfs = await runServersTest()
+            let rfs = await runRelaysTest()
             await MainActor.run {
                 testing = false
-                if !fs.isEmpty {
-                    let msg = fs.map { (srv, f) in
-                        "\(srv): \(f.localizedDescription)"
-                    }.joined(separator: "\n")
+                var failures: [String] = []
+                failures += sfs.map { (srv, f) in "\(srv): \(f.localizedDescription)" }
+                failures += rfs.map { (name, f) in "\(name): \(f.localizedDescription)" }
+                if !failures.isEmpty {
+                    let msg = failures.joined(separator: "\n")
                     showAlert(
                         NSLocalizedString("Tests failed!", comment: "alert title"),
                         message: String.localizedStringWithFormat(NSLocalizedString("Some servers failed the test:\n%@", comment: "alert message"), msg)
@@ -395,6 +401,12 @@ struct TestServersButton: View {
                 xftpServers[i].tested = nil
             }
         }
+
+        for i in 0..<chatRelays.count {
+            if chatRelays[i].enabled && !chatRelays[i].deleted {
+                chatRelays[i].tested = nil
+            }
+        }
     }
 
     private func runServersTest() async -> [String: ProtocolTestFailure] {
@@ -411,6 +423,19 @@ struct TestServersButton: View {
             if xftpServers[i].enabled {
                 if let f = await testServerConnection(server: $xftpServers[i]) {
                     fs[serverHostname(xftpServers[i].server)] = f
+                }
+            }
+        }
+        return fs
+    }
+
+    private func runRelaysTest() async -> [String: RelayTestFailure] {
+        var fs: [String: RelayTestFailure] = [:]
+        for i in 0..<chatRelays.count {
+            if chatRelays[i].enabled && !chatRelays[i].deleted {
+                if let f = await testRelayConnection(relay: $chatRelays[i]) {
+                    let name = !chatRelays[i].name.isEmpty ? chatRelays[i].name : chatRelays[i].domains.first ?? chatRelays[i].address
+                    fs[name] = f
                 }
             }
         }

@@ -259,6 +259,7 @@ struct OperatorView: View {
                         TestServersButton(
                             smpServers: $userServers[operatorIndex].smpServers,
                             xftpServers: $userServers[operatorIndex].xftpServers,
+                            chatRelays: $userServers[operatorIndex].chatRelays,
                             testing: $testing
                         )
                     }
