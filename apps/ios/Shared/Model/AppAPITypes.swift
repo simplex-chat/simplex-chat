@@ -2018,11 +2018,11 @@ struct ProtocolTestFailure: Decodable, Error, Equatable {
 }
 
 public enum RelayTestStep: String, Decodable {
-    case getLink = "GetLink"
-    case decodeLink = "DecodeLink"
-    case connect = "Connect"
-    case waitResponse = "WaitResponse"
-    case verify = "Verify"
+    case getLink
+    case decodeLink
+    case connect
+    case waitResponse
+    case verify
 
     var text: String {
         switch self {
