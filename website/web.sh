@@ -48,7 +48,6 @@ for lang in "${langs[@]}"; do
   cp src/invitation.html src/$lang
   cp src/fdroid.html src/$lang
   cp src/why.html src/$lang
-  cp src/file.html src/$lang
   echo "{\"lang\":\"$lang\"}" > src/$lang/$lang.json
   echo "done $lang copying"
 done

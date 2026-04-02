@@ -266,6 +266,13 @@ function displayEntries(entries) {
         textContainer.appendChild(memberCountElement);
       }
 
+      if (entryType?.admission?.review === "all") {
+        const knockingElement = document.createElement('p');
+        knockingElement.textContent = 'New members are reviewed by admins';
+        knockingElement.className = 'text-sm';
+        textContainer.appendChild(knockingElement);
+      }
+
       const imgLinkElement = document.createElement('a');
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {

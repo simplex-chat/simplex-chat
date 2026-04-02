@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -117,12 +118,25 @@ fun DatabaseErrorView(
           OpenDatabaseDirectoryButton()
         }
         is MigrationError.Downgrade -> {
+          val warnings = downMigrationWarnings(err.downMigrations).reversed()
           DatabaseErrorDetails(MR.strings.database_downgrade) {
             TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUpDown) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
               Text(generalGetString(MR.strings.downgrade_and_open_chat))
             }
             Spacer(Modifier.height(20.dp))
+            Icon(
+              painterResource(MR.images.ic_warning_filled),
+              contentDescription = null,
+              Modifier.size(40.dp).align(Alignment.CenterHorizontally),
+              tint = Color.Red
+            )
+            Spacer(Modifier.height(12.dp))
             Text(generalGetString(MR.strings.database_downgrade_warning), fontWeight = FontWeight.Bold)
+            if (warnings.isNotEmpty()) {
+              warnings.forEach { warning ->
+                Text(warning, fontWeight = FontWeight.Bold)
+              }
+            }
             FileNameText(status.dbFile)
             MigrationsText(err.downMigrations)
             AppVersionText()
