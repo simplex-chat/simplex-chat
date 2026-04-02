@@ -1491,19 +1491,19 @@ processChatCommand vr nm = \case
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APITestProtoServer userId srv
   APITestChatRelay userId address -> withUserId userId $ \user -> do
-    let failAt step desc = pure $ CRChatRelayTestResult user Nothing (Just $ RelayTestFailure step desc)
+    let failAt step e = pure $ CRChatRelayTestResult user Nothing (Just $ RelayTestFailure step e)
     r <- tryAllErrors $ getShortLinkConnReq nm user address
     case r of
-      Left e -> failAt RTSGetLink (show e)
+      Left e -> failAt RTSGetLink e
       Right (FixedLinkData {rootKey, linkConnReq = cReq}, cData) -> do
         relayProfile_ <- liftIO $ decodeLinkUserData cData
         case relayProfile_ of
-          Nothing -> failAt RTSDecodeLink "no relay address link data"
+          Nothing -> failAt RTSDecodeLink (ChatError $ CEInternalError "no relay address link data")
           Just RelayAddressLinkData {relayProfile} -> do
-            let failWithProfile step desc =
-                  pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step desc)
+            let failWithProfile step e =
+                  pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
             lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
-              Nothing -> failWithProfile RTSConnect "invalid connection request"
+              Nothing -> failWithProfile RTSConnect (ChatError $ CEInternalError "invalid connection request")
               Just (agentV, _) -> do
                 let chatV = agentToChatVersion agentV
                 subMode <- chatReadVar subscriptionMode
@@ -1524,8 +1524,8 @@ processChatCommand vr nm = \case
                 withFastStore' $ \db -> deleteConnectionRecord db user dbConnId
                 deleteAgentConnectionAsync acId
                 case testResult of
-                  Left e -> failWithProfile RTSConnect (show e)
-                  Right Nothing -> failWithProfile RTSWaitResponse "timeout"
+                  Left e -> failWithProfile RTSConnect e
+                  Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CEInternalError "timeout")
                   Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
                   Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
   TestChatRelay address -> withUser $ \User {userId} ->
@@ -2202,14 +2202,15 @@ processChatCommand vr nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user@User {localDisplayName, userChatRelay} -> do
+  APICreateMyAddress userId -> withUserId userId $ \user@User {profile = LocalProfile {displayName}, userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
+    -- TODO [relays] relay: add identity, key to link data?
     let userData
-          | isTrue userChatRelay = encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {name = localDisplayName}}
+          | isTrue userChatRelay = encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {name = displayName}}
           | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]

@@ -659,7 +659,7 @@ data RelayTestStep
 
 data RelayTestFailure = RelayTestFailure
   { rtfStep :: RelayTestStep,
-    rtfDescription :: String
+    rtfError :: ChatError
   }
   deriving (Show)
 

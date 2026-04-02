@@ -253,12 +253,12 @@ createRelayTestConnection db vr user@User {userId} agentConnId connStatus chatV 
         INSERT INTO connections (
           user_id, agent_conn_id, conn_level, conn_status, conn_type,
           conn_chat_version, to_subscribe, pq_support, pq_encryption,
-          created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          relay_test, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (userId, agentConnId, 0 :: Int, connStatus, ConnContact)
           :. (chatV, BI (subMode == SMOnlyCreate), PQSupportOff, PQSupportOff)
-          :. (currentTs, currentTs)
+          :. (BI True, currentTs, currentTs)
       )
   connId <- liftIO $ insertedRowId db
   getConnectionById db vr user connId

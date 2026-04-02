@@ -907,11 +907,9 @@ getStaleRelayTestConns db User {userId} cutoffTs =
       db
       [sql|
         SELECT agent_conn_id FROM connections
-        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL
-          AND conn_status = ? AND contact_conn_initiated = 0
-          AND created_at < ?
+        WHERE user_id = ? AND relay_test = 1 AND created_at < ?
       |]
-      (userId, ConnContact, ConnPrepared, cutoffTs)
+      (userId, cutoffTs)
 
 deleteConnectionByAgentConnId :: DB.Connection -> User -> ConnId -> IO ()
 deleteConnectionByAgentConnId db User {userId} acId =

@@ -1616,8 +1616,8 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
 
 viewRelayTestResult :: Maybe RelayProfile -> Maybe RelayTestFailure -> [StyledString]
 viewRelayTestResult relayProfile_ = \case
-  Just RelayTestFailure {rtfStep, rtfDescription} ->
-    ["relay test failed at " <> plain (show rtfStep) <> ", error: " <> plain rtfDescription]
+  Just RelayTestFailure {rtfStep, rtfError} ->
+    ["relay test failed at " <> plain (show rtfStep) <> ", error: " <> plain (show rtfError)]
   Nothing -> case relayProfile_ of
     Just RelayProfile {name} -> ["relay test passed, profile: " <> plain (T.unpack name)]
     Nothing -> ["relay test passed"]

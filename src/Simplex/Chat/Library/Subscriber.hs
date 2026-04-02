@@ -413,20 +413,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               r <- tryAllErrors $ do
                 ChatMessage {chatMsgEvent} <- parseChatMessage conn connInfo
                 case chatMsgEvent of
-                  XGrpRelayTest _challenge sig_ ->
-                    case sig_ of
-                      Just sig
-                        | C.verify' rootKey sig challenge ->
-                            atomically $ putTMVar testVar Nothing
-                        | otherwise ->
-                            atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify "invalid signature")
+                  XGrpRelayTest _challenge sigBytes_ ->
+                    case sigBytes_ of
+                      Just sigBytes -> case C.decodeSignature sigBytes of
+                        Right sig
+                          | C.verify' rootKey sig challenge ->
+                              atomically $ putTMVar testVar Nothing
+                          | otherwise ->
+                              atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CEInternalError "invalid signature"))
+                        Left e ->
+                          atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CEInternalError $ "signature decoding failed: " <> e))
                       Nothing ->
-                        atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify "no signature in response")
+                        atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CEInternalError "no signature in response"))
                   _ ->
-                    atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse "unexpected message type")
+                    atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse (ChatError $ CEInternalError "unexpected message type"))
               case r of
                 Left e ->
-                  atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse (show e))
+                  atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse e)
                 Right () -> pure ()
             Nothing -> do
               conn' <- processCONFpqSupport conn pqSupport
@@ -1483,7 +1486,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case privKey_ of
             Nothing -> eToView $ ChatError (CEInternalError "no short link key for relay address")
             Just privKey -> do
-              let sig = C.sign' privKey challenge
+              let sig = C.signatureBytes $ C.sign' privKey challenge
                   msg = XGrpRelayTest challenge (Just sig)
               subMode <- chatReadVar subscriptionMode
               chatVR <- chatVersionRange

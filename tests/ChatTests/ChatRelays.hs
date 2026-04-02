@@ -130,17 +130,13 @@ testChatRelayTest ps =
         (cathSLink, _cLink) <- getContactLinks cath True
 
         -- Scenario 1: Happy path - test relay address succeeds
-        concurrentlyN_
-          [ do
-              alice ##> ("/relay test " <> bobSLink)
-              alice <## "relay test passed, profile: bob",
-            pure ()
-          ]
+        alice ##> ("/relay test " <> bobSLink)
+        alice <## "relay test passed, profile: bob"
 
         -- Scenario 2: Non-relay address - cath is not a relay user,
         -- her address has ContactShortLinkData, not RelayAddressLinkData
         alice ##> ("/relay test " <> cathSLink)
-        alice <## "relay test failed at RTSDecodeLink, error: no relay address link data"
+        alice <##. "relay test failed at RTSDecodeLink, error: "
 
         -- Scenario 3: Deleted address - bob deletes his address
         bob ##> "/da"

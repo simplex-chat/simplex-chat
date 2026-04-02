@@ -436,7 +436,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
   XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
-  XGrpRelayTest :: ByteString -> Maybe (C.Signature 'C.Ed25519) -> ChatMsgEvent 'Json
+  XGrpRelayTest :: ByteString -> Maybe ByteString -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -1289,11 +1289,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink"
       XGrpRelayTest_ -> do
         B64UrlByteString challenge <- p "challenge"
-        sig_ <- traverse decodeSig =<< opt "signature"
+        sig_ <- fmap (\(B64UrlByteString s) -> s) <$> opt "signature"
         pure $ XGrpRelayTest challenge sig_
-        where
-          decodeSig :: B64UrlByteString -> Either String (C.Signature 'C.Ed25519)
-          decodeSig (B64UrlByteString s) = C.decodeSignature s
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1362,7 +1359,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
       XGrpRelayAcpt relayLink -> o ["relayLink" .= relayLink]
       XGrpRelayTest challenge sig_ -> o $
-        ("signature" .=? (B64UrlByteString . C.signatureBytes <$> sig_))
+        ("signature" .=? (B64UrlByteString <$> sig_))
         ["challenge" .= B64UrlByteString challenge]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
