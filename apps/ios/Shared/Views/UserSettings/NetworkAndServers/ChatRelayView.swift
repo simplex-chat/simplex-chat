@@ -152,12 +152,12 @@ struct ChatRelayView: View {
 
     private func presetRelay() -> some View {
         List {
-            Section(header: Text("Preset relay name").foregroundColor(theme.colors.secondary)) {
-                Text(relayToEdit.name)
-            }
             Section(header: Text("Preset relay address").foregroundColor(theme.colors.secondary)) {
                 Text(relayToEdit.address)
                     .textSelection(.enabled)
+            }
+            Section(header: Text("Preset relay name").foregroundColor(theme.colors.secondary)) {
+                Text(relayToEdit.name)
             }
             useRelaySection()
         }
@@ -165,12 +165,6 @@ struct ChatRelayView: View {
 
     private func customRelay(validName: Bool, validAddress: Bool) -> some View {
         List {
-            Section {
-                TextField("Enter relay name…", text: $relayToEdit.name)
-                    .autocorrectionDisabled(true)
-            } header: {
-                relayNameHeader(validName: validName)
-            }
             Section {
                 TextEditor(text: $relayToEdit.address)
                     .multilineTextAlignment(.leading)
@@ -188,6 +182,17 @@ struct ChatRelayView: View {
                         Spacer()
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                     }
+                }
+            }
+            Section {
+                TextField("Enter relay name…", text: $relayToEdit.name)
+                    .autocorrectionDisabled(true)
+                    .disabled(relayToEdit.tested == true)
+            } header: {
+                relayNameHeader(validName: validName)
+            } footer: {
+                if relayToEdit.tested != true {
+                    Text("**Test relay** to retrieve its name.")
                 }
             }
             useRelaySection(valid: validAddress)
@@ -297,19 +302,6 @@ struct NewChatRelayView: View {
         ZStack {
         List {
             Section {
-                TextField("Enter relay name…", text: $relayToEdit.name)
-                    .autocorrectionDisabled(true)
-            } header: {
-                HStack {
-                    Text("Your relay name").foregroundColor(theme.colors.secondary)
-                    if !validName {
-                        Spacer()
-                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                            .onTapGesture { showInvalidRelayNameAlert($relayToEdit.name) }
-                    }
-                }
-            }
-            Section {
                 TextEditor(text: $relayToEdit.address)
                     .multilineTextAlignment(.leading)
                     .autocorrectionDisabled(true)
@@ -326,6 +318,24 @@ struct NewChatRelayView: View {
                         Spacer()
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                     }
+                }
+            }
+            Section {
+                TextField("Enter relay name…", text: $relayToEdit.name)
+                    .autocorrectionDisabled(true)
+                    .disabled(relayToEdit.tested == true)
+            } header: {
+                HStack {
+                    Text("Your relay name").foregroundColor(theme.colors.secondary)
+                    if !validName {
+                        Spacer()
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                            .onTapGesture { showInvalidRelayNameAlert($relayToEdit.name) }
+                    }
+                }
+            } footer: {
+                if relayToEdit.tested != true {
+                    Text("**Test relay** to retrieve its name.")
                 }
             }
             Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
@@ -360,6 +370,9 @@ struct NewChatRelayView: View {
                 title: Text("Relay test failed!"),
                 message: Text(testFailure?.localizedDescription ?? "")
             )
+        }
+        .onChange(of: relayToEdit.address) { _ in
+            relayToEdit.tested = nil
         }
     }
 }
