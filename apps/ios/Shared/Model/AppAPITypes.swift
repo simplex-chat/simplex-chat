@@ -2045,7 +2045,7 @@ public struct RelayTestFailure: Decodable, Error {
         case .errorAgent(agentError: .SMP(_, .AUTH)):
             return err + " " + NSLocalizedString("Server requires authorization to connect to relay, check password.", comment: "relay test error")
         case .errorAgent(agentError: .BROKER(_, .NETWORK(.unknownCAError))):
-            return err + " " + NSLocalizedString("Fingerprint in relay address does not match certificate.", comment: "relay test error")
+            return err + " " + NSLocalizedString("Fingerprint in server address does not match certificate.", comment: "relay test error")
         default:
             return err + " " + String.localizedStringWithFormat(NSLocalizedString("Error: %@.", comment: "relay test error"), String(describing: rtfError))
         }
