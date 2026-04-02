@@ -444,21 +444,30 @@ fun OperatorViewLayout(
           testing = testing,
           smpServers = userServers.value[operatorIndex].smpServers,
           xftpServers = userServers.value[operatorIndex].xftpServers,
-        ) { p, l ->
-          when (p) {
-            ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
-              this[operatorIndex] = this[operatorIndex].copy(
-                xftpServers = l
-              )
-            }
+          chatRelays = userServers.value[operatorIndex].chatRelays,
+          onUpdate = { p, l ->
+            when (p) {
+              ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+                this[operatorIndex] = this[operatorIndex].copy(
+                  xftpServers = l
+                )
+              }
 
-            ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+              ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+                this[operatorIndex] = this[operatorIndex].copy(
+                  smpServers = l
+                )
+              }
+            }
+          },
+          onUpdateRelays = { relays ->
+            userServers.value = userServers.value.toMutableList().apply {
               this[operatorIndex] = this[operatorIndex].copy(
-                smpServers = l
+                chatRelays = relays
               )
             }
           }
-        }
+        )
       }
 
       SectionBottomSpacer()

@@ -115,6 +115,7 @@ import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
 import System.Random (randomRIO)
+import System.Timeout (timeout)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkIO, threadDelay)
 import UnliftIO.Directory
@@ -1489,6 +1490,46 @@ processChatCommand vr nm = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APITestProtoServer userId srv
+  APITestChatRelay userId address -> withUserId userId $ \user -> do
+    let failAt step e = pure $ CRChatRelayTestResult user Nothing (Just $ RelayTestFailure step e)
+    r <- tryAllErrors $ getShortLinkConnReq nm user address
+    case r of
+      Left e -> failAt RTSGetLink e
+      Right (FixedLinkData {rootKey, linkConnReq = cReq}, cData) -> do
+        relayProfile_ <- liftIO $ decodeLinkUserData cData
+        case relayProfile_ of
+          Nothing -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
+          Just RelayAddressLinkData {relayProfile} -> do
+            let failWithProfile step e =
+                  pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
+            lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+              Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
+              Just (agentV, _) -> do
+                let chatV = agentToChatVersion agentV
+                subMode <- chatReadVar subscriptionMode
+                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+                conn@Connection {connId = testCId} <- withFastStore $ \db ->
+                  createRelayTestConnection db vr user connId ConnPrepared chatV subMode
+                challenge <- drgRandomBytes 32
+                testVar <- newEmptyTMVarIO
+                let acId = aConnId conn
+                    relayTest = RelayTest {challenge, rootKey, result = testVar}
+                chatRelayTests_ <- asks chatRelayTests
+                atomically $ TM.insert acId relayTest chatRelayTests_
+                testResult <- tryAllErrors $ do
+                  dm <- encodeConnInfo $ XGrpRelayTest challenge Nothing
+                  void $ withAgent $ \a -> joinConnection a nm (aUserId user) acId True cReq dm PQSupportOff subMode
+                  liftIO $ timeout 40000000 $ atomically $ takeTMVar testVar
+                atomically $ TM.delete acId chatRelayTests_
+                withFastStore' $ \db -> deleteConnectionRecord db user testCId
+                deleteAgentConnectionAsync acId
+                case testResult of
+                  Left e -> failWithProfile RTSConnect e
+                  Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CERelayTestError "timeout")
+                  Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
+                  Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
+  TestChatRelay address -> withUser $ \User {userId} ->
+    processChatCommand vr nm $ APITestChatRelay userId address
   GetUserChatRelays -> withUser $ \user -> do
     srvs <- withFastStore (`getUserServers` user)
     liftIO $ CRUserServers user <$> groupByOperator (onlyRelays srvs)
@@ -2161,14 +2202,16 @@ processChatCommand vr nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user@User {userChatRelay} -> do
+  APICreateMyAddress userId -> withUserId userId $ \user@User {profile = LocalProfile {displayName}, userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    -- TODO [relays] relay: add relay profile, identity, key to link data?
-    let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
+    -- TODO [relays] relay: add identity, key to link data?
+    let userData
+          | isTrue userChatRelay = encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {name = displayName}}
+          | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
@@ -4504,6 +4547,8 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupInProgressGroups user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+      cleanupStaleRelayTestConns user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -4523,6 +4568,13 @@ cleanupManager = do
       inProgressGroups <- withStore' $ \db -> getInProgressGroups db vr user cutoffTs
       forM_ inProgressGroups $ \gInfo ->
         deleteInProgressGroup user gInfo `catchAllErrors` eToView
+    cleanupStaleRelayTestConns user = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-300) ts
+      staleConns <- withStore' $ \db -> getStaleRelayTestConns db user cutoffTs
+      forM_ staleConns $ \acId -> do
+        deleteAgentConnectionAsync acId
+        withStore' $ \db -> deleteConnectionByAgentConnId db user acId
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
@@ -4767,6 +4819,8 @@ chatCommandP =
       "/xftp " *> (SetUserProtoServers (AProtocolType SPXFTP) . map (AProtoServerWithAuth SPXFTP) <$> protocolServersP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
+      "/_relay test " *> (APITestChatRelay <$> A.decimal <* A.space <*> strP),
+      "/relay test " *> (TestChatRelay <$> strP),
       "/relays " *> (SetUserChatRelays <$> chatRelaysP),
       "/relays" $> GetUserChatRelays,
       "/_operators" $> APIGetServerOperators,

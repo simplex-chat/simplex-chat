@@ -11,6 +11,7 @@ chatRelayTests = do
     it "get and set chat relays" testGetSetChatRelays
     it "re-add soft-deleted relay by same address" testReAddRelaySameAddress
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
+    it "test chat relay" testChatRelayTest
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
@@ -114,6 +115,35 @@ testReAddRelaySameName ps =
         alice <## "Your servers"
         alice <## "  Chat relays"
         alice <## ("    my_relay: " <> bobSLink)
+
+testChatRelayTest :: HasCallStack => TestParams -> IO ()
+testChatRelayTest ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        -- Setup: bob (relay) creates address
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+
+        -- Setup: cath (normal user) creates address
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+
+        -- Scenario 1: Happy path - test relay address succeeds
+        alice ##> ("/relay test " <> bobSLink)
+        alice <## "relay test passed, profile: bob"
+
+        -- Scenario 2: Non-relay address - cath is not a relay user,
+        -- her address has ContactShortLinkData, not RelayAddressLinkData
+        alice ##> ("/relay test " <> cathSLink)
+        alice <##. "relay test failed at RTSDecodeLink, error: "
+
+        -- Scenario 3: Deleted address - bob deletes his address
+        bob ##> "/da"
+        bob <## "Your chat address is deleted - accepted contacts will remain connected."
+        bob <## "To create a new chat address use /ad"
+        alice ##> ("/relay test " <> bobSLink)
+        alice <##. "relay test failed at RTSGetLink, error: "
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

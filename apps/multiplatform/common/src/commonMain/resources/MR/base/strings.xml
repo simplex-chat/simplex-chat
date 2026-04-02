@@ -2840,8 +2840,15 @@
   <string name="test_relay">Test relay</string>
   <string name="use_for_new_channels">Use for new channels</string>
   <string name="delete_relay">Delete relay</string>
-  <string name="not_implemented">Not implemented</string>
-  <string name="relay_testing_not_available">Relay testing is not yet available.</string>
+  <string name="test_relay_to_retrieve_name"><![CDATA[<b>Test relay</b> to retrieve its name.]]></string>
+  <string name="relay_test_failed_alert">Relay test failed!</string>
+  <string name="relay_test_step_get_link">Get link</string>
+  <string name="relay_test_step_decode_link">Decode link</string>
+  <string name="relay_test_step_connect">Connect</string>
+  <string name="relay_test_step_wait_response">Wait response</string>
+  <string name="relay_test_step_verify">Verify</string>
+  <string name="error_relay_test_failed_at_step">Test failed at step %s.</string>
+  <string name="error_relay_test_server_auth">Server requires authorization to connect to relay, check password.</string>
   <string name="invalid_relay_name">Invalid relay name!</string>
   <string name="check_relay_name">Check relay name and try again.</string>
   <string name="invalid_relay_address">Invalid relay address!</string>

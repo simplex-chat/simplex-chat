@@ -250,6 +250,7 @@ data ChatController = ChatController
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
+    chatRelayTests :: TMap ConnId RelayTest,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -398,9 +399,8 @@ data ChatCommand
   | TestProtoServer AProtoServerWithAuth
   | GetUserChatRelays
   | SetUserChatRelays [CLINewRelay]
-  -- TODO [relays] commands to test chat relay
-  -- | APITestChatRelay UserId ConnLinkContact
-  -- | TestChatRelay ConnLinkContact
+  | APITestChatRelay UserId ShortLinkContact
+  | TestChatRelay ShortLinkContact
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
@@ -649,6 +649,26 @@ data RelayConnectionResult = RelayConnectionResult
   }
   deriving (Show)
 
+data RelayTestStep
+  = RTSGetLink
+  | RTSDecodeLink
+  | RTSConnect
+  | RTSWaitResponse
+  | RTSVerify
+  deriving (Show)
+
+data RelayTestFailure = RelayTestFailure
+  { rtfStep :: RelayTestStep,
+    rtfError :: ChatError
+  }
+  deriving (Show)
+
+data RelayTest = RelayTest
+  { challenge :: ByteString,
+    rootKey :: C.PublicKeyEd25519,
+    result :: TMVar (Maybe RelayTestFailure)
+  }
+
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
@@ -665,6 +685,7 @@ data ChatResponse
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
+  | CRChatRelayTestResult {user :: User, relayProfile :: Maybe RelayProfile, relayTestFailure :: Maybe RelayTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
   | CRUserServersValidation {user :: User, serverErrors :: [UserServersError], serverWarnings :: [UserServersWarning]}
@@ -1351,6 +1372,7 @@ data ChatErrorType
   | CEConnectionIncognitoChangeProhibited
   | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
+  | CERelayTestError {message :: String}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception)
@@ -1678,6 +1700,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
 
 $(JQ.deriveJSON defaultJSON ''RelayConnectionResult)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
+
+$(JQ.deriveJSON defaultJSON ''RelayTestFailure)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

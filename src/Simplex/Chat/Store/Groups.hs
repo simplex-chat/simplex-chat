@@ -1335,11 +1335,11 @@ groupRelayQuery =
 
 toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
 toGroupRelay (groupRelayId, groupMemberId, chatRelayId, address, name, domains, BI preset, tested, BI enabled, BI deleted, relayStatus, relayLink) =
-  let userChatRelay = UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
+  let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = RelayProfile {name}, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
    in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
-createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {name} = do
+createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {name}} = do
   currentTs <- liftIO getCurrentTime
   let relayProfile = profileFromName name
   (localDisplayName, memProfileId) <- createNewMemberProfile_ db user relayProfile currentTs

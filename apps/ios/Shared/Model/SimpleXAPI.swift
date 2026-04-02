@@ -758,6 +758,15 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r.unexpected
 }
 
+func testChatRelay(address: String) async throws -> (RelayProfile?, RelayTestFailure?) {
+    let userId = try currentUserId("testChatRelay")
+    let r: ChatResponse0 = try await chatSendCmd(.apiTestChatRelay(userId: userId, address: address))
+    if case let .chatRelayTestResult(_, relayProfile, relayTestFailure) = r {
+        return (relayProfile, relayTestFailure)
+    }
+    throw r.unexpected
+}
+
 func getServerOperators() async throws -> ServerOperatorConditions {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetServerOperators)
     if case let .serverOperatorConditions(conditions) = r { return conditions }

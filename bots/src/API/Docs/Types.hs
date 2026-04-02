@@ -331,6 +331,7 @@ chatTypesDocsData =
     (sti @RcvFileStatus, STUnion, "RFS", [], "", ""),
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
+    (sti @RelayProfile, STRecord, "", [], "", ""),
     (sti @RelayStatus, STEnum, "RS", [], "", ""),
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
@@ -534,6 +535,7 @@ deriving instance Generic RcvFileDescr
 deriving instance Generic RcvFileStatus
 deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
+deriving instance Generic RelayProfile
 deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode

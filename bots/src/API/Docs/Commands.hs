@@ -414,6 +414,7 @@ undocumentedCommands =
     "APISwitchGroupMember",
     "APISyncContactRatchet",
     "APISyncGroupMemberRatchet",
+    "APITestChatRelay",
     "APITestProtoServer",
     "APIUnhideUser",
     "APIUnmuteUser",
@@ -471,6 +472,7 @@ undocumentedCommands =
     "StopRemoteHost",
     "StoreRemoteFile",
     "SwitchRemoteHost",
+    "TestChatRelay",
     "TestProtoServer",
     "TestStorageEncryption",
     "VerifyRemoteCtrlSession"

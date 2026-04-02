@@ -1767,6 +1767,15 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         INSERT INTO connections (
           user_id, agent_conn_id, conn_level, conn_status, conn_type,
+          conn_chat_version, to_subscribe, pq_support, pq_encryption,
+          relay_test, created_at, updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      
+Plan:
+
+Query: 
+        INSERT INTO connections (
+          user_id, agent_conn_id, conn_level, conn_status, conn_type,
           group_member_id, conn_chat_version, to_subscribe, pq_support, pq_encryption,
           created_at, updated_at
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
@@ -3292,6 +3301,13 @@ Query:
       
 Plan:
 SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
+
+Query: 
+        SELECT agent_conn_id FROM connections
+        WHERE user_id = ? AND relay_test = 1 AND created_at < ?
+      
+Plan:
+SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
 
 Query: 
         SELECT c.agent_conn_id
