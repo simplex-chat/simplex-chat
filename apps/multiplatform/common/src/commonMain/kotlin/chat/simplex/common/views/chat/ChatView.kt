@@ -1007,6 +1007,11 @@ fun ChatLayout(
                   CommandsMenuView(chatsCtx, chat, composeState, showCommandsMenu)
                 }
               }
+              // Copy button: last child of chat Box — above messages,
+              // behind compose (ABPL paints compose after) and toolbars (outer Box paints after ABPL)
+              if (appPlatform.isDesktop) {
+                SelectionCopyButton()
+              }
             }
           }
           if (chatsCtx.contentTag == MsgContentTag.Report) {
@@ -1057,10 +1062,6 @@ fun ChatLayout(
               composeView(composeViewFocusRequester)
             }
           }
-        }
-        // Copy button: above messages, behind toolbars/compose
-        if (appPlatform.isDesktop) {
-          SelectionCopyButton()
         }
         val reportsCount = reportsCount(chatInfo?.id)
         val supportUnreadCount = supportUnreadCount(chatInfo?.id)
