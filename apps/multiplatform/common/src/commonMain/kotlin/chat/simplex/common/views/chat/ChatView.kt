@@ -1058,6 +1058,10 @@ fun ChatLayout(
             }
           }
         }
+        // Copy button: above messages, behind toolbars/compose
+        if (appPlatform.isDesktop) {
+          SelectionCopyButton()
+        }
         val reportsCount = reportsCount(chatInfo?.id)
         val supportUnreadCount = supportUnreadCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
@@ -1133,10 +1137,6 @@ fun ChatLayout(
               }
             }
           }
-        }
-        // Desktop selection copy button — last child of outer Box, on top of everything
-        if (appPlatform.isDesktop) {
-          SelectionCopyButton()
         }
       }
     }
