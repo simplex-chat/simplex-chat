@@ -110,16 +110,23 @@ class SelectionManager {
         selectionState = SelectionState.Idle
     }
 
+    // Computes copy button position relative to the viewport (called during layout phase).
+    // Dragging down: button below focus char (top-left at char's bottom-right corner).
+    // Dragging up: button above focus char (bottom-right at char's top-left corner).
+    // focusCharRect X is absolute window coords, Y is relative to item.
     fun copyButtonOffset(draggingDown: Boolean, gap: Float, buttonSize: IntSize): IntOffset {
         val r = range ?: return IntOffset.Zero
         val ls = listState?.value ?: return IntOffset.Zero
         val itemInfo = ls.layoutInfo.visibleItemsInfo.find { it.index == r.endIndex }
-            ?: return IntOffset(-10000, -10000)
+            ?: return IntOffset(-10000, -10000) // focus item scrolled off screen
+        // Item top in viewport coords (reversed layout: viewportEnd - offset - size)
         val itemWindowY = (ls.layoutInfo.viewportEndOffset - itemInfo.offset - itemInfo.size).toFloat()
         val cr = focusCharRect
         val vp = viewportPosition
+        // Convert from window coords to viewport-relative
         val charX = (if (draggingDown) cr.right else cr.left) - vp.x
         val charY = itemWindowY + (if (draggingDown) cr.bottom else cr.top) - vp.y
+        // Anchor button corner at char corner with gap
         val x = if (draggingDown) charX else (charX - buttonSize.width).coerceAtLeast(0f)
         val y = if (draggingDown) charY + gap else charY - buttonSize.height - gap
         val clampedX = x.coerceIn(0f, (viewportWidth - buttonSize.width).coerceAtLeast(0f))
@@ -180,13 +187,11 @@ private const val MAX_SCROLL_SPEED = 20f
 
 @Composable
 fun BoxScope.SelectionHandler(
-    manager: SelectionManager?,
+    manager: SelectionManager,
     listState: State<LazyListState>,
     mergedItems: State<MergedItems>,
     linkMode: SimplexLinkMode
 ): Modifier {
-    if (manager == null || !appPlatform.isDesktop) return Modifier
-
     val touchSlop = LocalViewConfiguration.current.touchSlop
     val clipboard = LocalClipboardManager.current
     val focusRequester = remember { FocusRequester() }
