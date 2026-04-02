@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
@@ -1137,19 +1136,7 @@ fun ChatLayout(
         }
         // Desktop selection copy button — last child of outer Box, on top of everything
         if (appPlatform.isDesktop) {
-          val manager = LocalSelectionManager.current
-          val range = manager?.range
-          if (manager != null && manager.selectionState == SelectionState.Selected && range != null && manager.focusCharRect != Rect.Zero) {
-            val draggingDown = range.startIndex > range.endIndex || (range.startIndex == range.endIndex && range.startOffset < range.endOffset)
-            val gap = with(LocalDensity.current) { 4.dp.toPx() }
-            var buttonSize by remember { mutableStateOf(IntSize.Zero) }
-            SelectionCopyButton(
-              modifier = Modifier
-                .offset { manager.copyButtonOffset(draggingDown, gap, buttonSize) }
-                .onSizeChanged { buttonSize = it },
-              onCopy = { manager.onCopySelection?.invoke() }
-            )
-          }
+          SelectionCopyButton()
         }
       }
     }

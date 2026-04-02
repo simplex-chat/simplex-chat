@@ -22,33 +22,8 @@ val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiF
 
 @Composable
 fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
-  val selectionManager = LocalSelectionManager.current
-  val selectionIndex = LocalItemContext.current.selectionIndex
   val emojiText = chatItem.content.text.trim()
-
-  if (selectionManager != null && selectionIndex >= 0) {
-    val isAnchor = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    LaunchedEffect(isAnchor.value) {
-      if (!isAnchor.value) return@LaunchedEffect
-      selectionManager.setAnchorOffset(0)
-    }
-
-    val isFocus = remember(selectionIndex) {
-      derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
-    }
-    if (isFocus.value) {
-      LaunchedEffect(Unit) {
-        snapshotFlow { selectionManager.focusWindowY }
-          .collect { selectionManager.updateFocusOffset(emojiText.length) }
-      }
-    }
-  }
-
-  val isSelected = if (selectionManager != null && selectionIndex >= 0) {
-    remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) != null } }.value
-  } else false
+  val isSelected = setupEmojiSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, emojiText.length)
 
   Column(
     Modifier.padding(vertical = 8.dp, horizontal = 12.dp),

@@ -23,8 +23,10 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -404,14 +406,48 @@ fun setupItemSelection(selectionManager: SelectionManager?, selectionIndex: Int,
     return ItemSelection(highlightRange, positionModifier, onTextLayoutResult)
 }
 
+// Sets up full-item selection for emoji items (no character-level tracking).
 @Composable
-fun SelectionCopyButton(modifier: Modifier = Modifier, onCopy: () -> Unit) {
+fun setupEmojiSelection(selectionManager: SelectionManager?, selectionIndex: Int, textLength: Int): Boolean {
+    if (selectionManager == null || selectionIndex < 0) return false
+
+    val isAnchor = remember(selectionIndex) {
+        derivedStateOf { selectionManager.range?.startIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+    }
+    LaunchedEffect(isAnchor.value) {
+        if (!isAnchor.value) return@LaunchedEffect
+        selectionManager.setAnchorOffset(0)
+    }
+
+    val isFocus = remember(selectionIndex) {
+        derivedStateOf { selectionManager.range?.endIndex == selectionIndex && selectionManager.selectionState == SelectionState.Selecting }
+    }
+    if (isFocus.value) {
+        LaunchedEffect(Unit) {
+            snapshotFlow { selectionManager.focusWindowY }
+                .collect { selectionManager.updateFocusOffset(textLength) }
+        }
+    }
+
+    return remember(selectionIndex) { derivedStateOf { selectedRange(selectionManager.range, selectionIndex) != null } }.value
+}
+
+@Composable
+fun SelectionCopyButton() {
+    val manager = LocalSelectionManager.current ?: return
+    val range = manager.range ?: return
+    if (manager.selectionState != SelectionState.Selected || manager.focusCharRect == Rect.Zero) return
+    val draggingDown = range.startIndex > range.endIndex || (range.startIndex == range.endIndex && range.startOffset < range.endOffset)
+    val gap = with(LocalDensity.current) { 4.dp.toPx() }
+    var buttonSize by remember { mutableStateOf(IntSize.Zero) }
     Row(
-        modifier
+        Modifier
+            .offset { manager.copyButtonOffset(draggingDown, gap, buttonSize) }
+            .onSizeChanged { buttonSize = it }
             .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
             .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .clickable { onCopy() }
+            .clickable { manager.onCopySelection?.invoke() }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
