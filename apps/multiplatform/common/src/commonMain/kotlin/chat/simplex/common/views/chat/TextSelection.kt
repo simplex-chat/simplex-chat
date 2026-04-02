@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.displayText
+import chat.simplex.common.views.chat.item.itemSegmentDisplayText
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -110,6 +110,25 @@ class SelectionManager {
         selectionState = SelectionState.Selected
     }
 
+    // Snaps boundary offsets to include full transformed segments (mentions, links with showText).
+    fun snapSelection(items: List<MergedItem>, linkMode: SimplexLinkMode) {
+        val r = range ?: return
+        val startCi = items.getOrNull(r.startIndex)?.newest()?.item
+        val endCi = items.getOrNull(r.endIndex)?.newest()?.item
+        // expandRight: snap in the direction that grows the selection
+        val startExpandRight = if (r.startIndex == r.endIndex) r.startOffset > r.endOffset else r.startIndex < r.endIndex
+        val endExpandRight = if (r.startIndex == r.endIndex) r.endOffset > r.startOffset else r.endIndex < r.startIndex
+        val snappedStart = if (startCi != null && r.startOffset >= 0)
+            snapOffset(startCi, r.startOffset, linkMode, expandRight = startExpandRight)
+        else r.startOffset
+        val snappedEnd = if (endCi != null && r.endOffset >= 0)
+            snapOffset(endCi, r.endOffset, linkMode, expandRight = endExpandRight)
+        else r.endOffset
+        if (snappedStart != r.startOffset || snappedEnd != r.endOffset) {
+            range = r.copy(startOffset = snappedStart, endOffset = snappedEnd)
+        }
+    }
+
     fun clearSelection() {
         range = null
         selectionState = SelectionState.Idle
@@ -176,18 +195,14 @@ class SelectionManager {
         }
     }
 
-    fun getSelectedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
+    fun getSelectedCopiedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
         val r = range ?: return ""
         val lo = minOf(r.startIndex, r.endIndex)
         val hi = maxOf(r.startIndex, r.endIndex)
         return (lo..hi).mapNotNull { idx ->
             val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
             val sel = selectedRange(range, idx) ?: return@mapNotNull null
-            val text = displayText(ci, linkMode, sendCommandMsg = false)
-            text.substring(
-                sel.first.coerceAtMost(text.length),
-                (sel.last + 1).coerceAtMost(text.length)
-            )
+            selectedItemCopiedText(ci, sel, linkMode)
         }.reversed().joinToString("\n")
     }
 }
@@ -222,6 +237,48 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
     }
 }
 
+// Extracts source text for the selected range within one item.
+// Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
+// the full source is emitted if any part is selected. For untransformed segments, partial substring works.
+private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: SimplexLinkMode): String {
+    val formattedText = ci.formattedText ?: return ci.text.substring(
+        sel.first.coerceAtMost(ci.text.length),
+        (sel.last + 1).coerceAtMost(ci.text.length)
+    )
+    val sb = StringBuilder()
+    var displayOffset = 0
+    for (ft in formattedText) {
+        val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
+        val displayEnd = displayOffset + segDisplay.length
+        val overlapStart = maxOf(displayOffset, sel.first)
+        val overlapEnd = minOf(displayEnd, sel.last + 1)
+        if (overlapStart < overlapEnd) {
+            if (ft.text.length == segDisplay.length) {
+                sb.append(ft.text, overlapStart - displayOffset, overlapEnd - displayOffset)
+            } else {
+                sb.append(ft.text)
+            }
+        }
+        displayOffset = displayEnd
+    }
+    return sb.toString()
+}
+
+// Snaps a boundary offset to include full transformed segments.
+private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
+    val formattedText = ci.formattedText ?: return offset
+    var displayOffset = 0
+    for (ft in formattedText) {
+        val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
+        val displayEnd = displayOffset + segDisplay.length
+        if (offset > displayOffset && offset < displayEnd && ft.text.length != segDisplay.length) {
+            return if (expandRight) displayEnd else displayOffset
+        }
+        displayOffset = displayEnd
+    }
+    return offset
+}
+
 val LocalSelectionManager = staticCompositionLocalOf<SelectionManager?> { null }
 
 private const val AUTO_SCROLL_ZONE_PX = 40f
@@ -253,7 +310,7 @@ fun BoxScope.SelectionHandler(
 
     manager.listState = listState
     manager.onCopySelection = {
-        clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
+        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, linkMode)))
         manager.clearSelection()
         showToast(generalGetString(MR.strings.copied))
     }
@@ -314,6 +371,7 @@ fun BoxScope.SelectionHandler(
                         SelectionState.Selecting -> {
                             if (!event.pressed) {
                                 manager.endSelection()
+                                manager.snapSelection(mergedItems.value.items, linkMode)
                                 return@awaitEachGesture
                             }
                             val windowPos = event.position + manager.viewportPosition

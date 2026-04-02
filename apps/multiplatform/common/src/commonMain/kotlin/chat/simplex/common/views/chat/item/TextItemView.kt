@@ -57,35 +57,35 @@ private fun typingIndicator(recent: Boolean, typingIdx: Int): AnnotatedString = 
 private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
-// Must be coordinated with MarkdownText — same text transformations for:
-// Mention, HyperLink, SimplexLink, Command
-fun displayText(ci: ChatItem, linkMode: SimplexLinkMode, sendCommandMsg: Boolean): String {
-  val formattedText = ci.formattedText
-  if (formattedText == null) return ci.text
-  return formattedText.joinToString("") { ft ->
-    when (ft.format) {
-      is Format.Mention -> {
-        val mention = ci.mentions?.get(ft.format.memberName)
-        if (mention?.memberRef != null) {
-          val name = if (mention.memberRef.localAlias.isNullOrEmpty()) mention.memberRef.displayName
-            else "${mention.memberRef.localAlias} (${mention.memberRef.displayName})"
-          mentionText(name)
-        } else if (mention != null) mentionText(ft.format.memberName)
-        else ft.text
-      }
-      is Format.HyperLink -> ft.format.showText ?: ft.text
-      is Format.SimplexLink -> {
-        val t = ft.format.showText
-          ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
-        if (t != null) "$t ${ft.format.viaHosts}" else ft.text
-      }
-      is Format.Command -> if (sendCommandMsg) "/${ft.format.commandStr}" else ft.text
-      else -> ft.text
+// Display text for a single formatted segment — must be coordinated with MarkdownText.
+fun itemSegmentDisplayText(ft: FormattedText, ci: ChatItem, linkMode: SimplexLinkMode): String =
+  when (ft.format) {
+    is Format.Mention -> {
+      val mention = ci.mentions?.get(ft.format.memberName)
+      if (mention?.memberRef != null) {
+        val name = if (mention.memberRef.localAlias.isNullOrEmpty()) mention.memberRef.displayName
+          else "${mention.memberRef.localAlias} (${mention.memberRef.displayName})"
+        mentionText(name)
+      } else if (mention != null) mentionText(ft.format.memberName)
+      else ft.text
     }
+    is Format.HyperLink -> ft.format.showText ?: ft.text
+    is Format.SimplexLink -> {
+      val t = ft.format.showText
+        ?: if (linkMode == SimplexLinkMode.DESCRIPTION) ft.format.linkType.description else null
+      if (t != null) "$t ${ft.format.viaHosts}" else ft.text
+    }
+    is Format.Command -> ft.text
+    else -> ft.text
   }
+
+// Full display text for a chat item — joins segment display texts.
+fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
+  val formattedText = ci.formattedText ?: return ci.text
+  return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
 }
 
-// Text transformations in this function must match displayText above
+// Text transformations in MarkdownText must match itemSegmentDisplayText above
 @Composable
 fun MarkdownText (
   text: CharSequence,
@@ -531,4 +531,4 @@ private fun isRtl(s: CharSequence): Boolean {
   return false
 }
 
-private fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
+fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
