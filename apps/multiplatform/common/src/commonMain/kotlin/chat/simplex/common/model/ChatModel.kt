@@ -2299,14 +2299,6 @@ data class UserChatRelay(
 
   val name: String get() = relayProfile.name
 
-  constructor(
-    chatRelayId: Long? = null, address: String, name: String, domains: List<String>,
-    preset: Boolean, tested: Boolean? = null, enabled: Boolean, deleted: Boolean
-  ) : this(
-    chatRelayId = chatRelayId, address = address, relayProfile = RelayProfile(name = name),
-    domains = domains, preset = preset, tested = tested, enabled = enabled, deleted = deleted
-  )
-
   fun copyWithName(name: String): UserChatRelay = copy(relayProfile = RelayProfile(name = name))
 }
 

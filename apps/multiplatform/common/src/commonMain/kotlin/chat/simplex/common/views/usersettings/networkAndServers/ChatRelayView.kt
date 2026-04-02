@@ -362,7 +362,7 @@ fun ModalData.NewChatRelayView(
   val relayToEdit = remember {
     mutableStateOf(
       UserChatRelay(
-        chatRelayId = null, address = "", name = "", domains = emptyList(),
+        chatRelayId = null, address = "", relayProfile = RelayProfile(name = ""), domains = emptyList(),
         preset = false, tested = null, enabled = true, deleted = false
       )
     )
