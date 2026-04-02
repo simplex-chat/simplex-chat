@@ -7231,7 +7231,7 @@ sealed class ChatErrorType {
       is ConnectionIncognitoChangeProhibited -> "connectionIncognitoChangeProhibited"
       is ConnectionUserChangeProhibited -> "connectionUserChangeProhibited"
       is PeerChatVRangeIncompatible -> "peerChatVRangeIncompatible"
-      is RelayTestError -> "relayTestError"
+      is RelayTestError -> "relayTestError $message"
       is InternalError -> "internalError"
       is CEException -> "exception $message"
     }

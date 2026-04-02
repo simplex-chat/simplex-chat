@@ -356,21 +356,21 @@ private suspend fun testServers(
   onUpdate: (ServerProtocol, List<UserServer>) -> Unit,
   onUpdateRelays: ((List<UserChatRelay>) -> Unit)?
 ) {
+  val relaysResetStatus = resetRelayTestStatus(chatRelays)
+  onUpdateRelays?.invoke(relaysResetStatus)
   val smpResetStatus = resetTestStatus(smpServers)
   onUpdate(ServerProtocol.SMP, smpResetStatus)
   val xftpResetStatus = resetTestStatus(xftpServers)
   onUpdate(ServerProtocol.XFTP, xftpResetStatus)
-  val relaysResetStatus = resetRelayTestStatus(chatRelays)
-  onUpdateRelays?.invoke(relaysResetStatus)
   testing.value = true
+  val relayFailures = runRelaysTest(relaysResetStatus) { onUpdateRelays?.invoke(it) }
   val smpFailures = runServersTest(smpResetStatus, m) { onUpdate(ServerProtocol.SMP, it) }
   val xftpFailures = runServersTest(xftpResetStatus, m) { onUpdate(ServerProtocol.XFTP, it) }
-  val relayFailures = runRelaysTest(relaysResetStatus) { onUpdateRelays?.invoke(it) }
   testing.value = false
   val failures = mutableListOf<String>()
+  failures += relayFailures.map { (name, f) -> "$name: ${f.localizedDescription}" }
   failures += smpFailures.map { (srv, f) -> "$srv: ${f.localizedDescription}" }
   failures += xftpFailures.map { (srv, f) -> "$srv: ${f.localizedDescription}" }
-  failures += relayFailures.map { (name, f) -> "$name: ${f.localizedDescription}" }
   if (failures.isNotEmpty()) {
     val msg = failures.joinToString("\n")
     AlertManager.shared.showAlertMsg(

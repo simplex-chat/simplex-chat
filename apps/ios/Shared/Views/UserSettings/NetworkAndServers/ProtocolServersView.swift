@@ -371,13 +371,13 @@ struct TestServersButton: View {
         resetTestStatus()
         testing = true
         Task {
-            let sfs = await runServersTest()
             let rfs = await runRelaysTest()
+            let sfs = await runServersTest()
             await MainActor.run {
                 testing = false
                 var failures: [String] = []
-                failures += sfs.map { (srv, f) in "\(srv): \(f.localizedDescription)" }
                 failures += rfs.map { (name, f) in "\(name): \(f.localizedDescription)" }
+                failures += sfs.map { (srv, f) in "\(srv): \(f.localizedDescription)" }
                 if !failures.isEmpty {
                     let msg = failures.joined(separator: "\n")
                     showAlert(
@@ -390,6 +390,12 @@ struct TestServersButton: View {
     }
 
     private func resetTestStatus() {
+        for i in 0..<chatRelays.count {
+            if chatRelays[i].enabled && !chatRelays[i].deleted {
+                chatRelays[i].tested = nil
+            }
+        }
+
         for i in 0..<smpServers.count {
             if smpServers[i].enabled {
                 smpServers[i].tested = nil
@@ -399,12 +405,6 @@ struct TestServersButton: View {
         for i in 0..<xftpServers.count {
             if xftpServers[i].enabled {
                 xftpServers[i].tested = nil
-            }
-        }
-
-        for i in 0..<chatRelays.count {
-            if chatRelays[i].enabled && !chatRelays[i].deleted {
-                chatRelays[i].tested = nil
             }
         }
     }
