@@ -254,6 +254,8 @@ fun BoxScope.SelectionHandler(
     manager.listState = listState
     manager.onCopySelection = {
         clipboard.setText(AnnotatedString(manager.getSelectedText(mergedItems.value.items, linkMode)))
+        manager.clearSelection()
+        showToast(generalGetString(MR.strings.copied))
     }
 
     return Modifier
@@ -330,7 +332,6 @@ private fun resolveIndexAtY(listState: LazyListState, localY: Float): Int? {
     val idx = listState.layoutInfo.visibleItemsInfo.find { item ->
         reversedY >= item.offset && reversedY < item.offset + item.size
     }?.index
-    Log.e(TAG, "resolveIndexAtY localY=$localY reversedY=$reversedY → index=$idx")
     return idx
 }
 
