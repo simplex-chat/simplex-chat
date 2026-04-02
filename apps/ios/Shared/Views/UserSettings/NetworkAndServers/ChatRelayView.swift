@@ -135,7 +135,12 @@ struct ChatRelayView: View {
             )
         }
         .onChange(of: relayToEdit.address) { _ in
-            relayToEdit.tested = relayToEdit.address == relay.address ? relay.tested : nil
+            if relayToEdit.address == relay.address {
+                relayToEdit.tested = relay.tested
+                relayToEdit.name = relay.name
+            } else {
+                relayToEdit.tested = nil
+            }
         }
     }
 
