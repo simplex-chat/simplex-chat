@@ -29,25 +29,42 @@ async function initDirectory() {
 
   function applyHash() {
     const hash = location.hash;
-    let search = '';
-    try { if (hash.startsWith('#q=')) search = decodeURIComponent(hash.slice(3)); } catch(e) {}
-    const mode = hash === '#active' ? 'live' : hash === '#new' ? 'new' : 'top';
-    const btn = mode === 'live' ? liveBtn : mode === 'new' ? newBtn : topBtn;
-    const comparator = mode === 'live' ? byActiveAtDesc : mode === 'new' ? byCreatedAtDesc : bySortPriority;
-    if (search) searchInput.value = search;
+    let mode, comparator, btn, search = '';
+    switch (hash) {
+      case '#active':
+        mode = 'live';
+        comparator = byActiveAtDesc;
+        btn = liveBtn;
+      case '#new':
+        mode = 'new';
+        comparator = byCreatedAtDesc;
+        btn = newBtn;
+      default:
+        mode = 'top';
+        comparator = bySortPriority;
+        btn = topBtn;
+        try {
+          if (hash.startsWith('#q=')) {
+            search = decodeURIComponent(hash.slice(3));
+            if (search) searchInput.value = search;
+          }
+        } catch(e) {}
+      }
     currentSortMode = '';
     currentSearch = '';
     currentPage = 1;
-    renderEntries(mode, comparator, btn, search, true);
+    renderEntries(mode, comparator, btn, search);
   }
 
-  function renderEntries(mode, comparator, btn, search = '', replaceHash = false) {
+  function renderEntries(mode, comparator, btn, search = '') {
     if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
-    const hash = search ? '#q=' + encodeURIComponent(search) : mode === 'live' ? '#active' : mode === 'new' ? '#new' : '';
+    const hash = search ? '#q=' + encodeURIComponent(search)
+              : mode === 'live' ? '#active'
+              : mode === 'new' ? '#new'
+              : '';
     const url = hash || (location.pathname + location.search);
-    if (replaceHash) history.replaceState(null, '', url);
-    else history.pushState(null, '', url);
+    history.replaceState(null, '', url);
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
