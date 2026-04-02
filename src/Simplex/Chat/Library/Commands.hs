@@ -1498,12 +1498,12 @@ processChatCommand vr nm = \case
       Right (FixedLinkData {rootKey, linkConnReq = cReq}, cData) -> do
         relayProfile_ <- liftIO $ decodeLinkUserData cData
         case relayProfile_ of
-          Nothing -> failAt RTSDecodeLink (ChatError $ CEInternalError "no relay address link data")
+          Nothing -> failAt RTSDecodeLink (ChatError $ CERelayTestError "no relay address link data")
           Just RelayAddressLinkData {relayProfile} -> do
             let failWithProfile step e =
                   pure $ CRChatRelayTestResult user (Just relayProfile) (Just $ RelayTestFailure step e)
             lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
-              Nothing -> failWithProfile RTSConnect (ChatError $ CEInternalError "invalid connection request")
+              Nothing -> failWithProfile RTSConnect (ChatError $ CERelayTestError "invalid connection request")
               Just (agentV, _) -> do
                 let chatV = agentToChatVersion agentV
                 subMode <- chatReadVar subscriptionMode
@@ -1525,7 +1525,7 @@ processChatCommand vr nm = \case
                 deleteAgentConnectionAsync acId
                 case testResult of
                   Left e -> failWithProfile RTSConnect e
-                  Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CEInternalError "timeout")
+                  Right Nothing -> failWithProfile RTSWaitResponse (ChatError $ CERelayTestError "timeout")
                   Right (Just Nothing) -> pure $ CRChatRelayTestResult user (Just relayProfile) Nothing
                   Right (Just (Just failure)) -> pure $ CRChatRelayTestResult user (Just relayProfile) (Just failure)
   TestChatRelay address -> withUser $ \User {userId} ->

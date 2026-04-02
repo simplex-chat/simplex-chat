@@ -420,13 +420,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           | C.verify' rootKey sig challenge ->
                               atomically $ putTMVar testVar Nothing
                           | otherwise ->
-                              atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CEInternalError "invalid signature"))
+                              atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CERelayTestError "invalid signature"))
                         Left e ->
-                          atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CEInternalError $ "signature decoding failed: " <> e))
+                          atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CERelayTestError $ "signature decoding failed: " <> e))
                       Nothing ->
-                        atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CEInternalError "no signature in response"))
+                        atomically $ putTMVar testVar (Just $ RelayTestFailure RTSVerify (ChatError $ CERelayTestError "no signature in response"))
                   _ ->
-                    atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse (ChatError $ CEInternalError "unexpected message type"))
+                    atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse (ChatError $ CERelayTestError "unexpected message type"))
               case r of
                 Left e ->
                   atomically $ putTMVar testVar (Just $ RelayTestFailure RTSWaitResponse e)

@@ -2605,6 +2605,7 @@ viewChatError isCmd logLevel testView = \case
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
     CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
+    CERelayTestError e -> ["relay test error: " <> plain e]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

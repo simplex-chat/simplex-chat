@@ -795,6 +795,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case connectionIncognitoChangeProhibited
     case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
+    case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
 }

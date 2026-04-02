@@ -1372,6 +1372,7 @@ data ChatErrorType
   | CEConnectionIncognitoChangeProhibited
   | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
+  | CERelayTestError {message :: String}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception)
