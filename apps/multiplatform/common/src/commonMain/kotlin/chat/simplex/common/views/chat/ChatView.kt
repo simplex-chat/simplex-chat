@@ -1007,10 +1007,12 @@ fun ChatLayout(
                   CommandsMenuView(chatsCtx, chat, composeState, showCommandsMenu)
                 }
               }
-              // Copy button: last child of chat Box — above messages,
+              // Copy button inside TopStart-aligned wrapper — above messages,
               // behind compose (ABPL paints compose after) and toolbars (outer Box paints after ABPL)
               if (appPlatform.isDesktop) {
-                SelectionCopyButton()
+                Box(Modifier.matchParentSize()) {
+                  SelectionCopyButton()
+                }
               }
             }
           }
