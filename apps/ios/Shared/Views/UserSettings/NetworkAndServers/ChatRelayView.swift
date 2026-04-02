@@ -92,6 +92,9 @@ struct ChatRelayView: View {
     @Binding var relay: UserChatRelay
     @State var relayToEdit: UserChatRelay
     var backLabel: LocalizedStringKey
+    @State private var showTestFailure = false
+    @State private var testing = false
+    @State private var testFailure: RelayTestFailure?
 
     var body: some View {
         let validName = validRelayName(relayToEdit.name)
@@ -101,6 +104,9 @@ struct ChatRelayView: View {
                 presetRelay()
             } else {
                 customRelay(validName: validName, validAddress: validAddress)
+            }
+            if testing {
+                ProgressView().scaleEffect(2)
             }
         }
         .modifier(BackButton(label: backLabel, disabled: Binding.constant(false)) {
@@ -122,6 +128,15 @@ struct ChatRelayView: View {
                 )
             }
         })
+        .alert(isPresented: $showTestFailure) {
+            Alert(
+                title: Text("Relay test failed!"),
+                message: Text(testFailure?.localizedDescription ?? "")
+            )
+        }
+        .onChange(of: relayToEdit.address) { _ in
+            relayToEdit.tested = relayToEdit.address == relay.address ? relay.tested : nil
+        }
     }
 
     private func relayNameHeader(validName: Bool) -> some View {
@@ -193,12 +208,17 @@ struct ChatRelayView: View {
         Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
             HStack {
                 Button("Test relay") {
-                    showAlert(
-                        NSLocalizedString("Not implemented", comment: "alert title"),
-                        message: NSLocalizedString("Relay testing is not yet available.", comment: "alert message")
-                    )
+                    testing = true
+                    relayToEdit.tested = nil
+                    Task {
+                        if let f = await testRelayConnection(relay: $relayToEdit) {
+                            showTestFailure = true
+                            testFailure = f
+                        }
+                        await MainActor.run { testing = false }
+                    }
                 }
-                .disabled(!valid)
+                .disabled(!valid || testing)
                 Spacer()
                 showRelayTestStatus(relay: relayToEdit)
             }
@@ -267,10 +287,14 @@ struct NewChatRelayView: View {
         chatRelayId: nil, address: "", name: "", domains: [],
         preset: false, tested: nil, enabled: true, deleted: false
     )
+    @State private var showTestFailure = false
+    @State private var testing = false
+    @State private var testFailure: RelayTestFailure?
 
     var body: some View {
         let validName = validRelayName(relayToEdit.name)
         let validAddress = validRelayAddress(relayToEdit.address)
+        ZStack {
         List {
             Section {
                 TextField("Enter relay name…", text: $relayToEdit.name)
@@ -307,20 +331,56 @@ struct NewChatRelayView: View {
             Section(header: Text("Use relay").foregroundColor(theme.colors.secondary)) {
                 HStack {
                     Button("Test relay") {
-                        showAlert(
-                            NSLocalizedString("Not implemented", comment: "alert title"),
-                            message: NSLocalizedString("Relay testing is not yet available.", comment: "alert message")
-                        )
+                        testing = true
+                        relayToEdit.tested = nil
+                        Task {
+                            if let f = await testRelayConnection(relay: $relayToEdit) {
+                                showTestFailure = true
+                                testFailure = f
+                            }
+                            await MainActor.run { testing = false }
+                        }
                     }
-                    .disabled(!validAddress)
+                    .disabled(!validAddress || testing)
                     Spacer()
                     showRelayTestStatus(relay: relayToEdit)
                 }
                 Toggle("Use for new channels", isOn: $relayToEdit.enabled)
             }
         }
+        if testing {
+            ProgressView().scaleEffect(2)
+        }
+        }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             addChatRelay(relayToEdit, $userServers, $serverErrors, $serverWarnings, dismiss)
         })
+        .alert(isPresented: $showTestFailure) {
+            Alert(
+                title: Text("Relay test failed!"),
+                message: Text(testFailure?.localizedDescription ?? "")
+            )
+        }
+    }
+}
+
+func testRelayConnection(relay: Binding<UserChatRelay>) async -> RelayTestFailure? {
+    do {
+        let (relayProfile, testFailure) = try await testChatRelay(address: relay.wrappedValue.address)
+        if let f = testFailure {
+            await MainActor.run { relay.wrappedValue.tested = false }
+            return f
+        }
+        await MainActor.run {
+            relay.wrappedValue.tested = true
+            if let relayProfile {
+                relay.wrappedValue.name = relayProfile.name
+            }
+        }
+        return nil
+    } catch {
+        logger.error("testRelayConnection \(responseError(error))")
+        await MainActor.run { relay.wrappedValue.tested = false }
+        return nil
     }
 }

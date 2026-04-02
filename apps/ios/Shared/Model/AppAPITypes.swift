@@ -2023,11 +2023,33 @@ public enum RelayTestStep: String, Decodable {
     case connect = "Connect"
     case waitResponse = "WaitResponse"
     case verify = "Verify"
+
+    var text: String {
+        switch self {
+        case .getLink: return NSLocalizedString("Get link", comment: "relay test step")
+        case .decodeLink: return NSLocalizedString("Decode link", comment: "relay test step")
+        case .connect: return NSLocalizedString("Connect", comment: "relay test step")
+        case .waitResponse: return NSLocalizedString("Wait response", comment: "relay test step")
+        case .verify: return NSLocalizedString("Verify", comment: "relay test step")
+        }
+    }
 }
 
-public struct RelayTestFailure: Decodable {
+public struct RelayTestFailure: Decodable, Error {
     public var rtfStep: RelayTestStep
-    public var rtfDescription: String
+    public var rtfError: ChatError
+
+    var localizedDescription: String {
+        let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "relay test failure"), rtfStep.text)
+        switch rtfError {
+        case .errorAgent(agentError: .SMP(_, .AUTH)):
+            return err + " " + NSLocalizedString("Server requires authorization to connect to relay, check password.", comment: "relay test error")
+        case .errorAgent(agentError: .BROKER(_, .NETWORK(.unknownCAError))):
+            return err + " " + NSLocalizedString("Fingerprint in relay address does not match certificate.", comment: "relay test error")
+        default:
+            return err + " " + String.localizedStringWithFormat(NSLocalizedString("Error: %@.", comment: "relay test error"), String(describing: rtfError))
+        }
+    }
 }
 
 struct MigrationFileLinkData: Codable {
