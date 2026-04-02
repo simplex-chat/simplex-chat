@@ -5,6 +5,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import uk.co.caprica.vlcj.factory.MediaPlayerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
@@ -13,15 +14,71 @@ import java.util.*
 import kotlin.math.max
 
 actual class RecorderNative: RecorderInterface {
+  private var factory: MediaPlayerFactory? = null
+  private var player: MediaPlayer? = null
+  private var progressJob: Job? = null
+  private var filePath: String? = null
+  private var recStartedAt: Long? = null
+
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
-    /*LALAL*/
-    return ""
+    VideoPlayerHolder.stopAll()
+    AudioPlayer.stop()
+    val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_", tmpDir), ".tmp", tmpDir)
+    fileToSave.deleteOnExit()
+    val path = fileToSave.absolutePath
+    filePath = path
+    val mrl = when {
+      desktopPlatform.isMac() -> "qtsound://"
+      desktopPlatform.isLinux() -> "pulse://"
+      desktopPlatform.isWindows() -> "dshow://"
+      else -> error("Unsupported platform")
+    }
+    val sout = ":sout=#transcode{vcodec=none,acodec=mp4a,ab=32,channels=1,samplerate=16000}:std{access=file,mux=mp4,dst=$path}"
+    val options = mutableListOf(sout)
+    if (desktopPlatform.isWindows()) {
+      options.add(":dshow-vdev=none")
+      options.add(":dshow-adev=")
+    }
+    val f = MediaPlayerFactory("--no-video", "--sout-avcodec-strict=-2")
+    factory = f
+    val p = f.mediaPlayers().newMediaPlayer()
+    player = p
+    p.media().play(mrl, *options.toTypedArray())
+    recStartedAt = System.currentTimeMillis()
+    progressJob = CoroutineScope(Dispatchers.Default).launch {
+      while (isActive) {
+        val ms = progress()
+        onProgressUpdate(ms, false)
+        if (ms != null && ms >= MAX_VOICE_MILLIS_FOR_SENDING) {
+          stop()
+          break
+        }
+        delay(50)
+      }
+    }.apply {
+      invokeOnCompletion { onProgressUpdate(realDuration(path), true) }
+    }
+    RecorderInterface.stopRecording = { stop() }
+    return path
   }
 
   override fun stop(): Int {
-    /*LALAL*/
-    return 0
+    val path = filePath ?: return 0
+    RecorderInterface.stopRecording = null
+    runCatching { player?.controls()?.stop() }
+    runCatching { player?.release() }
+    runCatching { factory?.release() }
+    runBlocking { progressJob?.cancelAndJoin() }
+    progressJob = null
+    filePath = null
+    player = null
+    factory = null
+    return (realDuration(path) ?: 0).also { recStartedAt = null }
   }
+
+  private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }
+
+  private fun realDuration(path: String): Int? = AudioPlayer.duration(path) ?: progress()
 }
 
 actual object AudioPlayer: AudioPlayerInterface {
