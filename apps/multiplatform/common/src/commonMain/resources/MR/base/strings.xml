@@ -54,6 +54,7 @@
   <string name="blocked_by_admin_items_description">%d messages blocked by admin</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
+  <string name="voice_recording_not_supported">Voice recording is not supported on your platform</string>
   <string name="sender_you_pronoun">you</string>
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>

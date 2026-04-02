@@ -31,7 +31,10 @@ actual class RecorderNative: RecorderInterface {
       desktopPlatform.isMac() -> "qtsound://"
       desktopPlatform.isLinux() -> "pulse://"
       desktopPlatform.isWindows() -> "dshow://"
-      else -> error("Unsupported platform")
+      else -> {
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.voice_recording_not_supported))
+        return ""
+      }
     }
     val sout = ":sout=#transcode{vcodec=none,acodec=mp4a,ab=32,channels=1,samplerate=16000}:std{access=file,mux=mp4,dst=$path}"
     val options = mutableListOf(sout)
