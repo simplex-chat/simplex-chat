@@ -403,19 +403,9 @@ fun ClickableText(
     }
   }
 
-  val selectionHighlight = if (selectionRange != null) {
-    Modifier.drawBehind {
-      layoutResult.value?.let { result ->
-        if (selectionRange.first <= selectionRange.last && selectionRange.last + 1 <= text.length) {
-          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
-        }
-      }
-    }
-  } else Modifier
-
   BasicText(
     text = text,
-    modifier = modifier.then(selectionHighlight).then(pressIndicator),
+    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)).then(pressIndicator),
     style = style,
     softWrap = softWrap,
     overflow = overflow,
@@ -438,19 +428,10 @@ private fun SelectableText(
   onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val highlight = if (selectionRange != null) {
-    Modifier.drawBehind {
-      layoutResult.value?.let { result ->
-        if (selectionRange.first <= selectionRange.last && selectionRange.last + 1 <= text.length) {
-          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
-        }
-      }
-    }
-  } else Modifier
 
   BasicText(
     text = text,
-    modifier = modifier.then(highlight),
+    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)),
     style = style,
     maxLines = maxLines,
     overflow = overflow,
@@ -460,6 +441,17 @@ private fun SelectableText(
     }
   )
 }
+
+private fun selectionHighlight(selectionRange: IntRange?, textLength: Int, layoutResult: State<TextLayoutResult?>): Modifier =
+  if (selectionRange != null) {
+    Modifier.drawBehind {
+      layoutResult.value?.let { result ->
+        if (selectionRange.first <= selectionRange.last && selectionRange.last + 1 <= textLength) {
+          drawPath(result.getPathForRange(selectionRange.first, selectionRange.last + 1), SelectionHighlightColor)
+        }
+      }
+    }
+  } else Modifier
 
 fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
   val (res, err) = sanitizeUri(uri)
