@@ -1491,7 +1491,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               subMode <- chatReadVar subscriptionMode
               chatVR <- chatVersionRange
               let chatV = chatVR `peerConnChatVersion` chatVRange
-              void $ agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+              (cmdId, acId) <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+              withFastStore $ \db -> do
+                Connection {connId = testCId} <- createRelayTestConnection db vr user acId ConnAccepted chatV subMode
+                liftIO $ setCommandConnId db user cmdId testCId
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
         memberJoinRequestViaRelay :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> MemberKey -> CM ()
