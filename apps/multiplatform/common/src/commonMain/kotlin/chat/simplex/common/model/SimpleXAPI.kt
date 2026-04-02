@@ -1216,6 +1216,14 @@ object ChatController {
     throw Exception("testProtoServer bad response: ${r.responseType} ${r.details}")
   }
 
+  suspend fun testChatRelay(rh: Long?, address: String): Pair<RelayProfile?, RelayTestFailure?> {
+    val userId = currentUserId("testChatRelay")
+    val r = sendCmd(rh, CC.APITestChatRelay(userId, address))
+    if (r is API.Result && r.res is CR.ChatRelayTestResult) return r.res.relayProfile to r.res.relayTestFailure
+    Log.e(TAG, "testChatRelay bad response: ${r.responseType} ${r.details}")
+    throw Exception("testChatRelay bad response: ${r.responseType} ${r.details}")
+  }
+
   suspend fun getServerOperators(rh: Long?): ServerOperatorConditionsDetail? {
     val r = sendCmd(rh, CC.ApiGetServerOperators())
     if (r is API.Result && r.res is CR.ServerOperatorConditions) return r.res.conditions
@@ -3637,6 +3645,7 @@ sealed class CC {
   class APISendMemberContactInvitation(val contactId: Long, val mc: MsgContent): CC()
   class APIAcceptMemberContact(val contactId: Long): CC()
   class APITestProtoServer(val userId: Long, val server: String): CC()
+  class APITestChatRelay(val userId: Long, val address: String): CC()
   class ApiGetServerOperators(): CC()
   class ApiSetServerOperators(val operators: List<ServerOperator>): CC()
   class ApiGetUserServers(val userId: Long): CC()
@@ -3837,6 +3846,7 @@ sealed class CC {
     is APISendMemberContactInvitation -> "/_invite member contact @$contactId ${mc.cmdString}"
     is APIAcceptMemberContact -> "/_accept member contact @$contactId"
     is APITestProtoServer -> "/_server test $userId $server"
+    is APITestChatRelay -> "/_relay test $userId $address"
     is ApiGetServerOperators -> "/_operators"
     is ApiSetServerOperators -> "/_operators ${json.encodeToString(operators)}"
     is ApiGetUserServers -> "/_servers $userId"
@@ -4015,6 +4025,7 @@ sealed class CC {
     is APISendMemberContactInvitation -> "apiSendMemberContactInvitation"
     is APIAcceptMemberContact -> "apiAcceptMemberContact"
     is APITestProtoServer -> "testProtoServer"
+    is APITestChatRelay -> "apiTestChatRelay"
     is ApiGetServerOperators -> "apiGetServerOperators"
     is ApiSetServerOperators -> "apiSetServerOperators"
     is ApiGetUserServers -> "apiGetUserServers"
@@ -4675,6 +4686,44 @@ data class ProtocolTestFailure(
         err + " " + generalGetString(MR.strings.error_smp_test_certificate)
       else ->
         err + " " + String.format(generalGetString(MR.strings.error_with_info), testError.toString())
+    }
+  }
+}
+
+@Serializable
+enum class RelayTestStep {
+  @SerialName("getLink") GetLink,
+  @SerialName("decodeLink") DecodeLink,
+  @SerialName("connect") Connect,
+  @SerialName("waitResponse") WaitResponse,
+  @SerialName("verify") Verify;
+
+  val text: String get() = when (this) {
+    GetLink -> generalGetString(MR.strings.relay_test_step_get_link)
+    DecodeLink -> generalGetString(MR.strings.relay_test_step_decode_link)
+    Connect -> generalGetString(MR.strings.relay_test_step_connect)
+    WaitResponse -> generalGetString(MR.strings.relay_test_step_wait_response)
+    Verify -> generalGetString(MR.strings.relay_test_step_verify)
+  }
+}
+
+@Serializable
+data class RelayTestFailure(
+  val rtfStep: RelayTestStep,
+  val rtfError: ChatError
+) {
+  val localizedDescription: String get() {
+    val err = String.format(generalGetString(MR.strings.error_relay_test_failed_at_step), rtfStep.text)
+    return when {
+      rtfError is ChatError.ChatErrorAgent &&
+        rtfError.agentError is AgentErrorType.SMP && rtfError.agentError.smpErr is SMPErrorType.AUTH ->
+          err + " " + generalGetString(MR.strings.error_relay_test_server_auth)
+      rtfError is ChatError.ChatErrorAgent &&
+        rtfError.agentError is AgentErrorType.BROKER && rtfError.agentError.brokerErr is BrokerErrorType.NETWORK &&
+        rtfError.agentError.brokerErr.networkError is NetworkError.UnknownCAError ->
+          err + " " + generalGetString(MR.strings.error_smp_test_certificate)
+      else ->
+        err + " " + String.format(generalGetString(MR.strings.error_with_info), rtfError.toString())
     }
   }
 }
@@ -6206,6 +6255,7 @@ sealed class CR {
   @Serializable @SerialName("chatTags") class ChatTags(val user: UserRef, val userTags: List<ChatTag>): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
+  @Serializable @SerialName("chatRelayTestResult") class ChatRelayTestResult(val user: UserRef, val relayProfile: RelayProfile? = null, val relayTestFailure: RelayTestFailure? = null): CR()
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
   @Serializable @SerialName("userServers") class UserServers(val user: UserRef, val userServers: List<UserOperatorServers>): CR()
   @Serializable @SerialName("userServersValidation") class UserServersValidation(val user: UserRef, val serverErrors: List<UserServersError>, val serverWarnings: List<UserServersWarning> = emptyList()): CR()
@@ -7179,6 +7229,7 @@ sealed class ChatErrorType {
       is ConnectionIncognitoChangeProhibited -> "connectionIncognitoChangeProhibited"
       is ConnectionUserChangeProhibited -> "connectionUserChangeProhibited"
       is PeerChatVRangeIncompatible -> "peerChatVRangeIncompatible"
+      is RelayTestError -> "relayTestError"
       is InternalError -> "internalError"
       is CEException -> "exception $message"
     }
@@ -7260,6 +7311,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("connectionIncognitoChangeProhibited") object ConnectionIncognitoChangeProhibited: ChatErrorType()
   @Serializable @SerialName("connectionUserChangeProhibited") object ConnectionUserChangeProhibited: ChatErrorType()
   @Serializable @SerialName("peerChatVRangeIncompatible") object PeerChatVRangeIncompatible: ChatErrorType()
+  @Serializable @SerialName("relayTestError") class RelayTestError(val message: String): ChatErrorType()
   @Serializable @SerialName("internalError") class InternalError(val message: String): ChatErrorType()
   @Serializable @SerialName("exception") class CEException(val message: String): ChatErrorType()
 }

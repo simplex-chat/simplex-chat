@@ -203,21 +203,30 @@ fun YourServersViewLayout(
         testing = testing,
         smpServers = userServers.value[operatorIndex].smpServers,
         xftpServers = userServers.value[operatorIndex].xftpServers,
-      ) { p, l ->
-        when (p) {
-          ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
-            this[operatorIndex] = this[operatorIndex].copy(
-              xftpServers = l
-            )
-          }
+        chatRelays = userServers.value[operatorIndex].chatRelays,
+        onUpdate = { p, l ->
+          when (p) {
+            ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                xftpServers = l
+              )
+            }
 
-          ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+            ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                smpServers = l
+              )
+            }
+          }
+        },
+        onUpdateRelays = { relays ->
+          userServers.value = userServers.value.toMutableList().apply {
             this[operatorIndex] = this[operatorIndex].copy(
-              smpServers = l
+              chatRelays = relays
             )
           }
         }
-      }
+      )
 
       HowToButton()
     }
@@ -229,16 +238,20 @@ fun YourServersViewLayout(
 fun TestServersButton(
   smpServers: List<UserServer>,
   xftpServers: List<UserServer>,
+  chatRelays: List<UserChatRelay> = emptyList(),
   testing: MutableState<Boolean>,
-  onUpdate: (ServerProtocol, List<UserServer>) -> Unit
+  onUpdate: (ServerProtocol, List<UserServer>) -> Unit,
+  onUpdateRelays: ((List<UserChatRelay>) -> Unit)? = null
 ) {
   val scope = rememberCoroutineScope()
-  val disabled = derivedStateOf { (smpServers.none { it.enabled } && xftpServers.none { it.enabled }) || testing.value }
+  val disabled = derivedStateOf {
+    (smpServers.none { it.enabled } && xftpServers.none { it.enabled } && chatRelays.filter { !it.deleted }.none { it.enabled }) || testing.value
+  }
 
   SectionItemView(
     {
       scope.launch {
-        testServers(testing, smpServers, xftpServers, chatModel, onUpdate)
+        testServers(testing, smpServers, xftpServers, chatRelays, chatModel, onUpdate, onUpdateRelays)
       }
     },
     disabled = disabled.value
@@ -338,20 +351,28 @@ private suspend fun testServers(
   testing: MutableState<Boolean>,
   smpServers: List<UserServer>,
   xftpServers: List<UserServer>,
+  chatRelays: List<UserChatRelay>,
   m: ChatModel,
-  onUpdate: (ServerProtocol, List<UserServer>) -> Unit
+  onUpdate: (ServerProtocol, List<UserServer>) -> Unit,
+  onUpdateRelays: ((List<UserChatRelay>) -> Unit)?
 ) {
   val smpResetStatus = resetTestStatus(smpServers)
   onUpdate(ServerProtocol.SMP, smpResetStatus)
   val xftpResetStatus = resetTestStatus(xftpServers)
   onUpdate(ServerProtocol.XFTP, xftpResetStatus)
+  val relaysResetStatus = resetRelayTestStatus(chatRelays)
+  onUpdateRelays?.invoke(relaysResetStatus)
   testing.value = true
   val smpFailures = runServersTest(smpResetStatus, m) { onUpdate(ServerProtocol.SMP, it) }
   val xftpFailures = runServersTest(xftpResetStatus, m) { onUpdate(ServerProtocol.XFTP, it) }
+  val relayFailures = runRelaysTest(relaysResetStatus) { onUpdateRelays?.invoke(it) }
   testing.value = false
-  val fs = smpFailures + xftpFailures
-  if (fs.isNotEmpty()) {
-    val msg = fs.map { it.key + ": " + it.value.localizedDescription }.joinToString("\n")
+  val failures = mutableListOf<String>()
+  failures += smpFailures.map { (srv, f) -> "$srv: ${f.localizedDescription}" }
+  failures += xftpFailures.map { (srv, f) -> "$srv: ${f.localizedDescription}" }
+  failures += relayFailures.map { (name, f) -> "$name: ${f.localizedDescription}" }
+  if (failures.isNotEmpty()) {
+    val msg = failures.joinToString("\n")
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.smp_servers_test_failed),
       text = generalGetString(MR.strings.smp_servers_test_some_failed) + "\n" + msg
@@ -383,6 +404,37 @@ private suspend fun runServersTest(servers: List<UserServer>, m: ChatModel, onUp
       onUpdated(updatedServers.toList())
       if (f != null) {
         fs[serverHostname(updatedServer.server)] = f
+      }
+    }
+  }
+  return fs
+}
+
+private fun resetRelayTestStatus(relays: List<UserChatRelay>): List<UserChatRelay> {
+  val copy = ArrayList(relays)
+  for ((index, relay) in relays.withIndex()) {
+    if (relay.enabled && !relay.deleted) {
+      copy.removeAt(index)
+      copy.add(index, relay.copy(tested = null))
+    }
+  }
+  return copy
+}
+
+private suspend fun runRelaysTest(relays: List<UserChatRelay>, onUpdated: (List<UserChatRelay>) -> Unit): Map<String, RelayTestFailure> {
+  val fs: MutableMap<String, RelayTestFailure> = mutableMapOf()
+  val updatedRelays = ArrayList<UserChatRelay>(relays)
+  for ((index, relay) in relays.withIndex()) {
+    if (relay.enabled && !relay.deleted) {
+      interruptIfCancelled()
+      val relayState = mutableStateOf(relay)
+      val f = testRelayConnection(relayState)
+      updatedRelays.removeAt(index)
+      updatedRelays.add(index, relayState.value)
+      onUpdated(updatedRelays.toList())
+      if (f != null) {
+        val name = relayState.value.name.ifEmpty { relayState.value.domains.firstOrNull() ?: relayState.value.address }
+        fs[name] = f
       }
     }
   }

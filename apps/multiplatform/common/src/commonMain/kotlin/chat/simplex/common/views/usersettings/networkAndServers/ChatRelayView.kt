@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -25,6 +26,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @Composable
 fun ShowRelayTestStatus(relay: UserChatRelay, modifier: Modifier = Modifier) =
@@ -115,6 +117,18 @@ fun ChatRelayView(
 ) {
   val relayToEdit = remember { mutableStateOf(relay) }
 
+  LaunchedEffect(Unit) {
+    snapshotFlow { relayToEdit.value.address }
+      .distinctUntilChanged()
+      .collect {
+        if (relayToEdit.value.address == relay.address) {
+          relayToEdit.value = relayToEdit.value.copy(tested = relay.tested, relayProfile = relay.relayProfile)
+        } else {
+          relayToEdit.value = relayToEdit.value.copy(tested = null)
+        }
+      }
+  }
+
   ModalView(
     close = {
       val validName = validRelayName(relayToEdit.value.name)
@@ -149,25 +163,25 @@ private fun ChatRelayLayout(
   relay: MutableState<UserChatRelay>,
   onDelete: (() -> Unit)?
 ) {
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.chat_relay))
-    if (relay.value.preset) {
-      PresetRelay(relay)
-    } else {
-      CustomRelay(relay, onDelete)
+  val testing = remember { mutableStateOf(false) }
+  Box {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.chat_relay))
+      if (relay.value.preset) {
+        PresetRelay(relay, testing)
+      } else {
+        CustomRelay(relay, onDelete, testing)
+      }
+      SectionBottomSpacer()
     }
-    SectionBottomSpacer()
+    if (testing.value) {
+      DefaultProgressView(null)
+    }
   }
 }
 
 @Composable
-private fun PresetRelay(relay: MutableState<UserChatRelay>) {
-  SectionView(stringResource(MR.strings.preset_relay_name).uppercase()) {
-    SectionItemView {
-      Text(relay.value.name)
-    }
-  }
-  SectionDividerSpaced()
+private fun PresetRelay(relay: MutableState<UserChatRelay>, testing: MutableState<Boolean>) {
   SectionView(stringResource(MR.strings.preset_relay_address).uppercase()) {
     SelectionContainer {
       Text(
@@ -178,13 +192,20 @@ private fun PresetRelay(relay: MutableState<UserChatRelay>) {
     }
   }
   SectionDividerSpaced()
-  UseRelaySection(relay)
+  SectionView(stringResource(MR.strings.preset_relay_name).uppercase()) {
+    SectionItemView {
+      Text(relay.value.name)
+    }
+  }
+  SectionDividerSpaced()
+  UseRelaySection(relay, testing = testing)
 }
 
 @Composable
 private fun CustomRelay(
   relay: MutableState<UserChatRelay>,
-  onDelete: (() -> Unit)?
+  onDelete: (() -> Unit)?,
+  testing: MutableState<Boolean>
 ) {
   val relayName = remember { mutableStateOf(relay.value.name) }
   val relayAddress = remember { mutableStateOf(relay.value.address) }
@@ -194,13 +215,25 @@ private fun CustomRelay(
   LaunchedEffect(Unit) {
     snapshotFlow { relayName.value }
       .distinctUntilChanged()
-      .collect { relay.value = relay.value.copy(name = it) }
+      .collect { relay.value = relay.value.copyWithName(it) }
   }
   LaunchedEffect(Unit) {
     snapshotFlow { relayAddress.value }
       .distinctUntilChanged()
       .collect { relay.value = relay.value.copy(address = it) }
   }
+
+  SectionView(
+    stringResource(MR.strings.your_relay_address).uppercase(),
+    icon = painterResource(MR.images.ic_error),
+    iconTint = if (!validAddress.value) MaterialTheme.colors.error else Color.Transparent,
+  ) {
+    TextEditor(
+      relayAddress,
+      Modifier.height(144.dp)
+    )
+  }
+  SectionDividerSpaced(maxTopPadding = true)
 
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
@@ -224,25 +257,17 @@ private fun CustomRelay(
       TextEditor(
         relayName,
         Modifier,
-        placeholder = generalGetString(MR.strings.enter_relay_name)
+        placeholder = generalGetString(MR.strings.enter_relay_name),
+        enabled = relay.value.tested != true
       )
     }
   }
-  SectionDividerSpaced(maxTopPadding = true)
-
-  SectionView(
-    stringResource(MR.strings.your_relay_address).uppercase(),
-    icon = painterResource(MR.images.ic_error),
-    iconTint = if (!validAddress.value) MaterialTheme.colors.error else Color.Transparent,
-  ) {
-    TextEditor(
-      relayAddress,
-      Modifier.height(144.dp)
-    )
+  if (relay.value.tested != true) {
+    SectionTextFooter(annotatedStringResource(MR.strings.test_relay_to_retrieve_name))
   }
   SectionDividerSpaced(maxTopPadding = true)
 
-  UseRelaySection(relay, validAddress.value)
+  UseRelaySection(relay, validAddress.value, testing)
 
   if (onDelete != null) {
     SectionDividerSpaced()
@@ -257,21 +282,31 @@ private fun CustomRelay(
 @Composable
 private fun UseRelaySection(
   relay: MutableState<UserChatRelay>,
-  valid: Boolean = true
+  valid: Boolean = true,
+  testing: MutableState<Boolean>
 ) {
+  val scope = rememberCoroutineScope()
   SectionView(stringResource(MR.strings.use_relay).uppercase()) {
     SectionItemViewSpaceBetween(
       click = {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.not_implemented),
-          text = generalGetString(MR.strings.relay_testing_not_available)
-        )
+        testing.value = true
+        relay.value = relay.value.copy(tested = null)
+        scope.launch {
+          val f = testRelayConnection(relay)
+          if (f != null) {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.relay_test_failed_alert),
+              text = f.localizedDescription
+            )
+          }
+          testing.value = false
+        }
       },
-      disabled = !valid
+      disabled = !valid || testing.value
     ) {
       Text(
         stringResource(MR.strings.test_relay),
-        color = if (valid) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary
+        color = if (valid && !testing.value) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary
       )
       ShowRelayTestStatus(relay.value)
     }
@@ -328,6 +363,14 @@ fun ModalData.NewChatRelayView(
     )
   }
 
+  LaunchedEffect(Unit) {
+    snapshotFlow { relayToEdit.value.address }
+      .distinctUntilChanged()
+      .collect {
+        relayToEdit.value = relayToEdit.value.copy(tested = null)
+      }
+  }
+
   ModalView(close = {
     addChatRelay(relayToEdit.value, userServers, serverErrors, serverWarnings, rhId, close)
   }) {
@@ -337,9 +380,33 @@ fun ModalData.NewChatRelayView(
 
 @Composable
 private fun NewChatRelayLayout(relay: MutableState<UserChatRelay>) {
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.new_chat_relay))
-    CustomRelay(relay, onDelete = null)
-    SectionBottomSpacer()
+  val testing = remember { mutableStateOf(false) }
+  Box {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.new_chat_relay))
+      CustomRelay(relay, onDelete = null, testing = testing)
+      SectionBottomSpacer()
+    }
+    if (testing.value) {
+      DefaultProgressView(null)
+    }
   }
 }
+
+suspend fun testRelayConnection(relay: MutableState<UserChatRelay>): RelayTestFailure? =
+  try {
+    val (relayProfile, testFailure) = chatModel.controller.testChatRelay(chatModel.remoteHostId(), relay.value.address)
+    if (testFailure != null) {
+      relay.value = relay.value.copy(tested = false)
+      testFailure
+    } else {
+      relay.value = relay.value.copy(tested = true).let {
+        if (relayProfile != null) it.copyWithName(relayProfile.name) else it
+      }
+      null
+    }
+  } catch (e: Exception) {
+    Log.e(TAG, "testRelayConnection ${e.stackTraceToString()}")
+    relay.value = relay.value.copy(tested = false)
+    null
+  }

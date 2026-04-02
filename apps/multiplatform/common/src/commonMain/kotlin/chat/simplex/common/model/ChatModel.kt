@@ -2278,10 +2278,15 @@ enum class RelayStatus {
 }
 
 @Serializable
+data class RelayProfile(
+  val name: String
+)
+
+@Serializable
 data class UserChatRelay(
   val chatRelayId: Long?,
   val address: String,
-  val name: String,
+  val relayProfile: RelayProfile,
   val domains: List<String>,
   val preset: Boolean,
   val tested: Boolean? = null,
@@ -2291,6 +2296,18 @@ data class UserChatRelay(
   @Transient
   private val createdAt: Date = Date()
   val id: String get() = "$address $createdAt"
+
+  val name: String get() = relayProfile.name
+
+  constructor(
+    chatRelayId: Long? = null, address: String, name: String, domains: List<String>,
+    preset: Boolean, tested: Boolean? = null, enabled: Boolean, deleted: Boolean
+  ) : this(
+    chatRelayId = chatRelayId, address = address, relayProfile = RelayProfile(name = name),
+    domains = domains, preset = preset, tested = tested, enabled = enabled, deleted = deleted
+  )
+
+  fun copyWithName(name: String): UserChatRelay = copy(relayProfile = RelayProfile(name = name))
 }
 
 @Serializable
