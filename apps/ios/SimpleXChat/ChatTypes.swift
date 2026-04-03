@@ -2580,7 +2580,7 @@ public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     public var deleted: Bool
     public var createdAt = Date()
 
-    public var name: String {
+    public var displayName: String {
         get { relayProfile.displayName }
         set { relayProfile.displayName = newValue }
     }

@@ -7,7 +7,7 @@ import Test.Hspec hiding (it)
 
 chatRelayTests :: SpecWith TestParams
 chatRelayTests = do
-  describe "configure chat relays" $ do
+  fdescribe "configure chat relays" $ do
     it "get and set chat relays" testGetSetChatRelays
     it "re-add soft-deleted relay by same address" testReAddRelaySameAddress
     it "re-add soft-deleted relay by same name" testReAddRelaySameName

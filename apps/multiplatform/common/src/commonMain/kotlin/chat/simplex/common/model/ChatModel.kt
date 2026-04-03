@@ -2300,7 +2300,7 @@ data class UserChatRelay(
   private val createdAt: Date = Date()
   val id: String get() = "$address $createdAt"
 
-  val name: String get() = relayProfile.displayName
+  val displayName: String get() = relayProfile.displayName
 
   fun copyWithName(name: String): UserChatRelay = copy(relayProfile = relayProfile.copy(displayName = name))
 }
