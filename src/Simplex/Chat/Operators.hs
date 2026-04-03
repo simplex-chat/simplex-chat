@@ -46,7 +46,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
-import Simplex.Chat.Protocol (RelayProfile (..))
+import Simplex.Chat.Protocol (RelayProfile (..), relayProfileFromName)
 import Simplex.Chat.Types (ShortLinkContact, User)
 import Simplex.Chat.Types.Shared (RelayStatus)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
@@ -331,17 +331,17 @@ newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
-presetChatRelay :: Bool -> Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
+presetChatRelay :: Bool -> RelayProfile -> [Text] -> ShortLinkContact -> NewUserChatRelay
 presetChatRelay = newChatRelay_ True
 {-# INLINE presetChatRelay #-}
 
-newChatRelay :: Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
+newChatRelay :: RelayProfile -> [Text] -> ShortLinkContact -> NewUserChatRelay
 newChatRelay = newChatRelay_ False True
 {-# INLINE newChatRelay #-}
 
-newChatRelay_ :: Bool -> Bool -> Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
-newChatRelay_ preset enabled name domains !address =
-  UserChatRelay {chatRelayId = DBNewEntity, address, relayProfile = RelayProfile {name}, domains, preset, tested = Nothing, enabled, deleted = False}
+newChatRelay_ :: Bool -> Bool -> RelayProfile -> [Text] -> ShortLinkContact -> NewUserChatRelay
+newChatRelay_ preset enabled relayProfile domains !address =
+  UserChatRelay {chatRelayId = DBNewEntity, address, relayProfile, domains, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it evaluates to (current conditions, and conditions to add)
@@ -544,11 +544,11 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     chatRelayErrs uss = concatMap duplicateErrs_ cRelays
       where
         cRelays = filter (\(AUCR _ UserChatRelay {deleted}) -> not deleted) $ userChatRelays uss
-        duplicateErrs_ (AUCR _ UserChatRelay {relayProfile = RelayProfile {name}, address}) =
-          [USEDuplicateChatRelayName name | name `elem` duplicateNames]
-            <> [USEDuplicateChatRelayAddress name address | address `elem` duplicateAddresses]
+        duplicateErrs_ (AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}, address}) =
+          [USEDuplicateChatRelayName displayName | displayName `elem` duplicateNames]
+            <> [USEDuplicateChatRelayAddress displayName address | address `elem` duplicateAddresses]
         duplicateNames = snd $ foldl' addDuplicate (S.empty, S.empty) allNames
-        allNames = map (\(AUCR _ UserChatRelay {relayProfile = RelayProfile {name}}) -> name) cRelays
+        allNames = map (\(AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}}) -> displayName) cRelays
         duplicateAddresses = snd $ foldl' addAddress ([], []) allAddresses
         allAddresses = map (\(AUCR _ UserChatRelay {address}) -> address) cRelays
         addAddress :: ([ShortLinkContact], [ShortLinkContact]) -> ShortLinkContact -> ([ShortLinkContact], [ShortLinkContact])

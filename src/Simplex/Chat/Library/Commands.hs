@@ -1544,7 +1544,7 @@ processChatCommand vr nm = \case
           processChatCommand vr nm $ APISetUserServers userId $ L.map (updatedRelays relays') userServers
     where
       aUserRelay :: CLINewRelay -> AUserChatRelay
-      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay name [""] address
+      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay (relayProfileFromName name) [""] address
   APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
   APISetServerOperators operators -> do
     as <- asks randomAgentServers
@@ -2210,7 +2210,7 @@ processChatCommand vr nm = \case
     subMode <- chatReadVar subscriptionMode
     -- TODO [relays] relay: add identity, key to link data?
     let userData
-          | isTrue userChatRelay = encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {name = displayName}}
+          | isTrue userChatRelay = encodeShortLinkData $ RelayAddressLinkData {relayProfile = relayProfileFromName displayName}
           | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]

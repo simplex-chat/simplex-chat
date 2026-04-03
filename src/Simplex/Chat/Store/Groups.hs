@@ -1327,21 +1327,21 @@ groupRelayQuery :: Query
 groupRelayQuery =
   [sql|
     SELECT gr.group_relay_id, gr.group_member_id,
-           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
            gr.relay_status, gr.relay_link
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
   |]
 
-toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
-toGroupRelay (groupRelayId, groupMemberId, chatRelayId, address, name, domains, BI preset, tested, BI enabled, BI deleted, relayStatus, relayLink) =
-  let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = RelayProfile {name}, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
+toGroupRelay :: (Int64, GroupMemberId, DBEntityId, ShortLinkContact, Text, Text, Maybe Text, Maybe ImageData, Text, BoolInt) :. (Maybe BoolInt, BoolInt, BoolInt, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
+toGroupRelay ((groupRelayId, groupMemberId, chatRelayId, address, displayName, fullName, shortDescr, image, domains, BI preset) :. (tested, BI enabled, BI deleted, relayStatus, relayLink)) =
+  let userChatRelay = UserChatRelay {chatRelayId, address, relayProfile = toRelayProfile (displayName, fullName, shortDescr, image), domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted}
    in GroupRelay {groupRelayId, groupMemberId, userChatRelay, relayStatus, relayLink}
 
 createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
-createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {name}} = do
+createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {displayName}} = do
   currentTs <- liftIO getCurrentTime
-  let relayProfile = profileFromName name
+  let relayProfile = profileFromName displayName
   (localDisplayName, memProfileId) <- createNewMemberProfile_ db user relayProfile currentTs
   groupMemberId <- createWithRandomId' db gVar $ \memId -> runExceptT $ do
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId

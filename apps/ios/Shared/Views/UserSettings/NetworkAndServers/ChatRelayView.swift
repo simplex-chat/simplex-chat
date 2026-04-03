@@ -392,7 +392,7 @@ func testRelayConnection(relay: Binding<UserChatRelay>) async -> RelayTestFailur
         await MainActor.run {
             relay.wrappedValue.tested = true
             if let relayProfile {
-                relay.wrappedValue.name = relayProfile.name
+                relay.wrappedValue.name = relayProfile.displayName
             }
         }
         return nil
