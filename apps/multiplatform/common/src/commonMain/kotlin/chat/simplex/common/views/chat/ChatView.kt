@@ -832,7 +832,6 @@ fun ChatView(
 
 fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableContent: MutableState<List<ContentFilter>>) {
   withBGApi {
-    Log.e(TAG, "updateAvailableContent")
     val chatInfo = activeChat.value?.chatInfo
     if (chatInfo == null || chatInfo !is ChatInfo.Direct && chatInfo !is ChatInfo.Group && chatInfo !is ChatInfo.Local) return@withBGApi
     val types = chatModel.controller.apiGetChatContentTypes(chatRh, chatInfo.chatType, chatInfo.apiId, null)
@@ -841,7 +840,6 @@ fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableCon
       availableContent.value = ContentFilter.entries
     } else {
       val typeSet: Set<MsgContentTag> = types.union(ContentFilter.alwaysShow)
-      Log.e(TAG, "updateAvailableContent $typeSet")
       availableContent.value = ContentFilter.entries.filter { it -> typeSet.contains(it.contentTag) }
     }
   }
@@ -1868,7 +1866,7 @@ fun BoxScope.ChatItemsList(
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val scope = rememberCoroutineScope()
   val scrollToItem: (Long) -> Unit = remember {
-    scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages)
+    scrollToItem(chatsCtx, remoteHostIdUpdated, searchValue, contentFilter, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages)
   }
   val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(chatsCtx, remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem, scrollToItemId) }
   if (chatsCtx.secondaryContextFilter == null) {
@@ -3097,7 +3095,10 @@ private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, de
 }
 
 private fun scrollToItem(
+  chatsCtx: ChatModel.ChatsContext,
+  remoteHostId: State<Long?>,
   searchValue: State<String>,
+  contentFilter: State<ContentFilter?>,
   loadingMoreItems: MutableState<Boolean>,
   animatedScrollingInProgress: MutableState<Boolean>,
   highlightedItems: MutableState<Set<Long>>,
@@ -3112,8 +3113,13 @@ private fun scrollToItem(
   withApi {
     try {
       var index = mergedItems.value.indexInParentItems[itemId] ?: -1
-      // Don't try to load messages while in search
-      if (index == -1 && searchValue.value.isNotBlank()) return@withApi
+      if (index == -1 && (searchValue.value.isNotBlank() || contentFilter.value != null)) {
+        val ci = chatInfo.value
+        apiLoadMessages(chatsCtx, remoteHostId.value, ci.chatType, ci.apiId,
+          ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2),
+          openAroundItemId = itemId)
+        return@withApi
+      }
       // setting it to 'loading' even if the item is loaded because in rare cases when the resulting item is near the top, scrolling to
       // it will trigger loading more items and will scroll to incorrect position (because of trimming)
       loadingMoreItems.value = true

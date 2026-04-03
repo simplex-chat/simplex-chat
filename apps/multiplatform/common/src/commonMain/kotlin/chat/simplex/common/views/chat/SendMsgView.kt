@@ -24,7 +24,6 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -313,21 +312,19 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
     LockToCurrentOrientationUntilDispose()
     StopRecordButton(stopRecordingAndAddAudio)
   } else {
-    val startRecording: () -> Unit = out@ {
-      if (appPlatform.isDesktop) {
-        return@out showInDevelopingAlert()
+    val startRecording: () -> Unit = {
+      val filePath = rec.start { progress: Int?, finished: Boolean ->
+        val state = recState.value
+        if (state is RecordingState.Started && progress != null) {
+          recState.value = if (!finished)
+            RecordingState.Started(state.filePath, progress)
+          else
+            RecordingState.Finished(state.filePath, progress)
+        }
       }
-      recState.value = RecordingState.Started(
-        filePath = rec.start { progress: Int?, finished: Boolean ->
-          val state = recState.value
-          if (state is RecordingState.Started && progress != null) {
-            recState.value = if (!finished)
-              RecordingState.Started(state.filePath, progress)
-            else
-              RecordingState.Finished(state.filePath, progress)
-          }
-        },
-      )
+      if (filePath.isNotEmpty()) {
+        recState.value = RecordingState.Started(filePath = filePath)
+      }
     }
     val interactionSource = interactionSourceWithTapDetection(
       onPress = { if (recState.value is RecordingState.NotStarted) startRecording() },

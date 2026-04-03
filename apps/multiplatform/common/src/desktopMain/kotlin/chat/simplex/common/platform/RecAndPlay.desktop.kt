@@ -5,6 +5,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import uk.co.caprica.vlcj.factory.MediaPlayerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
@@ -12,20 +13,77 @@ import java.io.File
 import java.util.*
 import kotlin.math.max
 
+internal val vlcFactory: MediaPlayerFactory by lazy { MediaPlayerFactory() }
+
 actual class RecorderNative: RecorderInterface {
+  private var player: MediaPlayer? = null
+  private var progressJob: Job? = null
+  private var filePath: String? = null
+  private var recStartedAt: Long? = null
+
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
-    /*LALAL*/
-    return ""
+    VideoPlayerHolder.stopAll()
+    AudioPlayer.stop()
+    val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_", tmpDir), ".tmp", tmpDir)
+    fileToSave.deleteOnExit()
+    val path = fileToSave.absolutePath
+    filePath = path
+    val mrl = when {
+      desktopPlatform.isMac() -> "qtsound://"
+      desktopPlatform.isLinux() -> "pulse://"
+      desktopPlatform.isWindows() -> "dshow://"
+      else -> {
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.voice_recording_not_supported))
+        return ""
+      }
+    }
+    val sout = ":sout=#transcode{vcodec=none,acodec=mp4a,ab=32,channels=1,samplerate=16000}:std{access=file,mux=mp4,dst=$path}"
+    val options = mutableListOf(sout, ":sout-avcodec-strict=-2")
+    if (desktopPlatform.isWindows()) {
+      options.add(":dshow-vdev=none")
+      options.add(":dshow-adev=")
+    }
+    RecorderInterface.stopRecording = { stop() }
+    progressJob = CoroutineScope(Dispatchers.Default).launch {
+      // Shared factory init may take a few seconds on first VLC use — progress shows 0 until recording starts
+      val p = vlcFactory.mediaPlayers().newMediaPlayer()
+      player = p
+      p.media().play(mrl, *options.toTypedArray())
+      recStartedAt = System.currentTimeMillis()
+      while (isActive) {
+        val ms = progress()
+        onProgressUpdate(ms, false)
+        if (ms != null && ms >= MAX_VOICE_MILLIS_FOR_SENDING) {
+          stop()
+          break
+        }
+        delay(50)
+      }
+    }.apply {
+      invokeOnCompletion { onProgressUpdate(realDuration(path), true) }
+    }
+    return path
   }
 
   override fun stop(): Int {
-    /*LALAL*/
-    return 0
+    val path = filePath ?: return 0
+    RecorderInterface.stopRecording = null
+    runCatching { player?.controls()?.stop() }
+    runCatching { player?.release() }
+    runBlocking { progressJob?.cancelAndJoin() }
+    progressJob = null
+    filePath = null
+    player = null
+    return (realDuration(path) ?: 0).also { recStartedAt = null }
   }
+
+  private fun progress(): Int? = recStartedAt?.let { (System.currentTimeMillis() - it).toInt() }
+
+  private fun realDuration(path: String): Int? = AudioPlayer.duration(path) ?: progress()
 }
 
 actual object AudioPlayer: AudioPlayerInterface {
-  private val player by lazy { AudioPlayerComponent().mediaPlayer() }
+  private val player by lazy { AudioPlayerComponent(vlcFactory).mediaPlayer() }
 
   override val currentlyPlaying: MutableState<CurrentlyPlayingState?> = mutableStateOf(null)
   private var progressJob: Job? = null
@@ -170,7 +228,7 @@ actual object AudioPlayer: AudioPlayerInterface {
   override fun duration(unencryptedFilePath: String): Int? {
     var res: Int? = null
     try {
-      val helperPlayer = AudioPlayerComponent().mediaPlayer()
+      val helperPlayer = AudioPlayerComponent(vlcFactory).mediaPlayer()
       helperPlayer.media().startPaused(unencryptedFilePath)
       res = helperPlayer.duration
       helperPlayer.stop()
