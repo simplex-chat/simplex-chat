@@ -432,7 +432,7 @@ private suspend fun runRelaysTest(relays: List<UserChatRelay>, onUpdated: (List<
       updatedRelays.add(index, relayState.value)
       onUpdated(updatedRelays.toList())
       if (f != null) {
-        val name = relayState.value.name.ifEmpty { relayState.value.domains.firstOrNull() ?: relayState.value.address }
+        val name = relayState.value.displayName.ifEmpty { relayState.value.domains.firstOrNull() ?: relayState.value.address }
         fs[name] = f
       }
     }

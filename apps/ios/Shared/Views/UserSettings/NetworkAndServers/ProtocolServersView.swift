@@ -432,7 +432,7 @@ struct TestServersButton: View {
         for i in 0..<chatRelays.count {
             if chatRelays[i].enabled && !chatRelays[i].deleted {
                 if let f = await testRelayConnection(relay: $chatRelays[i]) {
-                    let name = !chatRelays[i].name.isEmpty ? chatRelays[i].name : chatRelays[i].domains.first ?? chatRelays[i].address
+                    let name = !chatRelays[i].displayName.isEmpty ? chatRelays[i].displayName : chatRelays[i].domains.first ?? chatRelays[i].address
                     fs[name] = f
                 }
             }
