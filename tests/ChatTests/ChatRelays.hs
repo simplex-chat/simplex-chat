@@ -3,6 +3,7 @@ module ChatTests.ChatRelays where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
+import Control.Concurrent (threadDelay)
 import Test.Hspec hiding (it)
 
 chatRelayTests :: SpecWith TestParams
@@ -12,6 +13,7 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same address" testReAddRelaySameAddress
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
+    it "relay profile updated in address" testRelayProfileUpdateInAddress
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
@@ -131,7 +133,7 @@ testChatRelayTest ps =
 
         -- Scenario 1: Happy path - test relay address succeeds
         alice ##> ("/relay test " <> bobSLink)
-        alice <## "relay test passed, profile: bob"
+        alice <## "relay test passed, profile: bob (Bob)"
 
         -- Scenario 2: Non-relay address - cath is not a relay user,
         -- her address has ContactShortLinkData, not RelayAddressLinkData
@@ -144,6 +146,24 @@ testChatRelayTest ps =
         bob <## "To create a new chat address use /ad"
         alice ##> ("/relay test " <> bobSLink)
         alice <##. "relay test failed at RTSGetLink, error: "
+
+testRelayProfileUpdateInAddress :: HasCallStack => TestParams -> IO ()
+testRelayProfileUpdateInAddress ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      bob ##> "/ad"
+      (bobSLink, _cLink) <- getContactLinks bob True
+
+      alice ##> ("/relay test " <> bobSLink)
+      alice <## "relay test passed, profile: bob (Bob)"
+
+      bob ##> "/p bob2 Bob relay"
+      bob <## "user profile is changed to bob2 (Bob relay) (your 0 contacts are notified)"
+
+      threadDelay 100000
+
+      alice ##> ("/relay test " <> bobSLink)
+      alice <## "relay test passed, profile: bob2 (Bob relay)"
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

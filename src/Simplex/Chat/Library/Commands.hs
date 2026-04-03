@@ -2202,7 +2202,7 @@ processChatCommand vr nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user@User {profile = LocalProfile {displayName}, userChatRelay} -> do
+  APICreateMyAddress userId -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
@@ -2210,7 +2210,7 @@ processChatCommand vr nm = \case
     subMode <- chatReadVar subscriptionMode
     -- TODO [relays] relay: add identity, key to link data?
     let userData
-          | isTrue userChatRelay = encodeShortLinkData $ RelayAddressLinkData {relayProfile = relayProfileFromName displayName}
+          | isTrue userChatRelay = relayShortLinkData (userProfileDirect user Nothing Nothing True)
           | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
     -- TODO [certs rcv]
@@ -3583,11 +3583,13 @@ processChatCommand vr nm = \case
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
     setMyAddressData :: User -> UserContactLink -> CM UserContactLink
-    setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
+    setMyAddressData user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db vr user
       let shortLinkProfile = userProfileDirect user Nothing Nothing True
           -- TODO [short links] do not save address to server if data did not change, spinners, error handling
-          userData = contactShortLinkData shortLinkProfile $ Just addressSettings
+          userData
+            | isTrue userChatRelay = relayShortLinkData shortLinkProfile
+            | otherwise = contactShortLinkData shortLinkProfile $ Just addressSettings
           userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
@@ -4063,6 +4065,9 @@ processChatCommand vr nm = \case
           business = maybe False businessAddress settings
           contactData = ContactShortLinkData p msg business
        in encodeShortLinkData contactData
+    relayShortLinkData :: Profile -> UserLinkData
+    relayShortLinkData Profile {displayName, fullName, shortDescr, image} =
+      encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {displayName, fullName, shortDescr, image}}
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
       forM (connShortLink =<< connLinkInv) $ \_ -> do

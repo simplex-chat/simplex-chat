@@ -46,7 +46,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
-import Simplex.Chat.Protocol (RelayProfile (..), relayProfileFromName)
+import Simplex.Chat.Protocol (RelayProfile (..))
 import Simplex.Chat.Types (ShortLinkContact, User)
 import Simplex.Chat.Types.Shared (RelayStatus)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
