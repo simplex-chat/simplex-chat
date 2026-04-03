@@ -243,7 +243,6 @@ struct ChatRelayViewLink: View {
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
     @Binding var relay: UserChatRelay
-    var duplicateRelayNames: Set<String>
     var duplicateRelayAddresses: Set<String>
     var backLabel: LocalizedStringKey
     @Binding var selectedServer: String?
@@ -264,7 +263,7 @@ struct ChatRelayViewLink: View {
         } label: {
             HStack {
                 Group {
-                    if duplicateRelayNames.contains(relay.displayName) || duplicateRelayAddresses.contains(relay.address) {
+                    if duplicateRelayAddresses.contains(relay.address) {
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                     } else if !relay.enabled {
                         Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)

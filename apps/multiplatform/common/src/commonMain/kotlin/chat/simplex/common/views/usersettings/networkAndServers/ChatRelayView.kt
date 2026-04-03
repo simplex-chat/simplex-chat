@@ -329,14 +329,13 @@ private fun UseRelaySection(
 @Composable
 fun ChatRelayViewLink(
   relay: UserChatRelay,
-  duplicateRelayNames: Set<String>,
   duplicateRelayAddresses: Set<String>,
   onClick: () -> Unit
 ) {
   SectionItemView(onClick) {
     Box(Modifier.width(16.dp)) {
       when {
-        relay.displayName in duplicateRelayNames || relay.address in duplicateRelayAddresses -> InvalidServer()
+        relay.address in duplicateRelayAddresses -> InvalidServer()
         !relay.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
         else -> ShowRelayTestStatus(relay)
       }

@@ -25,7 +25,6 @@ CREATE TABLE chat_relays(
 );
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(user_id, address);
-CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay SMALLINT NOT NULL DEFAULT 0;
 
@@ -111,7 +110,6 @@ DROP TABLE group_relays;
 
 DROP INDEX idx_chat_relays_user_id;
 DROP INDEX idx_chat_relays_user_id_address;
-DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
 ALTER TABLE group_members

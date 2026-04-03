@@ -507,7 +507,6 @@ data UserServersError
   | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
-  | USEDuplicateChatRelayName {duplicateChatRelay :: Text}
   | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
   deriving (Show)
 
@@ -545,10 +544,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
       where
         cRelays = filter (\(AUCR _ UserChatRelay {deleted}) -> not deleted) $ userChatRelays uss
         duplicateErrs_ (AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}, address}) =
-          [USEDuplicateChatRelayName displayName | displayName `elem` duplicateNames]
-            <> [USEDuplicateChatRelayAddress displayName address | address `elem` duplicateAddresses]
-        duplicateNames = snd $ foldl' addDuplicate (S.empty, S.empty) allNames
-        allNames = map (\(AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}}) -> displayName) cRelays
+          [USEDuplicateChatRelayAddress displayName address | address `elem` duplicateAddresses]
         duplicateAddresses = snd $ foldl' addAddress ([], []) allAddresses
         allAddresses = map (\(AUCR _ UserChatRelay {address}) -> address) cRelays
         addAddress :: ([ShortLinkContact], [ShortLinkContact]) -> ShortLinkContact -> ([ShortLinkContact], [ShortLinkContact])

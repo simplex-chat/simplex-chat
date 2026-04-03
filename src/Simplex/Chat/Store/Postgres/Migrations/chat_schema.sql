@@ -2027,7 +2027,6 @@ CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON test_chat_schema.chat_rel
 
 
 
-CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON test_chat_schema.chat_relays USING btree (user_id, name);
 
 
 

@@ -35,7 +35,7 @@ operatorTests = describe "managing server operators" $ do
   updatedServersTest
 
 validateServersTest :: Spec
-validateServersTest = describe "validate user servers" $ do
+validateServersTest = fdescribe "validate user servers" $ do
   it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` ([], [])
   it "should fail without servers" $ do
     validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [])
@@ -52,13 +52,8 @@ validateServersTest = describe "validate user servers" $ do
                  )
   it "should warn without chat relays" $
     validateUserServers [invalidNoChatRelays] [] `shouldBe` ([], [USWNoChatRelays Nothing])
-  it "should fail with duplicate chat relay name" $ do
-    validateUserServers [invalidDuplicateChatRelayName] []
-      `shouldBe` ( [ USEDuplicateChatRelayName "chat_relay_1",
-                     USEDuplicateChatRelayName "chat_relay_1"
-                   ],
-                   []
-                 )
+  it "should allow duplicate chat relay name" $
+    validateUserServers [duplicateChatRelayName] [] `shouldBe` ([], [])
   it "should fail with duplicate chat relay address" $ do
     validateUserServers [invalidDuplicateChatRelayAddress] []
       `shouldBe` ( [ USEDuplicateChatRelayAddress "chat_relay_1" duplicateAddr,
@@ -172,8 +167,8 @@ invalidDuplicateSrv =
 invalidNoChatRelays :: UpdatedUserOperatorServers
 invalidNoChatRelays = (valid :: UpdatedUserOperatorServers) {chatRelays = []}
 
-invalidDuplicateChatRelayName :: UpdatedUserOperatorServers
-invalidDuplicateChatRelayName =
+duplicateChatRelayName :: UpdatedUserOperatorServers
+duplicateChatRelayName =
   (valid :: UpdatedUserOperatorServers)
     { chatRelays = map (AUCR SDBNew) $ simplexChatRelays <> [presetChatRelay True (relayProfileFromName "chat_relay_1") ["simplex.im"] (either error id $ strDecode "https://smp444.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y")]
     }

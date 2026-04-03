@@ -43,7 +43,6 @@ struct YourServersView: View {
 
     private func yourServersView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
-        let duplicateRelayNames = findDuplicateRelayNames(serverErrors)
         let duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors)
         return List {
             if !userServers[operatorIndex].chatRelays.filter({ !$0.deleted }).isEmpty {
@@ -55,7 +54,6 @@ struct YourServersView: View {
                                 serverErrors: $serverErrors,
                                 serverWarnings: $serverWarnings,
                                 relay: relay,
-                                duplicateRelayNames: duplicateRelayNames,
                                 duplicateRelayAddresses: duplicateRelayAddresses,
                                 backLabel: "Your servers",
                                 selectedServer: $selectedServer

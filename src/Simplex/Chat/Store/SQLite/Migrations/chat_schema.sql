@@ -1270,7 +1270,6 @@ CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(
   user_id,
   address
 );
-CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(
   group_member_id

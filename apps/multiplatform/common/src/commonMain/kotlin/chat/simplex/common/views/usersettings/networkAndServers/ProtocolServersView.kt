@@ -85,12 +85,11 @@ fun YourServersViewLayout(
 
   Column {
     if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
-      val duplicateRelayNames = findDuplicateRelayNames(serverErrors.value)
       val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
       SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
         userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
           if (relay.deleted) return@forEachIndexed
-          ChatRelayViewLink(relay, duplicateRelayNames, duplicateRelayAddresses) {
+          ChatRelayViewLink(relay, duplicateRelayAddresses) {
             navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, i, relay, rhId)
           }
         }

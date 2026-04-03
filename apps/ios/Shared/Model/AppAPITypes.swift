@@ -1802,7 +1802,6 @@ enum UserServersError: Decodable {
     case storageMissing(protocol: ServerProtocol, user: UserRef?)
     case proxyMissing(protocol: ServerProtocol, user: UserRef?)
     case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
-    case duplicateChatRelayName(duplicateChatRelay: String)
     case duplicateChatRelayAddress(duplicateChatRelay: String, duplicateAddress: String)
 
     var globalError: String? {
