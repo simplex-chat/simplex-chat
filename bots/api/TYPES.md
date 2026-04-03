@@ -3184,7 +3184,10 @@ MsgBadSignature:
 ## RelayProfile
 
 **Record type**:
-- name: string
+- displayName: string
+- fullName: string
+- shortDescr: string?
+- image: string?
 
 
 ---

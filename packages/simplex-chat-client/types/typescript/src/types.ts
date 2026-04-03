@@ -3599,7 +3599,10 @@ export namespace RcvGroupEvent {
 }
 
 export interface RelayProfile {
-  name: string
+  displayName: string
+  fullName: string
+  shortDescr?: string
+  image?: string
 }
 
 export enum RelayStatus {
