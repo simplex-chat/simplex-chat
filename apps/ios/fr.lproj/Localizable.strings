@@ -825,7 +825,7 @@ swipe action */
 "Block member?" = "Bloquer ce membre ?";
 
 /* marked deleted chat item preview text */
-"blocked" = "blocké";
+"blocked" = "bloqué";
 
 /* rcv group event chat item */
 "blocked %@" = "%@ bloqué";
