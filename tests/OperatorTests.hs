@@ -35,7 +35,7 @@ operatorTests = describe "managing server operators" $ do
   updatedServersTest
 
 validateServersTest :: Spec
-validateServersTest = fdescribe "validate user servers" $ do
+validateServersTest = describe "validate user servers" $ do
   it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` ([], [])
   it "should fail without servers" $ do
     validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [])
