@@ -13,15 +13,13 @@ import java.io.File
 import java.util.*
 import kotlin.math.max
 
+internal val vlcFactory: MediaPlayerFactory by lazy { MediaPlayerFactory() }
+
 actual class RecorderNative: RecorderInterface {
   private var player: MediaPlayer? = null
   private var progressJob: Job? = null
   private var filePath: String? = null
   private var recStartedAt: Long? = null
-
-  companion object {
-    private val factory by lazy { MediaPlayerFactory("--no-video", "--sout-avcodec-strict=-2") }
-  }
 
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
     VideoPlayerHolder.stopAll()
@@ -40,15 +38,15 @@ actual class RecorderNative: RecorderInterface {
       }
     }
     val sout = ":sout=#transcode{vcodec=none,acodec=mp4a,ab=32,channels=1,samplerate=16000}:std{access=file,mux=mp4,dst=$path}"
-    val options = mutableListOf(sout)
+    val options = mutableListOf(sout, ":sout-avcodec-strict=-2")
     if (desktopPlatform.isWindows()) {
       options.add(":dshow-vdev=none")
       options.add(":dshow-adev=")
     }
     RecorderInterface.stopRecording = { stop() }
     progressJob = CoroutineScope(Dispatchers.Default).launch {
-      // Factory init may take a few seconds on first use — progress shows 0 until recording starts
-      val p = factory.mediaPlayers().newMediaPlayer()
+      // Shared factory init may take a few seconds on first VLC use — progress shows 0 until recording starts
+      val p = vlcFactory.mediaPlayers().newMediaPlayer()
       player = p
       p.media().play(mrl, *options.toTypedArray())
       recStartedAt = System.currentTimeMillis()
@@ -85,7 +83,7 @@ actual class RecorderNative: RecorderInterface {
 }
 
 actual object AudioPlayer: AudioPlayerInterface {
-  private val player by lazy { AudioPlayerComponent().mediaPlayer() }
+  private val player by lazy { AudioPlayerComponent(vlcFactory).mediaPlayer() }
 
   override val currentlyPlaying: MutableState<CurrentlyPlayingState?> = mutableStateOf(null)
   private var progressJob: Job? = null
@@ -230,7 +228,7 @@ actual object AudioPlayer: AudioPlayerInterface {
   override fun duration(unencryptedFilePath: String): Int? {
     var res: Int? = null
     try {
-      val helperPlayer = AudioPlayerComponent().mediaPlayer()
+      val helperPlayer = AudioPlayerComponent(vlcFactory).mediaPlayer()
       helperPlayer.media().startPaused(unencryptedFilePath)
       res = helperPlayer.duration
       helperPlayer.stop()
