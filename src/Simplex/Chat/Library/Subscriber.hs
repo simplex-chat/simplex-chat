@@ -2860,9 +2860,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} gInfo' = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
-          let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
-          groupMsgToView cInfo ci
+          unless (useRelays' gInfo') $ do
+            let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
+            (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
+            groupMsgToView cInfo ci
           case scopeInfo of
             Just (GCSIMemberSupport _) -> do
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m) (CIRcvGroupEvent RGENewMemberPendingReview) (Just brokerTs)
