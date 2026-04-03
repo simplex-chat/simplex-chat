@@ -14,7 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -24,12 +25,14 @@ import boofcv.alg.color.ColorFormat
 import boofcv.android.ConvertCameraImage
 import boofcv.factory.fiducial.FactoryFiducial
 import boofcv.struct.image.GrayU8
+import chat.simplex.common.helpers.showAllowPermissionInSettingsAlert
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import com.google.common.util.concurrent.ListenableFuture
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -42,6 +45,7 @@ import java.util.concurrent.*
 actual fun QRCodeScanner(
   showQRCodeScanner: MutableState<Boolean>,
   padding: PaddingValues,
+  clipShape: Shape,
   onBarcode: suspend (String) -> Boolean
 ) {
   val context = LocalContext.current
@@ -64,7 +68,7 @@ actual fun QRCodeScanner(
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
     val modifier = Modifier
       .padding(padding)
-      .clipToBounds()
+      .clip(clipShape)
       .widthIn(max = 400.dp)
       .aspectRatio(1f)
     val showScanner = remember { showQRCodeScanner }
@@ -143,7 +147,18 @@ actual fun QRCodeScanner(
           }
         }
         cameraPermissionState.status is PermissionStatus.Denied -> {
-          Button({ cameraPermissionState.launchPermissionRequest() }, modifier = modifier, colors = buttonColors) {
+          val context = LocalContext.current
+          Button(
+            onClick = {
+              if (cameraPermissionState.status.shouldShowRationale) {
+                cameraPermissionState.launchPermissionRequest()
+              } else {
+                context.showAllowPermissionInSettingsAlert()
+              }
+            },
+            modifier = modifier,
+            colors = buttonColors
+          ) {
             Icon(painterResource(MR.images.ic_camera_enhance), null)
             Spacer(Modifier.width(DEFAULT_PADDING_HALF))
             Text(stringResource(MR.strings.enable_camera_access))
