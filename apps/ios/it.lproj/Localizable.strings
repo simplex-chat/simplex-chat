@@ -513,6 +513,9 @@ swipe action */
 "all members" = "tutti i membri";
 
 /* No comment provided by engineer. */
+"All messages" = "Tutti i messaggi";
+
+/* No comment provided by engineer. */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Tutti i messaggi e i file vengono inviati **crittografati end-to-end**, con sicurezza resistenti alla quantistica nei messaggi diretti.";
 
 /* No comment provided by engineer. */
@@ -733,6 +736,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Chiamate audio e video";
+
+/* No comment provided by engineer. */
+"Audio call" = "Chiamata audio";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "chiamata audio (non crittografata e2e)";
@@ -1731,6 +1737,12 @@ swipe action */
 "Delete member message?" = "Eliminare il messaggio del membro?";
 
 /* No comment provided by engineer. */
+"Delete member messages" = "Elimina i messaggi del membro";
+
+/* alert title */
+"Delete member messages?" = "Eliminare i messaggi del membro?";
+
+/* No comment provided by engineer. */
 "Delete message?" = "Eliminare il messaggio?";
 
 /* alert action
@@ -2566,6 +2578,9 @@ snd error text */
 "Files and media prohibited!" = "File e contenuti multimediali vietati!";
 
 /* No comment provided by engineer. */
+"Filter" = "Filtro";
+
+/* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Filtra le chat non lette e preferite.";
 
 /* No comment provided by engineer. */
@@ -2869,6 +2884,9 @@ snd error text */
 "Image will be received when your contact is online, please wait or check later!" = "L'immagine verrà ricevuta quando il tuo contatto sarà in linea, aspetta o controlla più tardi!";
 
 /* No comment provided by engineer. */
+"Images" = "Immagini";
+
+/* No comment provided by engineer. */
 "Immediately" = "Immediatamente";
 
 /* No comment provided by engineer. */
@@ -3052,6 +3070,9 @@ snd error text */
 "Invite friends" = "Invita amici";
 
 /* No comment provided by engineer. */
+"Invite member" = "Invita membro";
+
+/* No comment provided by engineer. */
 "Invite members" = "Invita membri";
 
 /* No comment provided by engineer. */
@@ -3204,6 +3225,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Linked desktops" = "Desktop collegati";
 
+/* No comment provided by engineer. */
+"Links" = "Link";
+
 /* swipe action */
 "List" = "Elenco";
 
@@ -3296,6 +3320,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member is deleted - can't accept request" = "Il membro è eliminato - impossibile accettare la richiesta";
+
+/* alert message */
+"Member messages will be deleted - this cannot be undone!" = "I messaggi del membro verranno eliminati. Non è reversibile!";
 
 /* chat feature */
 "Member reports" = "Segnalazioni dei membri";
@@ -4384,6 +4411,9 @@ swipe action */
 /* alert action */
 "Remove" = "Rimuovi";
 
+/* alert action */
+"Remove and delete messages" = "Rimuovi ed elimina i messaggi";
+
 /* No comment provided by engineer. */
 "Remove archive?" = "Rimuovere l'archivio?";
 
@@ -4692,7 +4722,22 @@ chat item action */
 "Search bar accepts invitation links." = "La barra di ricerca accetta i link di invito.";
 
 /* No comment provided by engineer. */
+"Search files" = "Cerca file";
+
+/* No comment provided by engineer. */
+"Search images" = "Cerca immagini";
+
+/* No comment provided by engineer. */
+"Search links" = "Cerca link";
+
+/* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Cerca o incolla un link SimpleX";
+
+/* No comment provided by engineer. */
+"Search videos" = "Cerca video";
+
+/* No comment provided by engineer. */
+"Search voice messages" = "Cerca messaggi vocali";
 
 /* network option */
 "sec" = "sec";
@@ -5898,6 +5943,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Video will be received when your contact is online, please wait or check later!" = "Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!";
+
+/* No comment provided by engineer. */
+"Videos" = "Video";
 
 /* No comment provided by engineer. */
 "Videos and files up to 1gb" = "Video e file fino a 1 GB";

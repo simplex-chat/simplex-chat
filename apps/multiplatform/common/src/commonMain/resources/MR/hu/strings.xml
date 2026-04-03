@@ -233,7 +233,7 @@
     <string name="receipts_section_contacts">Partnerek</string>
     <string name="connection_error">Kapcsolódási hiba</string>
     <string name="alert_title_contact_connection_pending">A partnere még nem kapcsolódott!</string>
-    <string name="v5_3_discover_join_groups_descr">- kapcsolódás könyvtár szolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
+    <string name="v5_3_discover_join_groups_descr">- kapcsolódás a könyvtárszolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
     <string name="contribute">Közreműködés</string>
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX-cím létrehozása</string>
@@ -299,7 +299,7 @@
     <string name="display_name_connecting">kapcsolódás…</string>
     <string name="icon_descr_call_connecting">Hívás kapcsolása</string>
     <string name="delete_files_and_media_question">Törli a fájlokat és a médiatartalmakat?</string>
-    <string name="group_member_status_complete">befejezett</string>
+    <string name="group_member_status_complete">kész</string>
     <string name="chat_database_section">CSEVEGÉSI ADATBÁZIS</string>
     <string name="change_self_destruct_passcode">Önmegsemmisítő jelkód módosítása</string>
     <string name="smp_server_test_create_queue">Várólista létrehozása</string>
@@ -1392,7 +1392,7 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegés elindítható az alkalmazás „Beállítások / Adatbázis” menüjében vagy az alkalmazás újraindításával.</string>
     <string name="verify_code_on_mobile">Kód ellenőrzése a hordozható eszközön</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Ön csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet a friss hírekről</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, akiktől bármit kérdezhet és értesülhet a friss hírekről</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználóprofiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
@@ -1654,7 +1654,7 @@
     <string name="migrate_from_another_device">Átköltöztetés egy másik eszközről</string>
     <string name="v5_6_quantum_resistant_encryption">Kvantumbiztos titkosítás</string>
     <string name="migrate_from_device_try_again">Megpróbálhatja még egyszer.</string>
-    <string name="migrate_from_device_migration_complete">Átköltöztetés befejezve</string>
+    <string name="migrate_from_device_migration_complete">Átköltöztetés kész</string>
     <string name="v5_6_app_data_migration_descr">Átköltöztetés egy másik eszközre QR-kód használatával.</string>
     <string name="migrate_to_device_migrating">Átköltöztetés</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Megjegyzés:</b> ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a partnereitől érkező üzenetek visszafejtését.]]></string>
@@ -2522,4 +2522,7 @@
     <string name="placeholder_search_voice_messages">Hangüzenetek keresése</string>
     <string name="content_filter_videos">Videók</string>
     <string name="content_filter_voice_messages">Hangüzenetek</string>
+    <string name="info_row_connection_failed">Nem sikerült létrehozni a kapcsolatot</string>
+    <string name="member_info_member_failed">sikertelen</string>
+    <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
 </resources>

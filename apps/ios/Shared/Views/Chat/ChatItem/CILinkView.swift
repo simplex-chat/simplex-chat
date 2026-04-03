@@ -21,7 +21,8 @@ struct CILinkView: View {
             if let uiImage = imageFromBase64(linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
-                    .scaledToFit()
+                    .aspectRatio(1 / heightRatio(uiImage.size), contentMode: .fill)
+                    .clipped()
                     .modifier(PrivacyBlur(blurred: $blurred))
                     .if(!blurred) { v in
                         v.simultaneousGesture(TapGesture().onEnded {

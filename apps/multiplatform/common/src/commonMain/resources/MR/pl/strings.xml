@@ -1619,7 +1619,7 @@
     <string name="call_service_notification_end_call">Zakończ połączenie</string>
     <string name="call_service_notification_video_call">Połączenie wideo</string>
     <string name="unable_to_open_browser_title">Błąd podczas otwierania przeglądarki</string>
-    <string name="unable_to_open_browser_desc">Do połączeń wymagana jest domyślna przeglądarka. Proszę skonfigurować domyślną przeglądarkę systemową, i podzielić się informacją z twórcami.</string>
+    <string name="unable_to_open_browser_desc">Do wykonywania połączeń wymagana jest domyślna przeglądarka internetowa. Skonfiguruj domyślną przeglądarkę w systemie i przekaż więcej informacji programistom.</string>
     <string name="e2ee_info_pq_short">Ten czat jest chroniony przez szyfrowanie e2e odporne na ataki kwantowe.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Wiadomości, pliki i połączenia są chronione przez <b>szyfrowanie end-to-end</b> z perfect forward secrecy, zaprzeczalnością i odzyskiwaniem bezpieczeństwa po kompromitacji.]]></string>
     <string name="auth_open_migration_to_another_device">Otwórz ekran migrowania</string>
@@ -2234,7 +2234,7 @@
     <string name="compose_view_connect">Połącz</string>
     <string name="v6_4_connect_faster">Połącz się szybciej! 🚀</string>
     <string name="cant_send_message_contact_deleted">kontakt usunięty</string>
-    <string name="cant_send_message_contact_disabled">kontakt zablokowany</string>
+    <string name="cant_send_message_contact_disabled">kontakt wyłączony</string>
     <string name="cant_send_message_contact_not_ready">kontakt nie gotowy</string>
     <string name="settings_section_title_contact_requests_from_groups">PROŚBY O KONTAKT OD GRUP</string>
     <string name="contact_should_accept">kontakt powinien zaakceptować…</string>
@@ -2376,7 +2376,7 @@
     <string name="v6_2_improved_chat_navigation_descr">- Otwórz czat w pierwszej nieprzeczytanej wiadomości.\n- Przejdź do cytowanych wiadomości.</string>
     <string name="privacy_chat_list_open_clean_web_link">Otwórz czysty link</string>
     <string name="operator_open_conditions">Otwórz warunki</string>
-    <string name="privacy_chat_list_open_full_web_link">Otwórz pełen link</string>
+    <string name="privacy_chat_list_open_full_web_link">Otwórz pełny link</string>
     <string name="privacy_chat_list_open_web_link">Otwórz link</string>
     <string name="privacy_chat_list_open_links">Otwórz linki z listy czatów</string>
     <string name="connect_plan_open_new_chat">Otwórz nowy czat</string>
@@ -2395,8 +2395,8 @@
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Nie można odczytać hasła w magazynie kluczy. Wprowadź je ręcznie. Mogło się to zdarzyć po aktualizacji systemu niezgodnej z aplikacją. Jeśli tak nie jest, skontaktuj się z programistami.</string>
     <string name="restore_passphrase_can_not_be_read_desc">Nie można odczytać hasła w magazynie kluczy. Mogło się to zdarzyć po aktualizacji systemu niezgodnej z aplikacją. Jeśli tak nie jest, skontaktuj się z programistami.</string>
     <string name="group_member_status_pending_approval_short">oczekuje</string>
-    <string name="group_member_status_pending_approval">oczekiwanie zaakceptowane</string>
-    <string name="group_member_status_pending_review">oczekująca recenzja</string>
+    <string name="group_member_status_pending_approval">oczekuje na zatwierdzenie</string>
+    <string name="group_member_status_pending_review">oczekuje na ocenę</string>
     <string name="maximum_message_size_reached_text">Zmniejsz rozmiar wiadomości i wyślij ją ponownie.</string>
     <string name="maximum_message_size_reached_non_text">Zmniejsz rozmiar wiadomości lub usuń multimedia i wyślij ponownie.</string>
     <string name="snd_group_event_user_pending_review">Poczekaj, aż moderatorzy grupy rozpatrzą Twoją prośbę o dołączenie do grupy.</string>
@@ -2418,7 +2418,7 @@
     <string name="reject_pending_member_alert_title">Odrzucić członka?</string>
     <string name="remote_hosts_section">Zdalne telefony komórkowe</string>
     <string name="remove_member_delete_messages_confirmation">Usuń i skasuj wiadomości</string>
-    <string name="cant_send_message_mem_removed">przeniesiono z grupy</string>
+    <string name="cant_send_message_mem_removed">usunięty z grupy</string>
     <string name="sanitize_links_toggle">Usuń śledzenie linków</string>
     <string name="button_remove_members_question">Usunąć członka?</string>
     <string name="v6_4_role_moderator_descr">Usuwa wiadomości i blokuje członków.</string>
@@ -2428,7 +2428,7 @@
     <string name="report_compose_reason_header_profile">Zgłoś profil członka: będą go widzieć tylko moderatorzy grupy.</string>
     <string name="report_compose_reason_header_other">Zgłoś inne: zobaczą to tylko moderatorzy grupy.</string>
     <string name="report_reason_alert_title">Jaki jest powód zgłoszenia?</string>
-    <string name="notification_group_report">Zgłoś: %s</string>
+    <string name="notification_group_report">Zgłoszenie: %s</string>
     <string name="chat_list_group_reports">Zgłoszenia</string>
     <string name="report_sent_alert_title">Zgłoszenia wysłane do moderatorów</string>
     <string name="report_compose_reason_header_spam">Zgłoś spam: tylko moderatorzy grupy będą to widzieć.</string>
@@ -2437,7 +2437,7 @@
     <string name="display_name_requested_to_connect">poproszono o połączenie</string>
     <string name="cant_send_message_request_is_sent">prośba została wysłana</string>
     <string name="cant_send_message_rejected">prośba o dołączenie została odrzucona</string>
-    <string name="group_member_status_pending_review_short">przejrzyj</string>
+    <string name="group_member_status_pending_review_short">ocena</string>
     <string name="operator_review_conditions">Przejrzyj warunki</string>
     <string name="reviewed_by_admins">sprawdzone przez administratorów</string>
     <string name="v6_4_review_members">Przejrzyj członków grupy</string>
@@ -2445,12 +2445,12 @@
     <string name="admission_stage_review">Przejrzyj członków</string>
     <string name="admission_stage_review_descr">Przejrzyj członków przed przyjęciem (pukanie).</string>
     <string name="save_admission_question">Zapisać ustawienia wstępu?</string>
-    <string name="save_list">Zachowaj listę</string>
-    <string name="placeholder_search_files">Poszukaj plików</string>
-    <string name="placeholder_search_images">Poszukaj obrazów</string>
-    <string name="placeholder_search_links">Poszukaj linków</string>
-    <string name="placeholder_search_videos">Poszukaj wideo</string>
-    <string name="placeholder_search_voice_messages">Poszukaj wiadomości głosowych</string>
+    <string name="save_list">Zapisz listę</string>
+    <string name="placeholder_search_files">Szukaj plików</string>
+    <string name="placeholder_search_images">Szukaj zdjęć</string>
+    <string name="placeholder_search_links">Szukaj linków</string>
+    <string name="placeholder_search_videos">Szukaj wideo</string>
+    <string name="placeholder_search_voice_messages">Szukaj wiadomości głosowych</string>
     <string name="onboarding_select_network_operators_to_use">Wybierz operatora sieci</string>
     <string name="compose_view_send_contact_request_alert_question">Wysłać prośbę o kontakt?</string>
     <string name="v6_3_reports">Wyślij prywatne zgłoszenia</string>
@@ -2459,7 +2459,7 @@
     <string name="v6_4_support_chat_descr">Wyślij swoją prywatną opinię do grup.</string>
     <string name="sent_to_your_contact_after_connection">Wysłano do Twojego kontaktu po połączeniu.</string>
     <string name="server_added_to_operator__name">Serwer dodany do operatora %s.</string>
-    <string name="error_server_operator_changed">Operator serwera zmieniony.</string>
+    <string name="error_server_operator_changed">Operator serwera został zmieniony.</string>
     <string name="onboarding_choose_server_operators">Operatorzy serwera</string>
     <string name="error_server_protocol_changed">Protokół serwera zmieniony.</string>
     <string name="text_field_set_chat_placeholder">Ustaw nazwę czatu…</string>
@@ -2554,4 +2554,7 @@
     <string name="context_user_picker_your_profile">Twój profil</string>
     <string name="your_servers">Twoje serwery</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Przestaniesz otrzymywać wiadomości z tego czatu. Historia czatu zostanie zachowana.</string>
+    <string name="info_row_connection_failed">Połączenie nie powiodło się</string>
+    <string name="member_info_member_failed">niepowodzenie</string>
+    <string name="down_migration_warning_chat_relays">Jeśli dołączyłeś do kanałów lub je utworzyłeś, przestaną one działać na stałe.</string>
 </resources>
