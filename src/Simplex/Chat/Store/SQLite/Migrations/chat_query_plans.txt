@@ -1128,8 +1128,8 @@ Plan:
 
 Query: 
           INSERT INTO chat_relays
-            (address, name, domains, preset, tested, enabled, user_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?)
+            (address, display_name, full_name, short_descr, image, domains, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
           RETURNING chat_relay_id
         
 Plan:
@@ -1661,7 +1661,7 @@ SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AN
 
 Query: 
           UPDATE chat_relays
-          SET name = ?, domains = ?,
+          SET display_name = ?, full_name = ?, short_descr = ?, image = ?, domains = ?,
               preset = ?, tested = ?, enabled = ?, deleted = 0, updated_at = ?
           WHERE chat_relay_id = ?
         
@@ -3470,7 +3470,7 @@ Plan:
 SEARCH chat_item_versions USING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
 Query: 
-        SELECT chat_relay_id, address, name, domains, preset, tested, enabled
+        SELECT chat_relay_id, address, display_name, full_name, short_descr, image, domains, preset, tested, enabled
         FROM chat_relays
         WHERE user_id = ? AND chat_relay_id = ? AND deleted = 0
       
@@ -3478,12 +3478,12 @@ Plan:
 SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT chat_relay_id, address, name, domains, preset, tested, enabled
+        SELECT chat_relay_id, address, display_name, full_name, short_descr, image, domains, preset, tested, enabled
         FROM chat_relays
         WHERE user_id = ? AND deleted = 0
       
 Plan:
-SEARCH chat_relays USING INDEX idx_chat_relays_user_id (user_id=?)
+SEARCH chat_relays USING INDEX idx_chat_relays_user_id_address (user_id=?)
 
 Query: 
         SELECT chat_tag_id, chat_tag_emoji, chat_tag_text
@@ -5595,14 +5595,15 @@ SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
-           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
            gr.relay_status, gr.relay_link
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
-   JOIN group_members m ON m.group_member_id = gr.group_member_id
-                   WHERE gr.group_id = ?
-                     AND m.member_status = ?
-                     AND gr.relay_status IN (?,?)
+   
+               JOIN group_members m ON m.group_member_id = gr.group_member_id
+               WHERE gr.group_id = ?
+                 AND m.member_status = ?
+                 AND gr.relay_status IN (?,?)
              
 Plan:
 SEARCH gr USING INDEX idx_group_relays_group_id (group_id=?)
@@ -5611,7 +5612,7 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
-           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
            gr.relay_status, gr.relay_link
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
@@ -5622,7 +5623,7 @@ SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
-           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
            gr.relay_status, gr.relay_link
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
@@ -5633,7 +5634,7 @@ SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT gr.group_relay_id, gr.group_member_id,
-           cr.chat_relay_id, cr.address, cr.name, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
+           cr.chat_relay_id, cr.address, cr.display_name, cr.full_name, cr.short_descr, cr.image, cr.domains, cr.preset, cr.tested, cr.enabled, cr.deleted,
            gr.relay_status, gr.relay_link
     FROM group_relays gr
     JOIN chat_relays cr ON cr.chat_relay_id = gr.chat_relay_id
