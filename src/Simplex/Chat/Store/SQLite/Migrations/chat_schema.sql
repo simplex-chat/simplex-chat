@@ -750,7 +750,10 @@ CREATE TABLE connections_sync(
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
   address BLOB NOT NULL,
-  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL DEFAULT '',
+  short_descr TEXT,
+  image TEXT,
   domains TEXT NOT NULL,
   preset INTEGER NOT NULL DEFAULT 0,
   tested INTEGER,

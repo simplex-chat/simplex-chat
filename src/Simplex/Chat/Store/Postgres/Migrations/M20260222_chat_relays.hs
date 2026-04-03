@@ -13,7 +13,10 @@ m20260222_chat_relays =
 CREATE TABLE chat_relays(
   chat_relay_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   address BYTEA NOT NULL,
-  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL DEFAULT '',
+  short_descr TEXT,
+  image TEXT,
   domains TEXT NOT NULL,
   preset SMALLINT NOT NULL DEFAULT 0,
   tested SMALLINT,
