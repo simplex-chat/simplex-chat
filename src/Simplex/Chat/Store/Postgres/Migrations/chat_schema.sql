@@ -364,7 +364,7 @@ CREATE TABLE test_chat_schema.chat_relays (
     chat_relay_id bigint NOT NULL,
     address bytea NOT NULL,
     display_name text NOT NULL,
-    full_name text DEFAULT '' NOT NULL,
+    full_name text DEFAULT ''::text NOT NULL,
     short_descr text,
     image text,
     domains text NOT NULL,
@@ -2027,9 +2027,6 @@ CREATE INDEX idx_chat_relays_user_id ON test_chat_schema.chat_relays USING btree
 
 
 CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON test_chat_schema.chat_relays USING btree (user_id, address);
-
-
-
 
 
 
