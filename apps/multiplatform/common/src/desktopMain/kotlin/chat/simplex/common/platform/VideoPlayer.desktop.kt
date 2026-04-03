@@ -10,6 +10,7 @@ import uk.co.caprica.vlcj.media.VideoOrientation
 import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
+import uk.co.caprica.vlcj.player.component.MediaPlayerSpecs
 import java.awt.Component
 import java.awt.image.BufferedImage
 import java.io.File
@@ -32,7 +33,7 @@ actual class VideoPlayer actual constructor(
   override val duration: MutableState<Long> = mutableStateOf(defaultDuration)
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
-  val mediaPlayerComponent by lazy { runBlocking(playerThread.asCoroutineDispatcher()) { getOrCreatePlayer() } }
+  val mediaPlayerComponent by lazy { getOrCreatePlayer() }
   val player by lazy { mediaPlayerComponent.mediaPlayer() }
 
   init {
@@ -207,9 +208,9 @@ actual class VideoPlayer actual constructor(
 
     private fun initializeMediaPlayerComponent(): Component {
       return if (desktopPlatform.isMac()) {
-        CallbackMediaPlayerComponent()
+        CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
       } else {
-        EmbeddedMediaPlayerComponent()
+        EmbeddedMediaPlayerComponent(MediaPlayerSpecs.embeddedMediaPlayerSpec().apply { withFactory(vlcFactory) })
       }
     }
 
@@ -277,7 +278,7 @@ actual class VideoPlayer actual constructor(
 
     private fun putPlayer(player: Component) = playersPool.add(player)
 
-    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent()
+    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
     private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
   }
 }
