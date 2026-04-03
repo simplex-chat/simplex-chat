@@ -10,6 +10,7 @@ import uk.co.caprica.vlcj.media.VideoOrientation
 import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
+import uk.co.caprica.vlcj.player.component.MediaPlayerSpecs
 import java.awt.Component
 import java.awt.image.BufferedImage
 import java.io.File
@@ -207,9 +208,9 @@ actual class VideoPlayer actual constructor(
 
     private fun initializeMediaPlayerComponent(): Component {
       return if (desktopPlatform.isMac()) {
-        CallbackMediaPlayerComponent(vlcFactory)
+        CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
       } else {
-        EmbeddedMediaPlayerComponent(vlcFactory)
+        EmbeddedMediaPlayerComponent(MediaPlayerSpecs.embeddedMediaPlayerSpec().apply { withFactory(vlcFactory) })
       }
     }
 
@@ -277,7 +278,7 @@ actual class VideoPlayer actual constructor(
 
     private fun putPlayer(player: Component) = playersPool.add(player)
 
-    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(vlcFactory)
+    private fun getOrCreateHelperPlayer(): CallbackMediaPlayerComponent = helperPlayersPool.removeFirstOrNull() ?: CallbackMediaPlayerComponent(MediaPlayerSpecs.callbackMediaPlayerSpec().apply { withFactory(vlcFactory) })
     private fun putHelperPlayer(player: CallbackMediaPlayerComponent) = helperPlayersPool.add(player)
   }
 }
