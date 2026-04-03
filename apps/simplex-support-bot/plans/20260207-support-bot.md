@@ -114,13 +114,13 @@ When a customer leaves the group (or is disconnected), the bot cleans up all in-
 
 #### Team replies
 
-When a team member sends a text message in the customer group, the bot resends the card (subject to debouncing). The icon (👋 vs 💬 vs ⏰) is derived from recent chat history: if the most recent message in the group is from the customer, they are waiting; if from the team, the team is waiting. Wait time reflects the most recent unanswered message.
+When a team member sends a text message or reaction in the customer group, the bot resends the card (subject to debouncing). A team or Grok reply/reaction auto-completes the conversation (✅ icon, "done" wait time). If the customer sends a new message, the conversation reverts to incomplete — the icon is derived from current state (👋 vs 💬 vs ⏰) and wait time counts from the customer's new message.
 
 ### 4.2 Team Flow
 
 #### Setup
 
-The team group is created automatically on first run. Its name is set via the `--team-group` CLI argument. The group ID is written to the state file; subsequent runs reuse the same group. On every startup the bot re-applies group preferences (direct messages enabled, team commands registered as tappable buttons).
+The team group is created automatically on first run. Its name is set via the `--team-group` CLI argument. The group ID is written to the state file; subsequent runs reuse the same group. Group preferences (direct messages enabled, team commands registered as tappable buttons) are applied once at creation time.
 
 On every startup the bot generates a fresh invite link for the team group, prints it to stdout, and deletes it after 10 minutes (or on graceful shutdown). Any stale link from a previous run is deleted first.
 
@@ -272,7 +272,7 @@ Team · alex
 2. Bot posts it to the team group via `apiSendTextMessage` → receives back the `chatItemId`
 3. Bot writes `{cardItemId: chatItemId}` into the customer group's `customData`
 
-**Update** (delete + repost) — on every subsequent event: new customer message, team member reply in the customer group, state change (QUEUE → GROK, GROK → TEAM, GROK → QUEUE on join timeout, etc.), agent joining. Card updates are debounced per customer group — at most one update per 5 seconds. Rapid messages are batched into a single card repost.
+**Update** (delete + repost) — on every subsequent event: new customer message, team member reply in the customer group, state change (QUEUE → GROK, GROK → TEAM, GROK → QUEUE on join timeout, etc.), agent joining. Card updates are debounced globally — the bot collects all pending card changes and flushes them in a single batch every 15 minutes. Within a batch, each customer group's card is reposted at most once with the latest state.
 1. Bot reads `cardItemId` from the customer group's `customData`
 2. Bot deletes the old card in the team group via `apiDeleteChatItem(teamGroupId, cardItemId, "broadcast")` (delete for everyone)
 3. Bot composes the new card (updated icon, wait time, message count, preview)
@@ -297,6 +297,8 @@ Team members use these commands in the team group:
 | Command | Effect |
 |---------|--------|
 | `/join <groupId>:<name>` | Join the specified customer group (promoted to Owner once connected) |
+
+`/join` is **team-only** — it is registered as a bot command only in the team group. If a customer sends `/join` in a customer group, the bot treats it as an ordinary message (per the existing rule: unrecognized commands are treated as normal messages).
 
 #### Joining a customer group
 
