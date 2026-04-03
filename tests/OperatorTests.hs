@@ -20,7 +20,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Operators
 import Simplex.Chat.Operators.Presets
-import Simplex.Chat.Protocol (RelayProfile (..))
+import Simplex.Chat.Protocol (RelayProfile (..), relayProfileFromName)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
@@ -52,13 +52,8 @@ validateServersTest = describe "validate user servers" $ do
                  )
   it "should warn without chat relays" $
     validateUserServers [invalidNoChatRelays] [] `shouldBe` ([], [USWNoChatRelays Nothing])
-  it "should fail with duplicate chat relay name" $ do
-    validateUserServers [invalidDuplicateChatRelayName] []
-      `shouldBe` ( [ USEDuplicateChatRelayName "chat_relay_1",
-                     USEDuplicateChatRelayName "chat_relay_1"
-                   ],
-                   []
-                 )
+  it "should allow duplicate chat relay name" $
+    validateUserServers [duplicateChatRelayName] [] `shouldBe` ([], [])
   it "should fail with duplicate chat relay address" $ do
     validateUserServers [invalidDuplicateChatRelayAddress] []
       `shouldBe` ( [ USEDuplicateChatRelayAddress "chat_relay_1" duplicateAddr,
@@ -98,7 +93,7 @@ updatedServersTest = describe "validate user servers" $ do
         ( ops'',
           saveSrvs $ take 3 simplexChatSMPServers <> [newUserServer "smp://abcd@smp.example.im"],
           saveSrvs $ map (presetServer True) $ L.take 3 defaultXFTPServers,
-          saveRelays $ take 2 simplexChatRelays <> [newChatRelay "custom_relay" ["example.im"] customRelayAddr]
+          saveRelays $ take 2 simplexChatRelays <> [newChatRelay (relayProfileFromName "custom_relay") ["example.im"] customRelayAddr]
         )
     [op1, op2, op3] <- pure $ map updatedUserServers uss
     [p1, p2] <- pure operators -- presets
@@ -123,7 +118,7 @@ updatedServersTest = describe "validate user servers" $ do
       map chatRelayAddress presetRelays `shouldBe` map relayAddr' (chatRelays' op)
     srvHost' (AUS _ s) = srvHost s
     relayAddr' (AUCR _ r) = chatRelayAddress r
-    relayName' (AUCR _ UserChatRelay {relayProfile = RelayProfile {name}}) = name
+    relayName' (AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}}) = displayName
     PresetServers {operators} = presetServers defaultChatConfig
     customRelayAddr = either error id $ strDecode "https://relay.example.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
 
@@ -172,16 +167,16 @@ invalidDuplicateSrv =
 invalidNoChatRelays :: UpdatedUserOperatorServers
 invalidNoChatRelays = (valid :: UpdatedUserOperatorServers) {chatRelays = []}
 
-invalidDuplicateChatRelayName :: UpdatedUserOperatorServers
-invalidDuplicateChatRelayName =
+duplicateChatRelayName :: UpdatedUserOperatorServers
+duplicateChatRelayName =
   (valid :: UpdatedUserOperatorServers)
-    { chatRelays = map (AUCR SDBNew) $ simplexChatRelays <> [presetChatRelay True "chat_relay_1" ["simplex.im"] (either error id $ strDecode "https://smp444.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y")]
+    { chatRelays = map (AUCR SDBNew) $ simplexChatRelays <> [presetChatRelay True (relayProfileFromName "chat_relay_1") ["simplex.im"] (either error id $ strDecode "https://smp444.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y")]
     }
 
 invalidDuplicateChatRelayAddress :: UpdatedUserOperatorServers
 invalidDuplicateChatRelayAddress =
   (valid :: UpdatedUserOperatorServers)
-    { chatRelays = map (AUCR SDBNew) $ simplexChatRelays <> [presetChatRelay True "chat_relay_4" ["simplex.im"] duplicateAddr]
+    { chatRelays = map (AUCR SDBNew) $ simplexChatRelays <> [presetChatRelay True (relayProfileFromName "chat_relay_4") ["simplex.im"] duplicateAddr]
     }
 
 duplicateAddr :: ShortLinkContact

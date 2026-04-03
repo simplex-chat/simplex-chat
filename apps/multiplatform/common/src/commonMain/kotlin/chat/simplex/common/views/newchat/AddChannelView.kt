@@ -539,7 +539,7 @@ private fun LinkStepView(
 }
 
 fun relayDisplayName(relay: GroupRelay): String {
-  if (relay.userChatRelay.name.isNotEmpty()) return relay.userChatRelay.name
+  if (relay.userChatRelay.displayName.isNotEmpty()) return relay.userChatRelay.displayName
   relay.userChatRelay.domains.firstOrNull()?.let { return it }
   relay.relayLink?.let { return hostFromRelayLink(it) }
   return "relay ${relay.groupRelayId}"

@@ -1455,10 +1455,21 @@ data RelayShortLinkData = RelayShortLinkData
 
 $(JQ.deriveJSON defaultJSON ''RelayShortLinkData)
 
-data RelayProfile = RelayProfile {name :: ContactName}
+data RelayProfile = RelayProfile
+  { displayName :: ContactName,
+    fullName :: Text,
+    shortDescr :: Maybe Text,
+    image :: Maybe ImageData
+  }
   deriving (Eq, Show)
 
 $(JQ.deriveJSON defaultJSON ''RelayProfile)
+
+toRelayProfile :: (ContactName, Text, Maybe Text, Maybe ImageData) -> RelayProfile
+toRelayProfile (displayName, fullName, shortDescr, image) = RelayProfile {displayName, fullName, shortDescr, image}
+
+relayProfileFromName :: ContactName -> RelayProfile
+relayProfileFromName displayName = RelayProfile {displayName, fullName = "", shortDescr = Nothing, image = Nothing}
 
 data RelayAddressLinkData = RelayAddressLinkData {relayProfile :: RelayProfile}
   deriving (Show)

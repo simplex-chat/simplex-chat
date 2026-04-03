@@ -750,7 +750,10 @@ CREATE TABLE connections_sync(
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
   address BLOB NOT NULL,
-  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL DEFAULT '',
+  short_descr TEXT,
+  image TEXT,
   domains TEXT NOT NULL,
   preset INTEGER NOT NULL DEFAULT 0,
   tested INTEGER,
@@ -1270,7 +1273,6 @@ CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(
   user_id,
   address
 );
-CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(
   group_member_id

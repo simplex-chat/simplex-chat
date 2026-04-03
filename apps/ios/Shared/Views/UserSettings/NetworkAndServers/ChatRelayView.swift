@@ -57,11 +57,11 @@ func addChatRelay(
     _ serverWarnings: Binding<[UserServersWarning]>? = nil,
     _ dismiss: DismissAction
 ) {
-    let nameEmpty = relay.name.trimmingCharacters(in: .whitespaces).isEmpty
+    let nameEmpty = relay.displayName.trimmingCharacters(in: .whitespaces).isEmpty
     let addressEmpty = relay.address.trimmingCharacters(in: .whitespaces).isEmpty
     if nameEmpty && addressEmpty {
         dismiss()
-    } else if !validRelayName(relay.name) {
+    } else if !validRelayName(relay.displayName) {
         dismiss()
         showAlert(
             NSLocalizedString("Invalid relay name!", comment: "alert title"),
@@ -97,7 +97,7 @@ struct ChatRelayView: View {
     @State private var testFailure: RelayTestFailure?
 
     var body: some View {
-        let validName = validRelayName(relayToEdit.name)
+        let validName = validRelayName(relayToEdit.displayName)
         let validAddress = validRelayAddress(relayToEdit.address)
         ZStack {
             if relay.preset {
@@ -137,7 +137,7 @@ struct ChatRelayView: View {
         .onChange(of: relayToEdit.address) { _ in
             if relayToEdit.address == relay.address {
                 relayToEdit.tested = relay.tested
-                relayToEdit.name = relay.name
+                relayToEdit.displayName = relay.displayName
             } else {
                 relayToEdit.tested = nil
             }
@@ -150,7 +150,7 @@ struct ChatRelayView: View {
             if !validName {
                 Spacer()
                 Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                    .onTapGesture { showInvalidRelayNameAlert($relayToEdit.name) }
+                    .onTapGesture { showInvalidRelayNameAlert($relayToEdit.displayName) }
             }
         }
     }
@@ -162,7 +162,7 @@ struct ChatRelayView: View {
                     .textSelection(.enabled)
             }
             Section(header: Text("Preset relay name").foregroundColor(theme.colors.secondary)) {
-                Text(relayToEdit.name)
+                Text(relayToEdit.displayName)
             }
             useRelaySection()
         }
@@ -190,7 +190,7 @@ struct ChatRelayView: View {
                 }
             }
             Section {
-                TextField("Enter relay name…", text: $relayToEdit.name)
+                TextField("Enter relay name…", text: $relayToEdit.displayName)
                     .autocorrectionDisabled(true)
                     .disabled(relayToEdit.tested == true)
             } header: {
@@ -243,7 +243,6 @@ struct ChatRelayViewLink: View {
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
     @Binding var relay: UserChatRelay
-    var duplicateRelayNames: Set<String>
     var duplicateRelayAddresses: Set<String>
     var backLabel: LocalizedStringKey
     @Binding var selectedServer: String?
@@ -264,7 +263,7 @@ struct ChatRelayViewLink: View {
         } label: {
             HStack {
                 Group {
-                    if duplicateRelayNames.contains(relay.name) || duplicateRelayAddresses.contains(relay.address) {
+                    if duplicateRelayAddresses.contains(relay.address) {
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                     } else if !relay.enabled {
                         Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
@@ -275,7 +274,7 @@ struct ChatRelayViewLink: View {
                 .frame(width: 16, alignment: .center)
                 .padding(.trailing, 4)
 
-                let displayName = !relay.name.isEmpty ? relay.name : relay.domains.first ?? relay.address
+                let displayName = !relay.displayName.isEmpty ? relay.displayName : relay.domains.first ?? relay.address
                 let v = Text(displayName).lineLimit(1)
                 if relay.enabled {
                     v
@@ -302,7 +301,7 @@ struct NewChatRelayView: View {
     @State private var testFailure: RelayTestFailure?
 
     var body: some View {
-        let validName = validRelayName(relayToEdit.name)
+        let validName = validRelayName(relayToEdit.displayName)
         let validAddress = validRelayAddress(relayToEdit.address)
         ZStack {
         List {
@@ -326,7 +325,7 @@ struct NewChatRelayView: View {
                 }
             }
             Section {
-                TextField("Enter relay name…", text: $relayToEdit.name)
+                TextField("Enter relay name…", text: $relayToEdit.displayName)
                     .autocorrectionDisabled(true)
                     .disabled(relayToEdit.tested == true)
             } header: {
@@ -335,7 +334,7 @@ struct NewChatRelayView: View {
                     if !validName {
                         Spacer()
                         Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                            .onTapGesture { showInvalidRelayNameAlert($relayToEdit.name) }
+                            .onTapGesture { showInvalidRelayNameAlert($relayToEdit.displayName) }
                     }
                 }
             } footer: {
@@ -392,7 +391,7 @@ func testRelayConnection(relay: Binding<UserChatRelay>) async -> RelayTestFailur
         await MainActor.run {
             relay.wrappedValue.tested = true
             if let relayProfile {
-                relay.wrappedValue.name = relayProfile.name
+                relay.wrappedValue.displayName = relayProfile.displayName
             }
         }
         return nil

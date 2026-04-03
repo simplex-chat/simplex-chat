@@ -4473,7 +4473,6 @@ sealed class UserServersError {
   @Serializable @SerialName("storageMissing") data class StorageMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("proxyMissing") data class ProxyMissing(val protocol: ServerProtocol, val user: UserRef?): UserServersError()
   @Serializable @SerialName("duplicateServer") data class DuplicateServer(val protocol: ServerProtocol, val duplicateServer: String, val duplicateHost: String): UserServersError()
-  @Serializable @SerialName("duplicateChatRelayName") data class DuplicateChatRelayName(val duplicateChatRelay: String): UserServersError()
   @Serializable @SerialName("duplicateChatRelayAddress") data class DuplicateChatRelayAddress(val duplicateChatRelay: String, val duplicateAddress: String): UserServersError()
 
   val globalError: String?
@@ -4489,7 +4488,6 @@ sealed class UserServersError {
       is StorageMissing -> this.protocol
       is ProxyMissing -> this.protocol
       is DuplicateServer -> this.protocol
-      is DuplicateChatRelayName -> null
       is DuplicateChatRelayAddress -> null
     }
 

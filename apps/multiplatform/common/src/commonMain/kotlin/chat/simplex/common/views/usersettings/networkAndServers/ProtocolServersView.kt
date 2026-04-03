@@ -85,12 +85,11 @@ fun YourServersViewLayout(
 
   Column {
     if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
-      val duplicateRelayNames = findDuplicateRelayNames(serverErrors.value)
       val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
       SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
         userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
           if (relay.deleted) return@forEachIndexed
-          ChatRelayViewLink(relay, duplicateRelayNames, duplicateRelayAddresses) {
+          ChatRelayViewLink(relay, duplicateRelayAddresses) {
             navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, i, relay, rhId)
           }
         }
@@ -433,7 +432,7 @@ private suspend fun runRelaysTest(relays: List<UserChatRelay>, onUpdated: (List<
       updatedRelays.add(index, relayState.value)
       onUpdated(updatedRelays.toList())
       if (f != null) {
-        val name = relayState.value.name.ifEmpty { relayState.value.domains.firstOrNull() ?: relayState.value.address }
+        val name = relayState.value.displayName.ifEmpty { relayState.value.domains.firstOrNull() ?: relayState.value.address }
         fs[name] = f
       }
     }

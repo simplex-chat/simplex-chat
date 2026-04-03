@@ -1579,7 +1579,7 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
           ["  Chat relays"] <> map (plain . ("    " <>) . viewChatRelay) cRelays
       | otherwise = []
       where
-        viewChatRelay UserChatRelay {relayProfile = RelayProfile {name}, address, preset, tested, enabled} = name <> relayAddress <> relayInfo
+        viewChatRelay UserChatRelay {relayProfile = RelayProfile {displayName, fullName, shortDescr}, address, preset, tested, enabled} = displayName <> optionalFullName displayName fullName shortDescr <> relayAddress <> relayInfo
           where
             relayAddress = ": " <> safeDecodeUtf8 (strEncode address)
             relayInfo = if null relayInfo_ then "" else parens $ T.intercalate ", " relayInfo_
@@ -1619,7 +1619,7 @@ viewRelayTestResult relayProfile_ = \case
   Just RelayTestFailure {rtfStep, rtfError} ->
     ["relay test failed at " <> plain (show rtfStep) <> ", error: " <> plain (show rtfError)]
   Nothing -> case relayProfile_ of
-    Just RelayProfile {name} -> ["relay test passed, profile: " <> plain (T.unpack name)]
+    Just RelayProfile {displayName, fullName, shortDescr} -> ["relay test passed, profile: " <> ttyFullName displayName fullName shortDescr]
     Nothing -> ["relay test passed"]
 
 viewServerOperators :: [ServerOperator] -> Maybe UsageConditionsAction -> [StyledString]

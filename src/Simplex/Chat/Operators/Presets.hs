@@ -8,6 +8,7 @@ module Simplex.Chat.Operators.Presets where
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Operators
+import Simplex.Chat.Protocol (relayProfileFromName)
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
@@ -91,9 +92,9 @@ disabledSimplexChatSMPServers =
 -- TODO [relays] real chat relays
 simplexChatRelays :: [NewUserChatRelay]
 simplexChatRelays =
-  [ presetChatRelay True "chat_relay_1" ["simplex.im"] (either error id $ strDecode "https://smp111.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),
-    presetChatRelay True "chat_relay_2" ["simplex.im"] (either error id $ strDecode "https://smp222.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),
-    presetChatRelay True "chat_relay_3" ["simplex.im"] (either error id $ strDecode "https://smp333.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y")
+  [ presetChatRelay True (relayProfileFromName "chat_relay_1") ["simplex.im"] (either error id $ strDecode "https://smp111.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),
+    presetChatRelay True (relayProfileFromName "chat_relay_2") ["simplex.im"] (either error id $ strDecode "https://smp222.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),
+    presetChatRelay True (relayProfileFromName "chat_relay_3") ["simplex.im"] (either error id $ strDecode "https://smp333.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]

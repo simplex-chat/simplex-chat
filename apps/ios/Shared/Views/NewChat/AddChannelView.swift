@@ -422,7 +422,7 @@ struct AddChannelView: View {
 }
 
 func relayDisplayName(_ relay: GroupRelay) -> String {
-    if !relay.userChatRelay.name.isEmpty { return relay.userChatRelay.name }
+    if !relay.userChatRelay.displayName.isEmpty { return relay.userChatRelay.displayName }
     if let domain = relay.userChatRelay.domains.first { return domain }
     if let link = relay.relayLink { return hostFromRelayLink(link) }
     return "relay \(relay.groupRelayId)"

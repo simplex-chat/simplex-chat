@@ -2563,7 +2563,10 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
 }
 
 public struct RelayProfile: Codable, Equatable, Hashable {
-    public var name: String
+    public var displayName: String
+    public var fullName: String
+    public var shortDescr: String?
+    public var image: String?
 }
 
 public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
@@ -2577,15 +2580,15 @@ public struct UserChatRelay: Identifiable, Codable, Equatable, Hashable {
     public var deleted: Bool
     public var createdAt = Date()
 
-    public var name: String {
-        get { relayProfile.name }
-        set { relayProfile.name = newValue }
+    public var displayName: String {
+        get { relayProfile.displayName }
+        set { relayProfile.displayName = newValue }
     }
 
     public init(chatRelayId: Int64? = nil, address: String, name: String, domains: [String], preset: Bool, tested: Bool? = nil, enabled: Bool, deleted: Bool, createdAt: Date = Date()) {
         self.chatRelayId = chatRelayId
         self.address = address
-        self.relayProfile = RelayProfile(name: name)
+        self.relayProfile = RelayProfile(displayName: name, fullName: "", shortDescr: nil, image: nil)
         self.domains = domains
         self.preset = preset
         self.tested = tested

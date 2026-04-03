@@ -990,9 +990,6 @@ fun findDuplicateHosts(serverErrors: List<UserServersError>): Set<String> {
   return duplicateHostsList.toSet()
 }
 
-fun findDuplicateRelayNames(serverErrors: List<UserServersError>): Set<String> =
-  serverErrors.mapNotNull { (it as? UserServersError.DuplicateChatRelayName)?.duplicateChatRelay }.toSet()
-
 fun findDuplicateRelayAddresses(serverErrors: List<UserServersError>): Set<String> =
   serverErrors.mapNotNull { (it as? UserServersError.DuplicateChatRelayAddress)?.duplicateAddress }.toSet()
 

@@ -2279,7 +2279,10 @@ enum class RelayStatus {
 
 @Serializable
 data class RelayProfile(
-  val name: String
+  val displayName: String,
+  val fullName: String,
+  val shortDescr: String? = null,
+  val image: String? = null
 )
 
 @Serializable
@@ -2297,9 +2300,9 @@ data class UserChatRelay(
   private val createdAt: Date = Date()
   val id: String get() = "$address $createdAt"
 
-  val name: String get() = relayProfile.name
+  val displayName: String get() = relayProfile.displayName
 
-  fun copyWithName(name: String): UserChatRelay = copy(relayProfile = RelayProfile(name = name))
+  fun copyWithName(name: String): UserChatRelay = copy(relayProfile = relayProfile.copy(displayName = name))
 }
 
 @Serializable

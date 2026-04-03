@@ -236,13 +236,12 @@ fun OperatorViewLayout(
 
     if (operator.enabled) {
       if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
-        val duplicateRelayNames = findDuplicateRelayNames(serverErrors.value)
         val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
         SectionDividerSpaced()
         SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
           userServers.value[operatorIndex].chatRelays.forEachIndexed { index, relay ->
             if (!relay.deleted) {
-              ChatRelayViewLink(relay, duplicateRelayNames, duplicateRelayAddresses) {
+              ChatRelayViewLink(relay, duplicateRelayAddresses) {
                 navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, index, relay, rhId)
               }
             }

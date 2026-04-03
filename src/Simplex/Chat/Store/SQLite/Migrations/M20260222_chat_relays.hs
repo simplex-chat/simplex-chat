@@ -24,7 +24,10 @@ m20260222_chat_relays =
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
   address BLOB NOT NULL,
-  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  full_name TEXT NOT NULL DEFAULT '',
+  short_descr TEXT,
+  image TEXT,
   domains TEXT NOT NULL,
   preset INTEGER NOT NULL DEFAULT 0,
   tested INTEGER,
@@ -36,7 +39,6 @@ CREATE TABLE chat_relays(
 ) STRICT;
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(user_id, address);
-CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay INTEGER NOT NULL DEFAULT 0;
 
@@ -116,7 +118,6 @@ DROP TABLE group_relays;
 
 DROP INDEX idx_chat_relays_user_id;
 DROP INDEX idx_chat_relays_user_id_address;
-DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
 ALTER TABLE group_members DROP COLUMN relay_link;

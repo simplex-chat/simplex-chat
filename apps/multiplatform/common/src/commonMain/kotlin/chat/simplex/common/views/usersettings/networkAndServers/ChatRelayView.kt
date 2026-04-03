@@ -72,11 +72,11 @@ fun addChatRelay(
   rhId: Long?,
   close: () -> Unit
 ) {
-  val nameEmpty = relay.name.trim().isEmpty()
+  val nameEmpty = relay.displayName.trim().isEmpty()
   val addressEmpty = relay.address.trim().isEmpty()
   if (nameEmpty && addressEmpty) {
     close()
-  } else if (!validRelayName(relay.name)) {
+  } else if (!validRelayName(relay.displayName)) {
     close()
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.invalid_relay_name),
@@ -131,7 +131,7 @@ fun ChatRelayView(
 
   ModalView(
     close = {
-      val validName = validRelayName(relayToEdit.value.name)
+      val validName = validRelayName(relayToEdit.value.displayName)
       val validAddress = validRelayAddress(relayToEdit.value.address)
       if (validName && validAddress) {
         onUpdate(relayToEdit.value)
@@ -194,7 +194,7 @@ private fun PresetRelay(relay: MutableState<UserChatRelay>, testing: MutableStat
   SectionDividerSpaced()
   SectionView(stringResource(MR.strings.preset_relay_name).uppercase()) {
     SectionItemView {
-      Text(relay.value.name)
+      Text(relay.value.displayName)
     }
   }
   SectionDividerSpaced()
@@ -207,7 +207,7 @@ private fun CustomRelay(
   onDelete: (() -> Unit)?,
   testing: MutableState<Boolean>
 ) {
-  val relayName = remember { mutableStateOf(relay.value.name) }
+  val relayName = remember { mutableStateOf(relay.value.displayName) }
   val relayAddress = remember { mutableStateOf(relay.value.address) }
   val validName = remember { derivedStateOf { validRelayName(relayName.value) } }
   val validAddress = remember { derivedStateOf { validRelayAddress(relayAddress.value) } }
@@ -218,7 +218,7 @@ private fun CustomRelay(
       .collect { relay.value = relay.value.copyWithName(it) }
   }
   LaunchedEffect(Unit) {
-    snapshotFlow { relay.value.name }
+    snapshotFlow { relay.value.displayName }
       .distinctUntilChanged()
       .collect { relayName.value = it }
   }
@@ -329,20 +329,19 @@ private fun UseRelaySection(
 @Composable
 fun ChatRelayViewLink(
   relay: UserChatRelay,
-  duplicateRelayNames: Set<String>,
   duplicateRelayAddresses: Set<String>,
   onClick: () -> Unit
 ) {
   SectionItemView(onClick) {
     Box(Modifier.width(16.dp)) {
       when {
-        relay.name in duplicateRelayNames || relay.address in duplicateRelayAddresses -> InvalidServer()
+        relay.address in duplicateRelayAddresses -> InvalidServer()
         !relay.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
         else -> ShowRelayTestStatus(relay)
       }
     }
     Spacer(Modifier.padding(horizontal = 4.dp))
-    val displayName = relay.name.ifEmpty { relay.domains.firstOrNull() ?: relay.address }
+    val displayName = relay.displayName.ifEmpty { relay.domains.firstOrNull() ?: relay.address }
     if (relay.enabled) {
       Text(displayName, color = MaterialTheme.colors.onBackground, maxLines = 1)
     } else {
@@ -362,7 +361,7 @@ fun ModalData.NewChatRelayView(
   val relayToEdit = remember {
     mutableStateOf(
       UserChatRelay(
-        chatRelayId = null, address = "", relayProfile = RelayProfile(name = ""), domains = emptyList(),
+        chatRelayId = null, address = "", relayProfile = RelayProfile(displayName = "", fullName = ""), domains = emptyList(),
         preset = false, tested = null, enabled = true, deleted = false
       )
     )
@@ -406,7 +405,7 @@ suspend fun testRelayConnection(relay: MutableState<UserChatRelay>): RelayTestFa
       testFailure
     } else {
       relay.value = relay.value.copy(tested = true).let {
-        if (relayProfile != null) it.copyWithName(relayProfile.name) else it
+        if (relayProfile != null) it.copyWithName(relayProfile.displayName) else it
       }
       null
     }
