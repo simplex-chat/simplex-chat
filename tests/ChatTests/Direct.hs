@@ -16,7 +16,8 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, void)
+import Control.Monad (forM_, unless, void)
+import System.Timeout (timeout)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -2357,10 +2358,8 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 2000000
-
-      -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      -- second user messages are deleted (cleanup manager interval = 500ms, ttl = 1s)
+      waitUntilExpired alice "@6" [(1, "chat banner")]
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "subscribed 1 connections on server localhost"
@@ -2376,12 +2375,17 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
-
-      -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
+      -- second user messages are deleted (cleanup manager interval = 500ms, ttl = 1s)
+      waitUntilExpired alice "@6" [(1, "chat banner")]
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
+    waitUntilExpired cc chatRef expected = do
+      let go 0 = cc #$> ("/_get chat " <> chatRef <> " count=100", chat, expected)
+          go n = do
+            cc ##> ("/_get chat " <> chatRef <> " count=100")
+            r <- chat <$> getTermLine cc
+            if r == expected then pure () else threadDelay 500000 >> go (n - 1)
+      go (10 :: Int)
 
 testUsersTimedMessages :: HasCallStack => TestParams -> IO ()
 testUsersTimedMessages ps' = do
@@ -2770,15 +2774,24 @@ testAppSettings ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     let settings = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings
         settingsApp = T.unpack . safeDecodeUtf8 . LB.toStrict $ J.encode defaultAppSettings {AS.webrtcICEServers = Just ["non-default.value.com"]}
+        -- Long command echo may be split by virtual terminal getDiff;
+        -- skip non-matching lines to find the expected response, then drain artifacts
+        sendFindResponse cmd resp = do
+          alice `send` cmd
+          let go 0 = error $ "expected but not received: " <> resp
+              go n = do
+                line <- getTermLine alice
+                unless (line == resp) $ go (n - 1)
+          go (50 :: Int)
+          let drain = timeout 50000 (getTermLine alice) >>= mapM_ (\_ -> drain)
+          drain
     -- app-provided defaults
-    alice ##> ("/_get app settings " <> settingsApp)
-    alice <## ("app settings: " <> settingsApp)
+    sendFindResponse ("/_get app settings " <> settingsApp) ("app settings: " <> settingsApp)
     -- parser defaults fallback
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settings)
     -- store
-    alice ##> ("/_save app settings " <> settingsApp)
-    alice <## "ok"
+    sendFindResponse ("/_save app settings " <> settingsApp) "ok"
     -- read back
     alice ##> "/_get app settings"
     alice <## ("app settings: " <> settingsApp)
