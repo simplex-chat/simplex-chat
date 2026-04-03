@@ -14,11 +14,14 @@ import java.util.*
 import kotlin.math.max
 
 actual class RecorderNative: RecorderInterface {
-  private var factory: MediaPlayerFactory? = null
   private var player: MediaPlayer? = null
   private var progressJob: Job? = null
   private var filePath: String? = null
   private var recStartedAt: Long? = null
+
+  companion object {
+    private val factory by lazy { MediaPlayerFactory("--no-video", "--sout-avcodec-strict=-2") }
+  }
 
   override fun start(onProgressUpdate: (position: Int?, finished: Boolean) -> Unit): String {
     VideoPlayerHolder.stopAll()
@@ -42,13 +45,13 @@ actual class RecorderNative: RecorderInterface {
       options.add(":dshow-vdev=none")
       options.add(":dshow-adev=")
     }
-    val f = MediaPlayerFactory("--no-video", "--sout-avcodec-strict=-2")
-    factory = f
-    val p = f.mediaPlayers().newMediaPlayer()
-    player = p
-    p.media().play(mrl, *options.toTypedArray())
-    recStartedAt = System.currentTimeMillis()
+    RecorderInterface.stopRecording = { stop() }
     progressJob = CoroutineScope(Dispatchers.Default).launch {
+      // Factory init may take a few seconds on first use — progress shows 0 until recording starts
+      val p = factory.mediaPlayers().newMediaPlayer()
+      player = p
+      p.media().play(mrl, *options.toTypedArray())
+      recStartedAt = System.currentTimeMillis()
       while (isActive) {
         val ms = progress()
         onProgressUpdate(ms, false)
@@ -61,7 +64,6 @@ actual class RecorderNative: RecorderInterface {
     }.apply {
       invokeOnCompletion { onProgressUpdate(realDuration(path), true) }
     }
-    RecorderInterface.stopRecording = { stop() }
     return path
   }
 
@@ -70,12 +72,10 @@ actual class RecorderNative: RecorderInterface {
     RecorderInterface.stopRecording = null
     runCatching { player?.controls()?.stop() }
     runCatching { player?.release() }
-    runCatching { factory?.release() }
     runBlocking { progressJob?.cancelAndJoin() }
     progressJob = null
     filePath = null
     player = null
-    factory = null
     return (realDuration(path) ?: 0).also { recStartedAt = null }
   }
 
