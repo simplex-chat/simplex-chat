@@ -813,7 +813,6 @@ fun ChatView(
 
 fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableContent: MutableState<List<ContentFilter>>) {
   withBGApi {
-    Log.e(TAG, "updateAvailableContent")
     val chatInfo = activeChat.value?.chatInfo
     if (chatInfo == null) return@withBGApi
     val types = chatModel.controller.apiGetChatContentTypes(chatRh, chatInfo.chatType, chatInfo.apiId, null)
@@ -822,7 +821,6 @@ fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableCon
       availableContent.value = ContentFilter.entries
     } else {
       val typeSet: Set<MsgContentTag> = types.union(ContentFilter.alwaysShow)
-      Log.e(TAG, "updateAvailableContent $typeSet")
       availableContent.value = ContentFilter.entries.filter { it -> typeSet.contains(it.contentTag) }
     }
   }
