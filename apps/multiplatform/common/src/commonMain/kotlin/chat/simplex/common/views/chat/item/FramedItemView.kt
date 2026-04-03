@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -368,9 +368,11 @@ fun CIMarkdownText(
   showTimestamp: Boolean,
   prefix: AnnotatedString? = null
 ) {
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
-    val chatInfo = chat.chatInfo
-    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val chatInfo = chat.chatInfo
+  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
+
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -379,7 +381,9 @@ fun CIMarkdownText(
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
+      selectionRange = selection.highlightRange,
+      onTextLayoutResult = selection.onTextLayoutResult
     )
   }
 }
