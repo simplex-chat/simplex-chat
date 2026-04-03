@@ -477,7 +477,8 @@ CREATE TABLE test_chat_schema.connections (
     quota_err_counter bigint DEFAULT 0 NOT NULL,
     short_link_inv bytea,
     via_short_link_contact bytea,
-    via_contact_uri bytea
+    via_contact_uri bytea,
+    relay_test smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -842,7 +843,9 @@ CREATE TABLE test_chat_schema.group_profiles (
     description text,
     member_admission text,
     short_descr text,
-    group_link bytea
+    group_type text,
+    group_link bytea,
+    public_group_id bytea
 );
 
 
@@ -865,6 +868,7 @@ CREATE TABLE test_chat_schema.group_relays (
     chat_relay_id bigint NOT NULL,
     relay_status text NOT NULL,
     relay_link bytea,
+    conf_id bytea,
     created_at text DEFAULT now() NOT NULL,
     updated_at text DEFAULT now() NOT NULL
 );
@@ -948,10 +952,10 @@ CREATE TABLE test_chat_schema.groups (
     relay_request_peer_chat_max_version integer,
     relay_request_failed smallint DEFAULT 0,
     relay_request_err_reason text,
-    shared_group_id bytea,
     root_priv_key bytea,
     root_pub_key bytea,
-    member_priv_key bytea
+    member_priv_key bytea,
+    public_member_count bigint
 );
 
 

@@ -1315,10 +1315,12 @@ getConnectedGroupRelays db GroupInfo {groupId} =
     <$> DB.query
       db
       ( groupRelayQuery
-          <> [sql| JOIN group_members m ON m.group_member_id = gr.group_member_id
-                   WHERE gr.group_id = ?
-                     AND m.member_status = ?
-                     AND gr.relay_status IN (?,?)
+          <> " "
+          <> [sql|
+               JOIN group_members m ON m.group_member_id = gr.group_member_id
+               WHERE gr.group_id = ?
+                 AND m.member_status = ?
+                 AND gr.relay_status IN (?,?)
              |]
       )
       (groupId, GSMemConnected, RSAccepted, RSActive)
