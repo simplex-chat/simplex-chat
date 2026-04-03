@@ -32,6 +32,7 @@ data RcvGroupEvent
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
   | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
   | RGENewMemberPendingReview
+  | RGEMsgBadSignature
   deriving (Show)
 
 data SndGroupEvent
