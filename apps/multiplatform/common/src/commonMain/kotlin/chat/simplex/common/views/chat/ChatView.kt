@@ -148,6 +148,7 @@ fun ChatView(
     val showCommandsMenu = rememberSaveable { mutableStateOf(false) }
     val contentFilter = rememberSaveable { mutableStateOf<ContentFilter?>(null) }
     val availableContent = remember { mutableStateOf<List<ContentFilter>>(ContentFilter.initialList) }
+    val selectionManager = if (appPlatform.isDesktop) remember { SelectionManager() } else null
 
     if (appPlatform.isAndroid) {
       DisposableEffect(Unit) {
@@ -178,6 +179,7 @@ fun ChatView(
             contentFilter.value = null
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
+            selectionManager?.clearSelection()
             val cInfo = activeChat.value?.chatInfo
             if (chatsCtx.secondaryContextFilter == null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group || cInfo is ChatInfo.Local)) {
               updateAvailableContent(chatRh, activeChat, availableContent)
@@ -245,6 +247,7 @@ fun ChatView(
     val clipboard = LocalClipboardManager.current
     CompositionLocalProvider(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
+      LocalSelectionManager provides selectionManager,
     ) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -985,11 +988,20 @@ fun ChatLayout(
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chat != null) {
+            val selectionManager = LocalSelectionManager.current
+            if (selectionManager != null) {
+              LaunchedEffect(selectionManager) {
+                snapshotFlow { selectionManager.selectionState != SelectionState.Idle }
+                  .collect { chatsCtx.chatState.selectionActive = it }
+              }
+            }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
               // disables scrolling to top of chat item on click inside the bubble
-              CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
-                override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
-              }) {
+              CompositionLocalProvider(
+                LocalBringIntoViewSpec provides object : BringIntoViewSpec {
+                  override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
+                }
+              ) {
                 ChatItemsList(
                   chatsCtx, remoteHostId, chat, unreadCount, composeState, composeViewHeight, searchValue,
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
@@ -1016,6 +1028,13 @@ fun ChatLayout(
               if (chatInfo != null && chatInfo.menuCommands.isNotEmpty()) {
                 Column(Modifier.align(Alignment.BottomStart).padding(bottom = composeViewHeight.value)) {
                   CommandsMenuView(chatsCtx, chat, composeState, showCommandsMenu)
+                }
+              }
+              // Copy button inside TopStart-aligned wrapper — above messages,
+              // behind compose (ABPL paints compose after) and toolbars (outer Box paints after ABPL)
+              if (appPlatform.isDesktop) {
+                Box(Modifier.matchParentSize()) {
+                  SelectionCopyButton()
                 }
               }
             }
@@ -1195,25 +1214,6 @@ fun BoxScope.ChatInfoToolbar(
     chatInfo.contact.active &&
     activeCall == null
 
-  // Content filter button: always in bar on desktop and for groups; on Android for direct chats it
-  // goes into the three-dots menu UNLESS calls are unavailable, in which case it appears in the bar
-  if (showContentFilterButton && (appPlatform.isDesktop || chatInfo is ChatInfo.Group ||
-      (appPlatform.isAndroid && chatInfo is ChatInfo.Direct && !canStartCall && activeCall == null))) {
-    val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
-    barButtons.add {
-      IconButton(
-        { showContentFilterMenu.value = true },
-        enabled = enabled
-      ) {
-        Icon(
-          painterResource(MR.images.ic_photo_library),
-          null,
-          tint = MaterialTheme.colors.primary
-        )
-      }
-    }
-  }
-
   // Chat-type specific buttons
   when (chatInfo) {
     is ChatInfo.Local -> {
@@ -1310,6 +1310,26 @@ fun BoxScope.ChatInfoToolbar(
       }
     }
     else -> {}
+  }
+
+  // Content filter button: always in bar on desktop and for groups; on Android for direct chats it
+  // goes into the three-dots menu UNLESS calls are unavailable, in which case it appears in the bar.
+  // Must be after chat-type buttons so call buttons appear before filter during active call.
+  if (showContentFilterButton && (appPlatform.isDesktop || chatInfo is ChatInfo.Group ||
+      (appPlatform.isAndroid && chatInfo is ChatInfo.Direct && !canStartCall && activeCall == null))) {
+    val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
+    barButtons.add {
+      IconButton(
+        { showContentFilterMenu.value = true },
+        enabled = enabled
+      ) {
+        Icon(
+          painterResource(MR.images.ic_photo_library),
+          null,
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    }
   }
 
   val enableNtfs = chatInfo.chatSettings?.enableNtfs
@@ -1935,7 +1955,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = SwipeToDismissModifier(
+        val swipeableModifier = if (appPlatform.isDesktop) Modifier else SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
@@ -2320,8 +2340,11 @@ fun BoxScope.ChatItemsList(
     }
   }
 
+  val manager = LocalSelectionManager.current
+  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, linkMode) else Modifier
+
   LazyColumnWithScrollBar(
-    Modifier.align(Alignment.BottomCenter),
+    modifier.align(Alignment.BottomCenter),
     state = listState.value,
     contentPadding = PaddingValues(
       top = topPaddingToContent,
@@ -2375,8 +2398,10 @@ fun BoxScope.ChatItemsList(
           itemSeparation = getItemSeparation(item, null)
           prevItemSeparationLargeGap = false
         }
-        ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
-          if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
+        CompositionLocalProvider(LocalItemContext provides ItemContext(selectionIndex = index)) {
+          ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+            if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
+          }
         }
 
         if (last != null) {
