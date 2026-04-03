@@ -238,7 +238,7 @@ createNewSndMessage db gVar connOrGroupId chatMsgEvent msgSigning_ encodeMessage
               shared_msg_id, shared_msg_id_user, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ((MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, chatBinding <$> signedMsg_, smpEncode . signatures <$> signedMsg_, connId_, groupId_)
+          ((MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, chatBinding <$> signedMsg_, DB.Binary . smpEncode . signatures <$> signedMsg_, connId_, groupId_)
            :. (DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt))
         msgId <- insertedRowId db
         pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody, signedMsg_}
@@ -325,7 +325,7 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, b
              shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, chatBinding <$> signedMsg_, smpEncode . signatures <$> signedMsg_, brokerTs, currentTs, currentTs, connId_, groupId_)
+        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, chatBinding <$> signedMsg_, DB.Binary . smpEncode . signatures <$> signedMsg_, brokerTs, currentTs, currentTs, connId_, groupId_)
          :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgSigned, forwardedByMember}
