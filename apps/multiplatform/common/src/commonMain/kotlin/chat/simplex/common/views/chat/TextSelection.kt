@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
@@ -339,8 +340,9 @@ fun BoxScope.SelectionHandler(
         }
         .pointerInput(manager) {
             awaitEachGesture {
-                val initialEvent = awaitPointerEvent(PointerEventPass.Initial).changes.first()
-                if (!initialEvent.pressed) return@awaitEachGesture
+                var initialEvent: PointerInputChange
+                // Wait for press, skip hovers
+                do { initialEvent = awaitPointerEvent(PointerEventPass.Initial).changes.first() } while (!initialEvent.pressed)
                 val localStart = initialEvent.position
                 val windowStart = localStart + manager.viewportPosition
                 if (manager.selectionState == SelectionState.Selected) initialEvent.consume()
