@@ -185,9 +185,11 @@ import UnliftIO.STM
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (FromRow, In (..), Only (..), Query, ToRow, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Database.PostgreSQL.Simple.ToField (ToField)
 #else
 import Database.SQLite.Simple (FromRow, Only (..), Query, ToRow, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Database.SQLite.Simple.ToField (ToField)
 #endif
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
@@ -586,20 +588,20 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, show_group_as_sender, msg_signed, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, item_viewed, show_group_as_sender, msg_signed, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, msgId_) :. idsRow :. groupScopeRow :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgSigStatus) :. (Maybe Int, Maybe UTCTime)
-    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, BI hasLink, BI showGroupAsSender, msgSigned) :. ciTimedRow timed
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgSigStatus) :. (Maybe Int, Maybe UTCTime)
+    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, mcTag_, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, BI hasLink, BI itemViewed, BI showGroupAsSender, msgSigned) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
     idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId, Maybe NoteFolderId)
     idsRow = case chatDirection of
@@ -622,8 +624,13 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
       _ -> (Nothing, Nothing)
     includeInHistory :: Bool
     includeInHistory = case groupScope of
-      Just Nothing -> isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
+      Just Nothing -> isJust mcTag_ && mcTag_ /= Just MCReport_
       _ -> False
+    itemViewed :: Bool
+    itemViewed = case msgDirection @d of
+      SMDSnd -> isJust mcTag_
+      SMDRcv -> False
+    mcTag_ = msgContentTag <$> ciMsgContent ciContent
     forwardedFromRow :: (Maybe CIForwardedFromTag, Maybe Text, Maybe MsgDirection, Maybe Int64, Maybe Int64, Maybe Int64)
     forwardedFromRow = case itemForwarded of
       Nothing ->
@@ -1346,7 +1353,7 @@ getContactMinUnreadId_ db User {userId} Contact {contactId} =
       |]
       (userId, contactId, CISRcvNew)
 
--- max viewed item: received read or sent (any item_status != CISRcvNew)
+-- max viewed item: sent content or received read (excludes born-read events)
 getContactMaxViewedItemId_ :: DB.Connection -> User -> Contact -> IO (Maybe ChatItemId)
 getContactMaxViewedItemId_ db User {userId} Contact {contactId} =
   fmap join . maybeFirstRow fromOnly $
@@ -1355,11 +1362,11 @@ getContactMaxViewedItemId_ db User {userId} Contact {contactId} =
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_status != ?
+        WHERE user_id = ? AND contact_id = ? AND item_viewed = 1
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT 1
       |]
-      (userId, contactId, CISRcvNew)
+      (userId, contactId)
 
 getContactUnreadCount_ :: DB.Connection -> User -> Contact -> IO Int
 getContactUnreadCount_ db User {userId} Contact {contactId} =
@@ -1688,23 +1695,23 @@ getGroupStats_ db user g scopeInfo_ = do
 getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
 getGroupMinUnreadId_ db user g scopeInfo_ contentFilter =
   fmap join . maybeFirstRow fromOnly $
-    queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status = ? " baseQuery orderLimit
+    queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status = ? " CISRcvNew baseQuery orderLimit
   where
     baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
     orderLimit = " ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1"
 
--- max viewed item: received read or sent (any item_status != CISRcvNew)
+-- max viewed item: sent content or received read (excludes born-read events)
 getGroupMaxViewedItemId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
 getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter =
   fmap join . maybeFirstRow fromOnly $
-    queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status != ? " baseQuery orderLimit
+    queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_viewed = ? " (BI True) baseQuery orderLimit
   where
     baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
     orderLimit = " ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1"
 
 getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Int, Int)
 getGroupUnreadCount_ db user g scopeInfo_ contentFilter =
-  head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status = ? " baseQuery ""
+  head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter " item_status = ? " CISRcvNew baseQuery ""
   where
     baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? "
 
@@ -1716,27 +1723,27 @@ getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
       "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0"
       (userId, groupId, MCReport_, BI archived)
 
-queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> Query -> Query -> ExceptT StoreError IO [r]
-queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter statusCond baseQuery orderLimit =
+queryUnreadGroupItems :: (ToField p, FromRow r) => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> p -> Query -> Query -> ExceptT StoreError IO [r]
+queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter statusCond statusParam baseQuery orderLimit =
   case (scopeInfo_, contentFilter) of
     (Nothing, Nothing) ->
       liftIO $
         DB.query
           db
           (baseQuery <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND " <> statusCond <> orderLimit)
-          (userId, groupId, CISRcvNew)
+          (userId, groupId, statusParam)
     (Nothing, Just mcTag) ->
       liftIO $
         DB.query
           db
           (baseQuery <> " AND msg_content_tag = ? AND " <> statusCond <> orderLimit)
-          (userId, groupId, mcTag, CISRcvNew)
+          (userId, groupId, mcTag, statusParam)
     (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
       liftIO $
         DB.query
           db
           (baseQuery <> " AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? AND " <> statusCond <> orderLimit)
-          (userId, groupId, GCSTMemberSupport_, groupMemberId' <$> m, CISRcvNew)
+          (userId, groupId, GCSTMemberSupport_, groupMemberId' <$> m, statusParam)
     (Just _scope, Just _mcTag) ->
       throwError $ SEInternalError "group scope and content filter are not supported together"
 
@@ -1997,7 +2004,7 @@ updateDirectChatItemsRead db User {userId} contactId = do
   DB.execute
     db
     [sql|
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND contact_id = ? AND item_status = ?
     |]
     (CISRcvRead, currentTs, userId, contactId, CISRcvNew)
@@ -2042,7 +2049,7 @@ setDirectChatItemRead_ db User {userId} contactId itemId currentTs =
   DB.execute
     db
     [sql|
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND contact_id = ? AND item_status = ? AND chat_item_id = ?
     |]
     (CISRcvRead, currentTs, userId, contactId, CISRcvNew, itemId)
@@ -2062,7 +2069,7 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId} = do
   DB.execute
     db
     [sql|
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND group_id = ?
         AND item_status = ?
     |]
@@ -2076,7 +2083,7 @@ updateSupportChatItemsRead db vr user@User {userId} g@GroupInfo {groupId, member
       DB.execute
         db
         [sql|
-          UPDATE chat_items SET item_status = ?, updated_at = ?
+          UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
           WHERE user_id = ? AND group_id = ?
             AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
             AND item_status = ?
@@ -2154,7 +2161,7 @@ updateGroupChatItemsReadList db vr user@User {userId} g@GroupInfo {groupId} scop
         DB.query
           db
           [sql|
-            UPDATE chat_items SET item_status = ?, updated_at = ?
+            UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
             WHERE user_id = ? AND group_id = ? AND item_status = ? AND chat_item_id = ?
             RETURNING chat_item_id, timed_ttl, timed_delete_at, group_member_id, user_mention
           |]
@@ -2237,7 +2244,7 @@ updateLocalChatItemsRead db User {userId} noteFolderId = do
   DB.execute
     db
     [sql|
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
     |]
     (CISRcvRead, currentTs, userId, noteFolderId, CISRcvNew)
