@@ -2895,16 +2895,16 @@
   <string name="block_subscriber_for_all_question">Block subscriber for all?</string>
 
   <!-- AddChannelView.kt -->
-  <string name="create_channel_title">Create channel</string>
-  <string name="create_channel_button">Create channel</string>
-  <string name="create_channel_beta_button">Create channel (BETA)</string>
+  <string name="create_channel_title">Create public channel</string>
+  <string name="create_channel_button">Create public channel</string>
+  <string name="create_channel_beta_button">Create public channel (BETA)</string>
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
   <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
-  <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.</string>
+  <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
   <string name="configure_relays">Configure relays</string>
   <string name="relay_status_failed">failed</string>
   <string name="relay_connection_failed">Relay connection failed</string>
