@@ -50,7 +50,7 @@ chatFileTests = do
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
-    xit' "receive file marked to receive on chat start" testXFTPMarkToReceive
+    it "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
@@ -913,10 +913,10 @@ testXFTPMarkToReceive = do
       threadDelay 100000
 
       bob ##> "/_start"
-      bob <## "chat started"
 
       bob
-        <### [ "subscribed 1 connections on server localhost",
+        <### [ "chat started",
+               "subscribed 1 connections on server localhost",
                "started receiving file 1 (test.pdf) from alice",
                "saving file 1 from alice to test.pdf"
              ]
