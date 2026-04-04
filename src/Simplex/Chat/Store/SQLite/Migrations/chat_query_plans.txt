@@ -868,7 +868,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -879,7 +879,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1064,7 +1064,7 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
 
 Query: 
-            UPDATE chat_items SET item_status = ?, updated_at = ?
+            UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
             WHERE user_id = ? AND group_id = ? AND item_status = ? AND chat_item_id = ?
             RETURNING chat_item_id, timed_ttl, timed_delete_at, group_member_id, user_mention
           
@@ -1469,7 +1469,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1651,7 +1651,7 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
-          UPDATE chat_items SET item_status = ?, updated_at = ?
+          UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
           WHERE user_id = ? AND group_id = ?
             AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
             AND item_status = ?
@@ -3385,16 +3385,6 @@ SEARCH chat_items USING INDEX idx_chat_items_contact_id (contact_id=?)
 Query: 
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_status != ?
-        ORDER BY created_at DESC, chat_item_id DESC
-        LIMIT 1
-      
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
-Query: 
-        SELECT chat_item_id
-        FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
         ORDER BY created_at ASC, chat_item_id ASC
         LIMIT 1
@@ -3411,6 +3401,16 @@ Query:
       
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contact_id (contact_id=?)
+
+Query: 
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ? AND item_viewed = 1
+        ORDER BY created_at DESC, chat_item_id DESC
+        LIMIT 1
+      
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=? AND item_viewed=?)
 
 Query: 
         SELECT chat_item_id
@@ -4540,12 +4540,12 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, show_group_as_sender, msg_signed, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, item_viewed, show_group_as_sender, msg_signed, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4763,21 +4763,21 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND contact_id = ? AND item_status = ?
     
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
 
 Query: 
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND contact_id = ? AND item_status = ? AND chat_item_id = ?
     
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND group_id = ?
         AND item_status = ?
     
@@ -4785,7 +4785,7 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: 
-      UPDATE chat_items SET item_status = ?, updated_at = ?
+      UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
     
 Plan:
@@ -5545,7 +5545,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5554,7 +5554,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.contact_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5572,7 +5572,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.group_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -6027,7 +6027,7 @@ SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6051,7 +6051,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_content_tag != 'chatBanner'
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6063,7 +6063,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ?
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6087,7 +6087,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6390,7 +6390,7 @@ SEARCH protocol_servers USING COVERING INDEX idx_smp_servers_user_id (user_id=?)
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_user_id (user_id=?)
 SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_viewed (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_to_subscribe (user_id=?)
@@ -6554,7 +6554,7 @@ Query: SELECT EXISTS (SELECT 1 FROM chat_items WHERE user_id = ? AND contact_id 
 Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
 
 Query: SELECT EXISTS (SELECT 1 FROM group_members WHERE group_id = ? AND member_id = ?)
 Plan:
@@ -6588,13 +6588,13 @@ Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? 
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
 
-Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status != ?  ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
-
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND  item_viewed = ?  ORDER BY item_ts DESC, chat_item_id DESC LIMIT 1
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=? AND item_viewed=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1
 Plan:
@@ -6820,6 +6820,10 @@ Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ? WHERE user_id = ? AND item_status = ?
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
+
 Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -6827,10 +6831,6 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND item_status = ?
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
 
 Query: UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
