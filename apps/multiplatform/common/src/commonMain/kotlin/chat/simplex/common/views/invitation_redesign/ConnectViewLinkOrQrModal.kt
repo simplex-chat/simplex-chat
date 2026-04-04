@@ -50,16 +50,18 @@ fun ModalData.ConnectViewLinkOrQrModal(rhId: Long?, close: () -> Unit) {
       .verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Spacer(Modifier.height(24.dp))
-
-    Image(
-      painterResource(MR.images.ic_invitation_connect_link),
-      contentDescription = null,
-      contentScale = ContentScale.Fit,
-      modifier = Modifier.size(160.dp)
-    )
-
-    Spacer(Modifier.height(24.dp))
+    if (fullInvitationArtAvailable) {
+      Spacer(Modifier.height(24.dp))
+      Image(
+        painterResource(MR.images.ic_invitation_connect_link),
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(160.dp)
+      )
+      Spacer(Modifier.height(24.dp))
+    } else {
+      Spacer(Modifier.height(16.dp))
+    }
 
     SectionView(
       title = stringResource(MR.strings.paste_the_link_you_received).uppercase(),

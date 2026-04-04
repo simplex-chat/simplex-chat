@@ -40,10 +40,10 @@ fun EmptyChatListView(onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Bold),
       )
       Spacer(Modifier.height(DEFAULT_PADDING))
-      if (SHOW_PICTURES) {
-          InviteSomeoneWithPicturesContent(onOneTimeLinkClick = onOneTimeLinkClick)
+      if (fullInvitationArtAvailable) {
+        InviteSomeoneWithPicturesContent(onOneTimeLinkClick = onOneTimeLinkClick)
       } else {
-          InviteSomeoneContent()
+        InviteSomeoneContent()
       }
       SectionBottomSpacer()
     }

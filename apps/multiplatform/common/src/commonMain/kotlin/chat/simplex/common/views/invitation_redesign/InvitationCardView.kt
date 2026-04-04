@@ -41,12 +41,16 @@ fun InvitationCardView(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Image(
-        painterResource(mainImageResource),
-        contentDescription = null,
-        modifier = Modifier.fillMaxWidth()
-      )
-      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      if (fullInvitationArtAvailable) {
+        Image(
+          painterResource(mainImageResource),
+          contentDescription = null,
+          modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      } else {
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      }
       Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
           painterResource(iconResource),

@@ -11,6 +11,9 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
+val simplexArtLightResources = rootProject.rootDir.resolve("../../../simplex-chat-art/multiplatform/light")
+val simplexArtRepoPresent = simplexArtLightResources.isDirectory
+
 kotlin {
   androidTarget()
   jvm("desktop")
@@ -31,7 +34,11 @@ kotlin {
     }
 
     val commonMain by getting {
-      resources.srcDir(rootProject.rootDir.resolve("../../../simplex-chat-art/multiplatform/light"))
+      if (simplexArtRepoPresent) {
+        resources.srcDir(simplexArtLightResources)
+      } else {
+        resources.srcDir("src/commonMain/resourcesFallbackArt")
+      }
       dependencies {
         api(compose.runtime)
         api(compose.foundation)
@@ -161,6 +168,7 @@ buildConfig {
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
     buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
+    buildConfigField("Boolean", "FULL_INVITATION_IMAGES", "$simplexArtRepoPresent")
   }
 }
 

@@ -166,15 +166,16 @@ fun OneTimeLinkBottomSheetContent(connLinkInvitation: CreatedConnLink) {
   ) {
     Spacer(Modifier.height(DEFAULT_PADDING))
 
-    Image(
-      painterResource(MR.images.ic_invitation_one_time_link),
-      contentDescription = null,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING * 3)
-    )
-
-    Spacer(Modifier.height(DEFAULT_PADDING))
+    if (fullInvitationArtAvailable) {
+      Image(
+        painterResource(MR.images.ic_invitation_one_time_link),
+        contentDescription = null,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = DEFAULT_PADDING * 3)
+      )
+      Spacer(Modifier.height(DEFAULT_PADDING))
+    }
 
     Text(
       stringResource(MR.strings.send_1_time_link_description),
@@ -235,15 +236,16 @@ fun OneTimeLinkContent(connLinkInvitation: CreatedConnLink) {
   ) {
     Spacer(Modifier.height(DEFAULT_PADDING))
 
-    Image(
-      painterResource(MR.images.ic_invitation_one_time_link),
-      contentDescription = null,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING * 3)
-    )
-
-    Spacer(Modifier.height(DEFAULT_PADDING))
+    if (fullInvitationArtAvailable) {
+      Image(
+        painterResource(MR.images.ic_invitation_one_time_link),
+        contentDescription = null,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = DEFAULT_PADDING * 3)
+      )
+      Spacer(Modifier.height(DEFAULT_PADDING))
+    }
 
     Text(
       stringResource(MR.strings.send_1_time_link_description),

@@ -61,7 +61,7 @@ fun InviteCardComponent(
         Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        if (SHOW_PICTURES) {
+        if (fullInvitationArtAvailable) {
           Image(
             image,
             contentDescription = null,

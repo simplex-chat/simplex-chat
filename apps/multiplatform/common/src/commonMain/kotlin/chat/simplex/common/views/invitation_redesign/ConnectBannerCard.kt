@@ -37,38 +37,40 @@ fun ConnectBannerCard(onInviteClick: () -> Unit, onScanPasteClick: () -> Unit) {
       modifier = Modifier.fillMaxWidth()
     ) {
       Column {
-        Row(
-          Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-          Box(
-            modifier = Modifier
-              .weight(1f)
-              .aspectRatio(1.6f)
-              .clickable { onInviteClick() },
+        if (fullInvitationArtAvailable) {
+          Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
           ) {
-            Image(
-              painterResource(MR.images.ic_invitation_card_invite_someone),
-              contentDescription = stringResource(MR.strings.create_link_or_qr),
-              modifier = Modifier.fillMaxSize(),
-              contentScale = ContentScale.Crop
-            )
+            Box(
+              modifier = Modifier
+                .weight(1f)
+                .aspectRatio(1.6f)
+                .clickable { onInviteClick() },
+            ) {
+              Image(
+                painterResource(MR.images.ic_invitation_card_invite_someone),
+                contentDescription = stringResource(MR.strings.create_link_or_qr),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+              )
+            }
+            Box(
+              modifier = Modifier
+                .weight(1f)
+                .aspectRatio(1.6f)
+                .clickable { onScanPasteClick() },
+            ) {
+              Image(
+                painterResource(MR.images.ic_invitation_card_one_time_link),
+                contentDescription = stringResource(MR.strings.paste_link_scan),
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+              )
+            }
           }
-          Box(
-            modifier = Modifier
-              .weight(1f)
-              .aspectRatio(1.6f)
-              .clickable { onScanPasteClick() },
-          ) {
-            Image(
-              painterResource(MR.images.ic_invitation_card_one_time_link),
-              contentDescription = stringResource(MR.strings.paste_link_scan),
-              modifier = Modifier.fillMaxSize(),
-              contentScale = ContentScale.Crop
-            )
-          }
+          Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.06f))
         }
-        Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.06f))
         Row(
           Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING_HALF),
           horizontalArrangement = Arrangement.SpaceEvenly
