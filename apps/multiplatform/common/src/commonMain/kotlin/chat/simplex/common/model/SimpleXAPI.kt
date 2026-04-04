@@ -179,6 +179,8 @@ class AppPreferences {
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
   val connectBannerCardShown = mkBoolPreference(SHARED_PREFS_CONNECT_BANNER_CARD_SHOWN, false)
+  /** After the chat list had at least one real conversation once, the full-screen "Now you can" invite UI stays off. */
+  val chatListInviteEmptyDismissed = mkBoolPreference(SHARED_PREFS_CHAT_LIST_INVITE_EMPTY_DISMISSED, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val showReportsInSupportChatAlert = mkBoolPreference(SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
@@ -441,6 +443,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
     private const val SHARED_PREFS_CONNECT_BANNER_CARD_SHOWN = "ConnectBannerCardShown"
+    private const val SHARED_PREFS_CHAT_LIST_INVITE_EMPTY_DISMISSED = "ChatListInviteEmptyDismissed"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
     private const val SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "ShowReportsInSupportChatAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"

@@ -52,7 +52,8 @@ fun EmptyChatListView(onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit
       Modifier
         .fillMaxWidth()
         .padding(horizontal = DEFAULT_PADDING)
-        .padding(top = AppBarHeight),
+        .padding(top = AppBarHeight)
+        .verticalScroll(rememberScrollState()),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
@@ -74,7 +75,10 @@ fun EmptyChatListView(onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit
         title = stringResource(MR.strings.connect_via_link_or_qr),
         modifier = Modifier.fillMaxWidth().clickable { onConnectClick() }
       )
+
+      Spacer(Modifier.height(DEFAULT_BIG_PADDING * 3))
     }
+
   }
 }
 
