@@ -4111,6 +4111,7 @@ testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cath
       cath <## "changed to #club"
       alice <## "cath updated group #team:"
       alice <## "changed to #club"
+      threadDelay 250000
 
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect directly"
