@@ -26,16 +26,17 @@ fun InviteSomeoneView(close: () -> Unit) {
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-      InviteSomeoneContent()
+      InviteSomeoneMainContent()
       SectionBottomSpacer()
     }
   }
 }
 
+/** Invitation cards only; use inside a single [ColumnWithScrollBar] or other scroll parent — not as a nested scroll root. */
 @Composable
-fun InviteSomeoneContent() {
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize().background(MaterialTheme.colors.background),
+fun InviteSomeoneMainContent() {
+  Column(
+    Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     InviteCardComponent(
@@ -80,6 +81,16 @@ fun InviteSomeoneContent() {
   }
 }
 
+@Composable
+fun InviteSomeoneContent() {
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize().background(MaterialTheme.colors.background),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    InviteSomeoneMainContent()
+  }
+}
+
 @Preview
 @Composable
 private fun PreviewInviteSomeoneView() {
@@ -90,7 +101,7 @@ private fun PreviewInviteSomeoneView() {
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
       Spacer(Modifier.height(DEFAULT_PADDING))
-      InviteSomeoneContent()
+      InviteSomeoneMainContent()
       SectionBottomSpacer()
     }
   }

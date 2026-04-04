@@ -24,11 +24,10 @@ fun EmptyChatListView(onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit
 
   if (showInviteSomeone) {
     BackHandler { showInviteSomeone = false }
-    Column(
+    ColumnWithScrollBar(
       Modifier
         .fillMaxSize()
-        .background(MaterialTheme.colors.background)
-        .verticalScroll(rememberScrollState()),
+        .background(MaterialTheme.colors.background),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Row(Modifier.fillMaxWidth()) {
@@ -43,7 +42,7 @@ fun EmptyChatListView(onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit
       if (fullInvitationArtAvailable) {
         InviteSomeoneWithPicturesContent(onOneTimeLinkClick = onOneTimeLinkClick)
       } else {
-        InviteSomeoneContent()
+        InviteSomeoneMainContent()
       }
       SectionBottomSpacer()
     }
