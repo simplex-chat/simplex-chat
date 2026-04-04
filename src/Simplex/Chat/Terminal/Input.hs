@@ -67,6 +67,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
     Right r' -> processResp cmd rh r'
     Left _ -> when (isMessage cmd) $ echo s
   printRespToTerminal ct cc False rh r
+  chatResponseNotification ct r
   mapM_ (startLiveMessage cmd) r
   where
     echo s = printToTerminal ct [plain s]
