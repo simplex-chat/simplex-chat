@@ -1,15 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays where
 
 import Data.Text (Text)
-import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
 m20260222_chat_relays :: Text
 m20260222_chat_relays =
-  T.pack
-    [r|
+  [r|
 CREATE TABLE chat_relays(
   chat_relay_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   address BYTEA NOT NULL,
@@ -80,8 +79,7 @@ ALTER TABLE connections ADD COLUMN relay_test SMALLINT NOT NULL DEFAULT 0;
 
 down_m20260222_chat_relays :: Text
 down_m20260222_chat_relays =
-  T.pack
-    [r|
+  [r|
 UPDATE group_members SET member_role = 'observer' WHERE member_role = 'relay';
 
 ALTER TABLE users DROP COLUMN is_user_chat_relay;

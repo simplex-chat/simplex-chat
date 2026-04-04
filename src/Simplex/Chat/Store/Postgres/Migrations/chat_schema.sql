@@ -344,7 +344,8 @@ CREATE TABLE test_chat_schema.chat_items (
     group_scope_group_member_id bigint,
     show_group_as_sender smallint DEFAULT 0 NOT NULL,
     has_link smallint DEFAULT 0 NOT NULL,
-    msg_signed text
+    msg_signed text,
+    item_viewed smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1906,6 +1907,10 @@ CREATE INDEX idx_chat_items_contacts_has_link_created_at ON test_chat_schema.cha
 
 
 
+CREATE INDEX idx_chat_items_contacts_item_viewed ON test_chat_schema.chat_items USING btree (user_id, contact_id, item_viewed, created_at);
+
+
+
 CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, msg_content_tag, created_at);
 
 
@@ -1975,6 +1980,10 @@ CREATE INDEX idx_chat_items_groups_history ON test_chat_schema.chat_items USING 
 
 
 CREATE INDEX idx_chat_items_groups_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, item_ts);
+
+
+
+CREATE INDEX idx_chat_items_groups_item_viewed ON test_chat_schema.chat_items USING btree (user_id, group_id, item_viewed, item_ts);
 
 
 

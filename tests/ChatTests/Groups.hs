@@ -456,7 +456,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "items read for chat")
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "connected"), (0, "1"), (0, "2"), (0, "3"), (0, "4")])
 
   -- Read all items
   bob #$> ("/_read chat #1", id, "ok")

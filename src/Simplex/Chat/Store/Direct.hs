@@ -635,7 +635,7 @@ setUserChatsRead db User {userId} = do
   DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (BI False, updatedAt, userId, BI True)
   DB.execute db "UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (BI False, updatedAt, userId, BI True)
   DB.execute db "UPDATE note_folders SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (BI False, updatedAt, userId, BI True)
-  DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND item_status = ?" (CISRcvRead, updatedAt, userId, CISRcvNew)
+  DB.execute db "UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ? WHERE user_id = ? AND item_status = ?" (CISRcvRead, updatedAt, userId, CISRcvNew)
 
 updateContactStatus :: DB.Connection -> User -> Contact -> ContactStatus -> IO Contact
 updateContactStatus db User {userId} ct@Contact {contactId} contactStatus = do

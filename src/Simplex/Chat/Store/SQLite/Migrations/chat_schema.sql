@@ -464,7 +464,8 @@ CREATE TABLE chat_items(
   group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   show_group_as_sender INTEGER NOT NULL DEFAULT 0,
   has_link INTEGER NOT NULL DEFAULT 0,
-  msg_signed TEXT
+  msg_signed TEXT,
+  item_viewed INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -1278,6 +1279,18 @@ CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(
   group_member_id
 );
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
+CREATE INDEX idx_chat_items_contacts_item_viewed ON chat_items(
+  user_id,
+  contact_id,
+  item_viewed,
+  created_at
+);
+CREATE INDEX idx_chat_items_groups_item_viewed ON chat_items(
+  user_id,
+  group_id,
+  item_viewed,
+  item_ts
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
