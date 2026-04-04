@@ -1544,7 +1544,7 @@ processChatCommand vr nm = \case
           processChatCommand vr nm $ APISetUserServers userId $ L.map (updatedRelays relays') userServers
     where
       aUserRelay :: CLINewRelay -> AUserChatRelay
-      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay (relayProfileFromName name) [""] address
+      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay (mkRelayProfile name Nothing) [""] address
   APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
   APISetServerOperators operators -> do
     as <- asks randomAgentServers

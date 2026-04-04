@@ -1468,8 +1468,8 @@ $(JQ.deriveJSON defaultJSON ''RelayProfile)
 toRelayProfile :: (ContactName, Text, Maybe Text, Maybe ImageData) -> RelayProfile
 toRelayProfile (displayName, fullName, shortDescr, image) = RelayProfile {displayName, fullName, shortDescr, image}
 
-relayProfileFromName :: ContactName -> RelayProfile
-relayProfileFromName displayName = RelayProfile {displayName, fullName = "", shortDescr = Nothing, image = Nothing}
+mkRelayProfile :: ContactName -> Maybe ImageData -> RelayProfile
+mkRelayProfile displayName image = RelayProfile {displayName, fullName = "", shortDescr = Nothing, image}
 
 data RelayAddressLinkData = RelayAddressLinkData {relayProfile :: RelayProfile}
   deriving (Show)
