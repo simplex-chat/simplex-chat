@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Simplex.Chat.Store.Postgres.Migrations.M20260403_item_viewed where
