@@ -38,7 +38,10 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import java.net.URI
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   DisposableEffect(Unit) {
@@ -46,34 +49,105 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
       connectProgressManager.cancelConnectProgress()
     }
   }
-
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  var showNewChatViewSheet by remember { mutableStateOf(false) }
+  var showAddGroupSheet by remember { mutableStateOf(false) }
+  var newChatSheetSelection by remember { mutableStateOf(NewChatOption.INVITE) }
+  var newChatSheetShowQR by remember { mutableStateOf(false) }
+  val newChatSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+  val sheetScope = rememberCoroutineScope()
+  val closeAll = { ModalManager.start.closeModals() }
+  // Image picker state for AddGroup sheet
+  val addGroupChosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
+  val addGroupProfileImage = rememberSaveable { mutableStateOf<String?>(null) }
+  val imagePickerSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
 
-  Box {
-    val closeAll = { ModalManager.start.closeModals() }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-      NewChatSheetLayout(
-        addContact = {
-          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll) }
-        },
-        scanPaste = {
-          ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
-        },
-        createGroup = {
-          ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
-        },
-        rh = rh,
-        close = close
-      )
+  LaunchedEffect(newChatSheetState.currentValue) {
+    if (newChatSheetState.currentValue == ModalBottomSheetValue.Hidden) {
+      if (showNewChatViewSheet) showNewChatViewSheet = false
+      if (showAddGroupSheet) {
+        showAddGroupSheet = false
+        addGroupChosenImage.value = null
+        addGroupProfileImage.value = null
+      }
     }
-    if (oneHandUI.value) {
-      Column(Modifier.align(Alignment.BottomCenter)) {
-        DefaultAppBar(
-          navigationButton = { NavigationButtonBack(onButtonClicked = close) },
-          fixedTitleText = generalGetString(MR.strings.new_message),
-          onTop = false,
+  }
+
+  ModalBottomSheetLayout(
+    scrimColor = Color.Black.copy(alpha = 0.12F),
+    sheetState = imagePickerSheetState,
+    sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
+    sheetContent = {
+      if (showAddGroupSheet) {
+        GetImageBottomSheet(
+          addGroupChosenImage,
+          onImageChange = { bitmap -> addGroupProfileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
+          hideBottomSheet = { sheetScope.launch { imagePickerSheetState.hide() } }
         )
+      } else {
+        Spacer(Modifier.height(1.dp))
+      }
+    }
+  ) {
+    ModalBottomSheetLayout(
+      scrimColor = Color.Black.copy(alpha = 0.12F),
+      sheetState = newChatSheetState,
+      sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+      sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
+      sheetContent = {
+        if (showNewChatViewSheet) {
+          ModalData().NewChatViewSheet(
+            rh = chatModel.currentRemoteHost.value,
+            selection = newChatSheetSelection,
+            showQRCodeScanner = newChatSheetShowQR,
+            close = { sheetScope.launch { newChatSheetState.hide() } }
+          )
+        } else if (showAddGroupSheet) {
+          AddGroupViewSheet(
+            chatModel = chatModel,
+            rh = chatModel.currentRemoteHost.value,
+            profileImage = addGroupProfileImage,
+            onEditImage = { sheetScope.launch { imagePickerSheetState.show() } },
+            close = { sheetScope.launch { newChatSheetState.hide() } },
+            closeAll = closeAll
+          )
+        } else {
+          Spacer(Modifier.height(1.dp))
+        }
+      }
+    ) {
+      Box {
+        Column(modifier = Modifier.fillMaxSize()) {
+          NewChatSheetLayout(
+            addContact = {
+              newChatSheetSelection = NewChatOption.INVITE
+              newChatSheetShowQR = false
+              showNewChatViewSheet = true
+              sheetScope.launch { newChatSheetState.show() }
+            },
+            scanPaste = {
+              newChatSheetSelection = NewChatOption.CONNECT
+              newChatSheetShowQR = appPlatform.isAndroid
+              showNewChatViewSheet = true
+              sheetScope.launch { newChatSheetState.show() }
+            },
+            createGroup = {
+              showAddGroupSheet = true
+              sheetScope.launch { newChatSheetState.show() }
+            },
+            rh = rh,
+            close = close
+          )
+        }
+        if (oneHandUI.value) {
+          Column(Modifier.align(Alignment.BottomCenter)) {
+            DefaultAppBar(
+              navigationButton = { NavigationButtonBack(onButtonClicked = close) },
+              fixedTitleText = generalGetString(MR.strings.new_message),
+              onTop = false,
+            )
+          }
+        }
       }
     }
   }
@@ -96,6 +170,7 @@ fun chatContactType(chat: Chat): ContactType {
         else -> ContactType.UNLISTED
       }
     }
+
     else -> ContactType.UNLISTED
   }
 }
@@ -122,7 +197,7 @@ private fun ModalData.NewChatSheetLayout(
     val total = listState.layoutInfo.totalItemsCount
     if (prevIndex == 0 && prevOffset == 0) return@LaunchedEffect
     snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-      .filter { it == 0 to 0  }
+      .filter { it == 0 to 0 }
       .collect {
         if (total <= listState.layoutInfo.totalItemsCount) {
           listState.scrollToItem(prevIndex, prevOffset)
@@ -163,7 +238,6 @@ private fun ModalData.NewChatSheetLayout(
     previousIndex = currentIndex
     previousScrollOffset = currentScrollOffset
   }
-
   val filteredContactChats = filteredContactChats(
     showUnreadAndFavorites = showUnreadAndFavorites,
     searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
@@ -171,13 +245,11 @@ private fun ModalData.NewChatSheetLayout(
     searchText = searchText.value.text,
     contactChats = allChats
   )
-
   val sectionModifier = Modifier.fillMaxWidth()
   val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
   val deletedChats by remember(chatModel.chats.value, deletedContactTypes) {
     derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
   }
-
   val actionButtonsOriginal = listOf(
     Triple(
       painterResource(MR.images.ic_add_link),
@@ -485,7 +557,6 @@ private fun ContactsSearchBar(
         CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
       }
     }
-
     val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
     if (hasText.value) {
       val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
@@ -626,7 +697,6 @@ private val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
   when {
     chat1Type.ordinal < chat2Type.ordinal -> -1
     chat1Type.ordinal > chat2Type.ordinal -> 1
-
     else -> chat2.chatInfo.chatTs.compareTo(chat1.chatInfo.chatTs)
   }
 }

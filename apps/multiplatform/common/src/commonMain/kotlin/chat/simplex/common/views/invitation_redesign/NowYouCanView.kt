@@ -19,7 +19,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 
 @Composable
-fun EmptyChatListView(onConnectClick: () -> Unit) {
+fun EmptyChatListView(onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit) {
   var showInviteSomeone by remember { mutableStateOf(false) }
 
   if (showInviteSomeone) {
@@ -34,14 +34,14 @@ fun EmptyChatListView(onConnectClick: () -> Unit) {
       Row(Modifier.fillMaxWidth()) {
         NavigationButtonBack(onButtonClicked = { showInviteSomeone = false })
       }
-      Spacer(Modifier.height(DEFAULT_BIG_PADDING))
+      Spacer(Modifier.height(DEFAULT_PADDING))
       Text(
         stringResource(MR.strings.invite_someone),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Bold),
       )
       Spacer(Modifier.height(DEFAULT_PADDING))
       if (SHOW_PICTURES) {
-          InviteSomeoneWithPicturesContent()
+          InviteSomeoneWithPicturesContent(onOneTimeLinkClick = onOneTimeLinkClick)
       } else {
           InviteSomeoneContent()
       }
@@ -52,7 +52,7 @@ fun EmptyChatListView(onConnectClick: () -> Unit) {
       Modifier
         .fillMaxWidth()
         .padding(horizontal = DEFAULT_PADDING)
-        .padding(top = AppBarHeight + DEFAULT_BIG_PADDING),
+        .padding(top = AppBarHeight),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
@@ -83,7 +83,7 @@ fun EmptyChatListView(onConnectClick: () -> Unit) {
 fun PreviewEmptyChatListView() {
   SimpleXTheme {
     Box(Modifier.fillMaxSize()) {
-      EmptyChatListView(onConnectClick = {})
+      EmptyChatListView(onConnectClick = {}, onOneTimeLinkClick = {})
     }
   }
 }

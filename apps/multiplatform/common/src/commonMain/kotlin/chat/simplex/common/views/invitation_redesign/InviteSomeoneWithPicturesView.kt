@@ -2,44 +2,73 @@ package chat.simplex.common.views.invitation_redesign
 
 import SectionBottomSpacer
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun InviteSomeoneWithPicturesView(close: () -> Unit) {
+  var showOneTimeLinkSheet by remember { mutableStateOf(false) }
+  val oneTimeLinkSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+  val sheetScope = rememberCoroutineScope()
+
+  LaunchedEffect(oneTimeLinkSheetState.currentValue) {
+    if (oneTimeLinkSheetState.currentValue == ModalBottomSheetValue.Hidden && showOneTimeLinkSheet) {
+      showOneTimeLinkSheet = false
+    }
+  }
+
   ModalView(close) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize().padding(bottom = DEFAULT_BOTTOM_PADDING).background(Color.White),
-      horizontalAlignment = Alignment.CenterHorizontally
+    ModalBottomSheetLayout(
+      scrimColor = Color.Black.copy(alpha = 0.12F),
+      sheetState = oneTimeLinkSheetState,
+      sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+      sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
+      sheetContent = {
+        if (showOneTimeLinkSheet) {
+          OneTimeLinkBottomSheet(
+            rhId = chatModel.currentRemoteHost.value?.remoteHostId,
+            close = { sheetScope.launch { oneTimeLinkSheetState.hide() } }
+          )
+        } else {
+          Spacer(Modifier.height(1.dp))
+        }
+      }
     ) {
-      AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
-      Spacer(Modifier.height(DEFAULT_PADDING))
-      InviteSomeoneWithPicturesContent()
-      SectionBottomSpacer()
+      ColumnWithScrollBar(
+        Modifier.fillMaxSize().padding(bottom = DEFAULT_BOTTOM_PADDING).background(Color.White),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
+        Spacer(Modifier.height(DEFAULT_PADDING))
+        InviteSomeoneWithPicturesContent(
+          onOneTimeLinkClick = {
+            showOneTimeLinkSheet = true
+            sheetScope.launch { oneTimeLinkSheetState.show() }
+          }
+        )
+        SectionBottomSpacer()
+      }
     }
   }
 }
 
 @Composable
-fun InviteSomeoneWithPicturesContent() {
+fun InviteSomeoneWithPicturesContent(onOneTimeLinkClick: () -> Unit) {
 
   InvitationCardView(
     mainImageResource = MR.images.ic_invitation_card_one_time_link,
@@ -49,11 +78,7 @@ fun InviteSomeoneWithPicturesContent() {
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
-      .clickable {
-      ModalManager.start.showModalCloseable { close ->
-        OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
-      }
-    }
+      .clickable { onOneTimeLinkClick() }
   )
 
   Spacer(Modifier.height(DEFAULT_PADDING))
@@ -66,15 +91,11 @@ fun InviteSomeoneWithPicturesContent() {
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
-      .clickable {
-        // TODO, Hayk replace with page when data will be available
-        ModalManager.start.showModalCloseable { close ->
-          OneTimeLinkView(rhId = chatModel.currentRemoteHost.value?.remoteHostId, close = close)
-        }
-      }
+      .clickable { onOneTimeLinkClick() }
   )
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Preview
 @Composable
 private fun PreviewInviteSomeoneView() {
@@ -85,7 +106,7 @@ private fun PreviewInviteSomeoneView() {
     ) {
       AppBarTitle(stringResource(MR.strings.invite_someone), withPadding = false)
       Spacer(Modifier.height(DEFAULT_PADDING))
-      InviteSomeoneWithPicturesContent()
+      InviteSomeoneWithPicturesContent(onOneTimeLinkClick = {})
       SectionBottomSpacer()
     }
   }

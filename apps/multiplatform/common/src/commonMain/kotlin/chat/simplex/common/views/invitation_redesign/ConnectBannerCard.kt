@@ -15,50 +15,58 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 
 @Composable
-fun ConnectBannerCard() {
-  val closeAll = { ModalManager.start.closeModals() }
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = MaterialTheme.appColors.sentMessage,
-    modifier = Modifier.fillMaxWidth()
-  ) {
-    Box {
+fun ConnectBannerCard(onInviteClick: () -> Unit, onScanPasteClick: () -> Unit) {
+  Column {
+    IconButton(
+      onClick = { appPrefs.connectBannerCardShown.set(true) },
+      modifier = Modifier.align(Alignment.End)
+    ) {
+      Icon(
+        painterResource(MR.images.ic_close),
+        stringResource(MR.strings.back),
+        tint = MaterialTheme.colors.secondary
+      )
+    }
+    Surface(
+      shape = RoundedCornerShape(18.dp),
+      color = MaterialTheme.appColors.sentMessage,
+      modifier = Modifier.fillMaxWidth()
+    ) {
       Column {
         Row(
           Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-          Image(
-            painterResource(MR.images.ic_invitation_card_invite_someone),
-            contentDescription = stringResource(MR.strings.create_link_or_qr),
+          Box(
             modifier = Modifier
               .weight(1f)
-              .clickable {
-                ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ ->
-                  NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll)
-                }
-              },
-            contentScale = ContentScale.FillWidth
-          )
-          Image(
-            painterResource(MR.images.ic_invitation_card_one_time_link),
-            contentDescription = stringResource(MR.strings.paste_link_scan),
+              .aspectRatio(1.6f)
+              .clickable { onInviteClick() },
+          ) {
+            Image(
+              painterResource(MR.images.ic_invitation_card_invite_someone),
+              contentDescription = stringResource(MR.strings.create_link_or_qr),
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop
+            )
+          }
+          Box(
             modifier = Modifier
               .weight(1f)
-              .clickable {
-                ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ ->
-                  NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll)
-                }
-              },
-            contentScale = ContentScale.FillWidth
-          )
+              .aspectRatio(1.6f)
+              .clickable { onScanPasteClick() },
+          ) {
+            Image(
+              painterResource(MR.images.ic_invitation_card_one_time_link),
+              contentDescription = stringResource(MR.strings.paste_link_scan),
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop
+            )
+          }
         }
         Divider(color = MaterialTheme.colors.onSurface.copy(alpha = 0.06f))
         Row(
@@ -68,11 +76,7 @@ fun ConnectBannerCard() {
           Row(
             Modifier
               .weight(1f)
-              .clickable {
-                ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ ->
-                  NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll)
-                }
-              },
+              .clickable { onInviteClick() },
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -91,11 +95,7 @@ fun ConnectBannerCard() {
           Row(
             Modifier
               .weight(1f)
-              .clickable {
-                ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ ->
-                  NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll)
-                }
-              },
+              .clickable { onScanPasteClick() },
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -113,16 +113,6 @@ fun ConnectBannerCard() {
           }
         }
       }
-      IconButton(
-        onClick = { appPrefs.connectBannerCardShown.set(true) },
-        modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
-      ) {
-        Icon(
-          painterResource(MR.images.ic_close),
-          stringResource(MR.strings.back),
-          tint = MaterialTheme.colors.secondary
-        )
-      }
     }
   }
 }
@@ -131,6 +121,6 @@ fun ConnectBannerCard() {
 @Composable
 fun PreviewConnectBannerCard() {
   SimpleXTheme {
-    ConnectBannerCard()
+    ConnectBannerCard(onInviteClick = {}, onScanPasteClick = {})
   }
 }

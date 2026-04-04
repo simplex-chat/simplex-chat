@@ -151,45 +151,120 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
   val connectSheetScope = rememberCoroutineScope()
   val onConnectClick: () -> Unit = { connectSheetScope.launch { connectSheetState.show() } }
 
+  var showOneTimeLinkSheet by remember { mutableStateOf(false) }
+  val oneTimeLinkSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+  val oneTimeLinkSheetScope = rememberCoroutineScope()
+  val onOneTimeLinkClick: () -> Unit = {
+    showOneTimeLinkSheet = true
+    oneTimeLinkSheetScope.launch { oneTimeLinkSheetState.show() }
+  }
+
+  LaunchedEffect(oneTimeLinkSheetState.currentValue) {
+    if (oneTimeLinkSheetState.currentValue == ModalBottomSheetValue.Hidden && showOneTimeLinkSheet) {
+      showOneTimeLinkSheet = false
+    }
+  }
+
+  var showConnectBannerNewChatSheet by remember { mutableStateOf(false) }
+  var connectBannerSheetSelection by remember { mutableStateOf(NewChatOption.INVITE) }
+  var connectBannerSheetShowQR by remember { mutableStateOf(false) }
+  val connectBannerSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
+  val connectBannerSheetScope = rememberCoroutineScope()
+
+  LaunchedEffect(connectBannerSheetState.currentValue) {
+    if (connectBannerSheetState.currentValue == ModalBottomSheetValue.Hidden && showConnectBannerNewChatSheet) {
+      showConnectBannerNewChatSheet = false
+    }
+  }
+
+  val onBannerInviteClick: () -> Unit = {
+    connectBannerSheetSelection = NewChatOption.INVITE
+    connectBannerSheetShowQR = false
+    showConnectBannerNewChatSheet = true
+    connectBannerSheetScope.launch { connectBannerSheetState.show() }
+  }
+  val onBannerScanPasteClick: () -> Unit = {
+    connectBannerSheetSelection = NewChatOption.CONNECT
+    connectBannerSheetShowQR = appPlatform.isAndroid
+    showConnectBannerNewChatSheet = true
+    connectBannerSheetScope.launch { connectBannerSheetState.show() }
+  }
+
   ModalBottomSheetLayout(
     scrimColor = Color.Black.copy(alpha = 0.12F),
-    sheetState = connectSheetState,
+    sheetState = connectBannerSheetState,
     sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
     sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
     sheetContent = {
-      ModalData().ConnectViewLinkOrQrModal(
-        rhId = chatModel.currentRemoteHost.value?.remoteHostId,
-        close = { connectSheetScope.launch { connectSheetState.hide() } }
-      )
+      if (showConnectBannerNewChatSheet) {
+        ModalData().NewChatViewSheet(
+          rh = chatModel.currentRemoteHost.value,
+          selection = connectBannerSheetSelection,
+          showQRCodeScanner = connectBannerSheetShowQR,
+          close = { connectBannerSheetScope.launch { connectBannerSheetState.hide() } }
+        )
+      } else {
+        Spacer(Modifier.height(1.dp))
+      }
     }
   ) {
-    Box(Modifier.fillMaxSize()) {
-      if (oneHandUI.value) {
-        ChatListWithLoadingScreen(searchText, listState, onConnectClick)
-        Column(Modifier.align(Alignment.BottomCenter)) {
-          ChatListToolbar(
-            userPickerState,
-            listState,
-            stopped,
-            setPerformLA,
-          )
-        }
+  ModalBottomSheetLayout(
+    scrimColor = Color.Black.copy(alpha = 0.12F),
+    sheetState = oneTimeLinkSheetState,
+    sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
+    sheetContent = {
+      if (showOneTimeLinkSheet) {
+        OneTimeLinkBottomSheet(
+          rhId = chatModel.currentRemoteHost.value?.remoteHostId,
+          close = { oneTimeLinkSheetScope.launch { oneTimeLinkSheetState.hide() } }
+        )
       } else {
-        ChatListWithLoadingScreen(searchText, listState, onConnectClick)
-        Column {
-          ChatListToolbar(
-            userPickerState,
-            listState,
-            stopped,
-            setPerformLA,
-          )
-        }
-        if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-          NewChatSheetFloatingButton(oneHandUI, stopped)
+        Spacer(Modifier.height(1.dp))
+      }
+    }
+  ) {
+    ModalBottomSheetLayout(
+      scrimColor = Color.Black.copy(alpha = 0.12F),
+      sheetState = connectSheetState,
+      sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+      sheetBackgroundColor = MaterialTheme.colors.secondaryVariant,
+      sheetContent = {
+        ModalData().ConnectViewLinkOrQrModal(
+          rhId = chatModel.currentRemoteHost.value?.remoteHostId,
+          close = { connectSheetScope.launch { connectSheetState.hide() } }
+        )
+      }
+    ) {
+      Box(Modifier.fillMaxSize()) {
+        if (oneHandUI.value) {
+          ChatListWithLoadingScreen(searchText, listState, onConnectClick, onOneTimeLinkClick, onBannerInviteClick, onBannerScanPasteClick)
+          Column(Modifier.align(Alignment.BottomCenter)) {
+            ChatListToolbar(
+              userPickerState,
+              listState,
+              stopped,
+              setPerformLA,
+            )
+          }
+        } else {
+          ChatListWithLoadingScreen(searchText, listState, onConnectClick, onOneTimeLinkClick, onBannerInviteClick, onBannerScanPasteClick)
+          Column {
+            ChatListToolbar(
+              userPickerState,
+              listState,
+              stopped,
+              setPerformLA,
+            )
+          }
+          if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+            NewChatSheetFloatingButton(oneHandUI, stopped)
+          }
         }
       }
     }
   }
+  } // closes ModalBottomSheetLayout(connectBannerSheetState)
 
   if (searchText.value.text.isEmpty()) {
     if (appPlatform.isDesktop && !oneHandUI.value) {
@@ -305,9 +380,13 @@ private fun AddressCreationCard() {
 }
 
 @Composable
-private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState, onConnectClick: () -> Unit) {
+private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState, onConnectClick: () -> Unit, onOneTimeLinkClick: () -> Unit, onBannerInviteClick: () -> Unit, onBannerScanPasteClick: () -> Unit) {
   if (!chatModel.desktopNoUserNoRemote) {
-    EmptyChatListView(onConnectClick)
+    if (chatModel.chats.value.isEmpty()) {
+      EmptyChatListView(onConnectClick = onConnectClick, onOneTimeLinkClick = onOneTimeLinkClick)
+    } else {
+      ChatList(searchText = searchText, listState, onBannerInviteClick, onBannerScanPasteClick)
+    }
     return
   }
 
@@ -319,7 +398,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
         color = MaterialTheme.colors.secondary
       )
     } else {
-      EmptyChatListView(onConnectClick)
+      EmptyChatListView(onConnectClick = onConnectClick, onOneTimeLinkClick = onOneTimeLinkClick)
     }
   }
 }
@@ -770,7 +849,7 @@ fun BoxScope.NavigationBarBackground(modifier: Modifier, color: Color = Material
 }
 
 @Composable
-private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
+private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listState: LazyListState, onBannerInviteClick: () -> Unit, onBannerScanPasteClick: () -> Unit) {
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
@@ -859,7 +938,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
     if (!oneHandUICardShown.value || !addressCreationCardShown.value || !connectBannerCardShown.value) {
       item {
-        ChatListFeatureCards()
+        ChatListFeatureCards(onBannerInviteClick, onBannerScanPasteClick)
       }
     }
     if (appPlatform.isAndroid) {
@@ -929,7 +1008,7 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
 }
 
 @Composable
-private fun ChatListFeatureCards() {
+private fun ChatListFeatureCards(onBannerInviteClick: () -> Unit, onBannerScanPasteClick: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
@@ -937,14 +1016,14 @@ private fun ChatListFeatureCards() {
 
   Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
     if (!connectBannerCardShown.value) {
-      ConnectBannerCard()
+      ConnectBannerCard(onBannerInviteClick, onBannerScanPasteClick)
     }
     if (!oneHandUICardShown.value && !oneHandUI.value) {
       ToggleChatListCard()
     }
-    if (!addressCreationCardShown.value) {
-      AddressCreationCard()
-    }
+//    if (!addressCreationCardShown.value) {
+//      AddressCreationCard()
+//    }
     if (!oneHandUICardShown.value && oneHandUI.value) {
       ToggleChatListCard()
     }

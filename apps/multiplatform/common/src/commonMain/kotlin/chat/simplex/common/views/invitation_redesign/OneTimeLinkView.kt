@@ -4,7 +4,9 @@ import SectionBottomSpacer
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -90,6 +92,140 @@ fun OneTimeLinkView(rhId: Long?, close: () -> Unit) {
 }
 
 @Composable
+fun OneTimeLinkBottomSheet(rhId: Long?, close: () -> Unit) {
+  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(chatModel.showingInvitation.value?.conn) }
+  val connLinkInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connLink ?: CreatedConnLink("", null) } }
+  val creatingConnReq = rememberSaveable { mutableStateOf(false) }
+
+  LaunchedEffect(Unit) {
+    if (
+      connLinkInvitation.connFullLink.isEmpty()
+      && contactConnection.value == null
+      && !creatingConnReq.value
+    ) {
+      creatingConnReq.value = true
+      withBGApi {
+        val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
+        if (r != null) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContactConnection(rhId, r.second)
+            chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connLink = r.first, connChatUsed = false, conn = r.second)
+            contactConnection.value = r.second
+          }
+        } else {
+          creatingConnReq.value = false
+          if (alert != null) {
+            alert()
+          }
+        }
+      }
+    }
+  }
+
+  DisposableEffect(Unit) {
+    onDispose {
+      if (chatModel.showingInvitation.value != null) {
+        val conn = contactConnection.value
+        if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.keep_unused_invitation_question),
+            text = generalGetString(MR.strings.you_can_view_invitation_link_again),
+            confirmText = generalGetString(MR.strings.delete_verb),
+            dismissText = generalGetString(MR.strings.keep_invitation_link),
+            destructive = true,
+            onConfirm = {
+              withBGApi {
+                val chatInfo = ChatInfo.ContactConnection(conn)
+                controller.deleteChat(Chat(remoteHostId = rhId, chatInfo = chatInfo, chatItems = listOf()))
+                if (chatModel.chatId.value == chatInfo.id) {
+                  chatModel.chatId.value = null
+                  ModalManager.start.closeModals()
+                }
+              }
+            }
+          )
+        }
+        chatModel.showingInvitation.value = null
+      }
+    }
+  }
+
+  OneTimeLinkBottomSheetContent(connLinkInvitation)
+}
+
+@Composable
+fun OneTimeLinkBottomSheetContent(connLinkInvitation: CreatedConnLink) {
+  val showShortLink = remember { mutableStateOf(true) }
+
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .verticalScroll(rememberScrollState()),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    Spacer(Modifier.height(DEFAULT_PADDING))
+
+    Image(
+      painterResource(MR.images.ic_invitation_one_time_link),
+      contentDescription = null,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = DEFAULT_PADDING * 3)
+    )
+
+    Spacer(Modifier.height(DEFAULT_PADDING))
+
+    Text(
+      stringResource(MR.strings.send_1_time_link_description),
+      style = MaterialTheme.typography.body1,
+      modifier = Modifier.padding(horizontal = DEFAULT_PADDING)
+    )
+
+    Spacer(Modifier.height(DEFAULT_PADDING))
+
+    if (connLinkInvitation.connFullLink.isNotEmpty()) {
+      OneTimeLinkBar(connLinkInvitation, showShortLink.value)
+
+      Spacer(Modifier.height(DEFAULT_PADDING))
+
+      Text(
+        stringResource(MR.strings.or_show_qr_code_in_person_or_video_call),
+        style = MaterialTheme.typography.body1,
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING)
+      )
+
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+
+      Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colors.background,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(DEFAULT_PADDING)
+      ) {
+        SimpleXCreatedLinkQRCode(
+          connLinkInvitation,
+          padding = PaddingValues(DEFAULT_PADDING),
+          short = showShortLink.value,
+          onShare = { chatModel.markShowingInvitationUsed() }
+        )
+      }
+    } else {
+      Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(
+          Modifier.size(36.dp).padding(4.dp),
+          color = MaterialTheme.colors.secondary,
+          strokeWidth = 3.dp
+        )
+      }
+    }
+
+    SectionBottomSpacer()
+  }
+}
+
+@Composable
 fun OneTimeLinkContent(connLinkInvitation: CreatedConnLink) {
   val showShortLink = remember { mutableStateOf(true) }
 
@@ -165,8 +301,8 @@ private fun OneTimeLinkBar(connLinkInvitation: CreatedConnLink, short: Boolean) 
   val link = connLinkInvitation.simplexChatUri(short)
 
   Surface(
-    shape = RoundedCornerShape(24.dp),
-    color = MaterialTheme.appColors.sentMessage,
+    shape = RoundedCornerShape(12.dp),
+    color = MaterialTheme.colors.background,
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING)
