@@ -47,7 +47,35 @@ All rows disabled when `chatModel.chatRunning != true`. Appearance row only show
 | Show sent via proxy | Toggle to show proxy indicator on sent messages |
 | Show subscription % | Toggle to show server subscription percentage |
 
-Sub-files: `NetworkAndServers.swift`, `ProtocolServersView.swift`, `ProtocolServerView.swift`, `NewServerView.swift`, `ScanProtocolServer.swift`, `AdvancedNetworkSettings.swift`, `OperatorView.swift`, `ConditionsWebView.swift`
+Sub-files: `NetworkAndServers.swift`, `ProtocolServersView.swift`, `ProtocolServerView.swift`, `NewServerView.swift`, `ScanProtocolServer.swift`, `AdvancedNetworkSettings.swift`, `OperatorView.swift`, `ConditionsWebView.swift`, `ChatRelayView.swift`
+
+##### Chat Relays
+
+Chat relays forward messages to channel subscribers. They appear in two locations:
+
+- **Operator View** (`OperatorView`): "Chat relays" section lists relays for each operator with `ChatRelayViewLink` rows. Footer: "Chat relays forward messages in channels you create."
+- **Your Servers** (`YourServersView` in `ProtocolServersView`): "Chat relays" section for non-operator relays. "Add server" dialog includes a "Chat relay" option.
+
+Each relay is managed via `ChatRelayView`:
+
+| Element | Preset relay | Custom relay |
+|---|---|---|
+| Name | Read-only display | Editable text field |
+| Address | Read-only display | Editable text field (validates as `.simplexLink(_, .relay, _, _)`) |
+| Test button | "Test relay" (shows "Not implemented" alert) | Same |
+| Enable toggle | "Use for new channels" | Same |
+| Delete | Not available | "Delete relay" button |
+
+Adding a relay: `NewChatRelayView` form with name, address, test, and enable toggle. Back-button validates name/address and shows alerts for invalid input.
+
+##### Server Warnings
+
+`ServersWarningView` displays an orange exclamation triangle with warning text when `UserServersWarning.noChatRelays` is detected. Appears in:
+- Network & Servers footer (`globalServersWarning`)
+- Operator view footer
+- Your servers footer
+
+Server validation (`validateServers_`) now returns both errors and warnings.
 
 #### Privacy & Security (`PrivacySettings`)
 
@@ -169,4 +197,5 @@ Key `UserDefaults` / `AppStorage` keys managed by settings:
 - `Shared/Views/UserSettings/NetworkAndServers/NewServerView.swift` -- Add new server
 - `Shared/Views/UserSettings/NetworkAndServers/ScanProtocolServer.swift` -- Scan server QR code
 - `Shared/Views/UserSettings/NetworkAndServers/OperatorView.swift` -- Server operator configuration
+- `Shared/Views/UserSettings/NetworkAndServers/ChatRelayView.swift` -- Chat relay detail/edit/add views
 - `Shared/Views/UserSettings/NetworkAndServers/ConditionsWebView.swift` -- Operator conditions display

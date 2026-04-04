@@ -102,6 +102,15 @@ Emoji reactions bar displayed below messages with reaction counts.
 | Group mentions | `GroupMentionsView` autocomplete popup when typing `@` in groups |
 | Profile picker | `ContextProfilePickerView` for choosing incognito/main profile |
 
+### Channel Messages
+
+In channel conversations (`groupInfo.useRelays == true`), received messages (`.channelRcv` direction) display with:
+- The **channel icon** (`antenna.radiowaves.left.and.right`) instead of the standard group icon
+- The **channel name** as sender, with "channel" as the role label
+- The **group profile image** as the avatar (tapping opens group info, not member info)
+- Consecutive channel messages are grouped without repeating the avatar
+- Channel messages cannot be moderated per-member (no member identity)
+
 ### Member Support Chat (Groups)
 
 For groups with member support enabled:

@@ -727,6 +727,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case userUnknown
     case activeUserExists
     case userExists
+    case chatRelayExists
     case invalidDisplayName
     case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
     case cantDeleteActiveUser(userId: Int64)
@@ -794,6 +795,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case connectionIncognitoChangeProhibited
     case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
+    case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
 }
@@ -801,6 +803,7 @@ public enum ChatErrorType: Decodable, Hashable {
 public enum StoreError: Decodable, Hashable {
     case duplicateName
     case userNotFound(userId: Int64)
+    case relayUserNotFound
     case userNotFoundByName(contactName: ContactName)
     case userNotFoundByContactId(contactId: Int64)
     case userNotFoundByGroupId(groupId: Int64)
@@ -825,6 +828,7 @@ public enum StoreError: Decodable, Hashable {
     case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser
     case duplicateGroupMember
+    case duplicateMemberId
     case groupAlreadyJoined
     case groupInvitationNotFound
     case sndFileNotFound(fileId: Int64)
@@ -859,6 +863,9 @@ public enum StoreError: Decodable, Hashable {
     case hostMemberIdNotFound(groupId: Int64)
     case contactNotFoundByFileId(fileId: Int64)
     case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
+    case userChatRelayNotFound(chatRelayId: Int64)
+    case groupRelayNotFound(groupRelayId: Int64)
+    case groupRelayNotFoundByMemberId(groupMemberId: Int64)
     case dBException(message: String)
 }
 

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
@@ -368,9 +368,11 @@ fun CIMarkdownText(
   showTimestamp: Boolean,
   prefix: AnnotatedString? = null
 ) {
-  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
-    val chatInfo = chat.chatInfo
-    val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val chatInfo = chat.chatInfo
+  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
+
+  Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
@@ -379,7 +381,9 @@ fun CIMarkdownText(
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
+      selectionRange = selection.highlightRange,
+      onTextLayoutResult = selection.onTextLayoutResult
     )
   }
 }
@@ -437,7 +441,10 @@ fun PriorityLayout(
   ) { measureable, constraints ->
     // Find important element which should tell what max width other elements can use
     // Expecting only one such element. Can be less than one but not more
-    val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(constraints)
+    // Max image height for chat item display, taller images are cropped
+    val maxImageHeight = (constraints.maxWidth * 2.33f).toInt().coerceAtMost(constraints.maxHeight)
+    val imageConstraints = constraints.copy(maxHeight = maxImageHeight)
+    val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(imageConstraints)
     val placeables: List<Placeable> = measureable.map {
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!

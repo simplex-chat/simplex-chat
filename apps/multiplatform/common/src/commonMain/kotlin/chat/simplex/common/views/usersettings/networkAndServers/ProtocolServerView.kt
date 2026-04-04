@@ -36,6 +36,7 @@ fun ProtocolServerView(
   serverProtocol: ServerProtocol,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   onDelete: () -> Unit,
   onUpdate: (UserServer) -> Unit,
   close: () -> Unit,
