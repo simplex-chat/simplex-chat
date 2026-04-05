@@ -105,17 +105,14 @@ fun AddGroupLayout(
           Row(
             Modifier
               .fillMaxWidth()
-              .padding(horizontal = DEFAULT_PADDING * 2, vertical = 0.dp),
+              .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Box(
-              Modifier.padding(bottom = 24.dp),
-              contentAlignment = Alignment.Center
-            ) {
+            Box(contentAlignment = Alignment.Center) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(108.dp, image = profileImage.value)
+                  ProfileImage(128.dp, image = profileImage.value)
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -128,7 +125,7 @@ fun AddGroupLayout(
                 painterResource(if (isInDarkTheme()) MR.images.create_group_light else MR.images.create_group),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.weight(1f).height(128.dp)
+                modifier = Modifier.weight(1f).height(140.dp)
               )
             }
           }
