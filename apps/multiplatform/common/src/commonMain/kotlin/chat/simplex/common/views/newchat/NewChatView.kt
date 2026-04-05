@@ -458,7 +458,7 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
       painterResource(if (isInDarkTheme()) MR.images.one_time_link_light else MR.images.one_time_link),
       contentDescription = null,
       contentScale = ContentScale.Fit,
-      modifier = Modifier.fillMaxWidth().height(90.dp)
+      modifier = Modifier.fillMaxWidth().height(100.dp)
     )
   } else {
     Spacer(Modifier.height(10.dp))
@@ -601,7 +601,7 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
       painterResource(if (isInDarkTheme()) MR.images.connect_via_link_light else MR.images.connect_via_link),
       contentDescription = null,
       contentScale = ContentScale.Fit,
-      modifier = Modifier.fillMaxWidth().height(90.dp)
+      modifier = Modifier.fillMaxWidth().height(100.dp)
     )
   }
 
