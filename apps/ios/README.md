@@ -85,6 +85,27 @@ Workflow:
 - `Product > Export Localizations` - Export XLIFF files
 - `Product > Import Localizations` - Import updated translations
 
+## SimpleX Assets (optional illustrations)
+
+The app can include optional illustrations behind the `SIMPLEX_ASSETS` Swift compilation flag. Without setup, the app builds normally without them.
+
+### Setup
+
+Create `Local.xcconfig` (gitignored) in the `apps/ios/` directory:
+```
+SIMPLEX_ASSETS_DIR = /path/to/assets
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) SIMPLEX_ASSETS
+```
+
+The copy script (`scripts/ios/copy-assets.sh`) runs as a build phase on each build but exits immediately if `SIMPLEX_ASSETS` is not set.
+
+### Updating assets
+
+When source images change, regenerate resized images (requires ImageMagick):
+```bash
+cd path/to/assets && ./resize.sh
+```
+
 ## Background Capabilities
 
 Configured in Info.plist:

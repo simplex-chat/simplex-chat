@@ -249,8 +249,19 @@ private struct InviteView: View {
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
+    @Environment(\.colorScheme) var colorScheme
+
     var body: some View {
         List {
+            #if SIMPLEX_ASSETS
+            Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 100)
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+            #endif
             Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
                 shareLinkView()
             }
