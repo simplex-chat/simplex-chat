@@ -9,6 +9,7 @@ import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -266,9 +267,8 @@ private fun UserAddressLayout(
       Image(
         painterResource(if (isInDarkTheme()) MR.images.simplex_address_light else MR.images.simplex_address),
         contentDescription = null,
-        modifier = Modifier
-          .height(135.dp)
-          .offset(y = (-10).dp)
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.height(135.dp)
       )
     }
     Column(
