@@ -101,7 +101,7 @@ This is a reference for all commands accepted by the SimpleX Directory bot. For 
 
 ### 1. Searching
 
-The bot sends a welcome message automatically when you first connect.
+The bot sends a welcome message automatically when you connect.
 
 | Action | Syntax | Effect |
 |---|---|---|
@@ -121,11 +121,13 @@ Registration is a three-step process — see [DIRECTORY.md](../../docs/DIRECTORY
 2. Add the link the bot sends you to the group's welcome message.
 3. Wait for admin approval (usually within 24 hours).
 
-If a group with the same name is already registered, the bot asks you to confirm with `/confirm`.
+If a group with the same display name is already registered (but not yet listed or suspended), the bot asks you to confirm with `/confirm`. If the name is already listed or suspended in the directory, registration is blocked.
 
 ---
 
 ### 3. Managing Your Groups (user commands)
+
+> **Note on `<ID>` vs `<ID>:<name>`:** Commands shown with `<ID>[:<name>]` (`/role`, `/filter`, `/link`) accept just the ID — the name is optional. All other group commands (`/confirm`, `/delete`, and all admin/super-user commands) require both ID and name as `<ID>:<name>`. The bot provides the exact `ID:name` string in its messages so you can copy it directly.
 
 #### List groups
 
@@ -142,7 +144,9 @@ Shows all groups you have registered with their current status.
 /confirm <ID>:<name>
 ```
 
-Confirms registration when another group with the same display name already exists. `ID` and `name` are provided in the bot's prompt.
+When you invite the bot to a group whose display name matches an already-registered group, the bot pauses registration and asks for explicit confirmation. This prevents accidental registration of another group that shares a name. `/confirm` acknowledges the duplicate and proceeds with registration. `ID` and `name` are provided in the bot's prompt.
+
+If a group with the same name is already *listed* or *suspended* in the directory, registration is blocked entirely and `/confirm` is not offered.
 
 #### View or set default join role
 
@@ -213,6 +217,7 @@ Admins receive a notification whenever a group enters the PendingApproval state.
 | List recent | `/last [N]` | Show last N registered groups (default: 10) |
 | List pending | `/pending [N]` | Show N groups awaiting approval (default: 10) |
 | Message owner | `/owner <ID>:<name> <message>` | Forward a message to the group owner |
+| Reject | `/reject <ID>:<name>` | *(Reserved, currently a no-op)* |
 | Invite owner | `/invite <ID>:<name>` | Invite the group owner to the owners' group |
 
 ---
@@ -231,38 +236,52 @@ Admins receive a notification whenever a group enters the PendingApproval state.
 ```
 Invited by owner
       │
-      ▼
-PendingConfirmation  ──(/confirm)──▶  Proposed
-      │                                   │
-      └───────────────────────────────────┤
-                                          ▼
-                                    PendingUpdate
-                               (add bot link to welcome)
-                                          │
-                                          ▼
-                                   PendingApproval
-                                   (admin reviews)
-                                          │
-                              ┌───────────┴───────────┐
-                              ▼                       ▼
-                           Active             (profile change
-                          (listed)          → re-enters pending)
-                       ┌────┴─────┐
-                       ▼         ▼
-                  Suspended  SuspendedBadRoles
-                 (by admin)  (roles changed)
-                       │         │
-                       └────┬────┘
-                            ▼
-                          Removed
+      ├── (unique name) ──────────────────────────┐
+      │                                           │
+      └── (duplicate name*) ─▶ PendingConfirmation│
+                                    │             │
+                               (/confirm)         │
+                                    │             │
+                                    ├─────────────┘
+                                    ▼
+                                  Proposed
+                                    │
+                                    ▼
+                              PendingUpdate
+                         (add bot link to welcome)
+                                    │
+                                    ▼
+                             PendingApproval
+                             (admin reviews)
+                                    │
+                        ┌───────────┴───────────┐
+                        ▼                       ▼
+                     Active              (profile change**
+                    (listed)            → re-enters pending)
+                 ┌────┴─────┐
+                 ▼          ▼
+            Suspended  SuspendedBadRoles
+           (by admin)  (roles changed)
+                 │          │
+                 └────┬─────┘
+                      ▼
+                    Removed
 ```
+
+\* Only when the duplicate is registered but not yet listed or suspended.
+If the name is already listed or suspended, registration is blocked entirely.
+
+\*\* Profile changes only trigger re-approval when fields other than the
+directory bot link are modified. If the only change is swapping the old bot
+link for the new one, or changing only whitespace in the description, the
+group stays Active.
 
 **State notes:**
 
-- **PendingConfirmation** — bot has been invited but a group with the same display name is already registered. Owner must run `/confirm`.
-- **Proposed** — name accepted; owner has not yet added the bot link to the welcome message.
-- **PendingUpdate** — bot link added; awaiting admin approval.
-- **PendingApproval** — submitted for review. The `approval-id` shown to admins increments each time the group re-enters this state (e.g. after a profile change).
+- **PendingConfirmation** — bot has been invited but a group with the same display name is already registered (in a pending state). Owner must run `/confirm` to proceed. If a group with the same name is already listed or suspended, registration is blocked entirely.
+- **Proposed** — name is unique (or duplicate confirmed via `/confirm`); bot is joining the group.
+- **PendingUpdate** — bot has joined the group and created the group link; owner must add it to the group's welcome message.
+- **PendingApproval** — submitted for review. The `approval-id` shown to admins increments each time the group re-enters this state (e.g. after a profile change). An Active group re-enters this state when its profile is modified, unless the only change is swapping the old directory bot link for the new one or changing only whitespace in the description, in which case the group stays Active.
 - **Active** — listed in directory; visible in search results.
 - **Suspended** — hidden from directory by admin action; owner is notified.
 - **SuspendedBadRoles** — hidden automatically when the directory bot loses its `admin` role or the registering owner loses their `owner` role in the group.
