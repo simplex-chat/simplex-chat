@@ -302,7 +302,7 @@ private struct InviteView: View {
             Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 85)
+                .frame(height: 90)
                 .frame(maxWidth: .infinity)
             Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
         }
@@ -695,7 +695,7 @@ private struct ConnectView: View {
             Image(colorScheme == .light ? "connect-via-link" : "connect-via-link-light")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 85)
+                .frame(height: 90)
                 .frame(maxWidth: .infinity)
             Text("Paste the link you received").foregroundColor(theme.colors.secondary)
         }

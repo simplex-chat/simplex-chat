@@ -100,7 +100,7 @@ struct NewChatSheet: View {
                     NavigationLink(isActive: $isAddContactActive) {
                         NewChatView(selection: .invite)
                             .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         navigateOnTap(Label("Create 1-time link", systemImage: "link.badge.plus")) {
                             isAddContactActive = true
@@ -109,7 +109,7 @@ struct NewChatSheet: View {
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true)
                             .modifier(ThemedBackground(grouped: true))
-                            .navigationBarTitleDisplayMode(.large)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         navigateOnTap(Label("Scan / Paste link", systemImage: "qrcode")) {
                             isScanPasteLinkActive = true
@@ -129,7 +129,7 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create public channel (BETA)", systemImage: "antenna.radiowaves.left.and.right.circle.fill")
+                        Label("Create public channel (BETA)", systemImage: "antenna.radiowaves.left.and.right")
                     }
                 }
                 
