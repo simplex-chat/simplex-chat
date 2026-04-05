@@ -283,10 +283,11 @@ private struct InviteView: View {
                 } header: {
                     Text("Share profile").foregroundColor(theme.colors.secondary)
                 } footer: {
-                     if incognitoDefault {
-                         Text("A new random profile will be shared.")
-                     }
+                    if incognitoDefault {
+                        Text("A new random profile will be shared.")
+                    }
                 }
+            }
         }
         .onChange(of: incognitoDefault) { incognito in
             setInvitationUsed()
