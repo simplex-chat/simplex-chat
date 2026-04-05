@@ -106,12 +106,10 @@ fun AddGroupLayout(
             Modifier
               .fillMaxWidth()
               .padding(vertical = DEFAULT_PADDING_HALF),
+            horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Box(
-              Modifier.weight(1f),
-              contentAlignment = Alignment.Center
-            ) {
+            Box(contentAlignment = Alignment.Center) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
                   ProfileImage(128.dp, image = profileImage.value)
@@ -127,7 +125,7 @@ fun AddGroupLayout(
                 painterResource(if (isInDarkTheme()) MR.images.create_group_light else MR.images.create_group),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.weight(1f).height(140.dp)
+                modifier = Modifier.height(140.dp)
               )
             }
           }
