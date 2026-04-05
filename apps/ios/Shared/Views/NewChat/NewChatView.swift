@@ -298,7 +298,7 @@ private struct InviteView: View {
 
     private var sectionHeader: some View {
         #if SIMPLEX_ASSETS
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
                 .resizable()
                 .scaledToFit()
@@ -619,6 +619,8 @@ private struct ConnectView: View {
             Section(header: connectSectionHeader) {
                 pasteLinkView()
             }
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
+
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
             }
@@ -689,7 +691,7 @@ private struct ConnectView: View {
 
     private var connectSectionHeader: some View {
         #if SIMPLEX_ASSETS
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             Image(colorScheme == .light ? "connect-via-link" : "connect-via-link-light")
                 .resizable()
                 .scaledToFit()
@@ -697,7 +699,7 @@ private struct ConnectView: View {
                 .frame(maxWidth: .infinity)
             Text("Paste the link you received").foregroundColor(theme.colors.secondary)
         }
-        .padding(.bottom, 6)
+        .padding(.bottom, 4)
         #else
         Text("Paste the link you received").foregroundColor(theme.colors.secondary)
         #endif

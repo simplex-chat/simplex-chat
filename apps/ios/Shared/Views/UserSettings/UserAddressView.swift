@@ -159,15 +159,16 @@ struct UserAddressView: View {
             addressSettingsButton(userAddress)
         } header: {
             #if SIMPLEX_ASSETS
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 0) {
                 Image(colorScheme == .light ? "simplex-address" : "simplex-address-light")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 85)
+                    .frame(height: 135)
                     .frame(maxWidth: .infinity)
+                    .padding(.top, -20)
+                    .padding(.bottom, -10)
                 ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
             }
-            .padding(.bottom, 6)
             #else
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
             #endif

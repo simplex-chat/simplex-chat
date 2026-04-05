@@ -55,7 +55,7 @@ struct NewChatSheet: View {
         let showArchive = chatModel.chats.contains { $0.chatInfo.contact?.chatDeleted == true }
         let v = NavigationView {
             viewBody(showArchive)
-                .navigationTitle("New message")
+                .navigationTitle("New chat")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
@@ -99,7 +99,6 @@ struct NewChatSheet: View {
                 Section {
                     NavigationLink(isActive: $isAddContactActive) {
                         NewChatView(selection: .invite)
-                            .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
@@ -109,7 +108,6 @@ struct NewChatSheet: View {
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true)
-                            .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
