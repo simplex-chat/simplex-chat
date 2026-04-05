@@ -85,9 +85,9 @@ Workflow:
 - `Product > Export Localizations` - Export XLIFF files
 - `Product > Import Localizations` - Import updated translations
 
-## SimpleX Assets (optional illustrations)
+## SimpleX Assets
 
-The app can include optional illustrations behind the `SIMPLEX_ASSETS` Swift compilation flag. Without setup, the app builds normally without them.
+The app includes optional assets behind the `SIMPLEX_ASSETS` Swift compilation flag. Without setup, the app builds normally without them.
 
 ### Setup
 
