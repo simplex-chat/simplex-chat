@@ -7,6 +7,7 @@ import SectionTextFooter
 import SectionView
 import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -28,6 +29,7 @@ import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.res.MR
 
 @Composable
@@ -260,6 +262,15 @@ private fun UserAddressLayout(
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
+    if (BuildConfigCommon.SIMPLEX_ASSETS && userAddress != null) {
+      Image(
+        painterResource(if (isInDarkTheme()) MR.images.simplex_address_light else MR.images.simplex_address),
+        contentDescription = null,
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = DEFAULT_PADDING * 2)
+      )
+    }
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
