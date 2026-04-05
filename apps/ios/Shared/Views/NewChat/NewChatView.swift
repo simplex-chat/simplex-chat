@@ -253,16 +253,7 @@ private struct InviteView: View {
 
     var body: some View {
         List {
-            #if SIMPLEX_ASSETS
-            Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 100)
-                .frame(maxWidth: .infinity)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            #endif
-            Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
+            Section(header: sectionHeader) {
                 shareLinkView()
             }
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
@@ -296,7 +287,6 @@ private struct InviteView: View {
                          Text("A new random profile will be shared.")
                      }
                 }
-            }
         }
         .onChange(of: incognitoDefault) { incognito in
             setInvitationUsed()
@@ -304,6 +294,21 @@ private struct InviteView: View {
         .onChange(of: chatModel.currentUser) { u in
             setInvitationUsed()
         }
+    }
+
+    private var sectionHeader: some View {
+        #if SIMPLEX_ASSETS
+        VStack(spacing: 4) {
+            Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 90)
+                .frame(maxWidth: .infinity)
+            Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+        }
+        #else
+        Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+        #endif
     }
 
     private func shareLinkView() -> some View {
