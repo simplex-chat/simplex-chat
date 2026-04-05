@@ -268,7 +268,7 @@ private fun UserAddressLayout(
         painterResource(if (isInDarkTheme()) MR.images.simplex_address_light else MR.images.simplex_address),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.height(135.dp)
+        modifier = Modifier.fillMaxWidth().height(135.dp)
       )
     }
     Column(
