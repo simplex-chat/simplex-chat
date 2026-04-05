@@ -105,8 +105,8 @@ fun AddGroupLayout(
           Row(
             Modifier
               .fillMaxWidth()
-              .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
-            horizontalArrangement = Arrangement.Center,
+              .padding(vertical = DEFAULT_PADDING_HALF),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
           ) {
             Box(contentAlignment = Alignment.Center) {
@@ -125,7 +125,7 @@ fun AddGroupLayout(
                 painterResource(if (isInDarkTheme()) MR.images.create_group_light else MR.images.create_group),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.weight(1f).height(140.dp)
+                modifier = Modifier.size(140.dp)
               )
             }
           }
