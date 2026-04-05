@@ -25,7 +25,9 @@ buildscript {
     extra.set("application_id.suffix", prop["application_id.suffix"] ?: "")
     // Compression level for debug AND release apk. 0 = disable compression. Max is 9
     extra.set("compression.level", (prop["compression.level"] as String?)?.toIntOrNull() ?: 0)
-    extra.set("simplex.assets.dir", prop["simplex.assets.dir"])
+    if (prop["simplex.assets.dir"] != null) {
+        extra.set("simplex.assets.dir", prop["simplex.assets.dir"])
+    }
     // NOTE: If you need a different version of something, provide it in `local.properties`
     // like so: compose.version=123, or gradle.plugin.version=1.2.3, etc
 

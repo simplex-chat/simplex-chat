@@ -11,7 +11,7 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
-val simplexAssetsDir = (rootProject.findProperty("simplex.assets.dir") ?: rootProject.extra.properties["simplex.assets.dir"]) as String?
+val simplexAssetsDir = rootProject.findProperty("simplex.assets.dir") as String?
 val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
 val hasSimplexAssets = simplexAssetsDir != null
 
