@@ -619,7 +619,7 @@ private struct ConnectView: View {
             Section(header: connectSectionHeader) {
                 pasteLinkView()
             }
-            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
 
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
