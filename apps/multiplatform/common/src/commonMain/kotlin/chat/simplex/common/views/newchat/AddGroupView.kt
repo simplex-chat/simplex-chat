@@ -101,7 +101,7 @@ fun AddGroupLayout(
     ) {
       ModalView(close = close) {
         ColumnWithScrollBar {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
+          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId), bottomPadding = DEFAULT_PADDING_HALF)
           Row(
             Modifier
               .fillMaxWidth()
