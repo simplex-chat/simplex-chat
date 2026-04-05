@@ -267,8 +267,8 @@ private fun UserAddressLayout(
         painterResource(if (isInDarkTheme()) MR.images.simplex_address_light else MR.images.simplex_address),
         contentDescription = null,
         modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING * 2)
+          .height(135.dp)
+          .offset(y = (-10).dp)
       )
     }
     Column(
