@@ -16,10 +16,11 @@ val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
 val hasSimplexAssets = simplexAssetsDir != null
 
 if (simplexAssetsDir != null) {
+  val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir).absolutePath
   tasks.register<Exec>("copySimplexAssets") {
     commandLine(
       "${rootProject.rootDir}/../../scripts/android/copy-assets.sh",
-      simplexAssetsDir,
+      resolvedAssetsDir,
       simplexAssetsLocal.absolutePath
     )
   }
