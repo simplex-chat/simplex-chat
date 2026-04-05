@@ -239,6 +239,7 @@ private func incognitoProfileImage() -> some View {
 }
 
 private struct InviteView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
@@ -248,8 +249,6 @@ private struct InviteView: View {
     @Binding var choosingProfile: Bool
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
-
-    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         List {
@@ -299,14 +298,15 @@ private struct InviteView: View {
 
     private var sectionHeader: some View {
         #if SIMPLEX_ASSETS
-        VStack(spacing: 4) {
+        VStack(alignment: .leading) {
             Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 90)
+                .frame(height: 85)
                 .frame(maxWidth: .infinity)
             Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
         }
+        .padding(.bottom, 6)
         #else
         Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
         #endif
