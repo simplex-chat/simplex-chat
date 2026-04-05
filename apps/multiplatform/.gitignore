@@ -17,3 +17,6 @@ android/release
 common/build
 desktop/build
 release
+
+# Generated SimpleX assets
+common/src/commonMain/resources/assets/simplex/

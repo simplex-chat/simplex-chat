@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -39,6 +40,7 @@ import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 
@@ -450,7 +452,17 @@ fun ActiveProfilePicker(
 @Composable
 private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contactConnection: MutableState<PendingContactConnection?>) {
   val showShortLink = remember { mutableStateOf(true) }
-  Spacer(Modifier.height(10.dp))
+
+  if (BuildConfigCommon.SIMPLEX_ASSETS) {
+    Image(
+      painterResource(if (isInDarkTheme()) MR.images.one_time_link_light else MR.images.one_time_link),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.fillMaxWidth().height(100.dp)
+    )
+  } else {
+    Spacer(Modifier.height(10.dp))
+  }
 
   SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
     LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
@@ -582,6 +594,15 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     onDispose {
       connectProgressManager.cancelConnectProgress()
     }
+  }
+
+  if (BuildConfigCommon.SIMPLEX_ASSETS) {
+    Image(
+      painterResource(if (isInDarkTheme()) MR.images.connect_via_link_light else MR.images.connect_via_link),
+      contentDescription = null,
+      contentScale = ContentScale.Fit,
+      modifier = Modifier.fillMaxWidth().height(100.dp)
+    )
   }
 
   SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {

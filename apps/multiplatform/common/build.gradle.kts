@@ -11,6 +11,21 @@ plugins {
 group = "chat.simplex"
 version = extra["android.version_name"] as String
 
+val simplexAssetsDir = rootProject.findProperty("simplex.assets.dir") as String?
+val simplexAssetsLocal = file("src/commonMain/resources/assets/simplex")
+val hasSimplexAssets = simplexAssetsDir != null
+
+if (simplexAssetsDir != null) {
+  val resolvedAssetsDir = rootProject.rootDir.resolve(simplexAssetsDir).absolutePath
+  tasks.register<Exec>("copySimplexAssets") {
+    commandLine(
+      "${rootProject.rootDir}/../../scripts/android/copy-assets.sh",
+      resolvedAssetsDir,
+      simplexAssetsLocal.absolutePath
+    )
+  }
+}
+
 kotlin {
   androidTarget()
   jvm("desktop")
@@ -31,6 +46,11 @@ kotlin {
     }
 
     val commonMain by getting {
+      if (hasSimplexAssets) {
+        resources.srcDir(simplexAssetsLocal)
+      } else {
+        resources.srcDir("src/commonMain/resources/assets/default")
+      }
       dependencies {
         api(compose.runtime)
         api(compose.foundation)
@@ -160,12 +180,16 @@ buildConfig {
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
     buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
+    buildConfigField("Boolean", "SIMPLEX_ASSETS", "$hasSimplexAssets")
   }
 }
 
 afterEvaluate {
   tasks.named("generateMRcommonMain") {
     dependsOn("adjustFormatting")
+    if (hasSimplexAssets) {
+      dependsOn("copySimplexAssets")
+    }
   }
   tasks.create("adjustFormatting") {
     doLast {

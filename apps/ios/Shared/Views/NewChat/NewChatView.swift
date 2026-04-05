@@ -239,6 +239,7 @@ private func incognitoProfileImage() -> some View {
 }
 
 private struct InviteView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
@@ -251,7 +252,7 @@ private struct InviteView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
+            Section(header: sectionHeader) {
                 shareLinkView()
             }
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
@@ -281,9 +282,9 @@ private struct InviteView: View {
                 } header: {
                     Text("Share profile").foregroundColor(theme.colors.secondary)
                 } footer: {
-                     if incognitoDefault {
-                         Text("A new random profile will be shared.")
-                     }
+                    if incognitoDefault {
+                        Text("A new random profile will be shared.")
+                    }
                 }
             }
         }
@@ -293,6 +294,22 @@ private struct InviteView: View {
         .onChange(of: chatModel.currentUser) { u in
             setInvitationUsed()
         }
+    }
+
+    private var sectionHeader: some View {
+        #if SIMPLEX_ASSETS
+        VStack(alignment: .leading, spacing: 0) {
+            Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 90)
+                .frame(maxWidth: .infinity)
+            Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+        }
+        .padding(.bottom, 6)
+        #else
+        Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+        #endif
     }
 
     private func shareLinkView() -> some View {
@@ -587,6 +604,7 @@ private struct ActiveProfilePicker: View {
 }
 
 private struct ConnectView: View {
+    @Environment(\.colorScheme) var colorScheme
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
@@ -598,9 +616,11 @@ private struct ConnectView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Paste the link you received").foregroundColor(theme.colors.secondary)) {
+            Section(header: connectSectionHeader) {
                 pasteLinkView()
             }
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
             }
@@ -667,6 +687,22 @@ private struct ConnectView: View {
                 id: "processQRCode: failure"
             ))
         }
+    }
+
+    private var connectSectionHeader: some View {
+        #if SIMPLEX_ASSETS
+        VStack(alignment: .leading, spacing: 0) {
+            Image(colorScheme == .light ? "connect-via-link" : "connect-via-link-light")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 90)
+                .frame(maxWidth: .infinity)
+            Text("Paste the link you received").foregroundColor(theme.colors.secondary)
+        }
+        .padding(.bottom, 4)
+        #else
+        Text("Paste the link you received").foregroundColor(theme.colors.secondary)
+        #endif
     }
 
     private func connect(_ link: String) {
