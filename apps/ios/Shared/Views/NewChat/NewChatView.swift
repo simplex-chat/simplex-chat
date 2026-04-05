@@ -604,6 +604,7 @@ private struct ActiveProfilePicker: View {
 }
 
 private struct ConnectView: View {
+    @Environment(\.colorScheme) var colorScheme
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
@@ -615,7 +616,7 @@ private struct ConnectView: View {
 
     var body: some View {
         List {
-            Section(header: Text("Paste the link you received").foregroundColor(theme.colors.secondary)) {
+            Section(header: connectSectionHeader) {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
@@ -684,6 +685,22 @@ private struct ConnectView: View {
                 id: "processQRCode: failure"
             ))
         }
+    }
+
+    private var connectSectionHeader: some View {
+        #if SIMPLEX_ASSETS
+        VStack(alignment: .leading) {
+            Image(colorScheme == .light ? "connect-via-link" : "connect-via-link-light")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 85)
+                .frame(maxWidth: .infinity)
+            Text("Paste the link you received").foregroundColor(theme.colors.secondary)
+        }
+        .padding(.bottom, 6)
+        #else
+        Text("Paste the link you received").foregroundColor(theme.colors.secondary)
+        #endif
     }
 
     private func connect(_ link: String) {

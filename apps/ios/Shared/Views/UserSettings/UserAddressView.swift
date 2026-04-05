@@ -11,6 +11,7 @@ import MessageUI
 @preconcurrency import SimpleXChat
 
 struct UserAddressView: View {
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -157,7 +158,19 @@ struct UserAddressView: View {
             }
             addressSettingsButton(userAddress)
         } header: {
+            #if SIMPLEX_ASSETS
+            VStack(alignment: .leading) {
+                Image(colorScheme == .light ? "simplex-address" : "simplex-address-light")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 85)
+                    .frame(maxWidth: .infinity)
+                ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
+            }
+            .padding(.bottom, 6)
+            #else
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
+            #endif
         } footer: {
             if settings.businessAddress {
                 Text("Add your team members to the conversations.")

@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct AddGroupView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -66,23 +67,31 @@ struct AddGroupView: View {
     func createGroupView() -> some View {
         List {
             Group {
-                ZStack(alignment: .center) {
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128)
-                        if profile.image != nil {
-                            Button {
-                                profile.image = nil
-                            } label: {
-                                Image(systemName: "multiply")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 12)
+                HStack {
+                    ZStack(alignment: .center) {
+                        ZStack(alignment: .topTrailing) {
+                            ProfileImage(imageStr: profile.image, size: 128)
+                            if profile.image != nil {
+                                Button {
+                                    profile.image = nil
+                                } label: {
+                                    Image(systemName: "multiply")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 12)
+                                }
                             }
                         }
-                    }
 
-                    editImageButton { showChooseSource = true }
-                        .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
+                        editImageButton { showChooseSource = true }
+                            .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
+                    }
+                    #if SIMPLEX_ASSETS
+                    Image(colorScheme == .light ? "create-group" : "create-group-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 128)
+                    #endif
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
