@@ -67,7 +67,7 @@ struct AddGroupView: View {
     func createGroupView() -> some View {
         List {
             Group {
-                HStack {
+                HStack(spacing: 0) {
                     ZStack(alignment: .center) {
                         ZStack(alignment: .topTrailing) {
                             ProfileImage(imageStr: profile.image, size: 128)
@@ -86,14 +86,16 @@ struct AddGroupView: View {
                         editImageButton { showChooseSource = true }
                             .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
                     }
+                    .frame(maxWidth: .infinity)
                     #if SIMPLEX_ASSETS
                     Image(colorScheme == .light ? "create-group" : "create-group-light")
                         .resizable()
                         .scaledToFit()
-                        .frame(maxHeight: 128)
+                        .frame(height: 140)
+                        .frame(maxWidth: .infinity)
                     #endif
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity)
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
