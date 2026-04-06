@@ -336,7 +336,7 @@
     "file-drop-text": "Przeciągnij i upuść plik tutaj",
     "file-drop-hint": "lub",
     "file-choose": "Wybierz plik",
-    "file-max-size": "Maksymalnie 100 MB - <a href=\"#join-simplex\">aplikacja SimpleX Chat</a> obsługuje pliki o rozmiarze do 1 GB",
+    "file-max-size": "Maksymalnie 100 MB - <a href=\"/downloads\">aplikacja SimpleX Chat</a> obsługuje pliki o rozmiarze do 1 GB",
     "file-encrypting": "Szyfrowanie…",
     "file-uploading": "Wysyłanie…",
     "file-cancel": "Anuluj",
