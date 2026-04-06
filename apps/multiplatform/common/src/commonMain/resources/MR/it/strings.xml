@@ -2671,4 +2671,5 @@
     <string name="leave_channel_question">Uscire dal canale?</string>
     <string name="chat_banner_join_channel">Tocca Iscriviti al canale</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Puoi condividere un link o un codice QR, chiunque sarà in grado di iscriversi al canale.</string>
+    <string name="compose_view_broadcast">Trasmetti</string>
 </resources>
