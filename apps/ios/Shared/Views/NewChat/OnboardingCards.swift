@@ -139,9 +139,6 @@ struct ConnectOnboardingView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .ignoresSafeArea()
-        .onChange(of: currentPage) { page in
-            print("TabView currentPage changed to: \(page)")
-        }
         .sheet(isPresented: $showConnectViaLink) {
             NavigationView {
                 NewChatView(selection: .connect, showQRCodeScanner: true)
@@ -193,19 +190,50 @@ struct ConnectOnboardingView: View {
 
     // MARK: Screen 1
 
+    @ViewBuilder
+    private func pageHeader(_ title: LocalizedStringKey, showBack: Bool) -> some View {
+        let isLandscape = verticalSizeClass == .compact
+        let titleView = Text(title)
+            .font(.largeTitle)
+            .bold()
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity, alignment: .center)
+        if isLandscape {
+            ZStack(alignment: .leading) {
+                if showBack { backButton }
+                titleView
+            }
+            .padding(.horizontal, 16)
+        } else {
+            if showBack {
+                backButton.frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Color.clear.frame(height: backButtonHeight)
+            }
+            titleView.padding(.horizontal, 16)
+        }
+    }
+
+    private var backButton: some View {
+        Button {
+            withAnimation { currentPage = 0 }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "chevron.left")
+                Text("Back")
+            }
+        }
+        .frame(height: backButtonHeight)
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: Screen 1
+
     private var talkToSomeonePage: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                Color.clear.frame(height: backButtonHeight)
-
-                Text("Talk to someone")
-                    .font(.largeTitle)
-                    .bold()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.horizontal, 16)
+                pageHeader("Talk to someone", showBack: false)
 
                 Spacer(minLength: 16)
 
@@ -215,11 +243,7 @@ struct ConnectOnboardingView: View {
                         icon: "link.badge.plus",
                         title: "Let someone connect to you",
                         labelHeightRatio: 0.132,
-                        action: {
-                        print("LEFT CARD TAPPED, currentPage before: \(currentPage)")
-                        withAnimation { currentPage = 1 }
-                        print("LEFT CARD TAPPED, currentPage after: \(currentPage)")
-                    }
+                        action: { withAnimation { currentPage = 1 } }
                     )
                 } card2: {
                     OnboardingCardView(
@@ -242,28 +266,7 @@ struct ConnectOnboardingView: View {
     private var connectWithSomeonePage: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                HStack {
-                    Button {
-                        withAnimation { currentPage = 0 }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                    }
-                    Spacer()
-                }
-                .frame(height: backButtonHeight)
-                .padding(.horizontal, 16)
-
-                Text("Connect with someone")
-                    .font(.largeTitle)
-                    .bold()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.horizontal, 16)
+                pageHeader("Connect with someone", showBack: true)
 
                 Spacer(minLength: 16)
 
