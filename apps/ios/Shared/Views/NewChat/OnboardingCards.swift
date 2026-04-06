@@ -17,6 +17,7 @@ struct OnboardingCardView: View {
     let icon: String
     let title: LocalizedStringKey
     var subtitle: LocalizedStringKey? = nil
+    let labelHeightRatio: CGFloat  // label stripe height as fraction of card width
     let action: () -> Void
 
     private static let lightStops: [Gradient.Stop] = [
@@ -33,27 +34,53 @@ struct OnboardingCardView: View {
         .init(color: Color(red: 1.0, green: 0.965, blue: 0.878), location: 1.0)
     ]
 
+    // 80° CCW from horizontal
+    private static let gradientAngle: Double = 80.0 * .pi / 180.0
+
+    private static func gradientPoints(aspectRatio: CGFloat) -> (start: UnitPoint, end: UnitPoint) {
+        let r = Double(aspectRatio)
+        let dx = cos(gradientAngle)
+        let dy = -sin(gradientAngle) / r
+        let dLenSq = dx * dx + dy * dy
+        let projections = [
+            -0.5 * dx + (-0.5) * dy,
+             0.5 * dx + (-0.5) * dy,
+            -0.5 * dx + 0.5 * dy,
+             0.5 * dx + 0.5 * dy
+        ]
+        let tMin = projections.min()!
+        let tMax = projections.max()!
+        return (
+            start: .init(x: 0.5 + tMin * dx / dLenSq, y: 0.5 + tMin * dy / dLenSq),
+            end: .init(x: 0.5 + tMax * dx / dLenSq, y: 0.5 + tMax * dy / dLenSq)
+        )
+    }
+
     var body: some View {
         Button(action: action) {
-            ZStack(alignment: .bottom) {
-                LinearGradient(
-                    stops: colorScheme == .light ? Self.lightStops : Self.darkStops,
-                    startPoint: .init(x: 0.413, y: 0.992),
-                    endPoint: .init(x: 0.587, y: 0.008)
-                )
+            GeometryReader { geo in
+                let labelHeight = geo.size.width * labelHeightRatio
+                let gp = Self.gradientPoints(aspectRatio: geo.size.height / geo.size.width)
+                ZStack(alignment: .bottom) {
+                    LinearGradient(
+                        stops: colorScheme == .light ? Self.lightStops : Self.darkStops,
+                        startPoint: gp.start,
+                        endPoint: gp.end
+                    )
 
-                VStack(spacing: 0) {
-                    #if SIMPLEX_ASSETS
-                    Image(colorScheme == .light ? imageName : "\(imageName)-light")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
-                    #else
-                    Spacer()
-                    #endif
+                    VStack(spacing: 0) {
+                        #if SIMPLEX_ASSETS
+                        Image(colorScheme == .light ? imageName : "\(imageName)-light")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                        #else
+                        Spacer()
+                        #endif
 
-                    labelRow
+                        labelRow(height: labelHeight)
+                    }
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 24))
@@ -61,7 +88,7 @@ struct OnboardingCardView: View {
         .buttonStyle(.plain)
     }
 
-    private var labelRow: some View {
+    private func labelRow(height: CGFloat) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 20))
@@ -77,9 +104,8 @@ struct OnboardingCardView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, height: height, alignment: .leading)
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
         .background(colorScheme == .light ? Color.white.opacity(0.5) : Color.black.opacity(0.3))
     }
 
@@ -99,48 +125,58 @@ struct TalkToSomeoneView: View {
         GeometryReader { geo in
             let cardWidth = geo.size.width - 32
             let maxCardHeight = cardWidth * 0.75
-            VStack(spacing: 16) {
+            VStack(spacing: 0) {
                 Text("Talk to someone")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+
+                Spacer()
 
                 OnboardingCardView(
                     imageName: "card-let-someone-connect-to-you-alpha",
                     icon: "link",
                     title: "Let someone connect to you",
+                    labelHeightRatio: 0.132,
                     action: { showConnectWithSomeone = true }
                 )
                 .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
 
+                Spacer().frame(maxHeight: 16)
+
                 OnboardingCardView(
                     imageName: "card-connect-via-link-alpha",
                     icon: "qrcode",
                     title: "Connect via link or QR code",
+                    labelHeightRatio: 0.132,
                     action: { showConnectViaLink = true }
                 )
                 .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
+
+                Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .navigationBarLeading) { Color.clear.frame(height: 0) } }
         .background(
             NavigationLink(isActive: $showConnectWithSomeone) {
                 ConnectWithSomeoneView()
                     .modifier(ThemedBackground(grouped: true))
             } label: { EmptyView() }
         )
-        .background(
-            NavigationLink(isActive: $showConnectViaLink) {
+        .sheet(isPresented: $showConnectViaLink) {
+            NavigationView {
                 NewChatView(selection: .connect, showQRCodeScanner: true)
                     .modifier(ThemedBackground(grouped: true))
                     .navigationBarTitleDisplayMode(.inline)
-            } label: { EmptyView() }
-        )
+            }
+        }
     }
 }
 
@@ -155,50 +191,59 @@ struct ConnectWithSomeoneView: View {
         GeometryReader { geo in
             let cardWidth = geo.size.width - 32
             let maxCardHeight = cardWidth * 0.75
-            VStack(spacing: 16) {
+            VStack(spacing: 0) {
                 Text("Connect with someone")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
+                    .padding(.bottom, 24)
+
+                Spacer()
 
                 OnboardingCardView(
                     imageName: "card-invite-someone-privately-alpha",
                     icon: "link",
                     title: "Invite someone privately",
                     subtitle: "A link for one person to connect",
+                    labelHeightRatio: 0.195,
                     action: { showInviteSomeone = true }
                 )
                 .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
+
+                Spacer().frame(maxHeight: 16)
 
                 OnboardingCardView(
                     imageName: "card-create-your-public-address-alpha",
                     icon: "qrcode",
                     title: "Create your public address",
                     subtitle: "For anyone to reach you",
+                    labelHeightRatio: 0.195,
                     action: { showCreateAddress = true }
                 )
                 .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
+
+                Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .background(
-            NavigationLink(isActive: $showInviteSomeone) {
+        .navigationTitle("")
+        .sheet(isPresented: $showInviteSomeone) {
+            NavigationView {
                 NewChatView(selection: .invite)
                     .modifier(ThemedBackground(grouped: true))
                     .navigationBarTitleDisplayMode(.inline)
-            } label: { EmptyView() }
-        )
-        .background(
-            NavigationLink(isActive: $showCreateAddress) {
+            }
+        }
+        .sheet(isPresented: $showCreateAddress) {
+            NavigationView {
                 UserAddressView(autoCreate: true)
                     .modifier(ThemedBackground(grouped: true))
                     .navigationBarTitleDisplayMode(.inline)
-            } label: { EmptyView() }
-        )
+            }
+        }
         .modifier(ThemedBackground(grouped: true))
     }
 }
