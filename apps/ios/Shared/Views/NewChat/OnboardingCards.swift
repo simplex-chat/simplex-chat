@@ -161,6 +161,7 @@ struct ConnectOnboardingView: View {
 
     private var talkToSomeonePage: some View {
         GeometryReader { geo in
+            let _ = print("GEO Screen1: \(geo.size), safeArea: \(geo.safeAreaInsets)")
             let cardWidth = geo.size.width - 32
             let maxCardHeight = cardWidth * 0.75
             VStack(spacing: 0) {
@@ -171,7 +172,6 @@ struct ConnectOnboardingView: View {
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
 
                 Spacer()
 
@@ -201,12 +201,14 @@ struct ConnectOnboardingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .border(Color.red)
     }
 
     // MARK: Screen 2
 
     private var connectWithSomeonePage: some View {
         GeometryReader { geo in
+            let _ = print("GEO Screen2: \(geo.size), safeArea: \(geo.safeAreaInsets)")
             let cardWidth = geo.size.width - 32
             let maxCardHeight = cardWidth * 0.75
             VStack(spacing: 0) {
@@ -229,7 +231,6 @@ struct ConnectOnboardingView: View {
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
 
                 Spacer()
 
@@ -261,5 +262,6 @@ struct ConnectOnboardingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .border(Color.red)
     }
 }
