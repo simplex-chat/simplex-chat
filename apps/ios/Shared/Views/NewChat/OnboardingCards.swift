@@ -101,10 +101,11 @@ struct OnboardingCardView: View {
                     .font(.system(size: 24))
                     .foregroundColor(theme.colors.primary)
                 Text(title)
-                    .font(.headline)
+                    .font(.body)
+                    .fontWeight(.medium)
                     .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.75)
             }
             if let subtitle {
                 Text(subtitle)
@@ -198,7 +199,8 @@ struct ConnectOnboardingView: View {
                     .font(.largeTitle)
                     .bold()
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.75)
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
 
@@ -251,7 +253,8 @@ struct ConnectOnboardingView: View {
                     .font(.largeTitle)
                     .bold()
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.75)
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
 
