@@ -348,7 +348,34 @@ struct ChatListView: View {
         }
     }
     
-    private var chatList: some View {
+    private var shouldShowOnboarding: Bool {
+        !addressCreationCardShown && !chatModel.chats.isEmpty && noConversationChatsYet
+    }
+
+    private var noConversationChatsYet: Bool {
+        chatModel.chats.allSatisfy { chat in
+            switch chat.chatInfo {
+            case .local: return true
+            case let .direct(contact): return contact.chatDeleted || contact.isContactCard
+            case .group: return false
+            case .contactRequest: return true
+            case .contactConnection: return true
+            case .invalidJSON: return true
+            }
+        }
+    }
+
+    @ViewBuilder private var chatList: some View {
+        if shouldShowOnboarding {
+            ConnectOnboardingView()
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .modifier(ThemedBackground())
+        } else {
+            chatListContent
+        }
+    }
+
+    private var chatListContent: some View {
         let cs = filteredChats()
         return ZStack {
             ScrollViewReader { scrollProxy in
@@ -425,6 +452,11 @@ struct ChatListView: View {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
+            }
+        }
+        .onChange(of: chatModel.chats.count) { _ in
+            if !noConversationChatsYet && !addressCreationCardShown {
+                addressCreationCardShown = true
             }
         }
     }
