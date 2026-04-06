@@ -34,6 +34,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -383,7 +384,9 @@ fun CenterPartOfScreen() {
   }
   when (currentChatId.value) {
     null -> {
-      if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+      if (shouldShowOnboarding()) {
+        // Empty — desktop overlay handles onboarding cards
+      } else if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
         Box(
           Modifier
             .fillMaxSize()
@@ -443,6 +446,20 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     )
   }
   VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
+  if (shouldShowOnboarding()) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    Box(
+      Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colors.background)
+        .padding(
+          top = if (!oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp,
+          bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+        )
+    ) {
+      ConnectOnboardingView()
+    }
+  }
   ModalManager.fullscreen.showInView()
 }
 

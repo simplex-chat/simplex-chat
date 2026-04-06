@@ -289,15 +289,26 @@ private fun AddressCreationCard() {
 
 @Composable
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
-  if (!chatModel.desktopNoUserNoRemote) {
-    ChatList(searchText = searchText, listState)
+  val chats = chatModel.chats.value
+  when {
+    chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == null -> {
+      Text(stringResource(MR.strings.loading_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+    }
+    shouldShowOnboarding() -> {
+      if (appPlatform.isAndroid) {
+        ConnectOnboardingView()
+      }
+      // Desktop: empty — overlay in DesktopScreen handles it
+    }
+    !chatModel.desktopNoUserNoRemote -> {
+      ChatList(searchText = searchText, listState)
+    }
   }
-  if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-    Text(
-      stringResource(
-        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
-      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
-    )
+  // Auto-dismiss onboarding when first real conversation appears
+  LaunchedEffect(chats.size) {
+    if (chats.isNotEmpty() && !noConversationChatsYet(chats)) {
+      appPrefs.addressCreationCardShown.set(true)
+    }
   }
 }
 
