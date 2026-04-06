@@ -138,7 +138,6 @@ struct ConnectOnboardingView: View {
             connectWithSomeonePage.tag(1)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .ignoresSafeArea()
         .sheet(isPresented: $showConnectViaLink) {
             NavigationView {
                 NewChatView(selection: .connect, showQRCodeScanner: true)
