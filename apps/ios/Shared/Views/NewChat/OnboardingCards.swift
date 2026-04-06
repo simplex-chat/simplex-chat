@@ -92,7 +92,6 @@ struct OnboardingCardView: View {
 
 struct TalkToSomeoneView: View {
     @EnvironmentObject var theme: AppTheme
-    var oneHandUI: Bool
     @State private var showConnectWithSomeone = false
     @State private var showConnectViaLink = false
 
@@ -127,12 +126,11 @@ struct TalkToSomeoneView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .background(
             NavigationLink(isActive: $showConnectWithSomeone) {
-                ConnectWithSomeoneView(oneHandUI: oneHandUI)
+                ConnectWithSomeoneView()
                     .modifier(ThemedBackground(grouped: true))
             } label: { EmptyView() }
         )
@@ -150,7 +148,6 @@ struct TalkToSomeoneView: View {
 
 struct ConnectWithSomeoneView: View {
     @EnvironmentObject var theme: AppTheme
-    var oneHandUI: Bool
     @State private var showInviteSomeone = false
     @State private var showCreateAddress = false
 
@@ -187,7 +184,6 @@ struct ConnectWithSomeoneView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .navigationBarTitleDisplayMode(.inline)
         .background(
             NavigationLink(isActive: $showInviteSomeone) {
