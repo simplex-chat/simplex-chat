@@ -65,27 +65,27 @@ struct OnboardingCardView: View {
         Button(action: action) {
             GeometryReader { geo in
                 let labelHeight = geo.size.width * labelHeightRatio
-                let gp = Self.gradientPoints(aspectRatio: geo.size.height / geo.size.width, scale: colorScheme == .light ? 1.2 : 1.5)
-                ZStack(alignment: .bottom) {
-                    LinearGradient(
-                        stops: colorScheme == .light ? Self.lightStops : Self.darkStops,
-                        startPoint: gp.start,
-                        endPoint: gp.end
-                    )
-
-                    VStack(spacing: 0) {
+                let imageHeight = geo.size.height - labelHeight
+                let imageAspect = imageHeight / geo.size.width
+                let gp = Self.gradientPoints(aspectRatio: imageAspect, scale: colorScheme == .light ? 1.2 : 1.5)
+                VStack(spacing: 0) {
+                    ZStack {
+                        LinearGradient(
+                            stops: colorScheme == .light ? Self.lightStops : Self.darkStops,
+                            startPoint: gp.start,
+                            endPoint: gp.end
+                        )
                         #if SIMPLEX_ASSETS
                         Image(colorScheme == .light ? imageName : "\(imageName)-light")
                             .resizable()
                             .scaledToFit()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipped()
-                        #else
-                        Spacer()
                         #endif
-
-                        labelRow(height: labelHeight)
                     }
+                    .frame(height: imageHeight)
+
+                    labelRow(height: labelHeight)
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 24))
