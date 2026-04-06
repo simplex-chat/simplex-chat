@@ -1,4 +1,176 @@
-# Onboarding Cards — iOS Implementation Plan
+# Onboarding Cards — Layout Specification & iOS Implementation Plan
+
+## Layout Specification (cross-platform)
+
+This section is the authoritative reference for implementing on any platform.
+
+### Overall structure
+
+Two screens, each with a title and two tappable cards. Screens are connected by a horizontal paging transition (swipe or tap). Screen 1 has no back button; Screen 2 has a back button. Deeper views (1-time link, connect via link, SimpleX address) open as modal sheets from card taps, NOT as navigation pushes.
+
+The chat list toolbar (top or bottom depending on platform/settings) remains visible on both screens — the onboarding content occupies only the chat list content area.
+
+### Page header
+
+Each page has a header area containing:
+- **Back button area:** fixed height 44pt. Screen 1: empty space. Screen 2: "< Back" button left-aligned.
+- **Title:** centered, largeTitle font, bold, single line, shrinks to 75% minimum scale factor.
+- Screen 1 title: "Talk to someone"
+- Screen 2 title: "Connect with someone"
+
+**Portrait:** back button area and title are two separate rows (VStack).
+**Landscape:** back button and title share one row (ZStack — back button leading, title centered). No separate back button row — saves vertical space.
+
+Padding: 16pt horizontal on the header container. Back button has no padding of its own.
+
+### Card layout
+
+**Portrait:** two cards stacked vertically (VStack, spacing 16pt).
+**Landscape:** two cards side-by-side (HStack, spacing 16pt).
+
+Card horizontal padding: 16pt each side.
+
+Cards are vertically centered in the remaining space below the header. Equal space above and below the card group (Spacer with minLength 16pt on both sides).
+
+### Card max height
+
+Max total card height = card width × 0.75.
+
+In portrait: card width = screen width − 32pt (16pt padding each side).
+In landscape: card width = (screen width − 32pt − 16pt spacing) / 2.
+
+Card height can be less than max on small screens. Height never exceeds max.
+
+### Card component
+
+Each card is a rounded rectangle (corner radius 24pt) containing:
+
+1. **Image area** (top) — gradient background + alpha-channel illustration overlay
+2. **Label stripe** (bottom) — toolbar material background, fixed proportional height
+
+#### Image area
+
+- Gradient fills only the image area, NOT the label stripe
+- Illustration: `.resizable().scaledToFit()`, fills available space, clipped to image area
+
+#### Gradient
+
+Stops (light mode):
+- `#d2e8ff` (rgb 0.824, 0.910, 1.0) at 0%
+- `#cce9ff` (rgb 0.800, 0.914, 1.0) at 50%
+- `#dfffff` (rgb 0.875, 1.0, 1.0) at 90%
+- `#fffcea` (rgb 1.0, 0.988, 0.918) at 100%
+
+Stops (dark mode):
+- `#040a24` (rgb 0.016, 0.039, 0.141) at 40%
+- `#3854ab` (rgb 0.220, 0.329, 0.671) at 72%
+- `#a8edf3` (rgb 0.659, 0.929, 0.953) at 90%
+- `#fff6e0` (rgb 1.0, 0.965, 0.878) at 100%
+
+Angle: 80° counter-clockwise from horizontal (almost vertical, slight rightward lean at top).
+
+Gradient scale (center-anchored): 1.2× in light mode, 1.5× in dark mode. This pushes start/end points further from center, reducing colored corner area.
+
+**Gradient endpoint calculation** (accounts for variable card aspect ratio):
+
+The gradient must maintain a constant 80° visual angle regardless of card proportions. Given the IMAGE AREA aspect ratio `r = imageHeight / width`:
+
+```
+θ = 80° (in radians: 80 × π / 180)
+dx = cos(θ)
+dy = −sin(θ) / r
+
+Project four corners (±0.5, ±0.5) onto direction (dx, dy):
+  projections = [−0.5·dx + (−0.5)·dy, 0.5·dx + (−0.5)·dy, −0.5·dx + 0.5·dy, 0.5·dx + 0.5·dy]
+  tMin = min(projections), tMax = max(projections)
+  dLenSq = dx² + dy²
+
+Base endpoints:
+  startX = 0.5 + tMin·dx/dLenSq,  startY = 0.5 + tMin·dy/dLenSq
+  endX   = 0.5 + tMax·dx/dLenSq,  endY   = 0.5 + tMax·dy/dLenSq
+
+Apply scale S (1.2 or 1.5) center-anchored:
+  finalStart = (0.5 + (startX−0.5)·S, 0.5 + (startY−0.5)·S)
+  finalEnd   = (0.5 + (endX−0.5)·S,   0.5 + (endY−0.5)·S)
+```
+
+Important: aspect ratio uses IMAGE AREA height (card height minus label stripe), not total card height.
+
+#### Label stripe
+
+Height relative to card width:
+- Single-line labels (Screen 1): 0.132 × card width
+- Two-line labels (Screen 2): 0.195 × card width
+
+Background: platform toolbar material (matches the app toolbar appearance). On iOS: `Material` from `ToolbarMaterial` user setting. On Android: equivalent translucent material.
+
+Content layout: centered horizontally.
+- Icon: 24pt, theme primary/accent color
+- Title: body font (17pt), medium weight, theme foreground color, single line, shrinks to 75%
+- Subtitle (Screen 2 only): footnote (13pt), theme foreground at 70% opacity
+
+Label stripe sits below the image area — gradient does NOT extend under it.
+
+### Card images
+
+8 alpha-channel PNGs (4 illustrations × light/dark variants).
+
+Screen 1:
+- `card-let-someone-connect-to-you-alpha` / `-light`
+- `card-connect-via-link-alpha` / `-light`
+
+Screen 2:
+- `card-invite-someone-privately-alpha` / `-light`
+- `card-create-your-public-address-alpha` / `-light`
+
+Light/dark selection: use base name on light backgrounds, `-light` suffix on dark backgrounds.
+
+Gated behind build flag (`#if SIMPLEX_ASSETS` on iOS, `BuildConfigCommon.SIMPLEX_ASSETS` on Android). Without assets: gradient-only cards with label stripe, still functional.
+
+### Card icons (SF Symbols / Material equivalents)
+
+Screen 1:
+- "Let someone connect to you" — `link.badge.plus`
+- "Connect via link or QR code" — `qrcode.viewfinder`
+
+Screen 2:
+- "Invite someone privately" — `link.badge.plus`
+- "Create your public address" — `qrcode`
+
+### Card actions
+
+Screen 1:
+- Left card ("Let someone connect to you") → paging transition to Screen 2
+- Right card ("Connect via link or QR code") → modal sheet with ConnectView
+
+Screen 2:
+- Left card ("Invite someone privately") → modal sheet with InviteView (1-time link)
+- Right card ("Create your public address") → modal sheet with UserAddressView (auto-create)
+
+### Onboarding visibility
+
+Controlled by existing user default `addressCreationCardShown` (key: `"AddressCreationCardShown"`).
+
+Show onboarding when:
+- `addressCreationCardShown == false`
+- Chat list is not empty (chats have loaded)
+- All chats are "ignorable" (note folders, deleted contacts, contact cards, pending connections/requests, invalid JSON)
+- Any group = real conversation → onboarding hidden
+
+Auto-dismiss: when first real conversation appears, set `addressCreationCardShown = true` permanently. Observed via chat list count changes.
+
+### Strings (8)
+
+- "Talk to someone"
+- "Let someone connect to you"
+- "Connect via link or QR code"
+- "Connect with someone"
+- "Invite someone privately"
+- "A link for one person to connect"
+- "Create your public address"
+- "For anyone to reach you"
+
+---
 
 ## Scope
 
