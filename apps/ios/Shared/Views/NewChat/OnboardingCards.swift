@@ -139,6 +139,9 @@ struct ConnectOnboardingView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .ignoresSafeArea()
+        .onChange(of: currentPage) { page in
+            print("TabView currentPage changed to: \(page)")
+        }
         .sheet(isPresented: $showConnectViaLink) {
             NavigationView {
                 NewChatView(selection: .connect, showQRCodeScanner: true)
@@ -212,7 +215,11 @@ struct ConnectOnboardingView: View {
                         icon: "link.badge.plus",
                         title: "Let someone connect to you",
                         labelHeightRatio: 0.132,
-                        action: { withAnimation { currentPage = 1 } }
+                        action: {
+                        print("LEFT CARD TAPPED, currentPage before: \(currentPage)")
+                        withAnimation { currentPage = 1 }
+                        print("LEFT CARD TAPPED, currentPage after: \(currentPage)")
+                    }
                     )
                 } card2: {
                     OnboardingCardView(
