@@ -190,7 +190,6 @@ struct ConnectOnboardingView: View {
     // MARK: Screen 1
 
     @ViewBuilder
-    @ViewBuilder
     private func pageHeader(_ title: LocalizedStringKey, showBack: Bool) -> some View {
         let isLandscape = verticalSizeClass == .compact
         let titleView = Text(title)
