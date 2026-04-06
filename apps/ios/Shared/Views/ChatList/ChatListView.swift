@@ -367,8 +367,12 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         if shouldShowOnboarding {
-            TalkToSomeoneView()
-                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+            NavigationView {
+                TalkToSomeoneView(oneHandUI: oneHandUI)
+            }
+            .navigationViewStyle(.stack)
+            .modifier(ThemedBackground())
+            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         } else {
             chatListContent
         }

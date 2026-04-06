@@ -265,3 +265,65 @@ The `-light` suffix is appended automatically by `OnboardingCardView` when `colo
 - **New:** `Shared/Views/NewChat/OnboardingCards.swift` — `OnboardingCardView`, `TalkToSomeoneView`, `ConnectWithSomeoneView`
 
 No modifications to NewChatView, UserAddressView, or ConnectView in this phase.
+
+## Revision 1 — corrections from design review
+
+### Navigation scope (critical)
+Both screens must keep the bottom/top toolbar visible. The onboarding NavigationView is SCOPED to just the card area — it does NOT replace the full chatListView. In `chatList`, wrap `TalkToSomeoneView()` in its own `NavigationView { }.navigationViewStyle(.stack)`. The toolbar from `chatListView.withToolbar()` stays outside and visible on both screens.
+
+Screen 1 → Screen 2: real NavigationLink push within the scoped NavigationView.
+Screen 2 → deeper views: also NavigationLink pushes within same scoped NavigationView.
+
+### Screen 1 — reserve nav bar space
+Screen 2 has a back button (navigation bar). Screen 1 must reserve the same height to prevent content shift on slide. Set `.navigationTitle("")` with `.navigationBarTitleDisplayMode(.inline)` on Screen 1's root — shows an empty inline nav bar matching Screen 2's bar height.
+
+### Gradient direction fix
+Current gradient is nearly horizontal — wrong. Correct angle is 80° CCW from horizontal (almost vertical, slight rightward lean).
+
+Formula for full-coverage gradient at angle θ:
+```
+startPoint = (0.5 - 0.5·cos(θ), 0.5 + 0.5·sin(θ))
+endPoint   = (0.5 + 0.5·cos(θ), 0.5 - 0.5·sin(θ))
+```
+
+For θ = 80°: `startPoint: .init(x: 0.413, y: 0.992), endPoint: .init(x: 0.587, y: 0.008)`
+
+### Corner radius
+Change from 18 to 24.
+
+### Label stripe background
+The label area has a distinct semi-transparent background strip at the bottom of the card. Add to `labelRow`:
+- Light mode: `Color.white.opacity(0.5)`
+- Dark mode: `Color.black.opacity(0.3)`
+Exact opacity values need visual tuning.
+
+### Card max height ratio
+Cards have a max total height/width ratio of 0.75. On tall screens, cards are capped at this ratio with extra space distributed equally above and below. On short screens, cards shrink — ratio goes below 0.75, label stripe stays fixed height, only image area shrinks.
+
+Implementation: use `GeometryReader` to get available width, compute `maxCardHeight = cardWidth * 0.75`, apply `.frame(maxHeight: maxCardHeight)` on each card. The VStack centers vertically in the GeometryReader — equal space above and below on tall screens.
+
+### Title alignment
+Change from `.leading` to `.center` — design shows centered titles on both screens.
+
+### Subtitle color in dark mode
+Change `.foregroundColor(.secondary)` to `.foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .secondary)` — standard `.secondary` is too gray on the dark gradient.
+
+### Label stripe height proportions
+The label stripe has fixed proportional heights relative to card width:
+- Screen 1 (single-line labels): 0.132 × card width
+- Screen 2 (two-line labels): 0.195 × card width
+
+These are achieved via fixed padding on the label row. The image area is the remainder of the card height. When cards shrink on short screens, only the image area shrinks — the label stripe stays at its proportional height.
+
+### Spacing between title and cards, between cards, and below cards
+The gaps above first card and below second card should be EQUAL and LARGER than the gap between the two cards. The inter-card gap is the VStack spacing (~16pt). The outer gaps are larger — achieved by the GeometryReader centering the VStack vertically, which distributes extra space equally above and below.
+
+### ThemedBackground on TalkToSomeoneView
+`TalkToSomeoneView` needs `.modifier(ThemedBackground())` — it replaces `chatList` content and needs its own background. Currently missing.
+
+### `oneHandUI` inversion on Screen 2
+The scoped `NavigationView` sits inside `chatList` which is visually inverted by `chatListView`'s `.scaleEffect(y: -1)`. This inversion applies to the NavigationView's rendered frame — ALL pages inside it (both Screen 1 and Screen 2) are inverted. `TalkToSomeoneView` counter-inverts at the call site. `ConnectWithSomeoneView` (pushed within the NavigationView) also needs counter-inversion. Pass `oneHandUI` as a binding or read from `@AppStorage(GROUP_DEFAULT_ONE_HAND_UI)` directly inside `ConnectWithSomeoneView`, and apply `.scaleEffect(x: 1, y: oneHandUI ? -1 : 1)` on its root VStack. Same for any deeper pushed views — but those are existing views not modified in this phase, so their inversion behavior needs testing.
+
+### Plan cleanup note
+The original sections above contain outdated code snippets (wrong gradient, wrong corner radius, wrong switch cases, wrong alignment). The Revision 1 sections are authoritative. When implementing, follow Revision 1 values; treat original sections as structural context only.
+

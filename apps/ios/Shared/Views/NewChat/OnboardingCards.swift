@@ -38,8 +38,8 @@ struct OnboardingCardView: View {
             ZStack(alignment: .bottom) {
                 LinearGradient(
                     stops: colorScheme == .light ? Self.lightStops : Self.darkStops,
-                    startPoint: .init(x: 0.0, y: 0.6),
-                    endPoint: .init(x: 1.0, y: 0.4)
+                    startPoint: .init(x: 0.413, y: 0.992),
+                    endPoint: .init(x: 0.587, y: 0.008)
                 )
 
                 VStack(spacing: 0) {
@@ -56,7 +56,7 @@ struct OnboardingCardView: View {
                     labelRow
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
         }
         .buttonStyle(.plain)
     }
@@ -73,13 +73,14 @@ struct OnboardingCardView: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(.footnote)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .secondary)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(colorScheme == .light ? Color.white.opacity(0.5) : Color.black.opacity(0.3))
     }
 
     private var labelColor: Color {
@@ -91,41 +92,48 @@ struct OnboardingCardView: View {
 
 struct TalkToSomeoneView: View {
     @EnvironmentObject var theme: AppTheme
+    var oneHandUI: Bool
     @State private var showConnectWithSomeone = false
     @State private var showConnectViaLink = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Talk to someone")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        GeometryReader { geo in
+            let cardWidth = geo.size.width - 32
+            let maxCardHeight = cardWidth * 0.75
+            VStack(spacing: 16) {
+                Text("Talk to someone")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 16)
+
+                OnboardingCardView(
+                    imageName: "card-let-someone-connect-to-you-alpha",
+                    icon: "link",
+                    title: "Let someone connect to you",
+                    action: { showConnectWithSomeone = true }
+                )
+                .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
 
-            OnboardingCardView(
-                imageName: "card-let-someone-connect-to-you-alpha",
-                icon: "link",
-                title: "Let someone connect to you",
-                action: { showConnectWithSomeone = true }
-            )
-            .frame(maxHeight: .infinity)
-            .padding(.horizontal, 16)
-
-            OnboardingCardView(
-                imageName: "card-connect-via-link-alpha",
-                icon: "qrcode",
-                title: "Connect via link or QR code",
-                action: { showConnectViaLink = true }
-            )
-            .frame(maxHeight: .infinity)
-            .padding(.horizontal, 16)
+                OnboardingCardView(
+                    imageName: "card-connect-via-link-alpha",
+                    icon: "qrcode",
+                    title: "Connect via link or QR code",
+                    action: { showConnectViaLink = true }
+                )
+                .frame(maxHeight: maxCardHeight)
+                .padding(.horizontal, 16)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.vertical, 16)
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .background(
             NavigationLink(isActive: $showConnectWithSomeone) {
-                ConnectWithSomeoneView()
+                ConnectWithSomeoneView(oneHandUI: oneHandUI)
                     .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.inline)
             } label: { EmptyView() }
         )
         .background(
@@ -142,38 +150,45 @@ struct TalkToSomeoneView: View {
 
 struct ConnectWithSomeoneView: View {
     @EnvironmentObject var theme: AppTheme
+    var oneHandUI: Bool
     @State private var showInviteSomeone = false
     @State private var showCreateAddress = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Connect with someone")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        GeometryReader { geo in
+            let cardWidth = geo.size.width - 32
+            let maxCardHeight = cardWidth * 0.75
+            VStack(spacing: 16) {
+                Text("Connect with someone")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 16)
+
+                OnboardingCardView(
+                    imageName: "card-invite-someone-privately-alpha",
+                    icon: "link",
+                    title: "Invite someone privately",
+                    subtitle: "A link for one person to connect",
+                    action: { showInviteSomeone = true }
+                )
+                .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
 
-            OnboardingCardView(
-                imageName: "card-invite-someone-privately-alpha",
-                icon: "link",
-                title: "Invite someone privately",
-                subtitle: "A link for one person to connect",
-                action: { showInviteSomeone = true }
-            )
-            .frame(maxHeight: .infinity)
-            .padding(.horizontal, 16)
-
-            OnboardingCardView(
-                imageName: "card-create-your-public-address-alpha",
-                icon: "qrcode",
-                title: "Create your public address",
-                subtitle: "For anyone to reach you",
-                action: { showCreateAddress = true }
-            )
-            .frame(maxHeight: .infinity)
-            .padding(.horizontal, 16)
+                OnboardingCardView(
+                    imageName: "card-create-your-public-address-alpha",
+                    icon: "qrcode",
+                    title: "Create your public address",
+                    subtitle: "For anyone to reach you",
+                    action: { showCreateAddress = true }
+                )
+                .frame(maxHeight: maxCardHeight)
+                .padding(.horizontal, 16)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.vertical, 16)
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+        .navigationBarTitleDisplayMode(.inline)
         .background(
             NavigationLink(isActive: $showInviteSomeone) {
                 NewChatView(selection: .invite)
