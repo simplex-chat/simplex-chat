@@ -104,7 +104,8 @@ struct OnboardingCardView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, height: height, alignment: .leading)
+        .frame(height: height)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .background(colorScheme == .light ? Color.white.opacity(0.5) : Color.black.opacity(0.3))
     }
