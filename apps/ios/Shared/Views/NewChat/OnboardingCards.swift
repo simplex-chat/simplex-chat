@@ -13,6 +13,7 @@ import SimpleXChat
 
 struct OnboardingCardView: View {
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     let imageName: String
     let icon: String
     let title: LocalizedStringKey
@@ -36,8 +37,9 @@ struct OnboardingCardView: View {
 
     private static let gradientAngle: Double = 80.0 * .pi / 180.0
 
-    private static func gradientPoints(aspectRatio: CGFloat) -> (start: UnitPoint, end: UnitPoint) {
+    private static func gradientPoints(aspectRatio: CGFloat, scale: CGFloat) -> (start: UnitPoint, end: UnitPoint) {
         let r = Double(aspectRatio)
+        let s = Double(scale)
         let dx = cos(gradientAngle)
         let dy = -sin(gradientAngle) / r
         let dLenSq = dx * dx + dy * dy
@@ -49,9 +51,13 @@ struct OnboardingCardView: View {
         ]
         let tMin = projections.min()!
         let tMax = projections.max()!
+        let startX = 0.5 + tMin * dx / dLenSq
+        let startY = 0.5 + tMin * dy / dLenSq
+        let endX = 0.5 + tMax * dx / dLenSq
+        let endY = 0.5 + tMax * dy / dLenSq
         return (
-            start: .init(x: 0.5 + tMin * dx / dLenSq, y: 0.5 + tMin * dy / dLenSq),
-            end: .init(x: 0.5 + tMax * dx / dLenSq, y: 0.5 + tMax * dy / dLenSq)
+            start: .init(x: 0.5 + (startX - 0.5) * s, y: 0.5 + (startY - 0.5) * s),
+            end: .init(x: 0.5 + (endX - 0.5) * s, y: 0.5 + (endY - 0.5) * s)
         )
     }
 
@@ -59,7 +65,7 @@ struct OnboardingCardView: View {
         Button(action: action) {
             GeometryReader { geo in
                 let labelHeight = geo.size.width * labelHeightRatio
-                let gp = Self.gradientPoints(aspectRatio: geo.size.height / geo.size.width)
+                let gp = Self.gradientPoints(aspectRatio: geo.size.height / geo.size.width, scale: colorScheme == .light ? 1.2 : 1.5)
                 ZStack(alignment: .bottom) {
                     LinearGradient(
                         stops: colorScheme == .light ? Self.lightStops : Self.darkStops,
@@ -106,7 +112,7 @@ struct OnboardingCardView: View {
         .frame(height: height)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
-        .background(colorScheme == .light ? Color.white.opacity(0.5) : Color.black.opacity(0.3))
+        .background(ToolbarMaterial.material(toolbarMaterial))
     }
 
     private var labelColor: Color {
