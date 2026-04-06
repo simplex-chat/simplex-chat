@@ -118,7 +118,7 @@ struct OnboardingCardView: View {
 
 private let backButtonHeight: CGFloat = 44
 
-struct OnboardingView: View {
+struct ConnectOnboardingView: View {
     @EnvironmentObject var theme: AppTheme
     @State private var currentPage = 0
     @State private var showConnectViaLink = false

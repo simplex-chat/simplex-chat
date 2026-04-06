@@ -367,7 +367,7 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         if shouldShowOnboarding {
-            OnboardingView()
+            ConnectOnboardingView()
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .modifier(ThemedBackground())
         } else {
