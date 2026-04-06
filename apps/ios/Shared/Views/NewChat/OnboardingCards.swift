@@ -66,7 +66,7 @@ struct OnboardingCardView: View {
         Button(action: action) {
             GeometryReader { geo in
                 let labelHeight = geo.size.width * labelHeightRatio
-                let imageHeight = geo.size.height - labelHeight
+                let imageHeight = max(geo.size.height - labelHeight, 1)
                 let imageAspect = imageHeight / geo.size.width
                 let gp = Self.gradientPoints(aspectRatio: imageAspect, scale: colorScheme == .light ? 1.2 : 1.5)
                 VStack(spacing: 0) {
@@ -123,6 +123,7 @@ private let backButtonHeight: CGFloat = 44
 
 struct ConnectOnboardingView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var currentPage = 0
     @State private var showConnectViaLink = false
     @State private var showInviteSomeone = false
@@ -154,12 +155,39 @@ struct ConnectOnboardingView: View {
         }
     }
 
+    @ViewBuilder
+    private func cardPair<C1: View, C2: View>(
+        geo: GeometryProxy,
+        @ViewBuilder card1: () -> C1,
+        @ViewBuilder card2: () -> C2
+    ) -> some View {
+        let padding: CGFloat = 16
+        let spacing: CGFloat = 16
+        let isLandscape = verticalSizeClass == .compact
+        let cardWidth = isLandscape
+            ? (geo.size.width - padding * 2 - spacing) / 2
+            : geo.size.width - padding * 2
+        let maxCardHeight = cardWidth * 0.75
+
+        if isLandscape {
+            HStack(spacing: spacing) {
+                card1().frame(maxHeight: maxCardHeight)
+                card2().frame(maxHeight: maxCardHeight)
+            }
+            .padding(.horizontal, padding)
+        } else {
+            VStack(spacing: spacing) {
+                card1().frame(maxHeight: maxCardHeight)
+                card2().frame(maxHeight: maxCardHeight)
+            }
+            .padding(.horizontal, padding)
+        }
+    }
+
     // MARK: Screen 1
 
     private var talkToSomeonePage: some View {
         GeometryReader { geo in
-            let cardWidth = geo.size.width - 32
-            let maxCardHeight = cardWidth * 0.75
             VStack(spacing: 0) {
                 Color.clear.frame(height: backButtonHeight)
 
@@ -173,27 +201,23 @@ struct ConnectOnboardingView: View {
 
                 Spacer()
 
-                OnboardingCardView(
-                    imageName: "card-let-someone-connect-to-you-alpha",
-                    icon: "link.badge.plus",
-                    title: "Let someone connect to you",
-                    labelHeightRatio: 0.132,
-                    action: { withAnimation { currentPage = 1 } }
-                )
-                .frame(maxHeight: maxCardHeight)
-                .padding(.horizontal, 16)
-
-                Spacer().frame(maxHeight: 16)
-
-                OnboardingCardView(
-                    imageName: "card-connect-via-link-alpha",
-                    icon: "qrcode.viewfinder",
-                    title: "Connect via link or QR code",
-                    labelHeightRatio: 0.132,
-                    action: { showConnectViaLink = true }
-                )
-                .frame(maxHeight: maxCardHeight)
-                .padding(.horizontal, 16)
+                cardPair(geo: geo) {
+                    OnboardingCardView(
+                        imageName: "card-let-someone-connect-to-you-alpha",
+                        icon: "link.badge.plus",
+                        title: "Let someone connect to you",
+                        labelHeightRatio: 0.132,
+                        action: { withAnimation { currentPage = 1 } }
+                    )
+                } card2: {
+                    OnboardingCardView(
+                        imageName: "card-connect-via-link-alpha",
+                        icon: "qrcode.viewfinder",
+                        title: "Connect via link or QR code",
+                        labelHeightRatio: 0.132,
+                        action: { showConnectViaLink = true }
+                    )
+                }
 
                 Spacer()
             }
@@ -205,8 +229,6 @@ struct ConnectOnboardingView: View {
 
     private var connectWithSomeonePage: some View {
         GeometryReader { geo in
-            let cardWidth = geo.size.width - 32
-            let maxCardHeight = cardWidth * 0.75
             VStack(spacing: 0) {
                 HStack {
                     Button {
@@ -232,29 +254,25 @@ struct ConnectOnboardingView: View {
 
                 Spacer()
 
-                OnboardingCardView(
-                    imageName: "card-invite-someone-privately-alpha",
-                    icon: "link.badge.plus",
-                    title: "Invite someone privately",
-                    subtitle: "A link for one person to connect",
-                    labelHeightRatio: 0.195,
-                    action: { showInviteSomeone = true }
-                )
-                .frame(maxHeight: maxCardHeight)
-                .padding(.horizontal, 16)
-
-                Spacer().frame(maxHeight: 16)
-
-                OnboardingCardView(
-                    imageName: "card-create-your-public-address-alpha",
-                    icon: "qrcode",
-                    title: "Create your public address",
-                    subtitle: "For anyone to reach you",
-                    labelHeightRatio: 0.195,
-                    action: { showCreateAddress = true }
-                )
-                .frame(maxHeight: maxCardHeight)
-                .padding(.horizontal, 16)
+                cardPair(geo: geo) {
+                    OnboardingCardView(
+                        imageName: "card-invite-someone-privately-alpha",
+                        icon: "link.badge.plus",
+                        title: "Invite someone privately",
+                        subtitle: "A link for one person to connect",
+                        labelHeightRatio: 0.195,
+                        action: { showInviteSomeone = true }
+                    )
+                } card2: {
+                    OnboardingCardView(
+                        imageName: "card-create-your-public-address-alpha",
+                        icon: "qrcode",
+                        title: "Create your public address",
+                        subtitle: "For anyone to reach you",
+                        labelHeightRatio: 0.195,
+                        action: { showCreateAddress = true }
+                    )
+                }
 
                 Spacer()
             }
