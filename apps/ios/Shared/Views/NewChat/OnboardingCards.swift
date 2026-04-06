@@ -95,29 +95,25 @@ struct OnboardingCardView: View {
     }
 
     private func labelRow(height: CGFloat) -> some View {
-        HStack(alignment: subtitle != nil ? .firstTextBaseline : .center, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(theme.colors.primary)
-            VStack(alignment: .leading, spacing: 2) {
+        VStack {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(theme.colors.primary)
                 Text(title)
-                    .font(.body)
-                    .foregroundColor(labelColor)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .secondary)
-                }
+                    .font(.headline)
+                    .foregroundColor(theme.colors.onBackground)
+            }
+            if let subtitle {
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundColor(theme.colors.onBackground.opacity(0.7))
             }
         }
         .frame(height: height)
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.horizontal, 16)
         .background(ToolbarMaterial.material(toolbarMaterial))
-    }
-
-    private var labelColor: Color {
-        colorScheme == .dark ? .white : .primary
     }
 }
 
@@ -169,6 +165,7 @@ struct ConnectOnboardingView: View {
 
                 Text("Talk to someone")
                     .font(.largeTitle)
+                    .bold()
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -178,7 +175,7 @@ struct ConnectOnboardingView: View {
 
                 OnboardingCardView(
                     imageName: "card-let-someone-connect-to-you-alpha",
-                    icon: "link",
+                    icon: "link.badge.plus",
                     title: "Let someone connect to you",
                     labelHeightRatio: 0.132,
                     action: { withAnimation { currentPage = 1 } }
@@ -190,7 +187,7 @@ struct ConnectOnboardingView: View {
 
                 OnboardingCardView(
                     imageName: "card-connect-via-link-alpha",
-                    icon: "qrcode",
+                    icon: "qrcode.viewfinder",
                     title: "Connect via link or QR code",
                     labelHeightRatio: 0.132,
                     action: { showConnectViaLink = true }
@@ -227,6 +224,7 @@ struct ConnectOnboardingView: View {
 
                 Text("Connect with someone")
                     .font(.largeTitle)
+                    .bold()
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -236,7 +234,7 @@ struct ConnectOnboardingView: View {
 
                 OnboardingCardView(
                     imageName: "card-invite-someone-privately-alpha",
-                    icon: "link",
+                    icon: "link.badge.plus",
                     title: "Invite someone privately",
                     subtitle: "A link for one person to connect",
                     labelHeightRatio: 0.195,

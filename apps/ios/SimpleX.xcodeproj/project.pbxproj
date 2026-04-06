@@ -258,6 +258,7 @@
 		E5DCF9982C5906FF007928CC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF9962C5906FF007928CC /* InfoPlist.strings */; };
 		E5DDBE6E2DC4106800A0EFF0 /* AppAPITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDBE6D2DC4106200A0EFF0 /* AppAPITypes.swift */; };
 		E5DDBE702DC4217900A0EFF0 /* NSEAPITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDBE6F2DC4217900A0EFF0 /* NSEAPITypes.swift */; };
+		E5E418012F83D2CA00252B9E /* OnboardingCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E418002F83D2CA00252B9E /* OnboardingCards.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -676,6 +677,7 @@
 		E5DCF9A82C590732007928CC /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		E5DDBE6D2DC4106200A0EFF0 /* AppAPITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAPITypes.swift; sourceTree = "<group>"; };
 		E5DDBE6F2DC4217900A0EFF0 /* NSEAPITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NSEAPITypes.swift; sourceTree = "<group>"; };
+		E5E418002F83D2CA00252B9E /* OnboardingCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCards.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -973,6 +975,7 @@
 				640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */,
 				640417CC2B29B8C200CCB412 /* NewChatView.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
+				E5E418002F83D2CA00252B9E /* OnboardingCards.swift */,
 				6442E0B9287F169300CEC0F9 /* AddGroupView.swift */,
 				64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */,
 				647B15E72F4C8D2500EB431E /* AddChannelView.swift */,
@@ -1502,6 +1505,7 @@
 				640743612CD360E600158442 /* ChooseServerOperators.swift in Sources */,
 				64A779FE2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift in Sources */,
 				5C3F1D58284363C400EC8A82 /* PrivacySettings.swift in Sources */,
+				E5E418012F83D2CA00252B9E /* OnboardingCards.swift in Sources */,
 				5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */,
 				64A779F82DBFDBF200FDEF2F /* MemberSupportView.swift in Sources */,
 				5C93292F29239A170090FFF9 /* ProtocolServersView.swift in Sources */,
