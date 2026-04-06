@@ -157,7 +157,7 @@ struct ConnectOnboardingView: View {
 
     @ViewBuilder
     private func cardPair<C1: View, C2: View>(
-        geo: GeometryProxy,
+        _ geo: GeometryProxy,
         @ViewBuilder card1: () -> C1,
         @ViewBuilder card2: () -> C2
     ) -> some View {
@@ -199,9 +199,9 @@ struct ConnectOnboardingView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
 
-                Spacer()
+                Spacer(minLength: 16)
 
-                cardPair(geo: geo) {
+                cardPair(geo) {
                     OnboardingCardView(
                         imageName: "card-let-someone-connect-to-you-alpha",
                         icon: "link.badge.plus",
@@ -219,7 +219,7 @@ struct ConnectOnboardingView: View {
                     )
                 }
 
-                Spacer()
+                Spacer(minLength: 16)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -252,9 +252,9 @@ struct ConnectOnboardingView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
 
-                Spacer()
+                Spacer(minLength: 16)
 
-                cardPair(geo: geo) {
+                cardPair(geo) {
                     OnboardingCardView(
                         imageName: "card-invite-someone-privately-alpha",
                         icon: "link.badge.plus",
@@ -274,7 +274,7 @@ struct ConnectOnboardingView: View {
                     )
                 }
 
-                Spacer()
+                Spacer(minLength: 16)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
