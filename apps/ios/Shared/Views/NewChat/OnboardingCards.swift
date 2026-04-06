@@ -103,6 +103,8 @@ struct OnboardingCardView: View {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(theme.colors.onBackground)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             if let subtitle {
                 Text(subtitle)
@@ -135,6 +137,7 @@ struct ConnectOnboardingView: View {
             connectWithSomeonePage.tag(1)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .ignoresSafeArea()
         .sheet(isPresented: $showConnectViaLink) {
             NavigationView {
                 NewChatView(selection: .connect, showQRCodeScanner: true)
