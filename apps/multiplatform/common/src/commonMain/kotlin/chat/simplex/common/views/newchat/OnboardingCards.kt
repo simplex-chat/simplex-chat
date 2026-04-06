@@ -1,6 +1,5 @@
 package chat.simplex.common.views.newchat
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -14,7 +13,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -300,76 +298,30 @@ fun ConnectOnboardingView() {
   val pagerState = rememberPagerState(initialPage = 0) { 2 }
   val scope = rememberCoroutineScope()
 
-  // Desktop custom modal state
-  var desktopModalContent by remember { mutableStateOf<(@Composable (close: () -> Unit) -> Unit)?>(null) }
-  val showDesktopModal = desktopModalContent != null
-  val modalOffset by animateFloatAsState(if (showDesktopModal) 0f else -1f)
-  val cardOffset by animateFloatAsState(if (showDesktopModal) 0.3f else 0f)
-  val cardAlpha by animateFloatAsState(if (showDesktopModal) 0.3f else 1f)
-
-  val closeDesktopModal = { desktopModalContent = null }
-
   val openConnectViaLink = {
-    if (appPlatform.isDesktop) {
-      desktopModalContent = { close -> ModalData().NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = false, close = close) }
-    } else {
-      ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close) }
-    }
+    ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close) }
   }
   val openInviteSomeone = {
-    if (appPlatform.isDesktop) {
-      desktopModalContent = { close -> ModalData().NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
-    } else {
-      ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
-    }
+    ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
   }
   val openCreateAddress = {
-    if (appPlatform.isDesktop) {
-      desktopModalContent = { close -> UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close) }
-    } else {
-      ModalManager.start.showModalCloseable { close -> UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close) }
-    }
+    ModalManager.start.showModalCloseable { close -> UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close) }
   }
 
-  Box(Modifier.fillMaxSize()) {
-    // Cards — shifted and faded on desktop when modal is open
-    Box(
-      Modifier.fillMaxSize().graphicsLayer {
-        if (appPlatform.isDesktop) {
-          translationX = cardOffset * size.width
-          alpha = cardAlpha
-        }
-      }
-    ) {
-      HorizontalPager(
-        state = pagerState,
-        userScrollEnabled = !appPlatform.isDesktop
-      ) { page ->
-        when (page) {
-          0 -> TalkToSomeonePage(
-            onLetSomeoneConnect = { scope.launch { pagerState.animateScrollToPage(1) } },
-            onConnectViaLink = openConnectViaLink,
-            onCardClickWhenModal = if (showDesktopModal) closeDesktopModal else null
-          )
-          1 -> ConnectWithSomeonePage(
-            onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
-            onInviteSomeone = openInviteSomeone,
-            onCreateAddress = openCreateAddress,
-            onCardClickWhenModal = if (showDesktopModal) closeDesktopModal else null
-          )
-        }
-      }
-    }
-
-    // Desktop modal — slides from left
-    if (appPlatform.isDesktop && desktopModalContent != null) {
-      Box(
-        Modifier
-          .fillMaxSize()
-          .graphicsLayer { translationX = modalOffset * size.width }
-      ) {
-        desktopModalContent?.invoke(closeDesktopModal)
-      }
+  HorizontalPager(
+    state = pagerState,
+    userScrollEnabled = !appPlatform.isDesktop
+  ) { page ->
+    when (page) {
+      0 -> TalkToSomeonePage(
+        onLetSomeoneConnect = { scope.launch { pagerState.animateScrollToPage(1) } },
+        onConnectViaLink = openConnectViaLink
+      )
+      1 -> ConnectWithSomeonePage(
+        onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
+        onInviteSomeone = openInviteSomeone,
+        onCreateAddress = openCreateAddress
+      )
     }
   }
 }
@@ -379,18 +331,18 @@ fun ConnectOnboardingView() {
 @Composable
 private fun TalkToSomeonePage(
   onLetSomeoneConnect: () -> Unit,
-  onConnectViaLink: () -> Unit,
-  onCardClickWhenModal: (() -> Unit)?
+  onConnectViaLink: () -> Unit
 ) {
   BoxWithConstraints(Modifier.fillMaxSize()) {
     val isLandscape = maxWidth > maxHeight && appPlatform.isAndroid
     val padding = DEFAULT_PADDING
     val spacing = DEFAULT_PADDING
-    val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
+    val contentWidth = if (appPlatform.isDesktop) minOf(maxWidth, 500.dp) else maxWidth
+    val cardWidth = if (isLandscape) (contentWidth - padding * 2 - spacing) / 2 else contentWidth - padding * 2
     val maxCardHeight = cardWidth * 0.75f
 
     Column(
-      Modifier.fillMaxSize(),
+      Modifier.fillMaxSize().widthIn(max = 500.dp).align(Alignment.Center),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       PageHeader(
@@ -409,7 +361,7 @@ private fun TalkToSomeonePage(
             icon = MR.images.ic_add_link,
             title = stringResource(MR.strings.let_someone_connect_to_you),
             labelHeightRatio = 0.132f,
-            onClick = onCardClickWhenModal ?: onLetSomeoneConnect
+            onClick = onLetSomeoneConnect
           )
         },
         card2 = {
@@ -419,7 +371,7 @@ private fun TalkToSomeonePage(
             icon = MR.images.ic_qr_code,
             title = stringResource(MR.strings.connect_via_link_or_qr_code),
             labelHeightRatio = 0.132f,
-            onClick = onCardClickWhenModal ?: onConnectViaLink
+            onClick = onConnectViaLink
           )
         }
       )
@@ -435,18 +387,18 @@ private fun TalkToSomeonePage(
 private fun ConnectWithSomeonePage(
   onBack: () -> Unit,
   onInviteSomeone: () -> Unit,
-  onCreateAddress: () -> Unit,
-  onCardClickWhenModal: (() -> Unit)?
+  onCreateAddress: () -> Unit
 ) {
   BoxWithConstraints(Modifier.fillMaxSize()) {
     val isLandscape = maxWidth > maxHeight && appPlatform.isAndroid
     val padding = DEFAULT_PADDING
     val spacing = DEFAULT_PADDING
-    val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
+    val contentWidth = if (appPlatform.isDesktop) minOf(maxWidth, 500.dp) else maxWidth
+    val cardWidth = if (isLandscape) (contentWidth - padding * 2 - spacing) / 2 else contentWidth - padding * 2
     val maxCardHeight = cardWidth * 0.75f
 
     Column(
-      Modifier.fillMaxSize(),
+      Modifier.fillMaxSize().widthIn(max = 500.dp).align(Alignment.Center),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       PageHeader(
@@ -467,7 +419,7 @@ private fun ConnectWithSomeonePage(
             title = stringResource(MR.strings.invite_someone_privately),
             subtitle = stringResource(MR.strings.a_link_for_one_person),
             labelHeightRatio = 0.195f,
-            onClick = onCardClickWhenModal ?: onInviteSomeone
+            onClick = onInviteSomeone
           )
         },
         card2 = {
@@ -478,7 +430,7 @@ private fun ConnectWithSomeonePage(
             title = stringResource(MR.strings.create_your_public_address),
             subtitle = stringResource(MR.strings.for_anyone_to_reach_you),
             labelHeightRatio = 0.195f,
-            onClick = onCardClickWhenModal ?: onCreateAddress
+            onClick = onCreateAddress
           )
         }
       )

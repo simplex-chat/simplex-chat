@@ -451,11 +451,11 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     Box(
       Modifier
         .fillMaxSize()
-        .background(MaterialTheme.colors.background)
         .padding(
           top = if (!oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp,
           bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
         )
+        .background(MaterialTheme.colors.background)
     ) {
       ConnectOnboardingView()
     }
