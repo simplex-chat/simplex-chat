@@ -190,6 +190,7 @@ struct ConnectOnboardingView: View {
     // MARK: Screen 1
 
     @ViewBuilder
+    @ViewBuilder
     private func pageHeader(_ title: LocalizedStringKey, showBack: Bool) -> some View {
         let isLandscape = verticalSizeClass == .compact
         let titleView = Text(title)
@@ -205,12 +206,15 @@ struct ConnectOnboardingView: View {
             }
             .padding(.horizontal, 16)
         } else {
-            if showBack {
-                backButton.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16)
-            } else {
-                Color.clear.frame(height: backButtonHeight)
+            VStack(spacing: 0) {
+                if showBack {
+                    backButton.frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Color.clear.frame(height: backButtonHeight)
+                }
+                titleView
             }
-            titleView.padding(.horizontal, 16)
+            .padding(.horizontal, 16)
         }
     }
 
