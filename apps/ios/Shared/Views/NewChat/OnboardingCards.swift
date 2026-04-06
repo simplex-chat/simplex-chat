@@ -13,6 +13,7 @@ import SimpleXChat
 
 struct OnboardingCardView: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     let imageName: String
     let icon: String
@@ -94,23 +95,23 @@ struct OnboardingCardView: View {
     }
 
     private func labelRow(height: CGFloat) -> some View {
-        HStack(spacing: 8) {
+        HStack(alignment: subtitle != nil ? .firstTextBaseline : .center, spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(labelColor)
+                .font(.system(size: 16))
+                .foregroundColor(theme.colors.primary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.body)
                     .foregroundColor(labelColor)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.footnote)
+                        .font(.caption)
                         .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .secondary)
                 }
             }
         }
         .frame(height: height)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.horizontal, 16)
         .background(ToolbarMaterial.material(toolbarMaterial))
     }
@@ -168,7 +169,8 @@ struct ConnectOnboardingView: View {
 
                 Text("Talk to someone")
                     .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
 
@@ -225,7 +227,8 @@ struct ConnectOnboardingView: View {
 
                 Text("Connect with someone")
                     .font(.largeTitle)
-                    .fontWeight(.bold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.horizontal, 16)
 
