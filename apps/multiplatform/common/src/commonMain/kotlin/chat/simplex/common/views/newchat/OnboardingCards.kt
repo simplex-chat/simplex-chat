@@ -307,14 +307,29 @@ fun ConnectOnboardingView() {
   val cardOffset by animateFloatAsState(if (showDesktopModal) 0.3f else 0f)
   val cardAlpha by animateFloatAsState(if (showDesktopModal) 0.3f else 1f)
 
-  val openModal: (@Composable (close: () -> Unit) -> Unit) -> Unit = { content ->
+  val closeDesktopModal = { desktopModalContent = null }
+
+  val openConnectViaLink = {
     if (appPlatform.isDesktop) {
-      desktopModalContent = content
+      desktopModalContent = { close -> ModalData().NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = false, close = close) }
     } else {
-      ModalManager.start.showModalCloseable { close -> content(close) }
+      ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close) }
     }
   }
-  val closeDesktopModal = { desktopModalContent = null }
+  val openInviteSomeone = {
+    if (appPlatform.isDesktop) {
+      desktopModalContent = { close -> ModalData().NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
+    } else {
+      ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
+    }
+  }
+  val openCreateAddress = {
+    if (appPlatform.isDesktop) {
+      desktopModalContent = { close -> UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close) }
+    } else {
+      ModalManager.start.showModalCloseable { close -> UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close) }
+    }
+  }
 
   Box(Modifier.fillMaxSize()) {
     // Cards — shifted and faded on desktop when modal is open
@@ -333,25 +348,13 @@ fun ConnectOnboardingView() {
         when (page) {
           0 -> TalkToSomeonePage(
             onLetSomeoneConnect = { scope.launch { pagerState.animateScrollToPage(1) } },
-            onConnectViaLink = {
-              openModal { close ->
-                NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
-              }
-            },
+            onConnectViaLink = openConnectViaLink,
             onCardClickWhenModal = if (showDesktopModal) closeDesktopModal else null
           )
           1 -> ConnectWithSomeonePage(
             onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
-            onInviteSomeone = {
-              openModal { close ->
-                NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
-              }
-            },
-            onCreateAddress = {
-              openModal { close ->
-                UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-              }
-            },
+            onInviteSomeone = openInviteSomeone,
+            onCreateAddress = openCreateAddress,
             onCardClickWhenModal = if (showDesktopModal) closeDesktopModal else null
           )
         }
