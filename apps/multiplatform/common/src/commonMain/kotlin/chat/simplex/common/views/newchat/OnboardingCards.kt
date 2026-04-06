@@ -1,5 +1,6 @@
 package chat.simplex.common.views.newchat
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -13,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -145,15 +147,14 @@ fun OnboardingCardView(
       .clickable(onClick = onClick)
   ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-      val labelHeight = with(LocalDensity.current) { (maxWidth * labelHeightRatio).roundToPx() }
-      val imageHeight = with(LocalDensity.current) { max(constraints.maxHeight - labelHeight, 1) }
+      val labelHeightPx = with(LocalDensity.current) { (maxWidth * labelHeightRatio).roundToPx() }
+      val imageHeightPx = max(constraints.maxHeight - labelHeightPx, 1)
 
       Column(Modifier.fillMaxSize()) {
-        // Image area with gradient
         Box(
           Modifier
             .fillMaxWidth()
-            .height(with(LocalDensity.current) { imageHeight.toDp() })
+            .height(with(LocalDensity.current) { imageHeightPx.toDp() })
             .background(brush)
             .onSizeChanged { imageAreaSize = it }
         ) {
@@ -166,12 +167,10 @@ fun OnboardingCardView(
             )
           }
         }
-
-        // Label stripe
         Box(
           Modifier
             .fillMaxWidth()
-            .height(with(LocalDensity.current) { labelHeight.toDp() })
+            .height(with(LocalDensity.current) { labelHeightPx.toDp() })
             .background(labelBg),
           contentAlignment = Alignment.Center
         ) {
@@ -254,10 +253,7 @@ private fun BackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.height(24.dp)
     )
-    Text(
-      stringResource(MR.strings.back),
-      color = MaterialTheme.colors.primary
-    )
+    Text(stringResource(MR.strings.back), color = MaterialTheme.colors.primary)
   }
 }
 
@@ -293,35 +289,75 @@ private fun CardPair(
 
 // MARK: - Pager
 
+private val DESKTOP_MAX_CONTENT_WIDTH = 500.dp
+
 @Composable
 fun ConnectOnboardingView() {
   val pagerState = rememberPagerState(initialPage = 0) { 2 }
   val scope = rememberCoroutineScope()
 
-  val openConnectViaLink = {
-    ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close) }
-  }
-  val openInviteSomeone = {
-    ModalManager.start.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
-  }
-  val openCreateAddress = {
-    ModalManager.start.showModalCloseable { close -> UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close) }
-  }
+  // Desktop: watch ModalManager.start for animation
+  val startModalsOpen = if (appPlatform.isDesktop) ModalManager.start.hasModalsOpen else false
+  val cardOffset by animateFloatAsState(if (startModalsOpen) 0.3f else 0f)
+  val cardAlpha by animateFloatAsState(if (startModalsOpen) 0.3f else 1f)
+  val modalSlide by animateFloatAsState(if (startModalsOpen) 0f else -1f)
 
-  HorizontalPager(
-    state = pagerState,
-    userScrollEnabled = !appPlatform.isDesktop
-  ) { page ->
-    when (page) {
-      0 -> TalkToSomeonePage(
-        onLetSomeoneConnect = { scope.launch { pagerState.animateScrollToPage(1) } },
-        onConnectViaLink = openConnectViaLink
-      )
-      1 -> ConnectWithSomeonePage(
-        onBack = { scope.launch { pagerState.animateScrollToPage(0) } },
-        onInviteSomeone = openInviteSomeone,
-        onCreateAddress = openCreateAddress
-      )
+  Box(Modifier.fillMaxSize()) {
+    // Desktop: start modal area — slides from left
+    if (appPlatform.isDesktop) {
+      Box(
+        Modifier
+          .fillMaxHeight()
+          .widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+          .graphicsLayer { translationX = modalSlide * size.width }
+      ) {
+        ModalManager.start.showInView()
+      }
+    }
+
+    // Cards — shift right and fade on desktop when start modal is open
+    Box(
+      Modifier.fillMaxSize().graphicsLayer {
+        if (appPlatform.isDesktop) {
+          translationX = cardOffset * size.width
+          alpha = cardAlpha
+        }
+      },
+      contentAlignment = Alignment.Center
+    ) {
+      HorizontalPager(
+        state = pagerState,
+        modifier = if (appPlatform.isDesktop) Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH) else Modifier.fillMaxWidth(),
+        userScrollEnabled = !appPlatform.isDesktop
+      ) { page ->
+        val cardClickOverride: (() -> Unit)? = if (appPlatform.isDesktop && startModalsOpen) {
+          { ModalManager.start.closeModals() }
+        } else null
+
+        when (page) {
+          0 -> TalkToSomeonePage(
+            onLetSomeoneConnect = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(1) } },
+            onConnectViaLink = cardClickOverride ?: {
+              ModalManager.start.showModalCloseable { close ->
+                NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+              }
+            }
+          )
+          1 -> ConnectWithSomeonePage(
+            onBack = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(0) } },
+            onInviteSomeone = cardClickOverride ?: {
+              ModalManager.start.showModalCloseable { close ->
+                NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+              }
+            },
+            onCreateAddress = cardClickOverride ?: {
+              ModalManager.start.showModalCloseable { close ->
+                UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+              }
+            }
+          )
+        }
+      }
     }
   }
 }
@@ -337,12 +373,11 @@ private fun TalkToSomeonePage(
     val isLandscape = maxWidth > maxHeight && appPlatform.isAndroid
     val padding = DEFAULT_PADDING
     val spacing = DEFAULT_PADDING
-    val contentWidth = if (appPlatform.isDesktop) minOf(maxWidth, 500.dp) else maxWidth
-    val cardWidth = if (isLandscape) (contentWidth - padding * 2 - spacing) / 2 else contentWidth - padding * 2
+    val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
     val maxCardHeight = cardWidth * 0.75f
 
     Column(
-      Modifier.fillMaxSize().widthIn(max = 500.dp).align(Alignment.Center),
+      Modifier.fillMaxHeight().widthIn(max = if (appPlatform.isDesktop) DESKTOP_MAX_CONTENT_WIDTH else Dp.Unspecified),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       PageHeader(
@@ -393,12 +428,11 @@ private fun ConnectWithSomeonePage(
     val isLandscape = maxWidth > maxHeight && appPlatform.isAndroid
     val padding = DEFAULT_PADDING
     val spacing = DEFAULT_PADDING
-    val contentWidth = if (appPlatform.isDesktop) minOf(maxWidth, 500.dp) else maxWidth
-    val cardWidth = if (isLandscape) (contentWidth - padding * 2 - spacing) / 2 else contentWidth - padding * 2
+    val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
     val maxCardHeight = cardWidth * 0.75f
 
     Column(
-      Modifier.fillMaxSize().widthIn(max = 500.dp).align(Alignment.Center),
+      Modifier.fillMaxHeight().widthIn(max = if (appPlatform.isDesktop) DESKTOP_MAX_CONTENT_WIDTH else Dp.Unspecified),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       PageHeader(

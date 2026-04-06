@@ -418,7 +418,9 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
     }
   }
   Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
-    ModalManager.start.showInView()
+    if (!shouldShowOnboarding()) {
+      ModalManager.start.showInView()
+    }
     SwitchingUsersView()
   }
   Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
@@ -448,14 +450,21 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
   if (shouldShowOnboarding()) {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val topPad = if (!oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    val bottomPad = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    // Background layer — covers center+end area only, leaves start panel visible
     Box(
       Modifier
         .fillMaxSize()
-        .padding(
-          top = if (!oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp,
-          bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
-        )
+        .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, top = topPad, bottom = bottomPad)
         .background(MaterialTheme.colors.background)
+    )
+    // Content layer — full width, no background, clicks outside cards pass through to start panel
+    Box(
+      Modifier
+        .fillMaxSize()
+        .padding(top = topPad, bottom = bottomPad),
+      contentAlignment = Alignment.Center
     ) {
       ConnectOnboardingView()
     }
