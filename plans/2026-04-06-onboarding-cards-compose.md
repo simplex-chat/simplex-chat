@@ -103,87 +103,123 @@ Toolbar is a sibling in the parent `Box` (lines 150-174), stays visible.
 
 ## Desktop integration
 
-### Layout: full-width overlay with custom modal animation
+### Architecture
 
-Cards display in a full-width overlay (centered in window). On desktop, cards are ALWAYS vertical — the window is tall enough, and vertical layout leaves natural space on the left for the modal slide-in animation.
+The overlay is the PRIMARY UI surface during onboarding. ALL interaction happens inside it — card taps, toolbar button modals, everything. `ModalManager.start` renders INTO the overlay instead of into the start panel.
 
-Cards have a max width (~500dp) and center horizontally in the overlay.
+### Overlay structure in `DesktopScreen` (App.kt)
 
-### In `App.kt` — `DesktopScreen` (line 410)
+Two visual layers in the overlay, both full-width:
 
-Add a full-width overlay as a sibling Box (same z-order pattern as user picker scrim at line 432). Place before `ModalManager.fullscreen.showInView()`:
+1. **Background layer:** covers center+end area only (padded left by start panel width). Opaque `MaterialTheme.colors.background`. Hides center panel content ("No selected chat") while leaving start panel fully visible underneath.
+
+2. **Content layer:** full window width, no background. Cards render here, centered in the full window. Clicks outside cards fall through to the start panel below.
+
+Both layers have top/bottom padding for toolbar height (`AppBarHeight * fontSizeSqrtMultiplier`).
 
 ```kotlin
 if (shouldShowOnboarding()) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val toolbarPadding = AppBarHeight * fontSizeSqrtMultiplier
+  val topPad = if (!oneHandUI.value) toolbarPadding else 0.dp
+  val bottomPad = if (oneHandUI.value) toolbarPadding else 0.dp
+
+  // Background — center+end only
   Box(
     Modifier
       .fillMaxSize()
+      .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, top = topPad, bottom = bottomPad)
       .background(MaterialTheme.colors.background)
-      .padding(
-        top = if (!oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp,
-        bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
-      )
+  )
+
+  // Content — full width, cards centered
+  Box(
+    Modifier
+      .fillMaxSize()
+      .padding(top = topPad, bottom = bottomPad),
+    contentAlignment = Alignment.Center
   ) {
     ConnectOnboardingView()
   }
 }
 ```
 
-- Full-width overlay, cards centered in window
-- `.background(MaterialTheme.colors.background)` hides panel content
-- Toolbar padding: `AppBarHeight * fontSizeSqrtMultiplier`
-- Z-order: above panels, below `ModalManager.fullscreen`
+Z-order: above panels and vertical divider, below `ModalManager.fullscreen`.
 
-### Desktop modal animation: left-to-right slide with card dissolve
+### Start panel modal redirection
 
-When a card tap opens a deeper view (connect via link, invite, address) on desktop:
+During onboarding, `ModalManager.start.showInView()` renders INSIDE the overlay instead of in the start panel Box.
 
-1. The deeper view slides in from the LEFT edge, moving left-to-right (opposite of standard)
-2. Simultaneously, the cards shift RIGHT and fade to ~30% opacity
-3. The deeper view fills the left portion; faded cards are ghosted on the right
-4. Closing: reverse — deeper view slides left, cards restore position and full opacity
+In `DesktopScreen`:
+```kotlin
+// Start panel modals — normal location
+Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
+  if (!shouldShowOnboarding()) {
+    ModalManager.start.showInView()
+  }
+  SwitchingUsersView()
+}
+```
 
-Implementation: inside `ConnectOnboardingView`, manage desktop modal content as local state (NOT via `ModalManager`). On Android, card taps use `ModalManager.start` as usual.
+Inside `ConnectOnboardingView`, on desktop:
+- Watch `ModalManager.start.hasModalsOpen`
+- When a start modal opens (from toolbar + button, avatar, or card tap):
+  1. Cards shift RIGHT and fade to ~30% opacity (animated)
+  2. `ModalManager.start.showInView()` renders on the LEFT side of the overlay with left-to-right slide animation
+  3. This is the FIRST modal opening — it slides left-to-right
+  4. Subsequent modals within the start modal stack open right-to-left as usual (standard `ModalManager` behavior inside the rendered area)
+- When all start modals close: reverse animation — modal area slides left, cards restore position and opacity
+- Clicking a faded card triggers `ModalManager.start.closeModals()` to dismiss and restore cards. This requires swapping card `onClick` handlers when `startModalsOpen` is true — each card's onClick becomes `{ ModalManager.start.closeModals() }` instead of its normal action.
 
 ```kotlin
-// Desktop only — local modal state
-var desktopModalContent by remember { mutableStateOf<(@Composable (close: () -> Unit) -> Unit)?>(null) }
-val showModal = desktopModalContent != null
-val modalOffset by animateFloatAsState(if (showModal) 0f else -1f)
-val cardOffsetFraction by animateFloatAsState(if (showModal) 0.3f else 0f)
-val cardAlpha by animateFloatAsState(if (showModal) 0.3f else 1f)
+// Inside ConnectOnboardingView, desktop only:
+val startModalsOpen = ModalManager.start.hasModalsOpen
+val cardOffset by animateFloatAsState(if (startModalsOpen) 0.3f else 0f)
+val cardAlpha by animateFloatAsState(if (startModalsOpen) 0.3f else 1f)
+val modalSlide by animateFloatAsState(if (startModalsOpen) 0f else -1f)
 
 Box(Modifier.fillMaxSize()) {
-  // Cards — shifted and faded
-  Box(Modifier.fillMaxSize().graphicsLayer {
-    translationX = cardOffsetFraction * size.width
-    alpha = cardAlpha
-  }) {
-    HorizontalPager(...) { /* card pages */ }
-  }
-
-  // Desktop modal — slides from left
-  if (desktopModalContent != null) {
-    Box(Modifier.fillMaxSize().graphicsLayer {
-      translationX = modalOffset * size.width
-    }) {
-      desktopModalContent?.invoke { desktopModalContent = null }
+  // Modal area — slides from left
+  if (appPlatform.isDesktop) {
+    Box(
+      Modifier
+        .fillMaxHeight()
+        .widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
+        .graphicsLayer { translationX = modalSlide * size.width }
+    ) {
+      ModalManager.start.showInView()
     }
   }
-}
-```
 
-Card tap actions choose path by platform:
-```kotlin
-val openModal: (@Composable (close: () -> Unit) -> Unit) -> Unit = { content ->
-  if (appPlatform.isDesktop) {
-    desktopModalContent = content
-  } else {
-    ModalManager.start.showModalCloseable { close -> content(close) }
+  // Cards — shift right and fade when modal open
+  Box(
+    Modifier
+      .fillMaxSize()
+      .graphicsLayer {
+        if (appPlatform.isDesktop) {
+          translationX = cardOffset * size.width
+          alpha = cardAlpha
+        }
+      }
+  ) {
+    HorizontalPager(...) { /* pages */ }
   }
 }
 ```
+
+Card taps use `ModalManager.start.showModalCloseable` on ALL platforms — same code. On Android, the modal renders in the normal start panel modal area. On desktop during onboarding, the modal renders inside the overlay via the redirected `showInView()`.
+
+### Card tap actions — same on all platforms
+
+```kotlin
+val openConnectViaLink = {
+  ModalManager.start.showModalCloseable { close ->
+    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, ..., close = close)
+  }
+}
+```
+
+No platform branching needed. `ModalManager.start` handles the modal lifecycle. Only the rendering location changes.
 
 ### Suppress "No selected chat" in `CenterPartOfScreen` (line 373)
 
@@ -197,11 +233,55 @@ null -> {
 }
 ```
 
-When onboarding active: center panel shows nothing (overlay handles cards).
+When onboarding active: center panel shows nothing (overlay covers it visually).
 
 ### Desktop HorizontalPager: tap only
 
-`userScrollEnabled = !appPlatform.isDesktop` — disables mouse swipe on desktop, tap/button navigation only.
+`userScrollEnabled = !appPlatform.isDesktop` — disables mouse swipe on desktop.
+
+## Revision 2 — Bug fixes from initial implementation
+
+### Fix 1: `fillMaxSize()` overrides `widthIn(max:)`
+
+In both page composables, the Column has `Modifier.fillMaxSize().widthIn(max = 500.dp)`. `fillMaxSize()` sets width to maximum, overriding the `widthIn` constraint.
+
+Fix: `Modifier.fillMaxHeight().widthIn(max = 500.dp)` — only fill height, let widthIn cap the width.
+
+### Fix 2: Modifier order — background before padding
+
+In the overlay Box: `.fillMaxSize().background(color).padding(...)` paints background over toolbar area.
+
+Fix: `.fillMaxSize().padding(...).background(color)` — padding first, background only fills content area.
+
+Superseded by the two-layer approach above — background layer is separate from content layer.
+
+### Fix 3: "You have no chats" text dropped
+
+The `when` block in `ChatListWithLoadingScreen` replaced two independent `if` blocks with mutually exclusive branches, dropping the "You have no chats" case.
+
+Fix: revert to the original `if` block structure, adding onboarding as the first check:
+```kotlin
+private fun BoxScope.ChatListWithLoadingScreen(searchText, listState) {
+  if (shouldShowOnboarding()) {
+    if (appPlatform.isAndroid) {
+      ConnectOnboardingView()
+    }
+  } else {
+    if (!chatModel.desktopNoUserNoRemote) {
+      ChatList(searchText = searchText, listState)
+    }
+    if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+      Text(stringResource(
+        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
+      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+    }
+  }
+  // Auto-dismiss
+  LaunchedEffect(chatModel.chats.value.size) { ... }
+}
+```
+
+This preserves the original loading/empty behavior exactly. The onboarding branch is checked first — when active, it replaces everything. When inactive, original code runs unchanged.
 
 ## ConnectOnboardingView composable
 
