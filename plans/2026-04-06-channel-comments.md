@@ -4,25 +4,13 @@
 
 SimpleX Chat introduced channels in PR #6382 (the chat-relays MVP): groups where one node acts as a relay between the owner and many subscribers, posts are signed, and subscribers do not see each other. Channels currently support posts only — there is no way for subscribers to discuss a post.
 
-The user wants Telegram-style **comments**: under each channel post, a tappable affordance shows a count and opens a separate Comments view containing a flat thread of replies, with its own composer. Subscribers should be able to comment, including quoting the parent post and quoting other comments.
+Channels need Telegram-style **comments**: under each channel post, a tappable affordance shows a count and opens a separate Comments view containing a flat thread of replies, with its own composer. Subscribers can comment, including quoting the parent post and quoting other comments.
 
 This plan implements comments by extending the existing **`GroupChatScope` abstraction** that today supports member-support / reports chats. Comments live in a new scope `GCSChannelMsg` whose anchor is the channel post itself. The comment messages are ordinary `MCSimple`/`MCQuote`/`MCForward` messages, so all existing message features (text, files, voice, quotes, forwards, edits, deletes, reactions) work for free.
 
-The plan covers Haskell core, the CLI command surface (for tests), and the iOS app. Kotlin Multiplatform port is deferred per the user's scope. Profile dissemination between subscribers is left as a separate follow-up; for the MVP, comment authors who are unknown to a viewing subscriber appear as unknown members (the existing `unknownMemberRole` mechanism).
+The plan covers Haskell core, the CLI command surface (for tests), and the iOS app. Kotlin Multiplatform (Android/Desktop) is deferred to a follow-up. Profile dissemination between subscribers is also a separate follow-up; for the MVP, comment authors who are unknown to a viewing subscriber appear as unknown members (the existing `unknownMemberRole` mechanism).
 
-Keystone correction recorded earlier: comments are NOT a `MsgContainer` constructor (`MCComment` is left as dead code for forward compatibility, never constructed). Parent linkage belongs on the **scope**, not the container — this preserves the ability to quote and forward inside comments.
-
-User decisions confirmed:
-
-1. **History playback** — new subscribers do NOT receive existing comments on past posts. No code change needed: the existing `includeInHistory` logic at `Store/Messages.hs:625-628` already returns `False` for any scoped chat item, and `getGroupHistoryItems` filters by `include_in_history = 1` so scoped items are skipped at the SQL level. The `processContentItem` helper in `Internal.hs:1245` is never called for them.
-2. **Per-message disable scope** — owners + admins + moderators can disable comments on a specific channel post (mirrors the existing moderate/delete-others permission).
-3. **Role slot** — add a new `GRCommenter` constructor between `GRObserver` and `GRAuthor`. Do not repurpose the unused `GRAuthor` slot.
-4. **Group scope** — Comments are gated to channel groups only (`useRelays' gInfo`). Reject `MSChannelMsg` scope on non-channel groups.
-
-UX constraints from the most recent message:
-
-- No unread tracking on comments. Only a running total comment count per post is needed.
-- Per-channel-post disable toggle, with the disabled state propagated to subscribers via a wire event so the relay enforces it on incoming forwards.
+Comments are NOT a `MsgContainer` constructor — `MCComment` is left as dead code for forward compatibility and never constructed. Parent linkage belongs on the **scope**, not the container, which preserves the ability to quote and forward inside comments. There is no unread tracking on comments — only a running total comment count per post.
 
 ## Solution summary
 
@@ -33,7 +21,7 @@ UX constraints from the most recent message:
   - `comments_total INTEGER NOT NULL DEFAULT 0` (running comment count on the parent post row)
   - `comments_disabled INTEGER NOT NULL DEFAULT 0` (per-post disable flag on the parent post row)
   - Two new indexes mirroring the existing scope-pagination index pattern.
-- New `CommentsGroupPreference {enable, ttl}` group preference. `enable` controls whether commenting is allowed on the channel at all; `ttl` (`Maybe Int`, where `Nothing` = no TTL) is the maximum age of a channel post that still accepts new comments. Modeled exactly on `TimedMessagesGroupPreference`.
+- New `CommentsGroupPreference {enable, closeAfter}` group preference. `enable` controls whether commenting is allowed on the channel at all; `closeAfter` (`Maybe Int`, seconds since post creation; `Nothing` = no limit) is the duration after which a channel post stops accepting new comments. Modeled on `TimedMessagesGroupPreference` but the field name reflects that it closes commenting on a post rather than expiring data.
 - New role `GRCommenter` inserted between `GRObserver` and `GRAuthor` in `GroupMemberRole`. Default `channelSubscriberRole` changes from `GRObserver` to `GRCommenter`.
 - New chat command `APISetCommentsDisabled groupId chatItemId disabled` and a corresponding wire event `XGrpCommentsDisabled parentSharedMsgId disabled` so the disabled state is disseminated through the relay to all subscribers.
 - iOS: extend `GroupChatScope`/`GroupChatScopeInfo`, add the `matchesSecondaryIM` arm, add a small `Comments(N)` button on channel post bubbles that calls `ItemsModel.loadSecondaryChat(...)` and pushes the existing `SecondaryChatView`. Add a small toolbar variant and an owner-only "Disable comments" menu item.
@@ -126,7 +114,7 @@ The cascade self-FK is safe: SQLite cascades through one level by default. Tests
      = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
      | GCSIChannelMsg    {channelChatItem :: CChatItem 'CTGroup, channelMsgSharedId :: SharedMsgId}
    ```
-   The `CChatItem` carries the parent post's `itemTs` (needed for the TTL check) and `comments_disabled` flag (needed for the gate). The `channelMsgSharedId` is extracted by the smart constructor at lookup time so `toMsgScope` is total — it does not need to deconstruct the parent CChatItem to find the SharedMsgId.
+   The `CChatItem` carries the parent post's `itemTs` (needed for the commenting-window check) and `comments_disabled` flag (needed for the gate). The `channelMsgSharedId` is extracted by the smart constructor at lookup time so `toMsgScope` is total — it does not need to deconstruct the parent CChatItem to find the SharedMsgId.
 
 4. Extend `toMsgScope` — total, no `error` arm:
    ```haskell
@@ -149,12 +137,12 @@ Add `CommentsGroupPreference` mirroring `TimedMessagesGroupPreference`:
 ```haskell
 data CommentsGroupPreference = CommentsGroupPreference
   { enable :: GroupFeatureEnabled,
-    ttl :: Maybe Int
+    closeAfter :: Maybe Int -- seconds since post creation; Nothing = never close
   }
   deriving (Eq, Show)
 ```
 
-Mechanical extension across the file (~22 sites — same set the user uses for every other feature):
+Mechanical extension across the file (~22 sites — the same set every other group preference touches):
 
 - `GroupFeature` and `SGroupFeature` add `GFComments`/`SGFComments`
 - `groupFeatureNameText` adds the localized name
@@ -166,11 +154,11 @@ Mechanical extension across the file (~22 sites — same set the user uses for e
 - `defaultGroupPrefs` / `emptyGroupPrefs` / `defaultBusinessGroupPrefs` (default to `enable = FEOff` for backward-compatible groups; default to `FEOn` only for newly created channel groups — see `defaultGroupPrefs` callsites in `Store/Groups.hs`)
 - `HasField "enable"` for the singleton
 - `GroupFeatureI` (or `GroupFeatureNoRoleI` — comments has no role on the preference; the role gating is the separate `GRCommenter` mechanism)
-- `groupParamText_` renders the TTL the same way TimedMessages does
+- `groupParamText_` renders the `closeAfter` duration the same way `TimedMessagesGroupPreference` renders its `ttl`
 - `toGroupPreferences` / `mergeGroupPreferences`
-- `deriveJSON` and explicit `omittedField` returning `Just CommentsGroupPreference {enable = FEOff, ttl = Nothing}` for forward compat
+- `deriveJSON` and explicit `omittedField` returning `Just CommentsGroupPreference {enable = FEOff, closeAfter = Nothing}` for forward compat
 
-When a channel is created with `useRelays = True`, `defaultGroupPrefs` for that case sets `comments = CommentsGroupPreference {enable = FEOn, ttl = Nothing}`. Locate the channel-creation prefs branch in `Store/Groups.hs` (the same place that defaults `directMessages` to off and so on for channels).
+When a channel is created with `useRelays = True`, `defaultGroupPrefs` for that case sets `comments = CommentsGroupPreference {enable = FEOn, closeAfter = Nothing}`. Locate the channel-creation prefs branch in `Store/Groups.hs` (the same place that defaults `directMessages` to off and so on for channels).
 
 ### Role
 
@@ -261,11 +249,11 @@ The existing parent-lookup function is `getGroupChatItem db user groupId itemId 
 - `Internal.hs:1455` (`deleteTimedItem` — `gInfo` is fetched on line 1453)
 - `Commands.hs:702`, `Commands.hs:758`, `Commands.hs:848`, `Commands.hs:1097`, `Commands.hs:1127`, `Commands.hs:3124`, `Commands.hs:4158` — each call site has a corresponding `getGroupInfo` call earlier in the same function body. Implementation must verify and add `gInfo` to each invocation.
 
-The `Nothing` arm of the case guards the smart-constructor invariant that channel posts always have a `SharedMsgId`. The error constructor is the existing `SEChatItemNotFound {itemId :: ChatItemId}` from `Store/Shared.hs:135` (verified by grep), wrapped in `ChatErrorStore` to match the existing chat-error-from-store pattern. If a non-channel-post id is passed, the lookup returns it but the smart constructor refuses to wrap it.
+The `Nothing` arm of the case guards the smart-constructor invariant that channel posts always have a `SharedMsgId`. The error constructor is the existing `SEChatItemNotFound {itemId :: ChatItemId}` from `Store/Shared.hs:135` (verified by grep), wrapped in `ChatErrorStore` to match the existing chat-error-from-store pattern. The smart constructor only enforces the SharedMsgId invariant; "parent must be a channel post" is enforced separately by the `useRelays' gInfo` guard in `prohibitedGroupContent` and in the receive-side `mkGetMessageChatScope` arm — within a channel group, every chat item is necessarily a channel post (subscribers cannot post in main scope), so a successful `useRelays'` check is sufficient to prove the parent is a channel post.
 
 `Internal.hs:1579` `getGroupRecipients` — **no change**. The first guard `useRelays' gInfo && not (isRelay membership)` already routes ALL channel sends through `getGroupRelayMembers` regardless of scope, so comment send/receive fan-out is handled by the same path that handles channel posts. Verified by reading the function body in full.
 
-`Internal.hs:341` `prohibitedGroupContent` — new arm. The function signature is `GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature` (verified — no `UTCTime` param), so the TTL check that needs the wall clock CANNOT live here. Split into two checks:
+`Internal.hs:341` `prohibitedGroupContent` — new arm. The function signature is `GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature` (verified — no `UTCTime` param), so the commenting-window check that needs the wall clock CANNOT live here. Split into two checks:
 
 1. **Structural checks in `prohibitedGroupContent` (no clock needed)**:
    ```haskell
@@ -282,18 +270,21 @@ The `Nothing` arm of the case guards the smart-constructor invariant that channe
    ```
    Note the use of record-pattern syntax `GCSIChannelMsg {channelChatItem = ...}` so the second field `channelMsgSharedId` is irrelevant and ignored. The deleted-parent case is now an explicit reject (not a fall-through), so a soft-deleted parent post stops accepting comments. The `useRelays'` check inside the arm guards against an `MSChannelMsg` scope being constructed against a non-channel group locally.
 
-2. **Time-dependent TTL check in a new helper called from send/receive wrappers**:
+2. **Time-dependent commenting-window check in a new helper called from send/receive wrappers**:
    ```haskell
    -- in Internal.hs, near prohibitedGroupContent
-   commentsTtlExpired :: GroupInfo -> CChatItem 'CTGroup -> UTCTime -> Bool
-   commentsTtlExpired gInfo (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) now =
-     case fullGroupPreferences gInfo of
-       FullGroupPreferences {comments = CommentsGroupPreference {ttl = Just ttlSecs}} ->
-         diffUTCTime now itemTs > fromIntegral ttlSecs
-       _ -> False
+   commentsClosed :: GroupInfo -> CChatItem 'CTGroup -> UTCTime -> Bool
+   commentsClosed
+     GroupInfo {fullGroupPreferences = FullGroupPreferences {comments = CommentsGroupPreference {closeAfter}}}
+     (CChatItem _ ChatItem {meta = CIMeta {itemTs}})
+     now =
+       case closeAfter of
+         Just secs -> diffUTCTime now itemTs > fromIntegral secs
+         Nothing -> False
    ```
-   - **Send side** (`sendGroupContentMessages_` in `Commands.hs`): after `prohibitedGroupContent` is called, if the scope is `GCSIChannelMsg` and `useRelays' gInfo`, also call `liftIO getCurrentTime >>= \now -> when (commentsTtlExpired gInfo parent now) $ throwChatError $ CECommandError "comments TTL expired"` (or use a more specific error variant).
-   - **Receive side** (`newGroupContentMessage` in `Subscriber.hs`, after `mkGetMessageChatScope` returns `GCSIChannelMsg`): same shape, drop the message via `messageError "channel comments TTL expired"`.
+   The argument is destructured via record patterns rather than using `fullGroupPreferences gInfo` as a function call, because `Internal.hs` enables `DuplicateRecordFields` but not `OverloadedRecordDot`, and field selectors for duplicated fields are not callable as functions in that mode (verified — `Internal.hs` line 3 has `DuplicateRecordFields` and no `OverloadedRecordDot`).
+   - **Send side** (`sendGroupContentMessages_` in `Commands.hs`): after `prohibitedGroupContent` is called, if the scope is `GCSIChannelMsg` and `useRelays' gInfo`, also call `liftIO getCurrentTime >>= \now -> when (commentsClosed gInfo parent now) $ throwChatError $ CECommandError "commenting closed on this post"` (or use a more specific error variant).
+   - **Receive side** (`newGroupContentMessage` in `Subscriber.hs`, after `mkGetMessageChatScope` returns `GCSIChannelMsg`): same shape, drop the message via `messageError "commenting closed on channel post"`.
 
 The exact placement of the new arm in `prohibitedGroupContent` is the bottom-most `otherwise` arm that returns `Nothing` today; turn that arm into a `case scopeInfo of` that adds the comments check and falls through to `Nothing` for non-comment scopes. This preserves all existing behavior.
 
@@ -327,17 +318,15 @@ mkGetMessageChatScope vr user gInfo m mc msgScope_ =
       Nothing -> ...
       Just (MSMember mId) -> ...
       Just (MSChannelMsg parentSharedMsgId) -> do
-        unless (useRelays' gInfo) $
-          throwChatError $ CEMessageError "channel comment in non-channel group"
-        parent <- withFastStore $ \db ->
+        parent <- withStore $ \db ->
           getGroupChatItemBySharedMsgId db user gInfo Nothing parentSharedMsgId
         -- the parent SharedMsgId is the same value we just looked up by, so we can pass it through directly
         pure (gInfo, m, Just GCSIChannelMsg {channelChatItem = parent, channelMsgSharedId = parentSharedMsgId})
 ```
 
-The `Nothing` for `groupMemberId_` is correct — channel comments reference posts by `SharedMsgId` only; the parent's authoring member is not part of the lookup.
+The `Nothing` for `groupMemberId_` (the second argument to `getGroupChatItemBySharedMsgId`) is correct — channel comments reference posts by `SharedMsgId` only; the parent's authoring member is not part of the lookup.
 
-If `getGroupChatItemBySharedMsgId` raises `SEChatItemNotFound`, the receive path drops the message exactly the same way it drops a comment-on-deleted-parent. If `useRelays' gInfo` is false, the message is dropped as a `CEMessageError`. Both are the existing channel-message-error pathways used by the existing channel-message handlers.
+`mkGetMessageChatScope` does NOT need an explicit `useRelays' gInfo` guard. If the group is not a channel, two outcomes are possible: (a) the parent SharedMsgId does not match any chat item in the group, in which case the lookup raises `SEChatItemNotFound` and the receive path drops the message; (b) the SharedMsgId does match (regular group message accidentally collides), in which case the resulting `GCSIChannelMsg` flows into `prohibitedGroupContent`, whose new `not (useRelays' gInfo) -> Just GFComments` arm produces a `CIRcvGroupFeatureRejected GFComments` item via the existing `rejected` helper at `Subscriber.hs:1965`. Both pathways are clean and reuse existing infrastructure — no new error constructor or throwing logic is needed inside the scope resolver.
 
 `Subscriber.hs:2125` `groupMessageDelete` moderation arm — add the `MSChannelMsg` wire arm so moderator deletes inside Comments are routed through the comment scope, not the main channel chat. Mechanical: copy the existing `MSMember` arm and replace the scope resolver with the comment-scope resolver.
 
@@ -382,15 +371,18 @@ New wire event:
 Handler in `Subscriber.hs` (alongside `xGrpMsgUpdate`/`xGrpMsgDelete`):
 
 ```haskell
-xGrpCommentsDisabled gInfo m parentSharedMsgId disabled = do
-  unless (memberRole m >= GRModerator) $
-    messageError "member is not allowed to disable comments"
-  parent <- withStore $ \db ->
-    getGroupChatItemBySharedMsgId db user gInfo Nothing parentSharedMsgId
-  withStore' $ \db ->
-    setChannelMsgCommentsDisabled db (chatItemId' parent) disabled
-  toView $ CEvtChatItemUpdated user (AChatItem ...)
+xGrpCommentsDisabled gInfo m@GroupMember {memberRole} parentSharedMsgId disabled = do
+  if memberRole < GRModerator
+    then messageError "member is not allowed to disable comments"
+    else do
+      parent <- withStore $ \db ->
+        getGroupChatItemBySharedMsgId db user gInfo Nothing parentSharedMsgId
+      withStore' $ \db ->
+        setChannelMsgCommentsDisabled db (cChatItemId parent) disabled
+      toView $ CEvtChatItemUpdated user (AChatItem ...)
 ```
+
+The destructuring `m@GroupMember {memberRole}` is required because `DuplicateRecordFields` is enabled and field selectors don't work as functions. The `if/else` shape (rather than `unless`) ensures the body short-circuits cleanly when the role check fails — `messageError` returns `()` and the body must also return `()` in that branch.
 
 Plumb through `chatMsgEventTag` / `appJsonToCM` / `cmToAppMessage` and through `processForwardedMsg` for relay forwarding. The event is signed exactly like existing channel governance events.
 
@@ -399,7 +391,7 @@ Plumb through `chatMsgEventTag` / `appJsonToCM` / `cmToAppMessage` and through `
 The `comments_total` column on the parent post row is incremented:
 
 - On comment **insert** (snd or rcv): +1.
-- On comment **delete** (snd, rcv, moderation, marked-deleted via TTL): −1, only if the previous row was not already marked deleted.
+- On comment **delete** (snd, rcv, moderation): −1, only if the previous row was not already marked deleted.
 - On comment **edit**: no change to the count.
 
 Implement as a tiny helper in `Store/Messages.hs`:
@@ -490,25 +482,45 @@ Without an explicit arm for `GCSIChannelMsg`, the fall-through `_ -> (Nothing, N
    ```
    Add `group_scope_chat_item_id` immediately after `group_scope_group_member_id`. Update the placeholder count at line 596 from 39 to 40 `?` marks.
 
-3. **`includeInHistory` (Store/Messages.hs:625-628) does NOT need extension.** The existing code:
+3. **`includeInHistory` (Store/Messages.hs:625-628) needs a new arm for `GCSIChannelMsg`.** The existing code:
    ```haskell
    includeInHistory = case groupScope of
      Just Nothing -> isJust mcTag_ && mcTag_ /= Just MCReport_
      _ -> False
    ```
-   Already returns `False` for any non-`Just Nothing` scope, including `GCSIChannelMsg`. This is the **actual mechanism** that prevents channel comments from being replayed to new joiners — `getGroupHistoryItems` (line 3656) filters by `include_in_history = 1`, so any item with `includeInHistory = False` is skipped at the SQL level. The `processContentItem` helper (`Internal.hs:1245`) is never even called for channel comments because they're filtered out before the iteration.
+   Add an arm that admits channel-comment content items:
+   ```haskell
+   includeInHistory = case groupScope of
+     Just Nothing                  -> isJust mcTag_ && mcTag_ /= Just MCReport_
+     Just (Just GCSIChannelMsg {}) -> isJust mcTag_ && mcTag_ /= Just MCReport_
+     _                             -> False
+   ```
+   This persists comments with `include_in_history = 1` so they are visible to `getGroupHistoryItems`. The per-parent comment cap is enforced at query time, not at insert time — see "History playback for new subscribers" below.
 
 4. **Default-scope SELECT queries do NOT need updating.** Existing queries that filter by `group_scope_tag IS NULL AND group_scope_group_member_id IS NULL` (e.g., `Store/Messages.hs:891, 904, 1202, 1512, 1733`) already exclude channel comments correctly because comments have `group_scope_tag = 'channel_msg'`, which fails the `IS NULL` predicate. **No additional `group_scope_chat_item_id IS NULL` clause is needed** in these queries — but verify each one during implementation in case any predicate uses `OR` instead of `AND`.
 
 5. **Read-side scope reconstruction in `toGroupChatItem`** (`Store/Messages.hs:2334`) reads the chat item row including `group_scope_tag` and `group_scope_group_member_id`. After adding `group_scope_chat_item_id`, the row tuple shape grows by one column and `toGroupChatItem` needs to thread it through. This is the same per-SELECT plumbing as for the new `commentsDisabled` / `commentsTotal` columns mentioned in the `prohibitedGroupContent` section.
 
+### History playback for new subscribers
+
+`getGroupHistoryItems` (`Store/Messages.hs:3656`) replays the recent channel posts to a new joiner. Extend this so that for each replayed post, up to `M` most-recent non-deleted comments under that post are also replayed. `M` (and the existing post-window cap `N`) are tunable constants chosen at implementation time.
+
+Two pieces:
+
+1. `includeInHistory` (`Store/Messages.hs:625-628`) admits `GCSIChannelMsg` content items so they are persisted with `include_in_history = 1` (covered in the Insert path section above).
+2. `getGroupHistoryItems` runs an additional per-post sub-query against the new `idx_chat_items_channel_msg_scope_item_ts` index, ranked by `item_ts` descending and limited to `M`, applying the same soft-delete and report filters that the main history query already applies. The fetched comments are merged into the replay stream in `item_ts` order. A small helper `getChannelMsgCommentsForHistory db userId groupId parentChatItemId limit :: IO [CChatItem 'CTGroup]` lives next to `getGroupHistoryItems`; the caller iterates over the post ids it just selected.
+
+Older joiners on a chat protocol version below `commentsVersion` cannot deserialize `MSChannelMsg`. The relay's existing per-recipient version gate drops the comment items from their replay stream so they receive the post-only history unchanged from today.
+
+**`commentsTotal` consistency.** A new joiner receives the parent post row with its current `commentsTotal`, while only `M` of the comments are included in the initial replay. The Comments view fetches additional items on demand via the existing scope-pagination path; this is documented as expected UX, not a correctness issue.
+
 ### CLI / API surface (Haskell)
 
-`Commands.hs` add three commands:
+`Commands.hs`:
 
-1. `APIGetGroupChatScope groupId chatItemId` — already exists in spirit through `/_get chat #N count=K` with the scope filter; ensure the existing parser accepts `channel_msg <chatItemId>` as a scope value.
-2. `APISetCommentsDisabled groupId chatItemId disabled` — new, as described above.
-3. `APISetCommentsPref groupId enable ttl` — actually no, this is just `APISetGroupFeatureRole`/`APISetGroupPreference` which already takes a `GroupPreferences`. The new `comments` field flows through that.
+- New command `APISetCommentsDisabled groupId chatItemId disabled` — handler defined above in the "Per-message disable" section.
+- Existing `/_get chat #N count=K` parser must accept `scope=channel_msg/<chatItemId>` so the Comments view can paginate.
+- The `comments` group preference is set/cleared via the existing `APISetGroupPreference` path (`GroupPreferences` already round-trips an arbitrary preference set); no new preference command is needed.
 
 Sender side: `APISendMessages` already accepts `scope :: Maybe GroupChatScope`. Comments are sent by passing `Just (GCSChannelMsg parentChatItemId)`.
 
@@ -595,7 +607,7 @@ When a `ChatEvent` updates the parent post (e.g. `comments_disabled` toggled), t
 
 **Owner controls.** On the channel post bubble, in the existing item context menu (long-press), add an "Disable / enable comments" item, gated to `groupInfo.isOwner || groupInfo.isAdmin || groupInfo.isModerator`. Tapping it calls `apiSetCommentsDisabled` and updates the local state.
 
-**Composer gating.** In `ChatView`'s composer, when `chat.chatInfo.groupChatScope` is `.channelMsg`, the composer is disabled with a banner "Comments are disabled" if either the parent's `commentsDisabled` is true, the group's comments preference is off, or the group's TTL has expired.
+**Composer gating.** In `ChatView`'s composer, when `chat.chatInfo.groupChatScope` is `.channelMsg`, the composer is disabled with a banner "Comments are closed" if any of: the parent's `commentsDisabled` is true; the group's comments preference is off; the post's age has exceeded the group's `closeAfter` window.
 
 ### iOS three-layer documentation updates
 
@@ -608,7 +620,7 @@ Per `apps/ios/CODE.md` Change Protocol:
 - New `apps/ios/product/views/comments.md` describing the user-facing flow.
 - Update `apps/ios/product/concepts.md` adding a "Comments" row.
 - Update `apps/ios/product/glossary.md` defining "channel post comment".
-- Update `apps/ios/product/rules.md` with the gating invariants (channels-only, role >= commenter, parent.commentsDisabled false, within TTL).
+- Update `apps/ios/product/rules.md` with the gating invariants (channels-only, role >= commenter, parent.commentsDisabled false, post age within `closeAfter` window).
 - Update `apps/ios/spec/impact.md` to map the touched source files to the new product concept.
 - Run the within-layer + across-layer review until two consecutive passes find zero issues.
 
@@ -624,7 +636,7 @@ Each slice ends with a build + test run that should pass. The order is chosen so
 4. **Atomic with #3:** `Subscriber.hs:1522` `memberCanSend` `memberRole > GRObserver` → `memberRole >= GRAuthor`. This MUST land in the same commit as the role insertion to preserve send-permission semantics; otherwise commenters silently get non-comment send rights.
 5. `Commands.hs:5193` role parser arm `" commenter" $> GRCommenter` — same commit as #3 so `/_member` and tests can address commenters.
 6. `channelSubscriberRole` default change in `Controller.hs:160` from `GRObserver` to `GRCommenter`.
-7. `CommentsGroupPreference` in `Types/Preferences.hs` (~22 mechanical sites). Includes the channel-creation default change in `Store/Groups.hs` so new channel groups default to `comments = CommentsGroupPreference {enable = FEOn, ttl = Nothing}` while non-channel groups default to `FEOff`.
+7. `CommentsGroupPreference` in `Types/Preferences.hs` (~22 mechanical sites). Includes the channel-creation default change in `Store/Groups.hs` so new channel groups default to `comments = CommentsGroupPreference {enable = FEOn, closeAfter = Nothing}` while non-channel groups default to `FEOff`.
 8. Bump `commentsVersion :: VersionChat` in `Protocol.hs`, bump `currentChatVersion`.
 9. Spot-check existing test fixtures: grep `tests/ChatTests/` for `"observer"` string assertions to confirm none of them depend on the default channel-subscriber role being `observer` (verified — the existing matches are all `/mr ... observer` member-role-change tests, not channel default-role tests).
 
@@ -643,14 +655,15 @@ Test: `cabal test simplex-chat-test --test-options='-m "channels"'` — must con
 4b. **Read-side plumbing** in `toGroupChatItem` (`Store/Messages.hs:2334`) and any other chat-item SELECT that reads `group_scope_*` columns: extend the row tuple to include `group_scope_chat_item_id`. Same per-SELECT plumbing as for the new `commentsDisabled` / `commentsTotal` columns.
 5. `getChatScopeInfo` arm in `Internal.hs:1572` — same SharedMsgId-extraction smart constructor. **Includes signature change**: `getChatScopeInfo :: VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> CM GroupChatScopeInfo`. All 9 call sites must pass `gInfo` (each already has it in scope; verified).
 6. `mkGetMessageChatScope` arm in `Internal.hs:1626`.
-7. `prohibitedGroupContent` channel-comment branch in `Internal.hs:341` (channels-only, comments-pref-on, parent-not-deleted, parent-comments-disabled). NO TTL check — TTL is the new helper below.
-8. New `commentsTtlExpired :: GroupInfo -> CChatItem 'CTGroup -> UTCTime -> Bool` helper in `Internal.hs`, called from the send wrapper in `Commands.hs` and the receive wrapper in `Subscriber.hs`.
+7. `prohibitedGroupContent` channel-comment branch in `Internal.hs:341` (channels-only, comments-pref-on, parent-not-deleted, parent-comments-disabled). NO commenting-window check — the window check is the new helper below.
+8. New `commentsClosed :: GroupInfo -> CChatItem 'CTGroup -> UTCTime -> Bool` helper in `Internal.hs`, called from the send wrapper in `Commands.hs` and the receive wrapper in `Subscriber.hs`.
 9. `allowedRole` arm in `Commands.hs:4170`.
 10. `memberCanSend` arm in `Subscriber.hs:1519` (the role-comparison fix for the `Nothing` arm already landed in Slice 1).
 11. `infoToDeliveryContext` arm in `Delivery.hs:106`.
 12. `groupMessageDelete` moderation arm for `MSChannelMsg` in `Subscriber.hs:2125`.
 13. `getChatItemIDs` arm in `Store/Messages.hs:1506`.
 14. `adjustChannelMsgCommentCount` helper in `Store/Messages.hs` + guarded +1 inside `createNewChatItem_` (after the INSERT, gated on `groupScope = Just (Just GCSIChannelMsg {})`) so both `createNewSndChatItem` and `createNewRcvChatItem` benefit without duplication. Guarded −1 in the deletion path (`deleteChatItemBy*` and `markChatItemDeleted`), only when the previous row was not already marked deleted.
+15. **History playback**: extend `includeInHistory` (`Store/Messages.hs:625-628`) with the `GCSIChannelMsg` arm, add `getChannelMsgCommentsForHistory` helper, and extend `getGroupHistoryItems` to merge per-parent comments into the replay stream (see "History playback for new subscribers" section). Tunable constants (`N` recent posts, `M` comments per post) live next to the existing history caps.
 
 Build + test as Slice 1.
 
@@ -676,12 +689,13 @@ Build + test as before.
 6. `testChannelCommentModerationDelete` — owner deletes someone else's comment via moderation.
 7. `testChannelCommentObserverRejected` — in a channel group, downgrade a subscriber to `GRObserver` via `/mr team bob observer`; the subscriber's comment is rejected by `memberCanSend`.
 8. `testChannelCommentDisabledRejected` — owner toggles `comments_disabled` on a post; subscriber's comment is rejected by the relay.
-9. `testChannelCommentTTLExpired` — group has `comments.ttl = 1`; an old post can no longer accept comments.
+9. `testChannelCommentClosingWindow` — group has `comments.closeAfter = 1`; an old post can no longer accept new comments.
 10. `testChannelCommentPrefOff` — group `comments.enable = FEOff`; all comment sends are rejected.
 11. `testChannelCommentNotInRegularGroup` — a regular group rejects `MSChannelMsg` scope (server-side and client-side preflight).
 12. `testChannelCommentCountIncrement` — `comments_total` increments and decrements with insert/delete.
-13. `testChannelCommentNotReplayedToNewSubscriber` — eve joins after some comments exist; eve sees the parent post but not the past comments (per the user's history-playback decision).
-14. `testChannelCommentRoundtripJSON` — a `JSONTests.hs` round-trip case for `MSChannelMsg` and the new `XGrpCommentsDisabled` event.
+13. `testChannelCommentReplayedToNewSubscriberWithCap` — eve joins after several comments exist on a post; eve receives the parent post AND up to `M` most recent comments (the per-parent cap is enforced and older comments beyond the cap are NOT replayed).
+14. `testChannelCommentOwnerSentAsGroupNoLeak` — owner posts a channel message and adds an own comment with `sentAsGroup = True`; subscribers must not see the owner's member identity in the comment. Mirrors `testChannelOwnerReaction` (`tests/ChatTests/Groups.hs:9482`) and `testChannelOwnerQuote` (`tests/ChatTests/Groups.hs:9510`) — required by threat-model item #7.
+15. `testChannelCommentRoundtripJSON` — a `JSONTests.hs` round-trip case for `MSChannelMsg` and the new `XGrpCommentsDisabled` event.
 
 Each test follows the existing `testChannelMessage*` pattern: `alice #> "#team post"`, `bob #_> "#team channel_msg <id> reply"`, `[cath, dan, eve] *<# "#team bob> reply [>>]"`, `#$> ("/_get chat #1 scope=channel_msg/<id> count=...", chat, [...])`.
 
@@ -695,14 +709,14 @@ Build + test: `cabal test simplex-chat-test --test-options='-m "channel comments
 4. `SimpleXAPI.swift`: new `apiSetCommentsDisabled(...)` function.
 5. `ChatModel.swift:694` `matchesSecondaryIM` arm.
 
-iOS build via Xcode (out of scope for this Bash environment; the user runs the iOS build separately).
+iOS build via Xcode (out of scope for the Haskell test environment; built separately).
 
 ### Slice 6 — iOS UI
 
 1. `Comments(N)` button on channel post bubble (locate the right `ChatItem` view file for channel posts in `apps/ios/Shared/Views/Chat/ChatItem/`).
 2. New `ChannelMsgChatToolbar.swift` mirroring `MemberSupportChatToolbar.swift`.
 3. Wire `SecondaryChatView` push from the Comments button.
-4. Composer gating banner when comments are disabled / pref off / TTL expired.
+4. Composer gating banner when comments are disabled / pref off / commenting window closed.
 5. Owner-only "Disable comments" / "Enable comments" item in the per-message context menu.
 6. iOS three-layer documentation updates.
 
@@ -711,7 +725,7 @@ iOS build via Xcode (out of scope for this Bash environment; the user runs the i
 1. Re-read every changed file once more end-to-end.
 2. Run the full `cabal test simplex-chat-test` suite (not just channels).
 3. Run `JSONTests.hs` and `ProtocolTests.hs` to catch JSON / protocol regressions.
-4. Two consecutive clean self-review passes per the user's standard.
+4. Two consecutive clean adversarial self-review passes.
 
 ## Forward compatibility and threat model
 
@@ -726,7 +740,7 @@ iOS build via Xcode (out of scope for this Bash environment; the user runs the i
 **Threat model.**
 
 1. Malicious subscriber tries to flood comments → existing per-relay rate limits apply unchanged. Owner can disable comments per-post or globally via the group preference.
-2. Malicious subscriber tries to comment on a non-channel group → both send-side preflight (`prohibitedGroupContent` channel-only check) and receive-side gate (`mkGetMessageChatScope` channel-only assertion) reject.
+2. Malicious subscriber tries to comment on a non-channel group → `prohibitedGroupContent`'s `not (useRelays' gInfo) -> Just GFComments` arm rejects on both send-side preflight (`Commands.hs sendGroupContentMessages_`) and receive-side (`Subscriber.hs newGroupContentMessage`), saving a `CIRcvGroupFeatureRejected GFComments` item.
 3. Malicious subscriber tries to comment on a deleted parent post → cascade FK deletes the comment row when the parent is deleted; the receive path's `mkGetMessageChatScope` returns `SEChatItemNotFound` and the message is dropped.
 4. Malicious subscriber tries to disable comments without permission → `xGrpCommentsDisabled` handler asserts `memberRole >= GRModerator`.
 5. Malicious relay tries to forward a comment with a forged parent SharedMsgId → resolution fails on receive (`getGroupChatItemBySharedMsgId` returns not-found) and the message is dropped.
@@ -744,7 +758,6 @@ iOS build via Xcode (out of scope for this Bash environment; the user runs the i
 - Notification routing for comments (no per-comment notifications in MVP).
 - Comment count indicator on the channel chat list (no per-chat unread badge for comments).
 - A "list of comment threads" view for owners (no analog to `MemberSupportView`).
-- History playback of past comments to new subscribers.
 - A separate `DeliveryWorkerScope` for comments (they share the channel post worker for batching).
 
 ## Critical files to be modified
@@ -791,12 +804,12 @@ Backend (run by Claude in this environment):
 4. `cabal test simplex-chat-test` (full) after Slice 7; full suite green.
 5. After Slice 1, manually inspect the generated `chat_schema.sql` to confirm the new columns and indexes are present.
 
-iOS (the user runs in Xcode):
+iOS (run in Xcode):
 
 1. Build the iOS app target in Xcode after Slice 5.
 2. Manual test in iOS simulator: create a channel as Alice, join from Bob, post a message from Alice, comment from Bob, verify the comments button shows `comments 1`, open the secondary view, post another comment, edit, delete, quote both the parent post and another comment.
 3. As Alice, disable comments on the post, verify Bob's composer goes inactive and a banner appears, verify Bob cannot send a comment, re-enable, verify Bob can send again.
-4. Set `comments.ttl = 60` in the group preference, post a message, wait, verify commenting is rejected after 60 seconds.
+4. Set `comments.closeAfter = 60` in the group preference, post a message, wait, verify commenting is rejected after 60 seconds.
 5. Run iOS test suite (`xcodebuild test ...`).
 
 A change is complete only after two consecutive adversarial self-review passes find zero issues at the end of Slice 7.
