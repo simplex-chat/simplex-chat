@@ -206,7 +206,7 @@ struct ConnectOnboardingView: View {
             .padding(.horizontal, 16)
         } else {
             if showBack {
-                backButton.frame(maxWidth: .infinity, alignment: .leading)
+                backButton.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16)
             } else {
                 Color.clear.frame(height: backButtonHeight)
             }
@@ -224,7 +224,6 @@ struct ConnectOnboardingView: View {
             }
         }
         .frame(height: backButtonHeight)
-        .padding(.horizontal, 16)
     }
 
     // MARK: Screen 1
