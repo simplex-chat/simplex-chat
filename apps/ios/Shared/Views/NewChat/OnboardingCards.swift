@@ -17,7 +17,7 @@ struct OnboardingCardView: View {
     let icon: String
     let title: LocalizedStringKey
     var subtitle: LocalizedStringKey? = nil
-    let labelHeightRatio: CGFloat  // label stripe height as fraction of card width
+    let labelHeightRatio: CGFloat
     let action: () -> Void
 
     private static let lightStops: [Gradient.Stop] = [
@@ -34,7 +34,6 @@ struct OnboardingCardView: View {
         .init(color: Color(red: 1.0, green: 0.965, blue: 0.878), location: 1.0)
     ]
 
-    // 80° CCW from horizontal
     private static let gradientAngle: Double = 80.0 * .pi / 180.0
 
     private static func gradientPoints(aspectRatio: CGFloat) -> (start: UnitPoint, end: UnitPoint) {
@@ -115,18 +114,52 @@ struct OnboardingCardView: View {
     }
 }
 
-// MARK: - Screen 1
+// MARK: - Onboarding pager
 
-struct TalkToSomeoneView: View {
+private let backButtonHeight: CGFloat = 44
+
+struct OnboardingView: View {
     @EnvironmentObject var theme: AppTheme
-    @State private var showConnectWithSomeone = false
+    @State private var currentPage = 0
     @State private var showConnectViaLink = false
+    @State private var showInviteSomeone = false
+    @State private var showCreateAddress = false
 
     var body: some View {
+        TabView(selection: $currentPage) {
+            talkToSomeonePage.tag(0)
+            connectWithSomeonePage.tag(1)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .sheet(isPresented: $showConnectViaLink) {
+            NavigationView {
+                NewChatView(selection: .connect, showQRCodeScanner: true)
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
+        .sheet(isPresented: $showInviteSomeone) {
+            NavigationView {
+                NewChatView(selection: .invite)
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
+        .sheet(isPresented: $showCreateAddress) {
+            NavigationView {
+                UserAddressView(autoCreate: true)
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
+    }
+
+    // MARK: Screen 1
+
+    private var talkToSomeonePage: some View {
         GeometryReader { geo in
             let cardWidth = geo.size.width - 32
             let maxCardHeight = cardWidth * 0.75
             VStack(spacing: 0) {
+                Color.clear.frame(height: backButtonHeight)
+
                 Text("Talk to someone")
                     .font(.largeTitle)
                     .fontWeight(.bold)
@@ -141,7 +174,7 @@ struct TalkToSomeoneView: View {
                     icon: "link",
                     title: "Let someone connect to you",
                     labelHeightRatio: 0.132,
-                    action: { showConnectWithSomeone = true }
+                    action: { withAnimation { currentPage = 1 } }
                 )
                 .frame(maxHeight: maxCardHeight)
                 .padding(.horizontal, 16)
@@ -162,37 +195,29 @@ struct TalkToSomeoneView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .navigationBarLeading) { Color.clear.frame(height: 0) } }
-        .background(
-            NavigationLink(isActive: $showConnectWithSomeone) {
-                ConnectWithSomeoneView()
-                    .modifier(ThemedBackground(grouped: true))
-            } label: { EmptyView() }
-        )
-        .sheet(isPresented: $showConnectViaLink) {
-            NavigationView {
-                NewChatView(selection: .connect, showQRCodeScanner: true)
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.inline)
-            }
-        }
     }
-}
 
-// MARK: - Screen 2
+    // MARK: Screen 2
 
-struct ConnectWithSomeoneView: View {
-    @EnvironmentObject var theme: AppTheme
-    @State private var showInviteSomeone = false
-    @State private var showCreateAddress = false
-
-    var body: some View {
+    private var connectWithSomeonePage: some View {
         GeometryReader { geo in
             let cardWidth = geo.size.width - 32
             let maxCardHeight = cardWidth * 0.75
             VStack(spacing: 0) {
+                HStack {
+                    Button {
+                        withAnimation { currentPage = 0 }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                    }
+                    Spacer()
+                }
+                .frame(height: backButtonHeight)
+                .padding(.horizontal, 16)
+
                 Text("Connect with someone")
                     .font(.largeTitle)
                     .fontWeight(.bold)
@@ -230,21 +255,5 @@ struct ConnectWithSomeoneView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("")
-        .sheet(isPresented: $showInviteSomeone) {
-            NavigationView {
-                NewChatView(selection: .invite)
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.inline)
-            }
-        }
-        .sheet(isPresented: $showCreateAddress) {
-            NavigationView {
-                UserAddressView(autoCreate: true)
-                    .modifier(ThemedBackground(grouped: true))
-                    .navigationBarTitleDisplayMode(.inline)
-            }
-        }
-        .modifier(ThemedBackground(grouped: true))
     }
 }
