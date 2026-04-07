@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.BuildConfigCommon
@@ -194,7 +195,7 @@ fun OnboardingCardView(
             if (subtitle != null) {
               Text(
                 subtitle,
-                style = MaterialTheme.typography.caption,
+                fontSize = 13.sp,
                 color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f)
               )
             }
