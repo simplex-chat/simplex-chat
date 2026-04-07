@@ -283,8 +283,8 @@ private fun CardPair(
       Modifier.padding(horizontal = padding),
       verticalArrangement = Arrangement.spacedBy(spacing)
     ) {
-      Box(Modifier.fillMaxWidth().weight(1f).heightIn(max = maxCardHeight)) { card1() }
-      Box(Modifier.fillMaxWidth().weight(1f).heightIn(max = maxCardHeight)) { card2() }
+      Box(Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = maxCardHeight)) { card1() }
+      Box(Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = maxCardHeight)) { card2() }
     }
   }
 }

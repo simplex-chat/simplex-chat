@@ -291,7 +291,16 @@ private fun AddressCreationCard() {
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   if (shouldShowOnboarding()) {
     if (appPlatform.isAndroid) {
-      ConnectOnboardingView()
+      val oneHandUI = remember { appPrefs.oneHandUI.state }
+      val topPad = topPaddingToContent(false)
+      val bottomPad = if (oneHandUI.value) {
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+      } else {
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+      }
+      Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+        ConnectOnboardingView()
+      }
     }
     // Desktop: overlay in DesktopScreen handles cards
   } else {
