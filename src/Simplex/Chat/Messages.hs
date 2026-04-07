@@ -167,10 +167,7 @@ data ChatRef = ChatRef
 
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
-  -- The third parameter `Maybe ChannelMsgInfo` identifies the comments thread of a
-  -- specific channel post; it is `Nothing` for the main channel chat and for the
-  -- member-support scope. The two `Maybe` fields are mutually exclusive in practice.
-  GroupChat :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChannelMsgInfo -> ChatInfo 'CTGroup
+  GroupChat :: GroupInfo -> Maybe GroupChatScopeInfo -> ChatInfo 'CTGroup
   LocalChat :: NoteFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
@@ -179,16 +176,6 @@ data ChatInfo (c :: ChatType) where
 deriving instance Show (ChatInfo c)
 
 data GroupChatScopeInfo = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
-  deriving (Show)
-
--- Identifies the parent channel post of a comments thread.
--- Both fields are co-determined: the SharedMsgId is extracted from `channelMsgItem`
--- by the smart constructor in Store/Messages.hs, so the field is total at the
--- type-system level.
-data ChannelMsgInfo = ChannelMsgInfo
-  { channelMsgItem :: CChatItem 'CTGroup,
-    channelMsgSharedId :: SharedMsgId
-  }
   deriving (Show)
 
 toChatScope :: GroupChatScopeInfo -> GroupChatScope
@@ -202,7 +189,7 @@ toMsgScope GroupInfo {membership} = \case
 chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> Just $ ChatRef CTDirect contactId Nothing
-  GroupChat GroupInfo {groupId} scopeInfo _channelMsgInfo ->
+  GroupChat GroupInfo {groupId} scopeInfo ->
     Just $ ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
   LocalChat NoteFolder {noteFolderId} -> Just $ ChatRef CTLocal noteFolderId Nothing
   ContactRequest UserContactRequest {contactRequestId} -> Just $ ChatRef CTContactRequest contactRequestId Nothing
@@ -211,20 +198,18 @@ chatInfoToRef = \case
 
 chatInfoMembership :: ChatInfo c -> Maybe GroupMember
 chatInfoMembership = \case
-  GroupChat GroupInfo {membership} _scopeInfo _channelMsgInfo -> Just membership
+  GroupChat GroupInfo {membership} _scopeInfo -> Just membership
   _ -> Nothing
 
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
-  | JCInfoGroup {groupInfo :: GroupInfo, groupChatScope :: Maybe GroupChatScopeInfo, channelMsgInfo :: Maybe ChannelMsgInfo}
+  | JCInfoGroup {groupInfo :: GroupInfo, groupChatScope :: Maybe GroupChatScopeInfo}
   | JCInfoLocal {noteFolder :: NoteFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
   | JCInfoInvalidJSON {chatType :: ChatType, json :: J.Object}
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCSI") ''GroupChatScopeInfo)
-
-$(JQ.deriveJSON defaultJSON ''ChannelMsgInfo)
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo)
 
@@ -244,7 +229,7 @@ instance ToJSON (ChatInfo c) where
 jsonChatInfo :: ChatInfo c -> JSONChatInfo
 jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
-  GroupChat g s cm -> JCInfoGroup g s cm
+  GroupChat g s -> JCInfoGroup g s
   LocalChat l -> JCInfoLocal l
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
@@ -257,7 +242,7 @@ deriving instance Show AChatInfo
 jsonAChatInfo :: JSONChatInfo -> AChatInfo
 jsonAChatInfo = \case
   JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
-  JCInfoGroup g s cm -> AChatInfo SCTGroup $ GroupChat g s cm
+  JCInfoGroup g s -> AChatInfo SCTGroup $ GroupChat g s
   JCInfoLocal l -> AChatInfo SCTLocal $ LocalChat l
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
@@ -426,9 +411,9 @@ toChatInfo :: ChatDirection c d -> ChatInfo c
 toChatInfo = \case
   CDDirectSnd c -> DirectChat c
   CDDirectRcv c -> DirectChat c
-  CDGroupSnd g s -> GroupChat g s Nothing
-  CDGroupRcv g s _ -> GroupChat g s Nothing
-  CDChannelRcv g s -> GroupChat g s Nothing
+  CDGroupSnd g s -> GroupChat g s
+  CDGroupRcv g s _ -> GroupChat g s
+  CDChannelRcv g s -> GroupChat g s
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
 
