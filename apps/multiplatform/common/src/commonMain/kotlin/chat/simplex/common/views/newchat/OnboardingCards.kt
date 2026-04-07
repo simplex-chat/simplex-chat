@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -105,6 +106,14 @@ private val darkStops = arrayOf(
   1.0f to Color(0xFFfff6e0)
 )
 
+// MARK: - Layout helpers
+
+private fun Modifier.maxHeightByWidthRatio(ratio: Float) = layout { measurable, constraints ->
+  val maxH = (constraints.maxWidth * ratio).toInt().coerceAtMost(constraints.maxHeight)
+  val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = maxH))
+  layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+}
+
 // MARK: - Card component
 
 @Composable
@@ -114,7 +123,7 @@ fun OnboardingCardView(
   icon: dev.icerock.moko.resources.ImageResource,
   title: String,
   subtitle: String? = null,
-  labelHeight: Dp,
+  labelHeightRatio: Float,
   onClick: () -> Unit
 ) {
   var imageAreaSize by remember { mutableStateOf(IntSize.Zero) }
@@ -165,7 +174,7 @@ fun OnboardingCardView(
       Box(
         Modifier
           .fillMaxWidth()
-          .height(labelHeight)
+          .aspectRatio(1f / labelHeightRatio)
           .background(labelBg),
         contentAlignment = Alignment.Center
       ) {
@@ -262,25 +271,26 @@ private fun CardPair(
   isLandscape: Boolean,
   padding: Dp,
   spacing: Dp,
-  maxCardHeight: Dp,
+  heightRatio: Float,
   card1: @Composable () -> Unit,
   card2: @Composable () -> Unit
 ) {
   if (isLandscape) {
     Row(
-      Modifier.padding(horizontal = padding),
-      horizontalArrangement = Arrangement.spacedBy(spacing)
+      Modifier.fillMaxSize().padding(horizontal = padding),
+      horizontalArrangement = Arrangement.spacedBy(spacing),
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Box(Modifier.weight(1f).height(maxCardHeight)) { card1() }
-      Box(Modifier.weight(1f).height(maxCardHeight)) { card2() }
+      Box(Modifier.weight(1f).maxHeightByWidthRatio(heightRatio)) { card1() }
+      Box(Modifier.weight(1f).maxHeightByWidthRatio(heightRatio)) { card2() }
     }
   } else {
     Column(
-      Modifier.padding(horizontal = padding),
-      verticalArrangement = Arrangement.spacedBy(spacing)
+      Modifier.fillMaxSize().padding(horizontal = padding),
+      verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically)
     ) {
-      Box(Modifier.fillMaxWidth().height(maxCardHeight)) { card1() }
-      Box(Modifier.fillMaxWidth().height(maxCardHeight)) { card2() }
+      Box(Modifier.fillMaxWidth().weight(1f, fill = false).maxHeightByWidthRatio(heightRatio)) { card1() }
+      Box(Modifier.fillMaxWidth().weight(1f, fill = false).maxHeightByWidthRatio(heightRatio)) { card2() }
     }
   }
 }
@@ -378,41 +388,30 @@ private fun TalkToSomeonePage(
       isLandscape = isLandscape
     )
 
-    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-      val padding = DEFAULT_PADDING
-      val spacing = DEFAULT_PADDING
-      val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
-      val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
-      val maxCardHeight = if (isLandscape) {
-        minOf(maxDesiredCardHeight, maxHeight - padding * 2)
-      } else {
-        minOf(maxDesiredCardHeight, (maxHeight - spacing - padding * 2) / 2)
-      }.coerceAtLeast(0.dp)
-
-      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CardPair(isLandscape, padding, spacing, maxCardHeight,
-          card1 = {
-            OnboardingCardView(
-              imageName = MR.images.card_let_someone_connect_to_you_alpha,
-              imageNameLight = MR.images.card_let_someone_connect_to_you_alpha_light,
-              icon = MR.images.ic_add_link,
-              title = stringResource(MR.strings.let_someone_connect_to_you),
-              labelHeight = cardWidth * 0.132f,
-              onClick = onLetSomeoneConnect
-            )
-          },
-          card2 = {
-            OnboardingCardView(
-              imageName = MR.images.card_connect_via_link_alpha,
-              imageNameLight = MR.images.card_connect_via_link_alpha_light,
-              icon = MR.images.ic_qr_code,
-              title = stringResource(MR.strings.connect_via_link_or_qr_code),
-              labelHeight = cardWidth * 0.132f,
-              onClick = onConnectViaLink
-            )
-          }
-        )
-      }
+    val heightRatio = if (appPlatform.isDesktop) 0.5625f else 0.75f
+    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
+      CardPair(isLandscape, DEFAULT_PADDING, DEFAULT_PADDING, heightRatio,
+        card1 = {
+          OnboardingCardView(
+            imageName = MR.images.card_let_someone_connect_to_you_alpha,
+            imageNameLight = MR.images.card_let_someone_connect_to_you_alpha_light,
+            icon = MR.images.ic_add_link,
+            title = stringResource(MR.strings.let_someone_connect_to_you),
+            labelHeightRatio = 0.132f,
+            onClick = onLetSomeoneConnect
+          )
+        },
+        card2 = {
+          OnboardingCardView(
+            imageName = MR.images.card_connect_via_link_alpha,
+            imageNameLight = MR.images.card_connect_via_link_alpha_light,
+            icon = MR.images.ic_qr_code,
+            title = stringResource(MR.strings.connect_via_link_or_qr_code),
+            labelHeightRatio = 0.132f,
+            onClick = onConnectViaLink
+          )
+        }
+      )
     }
   }
 }
@@ -437,43 +436,32 @@ private fun ConnectWithSomeonePage(
       onBack = onBack
     )
 
-    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-      val padding = DEFAULT_PADDING
-      val spacing = DEFAULT_PADDING
-      val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
-      val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
-      val maxCardHeight = if (isLandscape) {
-        minOf(maxDesiredCardHeight, maxHeight - padding * 2)
-      } else {
-        minOf(maxDesiredCardHeight, (maxHeight - spacing - padding * 2) / 2)
-      }.coerceAtLeast(0.dp)
-
-      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CardPair(isLandscape, padding, spacing, maxCardHeight,
-          card1 = {
-            OnboardingCardView(
-              imageName = MR.images.card_invite_someone_privately_alpha,
-              imageNameLight = MR.images.card_invite_someone_privately_alpha_light,
-              icon = MR.images.ic_add_link,
-              title = stringResource(MR.strings.invite_someone_privately),
-              subtitle = stringResource(MR.strings.a_link_for_one_person),
-              labelHeight = cardWidth * 0.195f,
-              onClick = onInviteSomeone
-            )
-          },
-          card2 = {
-            OnboardingCardView(
-              imageName = MR.images.card_create_your_public_address_alpha,
-              imageNameLight = MR.images.card_create_your_public_address_alpha_light,
-              icon = MR.images.ic_qr_code,
-              title = stringResource(MR.strings.create_your_public_address),
-              subtitle = stringResource(MR.strings.for_anyone_to_reach_you),
-              labelHeight = cardWidth * 0.195f,
-              onClick = onCreateAddress
-            )
-          }
-        )
-      }
+    val heightRatio = if (appPlatform.isDesktop) 0.5625f else 0.75f
+    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
+      CardPair(isLandscape, DEFAULT_PADDING, DEFAULT_PADDING, heightRatio,
+        card1 = {
+          OnboardingCardView(
+            imageName = MR.images.card_invite_someone_privately_alpha,
+            imageNameLight = MR.images.card_invite_someone_privately_alpha_light,
+            icon = MR.images.ic_add_link,
+            title = stringResource(MR.strings.invite_someone_privately),
+            subtitle = stringResource(MR.strings.a_link_for_one_person),
+            labelHeightRatio = 0.195f,
+            onClick = onInviteSomeone
+          )
+        },
+        card2 = {
+          OnboardingCardView(
+            imageName = MR.images.card_create_your_public_address_alpha,
+            imageNameLight = MR.images.card_create_your_public_address_alpha_light,
+            icon = MR.images.ic_qr_code,
+            title = stringResource(MR.strings.create_your_public_address),
+            subtitle = stringResource(MR.strings.for_anyone_to_reach_you),
+            labelHeightRatio = 0.195f,
+            onClick = onCreateAddress
+          )
+        }
+      )
     }
   }
 }
