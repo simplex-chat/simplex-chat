@@ -82,12 +82,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
 -- 16 - support short link data (2025-06-10)
 -- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
+-- 18 - support comments on channel posts (2026-04-07)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 17
+currentChatVersion = VersionChat 18
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -153,6 +154,10 @@ shortLinkDataVersion = VersionChat 16
 -- support host voice messages during member approval regardless of group voice setting
 memberSupportVoiceVersion :: VersionChat
 memberSupportVoiceVersion = VersionChat 17
+
+-- support comments on channel posts (merged MsgContainer with optional `parent`, XGrpCommentsDisabled)
+commentsVersion :: VersionChat
+commentsVersion = VersionChat 18
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -451,6 +456,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
+  -- Governance: lock/unlock commenting on a specific channel post, addressed by its SharedMsgId.
+  XGrpCommentsDisabled :: {parentMsgId :: SharedMsgId, disabled :: Bool} -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
@@ -631,24 +638,58 @@ instance FromField MsgContentTag where fromField = fromTextField_ $ eitherToMayb
 
 instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
-data MsgContainer
-  = MCSimple ExtMsgContent
-  | MCQuote QuotedMsg ExtMsgContent
-  | MCComment MsgRef ExtMsgContent
-  | MCForward ExtMsgContent
+-- Wire JSON 1:1 with parsed form. The three discriminator fields `quote`, `parent`,
+-- and `forward` are independent and may co-occur (e.g. a comment that quotes another
+-- comment carries both `parent` and `quote`). `forward` is a plain Bool (not Maybe Bool)
+-- to match the existing wire format exactly: the serializer only emits `"forward": true`
+-- and the parser treats absent/false as "not a forward".
+data MsgContainer = MsgContainer
+  { content :: MsgContent,
+    -- the key used in mentions is a locally (per message) unique display name of member.
+    -- Suffixes _1, _2 should be appended to make names locally unique.
+    -- It should be done in the UI, as they will be part of the text, and validated in the API.
+    mentions :: Map MemberName MsgMention,
+    file :: Maybe FileInvitation,
+    ttl :: Maybe Int,
+    live :: Maybe Bool,
+    scope :: Maybe MsgScope,
+    asGroup :: Maybe Bool,
+    quote :: Maybe QuotedMsg,
+    parent :: Maybe MsgRef,
+    forward :: Bool
+  }
   deriving (Eq, Show)
 
-mcExtMsgContent :: MsgContainer -> ExtMsgContent
-mcExtMsgContent = \case
-  MCSimple c -> c
-  MCQuote _ c -> c
-  MCComment _ c -> c
-  MCForward c -> c
+-- Base value used by the smart constructors and for record-update on send sites.
+mc :: MsgContainer
+mc =
+  MsgContainer
+    { content = MCText "",
+      mentions = M.empty,
+      file = Nothing,
+      ttl = Nothing,
+      live = Nothing,
+      scope = Nothing,
+      asGroup = Nothing,
+      quote = Nothing,
+      parent = Nothing,
+      forward = False
+    }
+
+mcSimple :: MsgContent -> MsgContainer
+mcSimple c = mc {content = c}
+
+mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
+mcQuote q c = mc {content = c, quote = Just q}
+
+mcComment :: MsgRef -> MsgContent -> MsgContainer
+mcComment p c = mc {content = c, parent = Just p}
+
+mcForward :: MsgContent -> MsgContainer
+mcForward c = mc {content = c, forward = True}
 
 isMCForward :: MsgContainer -> Bool
-isMCForward = \case
-  MCForward _ -> True
-  _ -> False
+isMCForward MsgContainer {forward} = forward
 
 data MsgContent
   = MCText {text :: Text}
@@ -721,20 +762,6 @@ msgContentTag = \case
   MCReport {} -> MCReport_
   MCChat {} -> MCChat_
   MCUnknown {tag} -> MCUnknown_ tag
-
-data ExtMsgContent = ExtMsgContent
-  { content :: MsgContent,
-    -- the key used in mentions is a locally (per message) unique display name of member.
-    -- Suffixes _1, _2 should be appended to make names locally unique.
-    -- It should be done in the UI, as they will be part of the text, and validated in the API.
-    mentions :: Map MemberName MsgMention,
-    file :: Maybe FileInvitation,
-    ttl :: Maybe Int,
-    live :: Maybe Bool,
-    scope :: Maybe MsgScope,
-    asGroup :: Maybe Bool
-  }
-  deriving (Eq, Show)
 
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
@@ -850,9 +877,6 @@ parseMsgContainer v =
       scope <- v .:? "scope"
       asGroup <- v .:? "asGroup"
       pure ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup}
-
-extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -980,6 +1004,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
   XGrpPrefs_ :: CMEventTag 'Json
+  XGrpCommentsDisabled_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
@@ -1037,6 +1062,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
     XGrpPrefs_ -> "x.grp.prefs"
+    XGrpCommentsDisabled_ -> "x.grp.cmnts.dsbl"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
@@ -1095,6 +1121,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
         "x.grp.prefs" -> XGrpPrefs_
+        "x.grp.cmnts.dsbl" -> XGrpCommentsDisabled_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
@@ -1149,6 +1176,7 @@ toCMEventTag msg = case msg of
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
+  XGrpCommentsDisabled {} -> XGrpCommentsDisabled_
   XGrpDirectInv {} -> XGrpDirectInv_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
