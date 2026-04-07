@@ -246,7 +246,7 @@ private fun BackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     modifier
       .clip(RoundedCornerShape(20.dp))
       .clickable(onClick = onClick)
-      .padding(8.dp),
+      .padding(horizontal = 12.dp, vertical = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
@@ -273,7 +273,7 @@ private fun CardPair(
 ) {
   if (isLandscape) {
     Row(
-      Modifier.padding(horizontal = padding),
+      Modifier.padding(horizontal = padding, vertical = padding),
       horizontalArrangement = Arrangement.spacedBy(spacing)
     ) {
       Box(Modifier.weight(1f).heightIn(max = maxCardHeight)) { card1() }
