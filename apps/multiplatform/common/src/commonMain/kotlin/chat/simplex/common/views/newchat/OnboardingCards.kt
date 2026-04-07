@@ -304,67 +304,55 @@ fun ConnectOnboardingView() {
   val pagerState = rememberPagerState(initialPage = 0) { 2 }
   val scope = rememberCoroutineScope()
 
-  // Desktop: animate cards when start modals open
+  // Desktop: fade cards when start modals open, click faded cards to dismiss
   val startModalsOpen = appPlatform.isDesktop && ModalManager.start.hasModalsOpen
-  val cardOffset by animateFloatAsState(if (startModalsOpen) 0.3f else 0f)
   val cardAlpha by animateFloatAsState(if (startModalsOpen) 0.3f else 1f)
-  val modalSlide by animateFloatAsState(if (startModalsOpen) 0f else -1f)
 
-  Box(Modifier.fillMaxSize()) {
-    // Desktop: start modal area — slides from left
-    if (appPlatform.isDesktop) {
-      Box(
-        Modifier
-          .fillMaxHeight()
-          .widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
-          .graphicsLayer { translationX = modalSlide * size.width }
-      ) {
-        ModalManager.start.showInView()
-      }
-    }
+  Box(
+    Modifier.fillMaxSize().graphicsLayer {
+      if (appPlatform.isDesktop) alpha = cardAlpha
+    },
+    contentAlignment = Alignment.Center
+  ) {
+    HorizontalPager(
+      state = pagerState,
+      modifier = if (appPlatform.isDesktop) Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH) else Modifier.fillMaxWidth(),
+      userScrollEnabled = !appPlatform.isDesktop
+    ) { page ->
+      val cardClickOverride: (() -> Unit)? = if (appPlatform.isDesktop && startModalsOpen) {
+        { ModalManager.start.closeModals() }
+      } else null
 
-    // Cards — shift right and fade on desktop when start modal is open
-    Box(
-      Modifier.fillMaxSize().graphicsLayer {
+      fun goToPage(target: Int) {
         if (appPlatform.isDesktop) {
-          translationX = cardOffset * size.width
-          alpha = cardAlpha
+          scope.launch { pagerState.scrollToPage(target) }
+        } else {
+          scope.launch { pagerState.animateScrollToPage(target, animationSpec = tween(350)) }
         }
-      },
-      contentAlignment = Alignment.Center
-    ) {
-      HorizontalPager(
-        state = pagerState,
-        modifier = if (appPlatform.isDesktop) Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH) else Modifier.fillMaxWidth(),
-        userScrollEnabled = !appPlatform.isDesktop
-      ) { page ->
-        val cardClickOverride: (() -> Unit)? = if (appPlatform.isDesktop && startModalsOpen) {
-          { ModalManager.start.closeModals() }
-        } else null
+      }
 
-        when (page) {
-          0 -> TalkToSomeonePage(
-            onLetSomeoneConnect = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(1, animationSpec = tween(350)) }; Unit },
-            onConnectViaLink = cardClickOverride ?: {
-              ModalManager.start.showModalCloseable { close ->
-                NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
-              }
+      when (page) {
+        0 -> TalkToSomeonePage(
+          onLetSomeoneConnect = cardClickOverride ?: { goToPage(1) },
+          onConnectViaLink = cardClickOverride ?: {
+            ModalManager.start.showModalCloseable { close ->
+              NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
             }
-          )
-          1 -> ConnectWithSomeonePage(
-            onBack = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(0, animationSpec = tween(350)) }; Unit },
-            onInviteSomeone = cardClickOverride ?: {
-              ModalManager.start.showModalCloseable { close ->
-                NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
-              }
-            },
-            onCreateAddress = cardClickOverride ?: {
-              ModalManager.start.showModalCloseable { close ->
-                UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-              }
+          }
+        )
+        1 -> ConnectWithSomeonePage(
+          onBack = cardClickOverride ?: { goToPage(0) },
+          onInviteSomeone = cardClickOverride ?: {
+            ModalManager.start.showModalCloseable { close ->
+              NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
             }
-          )
-        }
+          },
+          onCreateAddress = cardClickOverride ?: {
+            ModalManager.start.showModalCloseable { close ->
+              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+            }
+          }
+        )
       }
     }
   }
