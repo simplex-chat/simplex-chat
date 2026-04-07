@@ -339,7 +339,7 @@ fun ConnectOnboardingView() {
 
         when (page) {
           0 -> TalkToSomeonePage(
-            onLetSomeoneConnect = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(1, animationSpec = tween(300)) }; Unit },
+            onLetSomeoneConnect = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(1, animationSpec = tween(350)) }; Unit },
             onConnectViaLink = cardClickOverride ?: {
               ModalManager.start.showModalCloseable { close ->
                 NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
@@ -347,7 +347,7 @@ fun ConnectOnboardingView() {
             }
           )
           1 -> ConnectWithSomeonePage(
-            onBack = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(0, animationSpec = tween(300)) }; Unit },
+            onBack = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(0, animationSpec = tween(350)) }; Unit },
             onInviteSomeone = cardClickOverride ?: {
               ModalManager.start.showModalCloseable { close ->
                 NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
