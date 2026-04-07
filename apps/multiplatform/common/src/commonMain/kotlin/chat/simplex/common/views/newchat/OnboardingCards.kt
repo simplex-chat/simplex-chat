@@ -211,7 +211,7 @@ fun OnboardingCardView(
 
 @Composable
 private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, onBack: (() -> Unit)? = null) {
-  val color = if (showBack && onBack != null) MaterialTheme.colors.primary else Color.Transparent
+  val color = if (showBack && onBack != null && !appPlatform.isDesktop) MaterialTheme.colors.primary else Color.Transparent
   val baseStyle = MaterialTheme.typography.h1
   val titleView = @Composable {
     var fontScale by remember(title) { mutableStateOf(1f) }
@@ -308,29 +308,24 @@ fun ConnectOnboardingView() {
   val startModalsOpen = appPlatform.isDesktop && ModalManager.start.hasModalsOpen
   val cardAlpha by animateFloatAsState(if (startModalsOpen) 0.3f else 1f)
 
-  Box(
-    Modifier.fillMaxSize().graphicsLayer {
-      if (appPlatform.isDesktop) alpha = cardAlpha
-    },
-    contentAlignment = Alignment.Center
-  ) {
+  val cardClickOverride: (() -> Unit)? = if (startModalsOpen) {
+    { ModalManager.start.closeModals() }
+  } else null
+
+  fun goToPage(target: Int) {
+    if (appPlatform.isDesktop) {
+      scope.launch { pagerState.scrollToPage(target) }
+    } else {
+      scope.launch { pagerState.animateScrollToPage(target, animationSpec = tween(350)) }
+    }
+  }
+
+  val pager = @Composable {
     HorizontalPager(
       state = pagerState,
-      modifier = if (appPlatform.isDesktop) Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH) else Modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth(),
       userScrollEnabled = !appPlatform.isDesktop
     ) { page ->
-      val cardClickOverride: (() -> Unit)? = if (appPlatform.isDesktop && startModalsOpen) {
-        { ModalManager.start.closeModals() }
-      } else null
-
-      fun goToPage(target: Int) {
-        if (appPlatform.isDesktop) {
-          scope.launch { pagerState.scrollToPage(target) }
-        } else {
-          scope.launch { pagerState.animateScrollToPage(target, animationSpec = tween(350)) }
-        }
-      }
-
       when (page) {
         0 -> TalkToSomeonePage(
           onLetSomeoneConnect = cardClickOverride ?: { goToPage(1) },
@@ -356,6 +351,30 @@ fun ConnectOnboardingView() {
       }
     }
   }
+
+  if (appPlatform.isDesktop) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
+      DefaultAppBar(
+        navigationButton = if (pagerState.currentPage == 1) {
+          { NavigationButtonBack(onButtonClicked = { goToPage(0) }) }
+        } else null,
+        onTop = true,
+        onSearchValueChanged = {}
+      )
+      Box(
+        Modifier.weight(1f).fillMaxWidth().graphicsLayer { alpha = cardAlpha },
+        contentAlignment = Alignment.Center
+      ) {
+        Box(Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH)) {
+          pager()
+        }
+      }
+    }
+  } else {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      pager()
+    }
+  }
 }
 
 // MARK: - Screen 1
@@ -376,7 +395,7 @@ private fun TalkToSomeonePage(
       isLandscape = isLandscape
     )
 
-    val heightRatio = if (appPlatform.isDesktop) 0.5625f else 0.75f
+    val heightRatio = 0.75f
     Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
       CardPair(isLandscape, DEFAULT_PADDING, DEFAULT_PADDING, heightRatio,
         card1 = {
@@ -424,7 +443,7 @@ private fun ConnectWithSomeonePage(
       onBack = onBack
     )
 
-    val heightRatio = if (appPlatform.isDesktop) 0.5625f else 0.75f
+    val heightRatio = 0.75f
     Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
       CardPair(isLandscape, DEFAULT_PADDING, DEFAULT_PADDING, heightRatio,
         card1 = {
