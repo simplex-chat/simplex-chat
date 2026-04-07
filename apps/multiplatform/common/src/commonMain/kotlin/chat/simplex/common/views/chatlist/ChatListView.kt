@@ -477,31 +477,33 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
-        Text(
-          stringResource(MR.strings.your_chats),
-          color = MaterialTheme.colors.onBackground,
-          fontWeight = FontWeight.SemiBold,
-        )
-        SubscriptionStatusIndicator(
-          click = {
-            ModalManager.start.closeModals()
-            val summary = serversSummary.value
-            ModalManager.start.showModalCloseable(
-              endButtons = {
-                if (summary != null) {
-                  ShareButton {
-                    val json = Json {
-                      prettyPrint = true
+      if (!shouldShowOnboarding()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
+          Text(
+            stringResource(MR.strings.your_chats),
+            color = MaterialTheme.colors.onBackground,
+            fontWeight = FontWeight.SemiBold,
+          )
+          SubscriptionStatusIndicator(
+            click = {
+              ModalManager.start.closeModals()
+              val summary = serversSummary.value
+              ModalManager.start.showModalCloseable(
+                endButtons = {
+                  if (summary != null) {
+                    ShareButton {
+                      val json = Json {
+                        prettyPrint = true
+                      }
+                      val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
+                      clipboard.shareText(text)
                     }
-                    val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
-                    clipboard.shareText(text)
                   }
                 }
-              }
-            ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
-          }
-        )
+              ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
+            }
+          )
+        }
       }
     },
     onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,
