@@ -450,8 +450,10 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
   if (shouldShowOnboarding()) {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
-    val topPad = if (!oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
-    val bottomPad = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    val toolbarHeight = AppBarHeight * fontSizeSqrtMultiplier
+    val topPad = if (!oneHandUI.value) toolbarHeight else 0.dp
+    val bottomPad = if (oneHandUI.value) toolbarHeight else 0.dp
+    val toolbarBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
     // Background layer — covers center+end area only, leaves start panel visible
     Box(
       Modifier
@@ -459,6 +461,24 @@ fun DesktopScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
         .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, top = topPad, bottom = bottomPad)
         .background(MaterialTheme.colors.background)
     )
+    // Fake center toolbar — matches start panel toolbar visually
+    Box(
+      Modifier
+        .fillMaxSize()
+        .padding(
+          start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier,
+          top = if (oneHandUI.value) 0.dp else 0.dp,
+          bottom = if (oneHandUI.value) 0.dp else 0.dp
+        )
+    ) {
+      Box(
+        Modifier
+          .fillMaxWidth()
+          .height(toolbarHeight)
+          .align(if (!oneHandUI.value) Alignment.TopStart else Alignment.BottomStart)
+          .background(toolbarBg)
+      )
+    }
     // Content layer — full width, no background, clicks outside cards pass through to start panel
     Box(
       Modifier

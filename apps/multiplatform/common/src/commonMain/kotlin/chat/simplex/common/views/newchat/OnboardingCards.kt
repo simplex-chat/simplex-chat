@@ -220,17 +220,19 @@ private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, o
   }
   if (isLandscape) {
     Box(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING)) {
-      if (showBack && onBack != null) {
-        BackButton(onBack, Modifier.align(Alignment.CenterStart))
-      }
+      BackButton(
+        onClick = onBack ?: {},
+        modifier = if (showBack && onBack != null) Modifier.align(Alignment.CenterStart) else Modifier.align(Alignment.CenterStart).graphicsLayer { alpha = 0f }
+      )
       titleView()
     }
   } else {
     Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING)) {
-      if (showBack && onBack != null) {
-        BackButton(onBack, Modifier.align(Alignment.Start))
-      } else {
-        Spacer(Modifier.height(AppBarHeight))
+      Box(Modifier.align(Alignment.Start)) {
+        BackButton(
+          onClick = onBack ?: {},
+          modifier = if (showBack && onBack != null) Modifier else Modifier.graphicsLayer { alpha = 0f }
+        )
       }
       titleView()
     }
@@ -281,8 +283,8 @@ private fun CardPair(
       Modifier.padding(horizontal = padding),
       verticalArrangement = Arrangement.spacedBy(spacing)
     ) {
-      Box(Modifier.fillMaxWidth().heightIn(max = maxCardHeight)) { card1() }
-      Box(Modifier.fillMaxWidth().heightIn(max = maxCardHeight)) { card2() }
+      Box(Modifier.fillMaxWidth().weight(1f).heightIn(max = maxCardHeight)) { card1() }
+      Box(Modifier.fillMaxWidth().weight(1f).heightIn(max = maxCardHeight)) { card2() }
     }
   }
 }
@@ -374,7 +376,7 @@ private fun TalkToSomeonePage(
     val padding = DEFAULT_PADDING
     val spacing = DEFAULT_PADDING
     val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
-    val maxCardHeight = cardWidth * 0.75f
+    val maxCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
 
     Column(
       Modifier.fillMaxSize(),
@@ -429,7 +431,7 @@ private fun ConnectWithSomeonePage(
     val padding = DEFAULT_PADDING
     val spacing = DEFAULT_PADDING
     val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
-    val maxCardHeight = cardWidth * 0.75f
+    val maxCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
 
     Column(
       Modifier.fillMaxSize(),
