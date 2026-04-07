@@ -203,14 +203,21 @@ fun OnboardingCardView(
 @Composable
 private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, onBack: (() -> Unit)? = null) {
   val color = if (showBack && onBack != null) MaterialTheme.colors.primary else Color.Transparent
+  val baseStyle = MaterialTheme.typography.h1
   val titleView = @Composable {
+    var fontScale by remember(title) { mutableStateOf(1f) }
     Text(
       title,
-      style = MaterialTheme.typography.h1,
+      style = baseStyle.copy(fontSize = baseStyle.fontSize * fontScale),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,
       textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
+      modifier = Modifier.fillMaxWidth(),
+      onTextLayout = { result ->
+        if (result.hasVisualOverflow && fontScale > 0.5f) {
+          fontScale -= 0.05f
+        }
+      }
     )
   }
   if (isLandscape) {
@@ -234,7 +241,7 @@ private fun BackButton(modifier: Modifier = Modifier, color: Color = MaterialThe
     modifier
       .clip(RoundedCornerShape(20.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 12.dp, vertical = 10.dp),
+      .padding(end = 12.dp, top = 10.dp, bottom = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
@@ -261,7 +268,7 @@ private fun CardPair(
 ) {
   if (isLandscape) {
     Row(
-      Modifier.padding(horizontal = padding, vertical = padding),
+      Modifier.padding(horizontal = padding),
       horizontalArrangement = Arrangement.spacedBy(spacing)
     ) {
       Box(Modifier.weight(1f).height(maxCardHeight)) { card1() }
@@ -377,7 +384,7 @@ private fun TalkToSomeonePage(
       val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
       val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
       val maxCardHeight = if (isLandscape) {
-        minOf(maxDesiredCardHeight, maxHeight - padding * 4)
+        minOf(maxDesiredCardHeight, maxHeight - padding * 2)
       } else {
         minOf(maxDesiredCardHeight, (maxHeight - spacing - padding * 2) / 2)
       }.coerceAtLeast(0.dp)
@@ -436,7 +443,7 @@ private fun ConnectWithSomeonePage(
       val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
       val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
       val maxCardHeight = if (isLandscape) {
-        minOf(maxDesiredCardHeight, maxHeight - padding * 4)
+        minOf(maxDesiredCardHeight, maxHeight - padding * 2)
       } else {
         minOf(maxDesiredCardHeight, (maxHeight - spacing - padding * 2) / 2)
       }.coerceAtLeast(0.dp)
