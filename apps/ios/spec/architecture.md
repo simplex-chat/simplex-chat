@@ -266,6 +266,55 @@ Optional desktop pairing allows controlling the mobile app from a desktop client
 
 ---
 
+## 8. Chat Relay Management
+
+### Overview
+
+Chat relays are SMP servers that forward messages to channel subscribers. They are configured in the Network & Servers settings and selected during channel creation.
+
+### Data Model
+
+| Type | Location | Description |
+|------|----------|-------------|
+| `UserChatRelay` | `ChatTypes.swift` | Relay server config: chatRelayId, address, name, domains, preset, tested, enabled, deleted |
+| `UserOperatorServers.chatRelays` | `AppAPITypes.swift` | Array of `UserChatRelay` per operator |
+| `UserServersWarning` | `AppAPITypes.swift` | Enum with `.noChatRelays(user:)` case |
+| `ServerSettings.serverWarnings` | `ChatListView.swift` | `[UserServersWarning]` field on `ServerSettings` struct (exposed via `SaveableSettings.servers`) |
+
+### Relay Management Views
+
+| View | File | Description |
+|------|------|-------------|
+| `ChatRelayView` | `ChatRelayView.swift` | Edit/view relay: name, address, test, enable toggle, delete |
+| `ChatRelayViewLink` | `ChatRelayView.swift` | NavigationLink row showing relay status icon + display name |
+| `NewChatRelayView` | `ChatRelayView.swift` | Form to add new relay (name + address + test + enable toggle) |
+| `ServersWarningView` | `NetworkAndServers.swift` | Orange exclamation triangle + warning text |
+
+### Key Functions
+
+| Function | File | Description |
+|----------|------|-------------|
+| `addChatRelay(...)` | `ChatRelayView.swift` | Validates name/address, appends to `userServers[nil operator].chatRelays`, calls `validateServers_` |
+| `deleteChatRelay(...)` | `ProtocolServersView.swift` | Marks relay as deleted or removes if no `chatRelayId` |
+| `validRelayName(_:)` | `ChatRelayView.swift` | Non-empty + valid display name check |
+| `validRelayAddress(_:)` | `ChatRelayView.swift` | Parses via `parseSimpleXMarkdown`, validates `.simplexLink(_, .relay, _, _)` |
+| `showRelayTestStatus(relay:)` | `ChatRelayView.swift` | ViewBuilder returning checkmark/multiply/clear icons |
+| `validateServers_` | `NetworkAndServers.swift` | Extended signature: now accepts optional `Binding<[UserServersWarning]>?`; calls `validateServers` which returns `([UserServersError], [UserServersWarning])` tuple |
+| `globalServersWarning(_:)` | `NetworkAndServers.swift` | Extracts `.noChatRelays` warning text for display |
+| `bindingForChatRelays(_:_:)` | `NetworkAndServers.swift` | Creates binding for `chatRelays` at operator index |
+
+### Relay Sections in Settings
+
+"Chat relays" sections appear in:
+- `OperatorView`: lists relays for the operator, with header and footer
+- `YourServersView` (in `ProtocolServersView`): lists relays for non-operator servers, with delete support and "Add server" -> "Chat relay" option
+
+### serverWarnings Plumbing
+
+`Binding<[UserServersWarning]>` is threaded through: `NetworkAndServers` -> `OperatorView` -> `ProtocolServersView` -> `ProtocolServerView` / `NewServerView` / `ScanProtocolServer`. All `validateServers_` calls pass the warnings binding.
+
+---
+
 ## Source Files
 
 | File | Path | Line |

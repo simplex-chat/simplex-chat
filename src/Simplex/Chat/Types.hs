@@ -54,8 +54,10 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
@@ -134,6 +136,7 @@ data User = User
     sendRcptsSmallGroups :: Bool,
     autoAcceptMemberContacts :: Bool,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
+    userChatRelay :: BoolDef,
     clientService :: BoolDef,
     uiThemes :: Maybe UIThemeEntityOverrides
   }
@@ -142,13 +145,14 @@ data User = User
 data NewUser = NewUser
   { profile :: Maybe Profile,
     pastTimestamp :: Bool,
+    userChatRelay :: BoolDef,
     clientService :: BoolDef
   }
   deriving (Show)
 
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
-  deriving newtype (FromField)
+  deriving newtype (FromField, Encoding)
 
 instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField $ Binary m
 
@@ -446,9 +450,26 @@ data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
 
 type GroupId = Int64
 
+data GroupRootKey
+  = GRKPrivate {rootPrivKey :: C.PrivateKeyEd25519}
+  | GRKPublic {rootPubKey :: C.PublicKeyEd25519}
+  deriving (Eq, Show)
+
+groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
+groupRootPubKey (GRKPrivate pk) = C.publicKey pk
+groupRootPubKey (GRKPublic pk) = pk
+
+data GroupKeys = GroupKeys
+  { publicGroupId :: B64UrlByteString,
+    groupRootKey :: GroupRootKey,
+    memberPrivKey :: C.PrivateKeyEd25519
+  }
+  deriving (Eq, Show)
+
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
+    relayOwnStatus :: Maybe RelayStatus, -- status of the relay itself related to the group
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -467,9 +488,19 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
-    viaGroupLinkUri :: Maybe ConnReqContact
+    viaGroupLinkUri :: Maybe ConnReqContact,
+    groupKeys :: Maybe GroupKeys
   }
   deriving (Eq, Show)
+
+useRelays' :: GroupInfo -> Bool
+useRelays' GroupInfo {useRelays} = isTrue useRelays
+
+sendAsGroup' :: GroupInfo -> Bool
+sendAsGroup' gInfo@GroupInfo {membership} = useRelays' gInfo && memberRole' membership == GROwner
+
+groupId' :: GroupInfo -> GroupId
+groupId' GroupInfo {groupId} = groupId
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -502,7 +533,8 @@ groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
 data GroupSummary = GroupSummary
-  { currentMembers :: Int64
+  { currentMembers :: Int64,
+    publicMemberCount :: Maybe Int64
   }
   deriving (Eq, Show)
 
@@ -725,12 +757,37 @@ fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
 
+data GroupType
+  = GTChannel
+  | GTUnknown Text
+  deriving (Eq, Show)
+
+instance TextEncoding GroupType where
+  textEncode = \case
+    GTChannel -> "channel"
+    GTUnknown tag -> tag
+  textDecode s = Just $ case s of
+    "channel" -> GTChannel
+    tag -> GTUnknown tag
+
+instance FromField GroupType where fromField = fromTextField_ textDecode
+
+instance ToField GroupType where toField = toField . textEncode
+
+data PublicGroupProfile = PublicGroupProfile
+  { groupType :: GroupType,
+    groupLink :: ShortLinkContact,
+    publicGroupId :: B64UrlByteString -- group identity = sha256(genesis root key), immutable
+  }
+  deriving (Eq, Show)
+
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
+    publicGroup :: Maybe PublicGroupProfile,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
@@ -813,6 +870,15 @@ data GroupLinkRejection = GroupLinkRejection
   }
   deriving (Eq, Show)
 
+-- sent by owner to relay when adding it to group
+data GroupRelayInvitation = GroupRelayInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberProfile :: Profile,
+    relayMemberId :: MemberId,
+    groupLink :: ShortLinkContact
+  }
+  deriving (Eq, Show)
+
 data GroupRejectionReason
   = GRRLongName
   | GRRBlockedName
@@ -852,11 +918,23 @@ data IntroInvitation = IntroInvitation
   }
   deriving (Eq, Show)
 
+newtype MemberKey = MemberKey C.PublicKeyEd25519
+  deriving (Eq, Show)
+  deriving newtype (StrEncoding)
+
+instance FromJSON MemberKey where
+  parseJSON = strParseJSON "MemberKey"
+
+instance ToJSON MemberKey where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
     v :: Maybe ChatVersionRange,
-    profile :: Profile
+    profile :: Profile,
+    memberKey :: Maybe MemberKey
   }
   deriving (Eq, Show)
 
@@ -948,7 +1026,16 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupSupportChat
+    supportChat :: Maybe GroupSupportChat,
+    memberPubKey :: Maybe C.PublicKeyEd25519,
+    relayLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data RelayRequestData = RelayRequestData
+  { relayInvId :: InvitationId,
+    reqGroupLink :: ShortLinkContact,
+    reqChatVRange :: VersionRangeChat
   }
   deriving (Eq, Show)
 
@@ -975,10 +1062,11 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
--- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
--- TODO   - in channels members should directly connect only to relays
-isMemberRelay :: GroupMember -> Bool
-isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
+isRelay :: GroupMember -> Bool
+isRelay m = memberRole' m == GRRelay
+
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1035,7 +1123,7 @@ data NewGroupMember = NewGroupMember
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
   deriving (Eq, Ord, Show)
-  deriving newtype (FromField)
+  deriving newtype (Encoding, FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m
 
@@ -1052,7 +1140,10 @@ instance ToJSON MemberId where
   toEncoding = strToJEncoding
 
 nameFromMemberId :: MemberId -> ContactName
-nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
+nameFromMemberId = nameFromBS . unMemberId
+
+nameFromBS :: ByteString -> ContactName
+nameFromBS = T.take 7 . safeDecodeUtf8 . B64.encode
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -1789,6 +1880,9 @@ data CommandFunction
   | CFAcceptContact
   | CFAckMessage -- not used
   | CFDeleteConn -- not used
+  | CFSetShortLink
+  | CFGetRelayDataJoin
+  | CFGetRelayDataAccept
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1806,6 +1900,9 @@ instance TextEncoding CommandFunction where
     "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
+    "set_short_link" -> Just CFSetShortLink
+    "get_relay_data_join" -> Just CFGetRelayDataJoin
+    "get_relay_data_accept" -> Just CFGetRelayDataAccept
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1817,6 +1914,9 @@ instance TextEncoding CommandFunction where
     CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
+    CFSetShortLink -> "set_short_link"
+    CFGetRelayDataJoin -> "get_relay_data_join"
+    CFGetRelayDataAccept -> "get_relay_data_accept"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1829,6 +1929,9 @@ commandExpectedResponse = \case
   CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
+  CFSetShortLink -> t LINK_
+  CFGetRelayDataJoin -> t LDATA_
+  CFGetRelayDataAccept -> t LDATA_
   where
     t = AEvtTag SAEConn
 
@@ -1931,6 +2034,15 @@ instance ToField GroupMemberAdmission where
 instance FromField GroupMemberAdmission where
   fromField = fromTextField_ decodeJSON
 
+instance FromJSON GroupType where
+  parseJSON = textParseJSON "GroupType"
+
+instance ToJSON GroupType where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupProfile)
+
 $(JQ.deriveJSON defaultJSON ''GroupProfile)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
@@ -1963,7 +2075,11 @@ $(JQ.deriveToJSON defaultJSON ''GroupSummary)
 
 instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
-  omittedField = Just GroupSummary {currentMembers = 0}
+  omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
+
+$(JQ.deriveJSON defaultJSON ''GroupKeys)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
@@ -1986,6 +2102,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

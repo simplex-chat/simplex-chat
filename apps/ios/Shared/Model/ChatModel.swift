@@ -333,6 +333,29 @@ class ConnectProgressManager: ObservableObject {
     }
 }
 
+class ChannelRelaysModel: ObservableObject {
+    static let shared = ChannelRelaysModel()
+    @Published var groupId: Int64? = nil
+    @Published var groupRelays: [GroupRelay] = []
+
+    func set(groupId: Int64, groupRelays: [GroupRelay]) {
+        self.groupId = groupId
+        self.groupRelays = groupRelays
+    }
+
+    func updateRelay(_ groupInfo: GroupInfo, _ relay: GroupRelay) {
+        if groupId == groupInfo.groupId,
+           let i = groupRelays.firstIndex(where: { $0.groupRelayId == relay.groupRelayId }) {
+            groupRelays[i] = relay
+        }
+    }
+
+    func reset() {
+        groupId = nil
+        groupRelays = []
+    }
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
@@ -363,9 +386,13 @@ final class ChatModel: ObservableObject {
     @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
     @Published var chatToTop: String?
+    @Published var creatingChannelId: String?
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
+    // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
+    // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
+    @Published var channelRelayHostnames: [Int64: [String]] = [:]
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -1196,12 +1223,23 @@ final class ChatModel: ObservableObject {
 
     // Spec: spec/state.md#removeChat
     func removeChat(_ id: String) {
+        var groupId: Int64?
         withAnimation {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
+                groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
                 removeWallpaperFilesFromChat(removed)
             }
+        }
+        if chatId == id {
+            groupMembers = []
+            groupMembersIndexes.removeAll()
+            // Remove channelRelayHostnames for this channel only, preserving other prepared channels
+            if let gId = groupId {
+                channelRelayHostnames.removeValue(forKey: gId)
+            }
+            membersLoaded = false
         }
     }
 
@@ -1211,12 +1249,18 @@ final class ChatModel: ObservableObject {
             updateGroup(groupInfo)
             return false
         }
-        // update current chat
-        if chatId == groupInfo.id {
+        // update current chat or channel being created
+        if chatId == groupInfo.id || creatingChannelId == groupInfo.id {
             if let i = groupMembersIndexes[member.groupMemberId] {
+                let connStatusChanged = self.groupMembers[i].wrapped.activeConn?.connStatus != member.activeConn?.connStatus
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
+                }
+                // Updating wrapped on a reference-type GMember doesn't mutate the groupMembers array,
+                // so ChatModel.objectWillChange doesn't fire automatically — notify views explicitly.
+                if connStatusChanged {
+                    objectWillChange.send()
                 }
                 return false
             } else {

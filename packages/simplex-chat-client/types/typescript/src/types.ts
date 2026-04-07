@@ -554,11 +554,19 @@ export type CIDirection =
   | CIDirection.DirectRcv
   | CIDirection.GroupSnd
   | CIDirection.GroupRcv
+  | CIDirection.ChannelRcv
   | CIDirection.LocalSnd
   | CIDirection.LocalRcv
 
 export namespace CIDirection {
-  export type Tag = "directSnd" | "directRcv" | "groupSnd" | "groupRcv" | "localSnd" | "localRcv"
+  export type Tag = 
+    | "directSnd"
+    | "directRcv"
+    | "groupSnd"
+    | "groupRcv"
+    | "channelRcv"
+    | "localSnd"
+    | "localRcv"
 
   interface Interface {
     type: Tag
@@ -579,6 +587,10 @@ export namespace CIDirection {
   export interface GroupRcv extends Interface {
     type: "groupRcv"
     groupMember: GroupMember
+  }
+
+  export interface ChannelRcv extends Interface {
+    type: "channelRcv"
   }
 
   export interface LocalSnd extends Interface {
@@ -783,6 +795,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
+  msgSigned?: MsgSigStatus
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -969,6 +982,7 @@ export type ChatErrorType =
   | ChatErrorType.NoRcvFileUser
   | ChatErrorType.UserUnknown
   | ChatErrorType.UserExists
+  | ChatErrorType.ChatRelayExists
   | ChatErrorType.DifferentActiveUser
   | ChatErrorType.CantDeleteActiveUser
   | ChatErrorType.CantDeleteLastUser
@@ -1033,6 +1047,7 @@ export type ChatErrorType =
   | ChatErrorType.ConnectionIncognitoChangeProhibited
   | ChatErrorType.ConnectionUserChangeProhibited
   | ChatErrorType.PeerChatVRangeIncompatible
+  | ChatErrorType.RelayTestError
   | ChatErrorType.InternalError
   | ChatErrorType.Exception
 
@@ -1044,6 +1059,7 @@ export namespace ChatErrorType {
     | "noRcvFileUser"
     | "userUnknown"
     | "userExists"
+    | "chatRelayExists"
     | "differentActiveUser"
     | "cantDeleteActiveUser"
     | "cantDeleteLastUser"
@@ -1108,6 +1124,7 @@ export namespace ChatErrorType {
     | "connectionIncognitoChangeProhibited"
     | "connectionUserChangeProhibited"
     | "peerChatVRangeIncompatible"
+    | "relayTestError"
     | "internalError"
     | "exception"
 
@@ -1141,6 +1158,10 @@ export namespace ChatErrorType {
   export interface UserExists extends Interface {
     type: "userExists"
     contactName: string
+  }
+
+  export interface ChatRelayExists extends Interface {
+    type: "chatRelayExists"
   }
 
   export interface DifferentActiveUser extends Interface {
@@ -1452,6 +1473,11 @@ export namespace ChatErrorType {
 
   export interface PeerChatVRangeIncompatible extends Interface {
     type: "peerChatVRangeIncompatible"
+  }
+
+  export interface RelayTestError extends Interface {
+    type: "relayTestError"
+    message: string
   }
 
   export interface InternalError extends Interface {
@@ -2470,6 +2496,7 @@ export enum GroupFeatureEnabled {
 export interface GroupInfo {
   groupId: number // int64
   useRelays: boolean
+  relayOwnStatus?: RelayStatus
   localDisplayName: string
   groupProfile: GroupProfile
   localAlias: string
@@ -2489,6 +2516,13 @@ export interface GroupInfo {
   groupSummary: GroupSummary
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
+  groupKeys?: GroupKeys
+}
+
+export interface GroupKeys {
+  publicGroupId: string
+  groupRootKey: GroupRootKey
+  memberPrivKey: string
 }
 
 export interface GroupLink {
@@ -2516,6 +2550,7 @@ export namespace GroupLinkPlan {
 
   export interface Ok extends Interface {
     type: "ok"
+    groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
   }
 
@@ -2560,6 +2595,8 @@ export interface GroupMember {
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
+  memberPubKey?: string
+  relayLink?: string
 }
 
 export interface GroupMemberAdmission {
@@ -2580,6 +2617,7 @@ export interface GroupMemberRef {
 }
 
 export enum GroupMemberRole {
+  Relay = "relay",
   Observer = "observer",
   Author = "author",
   Member = "member",
@@ -2634,16 +2672,53 @@ export interface GroupProfile {
   shortDescr?: string
   description?: string
   image?: string
+  publicGroup?: PublicGroupProfile
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
 }
 
+export interface GroupRelay {
+  groupRelayId: number // int64
+  groupMemberId: number // int64
+  userChatRelay: UserChatRelay
+  relayStatus: RelayStatus
+  relayLink?: string
+}
+
+export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
+
+export namespace GroupRootKey {
+  export type Tag = "private" | "public"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Private extends Interface {
+    type: "private"
+    rootPrivKey: string
+  }
+
+  export interface Public extends Interface {
+    type: "public"
+    rootPubKey: string
+  }
+}
+
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
+  publicGroupData?: PublicGroupData
+}
+
+export interface GroupShortLinkInfo {
+  direct: boolean
+  groupRelays: string[]
+  publicGroupId?: string
 }
 
 export interface GroupSummary {
   currentMembers: number // int64
+  publicMemberCount?: number // int64
 }
 
 export interface GroupSupportChat {
@@ -2652,6 +2727,10 @@ export interface GroupSupportChat {
   memberAttention: number // int64
   mentions: number // int64
   lastMsgFromMemberTs?: string // ISO-8601 timestamp
+}
+
+export enum GroupType {
+  Channel = "channel",
 }
 
 export enum HandshakeError {
@@ -2956,6 +3035,11 @@ export enum MsgReceiptStatus {
   BadMsgHash = "badMsgHash",
 }
 
+export enum MsgSigStatus {
+  Verified = "verified",
+  SignedNoKey = "signedNoKey",
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3008,6 +3092,7 @@ export namespace NetworkError {
 export interface NewUser {
   profile?: Profile
   pastTimestamp: boolean
+  userChatRelay: boolean
   clientService: boolean
 }
 
@@ -3130,6 +3215,16 @@ export namespace ProxyError {
   export interface NO_SESSION extends Interface {
     type: "NO_SESSION"
   }
+}
+
+export interface PublicGroupData {
+  publicMemberCount: number // int64
+}
+
+export interface PublicGroupProfile {
+  groupType: GroupType
+  groupLink: string
+  publicGroupId: string
 }
 
 export type RCErrorType = 
@@ -3387,6 +3482,7 @@ export type RcvGroupEvent =
   | RcvGroupEvent.MemberCreatedContact
   | RcvGroupEvent.MemberProfileUpdated
   | RcvGroupEvent.NewMemberPendingReview
+  | RcvGroupEvent.MsgBadSignature
 
 export namespace RcvGroupEvent {
   export type Tag = 
@@ -3406,6 +3502,7 @@ export namespace RcvGroupEvent {
     | "memberCreatedContact"
     | "memberProfileUpdated"
     | "newMemberPendingReview"
+    | "msgBadSignature"
 
   interface Interface {
     type: Tag
@@ -3490,6 +3587,24 @@ export namespace RcvGroupEvent {
   export interface NewMemberPendingReview extends Interface {
     type: "newMemberPendingReview"
   }
+
+  export interface MsgBadSignature extends Interface {
+    type: "msgBadSignature"
+  }
+}
+
+export interface RelayProfile {
+  displayName: string
+  fullName: string
+  shortDescr?: string
+  image?: string
+}
+
+export enum RelayStatus {
+  New = "new",
+  Invited = "invited",
+  Accepted = "accepted",
+  Active = "active",
 }
 
 export enum ReportReason {
@@ -3772,6 +3887,7 @@ export namespace SrvError {
 export type StoreError = 
   | StoreError.DuplicateName
   | StoreError.UserNotFound
+  | StoreError.RelayUserNotFound
   | StoreError.UserNotFoundByName
   | StoreError.UserNotFoundByContactId
   | StoreError.UserNotFoundByGroupId
@@ -3799,6 +3915,7 @@ export type StoreError =
   | StoreError.InvalidMemberRelationUpdate
   | StoreError.GroupWithoutUser
   | StoreError.DuplicateGroupMember
+  | StoreError.DuplicateMemberId
   | StoreError.GroupAlreadyJoined
   | StoreError.GroupInvitationNotFound
   | StoreError.NoteFolderAlreadyExists
@@ -3847,6 +3964,9 @@ export type StoreError =
   | StoreError.ProhibitedDeleteUser
   | StoreError.OperatorNotFound
   | StoreError.UsageConditionsNotFound
+  | StoreError.UserChatRelayNotFound
+  | StoreError.GroupRelayNotFound
+  | StoreError.GroupRelayNotFoundByMemberId
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
   | StoreError.InvalidDeliveryTask
@@ -3859,6 +3979,7 @@ export namespace StoreError {
   export type Tag = 
     | "duplicateName"
     | "userNotFound"
+    | "relayUserNotFound"
     | "userNotFoundByName"
     | "userNotFoundByContactId"
     | "userNotFoundByGroupId"
@@ -3886,6 +4007,7 @@ export namespace StoreError {
     | "invalidMemberRelationUpdate"
     | "groupWithoutUser"
     | "duplicateGroupMember"
+    | "duplicateMemberId"
     | "groupAlreadyJoined"
     | "groupInvitationNotFound"
     | "noteFolderAlreadyExists"
@@ -3934,6 +4056,9 @@ export namespace StoreError {
     | "prohibitedDeleteUser"
     | "operatorNotFound"
     | "usageConditionsNotFound"
+    | "userChatRelayNotFound"
+    | "groupRelayNotFound"
+    | "groupRelayNotFoundByMemberId"
     | "invalidQuote"
     | "invalidMention"
     | "invalidDeliveryTask"
@@ -3953,6 +4078,10 @@ export namespace StoreError {
   export interface UserNotFound extends Interface {
     type: "userNotFound"
     userId: number // int64
+  }
+
+  export interface RelayUserNotFound extends Interface {
+    type: "relayUserNotFound"
   }
 
   export interface UserNotFoundByName extends Interface {
@@ -4083,6 +4212,10 @@ export namespace StoreError {
 
   export interface DuplicateGroupMember extends Interface {
     type: "duplicateGroupMember"
+  }
+
+  export interface DuplicateMemberId extends Interface {
+    type: "duplicateMemberId"
   }
 
   export interface GroupAlreadyJoined extends Interface {
@@ -4321,6 +4454,21 @@ export namespace StoreError {
     type: "usageConditionsNotFound"
   }
 
+  export interface UserChatRelayNotFound extends Interface {
+    type: "userChatRelayNotFound"
+    chatRelayId: number // int64
+  }
+
+  export interface GroupRelayNotFound extends Interface {
+    type: "groupRelayNotFound"
+    groupRelayId: number // int64
+  }
+
+  export interface GroupRelayNotFoundByMemberId extends Interface {
+    type: "groupRelayNotFoundByMemberId"
+    groupMemberId: number // int64
+  }
+
   export interface InvalidQuote extends Interface {
     type: "invalidQuote"
   }
@@ -4495,8 +4643,20 @@ export interface User {
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
+  userChatRelay: boolean
   clientService: boolean
   uiThemes?: UIThemeEntityOverrides
+}
+
+export interface UserChatRelay {
+  chatRelayId: number // int64
+  address: string
+  relayProfile: RelayProfile
+  domains: string[]
+  preset: boolean
+  tested?: boolean
+  enabled: boolean
+  deleted: boolean
 }
 
 export interface UserContact {

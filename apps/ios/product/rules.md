@@ -106,6 +106,35 @@
 
 ---
 
+## Channel Integrity
+
+### RULE-19: Channel owner cannot leave own channel
+**Rule:** A channel owner (`groupInfo.useRelays && groupInfo.isOwner`) who is the sole owner MUST NOT be able to leave the channel. The leave button is hidden in both swipe actions and context menu.
+**Enforced by:** `ChatListNavLink.swift` (swipe/context menu guards), `GroupChatInfoView.swift` (leave button conditional).
+**Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md) | [spec/client/chat-list.md](../spec/client/chat-list.md)
+
+### RULE-20: Relay members cannot be removed
+**Rule:** Members with role `.relay` MUST NOT be removable through the member info UI. The remove button is hidden for relay members.
+**Enforced by:** `GroupMemberInfoView.swift` (`mem.memberRole != .relay` guard on remove button).
+**Spec:** [spec/client/chat-view.md](../spec/client/chat-view.md)
+
+### RULE-21: Relay links cannot be used to connect
+**Rule:** SimpleX links with path `/r` (relay addresses) MUST be rejected when users attempt to connect. An explanatory alert is shown instead.
+**Enforced by:** `ContentView.swift` (`connectViaUrl_` early return for `/r` path), `NewChatView.swift` (`planAndConnect` guard for `.simplexLink(_, .relay, _, _)`).
+**Spec:** [spec/client/navigation.md](../spec/client/navigation.md)
+
+### RULE-22: Channel subscribers default to observer role
+**Rule:** Members joining a channel via its link MUST receive the `.observer` role. The initial role picker is hidden for channels.
+**Enforced by:** `AddChannelView.swift` (`groupLinkMemberRole: .observer` hardcoded), `GroupLinkView.swift` (role picker hidden when `isChannel`).
+**Spec:** [spec/api.md](../spec/api.md)
+
+### RULE-23: Channels default to history enabled
+**Rule:** Newly created channels MUST have message history enabled by default (`GroupPreference(enable: .on)`).
+**Enforced by:** `AddChannelView.swift` (`createChannel()` sets history preference).
+**Spec:** [spec/api.md](../spec/api.md)
+
+---
+
 ## Call Integrity
 
 ### RULE-17: Call encryption key exchange

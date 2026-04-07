@@ -65,7 +65,6 @@ struct ChatView: View {
     @State private var showUserSupportChatSheet = false
     @State private var showCommandsMenu = false
     @State private var supportChatMemberInfoLinkActive = false
-
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -135,12 +134,6 @@ struct ChatView: View {
                         .padding(.top)
                 }
                 if selectedChatItems == nil {
-                    let reason = chat.chatInfo.userCantSendReason
-                    let composeEnabled = (
-                        chat.chatInfo.sendMsgEnabled ||
-                        (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) || // allow to join prepared group without message
-                        (chat.chatInfo.contact?.nextAcceptContactRequest ?? false) // allow to accept or reject contact request
-                    )
                     ComposeView(
                         chat: chat,
                         im: im,
@@ -149,17 +142,8 @@ struct ChatView: View {
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
                         selectedRange: $selectedRange,
-                        disabledText: reason?.composeLabel
+                        disabledText: chat.chatInfo.userCantSendReason?.composeLabel
                     )
-                    .disabled(!composeEnabled)
-                    .if(!composeEnabled) { v in
-                        v.disabled(true).onTapGesture {
-                            AlertManager.shared.showAlertMsg(
-                                title: "You can't send messages!",
-                                message: reason?.alertMessage
-                            )
-                        }
-                    }
                 } else {
                     SelectedItemsBottomToolbar(
                         im: im,
@@ -269,6 +253,18 @@ struct ChatView: View {
                 AddGroupMembersView(chat: chat, groupInfo: groupInfo)
             }
         }
+        .appSheet(isPresented: $showGroupLinkSheet) {
+            if case let .group(groupInfo, _) = cInfo {
+                GroupLinkView(
+                    groupId: groupInfo.groupId,
+                    groupLink: $groupLink,
+                    groupLinkMemberRole: $groupLinkMemberRole,
+                    showTitle: true,
+                    creatingGroup: false,
+                    isChannel: groupInfo.useRelays
+                )
+            }
+        }
         .sheet(isPresented: Binding(
             get: { !forwardedChatItems.isEmpty },
             set: { isPresented in
@@ -351,6 +347,13 @@ struct ChatView: View {
 
                 if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
+                } else if let viewedIdx = mergedItems.boxedValue.items.firstIndex(where: { !$0.hasUnread() }) {
+                    // scroll to first unread after last viewed item (items reversed: 0 = newest)
+                    if viewedIdx > 0 {
+                        scrollView.scrollToItem(viewedIdx - 1)
+                    } else {
+                        scrollView.scrollToBottom()
+                    }
                 } else if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
                     scrollView.scrollToItem(unreadIndex)
                 } else {
@@ -405,6 +408,7 @@ struct ChatView: View {
                         chatModel.groupMembers = []
                         chatModel.groupMembersIndexes.removeAll()
                         chatModel.membersLoaded = false
+                        ChannelRelaysModel.shared.reset()
                     }
                 }
             }
@@ -533,32 +537,51 @@ struct ChatView: View {
             case let .direct(contact):
                 HStack {
                     let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                    let canStartCall = callsPrefEnabled && contact.ready && contact.active && chatModel.activeCall == nil
                     if let call = chatModel.activeCall, call.contact.id == cInfo.id {
                         endCallButton(call)
-                    } else {
-                        contentFilterMenu(withLabel: false)
-                    }
-                    Menu {
-                        if callsPrefEnabled && chatModel.activeCall == nil {
+                    } else if canStartCall {
+                        // Call button always in toolbar; tap opens Audio/Video submenu
+                        Menu {
                             Button {
                                 CallController.shared.startCall(contact, .audio)
                             } label: {
                                 Label("Audio call", systemImage: "phone")
                             }
-                            .disabled(!contact.ready || !contact.active)
                             Button {
                                 CallController.shared.startCall(contact, .video)
                             } label: {
                                 Label("Video call", systemImage: "video")
                             }
-                            .disabled(!contact.ready || !contact.active)
+                        } label: {
+                            Image(systemName: "phone")
                         }
-                        if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                            contentFilterMenu(withLabel: true)
-                        }
+                    } else if chatModel.activeCall == nil {
+                        // Calls unavailable: show filter button in place of call button
+                        contentFilterMenu(withLabel: false)
+                    }
+                    Menu {
                         searchButton()
                         ToggleNtfsButton(chat: chat)
                             .disabled(!contact.ready || !contact.active)
+                        // Filter options in menu when call button is shown (or during any active call)
+                        if !availableContent.isEmpty && (canStartCall || chatModel.activeCall != nil) {
+                            Divider()
+                            ForEach(availableContent, id: \.self) { type in
+                                Button {
+                                    setContentFilter(type)
+                                } label: {
+                                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                                }
+                            }
+                            if contentFilter != nil {
+                                Button {
+                                    closeSearch()
+                                } label: {
+                                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                                }
+                            }
+                        }
                     } label: {
                         Image(systemName: "ellipsis")
                     }
@@ -568,17 +591,8 @@ struct ChatView: View {
                     contentFilterMenu(withLabel: false)
                     Menu {
                         if groupInfo.canAddMembers {
-                            if (chat.chatInfo.incognito) {
+                            if chat.chatInfo.incognito || groupInfo.useRelays {
                                 groupLinkButton()
-                                    .appSheet(isPresented: $showGroupLinkSheet) {
-                                        GroupLinkView(
-                                            groupId: groupInfo.groupId,
-                                            groupLink: $groupLink,
-                                            groupLinkMemberRole: $groupLinkMemberRole,
-                                            showTitle: true,
-                                            creatingGroup: false
-                                        )
-                                    }
                             } else {
                                 addMembersButton()
                             }
@@ -591,7 +605,26 @@ struct ChatView: View {
                 }
             case .local:
                 HStack {
-                    contentFilterMenu(withLabel: false)
+                    if !availableContent.isEmpty {
+                        Menu {
+                            ForEach(availableContent, id: \.self) { type in
+                                Button {
+                                    setContentFilter(type)
+                                } label: {
+                                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                                }
+                            }
+                            if contentFilter != nil {
+                                Button {
+                                    closeSearch()
+                                } label: {
+                                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
+                    }
                     searchButton()
                 }
             default:
@@ -698,6 +731,25 @@ struct ChatView: View {
                     await MainActor.run {
                         chatModel.chatAgentConnId = nil
                         chatModel.chatSubStatus = nil
+                    }
+                }
+            }
+            if case let .group(groupInfo, _) = cInfo, groupInfo.useRelays {
+                Task { await chatModel.loadGroupMembers(groupInfo) }
+                if groupInfo.membership.memberRole == .owner {
+                    Task {
+                        let relays = await apiGetGroupRelays(groupInfo.groupId)
+                        await MainActor.run {
+                            ChannelRelaysModel.shared.set(groupId: groupInfo.groupId, groupRelays: relays)
+                        }
+                    }
+                } else {
+                    Task {
+                        if let gInfo = await apiGetUpdatedGroupLinkData(groupInfo.groupId) {
+                            await MainActor.run {
+                                chatModel.updateGroup(gInfo)
+                            }
+                        }
                     }
                 }
             }
@@ -865,6 +917,7 @@ struct ChatView: View {
                             selectedChatItems: $selectedChatItems,
                             forwardedChatItems: $forwardedChatItems,
                             searchText: $searchText,
+                            contentFilter: $contentFilter,
                             closeKeyboardAndRun: closeKeyboardAndRun
                         )
                     }
@@ -1029,12 +1082,12 @@ struct ChatView: View {
                 switch groupInfo.businessChat?.chatType {
                 case .none:
                     if groupInfo.nextConnectPrepared {
-                        "Tap Join group"
+                        groupInfo.useRelays ? "Tap Join channel" : "Tap Join group"
                     } else {
                         switch (groupInfo.membership.memberStatus) {
-                        case .memInvited: "Join group"
-                        case .memCreator: "Your group"
-                        default: "Group"
+                        case .memInvited: groupInfo.useRelays ? "Join channel" : "Join group"
+                        case .memCreator: groupInfo.useRelays ? "Your channel" : "Your group"
+                        default: groupInfo.useRelays ? "Channel" : "Group"
                         }
                     }
                 case .business:
@@ -1062,10 +1115,14 @@ struct ChatView: View {
                 nil
             }
         case let .group(groupInfo, _):
-            switch (groupInfo.membership.memberStatus) {
-            case .memUnknown: groupInfo.preparedGroup?.connLinkStartedConnection == true ? "connecting…" : nil
-            case .memAccepted: "connecting…"
-            default: nil
+            if groupInfo.useRelays {
+                nil
+            } else {
+                switch (groupInfo.membership.memberStatus) {
+                case .memUnknown: groupInfo.preparedGroup?.connLinkStartedConnection == true ? "connecting…" : nil
+                case .memAccepted: "connecting…"
+                default: nil
+                }
             }
         default: nil
         }
@@ -1384,7 +1441,11 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Label("Group link", systemImage: "link.badge.plus")
+            if case let .group(gInfo, _) = chat.chatInfo, gInfo.useRelays {
+                Label("Channel link", systemImage: "link")
+            } else {
+                Label("Group link", systemImage: "link.badge.plus")
+            }
         }
     }
 
@@ -1631,12 +1692,14 @@ struct ChatView: View {
         @Binding var forwardedChatItems: [ChatItem]
 
         @Binding var searchText: String
+        @Binding var contentFilter: ContentFilter?
         var closeKeyboardAndRun: (@escaping () -> Void) -> Void
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
+        @State private var swipeOffset: CGFloat = 0
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -1653,6 +1716,8 @@ struct ChatView: View {
 
             let sameMemberAndDirection = if case .groupRcv(let prevGroupMember) = prevItem.chatDir, case .groupRcv(let groupMember) = chatItem.chatDir {
                 groupMember.groupMemberId == prevGroupMember.groupMemberId
+            } else if case .channelRcv = chatItem.chatDir, case .channelRcv = prevItem.chatDir {
+                true
             } else {
                 chatItem.chatDir.sent == prevItem.chatDir.sent
             }
@@ -1668,15 +1733,20 @@ struct ChatView: View {
         func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
             let oldIsGroupRcv = switch older?.chatDir {
             case .groupRcv: true
+            case .channelRcv: true
             default: false
             }
             let sameMember = switch (older?.chatDir, current.chatDir) {
             case (.groupRcv(let oldMember), .groupRcv(let member)):
                 oldMember.memberId == member.memberId
+            case (.channelRcv, .channelRcv):
+                true
             default:
                 false
             }
             if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+                return true
+            } else if case .channelRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
                 return true
             } else {
                 return false
@@ -1788,7 +1858,7 @@ struct ChatView: View {
 
         private var searchIsNotBlank: Bool {
             get {
-                searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                (searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || contentFilter != nil
             }
         }
 
@@ -1843,7 +1913,74 @@ struct ChatView: View {
             _ itemSeparation: ItemSeparation
         ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
-            if case let .groupRcv(member) = ci.chatDir,
+            if case .channelRcv = ci.chatDir,
+               case let .group(groupInfo, _) = chat.chatInfo {
+                if showAvatar {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if ci.content.showMemberName {
+                            Group {
+                                Group {
+                                    if #available(iOS 16.0, *) {
+                                        MemberLayout(spacing: 16, msgWidth: msgWidth) {
+                                            Text(groupInfo.chatViewName)
+                                                .lineLimit(1)
+                                            Text(NSLocalizedString("channel", comment: "shown as sender role for channel messages"))
+                                                .fontWeight(.semibold)
+                                                .lineLimit(1)
+                                                .padding(.trailing, 8)
+                                        }
+                                    } else {
+                                        HStack(spacing: 16) {
+                                            Text(groupInfo.chatViewName)
+                                                .lineLimit(1)
+                                            Text(NSLocalizedString("channel", comment: "shown as sender role for channel messages"))
+                                                .fontWeight(.semibold)
+                                                .lineLimit(1)
+                                                .layoutPriority(1)
+                                        }
+                                    }
+                                }
+                                .frame(
+                                    maxWidth: maxWidth,
+                                    alignment: chatItem.chatDir.sent ? .trailing : .leading
+                                )
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
+                            .padding(.top, 3)
+                        }
+                        HStack(alignment: .center, spacing: 0) {
+                            if selectedChatItems != nil && ci.canBeDeletedForSelf {
+                                SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                                    .padding(.trailing, 12)
+                            }
+                            HStack(alignment: .top, spacing: 10) {
+                                ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        showChatInfoSheet = true
+                                    })
+                                chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                                    .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
+                            }
+                        }
+                    }
+                    .padding(.bottom, bottomPadding)
+                    .padding(.trailing)
+                    .padding(.leading, 12)
+                } else {
+                    HStack(alignment: .center, spacing: 0) {
+                        if selectedChatItems != nil && ci.canBeDeletedForSelf {
+                            SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                                .padding(.leading, 12)
+                        }
+                        chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                            .padding(.trailing)
+                            .padding(.leading, 10 + memberImageSize + 12)
+                    }
+                    .padding(.bottom, bottomPadding)
+                }
+            } else if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo, _) = chat.chatInfo {
                 if showAvatar {
                     VStack(alignment: .leading, spacing: 4) {
@@ -1971,33 +2108,69 @@ struct ChatView: View {
 
         func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            return VStack(alignment: alignment.horizontal, spacing: 3) {
-                HStack {
-                    if ci.chatDir.sent {
-                        goToItemButton(true)
+            let live = composeState.liveMessage != nil
+            let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil
+            return ZStack(alignment: .trailing) {
+                Image(systemName: "arrowshape.turn.up.left")
+                    .font(.system(size: 18))
+                    .foregroundColor(.secondary)
+                    .opacity(min(1, -swipeOffset / 30))
+                    .offset(x: swipeOffset + 40)
+                VStack(alignment: alignment.horizontal, spacing: 3) {
+                    HStack {
+                        if ci.chatDir.sent {
+                            goToItemButton(true)
+                        }
+                        ChatItemView(
+                            chat: chat,
+                            im: im,
+                            chatItem: ci,
+                            scrollToItem: scrollToItem,
+                            scrollToItemId: $scrollToItemId,
+                            maxWidth: maxWidth,
+                            allowMenu: $allowMenu
+                        )
+                        .environment(\.revealed, revealed)
+                        .environment(\.showTimestamp, itemSeparation.timestamp)
+                        .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
+                        .contextMenu { menu(ci, range, live: live) }
+                        .accessibilityLabel("")
+                        if !ci.chatDir.sent {
+                            goToItemButton(false)
+                        }
                     }
-                    ChatItemView(
-                        chat: chat,
-                        im: im,
-                        chatItem: ci,
-                        scrollToItem: scrollToItem,
-                        scrollToItemId: $scrollToItemId,
-                        maxWidth: maxWidth,
-                        allowMenu: $allowMenu
-                    )
-                    .environment(\.revealed, revealed)
-                    .environment(\.showTimestamp, itemSeparation.timestamp)
-                    .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
-                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
-                    .accessibilityLabel("")
-                    if !ci.chatDir.sent {
-                        goToItemButton(false)
+                    if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
+                        chatItemReactions(ci)
+                            .padding(.bottom, 4)
                     }
                 }
-                if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
-                    chatItemReactions(ci)
-                        .padding(.bottom, 4)
-                }
+                .offset(x: swipeOffset)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 10)
+                        .onChanged { value in
+                            guard canReply else { return }
+                            let x = value.translation.width
+                            if x < 0 {
+                                swipeOffset = max(x * 0.63, -56)
+                            }
+                        }
+                        .onEnded { _ in
+                            if swipeOffset < -42 {
+                                withAnimation {
+                                    if composeState.editing {
+                                        composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
+                                    } else {
+                                        composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
+                                    }
+                                }
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }
+                            withAnimation(.spring(response: 0.25)) {
+                                swipeOffset = 0
+                            }
+                        }
+                )
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
@@ -2043,6 +2216,7 @@ struct ChatView: View {
             switch (prevItem?.chatDir) {
             case .groupSnd: return true
             case let .groupRcv(prevMember): return prevMember.groupMemberId != member.groupMemberId
+            case .channelRcv: return true
             default: return false
             }
         }

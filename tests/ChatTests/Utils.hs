@@ -75,6 +75,9 @@ danProfile = mkProfile "dan" "Daniel" Nothing
 eveProfile :: Profile
 eveProfile = mkProfile "eve" "Eve" Nothing
 
+frankProfile :: Profile
+frankProfile = mkProfile "frank" "Frank" Nothing
+
 businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
@@ -373,6 +376,16 @@ cc .<## line = do
   l <- getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
+  suffix `shouldBe` True
+
+(.<##.) :: HasCallStack => TestCC -> (String, String) -> Expectation
+cc .<##. (linePrefix, lineSuffix) = do
+  l <- getTermLine' (Just $ "prefix: " <> linePrefix <> "; suffix: " <> lineSuffix) cc
+  let prefix = linePrefix `isPrefixOf` l
+  unless prefix $ print ("expected to start from: " <> linePrefix, ", got: " <> l)
+  prefix `shouldBe` True
+  let suffix = lineSuffix `isSuffixOf` l
+  unless suffix $ print ("expected to end with: " <> lineSuffix, ", got: " <> l)
   suffix `shouldBe` True
 
 (<#.) :: HasCallStack => TestCC -> String -> Expectation

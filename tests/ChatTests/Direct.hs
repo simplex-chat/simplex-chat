@@ -389,7 +389,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   -- Read next 2 items
   let itemIds = intercalate "," $ map itemId [1 .. 2]
   bob #$> ("/_read chat items @2 " <> itemIds, id, "items read for chat")
-  bob #$> ("/_get chat @2 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+  bob #$> ("/_get chat @2 initial=2", chat, [(0, "Audio/video calls: enabled"), (0, "1"), (0, "2"), (0, "3"), (0, "4")])
 
   -- Read all items
   bob #$> ("/_read chat @2", id, "ok")
@@ -2376,7 +2376,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 2500000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])

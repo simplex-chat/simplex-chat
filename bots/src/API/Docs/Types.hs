@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
@@ -31,6 +32,8 @@ import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Operators
+import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -256,7 +259,7 @@ chatTypesDocsData =
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
     (sti @FileInvitation, STRecord, "", [], "", ""),
-    (sti @FileProtocol, (STEnum' $ consLower "FP"), "", [], "", ""),
+    (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
     (sti @Format, STUnion, "", ["Unknown"], "", ""),
@@ -269,21 +272,26 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
+    (sti @GroupKeys, STRecord, "", [], "", ""),
+    (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
-    (sti @GroupMemberCategory, (STEnum' $ dropPfxSfx "GC" "Member"), "", [], "", ""),
+    (sti @GroupMemberCategory, STEnum' (dropPfxSfx "GC" "Member"), "", [], "", ""),
     (sti @GroupMemberRef, STRecord, "", [], "", ""),
-    (sti @GroupMemberRole, STEnum, "GR", [], "", ""),
+    (sti @GroupMemberRole, STEnum' (dropPfxSfx "GR" ""), "", ["GRUnknown"], "", ""),
     (sti @GroupMemberSettings, STRecord, "", [], "", ""),
-    (sti @GroupMemberStatus, (STEnum' $ (\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
+    (sti @GroupMemberStatus, STEnum' ((\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
     (sti @GroupPreference, STRecord, "", [], "", ""),
     (sti @GroupPreferences, STRecord, "", [], "", ""),
     (sti @GroupProfile, STRecord, "", [], "", ""),
+    (sti @GroupRelay, STRecord, "", [], "", ""),
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
+    (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
+    (sti @GroupType, STEnum1, "GT", ["GTUnknown"], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
@@ -300,6 +308,7 @@ chatTypesDocsData =
     (sti @MsgFilter, STEnum, "MF", [], "", ""),
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
+    (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -312,6 +321,8 @@ chatTypesDocsData =
     (sti @Profile, STRecord, "", [], "", ""),
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
     (sti @ProxyError, STUnion, "", [], "", ""),
+    (sti @PublicGroupData, STRecord, "", [], "", ""),
+    (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
     (sti @RcvConnEvent, STUnion, "RCE", [], "", ""),
@@ -320,7 +331,9 @@ chatTypesDocsData =
     (sti @RcvFileStatus, STUnion, "RFS", [], "", ""),
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
-    (sti @ReportReason, (STEnum' $ dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
+    (sti @RelayProfile, STRecord, "", [], "", ""),
+    (sti @RelayStatus, STEnum, "RS", [], "", ""),
+    (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
@@ -344,6 +357,7 @@ chatTypesDocsData =
     (sti @UIThemeEntityOverrides, STRecord, "", [], "", ""),
     (sti @UpdatedMessage, STRecord, "", [], "", ""),
     (sti @User, STRecord, "", [], "", ""),
+    ((sti @UserChatRelay) {typeName = "UserChatRelay"}, STRecord, "", [], "", ""),
     (sti @UserContact, STRecord, "", [], "", ""),
     (sti @UserContactLink, STRecord, "", [], "", ""),
     (sti @UserContactRequest, STRecord, "", [], "", ""),
@@ -456,6 +470,8 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
+deriving instance Generic GroupKeys
+deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember
@@ -468,7 +484,10 @@ deriving instance Generic GroupMemberStatus
 deriving instance Generic GroupPreference
 deriving instance Generic GroupPreferences
 deriving instance Generic GroupProfile
+deriving instance Generic GroupRelay
 deriving instance Generic GroupShortLinkData
+deriving instance Generic GroupShortLinkInfo
+deriving instance Generic GroupType
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
 deriving instance Generic HandshakeError
@@ -493,6 +512,7 @@ deriving instance Generic MsgErrorType
 deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
+deriving instance Generic MsgSigStatus
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
@@ -505,6 +525,8 @@ deriving instance Generic PreparedGroup
 deriving instance Generic Profile
 deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
+deriving instance Generic PublicGroupData
+deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent
@@ -513,6 +535,8 @@ deriving instance Generic RcvFileDescr
 deriving instance Generic RcvFileStatus
 deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
+deriving instance Generic RelayProfile
+deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType
@@ -535,6 +559,7 @@ deriving instance Generic UIThemeEntityOverride
 deriving instance Generic UIThemeEntityOverrides
 deriving instance Generic UpdatedMessage
 deriving instance Generic User
+deriving instance Generic (UserChatRelay' 'DBStored)
 deriving instance Generic UserContact
 deriving instance Generic UserContactLink
 deriving instance Generic UserContactRequest
