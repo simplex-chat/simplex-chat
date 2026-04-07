@@ -155,7 +155,7 @@ shortLinkDataVersion = VersionChat 16
 memberSupportVoiceVersion :: VersionChat
 memberSupportVoiceVersion = VersionChat 17
 
--- support comments on channel posts (merged MsgContainer with optional `parent`, XGrpCommentsDisabled)
+-- support comments on channel posts (merged MsgContainer with optional `parent`, XMsgPrefs)
 commentsVersion :: VersionChat
 commentsVersion = VersionChat 18
 
@@ -257,6 +257,15 @@ data MsgRef = MsgRef
   deriving (Eq, Show)
 
 $(JQ.deriveJSON defaultJSON ''MsgRef)
+
+-- Per-message comment preferences carried by XMsgPrefs.
+-- `disabled = True` locks commenting on the addressed channel post.
+data MsgCommentsPref = MsgCommentsPref
+  { disabled :: Bool
+  }
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''MsgCommentsPref)
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
   deriving (Eq, Show)
@@ -456,8 +465,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
-  -- Governance: lock/unlock commenting on a specific channel post, addressed by its SharedMsgId.
-  XGrpCommentsDisabled :: {parentMsgId :: SharedMsgId, disabled :: Bool} -> ChatMsgEvent 'Json
+  -- Per-message preferences for a specific channel post addressed by its SharedMsgId.
+  XMsgPrefs :: {msgId :: SharedMsgId, comments :: MsgCommentsPref} -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
@@ -640,9 +649,9 @@ instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEnc
 
 -- Wire JSON 1:1 with parsed form. The three discriminator fields `quote`, `parent`,
 -- and `forward` are independent and may co-occur (e.g. a comment that quotes another
--- comment carries both `parent` and `quote`). `forward` is a plain Bool (not Maybe Bool)
--- to match the existing wire format exactly: the serializer only emits `"forward": true`
--- and the parser treats absent/false as "not a forward".
+-- comment carries both `parent` and `quote`). `forward` is `Maybe Bool` for backwards
+-- compatibility with the previous wire encoding: the serializer omits the field when
+-- `Nothing` and the parser treats absent/false as "not a forward".
 data MsgContainer = MsgContainer
   { content :: MsgContent,
     -- the key used in mentions is a locally (per message) unique display name of member.
@@ -656,7 +665,7 @@ data MsgContainer = MsgContainer
     asGroup :: Maybe Bool,
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
-    forward :: Bool
+    forward :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -673,7 +682,7 @@ mc =
       asGroup = Nothing,
       quote = Nothing,
       parent = Nothing,
-      forward = False
+      forward = Nothing
     }
 
 mcSimple :: MsgContent -> MsgContainer
@@ -686,10 +695,10 @@ mcComment :: MsgRef -> MsgContent -> MsgContainer
 mcComment p c = mc {content = c, parent = Just p}
 
 mcForward :: MsgContent -> MsgContainer
-mcForward c = mc {content = c, forward = True}
+mcForward c = mc {content = c, forward = Just True}
 
 isMCForward :: MsgContainer -> Bool
-isMCForward MsgContainer {forward} = forward
+isMCForward MsgContainer {forward} = forward == Just True
 
 data MsgContent
   = MCText {text :: Text}
@@ -1004,7 +1013,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
   XGrpPrefs_ :: CMEventTag 'Json
-  XGrpCommentsDisabled_ :: CMEventTag 'Json
+  XMsgPrefs_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
@@ -1062,7 +1071,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
     XGrpPrefs_ -> "x.grp.prefs"
-    XGrpCommentsDisabled_ -> "x.grp.cmnts.dsbl"
+    XMsgPrefs_ -> "x.msg.prefs"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
@@ -1121,7 +1130,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
         "x.grp.prefs" -> XGrpPrefs_
-        "x.grp.cmnts.dsbl" -> XGrpCommentsDisabled_
+        "x.msg.prefs" -> XMsgPrefs_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
@@ -1176,7 +1185,7 @@ toCMEventTag msg = case msg of
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
-  XGrpCommentsDisabled {} -> XGrpCommentsDisabled_
+  XMsgPrefs {} -> XMsgPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
