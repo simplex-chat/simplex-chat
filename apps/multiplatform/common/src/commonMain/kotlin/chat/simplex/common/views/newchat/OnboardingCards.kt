@@ -18,14 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.BuildConfigCommon
@@ -38,7 +36,6 @@ import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 import kotlin.math.cos
-import kotlin.math.max
 import kotlin.math.sin
 
 // MARK: - Onboarding condition
@@ -363,35 +360,29 @@ private fun TalkToSomeonePage(
   onLetSomeoneConnect: () -> Unit,
   onConnectViaLink: () -> Unit
 ) {
-  BoxWithConstraints(Modifier.fillMaxSize()) {
-    val isLandscape = maxWidth > maxHeight && appPlatform.isAndroid
-    val padding = DEFAULT_PADDING
-    val spacing = DEFAULT_PADDING
-    val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
-    val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
+  val isLandscape = windowOrientation() == WindowOrientation.LANDSCAPE && appPlatform.isAndroid
+  Column(
+    Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    PageHeader(
+      title = stringResource(MR.strings.talk_to_someone),
+      showBack = false,
+      isLandscape = isLandscape
+    )
 
-    val density = LocalDensity.current
-    var headerHeightDp by remember { mutableStateOf(0.dp) }
-    val cardAreaHeight = maxHeight - headerHeightDp
-    val maxCardHeight = if (isLandscape) {
-      minOf(maxDesiredCardHeight, cardAreaHeight - padding * 4)
-    } else {
-      minOf(maxDesiredCardHeight, (cardAreaHeight - spacing - padding * 2) / 2)
-    }.coerceAtLeast(0.dp)
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+      val padding = DEFAULT_PADDING
+      val spacing = DEFAULT_PADDING
+      val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
+      val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
+      val maxCardHeight = if (isLandscape) {
+        minOf(maxDesiredCardHeight, maxHeight - padding * 4)
+      } else {
+        minOf(maxDesiredCardHeight, (maxHeight - spacing - padding * 2) / 2)
+      }.coerceAtLeast(0.dp)
 
-    Column(
-      Modifier.fillMaxSize(),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Box(Modifier.onSizeChanged { headerHeightDp = with(density) { it.height.toDp() } }) {
-        PageHeader(
-          title = stringResource(MR.strings.talk_to_someone),
-          showBack = false,
-          isLandscape = isLandscape
-        )
-      }
-
-      Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CardPair(isLandscape, padding, spacing, maxCardHeight,
           card1 = {
             OnboardingCardView(
@@ -427,36 +418,30 @@ private fun ConnectWithSomeonePage(
   onInviteSomeone: () -> Unit,
   onCreateAddress: () -> Unit
 ) {
-  BoxWithConstraints(Modifier.fillMaxSize()) {
-    val isLandscape = maxWidth > maxHeight && appPlatform.isAndroid
-    val padding = DEFAULT_PADDING
-    val spacing = DEFAULT_PADDING
-    val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
-    val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
+  val isLandscape = windowOrientation() == WindowOrientation.LANDSCAPE && appPlatform.isAndroid
+  Column(
+    Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    PageHeader(
+      title = stringResource(MR.strings.connect_with_someone),
+      showBack = true,
+      isLandscape = isLandscape,
+      onBack = onBack
+    )
 
-    val density = LocalDensity.current
-    var headerHeightDp by remember { mutableStateOf(0.dp) }
-    val cardAreaHeight = maxHeight - headerHeightDp
-    val maxCardHeight = if (isLandscape) {
-      minOf(maxDesiredCardHeight, cardAreaHeight - padding * 4)
-    } else {
-      minOf(maxDesiredCardHeight, (cardAreaHeight - spacing - padding * 2) / 2)
-    }.coerceAtLeast(0.dp)
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+      val padding = DEFAULT_PADDING
+      val spacing = DEFAULT_PADDING
+      val cardWidth = if (isLandscape) (maxWidth - padding * 2 - spacing) / 2 else maxWidth - padding * 2
+      val maxDesiredCardHeight = cardWidth * if (appPlatform.isDesktop) 0.5625f else 0.75f
+      val maxCardHeight = if (isLandscape) {
+        minOf(maxDesiredCardHeight, maxHeight - padding * 4)
+      } else {
+        minOf(maxDesiredCardHeight, (maxHeight - spacing - padding * 2) / 2)
+      }.coerceAtLeast(0.dp)
 
-    Column(
-      Modifier.fillMaxSize(),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Box(Modifier.onSizeChanged { headerHeightDp = with(density) { it.height.toDp() } }) {
-        PageHeader(
-          title = stringResource(MR.strings.connect_with_someone),
-          showBack = true,
-          isLandscape = isLandscape,
-          onBack = onBack
-        )
-      }
-
-      Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CardPair(isLandscape, padding, spacing, maxCardHeight,
           card1 = {
             OnboardingCardView(
