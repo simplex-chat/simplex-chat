@@ -6,11 +6,11 @@ SimpleX Chat introduced channels in PR #6382 (the chat-relays MVP): groups where
 
 Channels need Telegram-style **comments**: under each channel post, a tappable affordance shows a count and opens a separate Comments view containing a flat thread of replies, with its own composer. Subscribers can comment, including quoting the parent post and quoting other comments.
 
-This revision of the plan reflects three architectural decisions taken during plan review and replaces the earlier design that used `MSChannelMsg` / `GCSChannelMsg` / a sheet-based UI:
+Three architectural choices shape the rest of the plan:
 
-1. **Wire format.** `ExtMsgContent` and `MsgContainer` are merged into a single record `MsgContainer` whose shape matches the wire JSON 1:1. The dead `MCComment` constructor is replaced with a `parent :: Maybe MsgRef` field on the merged record. A single message can now carry both a `quote` (referencing any prior message) and a `parent` (referencing the channel post being commented on). The new `MSChannelMsg` `MsgScope` variant proposed in the previous draft is **dropped** — it is no longer needed because the parent reference now lives in the message body, not in the scope.
+1. **Wire format.** `ExtMsgContent` and `MsgContainer` are merged into a single record `MsgContainer` whose shape matches the wire JSON 1:1. The dead `MCComment` constructor is replaced with a `parent :: Maybe MsgRef` field on the merged record. A single message can now carry both a `quote` (referencing any prior message) and a `parent` (referencing the channel post being commented on). The parent reference lives in the message body, so no new `MsgScope` variant is required.
 
-2. **Local model.** Comments are NOT a `GroupChatScope` variant. A new `ChannelMsgInfo` type is added as a separate field on `ChatInfo.GroupChat` and as a separate parameter to pagination, parallel to `Maybe GroupChatScopeInfo`. This keeps the Comments view as a distinct concept rather than overloading the scope mechanism.
+2. **Local model.** Comments are not a `GroupChatScope` variant. A new `ChannelMsgInfo` type is added as a separate field on `ChatInfo.GroupChat` and as a separate parameter to pagination, parallel to `Maybe GroupChatScopeInfo`. This keeps the Comments view as a distinct concept rather than overloading the scope mechanism.
 
 3. **iOS UI.** The Comments view opens via a hidden `NavigationLink` pushed onto the existing chat navigation stack (the same trick used by `NavStackCompat` and `UserSupportChatNavLink` / `GroupReportsChatNavLink`), not as a sheet. The user can navigate forward into a comment, back to the channel, and forward into another post's comments without losing context.
 
@@ -18,7 +18,7 @@ The plan covers Haskell core, the CLI command surface (for tests), and the iOS a
 
 ## Solution summary
 
-- Merge `ExtMsgContent` into `MsgContainer` as a single record with optional `quote :: Maybe QuotedMsg`, `parent :: Maybe MsgRef`, and plain `forward :: Bool` fields. Remove the four `MC*` constructors and `mcExtMsgContent`. Rewrite `parseMsgContainer` and `msgContainerJSON` to read/write the three discriminator fields independently rather than as mutually-exclusive arms — the existing wire JSON shape is preserved exactly because every existing message uses at most one of these keys and `forward` is only emitted when `True` (matching the old `MCForward` serializer arm).
+- Merge `ExtMsgContent` into `MsgContainer` as a single record with optional `quote :: Maybe QuotedMsg`, `parent :: Maybe MsgRef`, and plain `forward :: Bool` fields. Remove the four `MC*` constructors and `mcExtMsgContent`. Rewrite `parseMsgContainer` and `msgContainerJSON` to read/write the three discriminator fields independently rather than as mutually-exclusive arms — the existing wire JSON shape is preserved exactly because every existing message uses at most one of these keys and `forward` is only emitted when `True` (matching the existing `MCForward` serializer arm).
 - Add `commentsVersion :: VersionChat = VersionChat 18` and bump `currentChatVersion = VersionChat 18`. Comment-bearing messages (those whose container has `parent = Just _`) and the new `XGrpCommentsDisabled` event are gated for relay forwarding behind this version.
 - New SQLite + Postgres migration `M20260501_channel_comments` adding three columns to `chat_items`:
   - `parent_chat_item_id INTEGER REFERENCES chat_items(chat_item_id) ON DELETE CASCADE` — set on the comment row.
@@ -59,11 +59,12 @@ data MsgContainer = MsgContainer
     -- `parent` and `quote`).
     quote :: Maybe QuotedMsg,
     parent :: Maybe MsgRef,
-    -- forward is a plain Bool (not Maybe) to match the old wire format
-    -- exactly: the old parser treated absent/false as "not a forward" and
-    -- the old serializer only ever emitted "forward":true. Modelling it as
-    -- Maybe Bool would regress round-trips of `"forward": false` and bloat
-    -- the serialized output with an explicit false field.
+    -- forward is a plain Bool (not Maybe) to match the existing wire
+    -- format exactly: the existing parser treats absent/false as "not a
+    -- forward" and the existing serializer only ever emits "forward":true.
+    -- Modelling it as Maybe Bool would regress round-trips of
+    -- `"forward": false` and bloat the serialized output with an
+    -- explicit false field.
     forward :: Bool
   }
   deriving (Eq, Show)
@@ -102,9 +103,9 @@ mc =
     }
 ```
 
-The base `mc` value is the empty container that callers update via record syntax. Send sites that previously built an `ExtMsgContent` record and wrapped it in `MCSimple` now build `MsgContainer` directly: `mcSimple content` followed by record-update for any optional fields (`mentions = ...`, `file = ...`, `ttl = ...`, `live = ...`, `scope = ...`, `asGroup = ...`).
+The base `mc` value is the empty container that callers update via record syntax. Send sites that today build an `ExtMsgContent` record and wrap it in `MCSimple` are rewritten to build `MsgContainer` directly: `mcSimple content` followed by record-update for any optional fields (`mentions = ...`, `file = ...`, `ttl = ...`, `live = ...`, `scope = ...`, `asGroup = ...`).
 
-`MSChannelMsg` is **not** introduced — `MsgScope` stays a single-constructor type `data MsgScope = MSMember {memberId :: MemberId}`. Comments do not need a scope tag because the parent reference lives in `MsgContainer.parent`.
+`MsgScope` stays a single-constructor type `data MsgScope = MSMember {memberId :: MemberId}`. Comments do not need a scope tag because the parent reference lives in `MsgContainer.parent`.
 
 **Parser rewrite** (current `parseMsgContainer` at lines ~834–852).
 
@@ -122,7 +123,7 @@ parseMsgContainer v = do
   asGroup <- v .:? "asGroup"
   quote <- v .:? "quote"
   parent <- v .:? "parent"
-  -- forward parsing matches the old two-arm form exactly:
+  -- forward parsing matches the existing two-arm form exactly:
   --   J.Bool b   -> b     (modern boolean form, including `false`)
   --   J.Object _ -> True  (legacy object form: forward-compat with group links)
   --   absent     -> False
@@ -136,7 +137,7 @@ parseMsgContainer v = do
     parseForward _ = fail "invalid forward field"
 ```
 
-Backward compatibility: any old client that sent only one of `quote`/`parent`/`forward` is parsed identically — the other two fields are simply `Nothing`. New clients that send both `quote` and `parent` (a comment that quotes another comment) are parsed correctly. Pre-comments clients that receive a message with both `quote` and `parent` would see only the quote (their parser tries `MCQuote` first and never reads `parent`); the relay's per-recipient version gate (see "Forward compatibility" below) prevents such messages from reaching pre-comments clients in practice. Note that no current message in the wild has a `parent` field, because `MCComment` was dead code in the previous design.
+Backward compatibility: any client below `commentsVersion` that sent only one of `quote`/`parent`/`forward` is parsed identically by the new code — the other two fields are simply `Nothing`. Clients at or above `commentsVersion` that send both `quote` and `parent` (a comment that quotes another comment) are parsed correctly. A pre-`commentsVersion` client that received a message with both `quote` and `parent` would see only the quote (its parser tries `MCQuote` first and never reads `parent`); the relay's per-recipient version gate (see "Forward compatibility" below) prevents such messages from reaching pre-`commentsVersion` clients in practice. No message currently in flight has a `parent` field, because `MCComment` is a dead constructor in the existing source.
 
 **Serializer rewrite** (`msgContainerJSON` at lines ~900–909).
 
@@ -158,10 +159,10 @@ msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGrou
             )
         )
   where
-    -- At most one discriminator is typically present (old wire format had
-    -- them as mutually-exclusive arms). When a comment quotes another
-    -- comment, both `quote` and `parent` appear; this is new-only and
-    -- guarded by commentsVersion relay forwarding.
+    -- At most one discriminator is typically present (the existing wire
+    -- format treats them as mutually exclusive). When a comment quotes
+    -- another comment, both `quote` and `parent` appear; this combination
+    -- is gated by commentsVersion relay forwarding.
     discriminators =
       ["quote" .= q | Just q <- [quote]]
         <> ["parent" .= p | Just p <- [parent]]
@@ -169,10 +170,10 @@ msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGrou
 ```
 
 Key wire-format invariants preserved:
-- `forward` is only ever emitted as `"forward": true` (never `false`), matching the old serializer.
-- The field order inside the content sub-object (file, ttl, live, mentions, scope, asGroup, content) is unchanged from the existing `msgContent` helper — the new serializer wraps the same `("file" .=? file) $ ...` fold to keep every produced `J.Object` byte-identical to the old output for any pre-existing message.
+- `forward` is only ever emitted as `"forward": true` (never `false`), matching the existing serializer.
+- The field order inside the content sub-object (file, ttl, live, mentions, scope, asGroup, content) is unchanged from the existing `msgContent` helper — the rewritten serializer wraps the same `("file" .=? file) $ ...` fold to keep every produced `J.Object` byte-identical to the existing output for any pre-existing message.
 - `nonEmptyMap` (Protocol.hs:911) is reused verbatim; empty `mentions` maps are omitted exactly as before.
-- When both `quote` and `parent` are set (the new case), both fields are emitted; no old message in the wild has this shape, and the version gate prevents old recipients from seeing it.
+- When both `quote` and `parent` are set (only possible at or above `commentsVersion`), both fields are emitted; no message currently in flight has this shape, and the version gate prevents pre-`commentsVersion` recipients from seeing it.
 
 **Mechanical refactor — call sites.**
 
@@ -304,7 +305,7 @@ The cascade self-FK is safe — SQLite cascades through one level by default, an
    ```
    Existing call sites that build `ChatRef` are extended to pass `channelMsg_ = Nothing` by default. The Comments view passes the parent `ChatItemId`.
 
-4. **No changes** to `GroupChatScope`, `GroupChatScopeTag`, `GroupChatScopeInfo`, or `toMsgScope`. They keep their current single `MemberSupport` variant. The previous draft's `GCSChannelMsg` / `GCSIChannelMsg` / `MSChannelMsg` are NOT added.
+4. **No changes** to `GroupChatScope`, `GroupChatScopeTag`, `GroupChatScopeInfo`, or `toMsgScope`. They keep their current single `MemberSupport` variant. Comments are represented through `ChannelMsgInfo` rather than as a new scope variant, so the scope ADTs are untouched.
 
 ### 6. Smart constructor for `ChannelMsgInfo`
 
@@ -426,7 +427,7 @@ The per-parent comment cap is enforced at query time, not at insert time — see
 ... AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND parent_chat_item_id IS NULL ...
 ```
 
-Each of these sites must be audited and updated. There is no safe shortcut: the previous design relied on `group_scope_tag = 'channel_msg'` to discriminate, but the new design has no scope tag for comments and uses the dedicated column instead.
+Each of these sites must be audited and updated. Comments do not have a scope tag — the dedicated `parent_chat_item_id` column is the sole discriminator — so every default-scope SELECT must add the explicit `IS NULL` predicate.
 
 **Read-side plumbing in `toGroupChatItem`** (`Store/Messages.hs:2334`) and any other chat-item SELECT that reads chat-item rows: extend the row tuple to include `parent_chat_item_id`, `comments_total`, `comments_disabled`. These three fields propagate into the `CIMeta` record as new fields with default values. Parent chat-item id is exposed via a new optional `CIMeta` field; the comment count and disabled flag are read directly into the existing meta record.
 
@@ -493,7 +494,7 @@ allowedRole = case (scope, channelMsgInfo_) of
 
 `src/Simplex/Chat/Library/Subscriber.hs` — `newGroupContentMessage` (~line 1943).
 
-The current code resolves a chat scope via `mkGetMessageChatScope vr user gInfo m content msgScope_`. With the rework, the parent reference is in the message container (`mc.parent :: Maybe MsgRef`), not in the scope. The receive flow becomes:
+The current code resolves a chat scope via `mkGetMessageChatScope vr user gInfo m content msgScope_`. The parent reference for a comment lives in the message container (`mc.parent :: Maybe MsgRef`), not in the scope. The receive flow becomes:
 
 > **Notation note.** `mc.parent`, `mc.quote`, `mc.forward` in this section are prose shorthand for "the `parent`/`quote`/`forward` field of `mc`". `Subscriber.hs` does **not** enable `OverloadedRecordDot` and `DuplicateRecordFields` disables bare field selectors as functions, so the implementation MUST use explicit record patterns (`case mc of MsgContainer {parent = Just p, quote = q, forward = f} -> ...`) or a local `let MsgContainer {parent, quote, forward} = mc in ...` binding. Dot syntax will not compile in `Subscriber.hs`.
 
@@ -1006,10 +1007,10 @@ This slice is the largest mechanical refactor and is independent of comments. It
 
 **Wire-format-preserving acceptance criteria for Slice 1 (ALL must hold before the slice lands):**
 
-- `forward` is `Bool` (not `Maybe Bool`) in the record. Absent or `false` in the input JSON parses to `False`; `true` or any Object parses to `True`. The serializer emits `"forward": true` only when `True`, and emits nothing when `False`. (No `"forward": false` ever appears on the wire, matching the old `msgContainerJSON` which only ever emitted `("forward" .= True)` from the `MCForward` arm.)
-- The serializer's content-field ordering (`file, ttl, live, mentions, scope, asGroup, content`) is preserved byte-for-byte — the new implementation wraps the same `("file" .=? file) $ ("ttl" .=? ttl) $ ...` fold that `msgContent` used in the old `msgContainerJSON` at Protocol.hs:908-909.
+- `forward` is `Bool` (not `Maybe Bool`) in the record. Absent or `false` in the input JSON parses to `False`; `true` or any Object parses to `True`. The serializer emits `"forward": true` only when `True`, and emits nothing when `False`. (No `"forward": false` ever appears on the wire, matching the existing `msgContainerJSON` which only ever emits `("forward" .= True)` from the `MCForward` arm.)
+- The serializer's content-field ordering (`file, ttl, live, mentions, scope, asGroup, content`) is preserved byte-for-byte — the rewritten implementation wraps the same `("file" .=? file) $ ("ttl" .=? ttl) $ ...` fold that `msgContent` uses today in `msgContainerJSON` at Protocol.hs:908-909.
 - `nonEmptyMap` (Protocol.hs:911) is reused verbatim; empty `mentions` maps are omitted exactly as before.
-- Discriminator fields are emitted at the front in the same order as old case-arms: `quote` first (if present), then `parent` (if present), then `forward: true` (if true). In the old code, mutual exclusion guaranteed at most one; in the new code, at most one is present for any pre-existing message because no in-flight message has both `quote` and `parent` (MCComment was dead code).
+- Discriminator fields are emitted at the front in the order: `quote` first (if present), then `parent` (if present), then `forward: true` (if true). The existing source enforces mutual exclusion via case-arms; after the refactor, at most one is present for any pre-`commentsVersion` message because no in-flight message has both `quote` and `parent` (MCComment is a dead constructor in the existing source).
 - Every test in `tests/JSONTests.hs` that round-trips a `MsgContainer`, `ChatMsgEvent`, or `AppMessage` passes without modification. If a test had to be modified, the rewrite is wrong and must be revisited.
 - Manual spot-check: take five representative in-tree sample JSON messages (a plain text, a quote, a forward-with-bool, a forward-with-object, a file send) from `tests/ProtocolTests.hs` fixtures and round-trip them through the new parser + serializer. The output bytes must be identical to the input (modulo field ordering inside a single JSON object — Haskell Aeson preserves insertion order, so the fold-based serializer produces identical ordering).
 - The refactor does not touch `FromJSON`/`ToJSON` instances of `MsgContent`, `QuotedMsg`, `MsgRef`, `FileInvitation`, or `MsgScope`. Only the outer `MsgContainer` instances are rewritten.
@@ -1142,7 +1143,7 @@ iOS build via Xcode (out of scope for the Haskell test environment; built separa
 - Same gating for `XGrpCommentsDisabled` events.
 - The relay's existing per-recipient version check (used for `groupKnockingVersion`, `contentReportsVersion`, etc.) is the place to add the gating.
 - New optional `parentChatItemId` / `commentsTotal` / `commentsDisabled` fields on chat-item JSON ship with `omittedField` defaults so older remote-connection clients see chat items normally.
-- The merged `MsgContainer` record's wire JSON shape is identical to the previous shape — the old parser sees the same set of optional discriminator fields. No version bump is needed for the refactor itself; only the `parent` field semantics is gated.
+- The merged `MsgContainer` record's wire JSON shape is identical to the existing shape — pre-`commentsVersion` parsers see the same set of optional discriminator fields. No version bump is needed for the refactor itself; only the `parent` field semantics is gated.
 
 **Threat model.**
 
