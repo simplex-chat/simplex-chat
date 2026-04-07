@@ -186,7 +186,7 @@ fun OnboardingCardView(
               )
               Text(
                 title,
-                style = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Medium),
+                style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colors.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -195,7 +195,7 @@ fun OnboardingCardView(
             if (subtitle != null) {
               Text(
                 subtitle,
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.body2,
                 color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f)
               )
             }
