@@ -296,8 +296,8 @@ fun ConnectOnboardingView() {
   val pagerState = rememberPagerState(initialPage = 0) { 2 }
   val scope = rememberCoroutineScope()
 
-  // Desktop: watch ModalManager.start for animation
-  val startModalsOpen = if (appPlatform.isDesktop) ModalManager.start.hasModalsOpen else false
+  // Desktop: animate cards when start modals open
+  val startModalsOpen = appPlatform.isDesktop && ModalManager.start.hasModalsOpen
   val cardOffset by animateFloatAsState(if (startModalsOpen) 0.3f else 0f)
   val cardAlpha by animateFloatAsState(if (startModalsOpen) 0.3f else 1f)
   val modalSlide by animateFloatAsState(if (startModalsOpen) 0f else -1f)
@@ -336,7 +336,7 @@ fun ConnectOnboardingView() {
 
         when (page) {
           0 -> TalkToSomeonePage(
-            onLetSomeoneConnect = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(1) } },
+            onLetSomeoneConnect = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(1) }; Unit },
             onConnectViaLink = cardClickOverride ?: {
               ModalManager.start.showModalCloseable { close ->
                 NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
@@ -344,7 +344,7 @@ fun ConnectOnboardingView() {
             }
           )
           1 -> ConnectWithSomeonePage(
-            onBack = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(0) } },
+            onBack = cardClickOverride ?: { scope.launch { pagerState.animateScrollToPage(0) }; Unit },
             onInviteSomeone = cardClickOverride ?: {
               ModalManager.start.showModalCloseable { close ->
                 NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
@@ -377,7 +377,7 @@ private fun TalkToSomeonePage(
     val maxCardHeight = cardWidth * 0.75f
 
     Column(
-      Modifier.fillMaxHeight().widthIn(max = if (appPlatform.isDesktop) DESKTOP_MAX_CONTENT_WIDTH else Dp.Unspecified),
+      Modifier.fillMaxSize(),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       PageHeader(
@@ -432,7 +432,7 @@ private fun ConnectWithSomeonePage(
     val maxCardHeight = cardWidth * 0.75f
 
     Column(
-      Modifier.fillMaxHeight().widthIn(max = if (appPlatform.isDesktop) DESKTOP_MAX_CONTENT_WIDTH else Dp.Unspecified),
+      Modifier.fillMaxSize(),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       PageHeader(
