@@ -211,7 +211,7 @@ fun OnboardingCardView(
 
 @Composable
 private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, onBack: (() -> Unit)? = null) {
-  val color = if (showBack && onBack != null && !appPlatform.isDesktop) MaterialTheme.colors.primary else Color.Transparent
+  val color = if (showBack && onBack != null) MaterialTheme.colors.primary else Color.Transparent
   val baseStyle = MaterialTheme.typography.h1
   val titleView = @Composable {
     var fontScale by remember(title) { mutableStateOf(1f) }
@@ -353,21 +353,12 @@ fun ConnectOnboardingView() {
   }
 
   if (appPlatform.isDesktop) {
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
-      DefaultAppBar(
-        navigationButton = if (pagerState.currentPage == 1) {
-          { NavigationButtonBack(onButtonClicked = { goToPage(0) }) }
-        } else null,
-        onTop = true,
-        onSearchValueChanged = {}
-      )
-      Box(
-        Modifier.weight(1f).fillMaxWidth().graphicsLayer { alpha = cardAlpha },
-        contentAlignment = Alignment.Center
-      ) {
-        Box(Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH)) {
-          pager()
-        }
+    Box(
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background).graphicsLayer { alpha = cardAlpha },
+      contentAlignment = Alignment.Center
+    ) {
+      Box(Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH)) {
+        pager()
       }
     }
   } else {
