@@ -161,10 +161,7 @@ chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isS
 data ChatRef = ChatRef
   { chatType :: ChatType,
     chatId :: Int64,
-    chatScope :: Maybe GroupChatScope,
-    -- Set when referring to the comments thread of a specific channel post.
-    -- Mutually exclusive with chatScope at the call site.
-    channelMsg_ :: Maybe ChatItemId
+    chatScope :: Maybe GroupChatScope
   }
   deriving (Eq, Show, Ord)
 
@@ -204,12 +201,12 @@ toMsgScope GroupInfo {membership} = \case
 
 chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
-  DirectChat Contact {contactId} -> Just $ ChatRef CTDirect contactId Nothing Nothing
-  GroupChat GroupInfo {groupId} scopeInfo channelMsgInfo ->
-    Just $ ChatRef CTGroup groupId (toChatScope <$> scopeInfo) (cChatItemId . channelMsgItem <$> channelMsgInfo)
-  LocalChat NoteFolder {noteFolderId} -> Just $ ChatRef CTLocal noteFolderId Nothing Nothing
-  ContactRequest UserContactRequest {contactRequestId} -> Just $ ChatRef CTContactRequest contactRequestId Nothing Nothing
-  ContactConnection PendingContactConnection {pccConnId} -> Just $ ChatRef CTContactConnection pccConnId Nothing Nothing
+  DirectChat Contact {contactId} -> Just $ ChatRef CTDirect contactId Nothing
+  GroupChat GroupInfo {groupId} scopeInfo _channelMsgInfo ->
+    Just $ ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
+  LocalChat NoteFolder {noteFolderId} -> Just $ ChatRef CTLocal noteFolderId Nothing
+  ContactRequest UserContactRequest {contactRequestId} -> Just $ ChatRef CTContactRequest contactRequestId Nothing
+  ContactConnection PendingContactConnection {pccConnId} -> Just $ ChatRef CTContactConnection pccConnId Nothing
   CInfoInvalidJSON {} -> Nothing
 
 chatInfoMembership :: ChatInfo c -> Maybe GroupMember
