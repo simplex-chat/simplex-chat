@@ -24,7 +24,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.layout.ContentScale
 import chat.simplex.common.AppLock
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
@@ -235,52 +237,72 @@ private fun ChatListCard(
 }
 
 @Composable
-private fun AddressCreationCard() {
-  ChatListCard(
-    close = {
-      appPrefs.addressCreationCardShown.set(true)
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.simplex_address),
-        text = generalGetString(MR.strings.address_creation_instruction),
+private fun ConnectBannerCard() {
+  val isDark = isInDarkTheme()
+  val labelBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    .copy(alpha = appPrefs.inAppBarsAlpha.get())
+
+  Column(horizontalAlignment = Alignment.End) {
+    IconButton(onClick = { appPrefs.addressCreationCardShown.set(true) }) {
+      Icon(
+        painterResource(MR.images.ic_close),
+        contentDescription = stringResource(MR.strings.back),
+        modifier = Modifier
+          .size(24.dp)
+          .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), CircleShape)
+          .padding(4.dp),
+        tint = MaterialTheme.colors.secondary
       )
-    },
-    onCardClick = {
-      ModalManager.start.showModal {
-        UserAddressLearnMore(showCreateAddressButton = true)
-      }
-    }
-  ) {
-      Box(modifier = Modifier.matchParentSize().padding(end = (DEFAULT_PADDING_HALF + 2.dp) * fontSizeSqrtMultiplier, bottom = 2.dp), contentAlignment = Alignment.BottomEnd) {
-      TextButton(
-        onClick = {
-          ModalManager.start.showModalCloseable { close ->
-            UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-          }
-        },
-      ) {
-        Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
-      }
     }
     Row(
       Modifier
         .fillMaxWidth()
-        .padding(DEFAULT_PADDING),
-      verticalAlignment = Alignment.CenterVertically
+        .height(IntrinsicSize.Min)
+        .clip(RoundedCornerShape(18.dp))
     ) {
-      Box(Modifier.padding(vertical = 4.dp)) {
-        Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
-          ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
+      Column(
+        Modifier.weight(1f).clickable {
+          ModalManager.start.showModalCloseable { close ->
+            NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+          }
+        }
+      ) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isDark) MR.images.banner_create_link_light else MR.images.banner_create_link),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth()
+          )
+        }
+        Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+            Text(stringResource(MR.strings.create_1_time_link), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.onBackground)
+          }
         }
       }
-      Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
-        Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
-        Spacer(Modifier.fillMaxWidth().padding(DEFAULT_PADDING_HALF))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
-          Icon(
-            painterResource(MR.images.ic_info),
-            null,
+      Divider(Modifier.width(1.dp).fillMaxHeight())
+      Column(
+        Modifier.weight(1f).clickable {
+          ModalManager.start.showModalCloseable { close ->
+            NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+          }
+        }
+      ) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isDark) MR.images.banner_paste_link_light else MR.images.banner_paste_link),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth()
           )
+        }
+        Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+            Text(stringResource(MR.strings.scan_paste_link), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.onBackground)
+          }
         }
       }
     }
@@ -943,7 +965,7 @@ private fun ChatListFeatureCards() {
       ToggleChatListCard()
     }
     if (!addressCreationCardShown.value) {
-      AddressCreationCard()
+      ConnectBannerCard()
     }
     if (!oneHandUICardShown.value && oneHandUI.value) {
       ToggleChatListCard()
