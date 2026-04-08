@@ -5,12 +5,13 @@ export interface IdName {
 
 export interface Config {
   dbPrefix: string
-  grokDbPrefix: string
   teamGroup: IdName          // name from CLI, id resolved at startup from state file
   teamMembers: IdName[]      // optional, empty if not provided
-  grokContactId: number | null  // resolved at startup from state file
+  grokContactId: number | null  // resolved at startup
   groupLinks: string
   timezone: string
+  completeHours: number
+  cardFlushMinutes: number
   grokApiKey: string
 }
 
@@ -34,39 +35,33 @@ function optionalArg(args: string[], flag: string, defaultValue: string): string
   return args[i + 1]
 }
 
-function collectOptionalArgs(args: string[], flags: string[]): string[] {
-  const values: string[] = []
-  for (const flag of flags) {
-    const i = args.indexOf(flag)
-    if (i >= 0 && i + 1 < args.length) values.push(args[i + 1])
-  }
-  return values
-}
-
 export function parseConfig(args: string[]): Config {
   const grokApiKey = process.env.GROK_API_KEY
   if (!grokApiKey) throw new Error("Missing environment variable: GROK_API_KEY")
 
-  const dbPrefix = optionalArg(args, "--db-prefix", "./data/bot")
-  const grokDbPrefix = optionalArg(args, "--grok-db-prefix", "./data/grok")
+  const dbPrefix = optionalArg(args, "--db-prefix", "./data/simplex")
   const teamGroupName = requiredArg(args, "--team-group")
-  const teamGroup: IdName = {id: 0, name: teamGroupName} // id resolved at startup
-  const teamMembersRaws = collectOptionalArgs(args, ["--team-members", "--team-member"])
-  const teamMembers = teamMembersRaws.length > 0
-    ? teamMembersRaws.flatMap(s => s.split(",")).map(parseIdName)
+  const teamGroup: IdName = {id: 0, name: teamGroupName}
+
+  const teamMembersRaw = optionalArg(args, "--auto-add-team-members", "") || optionalArg(args, "-a", "")
+  const teamMembers = teamMembersRaw
+    ? teamMembersRaw.split(",").map(parseIdName)
     : []
 
   const groupLinks = optionalArg(args, "--group-links", "")
   const timezone = optionalArg(args, "--timezone", "UTC")
+  const completeHours = parseInt(optionalArg(args, "--complete-hours", "3"), 10)
+  const cardFlushMinutes = parseInt(optionalArg(args, "--card-flush-minutes", "15"), 10)
 
   return {
     dbPrefix,
-    grokDbPrefix,
     teamGroup,
     teamMembers,
-    grokContactId: null, // resolved at startup from state file
+    grokContactId: null,
     groupLinks,
     timezone,
+    completeHours,
+    cardFlushMinutes,
     grokApiKey,
   }
 }

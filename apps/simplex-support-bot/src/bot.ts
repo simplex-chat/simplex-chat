@@ -1,569 +1,284 @@
 import {api, util} from "simplex-chat"
 import {T, CEvt} from "@simplex-chat/types"
 import {Config} from "./config.js"
-import {GrokMessage} from "./state.js"
-import {GrokApiClient} from "./grok.js"
-import {teamQueueMessage, grokActivatedMessage, teamAddedMessage, teamLockedMessage, teamAlreadyAddedMessage} from "./messages.js"
-import {log, logError} from "./util.js"
-
-const MAX_MSG_TEXT_BYTES = 15000 // conservative limit under SimpleX's maxEncodedMsgLength (15,602) minus JSON envelope
-
-// --- Exported types for persistence ---
-
-export type SenderType = "customer" | "team" | "grok"
-
-export interface GroupMetadata {
-  firstContact: number
-  msgCount: number
-  customerName: string
-}
-
-export interface GroupPendingInfo {
-  lastEventType: "message" | "reaction"
-  lastEventFrom: SenderType
-  lastEventTimestamp: number
-  lastMessageFrom: SenderType
-}
-
-// --- Internal types ---
-
-interface GroupComposition {
-  grokMember: T.GroupMember | undefined
-  teamMember: T.GroupMember | undefined
-}
-
-function isActiveMember(m: T.GroupMember): boolean {
-  return m.memberStatus === T.GroupMemberStatus.Connected
-    || m.memberStatus === T.GroupMemberStatus.Complete
-    || m.memberStatus === T.GroupMemberStatus.Announced
-}
+import {GrokMessage, GrokApiClient} from "./grok.js"
+import {CardManager} from "./cards.js"
+import {
+  queueMessage, grokInvitingMessage, grokActivatedMessage, teamAddedMessage,
+  teamAlreadyInvitedMessage, teamLockedMessage, noTeamMembersMessage,
+  grokUnavailableMessage, grokErrorMessage, grokNoHistoryMessage,
+} from "./messages.js"
+import {profileMutex, log, logError} from "./util.js"
 
 export class SupportBot {
-  // Grok group mapping (persisted via onGrokMapChanged callback)
-  private pendingGrokJoins = new Map<string, number>()      // memberId → mainGroupId
-  private grokGroupMap = new Map<number, number>()           // mainGroupId → grokLocalGroupId
-  private reverseGrokMap = new Map<number, number>()         // grokLocalGroupId → mainGroupId
-  private grokJoinResolvers = new Map<number, () => void>()  // mainGroupId → resolve fn
-  private grokFullyConnected = new Set<number>()             // mainGroupIds where connectedToGroupMember fired
+  // Card manager
+  cards: CardManager
 
-  // Forwarded message tracking: "groupId:itemId" → {teamItemId, header, sender}
-  private forwardedItems = new Map<string, {teamItemId: number; header: string; sender: SenderType}>()
+  // Grok group mapping: memberId → mainGroupId (for pending joins)
+  private pendingGrokJoins = new Map<string, number>()
+  // Buffered invitations that arrived before pendingGrokJoins was set (race condition)
+  private bufferedGrokInvitations = new Map<string, CEvt.ReceivedGroupInvitation>()
+  // mainGroupId → grokLocalGroupId
+  private grokGroupMap = new Map<number, number>()
+  // grokLocalGroupId → mainGroupId
+  private reverseGrokMap = new Map<number, number>()
+  // mainGroupId → resolve fn for grok join
+  private grokJoinResolvers = new Map<number, () => void>()
+  // mainGroupIds where Grok connectedToGroupMember fired
+  private grokFullyConnected = new Set<number>()
 
-  // [NEW] marker tracking: groupId → {teamItemId, timestamp, originalText}
-  private newItems = new Map<number, {teamItemId: number; timestamp: number; originalText: string}>()
-
-  // Pending DMs for team group members (contactId → message) — sent on contactConnected
+  // Pending DMs for team group members (contactId → message)
   private pendingTeamDMs = new Map<number, string>()
+  // Contacts that already received the team DM (dedup)
+  private sentTeamDMs = new Set<number>()
 
-  // Pending owner role assignments: "groupId:groupMemberId" — set on member connect
-  private pendingOwnerRole = new Set<string>()
+  // Tracked fire-and-forget operations (for testing)
+  private _pendingOps: Promise<void>[] = []
 
-  // Groups where welcome flow (teamQueueMessage) was already completed
-  private welcomeCompleted = new Set<number>()
-
-  // Group activity tracking: groupId → last customer message timestamp (ms)
-  private groupLastActive = new Map<number, number>()
-
-  // A1: Reply-to-last threading: groupId → last teamItemId for that customer group
-  private lastTeamItemByGroup = new Map<number, number>()
-
-  // A4: Group metadata (firstContact, msgCount, customerName) — persisted
-  private groupMetadata = new Map<number, GroupMetadata>()
-
-  // D1: Pending tracking — persisted
-  private groupPendingInfo = new Map<number, GroupPendingInfo>()
-
-  // Bot's business address link (set after startup)
+  // Bot's business address link
   businessAddress: string | null = null
 
-  // Callback to persist grokGroupMap changes
-  onGrokMapChanged: ((map: ReadonlyMap<number, number>) => void) | null = null
-
-  // Callback to persist newItems changes
-  onNewItemsChanged: ((map: ReadonlyMap<number, {teamItemId: number; timestamp: number; originalText: string}>) => void) | null = null
-
-  // Callback to persist groupLastActive changes
-  onGroupLastActiveChanged: ((map: ReadonlyMap<number, number>) => void) | null = null
-
-  // Callback to persist groupMetadata changes
-  onGroupMetadataChanged: ((map: ReadonlyMap<number, GroupMetadata>) => void) | null = null
-
-  // Callback to persist groupPendingInfo changes
-  onGroupPendingInfoChanged: ((map: ReadonlyMap<number, GroupPendingInfo>) => void) | null = null
-
   constructor(
-    private mainChat: api.ChatApi,
-    private grokChat: api.ChatApi,
+    private chat: api.ChatApi,
     private grokApi: GrokApiClient,
     private config: Config,
-  ) {}
-
-  // --- Restore Methods ---
-
-  restoreGrokGroupMap(entries: [number, number][]): void {
-    for (const [mainGroupId, grokLocalGroupId] of entries) {
-      this.grokGroupMap.set(mainGroupId, grokLocalGroupId)
-      this.reverseGrokMap.set(grokLocalGroupId, mainGroupId)
-    }
-    log(`Restored Grok group map: ${entries.length} entries`)
+    private mainUserId: number,
+    private grokUserId: number,
+  ) {
+    this.cards = new CardManager(chat, config, mainUserId, config.cardFlushMinutes * 60 * 1000)
   }
 
-  restoreNewItems(entries: [number, {teamItemId: number; timestamp: number; originalText: string}][]): void {
-    const now = Date.now()
-    const DAY_MS = 24 * 60 * 60 * 1000
-    for (const [groupId, info] of entries) {
-      if (now - info.timestamp < DAY_MS) {
-        this.newItems.set(groupId, info)
-      }
-    }
-    log(`Restored NEW items: ${this.newItems.size} entries (pruned ${entries.length - this.newItems.size} expired)`)
-  }
-
-  restoreGroupLastActive(entries: [number, number][]): void {
-    const now = Date.now()
-    const PRUNE_MS = 48 * 60 * 60 * 1000
-    for (const [groupId, timestamp] of entries) {
-      if (now - timestamp < PRUNE_MS) {
-        this.groupLastActive.set(groupId, timestamp)
-      }
-    }
-    log(`Restored group activity: ${this.groupLastActive.size} entries (pruned ${entries.length - this.groupLastActive.size} expired)`)
-  }
-
-  restoreGroupMetadata(entries: [number, GroupMetadata][]): void {
-    for (const [groupId, meta] of entries) {
-      this.groupMetadata.set(groupId, meta)
-    }
-    log(`Restored group metadata: ${entries.length} entries`)
-  }
-
-  restoreGroupPendingInfo(entries: [number, GroupPendingInfo][]): void {
-    for (const [groupId, info] of entries) {
-      this.groupPendingInfo.set(groupId, info)
-    }
-    log(`Restored pending info: ${entries.length} entries`)
-  }
-
-  // --- Format Helpers (A2, A3, A4, A5) ---
-
-  private formatDuration(ms: number): string {
-    if (ms < 60_000) return "<1m"
-    if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m`
-    if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h`
-    return `${Math.floor(ms / 86_400_000)}d`
-  }
-
-  private buildHeader(
-    groupId: number,
-    customerName: string,
-    state: string,
-    msgNum: number,
-    firstContactTime: number | undefined,
-    sender: SenderType,
-    senderLabel?: string,
-  ): string {
-    const parts: string[] = []
-    // A5: sender identification
-    if (sender === "team" && senderLabel) {
-      parts.push(`${senderLabel} > ${groupId}:${customerName}`)
-    } else if (sender === "grok") {
-      parts.push(`Grok > ${groupId}:${customerName}`)
-    } else {
-      parts.push(`${groupId}:${customerName}`)
-    }
-    // A3: state indicator
-    parts.push(state)
-    // A4: message number
-    parts.push(`#${msgNum}`)
-    // A4: duration since first contact
-    if (firstContactTime !== undefined) {
-      const elapsed = Date.now() - firstContactTime
-      if (elapsed >= 60_000) {
-        parts.push(this.formatDuration(elapsed))
-      }
-    }
-    return parts.join(" · ")
-  }
-
-  // A2+A5: Build the full formatted message with color coding
-  private formatForwardMessage(header: string, body: string, sender: SenderType, isNew: boolean): string {
-    let line = ""
-    // A5: Color-coded prefix
-    if (isNew) {
-      line += "!1 NEW! "
-    } else if (sender === "team") {
-      line += "!2 >>! "
-    } else if (sender === "grok") {
-      line += "!5 AI! "
-    }
-    // A2: Bold header
-    line += `*${header}*`
-    // A5: Italic body for Grok responses
-    const formattedBody = sender === "grok" ? `_${body}_` : body
-    // A2: Multi-line format
-    return `${line}\n${formattedBody}`
-  }
-
-  // A6: Extract message content type for non-text indicators
-  private getMsgContentType(chatItem: T.ChatItem): string | null {
-    const content = chatItem.content as any
-    if (content?.type === "rcvMsgContent" || content?.type === "sndMsgContent") {
-      return content.msgContent?.type ?? null
-    }
-    return null
-  }
-
-  // --- State Tracking Helpers ---
-
-  private initGroupMetadata(groupId: number, customerName: string): GroupMetadata {
-    let meta = this.groupMetadata.get(groupId)
-    if (!meta) {
-      meta = {firstContact: Date.now(), msgCount: 0, customerName}
-      this.groupMetadata.set(groupId, meta)
-    } else {
-      meta.customerName = customerName
-    }
-    this.onGroupMetadataChanged?.(this.groupMetadata)
-    return meta
-  }
-
-  private incrementMsgCount(groupId: number): number {
-    const meta = this.groupMetadata.get(groupId)
-    if (meta) {
-      meta.msgCount++
-      this.onGroupMetadataChanged?.(this.groupMetadata)
-      return meta.msgCount
-    }
-    return 1
-  }
-
-  private updatePendingInfo(groupId: number, eventType: "message" | "reaction", from: SenderType): void {
-    const existing = this.groupPendingInfo.get(groupId)
-    const info: GroupPendingInfo = {
-      lastEventType: eventType,
-      lastEventFrom: from,
-      lastEventTimestamp: Date.now(),
-      lastMessageFrom: eventType === "message" ? from : (existing?.lastMessageFrom ?? from),
-    }
-    this.groupPendingInfo.set(groupId, info)
-    this.onGroupPendingInfoChanged?.(this.groupPendingInfo)
-  }
-
-  // --- State Derivation Helpers ---
-
-  private async getGroupComposition(groupId: number): Promise<GroupComposition> {
-    const members = await this.mainChat.apiListMembers(groupId)
-    return {
-      grokMember: members.find(m =>
-        this.config.grokContactId !== null
-        && m.memberContactId === this.config.grokContactId && isActiveMember(m)),
-      teamMember: members.find(m =>
-        this.config.teamMembers.some(tm => tm.id === m.memberContactId) && isActiveMember(m)),
+  // Wait for all fire-and-forget operations to settle (for testing)
+  async flush(): Promise<void> {
+    while (this._pendingOps.length > 0) {
+      const ops = this._pendingOps.splice(0)
+      await Promise.allSettled(ops)
     }
   }
 
-  private async isFirstCustomerMessage(groupId: number): Promise<boolean> {
-    if (this.welcomeCompleted.has(groupId)) return false
-    const chat = await this.apiGetChat(groupId, 20)
-    const found = chat.chatItems.some((ci: T.ChatItem) => {
-      if (ci.chatDir.type !== "groupSnd") return false
-      const text = util.ciContentText(ci)
-      return text?.includes("forwarded to the team")
-        || text?.includes("now chatting with Grok")
-        || text?.includes("team member has been added")
-        || text?.includes("team member has already been invited")
+  private fireAndForget(op: Promise<void>): void {
+    const tracked = op.catch(err => logError("async operation error", err))
+    this._pendingOps.push(tracked)
+    tracked.finally(() => {
+      const idx = this._pendingOps.indexOf(tracked)
+      if (idx >= 0) this._pendingOps.splice(idx, 1)
     })
-    if (found) this.welcomeCompleted.add(groupId)
-    return !found
   }
 
-  private async getGrokHistory(groupId: number, grokMember: T.GroupMember, customerId: string): Promise<GrokMessage[]> {
-    const chat = await this.apiGetChat(groupId, 100)
-    const history: GrokMessage[] = []
-    for (const ci of chat.chatItems) {
-      if (ci.chatDir.type !== "groupRcv") continue
-      const text = util.ciContentText(ci)?.trim()
-      if (!text) continue
-      if (ci.chatDir.groupMember.groupMemberId === grokMember.groupMemberId) {
-        history.push({role: "assistant", content: text})
-      } else if (ci.chatDir.groupMember.memberId === customerId && !util.ciBotCommand(ci)) {
-        history.push({role: "user", content: text})
-      }
-    }
-    return history
+  // --- Profile-switching helpers ---
+
+  private async withMainProfile<R>(fn: () => Promise<R>): Promise<R> {
+    return profileMutex.runExclusive(async () => {
+      await this.chat.apiSetActiveUser(this.mainUserId)
+      return fn()
+    })
   }
 
-  private async getCustomerMessages(groupId: number, customerId: string): Promise<string[]> {
-    const chat = await this.apiGetChat(groupId, 100)
-    return chat.chatItems
-      .filter((ci: T.ChatItem) =>
-        ci.chatDir.type === "groupRcv"
-        && ci.chatDir.groupMember.memberId === customerId
-        && !util.ciBotCommand(ci))
-      .map((ci: T.ChatItem) => util.ciContentText(ci)?.trim())
-      .filter((t): t is string => !!t)
+  private async withGrokProfile<R>(fn: () => Promise<R>): Promise<R> {
+    return profileMutex.runExclusive(async () => {
+      await this.chat.apiSetActiveUser(this.grokUserId)
+      return fn()
+    })
   }
 
-  private async hasTeamBeenActivatedBefore(groupId: number): Promise<boolean> {
-    const chat = await this.apiGetChat(groupId, 50)
-    return chat.chatItems.some((ci: T.ChatItem) =>
-      ci.chatDir.type === "groupSnd"
-      && util.ciContentText(ci)?.includes("A team member has been added"))
-  }
-
-  // Interim apiGetChat wrapper using sendChatCmd directly
-  private async apiGetChat(groupId: number, count: number): Promise<T.AChat> {
-    const r = await this.mainChat.sendChatCmd(`/_get chat #${groupId} count=${count}`) as any
-    if (r.type === "apiChat") return r.chat
-    throw new Error(`error getting chat for group ${groupId}: ${r.type}`)
-  }
-
-  // --- Event Handlers (main bot) ---
+  // --- Main profile event handlers ---
 
   async onBusinessRequest(evt: CEvt.AcceptingBusinessRequest): Promise<void> {
     const groupId = evt.groupInfo.groupId
     try {
       const profile = evt.groupInfo.groupProfile
-      await this.mainChat.apiUpdateGroupProfile(groupId, {
-        displayName: profile.displayName,
-        fullName: profile.fullName,
-        groupPreferences: {
-          ...profile.groupPreferences,
-          files: {enable: T.GroupFeatureEnabled.On},
-        },
-      })
-      log(`Enabled media uploads for business group ${groupId}`)
+      await this.withMainProfile(() =>
+        this.chat.apiUpdateGroupProfile(groupId, {
+          displayName: profile.displayName,
+          fullName: profile.fullName,
+          groupPreferences: {
+            ...profile.groupPreferences,
+            files: {enable: T.GroupFeatureEnabled.On},
+            history: {enable: T.GroupFeatureEnabled.On},
+          },
+        })
+      )
+      // file uploads + history enabled
     } catch (err) {
-      logError(`Failed to enable media uploads for group ${groupId}`, err)
+      logError(`Failed to update business group ${groupId} preferences`, err)
     }
   }
 
   async onNewChatItems(evt: CEvt.NewChatItems): Promise<void> {
+    // Only process events for main profile
+    if (evt.user.userId !== this.mainUserId) return
     for (const ci of evt.chatItems) {
       try {
-        await this.processChatItem(ci)
+        await this.processMainChatItem(ci)
       } catch (err) {
-        logError(`Error processing chat item in group`, err)
+        logError("Error processing chat item", err)
       }
     }
   }
 
+  async onChatItemUpdated(evt: CEvt.ChatItemUpdated): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
+    const {chatInfo} = evt.chatItem
+    if (chatInfo.type !== "group") return
+    const groupInfo = chatInfo.groupInfo
+    if (!groupInfo.businessChat) return
+    this.cards.scheduleUpdate(groupInfo.groupId)
+  }
+
+  async onChatItemReaction(evt: CEvt.ChatItemReaction): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
+    if (!evt.added) return
+    const chatInfo = evt.reaction.chatInfo
+    if (chatInfo.type !== "group") return
+    const groupInfo = chatInfo.groupInfo
+    if (!groupInfo.businessChat) return
+    this.cards.scheduleUpdate(groupInfo.groupId)
+  }
+
   async onLeftMember(evt: CEvt.LeftMember): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
     const groupId = evt.groupInfo.groupId
     const member = evt.member
     const bc = evt.groupInfo.businessChat
     if (!bc) return
 
-    // Customer left
     if (member.memberId === bc.customerId) {
-      log(`Customer left group ${groupId}, cleaning up`)
+      log(`Customer left group ${groupId}`)
       this.cleanupGrokMaps(groupId)
-      this.welcomeCompleted.delete(groupId)
-      if (this.newItems.delete(groupId)) {
-        this.onNewItemsChanged?.(this.newItems)
-      }
-      if (this.groupLastActive.delete(groupId)) {
-        this.onGroupLastActiveChanged?.(this.groupLastActive)
-      }
-      // Clean up new state
-      this.lastTeamItemByGroup.delete(groupId)
-      this.cleanupForwardedItems(groupId)
-      if (this.groupMetadata.delete(groupId)) {
-        this.onGroupMetadataChanged?.(this.groupMetadata)
-      }
-      if (this.groupPendingInfo.delete(groupId)) {
-        this.onGroupPendingInfoChanged?.(this.groupPendingInfo)
-      }
+      try { await this.cards.clearCustomData(groupId) } catch {}
       return
     }
 
-    // Grok left
     if (this.config.grokContactId !== null && member.memberContactId === this.config.grokContactId) {
       log(`Grok left group ${groupId}`)
       this.cleanupGrokMaps(groupId)
       return
     }
 
-    // Team member left
     if (this.config.teamMembers.some(tm => tm.id === member.memberContactId)) {
       log(`Team member left group ${groupId}`)
     }
   }
 
-  async onChatItemUpdated(evt: CEvt.ChatItemUpdated): Promise<void> {
-    const {chatInfo, chatItem} = evt.chatItem
-    if (chatInfo.type !== "group") return
-    const groupInfo = chatInfo.groupInfo
-    if (!groupInfo.businessChat) return
-    const groupId = groupInfo.groupId
-
-    if (chatItem.chatDir.type !== "groupRcv") return
-
-    const itemId = chatItem.meta.itemId
-    const key = `${groupId}:${itemId}`
-    const entry = this.forwardedItems.get(key)
-    if (!entry) return
-
-    const text = util.ciContentText(chatItem)?.trim()
-    if (!text) return
-
-    // Rebuild the message using new format
-    let fwd = this.truncateText(this.formatForwardMessage(entry.header, text, entry.sender, false))
-    const newEntry = this.newItems.get(groupId)
-    if (newEntry && newEntry.teamItemId === entry.teamItemId) {
-      fwd = this.truncateText(this.formatForwardMessage(entry.header, text, entry.sender, true))
-      newEntry.originalText = this.truncateText(this.formatForwardMessage(entry.header, text, entry.sender, false))
-      this.onNewItemsChanged?.(this.newItems)
-    }
-    try {
-      await this.mainChat.apiUpdateChatItem(
-        T.ChatType.Group,
-        this.config.teamGroup.id,
-        entry.teamItemId,
-        {type: "text", text: fwd},
-        false,
-      )
-    } catch (err) {
-      logError(`Failed to forward edit to team for group ${groupId}, item ${itemId}`, err)
-    }
-  }
-
-  // D1: Reaction event handler
-  async onChatItemReaction(evt: CEvt.ChatItemReaction): Promise<void> {
-    if (!evt.added) return
-    const chatInfo = evt.reaction.chatInfo
-    if (chatInfo.type !== "group") return
-    const groupInfo = (chatInfo as any).groupInfo
-    if (!groupInfo?.businessChat) return
-    const groupId = groupInfo.groupId
-
-    const reactionDir = evt.reaction.chatReaction.chatDir
-    if (reactionDir.type === "groupSnd") return
-    if (reactionDir.type !== "groupRcv") return
-
-    const sender = reactionDir.groupMember
-    const isCustomer = sender.memberId === groupInfo.businessChat.customerId
-    const isGrok = this.config.grokContactId !== null && sender.memberContactId === this.config.grokContactId
-    const isTeam = this.config.teamMembers.some(tm => tm.id === sender.memberContactId)
-
-    const from: SenderType | null = isCustomer ? "customer" : isGrok ? "grok" : isTeam ? "team" : null
-    if (!from) return
-
-    this.updatePendingInfo(groupId, "reaction", from)
-  }
-
   async onJoinedGroupMember(evt: CEvt.JoinedGroupMember): Promise<void> {
-    log(`Member joined group ${evt.groupInfo.groupId}: ${evt.member.memberProfile.displayName}`)
+    if (evt.user.userId !== this.mainUserId) return
     if (evt.groupInfo.groupId === this.config.teamGroup.id) {
       await this.sendTeamMemberDM(evt.member)
     }
   }
 
   async onMemberConnected(evt: CEvt.ConnectedToGroupMember): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
     const groupId = evt.groupInfo.groupId
-    log(`Member connected in group ${groupId}: ${evt.member.memberProfile.displayName}`)
+
+    // Team group → send DM (if not already sent by onJoinedGroupMember)
     if (groupId === this.config.teamGroup.id) {
       await this.sendTeamMemberDM(evt.member, evt.memberContact)
+      return
     }
-    // Set owner role for team members invited via /add
-    const key = `${groupId}:${evt.member.groupMemberId}`
-    if (this.pendingOwnerRole.delete(key)) {
-      try {
-        await this.mainChat.apiSetMembersRole(groupId, [evt.member.groupMemberId], T.GroupMemberRole.Owner)
-        log(`Set owner role for member ${evt.member.groupMemberId} in group ${groupId}`)
-      } catch (err) {
-        logError(`Failed to set owner role for member ${evt.member.groupMemberId} in group ${groupId}`, err)
+
+    // Customer group → promote to Owner (unless customer or Grok). Idempotent per plan §11.
+    const bc = evt.groupInfo.businessChat
+    if (bc) {
+      const isCustomer = evt.member.memberId === bc.customerId
+      const isGrok = this.config.grokContactId !== null
+        && evt.member.memberContactId === this.config.grokContactId
+      if (!isCustomer && !isGrok) {
+        try {
+          await this.withMainProfile(() =>
+            this.chat.apiSetMembersRole(groupId, [evt.member.groupMemberId], T.GroupMemberRole.Owner)
+          )
+          log(`Promoted member ${evt.member.groupMemberId} to Owner in group ${groupId}`)
+        } catch (err) {
+          logError(`Failed to promote member in group ${groupId}`, err)
+        }
       }
     }
   }
 
   async onMemberContactReceivedInv(evt: CEvt.NewMemberContactReceivedInv): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
     const {contact, groupInfo, member} = evt
     if (groupInfo.groupId === this.config.teamGroup.id) {
-      log(`Accepted DM contact from team group member: ${contact.contactId}:${member.memberProfile.displayName}`)
-      if (!this.pendingTeamDMs.has(contact.contactId)) {
-        const name = member.memberProfile.displayName
-        const formatted = name.includes(" ") ? `'${name}'` : name
-        const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${contact.contactId}:${formatted}`
+      if (this.sentTeamDMs.has(contact.contactId)) return
+      log(`DM contact from team group member: ${contact.contactId}:${member.memberProfile.displayName}`)
+      const name = member.memberProfile.displayName
+      const formatted = name.includes(" ") ? `'${name}'` : name
+      const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${contact.contactId}:${formatted}`
+      // Try sending immediately — contact may already be usable
+      try {
+        await this.withMainProfile(() =>
+          this.chat.apiSendTextMessage([T.ChatType.Direct, contact.contactId], msg)
+        )
+        this.sentTeamDMs.add(contact.contactId)
+        log(`Sent DM to team member ${contact.contactId}:${name}`)
+      } catch {
+        // Not ready yet — queue for contactConnected / contactSndReady
         this.pendingTeamDMs.set(contact.contactId, msg)
+        log(`Queued DM for team member ${contact.contactId}:${name}`)
       }
-    } else {
-      log(`DM contact received from non-team group ${groupInfo.groupId}, member ${member.memberProfile.displayName}`)
     }
   }
 
   async onContactConnected(evt: CEvt.ContactConnected): Promise<void> {
-    const contactId = evt.contact.contactId
+    if (evt.user.userId !== this.mainUserId) return
+    await this.deliverPendingDM(evt.contact.contactId)
+  }
+
+  async onContactSndReady(evt: CEvt.ContactSndReady): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
+    await this.deliverPendingDM(evt.contact.contactId)
+  }
+
+  private async deliverPendingDM(contactId: number): Promise<void> {
+    if (this.sentTeamDMs.has(contactId)) {
+      this.pendingTeamDMs.delete(contactId)
+      return
+    }
     const pendingMsg = this.pendingTeamDMs.get(contactId)
     if (pendingMsg === undefined) return
     this.pendingTeamDMs.delete(contactId)
-    log(`Contact connected, sending pending DM to team member ${contactId}`)
     try {
-      await this.mainChat.apiSendTextMessage([T.ChatType.Direct, contactId], pendingMsg)
+      await this.withMainProfile(() =>
+        this.chat.apiSendTextMessage([T.ChatType.Direct, contactId], pendingMsg)
+      )
+      this.sentTeamDMs.add(contactId)
+      log(`Sent DM to team member ${contactId}`)
     } catch (err) {
-      logError(`Failed to send DM to new team member ${contactId}`, err)
+      logError(`Failed to send DM to team member ${contactId}`, err)
     }
   }
 
-  private async sendTeamMemberDM(member: T.GroupMember, memberContact?: T.Contact): Promise<void> {
-    const name = member.memberProfile.displayName
-    const formatted = name.includes(" ") ? `'${name}'` : name
-
-    const contactId = memberContact?.contactId ?? member.memberContactId
-    if (contactId) {
-      const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${contactId}:${formatted}`
-      try {
-        await this.mainChat.apiSendTextMessage([T.ChatType.Direct, contactId], msg)
-        log(`Sent DM to team member ${contactId}:${name}`)
-      } catch (err) {
-        logError(`Failed to send DM to team member ${contactId}`, err)
-      }
-      return
-    }
-
-    const groupId = this.config.teamGroup.id
-    try {
-      const r = await this.mainChat.sendChatCmd(
-        `/_create member contact #${groupId} ${member.groupMemberId}`
-      ) as any
-      if (r.type !== "newMemberContact") {
-        log(`Unexpected response creating member contact: ${r.type}`)
-        return
-      }
-      const newContactId: number = r.contact.contactId
-      const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${newContactId}:${formatted}`
-      this.pendingTeamDMs.set(newContactId, msg)
-      await this.mainChat.sendChatCmd(`/_invite member contact @${newContactId}`)
-      log(`Sent DM invitation to team member ${newContactId}:${name}`)
-    } catch (err) {
-      logError(`Failed to create member contact for group member ${member.groupMemberId}`, err)
-    }
-  }
-
-  // --- Event Handler (Grok agent) ---
+  // --- Grok profile event handlers ---
 
   async onGrokGroupInvitation(evt: CEvt.ReceivedGroupInvitation): Promise<void> {
+    if (evt.user.userId !== this.grokUserId) return
     const memberId = evt.groupInfo.membership.memberId
     const mainGroupId = this.pendingGrokJoins.get(memberId)
     if (mainGroupId === undefined) {
-      log(`Grok received unexpected group invitation (memberId=${memberId}), ignoring`)
+      // Buffer: invitation may arrive before pendingGrokJoins is set (race with apiAddMember)
+      this.bufferedGrokInvitations.set(memberId, evt)
       return
     }
-    log(`Grok joining group: mainGroupId=${mainGroupId}, grokGroupId=${evt.groupInfo.groupId}`)
     this.pendingGrokJoins.delete(memberId)
+    this.bufferedGrokInvitations.delete(memberId)
+    await this.processGrokInvitation(evt, mainGroupId)
+  }
+
+  private async processGrokInvitation(evt: CEvt.ReceivedGroupInvitation, mainGroupId: number): Promise<void> {
+    log(`Grok joining group: mainGroupId=${mainGroupId}, grokGroupId=${evt.groupInfo.groupId}`)
     try {
-      await this.grokChat.apiJoinGroup(evt.groupInfo.groupId)
+      await this.withGrokProfile(() => this.chat.apiJoinGroup(evt.groupInfo.groupId))
     } catch (err) {
       logError(`Grok failed to join group ${evt.groupInfo.groupId}`, err)
       return
     }
-
     this.grokGroupMap.set(mainGroupId, evt.groupInfo.groupId)
     this.reverseGrokMap.set(evt.groupInfo.groupId, mainGroupId)
-    this.onGrokMapChanged?.(this.grokGroupMap)
   }
 
-  onGrokMemberConnected(evt: CEvt.ConnectedToGroupMember): void {
+  async onGrokMemberConnected(evt: CEvt.ConnectedToGroupMember): Promise<void> {
+    if (evt.user.userId !== this.grokUserId) return
     const grokGroupId = evt.groupInfo.groupId
     const mainGroupId = this.reverseGrokMap.get(grokGroupId)
     if (mainGroupId === undefined) return
@@ -571,24 +286,38 @@ export class SupportBot {
     const resolver = this.grokJoinResolvers.get(mainGroupId)
     if (resolver) {
       this.grokJoinResolvers.delete(mainGroupId)
-      log(`Grok fully connected in group: mainGroupId=${mainGroupId}, grokGroupId=${grokGroupId}`)
+      log(`Grok fully connected: mainGroupId=${mainGroupId}, grokGroupId=${grokGroupId}`)
       resolver()
     }
   }
 
-  // --- Internal Processing ---
+  async onGrokNewChatItems(evt: CEvt.NewChatItems): Promise<void> {
+    if (evt.user.userId !== this.grokUserId) return
+    for (const ci of evt.chatItems) {
+      try {
+        await this.processGrokChatItem(ci)
+      } catch (err) {
+        logError("Error processing Grok chat item", err)
+      }
+    }
+  }
 
-  private async processChatItem(ci: T.AChatItem): Promise<void> {
+  // --- Main profile message routing ---
+
+  private async processMainChatItem(ci: T.AChatItem): Promise<void> {
     const {chatInfo, chatItem} = ci
 
-    // Direct message (not from business group) → reply with business address
-    if (chatInfo.type === "direct" && chatItem.chatDir.type === "directRcv") {
-      const contactId = (chatInfo as any).contact?.contactId
-      if (contactId && this.businessAddress) {
+    // 1. Direct text message → reply with business address
+    if (chatInfo.type === "direct" && chatItem.chatDir.type === "directRcv"
+      && (chatItem.content as any).type === "rcvMsgContent") {
+      if (this.businessAddress) {
+        const contactId = chatInfo.contact.contactId
         try {
-          await this.mainChat.apiSendTextMessage(
-            [T.ChatType.Direct, contactId],
-            `I can't answer your questions on non-business address, please add me through my business address: ${this.businessAddress}`,
+          await this.withMainProfile(() =>
+            this.chat.apiSendTextMessage(
+              [T.ChatType.Direct, contactId],
+              `Please use my business address to ask questions: ${this.businessAddress}`,
+            )
           )
         } catch (err) {
           logError(`Failed to reply to direct message from contact ${contactId}`, err)
@@ -601,380 +330,332 @@ export class SupportBot {
     const groupInfo = chatInfo.groupInfo
     const groupId = groupInfo.groupId
 
-    // Handle commands in team group (/add, /inviteall, /invitenew, /pending)
+    // 2. Team group → handle /join
     if (groupId === this.config.teamGroup.id) {
       await this.processTeamGroupMessage(chatItem)
       return
     }
 
+    // 3. Skip non-business groups
     if (!groupInfo.businessChat) return
 
+    // 4. Skip own messages
     if (chatItem.chatDir.type === "groupSnd") return
     if (chatItem.chatDir.type !== "groupRcv") return
+
     const sender = chatItem.chatDir.groupMember
+    const bc = groupInfo.businessChat
+    const isCustomer = sender.memberId === bc.customerId
 
-    const isCustomer = sender.memberId === groupInfo.businessChat.customerId
-
+    // 6. Non-customer message → one-way gate check + card update
     if (!isCustomer) {
-      const isGrok = this.config.grokContactId !== null && sender.memberContactId === this.config.grokContactId
-      // Team member message → forward to team group
-      if (this.config.teamMembers.some(tm => tm.id === sender.memberContactId)) {
-        const text = util.ciContentText(chatItem)?.trim()
-        if (text) {
-          const customerName = groupInfo.groupProfile.displayName || `group-${groupId}`
-          const teamMemberName = sender.memberProfile.displayName
-          const contactId = sender.memberContactId
-          const itemId = chatItem.meta?.itemId
+      const isTeam = this.config.teamMembers.some(tm => tm.id === sender.memberContactId)
 
-          // Initialize metadata if needed, increment count
-          this.initGroupMetadata(groupId, customerName)
-          const msgNum = this.incrementMsgCount(groupId)
-          const meta = this.groupMetadata.get(groupId)!
-
-          // Get state for header
-          const {grokMember, teamMember} = await this.getGroupComposition(groupId)
-          const state = grokMember ? "GROK" : teamMember ? "TEAM" : "QUEUE"
-
-          const senderLabel = `${contactId}:${teamMemberName}`
-          const header = this.buildHeader(groupId, customerName, state, msgNum, meta.firstContact, "team", senderLabel)
-          const teamReplyTo = this.resolveTeamReplyTo(groupId, chatItem)
-          await this.forwardToTeam(groupId, header, text, "team", itemId, teamReplyTo)
-
-          // D1: Track team message
-          this.updatePendingInfo(groupId, "message", "team")
-        }
-      }
-      // Any non-customer, non-Grok member TEXT message → remove Grok if present
-      if (!isGrok && util.ciContentText(chatItem)?.trim()) {
-        const {grokMember} = await this.getGroupComposition(groupId)
+      if (isTeam && util.ciContentText(chatItem)?.trim()) {
+        // Check one-way gate: first team text → remove Grok
+        const {grokMember} = await this.cards.getGroupComposition(groupId)
         if (grokMember) {
-          log(`Team member sent message in group ${groupId}, removing Grok`)
+          log(`One-way gate: team message in group ${groupId}, removing Grok`)
           try {
-            await this.mainChat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
+            await this.withMainProfile(() =>
+              this.chat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
+            )
           } catch {
-            // ignore — may have already left
+            // may have already left
           }
           this.cleanupGrokMaps(groupId)
         }
       }
+      // Schedule card update for any non-customer message (team or Grok)
+      this.cards.scheduleUpdate(groupId)
       return
     }
 
-    // Customer message — get composition for state, then forward + dispatch
-    const {grokMember, teamMember} = await this.getGroupComposition(groupId)
-    const state = grokMember ? "GROK" : teamMember ? "TEAM" : "QUEUE"
-
+    // 8. Customer message → derive state and dispatch
+    const state = await this.cards.deriveState(groupId)
     const cmd = util.ciBotCommand(chatItem)
     const text = util.ciContentText(chatItem)?.trim() || null
 
-    // A6: Detect non-text content type
-    const contentType = this.getMsgContentType(chatItem)
-    const isNonText = contentType !== null && contentType !== "text"
-    const body = isNonText
-      ? (text ? `_[${contentType}]_ ${text}` : `_[${contentType}]_`)
-      : text
+    switch (state) {
+      case "WELCOME":
+        if (cmd?.keyword === "grok") {
+          // WELCOME → GROK (skip queue msg)
+          // Fire-and-forget: activateGrok awaits future events (waitForGrokJoin)
+          // which would deadlock the sequential event loop if awaited here.
+          // sendQueueOnFail=true: if Grok activation fails, send queue message as fallback
+          await this.cards.createCard(groupId, groupInfo)
+          this.fireAndForget(this.activateGrok(groupId, true))
+          return
+        }
+        if (cmd?.keyword === "team") {
+          await this.activateTeam(groupId)
+          await this.cards.createCard(groupId, groupInfo)
+          return
+        }
+        // First regular message → QUEUE
+        if (text) {
+          await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+          await this.cards.createCard(groupId, groupInfo)
+        }
+        break
 
-    if (body && !cmd) {
-      // Track customer text/content activity
-      this.groupLastActive.set(groupId, Date.now())
-      this.onGroupLastActiveChanged?.(this.groupLastActive)
+      case "QUEUE":
+        if (cmd?.keyword === "grok") {
+          this.fireAndForget(this.activateGrok(groupId))
+        } else if (cmd?.keyword === "team") {
+          await this.activateTeam(groupId)
+        }
+        this.cards.scheduleUpdate(groupId)
+        break
 
-      // A4: Initialize and increment metadata
-      const customerName = groupInfo.groupProfile.displayName || `group-${groupId}`
-      this.initGroupMetadata(groupId, customerName)
-      const msgNum = this.incrementMsgCount(groupId)
-      const meta = this.groupMetadata.get(groupId)!
+      case "GROK":
+        if (cmd?.keyword === "team") {
+          await this.activateTeam(groupId)
+        } else if (cmd?.keyword === "grok") {
+          // Already in grok mode — ignore
+        } else if (text) {
+          // Customer text → Grok responds (handled by Grok profile's onGrokNewChatItems)
+          // Just schedule card update for the customer message
+        }
+        this.cards.scheduleUpdate(groupId)
+        break
 
-      const firstMessage = await this.isFirstCustomerMessage(groupId)
-      const header = this.buildHeader(groupId, customerName, state, msgNum, meta.firstContact, "customer")
-      const teamReplyTo = this.resolveTeamReplyTo(groupId, chatItem)
-      await this.forwardToTeam(groupId, header, body, "customer", chatItem.meta?.itemId, teamReplyTo, firstMessage)
-      if (firstMessage) {
-        await this.sendToGroup(groupId, teamQueueMessage(this.config.timezone))
-        await this.sendAddCommand(groupId, groupInfo)
-        this.welcomeCompleted.add(groupId)
-      }
+      case "TEAM-PENDING":
+        if (cmd?.keyword === "grok") {
+          // Invite Grok if not present
+          const {grokMember} = await this.cards.getGroupComposition(groupId)
+          if (!grokMember) {
+            this.fireAndForget(this.activateGrok(groupId))
+          }
+          // else: already present, ignore
+        } else if (cmd?.keyword === "team") {
+          await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
+        }
+        this.cards.scheduleUpdate(groupId)
+        break
 
-      // D1: Track customer message
-      this.updatePendingInfo(groupId, "message", "customer")
-    }
-
-    // State-specific handling (commands, Grok API, etc.)
-    if (grokMember) {
-      await this.handleGrokMode(groupId, groupInfo, chatItem, text, grokMember)
-    } else if (teamMember) {
-      await this.handleTeamMode(groupId, cmd ?? null)
-    } else {
-      await this.handleNoSpecialMembers(groupId, groupInfo, cmd ?? null)
-    }
-
-  }
-
-  // Customer message when a team member is present (teamPending or teamLocked)
-  private async handleTeamMode(groupId: number, cmd: {keyword: string} | null): Promise<void> {
-    if (cmd?.keyword === "grok") {
-      await this.sendToGroup(groupId, teamLockedMessage)
-    }
-    // /team → ignore (already team). Text → already forwarded above.
-  }
-
-  // Customer message when Grok is present
-  private async handleGrokMode(
-    groupId: number,
-    groupInfo: T.GroupInfo,
-    chatItem: T.ChatItem,
-    text: string | null,
-    grokMember: T.GroupMember,
-  ): Promise<void> {
-    const cmd = util.ciBotCommand(chatItem)
-
-    if (cmd?.keyword === "grok") return // already in grok mode
-    if (cmd?.keyword === "team") {
-      await this.activateTeam(groupId, grokMember)
-      return
-    }
-    if (!text) return
-    // Text already forwarded to team in processChatItem — just send to Grok
-    await this.forwardToGrok(groupId, groupInfo, text, grokMember, chatItem.meta?.itemId)
-  }
-
-  // Customer message when neither Grok nor team is present (welcome or teamQueue)
-  private async handleNoSpecialMembers(
-    groupId: number,
-    groupInfo: T.GroupInfo,
-    cmd: {keyword: string} | null,
-  ): Promise<void> {
-    const firstMessage = await this.isFirstCustomerMessage(groupId)
-
-    if (firstMessage) {
-      if (cmd?.keyword === "grok") {
-        await this.activateGrok(groupId, groupInfo)
-        return
-      }
-      if (cmd?.keyword === "team") {
-        await this.activateTeam(groupId, undefined)
-        return
-      }
-      return
-    }
-
-    // teamQueue state
-    if (cmd?.keyword === "grok") {
-      await this.activateGrok(groupId, groupInfo)
-      return
-    }
-    if (cmd?.keyword === "team") {
-      await this.activateTeam(groupId, undefined)
-      return
+      case "TEAM":
+        if (cmd?.keyword === "grok") {
+          await this.sendToGroup(groupId, teamLockedMessage)
+        }
+        this.cards.scheduleUpdate(groupId)
+        break
     }
   }
 
-  // --- Grok Activation ---
+  // --- Grok profile message processing ---
 
-  private async activateGrok(groupId: number, groupInfo: T.GroupInfo): Promise<void> {
-    await this.removeNewPrefix(groupId)
-    if (this.config.grokContactId === null) {
-      await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
-      return
-    }
-    const grokContactId = this.config.grokContactId
-    let member: T.GroupMember | undefined
+  private async processGrokChatItem(ci: T.AChatItem): Promise<void> {
+    const {chatInfo, chatItem} = ci
+    if (chatInfo.type !== "group") return
+    const groupInfo = chatInfo.groupInfo
+    const grokGroupId = groupInfo.groupId
+
+    // Only process received text messages from customer
+    if (chatItem.chatDir.type !== "groupRcv") return
+    const text = util.ciContentText(chatItem)?.trim()
+    if (!text) return // ignore non-text
+
+    // Ignore bot commands
+    if (util.ciBotCommand(chatItem)) return
+
+    // Only respond in business groups (survives restart without in-memory maps)
+    const bc = groupInfo.businessChat
+    if (!bc) return
+
+    // Only respond to customer messages, not bot or team messages
+    if (chatItem.chatDir.groupMember.memberId !== bc.customerId) return
+
+    // Read history from Grok's own view
     try {
-      member = await this.mainChat.apiAddMember(groupId, grokContactId, T.GroupMemberRole.Member)
+      const chat = await this.withGrokProfile(() =>
+        this.chat.apiGetChat(T.ChatType.Group, grokGroupId, 100)
+      )
+      const history: GrokMessage[] = []
+      for (const histCi of chat.chatItems) {
+        const histText = util.ciContentText(histCi)?.trim()
+        if (!histText) continue
+        if (histCi.chatDir.type === "groupSnd") {
+          history.push({role: "assistant", content: histText})
+        } else if (histCi.chatDir.type === "groupRcv"
+          && histCi.chatDir.groupMember.memberId === bc.customerId
+          && !util.ciBotCommand(histCi)) {
+          history.push({role: "user", content: histText})
+        }
+      }
+
+      // Don't include the current message in history — it's the userMessage
+      if (history.length > 0 && history[history.length - 1].role === "user"
+        && history[history.length - 1].content === text) {
+        history.pop()
+      }
+
+      // Call Grok API (outside mutex)
+      const response = await this.grokApi.chat(history, text)
+
+      // Send response via Grok profile
+      await this.withGrokProfile(() =>
+        this.chat.apiSendTextMessage([T.ChatType.Group, grokGroupId], response)
+      )
     } catch (err) {
+      logError(`Grok per-message error for grokGroup ${grokGroupId}`, err)
+      try {
+        await this.withGrokProfile(() =>
+          this.chat.apiSendTextMessage([T.ChatType.Group, grokGroupId], grokErrorMessage)
+        )
+      } catch {}
+    }
+
+    // Card update scheduled by main profile seeing the groupRcv events
+  }
+
+  // --- Grok activation ---
+
+  private async activateGrok(groupId: number, sendQueueOnFail = false): Promise<void> {
+    if (this.config.grokContactId === null) {
+      await this.sendToGroup(groupId, grokUnavailableMessage)
+      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+      this.cards.scheduleUpdate(groupId)
+      return
+    }
+
+    await this.sendToGroup(groupId, grokInvitingMessage)
+
+    let member: T.GroupMember
+    try {
+      member = await this.withMainProfile(() =>
+        this.chat.apiAddMember(groupId, this.config.grokContactId!, T.GroupMemberRole.Member)
+      )
+    } catch (err: unknown) {
+      const chatErr = err as {chatError?: {errorType?: {type?: string}}}
+      if (chatErr?.chatError?.errorType?.type === "groupDuplicateMember") {
+        // Grok already in group (e.g. customer sent /grok again before join completed) —
+        // the in-flight activation will handle the outcome, just return silently
+        return
+      }
       logError(`Failed to invite Grok to group ${groupId}`, err)
-      await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
+      await this.sendToGroup(groupId, grokUnavailableMessage)
+      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+      this.cards.scheduleUpdate(groupId)
       return
     }
 
     this.pendingGrokJoins.set(member.memberId, groupId)
-    await this.sendToGroup(groupId, grokActivatedMessage)
-    this.welcomeCompleted.add(groupId)
 
-    const joined = await this.waitForGrokJoin(groupId, 30000)
+    // Drain buffered invitation that arrived during the apiAddMember await
+    const buffered = this.bufferedGrokInvitations.get(member.memberId)
+    if (buffered) {
+      this.bufferedGrokInvitations.delete(member.memberId)
+      this.pendingGrokJoins.delete(member.memberId)
+      await this.processGrokInvitation(buffered, groupId)
+    }
+
+    const joined = await this.waitForGrokJoin(groupId, 120_000)
     if (!joined) {
       this.pendingGrokJoins.delete(member.memberId)
       try {
-        await this.mainChat.apiRemoveMembers(groupId, [member.groupMemberId])
-      } catch {
-        // ignore — may have already left
-      }
+        await this.withMainProfile(() =>
+          this.chat.apiRemoveMembers(groupId, [member.groupMemberId])
+        )
+      } catch {}
       this.cleanupGrokMaps(groupId)
-      await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
+      await this.sendToGroup(groupId, grokUnavailableMessage)
+      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+      this.cards.scheduleUpdate(groupId)
       return
     }
 
-    // Grok joined — call API with accumulated customer messages from chat history
-    try {
-      const customerId = groupInfo.businessChat!.customerId
-      const customerMessages = await this.getCustomerMessages(groupId, customerId)
-      const initialUserMsg = customerMessages.join("\n")
-      const response = await this.grokApi.chat([], initialUserMsg)
+    await this.sendToGroup(groupId, grokActivatedMessage)
 
+    // Grok joined — send initial response based on customer's accumulated messages
+    try {
       const grokLocalGId = this.grokGroupMap.get(groupId)
       if (grokLocalGId === undefined) {
-        log(`Grok map entry missing after join for group ${groupId}, Grok may have left`)
-        await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
+        await this.sendToGroup(groupId, grokUnavailableMessage)
         return
       }
-      const replyTo = await this.findLastGrokReceivedItem(grokLocalGId)
-      await this.grokSendMessage(grokLocalGId, response, replyTo)
 
-      // Forward Grok response to team group with new format
-      const customerName = groupInfo.groupProfile.displayName || `group-${groupId}`
-      this.initGroupMetadata(groupId, customerName)
-      const msgNum = this.incrementMsgCount(groupId)
-      const meta = this.groupMetadata.get(groupId)!
-      const header = this.buildHeader(groupId, customerName, "GROK", msgNum, meta.firstContact, "grok")
-      const teamReplyTo = this.findLastForwardedTeamItem(groupId)
-      await this.forwardToTeam(groupId, header, response, "grok", undefined, teamReplyTo)
-
-      // D1: Track Grok response
-      this.updatePendingInfo(groupId, "message", "grok")
-    } catch (err) {
-      logError(`Grok API/send failed for group ${groupId}`, err)
-      try {
-        await this.mainChat.apiRemoveMembers(groupId, [member.groupMemberId])
-      } catch {
-        // ignore
-      }
-      this.cleanupGrokMaps(groupId)
-      await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
-    }
-  }
-
-  // --- Grok Message Forwarding ---
-
-  private async forwardToGrok(
-    groupId: number,
-    groupInfo: T.GroupInfo,
-    text: string,
-    grokMember: T.GroupMember,
-    customerItemId?: number,
-  ): Promise<void> {
-    try {
-      const grokLocalGId = this.grokGroupMap.get(groupId)
-      const customerId = groupInfo.businessChat!.customerId
-      const history = await this.getGrokHistory(groupId, grokMember, customerId)
-      const response = await this.grokApi.chat(history, text)
-
-      if (grokLocalGId !== undefined) {
-        const replyTo = await this.findLastGrokReceivedItem(grokLocalGId)
-        await this.grokSendMessage(grokLocalGId, response, replyTo)
-      }
-
-      // Forward Grok response to team group with new format
-      const customerName = groupInfo.groupProfile.displayName || `group-${groupId}`
-      this.initGroupMetadata(groupId, customerName)
-      const msgNum = this.incrementMsgCount(groupId)
-      const meta = this.groupMetadata.get(groupId)!
-      const header = this.buildHeader(groupId, customerName, "GROK", msgNum, meta.firstContact, "grok")
-      const teamReplyTo = customerItemId !== undefined
-        ? this.forwardedItems.get(`${groupId}:${customerItemId}`)?.teamItemId
-        : undefined
-      await this.forwardToTeam(groupId, header, response, "grok", undefined, teamReplyTo)
-
-      // D1: Track Grok response
-      this.updatePendingInfo(groupId, "message", "grok")
-    } catch (err) {
-      logError(`Grok API error for group ${groupId}`, err)
-      try {
-        await this.mainChat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
-      } catch {
-        // ignore — may have already left
-      }
-      this.cleanupGrokMaps(groupId)
-      await this.sendToGroup(groupId, "Grok is temporarily unavailable. Please try again or click /team for a team member.")
-    }
-  }
-
-  // --- Team Actions ---
-
-  // A1+A2+A3+A4+A5: Forwarding with full formatting and threading
-  private async forwardToTeam(
-    groupId: number, header: string, body: string, sender: SenderType,
-    sourceItemId?: number, inReplyTo?: number,
-    isNew: boolean = false,
-  ): Promise<void> {
-    const cleanMsg = this.truncateText(this.formatForwardMessage(header, body, sender, false))
-    const fwd = isNew ? this.truncateText(this.formatForwardMessage(header, body, sender, true)) : cleanMsg
-
-    // A1: Reply-to-last threading — use explicit reply-to if provided, else last team item for this group
-    const effectiveReplyTo = inReplyTo ?? this.lastTeamItemByGroup.get(groupId)
-
-    try {
-      const result = await this.mainChat.apiSendTextMessage(
-        [T.ChatType.Group, this.config.teamGroup.id],
-        fwd,
-        effectiveReplyTo,
+      // Read history from Grok's own view — only customer messages
+      const chat = await this.withGrokProfile(() =>
+        this.chat.apiGetChat(T.ChatType.Group, grokLocalGId, 100)
       )
-      if (result && result[0]) {
-        const teamItemId = result[0].chatItem.meta.itemId
-
-        // A1: Update threading tracker
-        this.lastTeamItemByGroup.set(groupId, teamItemId)
-
-        // Edit tracking (only when sourceItemId provided)
-        if (sourceItemId !== undefined) {
-          this.forwardedItems.set(`${groupId}:${sourceItemId}`, {teamItemId, header, sender})
-        }
-
-        // [NEW] marker tracking
-        if (isNew) {
-          this.newItems.set(groupId, {teamItemId, timestamp: Date.now(), originalText: cleanMsg})
-          this.onNewItemsChanged?.(this.newItems)
-        }
+      const grokBc = chat.chatInfo.type === "group" ? chat.chatInfo.groupInfo.businessChat : null
+      const customerMessages: string[] = []
+      for (const ci of chat.chatItems) {
+        if (ci.chatDir.type !== "groupRcv") continue
+        if (grokBc && ci.chatDir.groupMember.memberId !== grokBc.customerId) continue
+        const t = util.ciContentText(ci)?.trim()
+        if (t && !util.ciBotCommand(ci)) customerMessages.push(t)
       }
-    } catch (err) {
-      logError(`Failed to forward to team for group ${groupId}`, err)
-    }
-  }
 
-  private async activateTeam(groupId: number, _grokMember: T.GroupMember | undefined): Promise<void> {
-    await this.removeNewPrefix(groupId)
-    if (await this.hasTeamBeenActivatedBefore(groupId)) {
-      await this.sendToGroup(groupId, teamAlreadyAddedMessage)
-      this.welcomeCompleted.add(groupId)
-      return
-    }
-    if (this.config.teamMembers.length === 0) {
-      logError(`No team members configured, cannot add team member to group ${groupId}`, new Error("no team members"))
-      await this.sendToGroup(groupId, "No team members are available yet. Please try again later or click /grok.")
-      return
-    }
-    try {
-      const teamContactId = this.config.teamMembers[0].id
-      const member = await this.addOrFindTeamMember(groupId, teamContactId)
-      if (!member) {
-        await this.sendToGroup(groupId, "Sorry, there was an error adding a team member. Please try again.")
+      if (customerMessages.length === 0) {
+        await this.withGrokProfile(() =>
+          this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], grokNoHistoryMessage)
+        )
         return
       }
-      await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone))
-      this.welcomeCompleted.add(groupId)
+
+      const initialMsg = customerMessages.join("\n")
+      const response = await this.grokApi.chat([], initialMsg)
+
+      await this.withGrokProfile(() =>
+        this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], response)
+      )
     } catch (err) {
-      logError(`Failed to add team member to group ${groupId}`, err)
-      await this.sendToGroup(groupId, "Sorry, there was an error adding a team member. Please try again.")
+      logError(`Grok initial response failed for group ${groupId}`, err)
+      await this.sendToGroup(groupId, grokUnavailableMessage)
     }
   }
 
-  private async removeNewPrefix(groupId: number): Promise<void> {
-    const entry = this.newItems.get(groupId)
-    if (!entry) return
-    this.newItems.delete(groupId)
-    this.onNewItemsChanged?.(this.newItems)
+  // --- Team activation ---
 
-    if (Date.now() - entry.timestamp >= 24 * 60 * 60 * 1000) return
-
-    try {
-      await this.mainChat.apiUpdateChatItem(
-        T.ChatType.Group, this.config.teamGroup.id, entry.teamItemId,
-        {type: "text", text: entry.originalText}, false)
-    } catch (err) {
-      logError(`Failed to remove [NEW] for group ${groupId}`, err)
+  private async activateTeam(groupId: number): Promise<void> {
+    if (this.config.teamMembers.length === 0) {
+      await this.sendToGroup(groupId, noTeamMembersMessage)
+      return
     }
+
+    // Check if team was already activated before (message sent or "added" text in history)
+    const hasTeamBefore = await this.cards.hasTeamMemberSentMessage(groupId)
+    if (hasTeamBefore) {
+      const {teamMembers} = await this.cards.getGroupComposition(groupId)
+      if (teamMembers.length > 0) {
+        await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
+        return
+      }
+      // Team members sent messages but all have left — re-add below
+    }
+
+    if (!hasTeamBefore) {
+      // Check by scanning history for "team member has been added" AND verify team still present
+      const chat = await this.cards.getChat(groupId, 50)
+      const alreadyAdded = chat.chatItems.some((ci: T.ChatItem) =>
+        ci.chatDir.type === "groupSnd"
+        && util.ciContentText(ci)?.includes("team member has been added")
+      )
+      if (alreadyAdded) {
+        const {teamMembers} = await this.cards.getGroupComposition(groupId)
+        if (teamMembers.length > 0) {
+          await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
+          return
+        }
+        // Team was previously added but all members left — re-add below
+      }
+    }
+
+    // Add ALL configured team members — promoted to Owner on connectedToGroupMember
+    for (const tm of this.config.teamMembers) {
+      try {
+        await this.addOrFindTeamMember(groupId, tm.id)
+      } catch (err) {
+        logError(`Failed to add team member ${tm.id} to group ${groupId}`, err)
+      }
+    }
+
+    await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone))
   }
 
-  // --- Team Group Commands ---
+  // --- Team group commands ---
 
   private async processTeamGroupMessage(chatItem: T.ChatItem): Promise<void> {
     if (chatItem.chatDir.type !== "groupRcv") return
@@ -983,207 +664,65 @@ export class SupportBot {
     const senderContactId = chatItem.chatDir.groupMember.memberContactId
     if (!senderContactId) return
 
-    const addMatch = text.match(/^\/add\s+(\d+):/)
-    if (addMatch) {
-      await this.handleAddCommand(parseInt(addMatch[1]), senderContactId)
-      return
-    }
-    if (text === "/inviteall") {
-      await this.handleInviteAll(senderContactId)
-      return
-    }
-    if (text === "/invitenew") {
-      await this.handleInviteNew(senderContactId)
-      return
-    }
-    // D1: /pending command
-    if (text === "/pending") {
-      await this.handlePending()
+    const joinMatch = text.match(/^\/join\s+(\d+):/)
+    if (joinMatch) {
+      await this.handleJoinCommand(parseInt(joinMatch[1], 10), senderContactId)
       return
     }
   }
 
-  private async handleAddCommand(targetGroupId: number, senderContactId: number): Promise<void> {
-    await this.removeNewPrefix(targetGroupId)
+  private async handleJoinCommand(targetGroupId: number, senderContactId: number): Promise<void> {
+    // Validate target is a business group
+    const groups = await this.withMainProfile(() =>
+      this.chat.apiListGroups(this.mainUserId)
+    )
+    const targetGroup = groups.find(g => g.groupId === targetGroupId)
+    if (!targetGroup?.businessChat) {
+      await this.sendToGroup(this.config.teamGroup.id, `Error: group ${targetGroupId} is not a business chat`)
+      return
+    }
 
     try {
       const member = await this.addOrFindTeamMember(targetGroupId, senderContactId)
       if (member) {
-        log(`Team member ${senderContactId} added to group ${targetGroupId} via /add command`)
-        const key = `${targetGroupId}:${member.groupMemberId}`
-        this.pendingOwnerRole.add(key)
         try {
-          await this.mainChat.apiSetMembersRole(targetGroupId, [member.groupMemberId], T.GroupMemberRole.Owner)
-          this.pendingOwnerRole.delete(key)
+          await this.withMainProfile(() =>
+            this.chat.apiSetMembersRole(targetGroupId, [member.groupMemberId], T.GroupMemberRole.Owner)
+          )
         } catch {
-          // Member not yet connected — will be set in onMemberConnected
+          // Not yet connected — will be promoted in onMemberConnected
         }
+        log(`Team member ${senderContactId} joined group ${targetGroupId} via /join`)
       }
     } catch (err) {
-      logError(`Failed to add team member to group ${targetGroupId} via /add`, err)
+      logError(`/join failed for group ${targetGroupId}`, err)
+      await this.sendToGroup(this.config.teamGroup.id, `Error joining group ${targetGroupId}`)
     }
-  }
-
-  private async inviteToGroups(
-    groupIds: number[], senderContactId: number
-  ): Promise<{added: number; alreadyMember: number; failed: number}> {
-    let added = 0, alreadyMember = 0, failed = 0
-    for (const groupId of groupIds) {
-      try {
-        const members = await this.mainChat.apiListMembers(groupId)
-        if (members.some((m: T.GroupMember) => m.memberContactId === senderContactId)) {
-          alreadyMember++
-          continue
-        }
-        await this.removeNewPrefix(groupId)
-        const member = await this.addOrFindTeamMember(groupId, senderContactId)
-        if (member) {
-          const key = `${groupId}:${member.groupMemberId}`
-          this.pendingOwnerRole.add(key)
-          try {
-            await this.mainChat.apiSetMembersRole(groupId, [member.groupMemberId], T.GroupMemberRole.Owner)
-            this.pendingOwnerRole.delete(key)
-          } catch {
-            // Member not yet connected — will be set in onMemberConnected
-          }
-          added++
-        } else {
-          failed++
-        }
-      } catch (err) {
-        logError(`Failed to invite to group ${groupId}`, err)
-        failed++
-      }
-    }
-    return {added, alreadyMember, failed}
-  }
-
-  private async handleInviteAll(senderContactId: number): Promise<void> {
-    const now = Date.now()
-    const DAY_MS = 24 * 60 * 60 * 1000
-    const groupIds: number[] = []
-    for (const [groupId, timestamp] of this.groupLastActive) {
-      if (now - timestamp < DAY_MS) {
-        groupIds.push(groupId)
-      }
-    }
-    const result = await this.inviteToGroups(groupIds, senderContactId)
-    const summary = `Invited to ${result.added} group(s), already member in ${result.alreadyMember}, failed ${result.failed} (of ${groupIds.length} active in 24h)`
-    log(`/inviteall: ${summary}`)
-    await this.sendToGroup(this.config.teamGroup.id, summary)
-  }
-
-  private async handleInviteNew(senderContactId: number): Promise<void> {
-    const now = Date.now()
-    const TWO_DAYS_MS = 48 * 60 * 60 * 1000
-    const candidateIds: number[] = []
-    for (const [groupId, timestamp] of this.groupLastActive) {
-      if (now - timestamp < TWO_DAYS_MS) {
-        candidateIds.push(groupId)
-      }
-    }
-    const groupIds: number[] = []
-    for (const groupId of candidateIds) {
-      const {grokMember, teamMember} = await this.getGroupComposition(groupId)
-      if (!grokMember && !teamMember) {
-        groupIds.push(groupId)
-      }
-    }
-    const result = await this.inviteToGroups(groupIds, senderContactId)
-    const summary = `Invited to ${result.added} group(s), already member in ${result.alreadyMember}, failed ${result.failed} (of ${candidateIds.length} active in 48h, ${groupIds.length} without team/Grok)`
-    log(`/invitenew: ${summary}`)
-    await this.sendToGroup(this.config.teamGroup.id, summary)
-  }
-
-  // D1: /pending command handler
-  private async handlePending(): Promise<void> {
-    const pending: {groupId: number; customerName: string; state: string; msgCount: number; firstContact: number}[] = []
-
-    for (const [groupId, _lastActive] of this.groupLastActive) {
-      const info = this.groupPendingInfo.get(groupId)
-      const meta = this.groupMetadata.get(groupId)
-
-      // If no pending info tracked (e.g., after restart), assume pending
-      if (!info) {
-        const {grokMember, teamMember} = await this.getGroupComposition(groupId)
-        const state = grokMember ? "GROK" : teamMember ? "TEAM" : "QUEUE"
-        pending.push({
-          groupId,
-          customerName: meta?.customerName ?? `group-${groupId}`,
-          state,
-          msgCount: meta?.msgCount ?? 0,
-          firstContact: meta?.firstContact ?? _lastActive,
-        })
-        continue
-      }
-
-      // Not pending if last event is from team or grok
-      if (info.lastEventFrom === "team" || info.lastEventFrom === "grok") continue
-
-      // Not pending if last event is customer reaction but last message is not from customer
-      if (info.lastEventType === "reaction" && info.lastEventFrom === "customer" && info.lastMessageFrom !== "customer") continue
-
-      // It's pending
-      const {grokMember, teamMember} = await this.getGroupComposition(groupId)
-      const state = grokMember ? "GROK" : teamMember ? "TEAM" : "QUEUE"
-      pending.push({
-        groupId,
-        customerName: meta?.customerName ?? `group-${groupId}`,
-        state,
-        msgCount: meta?.msgCount ?? 0,
-        firstContact: meta?.firstContact ?? _lastActive,
-      })
-    }
-
-    if (pending.length === 0) {
-      await this.sendToGroup(this.config.teamGroup.id, "No pending conversations.")
-      return
-    }
-
-    // Sort by firstContact ascending (longest waiting first)
-    const now = Date.now()
-    pending.sort((a, b) => a.firstContact - b.firstContact)
-
-    let msg = `*Pending (${pending.length}):*`
-    for (const p of pending) {
-      const duration = this.formatDuration(now - p.firstContact)
-      msg += `\n${p.groupId}:${p.customerName} · ${p.state} · #${p.msgCount} · ${duration}`
-    }
-
-    await this.sendToGroup(this.config.teamGroup.id, msg)
-  }
-
-  private async sendAddCommand(groupId: number, groupInfo: T.GroupInfo): Promise<void> {
-    const name = groupInfo.groupProfile.displayName || `group-${groupId}`
-    const formatted = name.includes(" ") ? `'${name}'` : name
-    const cmd = `/add ${groupId}:${formatted}`
-    await this.sendToGroup(this.config.teamGroup.id, cmd)
   }
 
   // --- Helpers ---
 
   private async addOrFindTeamMember(groupId: number, teamContactId: number): Promise<T.GroupMember | null> {
     try {
-      return await this.mainChat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Owner)
-    } catch (err: any) {
-      if (err?.chatError?.errorType?.type === "groupDuplicateMember") {
-        log(`Team member already in group ${groupId}, looking up existing member`)
-        const members = await this.mainChat.apiListMembers(groupId)
-        const existing = members.find(m => m.memberContactId === teamContactId)
-        if (existing) {
-          log(`Found existing team member: groupMemberId=${existing.groupMemberId}`)
-          return existing
-        }
-        logError(`Team member contact ${teamContactId} reported as duplicate but not found in group ${groupId}`, err)
-        return null
+      return await this.withMainProfile(() =>
+        this.chat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
+      )
+    } catch (err: unknown) {
+      const chatErr = err as {chatError?: {errorType?: {type?: string}}}
+      if (chatErr?.chatError?.errorType?.type === "groupDuplicateMember") {
+        log(`Team member already in group ${groupId}, looking up existing`)
+        const members = await this.withMainProfile(() => this.chat.apiListMembers(groupId))
+        return members.find(m => m.memberContactId === teamContactId) ?? null
       }
       throw err
     }
   }
 
-  private async sendToGroup(groupId: number, text: string): Promise<void> {
+  async sendToGroup(groupId: number, text: string): Promise<void> {
     try {
-      await this.mainChat.apiSendTextMessage([T.ChatType.Group, groupId], text)
+      await this.withMainProfile(() =>
+        this.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
+      )
     } catch (err) {
       logError(`Failed to send message to group ${groupId}`, err)
     }
@@ -1203,61 +742,54 @@ export class SupportBot {
     })
   }
 
-  private async grokSendMessage(grokLocalGId: number, text: string, replyTo?: number): Promise<void> {
-    const safeText = this.truncateText(text)
-    try {
-      await this.grokChat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], safeText, replyTo)
-    } catch (err: any) {
-      if (replyTo !== undefined && err?.chatError?.type === "errorStore" && err?.chatError?.storeError?.type === "invalidQuote") {
-        log(`Invalid quote in Grok group ${grokLocalGId}, retrying without reply`)
-        await this.grokChat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], safeText)
-      } else {
-        throw err
-      }
-    }
-  }
+  private async sendTeamMemberDM(member: T.GroupMember, memberContact?: T.Contact): Promise<void> {
+    const name = member.memberProfile.displayName
+    const formatted = name.includes(" ") ? `'${name}'` : name
 
-  private async findLastGrokReceivedItem(grokLocalGId: number): Promise<number | undefined> {
-    try {
-      const r = await this.grokChat.sendChatCmd(`/_get chat #${grokLocalGId} count=20`) as any
-      if (r.type !== "apiChat") return undefined
-      const items = r.chat.chatItems
-      for (let i = items.length - 1; i >= 0; i--) {
-        if (items[i].chatDir.type !== "groupSnd") {
-          return items[i].meta?.itemId
+    let contactId = memberContact?.contactId ?? member.memberContactId
+    if (!contactId) {
+      // No DM contact yet — create one and send invitation with message
+      try {
+        const createResp: any = await this.withMainProfile(() =>
+          this.chat.sendChatCmd(`/_create member contact #${this.config.teamGroup.id} ${member.groupMemberId}`)
+        )
+        if (createResp.type !== "newMemberContact" || !createResp.contact?.contactId) {
+          logError(`Unexpected response creating member contact for ${name}`, createResp)
+          return
         }
+        contactId = createResp.contact.contactId as number
+        log(`Created DM contact ${contactId} for team member ${name}`)
+      } catch (err) {
+        logError(`Failed to create member contact for ${name}`, err)
+        return
       }
-      return undefined
+      if (this.sentTeamDMs.has(contactId)) return
+      const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${contactId}:${formatted}`
+      try {
+        await this.withMainProfile(() =>
+          this.chat.sendChatCmd(`/_invite member contact @${contactId} text ${msg}`)
+        )
+        this.sentTeamDMs.add(contactId)
+        this.pendingTeamDMs.delete(contactId)
+        log(`Sent DM invitation to team member ${contactId}:${name}`)
+      } catch {
+        this.pendingTeamDMs.set(contactId, msg)
+      }
+      return
+    }
+    // Contact already exists — send via normal DM
+    if (this.sentTeamDMs.has(contactId)) return
+    const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${contactId}:${formatted}`
+    try {
+      await this.withMainProfile(() =>
+        this.chat.apiSendTextMessage([T.ChatType.Direct, contactId], msg)
+      )
+      this.sentTeamDMs.add(contactId)
+      this.pendingTeamDMs.delete(contactId)
+      log(`Sent DM to team member ${contactId}:${name}`)
     } catch {
-      return undefined
+      this.pendingTeamDMs.set(contactId, msg)
     }
-  }
-
-  private resolveTeamReplyTo(groupId: number, chatItem: T.ChatItem): number | undefined {
-    const quotedItemId = (chatItem as any).quotedItem?.itemId
-    if (quotedItemId === undefined) return undefined
-    return this.forwardedItems.get(`${groupId}:${quotedItemId}`)?.teamItemId
-  }
-
-  private findLastForwardedTeamItem(groupId: number): number | undefined {
-    return this.lastTeamItemByGroup.get(groupId)
-  }
-
-  private cleanupForwardedItems(groupId: number): void {
-    const prefix = `${groupId}:`
-    for (const key of this.forwardedItems.keys()) {
-      if (key.startsWith(prefix)) this.forwardedItems.delete(key)
-    }
-  }
-
-  private truncateText(text: string, maxBytes: number = MAX_MSG_TEXT_BYTES): string {
-    const encoder = new TextEncoder()
-    if (encoder.encode(text).length <= maxBytes) return text
-    const suffix = "… [truncated]"
-    const target = maxBytes - encoder.encode(suffix).length
-    const decoder = new TextDecoder("utf-8", {fatal: false})
-    const truncated = decoder.decode(encoder.encode(text).slice(0, target)).replace(/\uFFFD$/, "")
-    return truncated + suffix
   }
 
   private cleanupGrokMaps(groupId: number): void {
@@ -1266,6 +798,5 @@ export class SupportBot {
     if (grokLocalGId === undefined) return
     this.grokGroupMap.delete(groupId)
     this.reverseGrokMap.delete(grokLocalGId)
-    this.onGrokMapChanged?.(this.grokGroupMap)
   }
 }

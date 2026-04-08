@@ -46,11 +46,11 @@ A support bot for SimpleX Chat. Customers connect via a business address and get
 
 When a user scans the support bot's QR code or clicks its address link, SimpleX creates a **business group** — a special group type where the customer is a fixed member identified by a stable `customerId`, and the bot is the host. The bot auto-accepts the connection and enables file uploads and visible history on the group.
 
-If a user contacts the bot via a regular direct-message address instead of the business address, the bot replies with the business address link and does not continue the conversation.
+If a user contacts the bot via a regular direct-message address instead of the business address, the bot replies with the business address link and does not continue the conversation. Only actual text messages trigger this reply — system events (e.g. `contactConnected`) on the DM contact are ignored.
 
 Bot sends the welcome message automatically as part of the connection handshake — not triggered by a message:
 > Hello! Feel free to ask any question about SimpleX Chat.
-> *Only SimpleX Chat team has access to your messages.* This is a SimpleX Chat team bot — it is not any LLM or AI.
+> *Only SimpleX Chat team has access to your messages.* This is a SimpleX Chat team bot - it is not any LLM or AI.
 > *Join public groups*: [existing link]
 > Please send questions in English, you can use translator.
 
@@ -72,9 +72,12 @@ Each subsequent message updates the card — icon, wait time, message preview. T
 
 #### Step 3 — `/grok` (Grok mode)
 
-Available in WELCOME, QUEUE, or TEAM-PENDING state (before any team member sends a message). If Grok is already in the group, the command is ignored. If `/grok` is the customer's first message, the bot transitions directly from WELCOME → GROK — it creates the card with 🤖 icon and does not send the queue message. Triggers Grok activation (see [5.3 Grok integration](#53-grok-integration)). If Grok fails to join within 30 seconds, the bot notifies the user and the state falls back to QUEUE (the queue message is sent at this point).
+Available in WELCOME, QUEUE, or TEAM-PENDING state (before any team member sends a message). If Grok is already being invited (e.g. customer sent `/grok` multiple times before Grok finished joining), the duplicate is silently ignored — the in-flight activation handles the outcome. If `/grok` is the customer's first message, the bot transitions directly from WELCOME → GROK — it creates the card with 🤖 icon and does not send the queue message. Triggers Grok activation (see [5.3 Grok integration](#53-grok-integration)). If Grok fails to join within 120 seconds, the bot notifies the user and the state falls back to QUEUE (the queue message is sent at this point).
 
-Bot replies:
+Bot immediately replies:
+> Inviting Grok, please wait...
+
+Once Grok joins and connects:
 > *You are now chatting with Grok. You can send questions in any language.* Grok can see your earlier messages.
 > Send /team at any time to switch to a human team member.
 
@@ -84,10 +87,10 @@ Grok is prompted as a privacy expert and support assistant who knows SimpleX Cha
 
 #### Step 4 — `/team` (Team mode, one-way gate)
 
-Available in QUEUE or GROK state. Bot adds all configured `--team-members` to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (detected by scanning for "team member has been added" in chat history), sends the "already invited" message instead.
+Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (detected by scanning for "team member has been added" in chat history), sends the "already invited" message instead.
 
 Bot replies:
-> A team member has been added and will reply within 24 hours. You can keep describing your issue — they will see the full conversation.
+> A team member has been added and will reply within 24 hours. You can keep describing your issue - they will see the full conversation.
 
 On weekends, the bot says "48 hours" instead of "24 hours".
 
@@ -114,23 +117,23 @@ When a customer leaves the group (or is disconnected), the bot cleans up all in-
 
 #### Team replies
 
-When a team member sends a text message or reaction in the customer group, the bot resends the card (subject to debouncing). A team or Grok reply/reaction auto-completes the conversation (✅ icon, "done" wait time). If the customer sends a new message, the conversation reverts to incomplete — the icon is derived from current state (👋 vs 💬 vs ⏰) and wait time counts from the customer's new message.
+When a team member sends a text message or reaction in the customer group, the bot resends the card (subject to debouncing). A conversation auto-completes (✅ icon, "done" wait time) when `completeHours` (default 3h, configurable via `--complete-hours`) pass after the last team/Grok message without any customer reply. The card flush cycle checks elapsed time and transitions to ✅ when the threshold is met. If the customer sends a new message — including after ✅ — the conversation reverts to incomplete: the icon is derived from current state (👋 vs 💬 vs ⏰) and wait time counts from the customer's new message.
 
 ### 4.2 Team Flow
 
 #### Setup
 
-The team group is created automatically on first run. Its name is set via the `--team-group` CLI argument. The group ID is written to the state file; subsequent runs reuse the same group. Group preferences (direct messages enabled, team commands registered as tappable buttons) are applied once at creation time.
+The team group is created automatically on first run. Its name is set via the `--team-group` CLI argument. The group ID is written to the state file; subsequent runs reuse the same group. Group preferences (direct messages enabled, delete for everyone enabled, team commands registered as tappable buttons) are applied at creation time. On subsequent startups, the bot compares the existing `fullGroupPreferences` with the desired ones and only calls `apiUpdateGroupProfile` if they differ — avoiding unnecessary network round-trips to SMP relays.
 
-On every startup the bot generates a fresh invite link for the team group, prints it to stdout, and deletes it after 10 minutes (or on graceful shutdown). Any stale link from a previous run is deleted first.
+On every startup the bot attempts to generate a fresh invite link for the team group, prints it to stdout, and deletes it after 10 minutes (or on graceful shutdown). Any stale link from a previous run is deleted first. Link creation is best-effort — if the SMP relay is temporarily unreachable, the error is logged and the bot continues without an invite link.
 
 The operator shares the link with team members. They must join within the 10-minute window. When a team member joins, the bot automatically establishes a direct-message contact with them and sends:
 
 > Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is `N:name`
 
-This ID is needed for `--team-members` config. The DM is sent via a two-step handshake: the bot initiates a member contact, the team member accepts the DM invitation, and the message is delivered on connection.
+This ID is needed for `--auto-add-team-members` (`-a`) config. The DM is sent as soon as the member joins the team group — the bot proactively creates a DM contact via raw SimpleX commands (`/_create member contact` + `/_invite member contact`) and delivers the message with the invitation. If the contact already exists, the message is sent directly. Multiple delivery paths ensure the DM arrives regardless of connection timing.
 
-Team members are configured as a single comma-separated `--team-members` flag (e.g., `--team-members "42:alice,55:bob"`), using the IDs from the DMs above. The bot validates every configured member against its contact list at startup and exits if any ID is missing or the display name does not match.
+Team members are configured as a single comma-separated `--auto-add-team-members` flag (shortcut `-a`; e.g., `--auto-add-team-members "42:alice,55:bob"` or `-a "42:alice,55:bob"`), using the IDs from the DMs above. The bot validates every configured member against its contact list at startup and exits if any ID is missing or the display name does not match.
 
 Until team members are configured, `/team` commands from customers cannot add anyone to a conversation. The bot logs an error and notifies the customer.
 
@@ -162,8 +165,9 @@ Each card has five parts:
 | 👋 | TEAM — team member added, no reply yet |
 | 💬 | TEAM — team member has replied; conversation active |
 | ⏰ | TEAM — customer sent a follow-up, team hasn't replied in > 2 h |
+| ✅ | Done — no customer reply for `completeHours` (default 3h) after last team/Grok message |
 
-**Wait time** — time since the customer's last unanswered message. For conversations where the team has replied and the customer hasn't followed up, time since last message from either side.
+**Wait time** — time since the customer's last unanswered message. For ✅ (auto-completed) conversations, the wait field shows the literal string "done". For conversations where the team has replied and the customer hasn't followed up, time since last message from either side.
 
 **State label**
 
@@ -176,7 +180,7 @@ Each card has five parts:
 
 **Agents** — comma-separated display names of all team members currently in the group. Omitted when no team member has joined.
 
-**Message preview** — the last several messages, most recent last, separated by ` / `. In Grok mode, Grok responses are included and prefixed with `Grok:`. Each individual message is truncated to ~200 characters with `[truncated]` appended at the end of that message. Messages are included in reverse order until the total preview reaches ~1000 characters; if older messages are cut off, `[truncated]` is prepended at the beginning of the preview. Media messages show a content-type tag: `[image]`, `[file]`, etc.
+**Message preview** — the last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat. Newest messages are prioritized — when the total preview exceeds ~1000 characters, the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender — subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok is labeled "Grok"; the customer is labeled with their display name (newlines replaced with spaces for display; the `/join` command uses the raw name so it matches the actual group profile); team members use their display name. The bot's own messages are excluded. Each individual message is truncated to ~200 characters with `[truncated]` appended. Media-only messages show a type label: `[image]`, `[file]`, `[voice]`, `[video]`.
 
 **Join command** — `/join id:name` lets any team member tap to join the group instantly. Names containing spaces are single-quoted: `/join id:'First Last'`.
 
@@ -191,7 +195,7 @@ The icon in line 1 is the sole urgency indicator — no reactions are used.
 ```
 🆕 *Alice Johnson* · just now · 1 msg
 Queue
-"I can't connect to my contacts after updating to 6.3."
+"Alice Johnson: I can't connect to my contacts after updating to 6.3."
 /join 42:Alice
 ```
 
@@ -202,9 +206,11 @@ Queue
 ```
 🟡 *Emma Webb* · 20m · 2 msgs
 Queue
-"Hi" / "Is anyone there? I have an urgent question about my keys"
+"Emma Webb: Hi" / "Is anyone there? I have an urgent question about my keys"
 /join 88:Emma
 ```
+
+Second message has no prefix because it's the same sender as the first.
 
 ---
 
@@ -213,20 +219,22 @@ Queue
 ```
 🔴 *Maria Santos* · 3h 20m · 6 msgs
 Queue
-"I reset my phone and now all conversations are gone" / "I tried reinstalling but nothing changed" / "Please help, I've lost access to all my conversations after resetting my phone…"
+"Maria Santos: I reset my phone and now all conversations are gone" / "I tried reinstalling but nothing changed" / "Please help, I've lost access to all my conversations after resetting my phone…"
 /join 38:Maria
 ```
 
 ---
 
-**4. Grok mode — Grok is handling it**
+**4. Grok mode — alternating senders**
 
 ```
 🤖 *David Kim* · 1h 5m · 8 msgs
 Grok
-"Which encryption algorithm does SimpleX use for messages?" / "Grok: SimpleX uses double ratchet with NaCl crypto_box for end-to-end encryption…[truncated]" / "And what about metadata protection?"
+"David Kim: Which encryption algorithm does SimpleX use for messages?" / "Grok: SimpleX uses double ratchet with NaCl crypto_box for end-to-end encryption…[truncated]" / "David Kim: And what about metadata protection?"
 /join 29:David
 ```
+
+Each sender change triggers a new name prefix. David and Grok alternate, so every message gets a prefix.
 
 ---
 
@@ -235,7 +243,7 @@ Grok
 ```
 👋 *Sarah Miller* · 2h 10m · 5 msgs
 Team – pending · evan
-"Notifications completely stopped working after I updated my phone OS. I'm on Android 14…"
+"Sarah Miller: Notifications completely stopped working after I updated my phone OS. I'm on Android 14…"
 /join 55:Sarah
 ```
 
@@ -246,7 +254,7 @@ Team – pending · evan
 ```
 💬 *François Dupont* · 30m · 14 msgs
 Team · evan, alex
-"OK merci, I will try this and let you know."
+"François Dupont: OK merci, I will try this and let you know."
 /join 61:'François Dupont'
 ```
 
@@ -257,7 +265,7 @@ Team · evan, alex
 ```
 ⏰ *Wang Fang* · 4h · 19 msgs
 Team · alex
-"The app crashes when I open large groups" / "I tried what you suggested but it still doesn't work. Any other ideas?"
+"Wang Fang: The app crashes when I open large groups" / "I tried what you suggested but it still doesn't work. Any other ideas?"
 /join 73:Wang
 ```
 
@@ -272,7 +280,7 @@ Team · alex
 2. Bot posts it to the team group via `apiSendTextMessage` → receives back the `chatItemId`
 3. Bot writes `{cardItemId: chatItemId}` into the customer group's `customData`
 
-**Update** (delete + repost) — on every subsequent event: new customer message, team member reply in the customer group, state change (QUEUE → GROK, GROK → TEAM, GROK → QUEUE on join timeout, etc.), agent joining. Card updates are debounced globally — the bot collects all pending card changes and flushes them in a single batch every 15 minutes. Within a batch, each customer group's card is reposted at most once with the latest state.
+**Update** (delete + repost) — on every subsequent event: new customer message, team member reply in the customer group, state change (QUEUE → GROK, GROK → TEAM, GROK → QUEUE on join timeout, etc.), agent joining. Card updates are debounced globally — the bot collects all pending card changes and flushes them in a single batch at a configurable interval (default 15 minutes, set via `--card-flush-minutes`). Within a batch, each customer group's card is reposted at most once with the latest state.
 1. Bot reads `cardItemId` from the customer group's `customData`
 2. Bot deletes the old card in the team group via `apiDeleteChatItem(teamGroupId, cardItemId, "broadcast")` (delete for everyone)
 3. Bot composes the new card (updated icon, wait time, message count, preview)
@@ -288,7 +296,9 @@ Because the old card is deleted and the new one is posted at the bottom, the mos
 2. Card is **not deleted** — it remains in the team group until a retention policy is added (resolved state TBD)
 3. Bot clears the `cardItemId` from `customData`
 
-**Restart recovery** — on startup, the bot does not need to rebuild any card tracking. Each customer group's `customData` already contains the `cardItemId` pointing to the correct team group message. The next event for that group reads `customData` and resumes the delete-repost cycle normally.
+**Completion tracking:** When a card is composed with the ✅ icon (auto-completed), the bot writes `complete: true` into the group's `customData` alongside `cardItemId` and `joinItemId`. When a customer sends a new message and the card is recomposed as non-✅, the `complete` flag is omitted from the new `customData` (self-healing). This allows the bot to skip completed conversations on restart without re-reading chat history for every group.
+
+**Restart recovery** — on startup, the bot refreshes existing cards to update wait times, icons, and auto-complete status. It lists all groups, finds those with `customData.cardItemId` set and `customData.complete` not set, sorts by `cardItemId` ascending (higher IDs = more recently updated cards), and re-posts them oldest-first. This ensures the most recently active cards appear at the bottom of the team group (newest position). Completed cards are skipped — they remain as-is until a new customer message triggers the normal event-driven update. Old/pre-bot groups without `customData` are also skipped. The bot attempts to delete the old card message before reposting; deletion failures (e.g., card older than 24h) are silently ignored. Subsequent events resume the normal delete-repost cycle via `customData`.
 
 #### Team commands
 
@@ -310,7 +320,7 @@ When a team member taps `/join`, the bot first verifies that the target `groupId
 |-----------|-------------|
 | All team members leave before any sends a message | State reverts to QUEUE (stateless derivation — no team member present) |
 | Customer leaves | All in-memory state cleaned up; card remains (TBD) |
-| No `--team-members` configured | `/team` tells customer "no team members available yet" |
+| No `--auto-add-team-members` (`-a`) configured | `/team` tells customer "no team members available yet" |
 | Team member already in customer group | `apiListMembers` lookup finds existing member — no error |
 
 ---
@@ -335,11 +345,13 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 |------|----------|---------|--------|---------|
 | `--db-prefix` | No | `./data/simplex` | path | Database file prefix (both profiles share it) |
 | `--team-group` | Yes | — | `name` | Team group display name (auto-created if absent, resolved by persisted ID on restarts) |
-| `--team-members` | No | `""` | `ID:name,...` | Comma-separated team member contacts. Validated at startup — exits on mismatch. Without this, `/team` tells customers no members available. |
+| `--auto-add-team-members` / `-a` | No | `""` | `ID:name,...` | Comma-separated team member contacts. Validated at startup — exits on mismatch. Without this, `/team` tells customers no members available. |
 | `--group-links` | No | `""` | string | Public group link(s) for welcome message |
 | `--timezone` | No | `"UTC"` | IANA tz | For weekend detection (24h vs 48h). Weekend is Saturday 00:00 through Sunday 23:59 in this timezone. |
+| `--complete-hours` | No | `3` | number | Hours of customer inactivity after last team/Grok reply before auto-completing a conversation (✅ icon, "done" wait time). |
+| `--card-flush-minutes` | No | `15` | number | Minutes between card dashboard update flushes. Lower values give faster updates; higher values reduce message churn. |
 
-**Why `--team-members` uses `ID:name`:** Contact IDs are local to the bot's database — not discoverable externally. The bot DMs each team member their ID when they join the team group. The name is validated at startup to catch stale IDs pointing to the wrong contact.
+**Why `--auto-add-team-members` (`-a`) uses `ID:name`:** Contact IDs are local to the bot's database — not discoverable externally. The bot DMs each team member their ID when they join the team group. The name is validated at startup to catch stale IDs pointing to the wrong contact.
 
 **Customer commands** (registered in customer groups via `bot.run`):
 
@@ -411,12 +423,13 @@ On subsequent runs, the bot looks up `grokContactId` from the state file and ver
 When a customer sends `/grok`:
 
 **Main profile side (failure detection):**
-1. Main profile: `apiAddMember(groupId, grokContactId, Member)` — invites the Grok contact to the customer's business group
-2. The `member.memberId` is stored in an in-memory map `pendingGrokJoins: memberId → mainGroupId`
-3. Main profile receives `connectedToGroupMember` for any member connecting in the group. The bot checks the event's `memberId` against `pendingGrokJoins` — only a match resolves the 30-second promise. This promise is only for failure detection — if it times out, the bot notifies the customer and falls back to QUEUE.
+1. Bot sends "Inviting Grok, please wait..." to the customer group
+2. Main profile: `apiAddMember(groupId, grokContactId, Member)` — invites the Grok contact to the customer's business group. If `groupDuplicateMember` (customer sent `/grok` again before join completed), the duplicate activation returns silently — the in-flight one handles the outcome.
+3. The `member.memberId` is stored in an in-memory map `pendingGrokJoins: memberId → mainGroupId`. Any invitation event that arrived during the `apiAddMember` await (race condition) is drained from the buffer and processed immediately.
+4. Main profile receives `connectedToGroupMember` for any member connecting in the group. The bot checks the event's `memberId` against `pendingGrokJoins` — only a match resolves the 120-second promise. This promise is only for failure detection — if it times out, the bot notifies the customer and falls back to QUEUE.
 
 **Grok profile side (independent, triggered by its own events):**
-4. Grok profile receives a `receivedGroupInvitation` event and auto-accepts via `apiJoinGroup(groupId)` (using the group ID from its own event)
+5. Grok profile receives a `receivedGroupInvitation` event. If a matching `pendingGrokJoins` entry exists, auto-accepts via `apiJoinGroup(groupId)`. If not (race: event arrived before step 3), buffers the event for the main profile to drain.
 5. Grok profile reads visible history from the group — the last 100 messages — to build the initial Grok API context (customer messages → `user` role)
 6. Grok profile calls the Grok HTTP API with this context
 7. Grok profile sends the response into the group via `apiSendTextMessage([Group, groupId], response)` — visible to the customer as a message from "Grok AI"
@@ -443,7 +456,7 @@ Grok API calls are serialized per customer group — if a new customer message a
 
 Grok is removed from the group (via main profile `apiRemoveMembers`) in three cases:
 1. Team member sends their first text message in the customer group
-2. Grok join fails (30-second timeout) — graceful fallback to QUEUE, bot notifies the customer
+2. Grok join fails (120-second timeout) — graceful fallback to QUEUE, bot notifies the customer
 3. Customer leaves the group
 
 ### 5.4 Persistent State
@@ -473,7 +486,7 @@ User profile IDs (`mainUserId`, `grokUserId`) are **not** persisted — they are
 | Customer name | Always available from the group's display name |
 | Who sent last message | Derived from recent chat history |
 | `welcomeCompleted` | Rebuilt on demand: `isFirstCustomerMessage` scans recent history |
-| `pendingGrokJoins` | In-flight during the 30-second join window only |
+| `pendingGrokJoins` | In-flight during the 120-second join window only |
 | Owner role promotion | Not tracked — on every `memberConnected` in a customer group, the bot promotes the member to Owner unless it's the customer or Grok. Idempotent, survives restarts. |
 | `pendingTeamDMs` | Messages queued to greet team members — simply not sent if lost |
 | `grokJoinResolvers`, `grokFullyConnected` | Pure async synchronization primitives — always empty at startup |
