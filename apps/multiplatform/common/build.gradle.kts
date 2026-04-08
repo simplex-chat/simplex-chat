@@ -160,6 +160,11 @@ buildConfig {
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
     buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
     buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
+    buildConfigField(
+      "Boolean",
+      "USE_BRANDED_IMAGES",
+      (project.findProperty("USE_BRANDED_IMAGES")?.toString()?.toBooleanStrictOrNull() ?: false).toString()
+    )
   }
 }
 
