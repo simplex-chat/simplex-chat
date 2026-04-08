@@ -5,17 +5,17 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "test": "vitest run"
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@simplex-chat/types": "^0.3.0",
-    "simplex-chat": "^6.5.0-beta.4.4"
+    "@simplex-chat/types": "file:../../packages/simplex-chat-client/types/typescript",
+    "async-mutex": "^0.5.0",
+    "simplex-chat": "file:../../packages/simplex-chat-nodejs"
   },
   "devDependencies": {
-    "@types/node": "^25.0.5",
+    "@types/node": "^22.0.0",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.9"
+    "vitest": "^1.6.1"
   },
   "author": "SimpleX Chat",
   "license": "AGPL-3.0"
