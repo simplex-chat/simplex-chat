@@ -60,9 +60,9 @@ fun noConversationChatsYet(chats: List<Chat>): Boolean =
     }
   }
 
-private data class GradientEndpoints(val startX: Float, val startY: Float, val endX: Float, val endY: Float)
+internal data class GradientEndpoints(val startX: Float, val startY: Float, val endX: Float, val endY: Float)
 
-private fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints {
+internal fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints {
   val r = aspectRatio.toDouble()
   val s = scale.toDouble()
   val dx = cos(GRADIENT_ANGLE_RAD)
@@ -88,14 +88,14 @@ private fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints 
   )
 }
 
-private val lightStops = arrayOf(
+internal val lightStops = arrayOf(
   0.0f to Color(0xFFd2e8ff),
   0.5f to Color(0xFFcce9ff),
   0.9f to Color(0xFFdfffff),
   1.0f to Color(0xFFfffcea)
 )
 
-private val darkStops = arrayOf(
+internal val darkStops = arrayOf(
   0.4f to Color(0xFF040a24),
   0.72f to Color(0xFF3854ab),
   0.9f to Color(0xFFa8edf3),

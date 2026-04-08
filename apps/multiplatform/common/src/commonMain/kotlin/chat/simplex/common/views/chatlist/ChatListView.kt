@@ -24,7 +24,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.AppLock
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
@@ -236,6 +240,31 @@ private fun ChatListCard(
   }
 }
 
+private const val BANNER_IMAGE_RATIO = 800f / 505f
+
+@Composable
+private fun BannerGradientBox(isDark: Boolean, content: @Composable () -> Unit) {
+  val stops = if (isDark) darkStops else lightStops
+  val scale = if (isDark) 1.5f else 1.2f
+  val gp = gradientPoints(1f / BANNER_IMAGE_RATIO, scale)
+  var size by remember { mutableStateOf(IntSize.Zero) }
+  val brush = remember(size, isDark) {
+    if (size.width > 0 && size.height > 0) {
+      Brush.linearGradient(
+        colorStops = stops,
+        start = Offset(gp.startX * size.width, gp.startY * size.height),
+        end = Offset(gp.endX * size.width, gp.endY * size.height)
+      )
+    } else {
+      Brush.linearGradient(colorStops = stops)
+    }
+  }
+  Box(
+    Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO).background(brush).onSizeChanged { size = it },
+    contentAlignment = Alignment.Center
+  ) { content() }
+}
+
 @Composable
 private fun ConnectBannerCard() {
   val isDark = isInDarkTheme()
@@ -281,7 +310,7 @@ private fun ConnectBannerCard() {
             modifier = Modifier.fillMaxWidth()
           )
         } else {
-          Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+          BannerGradientBox(isDark) {
             Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
           }
         }
@@ -312,7 +341,7 @@ private fun ConnectBannerCard() {
             modifier = Modifier.fillMaxWidth()
           )
         } else {
-          Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+          BannerGradientBox(isDark) {
             Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
           }
         }
