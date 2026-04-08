@@ -241,19 +241,25 @@ private fun ConnectBannerCard() {
   val isDark = isInDarkTheme()
   val labelBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
     .copy(alpha = appPrefs.inAppBarsAlpha.get())
+  val buttonSize = AppBarHeight * fontSizeSqrtMultiplier * 0.9f
+  val gap = buttonSize * 0.2f
 
   Column(horizontalAlignment = Alignment.End) {
-    IconButton(onClick = { appPrefs.addressCreationCardShown.set(true) }) {
+    IconButton(
+      onClick = { appPrefs.addressCreationCardShown.set(true) },
+      modifier = Modifier.size(buttonSize)
+    ) {
       Icon(
         painterResource(MR.images.ic_close),
-        contentDescription = stringResource(MR.strings.back),
+        contentDescription = stringResource(MR.strings.icon_descr_close_button),
         modifier = Modifier
-          .size(24.dp)
+          .size(buttonSize)
           .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), CircleShape)
-          .padding(4.dp),
+          .padding(buttonSize * 0.25f),
         tint = MaterialTheme.colors.secondary
       )
     }
+    Spacer(Modifier.height(gap))
     Row(
       Modifier
         .fillMaxWidth()
@@ -274,15 +280,23 @@ private fun ConnectBannerCard() {
             contentScale = ContentScale.FillWidth,
             modifier = Modifier.fillMaxWidth()
           )
+        } else {
+          Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+            Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
+          }
         }
         Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
-            Text(stringResource(MR.strings.create_1_time_link), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.onBackground)
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+              Text(stringResource(MR.strings.new_1_time_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            }
+          } else {
+            Text(stringResource(MR.strings.new_1_time_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
           }
         }
       }
-      Divider(Modifier.width(1.dp).fillMaxHeight())
+      Spacer(Modifier.width(2.dp).fillMaxHeight().background(MaterialTheme.colors.background))
       Column(
         Modifier.weight(1f).clickable {
           ModalManager.start.showModalCloseable { close ->
@@ -297,11 +311,19 @@ private fun ConnectBannerCard() {
             contentScale = ContentScale.FillWidth,
             modifier = Modifier.fillMaxWidth()
           )
+        } else {
+          Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+            Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
+          }
         }
         Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
-            Text(stringResource(MR.strings.scan_paste_link), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.onBackground)
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+              Text(stringResource(MR.strings.paste_link_scan), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            }
+          } else {
+            Text(stringResource(MR.strings.paste_link_scan), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
           }
         }
       }
