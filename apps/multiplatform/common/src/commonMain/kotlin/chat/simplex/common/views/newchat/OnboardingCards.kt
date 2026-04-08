@@ -231,13 +231,13 @@ private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, o
   }
   if (isLandscape) {
     Box(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING)) {
-      BackButton(Modifier.align(Alignment.CenterStart), color) { onBack?.invoke() }
+      BackButton(Modifier.align(Alignment.CenterStart), color, onBack)
       titleView()
     }
   } else {
     Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING)) {
       Box(Modifier.align(Alignment.Start)) {
-        BackButton(color = color) { onBack?.invoke() }
+        BackButton(color = color, onClick = onBack)
       }
       titleView()
     }
@@ -245,11 +245,11 @@ private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, o
 }
 
 @Composable
-private fun BackButton(modifier: Modifier = Modifier, color: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
+private fun BackButton(modifier: Modifier = Modifier, color: Color = MaterialTheme.colors.primary, onClick: (() -> Unit)? = null) {
   Row(
     modifier
       .clip(RoundedCornerShape(20.dp))
-      .clickable(onClick = onClick)
+      .clickable(enabled = onClick != null, onClick = onClick ?: {})
       .padding(end = 12.dp, top = 10.dp, bottom = 10.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -296,8 +296,6 @@ private fun CardPair(
 }
 
 // MARK: - Pager
-
-private val DESKTOP_MAX_CONTENT_WIDTH = 500.dp
 
 @Composable
 fun ConnectOnboardingView() {
@@ -354,12 +352,9 @@ fun ConnectOnboardingView() {
 
   if (appPlatform.isDesktop) {
     Box(
-      Modifier.fillMaxSize().background(MaterialTheme.colors.background).graphicsLayer { alpha = cardAlpha },
-      contentAlignment = Alignment.Center
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background).padding(vertical = DEFAULT_PADDING).graphicsLayer { alpha = cardAlpha }
     ) {
-      Box(Modifier.widthIn(max = DESKTOP_MAX_CONTENT_WIDTH)) {
-        pager()
-      }
+      pager()
     }
   } else {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
