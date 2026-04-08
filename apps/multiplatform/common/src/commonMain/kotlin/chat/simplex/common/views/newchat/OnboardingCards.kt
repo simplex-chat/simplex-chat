@@ -351,10 +351,14 @@ fun ConnectOnboardingView() {
   }
 
   if (appPlatform.isDesktop) {
+    val maxContentWidth = DEFAULT_WINDOW_WIDTH - DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier
     Box(
-      Modifier.fillMaxSize().background(MaterialTheme.colors.background).padding(vertical = DEFAULT_PADDING).graphicsLayer { alpha = cardAlpha }
+      Modifier.fillMaxSize().background(MaterialTheme.colors.background).padding(vertical = DEFAULT_PADDING).graphicsLayer { alpha = cardAlpha },
+      contentAlignment = Alignment.Center
     ) {
-      pager()
+      Box(Modifier.widthIn(max = maxContentWidth).fillMaxHeight()) {
+        pager()
+      }
     }
   } else {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
