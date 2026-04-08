@@ -188,7 +188,7 @@ fun OnboardingCardView(
             )
             Text(
               title,
-              style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Medium),
+              style = (if (appPlatform.isDesktop) MaterialTheme.typography.h3 else MaterialTheme.typography.h4).copy(fontWeight = FontWeight.Medium),
               color = MaterialTheme.colors.onBackground,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
@@ -197,7 +197,7 @@ fun OnboardingCardView(
           if (subtitle != null) {
             Text(
               subtitle,
-              style = MaterialTheme.typography.body2,
+              style = if (appPlatform.isDesktop) MaterialTheme.typography.body1 else MaterialTheme.typography.body2,
               color = MaterialTheme.colors.onBackground.copy(alpha = 0.7f)
             )
           }
@@ -375,7 +375,7 @@ private fun TalkToSomeonePage(
   onLetSomeoneConnect: () -> Unit,
   onConnectViaLink: () -> Unit
 ) {
-  val isLandscape = windowOrientation() == WindowOrientation.LANDSCAPE && appPlatform.isAndroid
+  val isLandscape = appPlatform.isDesktop || windowOrientation() == WindowOrientation.LANDSCAPE
   Column(
     Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally
@@ -422,7 +422,7 @@ private fun ConnectWithSomeonePage(
   onInviteSomeone: () -> Unit,
   onCreateAddress: () -> Unit
 ) {
-  val isLandscape = windowOrientation() == WindowOrientation.LANDSCAPE && appPlatform.isAndroid
+  val isLandscape = appPlatform.isDesktop || windowOrientation() == WindowOrientation.LANDSCAPE
   Column(
     Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally
