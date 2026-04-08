@@ -289,15 +289,41 @@ private fun AddressCreationCard() {
 
 @Composable
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
-  if (!chatModel.desktopNoUserNoRemote) {
-    ChatList(searchText = searchText, listState)
+  if (shouldShowOnboarding()) {
+    if (appPlatform.isAndroid) AndroidOnboardingCards()
+  } else {
+    if (!chatModel.desktopNoUserNoRemote) {
+      ChatList(searchText = searchText, listState)
+    }
+    if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+      Text(
+        stringResource(
+          if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
+        ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
+      )
+    }
   }
-  if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-    Text(
-      stringResource(
-        if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
-      ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
-    )
+  if (shouldShowOnboarding()) {
+    val chats = chatModel.chats.value
+    LaunchedEffect(chats.size) {
+      if (!noConversationChatsYet(chats)) {
+        appPrefs.addressCreationCardShown.set(true)
+      }
+    }
+  }
+}
+
+@Composable
+private fun AndroidOnboardingCards() {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val topPad = topPaddingToContent(false)
+  val bottomPad = if (oneHandUI.value) {
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+  } else {
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+  }
+  Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+    ConnectOnboardingView()
   }
 }
 
@@ -454,31 +480,33 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
-        Text(
-          stringResource(MR.strings.your_chats),
-          color = MaterialTheme.colors.onBackground,
-          fontWeight = FontWeight.SemiBold,
-        )
-        SubscriptionStatusIndicator(
-          click = {
-            ModalManager.start.closeModals()
-            val summary = serversSummary.value
-            ModalManager.start.showModalCloseable(
-              endButtons = {
-                if (summary != null) {
-                  ShareButton {
-                    val json = Json {
-                      prettyPrint = true
+      if (!shouldShowOnboarding()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
+          Text(
+            stringResource(MR.strings.your_chats),
+            color = MaterialTheme.colors.onBackground,
+            fontWeight = FontWeight.SemiBold,
+          )
+          SubscriptionStatusIndicator(
+            click = {
+              ModalManager.start.closeModals()
+              val summary = serversSummary.value
+              ModalManager.start.showModalCloseable(
+                endButtons = {
+                  if (summary != null) {
+                    ShareButton {
+                      val json = Json {
+                        prettyPrint = true
+                      }
+                      val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
+                      clipboard.shareText(text)
                     }
-                    val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
-                    clipboard.shareText(text)
                   }
                 }
-              }
-            ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
-          }
-        )
+              ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
+            }
+          )
+        }
       }
     },
     onTitleClick = if (canScrollToZero.value) { { scrollToBottom(scope, listState) } } else null,

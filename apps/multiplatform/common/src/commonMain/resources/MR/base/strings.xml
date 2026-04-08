@@ -463,6 +463,14 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="talk_to_someone">Talk to someone</string>
+  <string name="let_someone_connect_to_you">Let someone connect to you</string>
+  <string name="connect_via_link_or_qr_code">Connect via link or QR code</string>
+  <string name="connect_with_someone">Connect with someone</string>
+  <string name="invite_someone_privately">Invite someone privately</string>
+  <string name="a_link_for_one_person">A link for one person to connect</string>
+  <string name="create_your_public_address">Create your public address</string>
+  <string name="for_anyone_to_reach_you">For anyone to reach you</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="no_chats_in_list">No chats in list %s.</string>
