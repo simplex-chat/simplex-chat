@@ -289,7 +289,7 @@ private fun AddressCreationCard() {
 
 @Composable
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
-  if (shouldShowOnboarding()) {
+  if (appPlatform.isAndroid && shouldShowOnboarding()) {
     AndroidOnboardingCards()
   } else {
     if (!chatModel.desktopNoUserNoRemote) {
@@ -315,17 +315,15 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
 
 @Composable
 private fun AndroidOnboardingCards() {
-  if (appPlatform.isAndroid) {
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
-    val topPad = topPaddingToContent(false)
-    val bottomPad = if (oneHandUI.value) {
-      WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
-    } else {
-      WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    }
-    Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
-      ConnectOnboardingView()
-    }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val topPad = topPaddingToContent(false)
+  val bottomPad = if (oneHandUI.value) {
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+  } else {
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+  }
+  Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+    ConnectOnboardingView()
   }
 }
 
