@@ -241,8 +241,8 @@ private fun ConnectBannerCard() {
   val isDark = isInDarkTheme()
   val labelBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
     .copy(alpha = appPrefs.inAppBarsAlpha.get())
-  val buttonSize = AppBarHeight * fontSizeSqrtMultiplier * 0.9f
-  val gap = buttonSize * 0.2f
+  val buttonSize = 30.dp * fontSizeSqrtMultiplier
+  val gap = 6.dp * fontSizeSqrtMultiplier
 
   Column(horizontalAlignment = Alignment.End) {
     IconButton(
