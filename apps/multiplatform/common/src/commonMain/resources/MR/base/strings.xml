@@ -895,7 +895,7 @@
   <string name="new_chat">New chat</string>
   <string name="new_message">New message</string>
   <string name="add_contact_tab">Add contact</string>
-  <string name="scan_paste_link">Scan / Paste link</string>
+  <string name="scan_paste_link">Paste link / Scan</string>
   <string name="paste_link">Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
@@ -1146,7 +1146,6 @@
   <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
   <string name="create_1_time_link">Create 1-time link</string>
   <string name="new_1_time_link">New 1-time link</string>
-  <string name="paste_link_scan">Paste link / Scan</string>
   <string name="address_settings">Address settings</string>
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>

@@ -255,7 +255,7 @@ private fun ConnectBannerCard() {
         modifier = Modifier
           .size(buttonSize)
           .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), CircleShape)
-          .padding(buttonSize * 0.25f),
+          .padding(buttonSize * 0.15f),
         tint = MaterialTheme.colors.secondary
       )
     }
@@ -320,10 +320,10 @@ private fun ConnectBannerCard() {
           if (BuildConfigCommon.SIMPLEX_ASSETS) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
-              Text(stringResource(MR.strings.paste_link_scan), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+              Text(stringResource(MR.strings.scan_paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
             }
           } else {
-            Text(stringResource(MR.strings.paste_link_scan), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            Text(stringResource(MR.strings.scan_paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
           }
         }
       }
