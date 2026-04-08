@@ -290,19 +290,7 @@ private fun AddressCreationCard() {
 @Composable
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   if (shouldShowOnboarding()) {
-    if (appPlatform.isAndroid) {
-      val oneHandUI = remember { appPrefs.oneHandUI.state }
-      val topPad = topPaddingToContent(false)
-      val bottomPad = if (oneHandUI.value) {
-        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
-      } else {
-        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-      }
-      Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
-        ConnectOnboardingView()
-      }
-    }
-    // Desktop: overlay in DesktopScreen handles cards
+    AndroidOnboardingCards()
   } else {
     if (!chatModel.desktopNoUserNoRemote) {
       ChatList(searchText = searchText, listState)
@@ -315,11 +303,28 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
       )
     }
   }
-  // Auto-dismiss onboarding when first real conversation appears
-  val chats = chatModel.chats.value
-  LaunchedEffect(chats.size) {
-    if (chats.isNotEmpty() && !noConversationChatsYet(chats)) {
-      appPrefs.addressCreationCardShown.set(true)
+  if (shouldShowOnboarding()) {
+    val chats = chatModel.chats.value
+    LaunchedEffect(chats.size) {
+      if (!noConversationChatsYet(chats)) {
+        appPrefs.addressCreationCardShown.set(true)
+      }
+    }
+  }
+}
+
+@Composable
+private fun AndroidOnboardingCards() {
+  if (appPlatform.isAndroid) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val topPad = topPaddingToContent(false)
+    val bottomPad = if (oneHandUI.value) {
+      WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier
+    } else {
+      WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    }
+    Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+      ConnectOnboardingView()
     }
   }
 }

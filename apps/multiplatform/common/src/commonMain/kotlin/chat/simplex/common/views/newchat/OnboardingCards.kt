@@ -22,7 +22,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
@@ -39,7 +38,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 
-// MARK: - Onboarding condition
+private const val CARD_HEIGHT_RATIO = 0.75f
+private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 
 @Composable
 fun shouldShowOnboarding(): Boolean {
@@ -59,10 +59,6 @@ fun noConversationChatsYet(chats: List<Chat>): Boolean =
       is ChatInfo.InvalidJSON -> true
     }
   }
-
-// MARK: - Gradient math
-
-private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 
 private data class GradientEndpoints(val startX: Float, val startY: Float, val endX: Float, val endY: Float)
 
@@ -106,15 +102,11 @@ private val darkStops = arrayOf(
   1.0f to Color(0xFFfff6e0)
 )
 
-// MARK: - Layout helpers
-
 private fun Modifier.maxHeightByWidthRatio(ratio: Float) = layout { measurable, constraints ->
   val maxH = (constraints.maxWidth * ratio).toInt().coerceAtMost(constraints.maxHeight)
   val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = maxH))
   layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
 }
-
-// MARK: - Card component
 
 @Composable
 fun OnboardingCardView(
@@ -207,11 +199,9 @@ fun OnboardingCardView(
   }
 }
 
-// MARK: - Page header
-
 @Composable
-private fun PageHeader(title: String, showBack: Boolean, isLandscape: Boolean, onBack: (() -> Unit)? = null) {
-  val color = if (showBack && onBack != null) MaterialTheme.colors.primary else Color.Transparent
+private fun PageHeader(title: String, isLandscape: Boolean, onBack: (() -> Unit)? = null) {
+  val color = if (onBack != null) MaterialTheme.colors.primary else Color.Transparent
   val baseStyle = MaterialTheme.typography.h1
   val titleView = @Composable {
     var fontScale by remember(title) { mutableStateOf(1f) }
@@ -264,21 +254,17 @@ private fun BackButton(modifier: Modifier = Modifier, color: Color = MaterialThe
   }
 }
 
-// MARK: - Card pair layout
-
 @Composable
 private fun CardPair(
   isLandscape: Boolean,
-  padding: Dp,
-  spacing: Dp,
   heightRatio: Float,
   card1: @Composable () -> Unit,
   card2: @Composable () -> Unit
 ) {
   if (isLandscape) {
     Row(
-      Modifier.fillMaxSize().padding(horizontal = padding),
-      horizontalArrangement = Arrangement.spacedBy(spacing),
+      Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING),
+      horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f).maxHeightByWidthRatio(heightRatio)) { card1() }
@@ -286,8 +272,8 @@ private fun CardPair(
     }
   } else {
     Column(
-      Modifier.fillMaxSize().padding(horizontal = padding),
-      verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically)
+      Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING),
+      verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING, Alignment.CenterVertically)
     ) {
       Box(Modifier.fillMaxWidth().weight(1f, fill = false).maxHeightByWidthRatio(heightRatio)) { card1() }
       Box(Modifier.fillMaxWidth().weight(1f, fill = false).maxHeightByWidthRatio(heightRatio)) { card2() }
@@ -295,14 +281,26 @@ private fun CardPair(
   }
 }
 
-// MARK: - Pager
+@Composable
+private fun OnboardingPageLayout(
+  title: String,
+  onBack: (() -> Unit)? = null,
+  cards: @Composable (isLandscape: Boolean) -> Unit
+) {
+  val isLandscape = appPlatform.isDesktop || windowOrientation() == WindowOrientation.LANDSCAPE
+  Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+    PageHeader(title = title, isLandscape = isLandscape, onBack = onBack)
+    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
+      cards(isLandscape)
+    }
+  }
+}
 
 @Composable
 fun ConnectOnboardingView() {
   val pagerState = rememberPagerState(initialPage = 0) { 2 }
   val scope = rememberCoroutineScope()
 
-  // Desktop: fade cards when start modals open, click faded cards to dismiss
   val startModalsOpen = appPlatform.isDesktop && ModalManager.start.hasModalsOpen
   val cardAlpha by animateFloatAsState(if (startModalsOpen) 0.3f else 1f)
 
@@ -325,27 +323,71 @@ fun ConnectOnboardingView() {
       userScrollEnabled = !appPlatform.isDesktop
     ) { page ->
       when (page) {
-        0 -> TalkToSomeonePage(
-          onLetSomeoneConnect = cardClickOverride ?: { goToPage(1) },
-          onConnectViaLink = cardClickOverride ?: {
-            ModalManager.start.showModalCloseable { close ->
-              NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+        0 -> OnboardingPageLayout(title = stringResource(MR.strings.talk_to_someone)) { isLandscape ->
+          CardPair(isLandscape, CARD_HEIGHT_RATIO,
+            card1 = {
+              OnboardingCardView(
+                imageName = MR.images.card_let_someone_connect_to_you_alpha,
+                imageNameLight = MR.images.card_let_someone_connect_to_you_alpha_light,
+                icon = MR.images.ic_add_link,
+                title = stringResource(MR.strings.let_someone_connect_to_you),
+                labelHeightRatio = 0.132f,
+                onClick = cardClickOverride ?: { goToPage(1) }
+              )
+            },
+            card2 = {
+              OnboardingCardView(
+                imageName = MR.images.card_connect_via_link_alpha,
+                imageNameLight = MR.images.card_connect_via_link_alpha_light,
+                icon = MR.images.ic_qr_code,
+                title = stringResource(MR.strings.connect_via_link_or_qr_code),
+                labelHeightRatio = 0.132f,
+                onClick = cardClickOverride ?: {
+                  ModalManager.start.showModalCloseable { close ->
+                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+                  }
+                }
+              )
             }
-          }
-        )
-        1 -> ConnectWithSomeonePage(
-          onBack = cardClickOverride ?: { goToPage(0) },
-          onInviteSomeone = cardClickOverride ?: {
-            ModalManager.start.showModalCloseable { close ->
-              NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+          )
+        }
+        1 -> OnboardingPageLayout(
+          title = stringResource(MR.strings.connect_with_someone),
+          onBack = cardClickOverride ?: { goToPage(0) }
+        ) { isLandscape ->
+          CardPair(isLandscape, CARD_HEIGHT_RATIO,
+            card1 = {
+              OnboardingCardView(
+                imageName = MR.images.card_invite_someone_privately_alpha,
+                imageNameLight = MR.images.card_invite_someone_privately_alpha_light,
+                icon = MR.images.ic_add_link,
+                title = stringResource(MR.strings.invite_someone_privately),
+                subtitle = stringResource(MR.strings.a_link_for_one_person),
+                labelHeightRatio = 0.195f,
+                onClick = cardClickOverride ?: {
+                  ModalManager.start.showModalCloseable { close ->
+                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+                  }
+                }
+              )
+            },
+            card2 = {
+              OnboardingCardView(
+                imageName = MR.images.card_create_your_public_address_alpha,
+                imageNameLight = MR.images.card_create_your_public_address_alpha_light,
+                icon = MR.images.ic_qr_code,
+                title = stringResource(MR.strings.create_your_public_address),
+                subtitle = stringResource(MR.strings.for_anyone_to_reach_you),
+                labelHeightRatio = 0.195f,
+                onClick = cardClickOverride ?: {
+                  ModalManager.start.showModalCloseable { close ->
+                    UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+                  }
+                }
+              )
             }
-          },
-          onCreateAddress = cardClickOverride ?: {
-            ModalManager.start.showModalCloseable { close ->
-              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-            }
-          }
-        )
+          )
+        }
       }
     }
   }
@@ -363,102 +405,6 @@ fun ConnectOnboardingView() {
   } else {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       pager()
-    }
-  }
-}
-
-// MARK: - Screen 1
-
-@Composable
-private fun TalkToSomeonePage(
-  onLetSomeoneConnect: () -> Unit,
-  onConnectViaLink: () -> Unit
-) {
-  val isLandscape = appPlatform.isDesktop || windowOrientation() == WindowOrientation.LANDSCAPE
-  Column(
-    Modifier.fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    PageHeader(
-      title = stringResource(MR.strings.talk_to_someone),
-      showBack = false,
-      isLandscape = isLandscape
-    )
-
-    val heightRatio = 0.75f
-    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
-      CardPair(isLandscape, DEFAULT_PADDING, DEFAULT_PADDING, heightRatio,
-        card1 = {
-          OnboardingCardView(
-            imageName = MR.images.card_let_someone_connect_to_you_alpha,
-            imageNameLight = MR.images.card_let_someone_connect_to_you_alpha_light,
-            icon = MR.images.ic_add_link,
-            title = stringResource(MR.strings.let_someone_connect_to_you),
-            labelHeightRatio = 0.132f,
-            onClick = onLetSomeoneConnect
-          )
-        },
-        card2 = {
-          OnboardingCardView(
-            imageName = MR.images.card_connect_via_link_alpha,
-            imageNameLight = MR.images.card_connect_via_link_alpha_light,
-            icon = MR.images.ic_qr_code,
-            title = stringResource(MR.strings.connect_via_link_or_qr_code),
-            labelHeightRatio = 0.132f,
-            onClick = onConnectViaLink
-          )
-        }
-      )
-    }
-  }
-}
-
-// MARK: - Screen 2
-
-@Composable
-private fun ConnectWithSomeonePage(
-  onBack: () -> Unit,
-  onInviteSomeone: () -> Unit,
-  onCreateAddress: () -> Unit
-) {
-  val isLandscape = appPlatform.isDesktop || windowOrientation() == WindowOrientation.LANDSCAPE
-  Column(
-    Modifier.fillMaxSize(),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    PageHeader(
-      title = stringResource(MR.strings.connect_with_someone),
-      showBack = true,
-      isLandscape = isLandscape,
-      onBack = onBack
-    )
-
-    val heightRatio = 0.75f
-    Box(Modifier.weight(1f).fillMaxWidth().padding(vertical = DEFAULT_PADDING)) {
-      CardPair(isLandscape, DEFAULT_PADDING, DEFAULT_PADDING, heightRatio,
-        card1 = {
-          OnboardingCardView(
-            imageName = MR.images.card_invite_someone_privately_alpha,
-            imageNameLight = MR.images.card_invite_someone_privately_alpha_light,
-            icon = MR.images.ic_add_link,
-            title = stringResource(MR.strings.invite_someone_privately),
-            subtitle = stringResource(MR.strings.a_link_for_one_person),
-            labelHeightRatio = 0.195f,
-            onClick = onInviteSomeone
-          )
-        },
-        card2 = {
-          OnboardingCardView(
-            imageName = MR.images.card_create_your_public_address_alpha,
-            imageNameLight = MR.images.card_create_your_public_address_alpha_light,
-            icon = MR.images.ic_qr_code,
-            title = stringResource(MR.strings.create_your_public_address),
-            subtitle = stringResource(MR.strings.for_anyone_to_reach_you),
-            labelHeightRatio = 0.195f,
-            onClick = onCreateAddress
-          )
-        }
-      )
     }
   }
 }
