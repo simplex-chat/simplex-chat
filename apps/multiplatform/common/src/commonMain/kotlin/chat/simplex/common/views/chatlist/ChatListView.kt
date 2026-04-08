@@ -290,9 +290,7 @@ private fun AddressCreationCard() {
 @Composable
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
   if (shouldShowOnboarding()) {
-    if (appPlatform.isAndroid) {
-      AndroidOnboardingCards()
-    }
+    if (appPlatform.isAndroid) AndroidOnboardingCards()
   } else {
     if (!chatModel.desktopNoUserNoRemote) {
       ChatList(searchText = searchText, listState)
