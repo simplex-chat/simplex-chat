@@ -161,6 +161,13 @@ fun OnboardingCardView(
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize()
           )
+        } else {
+          Icon(
+            painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(64.dp).align(Alignment.Center),
+            tint = MaterialTheme.colors.primary
+          )
         }
       }
       Box(
@@ -172,12 +179,14 @@ fun OnboardingCardView(
       ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
           Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(
-              painterResource(icon),
-              contentDescription = null,
-              modifier = Modifier.size(24.dp),
-              tint = MaterialTheme.colors.primary
-            )
+            if (BuildConfigCommon.SIMPLEX_ASSETS) {
+              Icon(
+                painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colors.primary
+              )
+            }
             Text(
               title,
               style = (if (appPlatform.isDesktop) MaterialTheme.typography.h3 else MaterialTheme.typography.h4).copy(fontWeight = FontWeight.Medium),
@@ -339,7 +348,7 @@ fun ConnectOnboardingView() {
               OnboardingCardView(
                 imageName = MR.images.card_connect_via_link_alpha,
                 imageNameLight = MR.images.card_connect_via_link_alpha_light,
-                icon = MR.images.ic_qr_code,
+                icon = MR.images.ic_qr_code_scanner,
                 title = stringResource(MR.strings.connect_via_link_or_qr_code),
                 labelHeightRatio = 0.132f,
                 onClick = cardClickOverride ?: {
