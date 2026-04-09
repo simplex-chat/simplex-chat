@@ -293,7 +293,9 @@ struct ChatListView: View {
     
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
-        ToolbarItem(placement: .principal) { principalToolbarItem }
+        if !shouldShowOnboarding {
+            ToolbarItem(placement: .principal) { SubsStatusIndicator() }
+        }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
 
@@ -303,8 +305,10 @@ struct ChatListView: View {
             HStack {
                 leadingToolbarItem.padding(.bottom, padding)
                 Spacer()
-                principalToolbarItem.padding(.bottom, padding)
-                Spacer()
+                if !shouldShowOnboarding {
+                    SubsStatusIndicator().padding(.bottom, padding)
+                    Spacer()
+                }
                 trailingToolbarItem.padding(.bottom, padding)
             }
             .contentShape(Rectangle())
@@ -317,18 +321,14 @@ struct ChatListView: View {
         ToolbarItemGroup(placement: viewOnScreen ? .bottomBar : .principal) {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
-            principalToolbarItem.padding(.bottom, padding)
-            Spacer()
+            if !shouldShowOnboarding {
+                SubsStatusIndicator().padding(.bottom, padding)
+                Spacer()
+            }
             trailingToolbarItem.padding(.bottom, padding)
         }
     }
 
-    @ViewBuilder var principalToolbarItem: some View {
-        if !shouldShowOnboarding {
-            SubsStatusIndicator()
-        }
-    }
-    
     @ViewBuilder var leadingToolbarItem: some View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
