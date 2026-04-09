@@ -73,7 +73,7 @@ struct ComposeState {
     }
 
     init(editingItem: ChatItem) {
-        let text = editingItem.content.text
+        let text = editingItem.content.rawText
         self.message = text
         self.parsedMessage = editingItem.formattedText ?? FormattedText.plain(text)
         self.preview = chatItemPreview(chatItem: editingItem)

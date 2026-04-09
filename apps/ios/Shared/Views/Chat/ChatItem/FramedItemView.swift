@@ -114,9 +114,9 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func framedMsgContentView() -> some View {
-        if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.isLive && isShortEmoji(chatItem.content.text) {
+        if chatItem.formattedText == nil && chatItem.file == nil && !chatItem.meta.isLive && isShortEmoji(chatItem.content.rawText) {
             VStack {
-                emojiText(chatItem.content.text)
+                emojiText(chatItem.content.rawText)
                 Text("")
             }
             .padding(.vertical, 6)
@@ -304,7 +304,7 @@ struct FramedItemView: View {
     }
     
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil) -> some View {
-        let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
+        let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.rawText : ci.rawText
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
         let v = MsgContentView(

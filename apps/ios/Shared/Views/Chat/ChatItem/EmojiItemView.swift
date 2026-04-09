@@ -18,7 +18,7 @@ struct EmojiItemView: View {
 
     var body: some View {
         VStack(spacing: 1) {
-            emojiText(chatItem.content.text)
+            emojiText(chatItem.content.rawText)
                 .padding(.top, 8)
                 .padding(.horizontal, 6)
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)

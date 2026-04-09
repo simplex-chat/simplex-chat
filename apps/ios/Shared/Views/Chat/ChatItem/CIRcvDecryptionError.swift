@@ -115,7 +115,7 @@ struct CIRcvDecryptionError: View {
         ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(chatItem.content.text)
+                    Text(chatItem.content.rawText)
                         .foregroundColor(.red)
                         .italic()
                 }
@@ -143,7 +143,7 @@ struct CIRcvDecryptionError: View {
     private func decryptionErrorItem(_ onClick: @escaping (() -> Void)) -> some View {
         return ZStack(alignment: .bottomTrailing) {
             HStack {
-                Text(chatItem.content.text)
+                Text(chatItem.content.rawText)
                     .foregroundColor(.red)
                     .italic()
                 + Text(verbatim: "   ")

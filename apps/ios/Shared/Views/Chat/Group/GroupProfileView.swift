@@ -42,7 +42,7 @@ struct GroupProfileView: View {
 
             Section {
                 HStack {
-                    TextField("Group display name", text: $groupProfile.displayName)
+                    TextField(groupInfo.useRelays ? "Channel display name" : "Group display name", text: $groupProfile.displayName)
                         .focused($focusDisplayName)
                     if !validNewProfileName {
                         Button {
@@ -54,7 +54,7 @@ struct GroupProfileView: View {
                 }
                 let fullName = groupInfo.groupProfile.fullName
                 if fullName != "" && fullName != groupProfile.displayName {
-                    TextField("Group full name (optional)", text: $groupProfile.fullName)
+                    TextField(groupInfo.useRelays ? "Channel full name (optional)" : "Group full name (optional)", text: $groupProfile.fullName)
                 }
                 HStack {
                     TextField("Short description", text: $shortDescr)
@@ -67,7 +67,7 @@ struct GroupProfileView: View {
                     }
                 }
             } footer: {
-                Text("Group profile is stored on members' devices, not on the servers.")
+                Text(groupInfo.useRelays ? "Channel profile is stored on subscribers' devices, not on the servers." : "Group profile is stored on members' devices, not on the servers.")
             }
 
             Section {
@@ -80,11 +80,11 @@ struct GroupProfileView: View {
                     currentProfileHash == groupProfile.hashValue &&
                     (groupInfo.groupProfile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
                 )
-                Button("Save group profile", action: saveProfile)
+                Button(groupInfo.useRelays ? "Save channel profile" : "Save group profile", action: saveProfile)
                 .disabled(!canUpdateProfile)
             }
         }
-        .confirmationDialog("Group image", isPresented: $showChooseSource, titleVisibility: .visible) {
+        .confirmationDialog(groupInfo.useRelays ? "Channel image" : "Group image", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true
             }
@@ -130,9 +130,15 @@ struct GroupProfileView: View {
         .onDisappear {
             if canUpdateProfile {
                 showAlert(
-                    title: NSLocalizedString("Save group profile?", comment: "alert title"),
-                    message: NSLocalizedString("Group profile was changed. If you save it, the updated profile will be sent to group members.", comment: "alert message"),
-                    buttonTitle: NSLocalizedString("Save (and notify members)", comment: "alert button"),
+                    title: groupInfo.useRelays
+                        ? NSLocalizedString("Save channel profile?", comment: "alert title")
+                        : NSLocalizedString("Save group profile?", comment: "alert title"),
+                    message: groupInfo.useRelays
+                        ? NSLocalizedString("Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers.", comment: "alert message")
+                        : NSLocalizedString("Group profile was changed. If you save it, the updated profile will be sent to group members.", comment: "alert message"),
+                    buttonTitle: groupInfo.useRelays
+                        ? NSLocalizedString("Save (and notify subscribers)", comment: "alert button")
+                        : NSLocalizedString("Save (and notify members)", comment: "alert button"),
                     buttonAction: saveProfile,
                     cancelButton: true
                 )
@@ -142,14 +148,14 @@ struct GroupProfileView: View {
             switch a {
             case let .saveError(err):
                 return Alert(
-                    title: Text("Error saving group profile"),
+                    title: Text(groupInfo.useRelays ? "Error saving channel profile" : "Error saving group profile"),
                     message: Text(err)
                 )
             case let .invalidName(name):
                 return createInvalidNameAlert(name, $groupProfile.displayName)
             }
         }
-        .navigationBarTitle("Group profile")
+        .navigationBarTitle(groupInfo.useRelays ? "Channel profile" : "Group profile")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(focusDisplayName ? .inline : .large)
     }

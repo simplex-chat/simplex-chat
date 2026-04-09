@@ -97,7 +97,7 @@ struct CIChatFeatureView: View {
             Image(systemName: icon ?? feature.iconFilled)
                 .foregroundColor(iconColor)
                 .scaleEffect(feature.iconScale)
-            chatEventText(chatItem, theme.colors.secondary)
+            chatEventText(chatItem, chat.chatInfo.groupInfo?.useRelays ?? false, theme.colors.secondary)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)

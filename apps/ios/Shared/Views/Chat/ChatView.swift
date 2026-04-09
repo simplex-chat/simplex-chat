@@ -852,7 +852,7 @@ struct ChatView: View {
     }
 
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
-        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
+        ci.content.msgContent?.isVoice == true && ci.content.rawText.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
     // Spec: spec/client/chat-view.md#filtered
@@ -2282,7 +2282,7 @@ struct ChatView: View {
                 }
                 let fileSource = getLoadedFileSource(ci.file)
                 let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
-                let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
+                let copyAndShareAllowed = !ci.content.rawText.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
                 if copyAndShareAllowed {
                     shareButton(ci)
                     copyButton(ci)
@@ -2453,7 +2453,7 @@ struct ChatView: View {
 
         private func shareButton(_ ci: ChatItem) -> Button<some View> {
             Button {
-                var shareItems: [Any] = [ci.content.text]
+                var shareItems: [Any] = [ci.content.text(chat.chatInfo.groupInfo?.useRelays ?? false)]
                 if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                     shareItems.append(image)
                 }
@@ -2473,7 +2473,7 @@ struct ChatView: View {
                    let image = getLoadedImage(ci.file) {
                     UIPasteboard.general.image = image
                 } else {
-                    UIPasteboard.general.string = ci.content.text
+                    UIPasteboard.general.string = ci.content.text(chat.chatInfo.groupInfo?.useRelays ?? false)
                 }
             } label: {
                 Label("Copy", systemImage: "doc.on.doc")

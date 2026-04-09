@@ -63,7 +63,7 @@ struct CIMsgError: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            Text(chatItem.content.text)
+            Text(chatItem.content.rawText)
                 .foregroundColor(.red)
                 .italic()
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
