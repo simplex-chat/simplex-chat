@@ -136,6 +136,11 @@ struct UserAddressView: View {
         }
     }
 
+    private func addressQRCode(_ userAddress: UserContactLink) -> some View {
+        SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
+            .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+    }
+
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
             if onboarding {
@@ -151,8 +156,7 @@ struct UserAddressView: View {
                 }
                 .frame(maxWidth: .infinity)
             } else {
-                SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
-                    .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+                addressQRCode(userAddress)
                 if userAddress.shouldBeUpgraded {
                     upgradeAddressButton()
                 }
@@ -204,8 +208,7 @@ struct UserAddressView: View {
 
         if onboarding {
             Section {
-                SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
-                    .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+                addressQRCode(userAddress)
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
