@@ -307,13 +307,13 @@ private fun UserAddressLayout(
         if (onboarding) {
           Text(
             stringResource(MR.strings.onboarding_post_address),
-            Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
             style = MaterialTheme.typography.body1
           )
           LinkTextView(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value), true)
           Text(
             stringResource(MR.strings.onboarding_or_use_qr_code),
-            Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
             style = MaterialTheme.typography.body1
           )
           SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)

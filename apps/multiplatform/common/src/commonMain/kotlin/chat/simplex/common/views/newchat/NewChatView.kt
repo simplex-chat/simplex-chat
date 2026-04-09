@@ -484,13 +484,13 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
   if (onboarding) {
     Text(
       stringResource(MR.strings.onboarding_send_1_time_link),
-      Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+      Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
       style = MaterialTheme.typography.body1
     )
     LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
     Text(
       stringResource(MR.strings.onboarding_or_show_qr_code),
-      Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+      Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
       style = MaterialTheme.typography.body1
     )
     SimpleXCreatedLinkQRCode(connLinkInvitation, short = showShortLink.value, onShare = { chatModel.markShowingInvitationUsed() })
