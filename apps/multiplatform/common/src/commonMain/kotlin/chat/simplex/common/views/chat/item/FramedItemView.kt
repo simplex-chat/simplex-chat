@@ -191,7 +191,7 @@ fun FramedItemView(
   }
 
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
-      !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
+      !ci.meta.isLive && ci.content.text(false).isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
 
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
@@ -280,7 +280,7 @@ fun FramedItemView(
               FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
             }
           }
-          if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
+          if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text(false))) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
               Column(
                 Modifier
@@ -288,7 +288,7 @@ fun FramedItemView(
                   .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
               ) {
-                EmojiText(ci.content.text)
+                EmojiText(ci.content.text(false))
                 Text("")
               }
             }
@@ -369,7 +369,7 @@ fun CIMarkdownText(
   prefix: AnnotatedString? = null
 ) {
   val chatInfo = chat.chatInfo
-  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+  val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text(false) else ci.text(false)
   val selection = setupItemSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, ci.meta.isLive == true)
 
   Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp).then(selection.positionModifier)) {

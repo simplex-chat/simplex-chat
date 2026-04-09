@@ -368,7 +368,7 @@ struct ChatThemePreview: View {
         let view = VStack {
             if withMessages {
                 let alice = ChatItem.getSample(1, CIDirection.directRcv, Date.now, NSLocalizedString("Good afternoon!", comment: "message preview"))
-                let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.rawText, chatDir: alice.chatDir))
+                let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text(false), chatDir: alice.chatDir))
                 HStack {
                     ChatItemView(chat: Chat.sampleData, im: ItemsModel.shared, chatItem: alice, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
                         .modifier(ChatItemClipped(alice, tailVisible: true))

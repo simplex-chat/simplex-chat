@@ -56,11 +56,11 @@ struct CIMemberCreatedContactView: View {
     
     private func eventText() -> Text {
         if let member = chatItem.memberDisplayName {
-            return Text(member + " " + chatItem.content.rawText + "  ")
+            return Text(member + " " + chatItem.content.text(false) + "  ")
                 .fontWeight(.light)
                 .foregroundColor(theme.colors.secondary)
         } else {
-            return Text(chatItem.content.rawText + "  ")
+            return Text(chatItem.content.text(false) + "  ")
                 .fontWeight(.light)
                 .foregroundColor(theme.colors.secondary)
         }
@@ -72,7 +72,7 @@ struct CIMemberCreatedContactView_Previews: PreviewProvider {
         let content = CIContent.rcvGroupEvent(rcvGroupEvent: .memberCreatedContact)
         let chatItem = ChatItem(
             chatDir: .groupRcv(groupMember: GroupMember.sampleData),
-            meta: CIMeta.getSample(1, .now, content.rawText, .rcvRead),
+            meta: CIMeta.getSample(1, .now, content.text(false), .rcvRead),
             content: content,
             quotedItem: nil,
             file: nil

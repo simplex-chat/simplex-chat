@@ -23,11 +23,11 @@ fun CIMemberCreatedContactView(
       buildAnnotatedString {
         withStyle(chatEventStyle) { append(memberDisplayName) }
         append(" ")
-        withStyle(chatEventStyle) { append(chatItem.content.text) }
+        withStyle(chatEventStyle) { append(chatItem.content.text(false)) }
       }
     } else {
       buildAnnotatedString {
-        withStyle(chatEventStyle) { append(chatItem.content.text) }
+        withStyle(chatEventStyle) { append(chatItem.content.text(false)) }
       }
     }
   }

@@ -18,7 +18,7 @@ struct DeletedItemView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            Text(chatItem.content.rawText)
+            Text(chatItem.content.text(false))
                 .foregroundColor(theme.colors.secondary)
                 .italic()
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)

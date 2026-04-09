@@ -214,7 +214,7 @@ func hideSecrets(_ cItem: ChatItem) -> String {
             return String.localizedStringWithFormat(NSLocalizedString("Report: %@", comment: "report in notification"), text.isEmpty ? reason.text : text)
         } else {
             // notifications have no GroupInfo in scope; group service events use group wording even in channels
-            return cItem.rawText
+            return cItem.text(false)
         }
     }
 }

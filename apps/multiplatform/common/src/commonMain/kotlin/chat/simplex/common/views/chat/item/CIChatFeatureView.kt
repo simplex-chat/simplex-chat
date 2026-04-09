@@ -44,7 +44,7 @@ fun CIChatFeatureView(
         }
       }
     } else {
-      FullFeatureView(chatItem, feature, iconColor, icon)
+      FullFeatureView(chatItem, feature, iconColor, icon, chatInfo is ChatInfo.Group && chatInfo.groupInfo.useRelays)
     }
   }
 }
@@ -118,7 +118,8 @@ private fun FullFeatureView(
   chatItem: ChatItem,
   feature: Feature,
   iconColor: Color,
-  icon: Painter? = null
+  icon: Painter? = null,
+  isChannel: Boolean
 ) {
   Row(
     Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -127,7 +128,7 @@ private fun FullFeatureView(
   ) {
     Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
     Text(
-      chatEventText(chatItem),
+      chatEventText(chatItem, isChannel),
       Modifier,
       // this is important. Otherwise, aligning will be bad because annotated string has a Span with size 12.sp
       fontSize = 12.sp

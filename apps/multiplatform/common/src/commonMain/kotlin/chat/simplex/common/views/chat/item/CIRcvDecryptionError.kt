@@ -154,7 +154,7 @@ fun DecryptionErrorItemFixButton(
       ) {
         Text(
           buildAnnotatedString {
-            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text(false)) }
           },
           style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
         )
@@ -200,7 +200,7 @@ fun DecryptionErrorItem(
       val secondaryColor = MaterialTheme.colors.secondary
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text(false)) }
           withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor, showTimestamp = true)) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)

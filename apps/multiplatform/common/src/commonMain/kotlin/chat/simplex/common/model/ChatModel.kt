@@ -2901,10 +2901,6 @@ data class ChatItem (
     }
   }
 
-  // rawText is channel-agnostic — use for clipboard/share/search and any context
-  // where group vs channel terminology is not rendered to the user.
-  val rawText: String get() = text(false)
-
   val isRcvNew: Boolean get() = meta.isRcvNew
 
   val allowAddReaction: Boolean get() =
@@ -3172,7 +3168,7 @@ data class ChatItem (
       val content = CIContent.RcvChatFeature(feature = feature, enabled = enabled, param = null)
       return ChatItem(
         chatDir = CIDirection.DirectRcv(),
-        meta = CIMeta.getSample(1, Clock.System.now(), content.text, CIStatus.RcvRead()),
+        meta = CIMeta.getSample(1, Clock.System.now(), content.text(false), CIStatus.RcvRead()),
         content = content,
         quotedItem = null,
         reactions = listOf(),
@@ -3793,10 +3789,6 @@ sealed class CIContent {
       is ChatBanner -> ""
       is InvalidJSON -> "invalid data"
     }
-
-  // rawText is channel-agnostic — use for emoji/voice checks, clipboard, search, and any context
-  // where group vs channel terminology is not rendered to the user.
-  val rawText: String get() = text(false)
 
   val hasMsgContent: Boolean get() =
     if (msgContent != null) {
@@ -4831,7 +4823,7 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userPendingReview") class UserPendingReview(): SndGroupEvent()
 
-  val text: String get() = when (this) {
+  fun text(isChannel: Boolean): String = when (this) {
     is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
     is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
     is MemberBlocked -> if (blocked) {
@@ -4841,9 +4833,13 @@ sealed class SndGroupEvent() {
     }
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
-    is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
+    is GroupUpdated ->
+      if (isChannel) generalGetString(MR.strings.snd_group_event_channel_profile_updated)
+      else generalGetString(MR.strings.snd_group_event_group_profile_updated)
     is MemberAccepted -> generalGetString(MR.strings.snd_group_event_member_accepted)
-    is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
+    is UserPendingReview ->
+      if (isChannel) generalGetString(MR.strings.snd_group_event_user_pending_review_channel)
+      else generalGetString(MR.strings.snd_group_event_user_pending_review)
   }
 }
 

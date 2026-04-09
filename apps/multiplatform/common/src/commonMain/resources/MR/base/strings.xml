@@ -1707,10 +1707,13 @@
   <string name="rcv_group_event_member_deleted">removed %1$s</string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_group_event_channel_deleted">deleted channel</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
+  <string name="rcv_group_event_updated_channel_profile">updated channel profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
+  <string name="rcv_group_event_new_subscriber_pending_review">New subscriber wants to join the channel.</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
   <string name="snd_group_event_member_blocked">you blocked %s</string>
@@ -1718,8 +1721,10 @@
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+  <string name="snd_group_event_channel_profile_updated">channel profile updated</string>
   <string name="snd_group_event_member_accepted">you accepted this member</string>
   <string name="snd_group_event_user_pending_review">Please wait for group moderators to review your request to join the group.</string>
+  <string name="snd_group_event_user_pending_review_channel">Please wait for channel moderators to review your request to join the channel.</string>
 
   <string name="rcv_group_event_1_member_connected">%s connected</string>
   <string name="rcv_group_event_2_members_connected">%s and %s connected</string>
@@ -1740,6 +1745,7 @@
   <string name="profile_update_event_set_new_address">set new contact address</string>
   <string name="profile_update_event_updated_profile">updated profile</string>
   <string name="profile_update_event_member_name_changed">member %1$s changed to %2$s</string>
+  <string name="profile_update_event_subscriber_name_changed">subscriber %1$s changed to %2$s</string>
 
   <!-- Conn event chat items -->
   <string name="rcv_conn_event_switch_queue_phase_completed">changed address for you</string>

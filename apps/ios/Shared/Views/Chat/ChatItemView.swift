@@ -75,12 +75,12 @@ struct ChatItemView: View {
         if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
             MarkedDeletedItemView(chat: chat, im: im, chatItem: chatItem)
         } else if ci.quotedItem == nil && ci.meta.itemForwarded == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
-            if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.rawText) {
+            if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text(false)) {
                 EmojiItemView(chat: chat, chatItem: ci)
-            } else if ci.content.rawText.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
+            } else if ci.content.text(false).isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
-                ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: { Text(ci.rawText) }) // msgContent is unreachable branch in this case
+                ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: { Text(ci.text(false)) }) // msgContent is unreachable branch in this case
             } else {
                 framedItemView()
             }

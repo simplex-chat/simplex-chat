@@ -48,8 +48,8 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem): AnnotatedString =
-  chatEventText(ci.content.text, ci.timestampText)
+fun chatEventText(ci: ChatItem, isChannel: Boolean): AnnotatedString =
+  chatEventText(ci.content.text(isChannel), ci.timestampText)
 
 fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
@@ -113,6 +113,7 @@ fun ChatItemView(
   swipeOffset: Float = 0f,
 ) {
   val cInfo = chat.chatInfo
+  val isChannel = cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
@@ -415,7 +416,7 @@ fun ChatItemView(
                     val clipboard = LocalClipboardManager.current
                     val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
                     val copyAndShareAllowed = when {
-                      cItem.content.text.isNotEmpty() -> true
+                      cItem.content.text(false).isNotEmpty() -> true
                       cItem.file?.forwardingAllowed() == true -> true
                       else -> false
                     }
@@ -425,8 +426,8 @@ fun ChatItemView(
                         var fileSource = getLoadedFileSource(cItem.file)
                         val shareIfExists = {
                           when (val f = fileSource) {
-                            null -> clipboard.shareText(cItem.content.text)
-                            else -> shareFile(cItem.text, f)
+                            null -> clipboard.shareText(cItem.content.text(isChannel))
+                            else -> shareFile(cItem.text(isChannel), f)
                           }
                           showMenu.value = false
                         }
@@ -441,7 +442,7 @@ fun ChatItemView(
                     }
                     if (copyAndShareAllowed) {
                       ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
-                        copyItemToClipboard(cItem, clipboard)
+                        copyItemToClipboard(cItem, clipboard, isChannel)
                         showMenu.value = false
                       })
                     }
@@ -570,9 +571,9 @@ fun ChatItemView(
             fun ContentItem() {
               val mc = cItem.content.msgContent
               if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
-                if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
+                if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text(false))) {
                   EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
-                } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
+                } else if (mc is MsgContent.MCVoice && cItem.content.text(false).isEmpty()) {
                   CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 } else {
                   framedItemView()
@@ -629,9 +630,9 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(memberDisplayName) }
                   append(" ")
-                }.plus(chatEventText(cItem))
+                }.plus(chatEventText(cItem, isChannel))
               } else {
-                chatEventText(cItem)
+                chatEventText(cItem, isChannel)
               }
             }
 
@@ -643,7 +644,7 @@ fun ChatItemView(
             @Composable fun PendingReviewEventItemView() {
               Text(
                 buildAnnotatedString {
-                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(isChannel)) }
                 },
                 Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
               )
@@ -1455,7 +1456,7 @@ fun moderateMessagesAlertDialog(itemIds: List<Long>, questionText: String, delet
   )
 }
 
-expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
+expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager, isChannel: Boolean)
 
 @Preview
 @Composable

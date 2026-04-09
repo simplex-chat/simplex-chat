@@ -3200,10 +3200,6 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
-    // rawText is channel-agnostic — use for clipboard/share/search and any context
-    // where group vs channel terminology is not rendered to the user.
-    public var rawText: String { text(false) }
-
     public var isRcvNew: Bool { meta.isRcvNew }
 
     public var isDeletedContent: Bool {
@@ -3483,7 +3479,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled, param: nil)
         return ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, content.rawText, .rcvRead),
+            meta: CIMeta.getSample(1, .now, content.text(false), .rcvRead),
             content: content,
             quotedItem: nil,
             file: nil
@@ -3515,7 +3511,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
-            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.rawText, chatDir: item.chatDir),
+            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text(false), chatDir: item.chatDir),
             file: nil
         )
     }
@@ -4088,10 +4084,6 @@ public enum CIContent: Decodable, Hashable {
         case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
         }
     }
-
-    // rawText is channel-agnostic — use for emoji/voice checks, clipboard, search, and any context
-    // where group vs channel terminology is not rendered to the user.
-    public var rawText: String { text(false) }
 
     private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
         e2eeInfo.pqEnabled == true

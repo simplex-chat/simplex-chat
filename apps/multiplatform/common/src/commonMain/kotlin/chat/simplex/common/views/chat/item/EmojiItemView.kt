@@ -22,7 +22,7 @@ val mediumEmojiFont: TextStyle = TextStyle(fontSize = 36.sp, fontFamily = EmojiF
 
 @Composable
 fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean, showTimestamp: Boolean) {
-  val emojiText = chatItem.content.text.trim()
+  val emojiText = chatItem.content.text(false).trim()
   val isSelected = setupEmojiSelection(LocalSelectionManager.current, LocalItemContext.current.selectionIndex, emojiText.length)
 
   Column(
@@ -31,10 +31,10 @@ fun EmojiItemView(chatItem: ChatItem, timedMessagesTTL: Int?, showViaProxy: Bool
   ) {
     if (isSelected) {
       Box(Modifier.background(SelectionHighlightColor)) {
-        EmojiText(chatItem.content.text)
+        EmojiText(chatItem.content.text(false))
       }
     } else {
-      EmojiText(chatItem.content.text)
+      EmojiText(chatItem.content.text(false))
     }
     CIMetaView(chatItem, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   }

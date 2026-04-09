@@ -51,7 +51,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   })
 }
 
-actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withLongRunningApi(slow = 600_000) {
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager, isChannel: Boolean) = withLongRunningApi(slow = 600_000) {
   var fileSource = getLoadedFileSource(cItem.file)
   if (chatModel.connectedToRemote() && fileSource == null) {
     cItem.file?.loadRemoteFile(true)
@@ -65,7 +65,7 @@ actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = w
       else -> clipboard.setText(AnnotatedString(filePath))
     }
   } else {
-    clipboard.setText(AnnotatedString(cItem.content.text))
+    clipboard.setText(AnnotatedString(cItem.content.text(isChannel)))
   }
   showToast(MR.strings.copied.localized())
 }.run {}

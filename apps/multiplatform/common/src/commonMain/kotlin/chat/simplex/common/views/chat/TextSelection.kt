@@ -242,9 +242,9 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
 // Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
 // the full source is emitted if any part is selected. For untransformed segments, partial substring works.
 private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: SimplexLinkMode): String {
-    val formattedText = ci.formattedText ?: return ci.text.substring(
-        sel.first.coerceAtMost(ci.text.length),
-        (sel.last + 1).coerceAtMost(ci.text.length)
+    val formattedText = ci.formattedText ?: return ci.text(false).substring(
+        sel.first.coerceAtMost(ci.text(false).length),
+        (sel.last + 1).coerceAtMost(ci.text(false).length)
     )
     val sb = StringBuilder()
     var displayOffset = 0
