@@ -334,7 +334,7 @@ private struct InviteView: View {
     }
 
     private func shareLinkView() -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 8) {
             let link = connLinkInvitation.simplexChatUri(short: showShortLink)
             linkTextView(link)
             Button {

@@ -212,7 +212,7 @@ struct UserAddressView: View {
 
     @ViewBuilder private func onboardingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            HStack(spacing: 16) {
+            HStack(spacing: 8) {
                 let link = userAddress.connLinkContact.simplexChatUri(short: showShortLink)
                 linkTextView(link)
                 Button { UIPasteboard.general.string = link } label: {

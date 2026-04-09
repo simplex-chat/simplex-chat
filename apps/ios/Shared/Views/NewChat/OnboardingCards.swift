@@ -84,7 +84,7 @@ struct OnboardingCardView: View {
                             .clipped()
                         #else
                         Image(systemName: icon)
-                            .font(.system(size: imageHeight * 0.4))
+                            .font(.system(size: imageHeight * 0.25))
                             .foregroundColor(theme.colors.primary)
                         #endif
                     }
@@ -101,9 +101,11 @@ struct OnboardingCardView: View {
     private func labelRow(height: CGFloat) -> some View {
         VStack {
             HStack {
+                #if SIMPLEX_ASSETS
                 Image(systemName: icon)
                     .font(.system(size: 24))
                     .foregroundColor(theme.colors.primary)
+                #endif
                 Text(title)
                     .font(.body)
                     .fontWeight(.medium)
