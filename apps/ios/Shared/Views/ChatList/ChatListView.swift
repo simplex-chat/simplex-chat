@@ -349,18 +349,18 @@ struct ChatListView: View {
     }
     
     private var shouldShowOnboarding: Bool {
-        !addressCreationCardShown && !chatModel.chats.isEmpty && noConversationChatsYet
+        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations
     }
 
-    private var noConversationChatsYet: Bool {
-        chatModel.chats.allSatisfy { chat in
+    private var hasConversations: Bool {
+        chatModel.chats.contains { chat in
             switch chat.chatInfo {
-            case .local: return true
-            case let .direct(contact): return contact.chatDeleted || contact.isContactCard
-            case .group: return false
-            case .contactRequest: return true
-            case .contactConnection: return true
-            case .invalidJSON: return true
+            case .local: return false
+            case let .direct(contact): return !contact.chatDeleted && !contact.isContactCard
+            case .group: return true
+            case .contactRequest: return false
+            case .contactConnection: return false
+            case .invalidJSON: return false
             }
         }
     }
@@ -422,8 +422,8 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    if !addressCreationCardShown {
-                        AddressCreationCard()
+                    if !addressCreationCardShown && hasConversations {
+                        ConnectBannerCard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
@@ -452,11 +452,6 @@ struct ChatListView: View {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
-            }
-        }
-        .onChange(of: chatModel.chats.count) { _ in
-            if !noConversationChatsYet && !addressCreationCardShown {
-                addressCreationCardShown = true
             }
         }
     }

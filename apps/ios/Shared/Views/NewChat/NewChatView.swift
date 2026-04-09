@@ -80,6 +80,7 @@ struct NewChatView: View {
     @EnvironmentObject var theme: AppTheme
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
+    var onboarding: Bool = false
     @State private var invitationUsed: Bool = false
     @State private var connLinkInvitation: CreatedConnLink = CreatedConnLink(connFullLink: "", connShortLink: nil)
     @State private var showShortLink = true
@@ -91,17 +92,19 @@ struct NewChatView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Picker("New chat", selection: $selection) {
-                Label("1-time link", systemImage: "link")
-                    .tag(NewChatOption.invite)
-                Label("Connect via link", systemImage: "qrcode")
-                    .tag(NewChatOption.connect)
-            }
-            .pickerStyle(.segmented)
-            .padding()
-            .onChange(of: $selection.wrappedValue) { opt in
-                if opt == NewChatOption.connect {
-                    showQRCodeScanner = true
+            if !onboarding {
+                Picker("New chat", selection: $selection) {
+                    Label("1-time link", systemImage: "link")
+                        .tag(NewChatOption.invite)
+                    Label("Connect via link", systemImage: "qrcode")
+                        .tag(NewChatOption.connect)
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                .onChange(of: $selection.wrappedValue) { opt in
+                    if opt == NewChatOption.connect {
+                        showQRCodeScanner = true
+                    }
                 }
             }
 
@@ -116,7 +119,7 @@ struct NewChatView: View {
                         }
                 }
                 if case .connect = selection {
-                    ConnectView(showQRCodeScanner: $showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
+                    ConnectView(showQRCodeScanner: $showQRCodeScanner, pastedLink: $pastedLink, alert: $alert, onboarding: onboarding)
                         .transition(.move(edge: .trailing))
                 }
             }
@@ -130,6 +133,7 @@ struct NewChatView: View {
             .animation(.easeInOut(duration: 0.3333), value: selection)
             .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
                 .onChanged { value in
+                    if onboarding { return }
                     switch(value.translation.width, value.translation.height) {
                     case (...0, -30...30): // left swipe
                         if selection == .invite {
@@ -145,9 +149,11 @@ struct NewChatView: View {
             )
         }
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                InfoSheetButton {
-                    AddContactLearnMore(showTitle: true)
+            if !onboarding {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    InfoSheetButton {
+                        AddContactLearnMore(showTitle: true)
+                    }
                 }
             }
         }
@@ -179,7 +185,8 @@ struct NewChatView: View {
                     contactConnection: $contactConnection,
                     connLinkInvitation: $connLinkInvitation,
                     showShortLink: $showShortLink,
-                    choosingProfile: $choosingProfile
+                    choosingProfile: $choosingProfile,
+                    onboarding: onboarding
                 )
             } else if creatingConnReq {
                 creatingLinkProgressView()
@@ -247,6 +254,7 @@ private struct InviteView: View {
     @Binding var connLinkInvitation: CreatedConnLink
     @Binding var showShortLink: Bool
     @Binding var choosingProfile: Bool
+    var onboarding: Bool = false
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
@@ -258,7 +266,7 @@ private struct InviteView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
             qrCodeView()
-            if let selectedProfile = chatModel.currentUser {
+            if !onboarding, let selectedProfile = chatModel.currentUser {
                 Section {
                     NavigationLink {
                         ActiveProfilePicker(
@@ -299,23 +307,39 @@ private struct InviteView: View {
     private var sectionHeader: some View {
         #if SIMPLEX_ASSETS
         VStack(alignment: .leading, spacing: 0) {
-            Image(colorScheme == .light ? "one-time-link" : "one-time-link-light")
+            Image(colorScheme == .light
+                ? (onboarding ? "one-time-link" : "one-time-link-small")
+                : (onboarding ? "one-time-link-light" : "one-time-link-small-light"))
                 .resizable()
                 .scaledToFit()
-                .frame(height: 90)
                 .frame(maxWidth: .infinity)
-            Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+            sectionHeaderText("Send the link via any messenger - it's secure. Ask to paste into SimpleX.", fallback: "Share this 1-time invite link")
         }
         .padding(.bottom, 6)
         #else
-        Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+        sectionHeaderText("Send the link via any messenger - it's secure. Ask to paste into SimpleX.", fallback: "Share this 1-time invite link")
         #endif
+    }
+
+    @ViewBuilder private func sectionHeaderText(_ onboardingText: LocalizedStringKey, fallback: LocalizedStringKey) -> some View {
+        if onboarding {
+            Text(onboardingText).font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+        } else {
+            Text(fallback).foregroundColor(theme.colors.secondary)
+        }
     }
 
     private func shareLinkView() -> some View {
         HStack {
             let link = connLinkInvitation.simplexChatUri(short: showShortLink)
             linkTextView(link)
+            Button {
+                UIPasteboard.general.string = link
+                setInvitationUsed()
+            } label: {
+                Image(systemName: "doc.on.doc")
+                    .padding(.top, -7)
+            }
             Button {
                 showShareSheet(items: [link])
                 setInvitationUsed()
@@ -341,7 +365,11 @@ private struct InviteView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         } header: {
-            ToggleShortLinkHeader(text: Text("Or show this code"), link: connLinkInvitation, short: $showShortLink)
+            if onboarding {
+                Text("Or show QR in person or via video call.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            } else {
+                ToggleShortLinkHeader(text: Text("Or show this code"), link: connLinkInvitation, short: $showShortLink)
+            }
         }
     }
 
@@ -611,6 +639,7 @@ private struct ConnectView: View {
     @Binding var showQRCodeScanner: Bool
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
+    var onboarding: Bool = false
     @State var scannerPaused: Bool = false
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
@@ -650,7 +679,7 @@ private struct ConnectView: View {
                         }
                     }
                 } label: {
-                    Text("Tap to paste link")
+                    Text("Tap to paste link").foregroundColor(theme.colors.primary)
                 }
                 .disabled(!pasteboardHasStrings)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -692,10 +721,11 @@ private struct ConnectView: View {
     private var connectSectionHeader: some View {
         #if SIMPLEX_ASSETS
         VStack(alignment: .leading, spacing: 0) {
-            Image(colorScheme == .light ? "connect-via-link" : "connect-via-link-light")
+            Image(colorScheme == .light
+                ? (onboarding ? "connect-via-link" : "connect-via-link-small")
+                : (onboarding ? "connect-via-link-light" : "connect-via-link-small-light"))
                 .resizable()
                 .scaledToFit()
-                .frame(height: 90)
                 .frame(maxWidth: .infinity)
             Text("Paste the link you received").foregroundColor(theme.colors.secondary)
         }
@@ -801,7 +831,7 @@ struct ScannerInView: View {
 }
 
 
-private func linkTextView(_ link: String) -> some View {
+func linkTextView(_ link: String) -> some View {
     Text(link)
         .lineLimit(1)
         .font(.caption)
