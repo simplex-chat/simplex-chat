@@ -139,16 +139,22 @@ struct ConnectOnboardingView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .sheet(isPresented: $showConnectViaLink) {
-            NewChatView(selection: .connect, showQRCodeScanner: true, onboarding: true)
-                .modifier(ThemedBackground(grouped: true))
+            NavigationView {
+                NewChatView(selection: .connect, showQRCodeScanner: true, onboarding: true)
+                    .modifier(ThemedBackground(grouped: true))
+            }
         }
         .sheet(isPresented: $showInviteSomeone) {
-            NewChatView(selection: .invite, onboarding: true)
-                .modifier(ThemedBackground(grouped: true))
+            NavigationView {
+                NewChatView(selection: .invite, onboarding: true)
+                    .modifier(ThemedBackground(grouped: true))
+            }
         }
         .sheet(isPresented: $showCreateAddress) {
-            UserAddressView(autoCreate: true, onboarding: true)
-                .modifier(ThemedBackground(grouped: true))
+            NavigationView {
+                UserAddressView(autoCreate: true, onboarding: true)
+                    .modifier(ThemedBackground(grouped: true))
+            }
         }
     }
 
