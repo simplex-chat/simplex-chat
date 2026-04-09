@@ -220,8 +220,6 @@ struct UserAddressView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: .infinity)
-                .padding(.top, -20)
-                .padding(.bottom, -10)
             if onboarding {
                 Text("Use this address in your social media profile, website, or email signature.")
                     .font(.body)
