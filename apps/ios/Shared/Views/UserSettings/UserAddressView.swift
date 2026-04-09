@@ -56,6 +56,14 @@ struct UserAddressView: View {
                 }
             }
         }
+        .if(onboarding) { v in
+            v.toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Image(systemName: "info.circle").opacity(0)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+        }
         .onAppear {
             if chatModel.userAddress == nil, autoCreate {
                 createAddress()
