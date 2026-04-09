@@ -63,7 +63,7 @@ fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onC
     ) {
       Text(
         buildAnnotatedString {
-          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text(false)) }
+          withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)

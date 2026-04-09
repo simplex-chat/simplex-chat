@@ -75,12 +75,12 @@ struct ChatItemView: View {
         if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
             MarkedDeletedItemView(chat: chat, im: im, chatItem: chatItem)
         } else if ci.quotedItem == nil && ci.meta.itemForwarded == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
-            if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text(false)) {
+            if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
-            } else if ci.content.text(false).isEmpty, case let .voice(_, duration) = ci.content.msgContent {
+            } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
-                ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: { Text(ci.text(false)) }) // msgContent is unreachable branch in this case
+                ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
                 framedItemView()
             }
@@ -130,8 +130,6 @@ struct ChatItemContentView<Content: View>: View {
     var chatItem: ChatItem
     var msgContentView: () -> Content
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-
-    private var isChannel: Bool { chat.chatInfo.groupInfo?.useRelays ?? false }
 
     var body: some View {
         switch chatItem.content {
@@ -197,7 +195,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func pendingReviewEventItemText() -> Text {
-        Text(chatItem.content.text(isChannel))
+        Text(chatItem.content.text)
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .fontWeight(.bold)
@@ -211,9 +209,9 @@ struct ChatItemContentView<Content: View>: View {
                     .font(.caption)
                     .foregroundColor(secondaryColor)
                     .fontWeight(.light)
-                + chatEventText(chatItem, isChannel, secondaryColor)
+                + chatEventText(chatItem, secondaryColor)
         } else {
-            return chatEventText(chatItem, isChannel, secondaryColor)
+            return chatEventText(chatItem, secondaryColor)
         }
     }
 
@@ -277,8 +275,8 @@ func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor
     chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
-func chatEventText(_ ci: ChatItem, _ isChannel: Bool, _ secondaryColor: Color) -> Text {
-    chatEventText("\(ci.content.text(isChannel))", ci.timestampText, secondaryColor)
+func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
+    chatEventText("\(ci.content.text)", ci.timestampText, secondaryColor)
 }
 
 struct ChatItemView_Previews: PreviewProvider {

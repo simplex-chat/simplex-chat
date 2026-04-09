@@ -33,7 +33,7 @@ fun CIFeaturePreferenceView(
       val acceptTextId = if (setParam) MR.strings.accept_feature_set_1_day else MR.strings.accept_feature
       val param = if (setParam) 86400 else null
       val annotatedText = buildAnnotatedString {
-        withStyle(chatEventStyle) { append(chatItem.content.text(false) + "  ") }
+        withStyle(chatEventStyle) { append(chatItem.content.text + "  ") }
         withAnnotation(tag = "Accept", annotation = "Accept") {
           withStyle(acceptStyle) { append(generalGetString(acceptTextId) + "  ") }
         }
@@ -46,7 +46,7 @@ fun CIFeaturePreferenceView(
         shouldConsumeEvent = ::accept
       )
     } else {
-      Text(chatItem.content.text(false) + "  " + chatItem.timestampText,
+      Text(chatItem.content.text + "  " + chatItem.timestampText,
         fontSize = 12.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colors.secondary)
     }
   }

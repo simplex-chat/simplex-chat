@@ -112,8 +112,8 @@ data class ComposeState(
   val mentions: MentionedMembers = emptyMap()
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
-    ComposeMessage(editingItem.content.text(false)),
-    editingItem.formattedText ?: FormattedText.plain(editingItem.content.text(false)),
+    ComposeMessage(editingItem.content.text),
+    editingItem.formattedText ?: FormattedText.plain(editingItem.content.text),
     liveMessage,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),

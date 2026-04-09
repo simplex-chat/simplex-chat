@@ -81,7 +81,7 @@ fun itemSegmentDisplayText(ft: FormattedText, ci: ChatItem, linkMode: SimplexLin
 
 // Full display text for a chat item — joins segment display texts.
 fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
-  val formattedText = ci.formattedText ?: return ci.text(false)
+  val formattedText = ci.formattedText ?: return ci.text
   return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
 }
 

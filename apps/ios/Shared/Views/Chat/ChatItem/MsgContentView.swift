@@ -470,7 +470,7 @@ struct MsgContentView_Previews: PreviewProvider {
         let chatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
         return MsgContentView(
             chat: Chat.sampleData,
-            text: chatItem.text(false),
+            text: chatItem.text,
             formattedText: chatItem.formattedText,
             textStyle: .body,
             sender: chatItem.memberDisplayName,

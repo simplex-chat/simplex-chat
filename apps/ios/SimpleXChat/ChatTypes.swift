@@ -3191,12 +3191,11 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var timestampText: Text { meta.timestampText }
 
-    public func text(_ isChannel: Bool) -> String {
-        let ct = content.text(isChannel)
-        switch (ct, content.msgContent, file) {
-        case ("", .some(.voice(_, let duration)), _): return "Voice message (\(durationText(duration)))"
-        case ("", _, .some(let file)): return file.fileName
-        default: return ct
+    public var text: String {
+        switch (content.text, content.msgContent, file) {
+        case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
+        case let ("", _, .some(file)): return file.fileName
+        default: return content.text
         }
     }
 
@@ -3479,7 +3478,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         let content = CIContent.rcvChatFeature(feature: feature, enabled: enabled, param: nil)
         return ChatItem(
             chatDir: .directRcv,
-            meta: CIMeta.getSample(1, .now, content.text(false), .rcvRead),
+            meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
             content: content,
             quotedItem: nil,
             file: nil
@@ -3511,7 +3510,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
-            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text(false), chatDir: item.chatDir),
+            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
             file: nil
         )
     }
@@ -4014,7 +4013,7 @@ protocol ItemContent {
     var text: String { get }
 }
 
-public enum CIContent: Decodable, Hashable {
+public enum CIContent: Decodable, ItemContent, Hashable {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
     case sndDeleted(deleteMode: CIDeleteMode) // legacy - since v4.3.0 itemDeleted field is used
@@ -4048,40 +4047,42 @@ public enum CIContent: Decodable, Hashable {
     case chatBanner
     case invalidJSON(json: Data?)
 
-    public func text(_ isChannel: Bool) -> String {
-        switch self {
-        case let .sndMsgContent(mc): return mc.text
-        case let .rcvMsgContent(mc): return mc.text
-        case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
-        case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
-        case let .sndCall(status, duration): return status.text(duration)
-        case let .rcvCall(status, duration): return status.text(duration)
-        case let .rcvIntegrityError(msgError): return msgError.text
-        case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
-        case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
-        case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
-        case let .rcvDirectEvent(rcvDirectEvent): return rcvDirectEvent.text
-        case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text(isChannel)
-        case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text(isChannel)
-        case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
-        case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
-        case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
-        case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
-        case let .rcvChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
-        case let .sndChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
-        case let .rcvGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
-        case let .sndGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
-        case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
-        case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
-        case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
-        case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
-        case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
-        case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
-        case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
-        case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
-        case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
-        case .chatBanner: return ""
-        case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
+    public var text: String {
+        get {
+            switch self {
+            case let .sndMsgContent(mc): return mc.text
+            case let .rcvMsgContent(mc): return mc.text
+            case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+            case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+            case let .sndCall(status, duration): return status.text(duration)
+            case let .rcvCall(status, duration): return status.text(duration)
+            case let .rcvIntegrityError(msgError): return msgError.text
+            case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
+            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .rcvDirectEvent(rcvDirectEvent): return rcvDirectEvent.text
+            case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
+            case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
+            case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
+            case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
+            case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+            case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+            case let .rcvChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
+            case let .sndChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
+            case let .rcvGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
+            case let .sndGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
+            case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
+            case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
+            case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
+            case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
+            case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
+            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+            case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
+            case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
+            case .chatBanner: return ""
+            case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
+            }
         }
     }
 
@@ -5152,14 +5153,11 @@ public enum RcvGroupEvent: Decodable, Hashable {
     case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case newMemberPendingReview
 
-    func text(_ isChannel: Bool) -> String {
+    var text: String {
         switch self {
         case let .memberAdded(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
-        case .memberConnected:
-            return isChannel
-            ? NSLocalizedString("subscriber connected", comment: "rcv group event chat item")
-            : NSLocalizedString("member connected", comment: "rcv group event chat item")
+        case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case let .memberAccepted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("accepted %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userAccepted: return NSLocalizedString("accepted you", comment: "rcv group event chat item")
@@ -5177,29 +5175,18 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
-        case .groupDeleted:
-            return isChannel
-            ? NSLocalizedString("deleted channel", comment: "rcv group event chat item")
-            : NSLocalizedString("deleted group", comment: "rcv group event chat item")
-        case .groupUpdated:
-            return isChannel
-            ? NSLocalizedString("updated channel profile", comment: "rcv group event chat item")
-            : NSLocalizedString("updated group profile", comment: "rcv group event chat item")
+        case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
-        case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile, isChannel)
-        case .newMemberPendingReview:
-            return isChannel
-            ? NSLocalizedString("New subscriber wants to join the channel.", comment: "rcv group event chat item")
-            : NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
+        case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
+        case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
         }
     }
 
-    private func profileUpdatedText(_ from: Profile, _ to: Profile, _ isChannel: Bool) -> String {
+    private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
         if to.displayName != from.displayName || to.fullName != from.fullName {
-            isChannel
-            ? String.localizedStringWithFormat(NSLocalizedString("subscriber %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
-            : String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
+            String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
         } else if to.image != from.image {
             to.image == nil
             ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
@@ -5221,7 +5208,7 @@ public enum SndGroupEvent: Decodable, Hashable {
     case memberAccepted(groupMemberId: Int64, profile: Profile)
     case userPendingReview
 
-    func text(_ isChannel: Bool) -> String {
+    var text: String {
         switch self {
         case let .memberRole(_, profile, role):
             return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
@@ -5236,15 +5223,10 @@ public enum SndGroupEvent: Decodable, Hashable {
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
-        case .groupUpdated:
-            return isChannel
-            ? NSLocalizedString("channel profile updated", comment: "snd group event chat item")
-            : NSLocalizedString("group profile updated", comment: "snd group event chat item")
+        case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
         case .memberAccepted: return NSLocalizedString("you accepted this member", comment: "snd group event chat item")
         case .userPendingReview:
-            return isChannel
-            ? NSLocalizedString("Please wait for channel moderators to review your request to join the channel.", comment: "snd group event chat item")
-            : NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
+            return NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
         }
     }
 }

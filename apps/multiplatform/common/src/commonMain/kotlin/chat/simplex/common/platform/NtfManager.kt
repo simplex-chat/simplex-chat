@@ -130,10 +130,9 @@ abstract class NtfManager {
     } else {
       val mc = cItem.content.msgContent
       if (mc is MsgContent.MCReport) {
-        generalGetString(MR.strings.notification_group_report).format(cItem.text(false).ifEmpty { mc.reason.text })
+        generalGetString(MR.strings.notification_group_report).format(cItem.text.ifEmpty { mc.reason.text })
       } else {
-        // notifications have no GroupInfo in scope; group service events use group wording even in channels
-        cItem.text(false)
+        cItem.text
       }
     }
   }

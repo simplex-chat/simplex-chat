@@ -44,6 +44,6 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
   })
 }
 
-actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager, isChannel: Boolean) {
-  clipboard.setText(AnnotatedString(cItem.content.text(isChannel)))
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) {
+  clipboard.setText(AnnotatedString(cItem.content.text))
 }
