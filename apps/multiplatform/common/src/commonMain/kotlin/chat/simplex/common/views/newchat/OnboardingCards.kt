@@ -45,18 +45,18 @@ private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && noConversationChatsYet(chats)
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats)
 }
 
-fun noConversationChatsYet(chats: List<Chat>): Boolean =
-  chats.all { chat ->
+fun hasConversations(chats: List<Chat>): Boolean =
+  chats.any { chat ->
     when (val c = chat.chatInfo) {
-      is ChatInfo.Local -> true
-      is ChatInfo.Direct -> c.contact.chatDeleted || c.contact.isContactCard
-      is ChatInfo.Group -> false
-      is ChatInfo.ContactRequest -> true
-      is ChatInfo.ContactConnection -> true
-      is ChatInfo.InvalidJSON -> true
+      is ChatInfo.Local -> false
+      is ChatInfo.Direct -> !c.contact.chatDeleted && !c.contact.isContactCard
+      is ChatInfo.Group -> true
+      is ChatInfo.ContactRequest -> false
+      is ChatInfo.ContactConnection -> false
+      is ChatInfo.InvalidJSON -> false
     }
   }
 

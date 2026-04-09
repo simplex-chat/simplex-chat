@@ -376,14 +376,6 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
       )
     }
   }
-  if (shouldShowOnboarding()) {
-    val chats = chatModel.chats.value
-    LaunchedEffect(chats.size) {
-      if (!noConversationChatsYet(chats)) {
-        appPrefs.addressCreationCardShown.set(true)
-      }
-    }
-  }
 }
 
 @Composable
@@ -961,14 +953,6 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
   }
 
-  if (!addressCreationCardShown.value) {
-    LaunchedEffect(chatModel.userAddress.value) {
-      if (chatModel.userAddress.value != null) {
-        appPrefs.addressCreationCardShown.set(true)
-      }
-    }
-  }
-
   LaunchedEffect(activeFilter.value) {
     searchText.value = TextFieldValue("")
   }
@@ -1015,7 +999,7 @@ private fun ChatListFeatureCards() {
     if (!oneHandUICardShown.value && !oneHandUI.value) {
       ToggleChatListCard()
     }
-    if (!addressCreationCardShown.value) {
+    if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
       ConnectBannerCard()
     }
     if (!oneHandUICardShown.value && oneHandUI.value) {
