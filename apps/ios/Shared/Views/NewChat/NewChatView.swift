@@ -149,11 +149,9 @@ struct NewChatView: View {
             )
         }
         .toolbar {
-            if !onboarding {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    InfoSheetButton {
-                        AddContactLearnMore(showTitle: true)
-                    }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                InfoSheetButton {
+                    AddContactLearnMore(showTitle: true)
                 }
             }
         }
