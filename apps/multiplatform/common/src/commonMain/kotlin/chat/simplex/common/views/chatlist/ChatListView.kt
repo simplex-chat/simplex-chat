@@ -271,7 +271,7 @@ private fun ConnectBannerCard() {
   val labelBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
     .copy(alpha = appPrefs.inAppBarsAlpha.get())
   val buttonSize = 30.dp * fontSizeSqrtMultiplier
-  val gap = 6.dp * fontSizeSqrtMultiplier
+  val gap = 3.dp * fontSizeSqrtMultiplier
 
   Column(horizontalAlignment = Alignment.End) {
     IconButton(
@@ -349,10 +349,10 @@ private fun ConnectBannerCard() {
           if (BuildConfigCommon.SIMPLEX_ASSETS) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
-              Text(stringResource(MR.strings.scan_paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+              Text(stringResource(if (appPlatform.isAndroid) MR.strings.scan_paste_link else MR.strings.paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
             }
           } else {
-            Text(stringResource(MR.strings.scan_paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            Text(stringResource(if (appPlatform.isAndroid) MR.strings.scan_paste_link else MR.strings.paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
           }
         }
       }
