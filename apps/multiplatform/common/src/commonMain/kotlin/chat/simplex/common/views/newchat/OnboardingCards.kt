@@ -177,7 +177,10 @@ fun OnboardingCardView(
           .background(labelBg),
         contentAlignment = Alignment.Center
       ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
           Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (BuildConfigCommon.SIMPLEX_ASSETS) {
               Icon(

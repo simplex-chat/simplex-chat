@@ -22,23 +22,23 @@ struct OnboardingCardView: View {
     let labelHeightRatio: CGFloat
     let action: () -> Void
 
-    private static let lightStops: [Gradient.Stop] = [
+    static let lightStops: [Gradient.Stop] = [
         .init(color: Color(red: 0.824, green: 0.910, blue: 1.0), location: 0.0),
         .init(color: Color(red: 0.800, green: 0.914, blue: 1.0), location: 0.5),
         .init(color: Color(red: 0.875, green: 1.0, blue: 1.0), location: 0.9),
         .init(color: Color(red: 1.0, green: 0.988, blue: 0.918), location: 1.0)
     ]
 
-    private static let darkStops: [Gradient.Stop] = [
+    static let darkStops: [Gradient.Stop] = [
         .init(color: Color(red: 0.016, green: 0.039, blue: 0.141), location: 0.4),
         .init(color: Color(red: 0.220, green: 0.329, blue: 0.671), location: 0.72),
         .init(color: Color(red: 0.659, green: 0.929, blue: 0.953), location: 0.9),
         .init(color: Color(red: 1.0, green: 0.965, blue: 0.878), location: 1.0)
     ]
 
-    private static let gradientAngle: Double = 80.0 * .pi / 180.0
+    static let gradientAngle: Double = 80.0 * .pi / 180.0
 
-    private static func gradientPoints(aspectRatio: CGFloat, scale: CGFloat) -> (start: UnitPoint, end: UnitPoint) {
+    static func gradientPoints(aspectRatio: CGFloat, scale: CGFloat) -> (start: UnitPoint, end: UnitPoint) {
         let r = Double(aspectRatio)
         let s = Double(scale)
         let dx = cos(gradientAngle)
@@ -82,6 +82,10 @@ struct OnboardingCardView: View {
                             .scaledToFit()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipped()
+                        #else
+                        Image(systemName: icon)
+                            .font(.system(size: imageHeight * 0.25))
+                            .foregroundColor(theme.colors.primary)
                         #endif
                     }
                     .frame(height: imageHeight)
@@ -97,9 +101,11 @@ struct OnboardingCardView: View {
     private func labelRow(height: CGFloat) -> some View {
         VStack {
             HStack {
+                #if SIMPLEX_ASSETS
                 Image(systemName: icon)
                     .font(.system(size: 24))
                     .foregroundColor(theme.colors.primary)
+                #endif
                 Text(title)
                     .font(.body)
                     .fontWeight(.medium)
@@ -140,19 +146,19 @@ struct ConnectOnboardingView: View {
         .tabViewStyle(.page(indexDisplayMode: .never))
         .sheet(isPresented: $showConnectViaLink) {
             NavigationView {
-                NewChatView(selection: .connect, showQRCodeScanner: true)
+                NewChatView(selection: .connect, showQRCodeScanner: true, onboarding: true)
                     .modifier(ThemedBackground(grouped: true))
             }
         }
         .sheet(isPresented: $showInviteSomeone) {
             NavigationView {
-                NewChatView(selection: .invite)
+                NewChatView(selection: .invite, onboarding: true)
                     .modifier(ThemedBackground(grouped: true))
             }
         }
         .sheet(isPresented: $showCreateAddress) {
             NavigationView {
-                UserAddressView(autoCreate: true)
+                UserAddressView(autoCreate: true, onboarding: true)
                     .modifier(ThemedBackground(grouped: true))
             }
         }
@@ -164,8 +170,8 @@ struct ConnectOnboardingView: View {
         @ViewBuilder card1: () -> C1,
         @ViewBuilder card2: () -> C2
     ) -> some View {
-        let padding: CGFloat = 16
-        let spacing: CGFloat = 16
+        let padding: CGFloat = 20
+        let spacing: CGFloat = 20
         let isLandscape = verticalSizeClass == .compact
         let cardWidth = isLandscape
             ? (geo.size.width - padding * 2 - spacing) / 2
