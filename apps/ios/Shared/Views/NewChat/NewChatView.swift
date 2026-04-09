@@ -154,9 +154,12 @@ struct NewChatView: View {
                     InfoSheetButton {
                         AddContactLearnMore(showTitle: true)
                     }
+                } else {
+                    Image(systemName: "info.circle").opacity(0)
                 }
             }
         }
+        .if(onboarding) { $0.navigationBarTitleDisplayMode(.inline) }
         .modifier(ThemedBackground(grouped: true))
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
