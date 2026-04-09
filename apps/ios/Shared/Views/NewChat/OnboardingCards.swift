@@ -170,8 +170,8 @@ struct ConnectOnboardingView: View {
         @ViewBuilder card1: () -> C1,
         @ViewBuilder card2: () -> C2
     ) -> some View {
-        let padding: CGFloat = 16
-        let spacing: CGFloat = 16
+        let padding: CGFloat = 20
+        let spacing: CGFloat = 20
         let isLandscape = verticalSizeClass == .compact
         let cardWidth = isLandscape
             ? (geo.size.width - padding * 2 - spacing) / 2
