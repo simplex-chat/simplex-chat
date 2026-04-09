@@ -353,7 +353,7 @@ fun ConnectOnboardingView() {
                 labelHeightRatio = 0.132f,
                 onClick = cardClickOverride ?: {
                   ModalManager.start.showModalCloseable { close ->
-                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, onboarding = true, close = close)
                   }
                 }
               )
@@ -375,7 +375,7 @@ fun ConnectOnboardingView() {
                 labelHeightRatio = 0.195f,
                 onClick = cardClickOverride ?: {
                   ModalManager.start.showModalCloseable { close ->
-                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, onboarding = true, close = close)
                   }
                 }
               )
@@ -390,7 +390,7 @@ fun ConnectOnboardingView() {
                 labelHeightRatio = 0.195f,
                 onClick = cardClickOverride ?: {
                   ModalManager.start.showModalCloseable { close ->
-                    UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+                    UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, onboarding = true, close = close)
                   }
                 }
               )
