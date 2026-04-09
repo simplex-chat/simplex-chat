@@ -24,7 +24,13 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.AppLock
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
@@ -234,53 +240,120 @@ private fun ChatListCard(
   }
 }
 
+private const val BANNER_IMAGE_RATIO = 800f / 505f
+
 @Composable
-private fun AddressCreationCard() {
-  ChatListCard(
-    close = {
-      appPrefs.addressCreationCardShown.set(true)
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.simplex_address),
-        text = generalGetString(MR.strings.address_creation_instruction),
+private fun BannerGradientBox(isDark: Boolean, content: @Composable () -> Unit) {
+  val stops = if (isDark) darkStops else lightStops
+  val scale = if (isDark) 1.5f else 1.2f
+  val gp = gradientPoints(1f / BANNER_IMAGE_RATIO, scale)
+  var size by remember { mutableStateOf(IntSize.Zero) }
+  val brush = remember(size, isDark) {
+    if (size.width > 0 && size.height > 0) {
+      Brush.linearGradient(
+        colorStops = stops,
+        start = Offset(gp.startX * size.width, gp.startY * size.height),
+        end = Offset(gp.endX * size.width, gp.endY * size.height)
       )
-    },
-    onCardClick = {
-      ModalManager.start.showModal {
-        UserAddressLearnMore(showCreateAddressButton = true)
-      }
+    } else {
+      Brush.linearGradient(colorStops = stops)
     }
-  ) {
-      Box(modifier = Modifier.matchParentSize().padding(end = (DEFAULT_PADDING_HALF + 2.dp) * fontSizeSqrtMultiplier, bottom = 2.dp), contentAlignment = Alignment.BottomEnd) {
-      TextButton(
-        onClick = {
-          ModalManager.start.showModalCloseable { close ->
-            UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
-          }
-        },
-      ) {
-        Text(stringResource(MR.strings.create_address_button), style = MaterialTheme.typography.body1)
-      }
+  }
+  Box(
+    Modifier.fillMaxWidth().aspectRatio(BANNER_IMAGE_RATIO).background(brush).onSizeChanged { size = it },
+    contentAlignment = Alignment.Center
+  ) { content() }
+}
+
+@Composable
+private fun ConnectBannerCard() {
+  val isDark = isInDarkTheme()
+  val labelBg = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+    .copy(alpha = appPrefs.inAppBarsAlpha.get())
+  val buttonSize = 30.dp * fontSizeSqrtMultiplier
+  val gap = 3.dp * fontSizeSqrtMultiplier
+
+  Column(horizontalAlignment = Alignment.End) {
+    IconButton(
+      onClick = { appPrefs.addressCreationCardShown.set(true) },
+      modifier = Modifier.size(buttonSize)
+    ) {
+      Icon(
+        painterResource(MR.images.ic_close),
+        contentDescription = stringResource(MR.strings.icon_descr_close_button),
+        modifier = Modifier
+          .size(buttonSize)
+          .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), CircleShape)
+          .padding(buttonSize * 0.15f),
+        tint = MaterialTheme.colors.secondary
+      )
     }
+    Spacer(Modifier.height(gap))
     Row(
       Modifier
         .fillMaxWidth()
-        .padding(DEFAULT_PADDING),
-      verticalAlignment = Alignment.CenterVertically
+        .height(IntrinsicSize.Min)
+        .clip(RoundedCornerShape(18.dp))
     ) {
-      Box(Modifier.padding(vertical = 4.dp)) {
-        Box(Modifier.background(MaterialTheme.colors.primary, CircleShape).padding(12.dp)) {
-          ProfileImage(size = 37.dp, null, icon = MR.images.ic_mail_filled, color = Color.White, backgroundColor = Color.Red)
+      Column(
+        Modifier.weight(1f).clickable {
+          ModalManager.start.showModalCloseable { close ->
+            NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+          }
+        }
+      ) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isDark) MR.images.banner_create_link_light else MR.images.banner_create_link),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth()
+          )
+        } else {
+          BannerGradientBox(isDark) {
+            Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
+          }
+        }
+        Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(painterResource(MR.images.ic_add_link), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+              Text(stringResource(MR.strings.new_1_time_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            }
+          } else {
+            Text(stringResource(MR.strings.new_1_time_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+          }
         }
       }
-      Column(modifier = Modifier.padding(start = DEFAULT_PADDING)) {
-        Text(stringResource(MR.strings.your_simplex_contact_address), style = MaterialTheme.typography.h3)
-        Spacer(Modifier.fillMaxWidth().padding(DEFAULT_PADDING_HALF))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(stringResource(MR.strings.how_to_use_simplex_chat), Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON), style = MaterialTheme.typography.body1)
-          Icon(
-            painterResource(MR.images.ic_info),
-            null,
+      Spacer(Modifier.width(2.dp).fillMaxHeight().background(MaterialTheme.colors.background))
+      Column(
+        Modifier.weight(1f).clickable {
+          ModalManager.start.showModalCloseable { close ->
+            NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+          }
+        }
+      ) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isDark) MR.images.banner_paste_link_light else MR.images.banner_paste_link),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier.fillMaxWidth()
           )
+        } else {
+          BannerGradientBox(isDark) {
+            Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colors.primary)
+          }
+        }
+        Box(Modifier.fillMaxWidth().background(labelBg).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Icon(painterResource(MR.images.ic_qr_code_scanner), contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colors.primary)
+              Text(stringResource(if (appPlatform.isAndroid) MR.strings.scan_paste_link else MR.strings.paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+            }
+          } else {
+            Text(stringResource(if (appPlatform.isAndroid) MR.strings.scan_paste_link else MR.strings.paste_link), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.onBackground)
+          }
         }
       }
     }
@@ -289,26 +362,16 @@ private fun AddressCreationCard() {
 
 @Composable
 private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFieldValue>, listState: LazyListState) {
-  if (shouldShowOnboarding()) {
+  if (chatModel.chatRunning.value == null) {
+    Text(stringResource(MR.strings.loading_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+  } else if (shouldShowOnboarding()) {
     if (appPlatform.isAndroid) AndroidOnboardingCards()
   } else {
     if (!chatModel.desktopNoUserNoRemote) {
       ChatList(searchText = searchText, listState)
     }
     if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-      Text(
-        stringResource(
-          if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
-        ), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary
-      )
-    }
-  }
-  if (shouldShowOnboarding()) {
-    val chats = chatModel.chats.value
-    LaunchedEffect(chats.size) {
-      if (!noConversationChatsYet(chats)) {
-        appPrefs.addressCreationCardShown.set(true)
-      }
+      Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -888,14 +951,6 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
   }
 
-  if (!addressCreationCardShown.value) {
-    LaunchedEffect(chatModel.userAddress.value) {
-      if (chatModel.userAddress.value != null) {
-        appPrefs.addressCreationCardShown.set(true)
-      }
-    }
-  }
-
   LaunchedEffect(activeFilter.value) {
     searchText.value = TextFieldValue("")
   }
@@ -942,8 +997,8 @@ private fun ChatListFeatureCards() {
     if (!oneHandUICardShown.value && !oneHandUI.value) {
       ToggleChatListCard()
     }
-    if (!addressCreationCardShown.value) {
-      AddressCreationCard()
+    if (!addressCreationCardShown.value && hasConversations(chatModel.chats.value)) {
+      ConnectBannerCard()
     }
     if (!oneHandUICardShown.value && oneHandUI.value) {
       ToggleChatListCard()

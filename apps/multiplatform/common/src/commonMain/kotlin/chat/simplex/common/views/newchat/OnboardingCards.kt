@@ -45,24 +45,24 @@ private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && noConversationChatsYet(chats)
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats)
 }
 
-fun noConversationChatsYet(chats: List<Chat>): Boolean =
-  chats.all { chat ->
+fun hasConversations(chats: List<Chat>): Boolean =
+  chats.any { chat ->
     when (val c = chat.chatInfo) {
-      is ChatInfo.Local -> true
-      is ChatInfo.Direct -> c.contact.chatDeleted || c.contact.isContactCard
-      is ChatInfo.Group -> false
-      is ChatInfo.ContactRequest -> true
-      is ChatInfo.ContactConnection -> true
-      is ChatInfo.InvalidJSON -> true
+      is ChatInfo.Local -> false
+      is ChatInfo.Direct -> !c.contact.chatDeleted && !c.contact.isContactCard
+      is ChatInfo.Group -> true
+      is ChatInfo.ContactRequest -> false
+      is ChatInfo.ContactConnection -> false
+      is ChatInfo.InvalidJSON -> false
     }
   }
 
-private data class GradientEndpoints(val startX: Float, val startY: Float, val endX: Float, val endY: Float)
+internal data class GradientEndpoints(val startX: Float, val startY: Float, val endX: Float, val endY: Float)
 
-private fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints {
+internal fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints {
   val r = aspectRatio.toDouble()
   val s = scale.toDouble()
   val dx = cos(GRADIENT_ANGLE_RAD)
@@ -88,14 +88,14 @@ private fun gradientPoints(aspectRatio: Float, scale: Float): GradientEndpoints 
   )
 }
 
-private val lightStops = arrayOf(
+internal val lightStops = arrayOf(
   0.0f to Color(0xFFd2e8ff),
   0.5f to Color(0xFFcce9ff),
   0.9f to Color(0xFFdfffff),
   1.0f to Color(0xFFfffcea)
 )
 
-private val darkStops = arrayOf(
+internal val darkStops = arrayOf(
   0.4f to Color(0xFF040a24),
   0.72f to Color(0xFF3854ab),
   0.9f to Color(0xFFa8edf3),
@@ -353,7 +353,7 @@ fun ConnectOnboardingView() {
                 labelHeightRatio = 0.132f,
                 onClick = cardClickOverride ?: {
                   ModalManager.start.showModalCloseable { close ->
-                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = close)
+                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, onboarding = true, close = close)
                   }
                 }
               )
@@ -375,7 +375,7 @@ fun ConnectOnboardingView() {
                 labelHeightRatio = 0.195f,
                 onClick = cardClickOverride ?: {
                   ModalManager.start.showModalCloseable { close ->
-                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close)
+                    NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, onboarding = true, close = close)
                   }
                 }
               )
@@ -390,7 +390,7 @@ fun ConnectOnboardingView() {
                 labelHeightRatio = 0.195f,
                 onClick = cardClickOverride ?: {
                   ModalManager.start.showModalCloseable { close ->
-                    UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+                    UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, onboarding = true, close = close)
                   }
                 }
               )

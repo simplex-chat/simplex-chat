@@ -24,6 +24,10 @@ if (simplexAssetsDir != null) {
       simplexAssetsLocal.absolutePath
     )
   }
+} else {
+  tasks.register<Delete>("cleanSimplexAssets") {
+    delete(simplexAssetsLocal)
+  }
 }
 
 kotlin {
@@ -189,6 +193,8 @@ afterEvaluate {
     dependsOn("adjustFormatting")
     if (hasSimplexAssets) {
       dependsOn("copySimplexAssets")
+    } else {
+      dependsOn("cleanSimplexAssets")
     }
   }
   tasks.create("adjustFormatting") {
