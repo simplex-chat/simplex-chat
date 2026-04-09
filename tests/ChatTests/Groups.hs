@@ -8798,6 +8798,8 @@ testChannelLinkAfterProfileUpdate ps =
           threadDelay 100000
           alice ##> "/show link #my_team"
           (shortLink', fullLink') <- getGroupLinks alice "my_team" GRMember False
+          shortLink' `shouldBe` shortLink
+          fullLink' `shouldBe` fullLink
           memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
 
           alice #> "#my_team hi"
@@ -8833,8 +8835,14 @@ testChannelLinkAfterWelcomeUpdate ps =
           threadDelay 100000
           alice ##> "/show link #team"
           (shortLink', fullLink') <- getGroupLinks alice "team" GRMember False
+          shortLink' `shouldBe` shortLink
+          fullLink' `shouldBe` fullLink
           memberJoinChannel "team" [bob] [alice] shortLink' fullLink' dan
           dan #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
+
+          alice #> "#team hi"
+          bob <# "#team> hi"
+          [cath, dan] *<# "#team> hi [>>]"
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
