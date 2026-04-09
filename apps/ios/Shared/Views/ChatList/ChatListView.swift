@@ -293,17 +293,17 @@ struct ChatListView: View {
     
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
-        ToolbarItem(placement: .principal) { SubsStatusIndicator() }
+        ToolbarItem(placement: .principal) { principalToolbarItem }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
-    
+
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItem(placement: .bottomBar) {
             HStack {
                 leadingToolbarItem.padding(.bottom, padding)
                 Spacer()
-                SubsStatusIndicator().padding(.bottom, padding)
+                principalToolbarItem.padding(.bottom, padding)
                 Spacer()
                 trailingToolbarItem.padding(.bottom, padding)
             }
@@ -311,15 +311,21 @@ struct ChatListView: View {
             .onTapGesture { scrollToSearchBar = true }
         }
     }
-    
+
     @ToolbarContentBuilder func bottomToolbarGroup() -> some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItemGroup(placement: viewOnScreen ? .bottomBar : .principal) {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
-            SubsStatusIndicator().padding(.bottom, padding)
+            principalToolbarItem.padding(.bottom, padding)
             Spacer()
             trailingToolbarItem.padding(.bottom, padding)
+        }
+    }
+
+    @ViewBuilder var principalToolbarItem: some View {
+        if !shouldShowOnboarding {
+            SubsStatusIndicator()
         }
     }
     

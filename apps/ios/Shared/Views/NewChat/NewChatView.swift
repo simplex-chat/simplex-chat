@@ -150,8 +150,10 @@ struct NewChatView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                InfoSheetButton {
-                    AddContactLearnMore(showTitle: true)
+                if !onboarding {
+                    InfoSheetButton {
+                        AddContactLearnMore(showTitle: true)
+                    }
                 }
             }
         }
@@ -329,7 +331,7 @@ private struct InviteView: View {
     }
 
     private func shareLinkView() -> some View {
-        HStack {
+        HStack(spacing: 16) {
             let link = connLinkInvitation.simplexChatUri(short: showShortLink)
             linkTextView(link)
             Button {
@@ -338,6 +340,7 @@ private struct InviteView: View {
             } label: {
                 Image(systemName: "doc.on.doc")
                     .padding(.top, -7)
+                    .padding(.horizontal, 8)
             }
             Button {
                 showShareSheet(items: [link])
@@ -345,6 +348,7 @@ private struct InviteView: View {
             } label: {
                 Image(systemName: "square.and.arrow.up")
                     .padding(.top, -7)
+                    .padding(.horizontal, 8)
             }
         }
         .frame(maxWidth: .infinity)

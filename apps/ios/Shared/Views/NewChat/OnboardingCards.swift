@@ -82,6 +82,10 @@ struct OnboardingCardView: View {
                             .scaledToFit()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipped()
+                        #else
+                        Image(systemName: icon)
+                            .font(.system(size: imageHeight * 0.4))
+                            .foregroundColor(theme.colors.primary)
                         #endif
                     }
                     .frame(height: imageHeight)

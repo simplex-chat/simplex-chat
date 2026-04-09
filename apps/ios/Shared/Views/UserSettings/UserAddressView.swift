@@ -169,8 +169,10 @@ struct UserAddressView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: .infinity)
+                    .padding(.top, -20)
                 ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
             }
+            .padding(.bottom, 4)
             #else
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
             #endif
@@ -202,14 +204,18 @@ struct UserAddressView: View {
 
     @ViewBuilder private func onboardingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            HStack {
+            HStack(spacing: 16) {
                 let link = userAddress.connLinkContact.simplexChatUri(short: showShortLink)
                 linkTextView(link)
                 Button { UIPasteboard.general.string = link } label: {
-                    Image(systemName: "doc.on.doc").padding(.top, -7)
+                    Image(systemName: "doc.on.doc")
+                        .padding(.top, -7)
+                        .padding(.horizontal, 8)
                 }
                 Button { showShareSheet(items: [link]) } label: {
-                    Image(systemName: "square.and.arrow.up").padding(.top, -7)
+                    Image(systemName: "square.and.arrow.up")
+                        .padding(.top, -7)
+                        .padding(.horizontal, 8)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -223,6 +229,7 @@ struct UserAddressView: View {
                 Text("Use this address in your social media profile, website, or email signature.")
                     .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
             }
+            .padding(.bottom, 4)
             #else
             Text("Use this address in your social media profile, website, or email signature.")
                 .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
