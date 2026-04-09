@@ -67,7 +67,7 @@ struct GroupProfileView: View {
                     }
                 }
             } footer: {
-                Text(groupInfo.useRelays ? "Channel profile is stored on subscribers' devices, not on the servers." : "Group profile is stored on members' devices, not on the servers.")
+                Text(groupInfo.useRelays ? "Channel profile is stored on subscribers' devices and on the chat relays." : "Group profile is stored on members' devices, not on the servers.")
             }
 
             Section {

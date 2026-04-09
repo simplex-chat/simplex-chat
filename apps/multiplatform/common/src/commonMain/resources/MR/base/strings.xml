@@ -2009,7 +2009,7 @@
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
-  <string name="channel_profile_is_stored_on_subscribers_devices">Channel profile is stored on subscribers\' devices, not on the servers.</string>
+  <string name="channel_profile_is_stored_on_subscribers_devices">Channel profile is stored on subscribers\' devices and on the chat relays.</string>
   <string name="save_group_profile">Save group profile</string>
   <string name="save_channel_profile">Save channel profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
