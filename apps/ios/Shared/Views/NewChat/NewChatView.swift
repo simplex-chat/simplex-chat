@@ -302,7 +302,15 @@ private struct InviteView: View {
         }
     }
 
-    private var sectionHeader: some View {
+    @ViewBuilder private var sectionHeader: some View {
+        let text = Group {
+            if onboarding {
+                Text("Send the link via any messenger - it's secure. Ask to paste into SimpleX.")
+                    .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            } else {
+                Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)
+            }
+        }
         #if SIMPLEX_ASSETS
         VStack(alignment: .leading, spacing: 0) {
             Image(colorScheme == .light
@@ -311,20 +319,12 @@ private struct InviteView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: .infinity)
-            sectionHeaderText("Send the link via any messenger - it's secure. Ask to paste into SimpleX.", fallback: "Share this 1-time invite link")
+            text
         }
         .padding(.bottom, 6)
         #else
-        sectionHeaderText("Send the link via any messenger - it's secure. Ask to paste into SimpleX.", fallback: "Share this 1-time invite link")
+        text
         #endif
-    }
-
-    @ViewBuilder private func sectionHeaderText(_ onboardingText: LocalizedStringKey, fallback: LocalizedStringKey) -> some View {
-        if onboarding {
-            Text(onboardingText).font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
-        } else {
-            Text(fallback).foregroundColor(theme.colors.secondary)
-        }
     }
 
     private func shareLinkView() -> some View {
