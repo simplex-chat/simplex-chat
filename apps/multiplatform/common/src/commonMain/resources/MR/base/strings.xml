@@ -1171,6 +1171,7 @@
   <string name="save_and_notify_contact">Save and notify contact</string>
   <string name="save_and_notify_contacts">Save and notify contacts</string>
   <string name="save_and_notify_group_members">Save and notify group members</string>
+  <string name="save_and_notify_channel_subscribers">Save and notify channel subscribers</string>
   <string name="exit_without_saving">Exit without saving</string>
 
   <!-- HiddenProfileView.kt -->
@@ -1999,6 +2000,7 @@
   <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
+  <string name="channel_full_name_field">Channel full name:</string>
   <string name="group_short_descr_field">Short description:</string>
   <string name="group_descr_too_large">Description too large</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
@@ -2007,8 +2009,11 @@
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="channel_profile_is_stored_on_subscribers_devices">Channel profile is stored on subscribers\' devices and on the chat relays.</string>
   <string name="save_group_profile">Save group profile</string>
+  <string name="save_channel_profile">Save channel profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+  <string name="error_saving_channel_profile">Error saving channel profile</string>
 
   <!-- NetworkAndServers.kt -->
   <string name="network_preset_servers_title">Preset servers</string>
