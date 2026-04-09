@@ -293,9 +293,7 @@ struct ChatListView: View {
     
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
-        if !shouldShowOnboarding {
-            ToolbarItem(placement: .principal) { SubsStatusIndicator() }
-        }
+        ToolbarItem(placement: .principal) { if !shouldShowOnboarding { SubsStatusIndicator() } }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
 
