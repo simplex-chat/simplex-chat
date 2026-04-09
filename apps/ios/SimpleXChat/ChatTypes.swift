@@ -3515,7 +3515,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
-            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
+            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.rawText, chatDir: item.chatDir),
             file: nil
         )
     }
