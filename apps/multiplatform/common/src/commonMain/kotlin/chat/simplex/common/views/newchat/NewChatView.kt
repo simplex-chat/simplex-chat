@@ -684,7 +684,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
       }
     }) {
       Box(Modifier.weight(1f)) {
-        Text(stringResource(MR.strings.tap_to_paste_link))
+        Text(stringResource(MR.strings.tap_to_paste_link), color = MaterialTheme.colors.primary)
       }
       if (connectProgressManager.showConnectProgress != null) {
         CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
