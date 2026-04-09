@@ -1146,10 +1146,10 @@
   <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
   <string name="create_1_time_link">Create 1-time link</string>
   <string name="new_1_time_link">New 1-time link</string>
-  <string name="onboarding_send_1_time_link">Send 1-time link to your contact via any messenger, it is secure. Ask to use it in the app.</string>
-  <string name="onboarding_or_show_qr_code">Or show this QR code in person or in a video call.</string>
-  <string name="onboarding_post_address">Post the link on social media, your website, or add it to your email signature.</string>
-  <string name="onboarding_or_use_qr_code">Or use this QR code printed or digital.</string>
+  <string name="onboarding_send_1_time_link">Send this 1-time link to your contact via any messenger, it is secure.\nAsk to paste it into the app.</string>
+  <string name="onboarding_or_show_qr_code">Or show this code in person or in a video call.</string>
+  <string name="onboarding_post_address">Use this link in your social media profiles, website, or email signature.</string>
+  <string name="onboarding_or_use_qr_code">Or use this QR code — print or show digitally.</string>
   <string name="address_settings">Address settings</string>
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
