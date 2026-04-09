@@ -72,9 +72,11 @@ struct ConnectBannerCard: View {
                 gradientFallback(icon: icon)
                 #endif
                 HStack(spacing: 8) {
+                    #if SIMPLEX_ASSETS
                     Image(systemName: icon)
                         .font(.system(size: 18))
                         .foregroundColor(theme.colors.primary)
+                    #endif
                     Text(title)
                         .font(.footnote)
                         .foregroundColor(theme.colors.onBackground)
