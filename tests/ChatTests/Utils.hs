@@ -698,6 +698,25 @@ lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine' (Just "last item id") cc
 
+-- Highest chat_item_id in the given group. Uses chat_item_id DESC ordering
+-- (strictly monotonic via autoincrement), not item_ts, which can reverse
+-- between a local "connected" event and an incoming message due to clock
+-- skew across members. Captures any item type, including comments — use
+-- this to capture a comment id right after sending, since the default
+-- group pagination filters out rows with parent_chat_item_id set.
+lastGroupItemId :: HasCallStack => TestCC -> Int -> IO String
+lastGroupItemId cc gId = do
+  rows <-
+    withCCTransaction cc $ \db ->
+      DB.query
+        db
+        "SELECT chat_item_id FROM chat_items WHERE group_id = ? ORDER BY chat_item_id DESC LIMIT 1"
+        (Only gId) ::
+      IO [Only Int]
+  case rows of
+    [Only n] -> pure (show n)
+    _ -> error "lastGroupItemId: no items in group"
+
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)

@@ -342,6 +342,27 @@ data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (Cha
 
 deriving instance Show (CChatItem c)
 
+-- | Resolved parent post for a channel comments thread.
+-- Threaded through the send/receive paths so the wire-side MsgRef and
+-- the DB-side parent_chat_item_id are derived from a single resolution.
+data ChannelMsgInfo = ChannelMsgInfo
+  { channelMsgItem :: CChatItem 'CTGroup,
+    channelMsgSharedId :: SharedMsgId
+  }
+  deriving (Show)
+
+-- Build a MsgRef pointing at a channel post for the wire-side `parent` field
+-- of a comment message. Channel posts have no member identity, so memberId
+-- is Nothing for both subscriber-received (CIChannelRcv) and owner-sent
+-- (CIGroupSnd with showGroupAsSender = True) cases.
+channelMsgRef :: ChannelMsgInfo -> MsgRef
+channelMsgRef ChannelMsgInfo {channelMsgItem = CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs}}, channelMsgSharedId} =
+  MsgRef {msgId = Just channelMsgSharedId, sentAt = itemTs, sent = isSnd, memberId = Nothing}
+  where
+    isSnd = case chatDir of
+      CIGroupSnd -> True
+      _ -> False
+
 cChatItemId :: CChatItem c -> ChatItemId
 cChatItemId (CChatItem _ ci) = chatItemId' ci
 
@@ -1324,7 +1345,7 @@ data CIForwardedFrom
 
 cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
 cmForwardedFrom = \case
-  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
+  ACME _ (XMsgNew mc) | isMCForward mc -> Just CIFFUnknown
   _ -> Nothing
 
 data CIForwardedFromTag

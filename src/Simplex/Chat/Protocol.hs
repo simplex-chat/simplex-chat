@@ -493,9 +493,8 @@ deriving instance Show AChatMsgEvent
 -- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
-  XMsgNew mc -> case mcExtMsgContent mc of
-    ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
-    _ -> True
+  XMsgNew MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
+  XMsgNew _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
   XMsgDel {} -> True
@@ -510,6 +509,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
+  XMsgPrefs {} -> True
   _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -598,7 +598,7 @@ data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
 
 cmToQuotedMsg :: AChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
-  ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
+  ACME _ (XMsgNew MsgContainer {quote = Just quotedMsg}) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag
@@ -670,8 +670,10 @@ data MsgContainer = MsgContainer
   deriving (Eq, Show)
 
 -- Base value used by the smart constructors and for record-update on send sites.
-mc :: MsgContainer
-mc =
+-- Named mcEmpty (not mc) to avoid shadowing the conventional local variable name
+-- `mc` used at MsgContainer pattern-match sites across the codebase.
+mcEmpty :: MsgContainer
+mcEmpty =
   MsgContainer
     { content = MCText "",
       mentions = M.empty,
@@ -686,16 +688,16 @@ mc =
     }
 
 mcSimple :: MsgContent -> MsgContainer
-mcSimple c = mc {content = c}
+mcSimple c = mcEmpty {content = c}
 
 mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
-mcQuote q c = mc {content = c, quote = Just q}
+mcQuote q c = mcEmpty {content = c, quote = Just q}
 
 mcComment :: MsgRef -> MsgContent -> MsgContainer
-mcComment p c = mc {content = c, parent = Just p}
+mcComment p c = mcEmpty {content = c, parent = Just p}
 
 mcForward :: MsgContent -> MsgContainer
-mcForward c = mc {content = c, forward = Just True}
+mcForward c = mcEmpty {content = c, forward = Just True}
 
 isMCForward :: MsgContainer -> Bool
 isMCForward MsgContainer {forward} = forward == Just True
@@ -748,7 +750,7 @@ msgContentHasText :: MsgContent -> Bool
 msgContentHasText =
   not . T.null . \case
     MCVoice {text} -> text
-    mc -> msgContentText mc
+    c -> msgContentText c
 
 isVoice :: MsgContent -> Bool
 isVoice = \case
@@ -868,24 +870,26 @@ markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
-parseMsgContainer v =
-  MCQuote <$> v .: "quote" <*> mc
-    <|> MCComment <$> v .: "parent" <*> mc
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
-    -- The support for arbitrary object in "forward" property is added to allow
-    -- forward compatibility with forwards that include public group links.
-    <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
-    <|> MCSimple <$> mc
+parseMsgContainer v = do
+  content <- v .: "content"
+  file <- v .:? "file"
+  ttl <- v .:? "ttl"
+  live <- v .:? "live"
+  mentions <- fromMaybe M.empty <$> (v .:? "mentions")
+  scope <- v .:? "scope"
+  asGroup <- v .:? "asGroup"
+  quote <- v .:? "quote"
+  parent <- v .:? "parent"
+  forward <- (v .:? "forward") >>= parseForward
+  pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward}
   where
-    mc = do
-      content <- v .: "content"
-      file <- v .:? "file"
-      ttl <- v .:? "ttl"
-      live <- v .:? "live"
-      mentions <- fromMaybe M.empty <$> (v .:? "mentions")
-      scope <- v .:? "scope"
-      asGroup <- v .:? "asGroup"
-      pure ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup}
+    -- Backward compatibility: legacy clients encode forward either as a Bool or as an
+    -- object (the latter is used by public group links). Any present form → Just True.
+    parseForward :: Maybe J.Value -> JT.Parser (Maybe Bool)
+    parseForward Nothing = pure Nothing
+    parseForward (Just (J.Bool b)) = pure (justTrue b)
+    parseForward (Just (J.Object _)) = pure (Just True)
+    parseForward (Just _) = fail "invalid forward field"
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -931,15 +935,15 @@ unknownMsgType :: Text
 unknownMsgType = "unknown message type"
 
 msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON = \case
-  MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
-  MCComment ref mc -> o $ ("parent" .= ref) : msgContent mc
-  MCForward mc -> o $ ("forward" .= True) : msgContent mc
-  MCSimple mc -> o $ msgContent mc
+msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
+  JM.fromList $
+    discriminators
+      <> ("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) ["content" .= content])))))
   where
-    o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) $ ("asGroup" .=? asGroup) ["content" .= content]
+    discriminators =
+      ["quote" .= q | Just q <- [quote]]
+        <> ["parent" .= p | Just p <- [parent]]
+        <> ["forward" .= True | forward == Just True]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
@@ -1342,6 +1346,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
+      XMsgPrefs_ -> XMsgPrefs <$> p "msgId" <*> p "comments"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
@@ -1412,6 +1417,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
+      XMsgPrefs {msgId = msgId', comments} -> o ["msgId" .= msgId', "comments" .= comments]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where

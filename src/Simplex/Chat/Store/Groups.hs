@@ -2057,6 +2057,24 @@ checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberProfile} = do
   deleteGroupMemberConnection db user m
+  -- Decrement parent comment counts for this member's live comments BEFORE the bulk DELETE.
+  -- Decrements of parents that themselves belong to this member are harmless no-ops
+  -- (the row vanishes immediately after).
+  decrements <-
+    DB.query
+      db
+      [sql|
+        SELECT parent_chat_item_id, COUNT(*) FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+          AND parent_chat_item_id IS NOT NULL AND item_deleted = 0
+        GROUP BY parent_chat_item_id
+      |]
+      (userId, groupId, groupMemberId)
+  forM_ (decrements :: [(ChatItemId, Int)]) $ \(pId, n) ->
+    DB.execute
+      db
+      "UPDATE chat_items SET comments_total = MAX(0, comments_total + ?) WHERE chat_item_id = ?"
+      (negate n, pId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, groupMemberId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
   cleanupMemberProfileAndName_ db user m

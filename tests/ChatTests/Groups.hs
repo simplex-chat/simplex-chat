@@ -279,6 +279,14 @@ chatGroupTests = do
       it "should compute sendAsGroup in CLI forward" testForwardCLISendAsGroup
       it "should update member message in channel" testChannelMemberMessageUpdate
       it "should delete member message in channel" testChannelMemberMessageDelete
+    describe "channel comments" $ do
+      it "subscriber should comment on channel post" testChannelCommentSubscriberCanComment
+      it "should reject comment in non-channel group" testChannelCommentNotInRegularGroup
+      it "should reject comment when comments disabled on post" testChannelCommentDisabledRejected
+      it "subscriber should edit and delete own comment" testChannelCommentEditDelete
+      it "comments_total should increment on insert and decrement on delete" testChannelCommentCountIncrement
+      it "observer should not be able to comment" testChannelCommentObserverRejected
+      it "comments should not appear in main channel pagination" testChannelCommentMainChatExclusion
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -9876,6 +9884,260 @@ testChannelMemberMessageDelete ps =
                 dan <# "#team cath> [marked deleted] hello",
                 eve <# "#team cath> [marked deleted] hello"
               ]
+
+testChannelCommentSubscriberCanComment :: HasCallStack => TestParams -> IO ()
+testChannelCommentSubscriberCanComment ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner posts a channel message
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- subscriber comments on the post
+            parentId <- lastItemId cath
+            cath ##> ("/_comment #1 " <> parentId <> " text reply")
+            cath <# "#team reply"
+            bob <# "#team cath> reply"
+            concurrentlyN_
+              [ alice <# "#team cath> reply [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> reply [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> reply [>>]"
+              ]
+
+testChannelCommentNotInRegularGroup :: HasCallStack => TestParams -> IO ()
+testChannelCommentNotInRegularGroup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello"
+      [bob, cath] *<# "#team alice> hello"
+      parentId <- lastItemId bob
+      bob ##> ("/_comment #1 " <> parentId <> " text reply")
+      bob <## "bad chat command: comments are only supported in channel groups"
+
+testChannelCommentDisabledRejected :: HasCallStack => TestParams -> IO ()
+testChannelCommentDisabledRejected ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- owner disables comments on the post
+            aliceParentId <- lastItemId alice
+            alice ##> ("/_comments_disabled #1 " <> aliceParentId <> " on")
+            alice <## "ok"
+
+            -- owner's own comment attempt is rejected (local state updated)
+            alice ##> ("/_comment #1 " <> aliceParentId <> " text reply")
+            alice <## "bad chat command: feature not allowed Comments"
+
+testChannelCommentEditDelete :: HasCallStack => TestParams -> IO ()
+testChannelCommentEditDelete ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- cath comments on the post
+            cathParentId <- lastItemId cath
+            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath <# "#team reply"
+            bob <# "#team cath> reply"
+            concurrentlyN_
+              [ alice <# "#team cath> reply [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> reply [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> reply [>>]"
+              ]
+
+            -- cath edits her own comment
+            cathCommentId <- lastItemId cath
+            cath ##> ("/_update item #1 " <> cathCommentId <> " text reply edited")
+            cath <# "#team [edited] reply edited"
+            bob <# "#team cath> [edited] reply edited"
+            concurrentlyN_
+              [ alice <# "#team cath> [edited] reply edited",
+                dan <# "#team cath> [edited] reply edited",
+                eve <# "#team cath> [edited] reply edited"
+              ]
+
+            -- cath deletes her own comment
+            cath #$> ("/_delete item #1 " <> cathCommentId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] reply edited"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] reply edited",
+                dan <# "#team cath> [marked deleted] reply edited",
+                eve <# "#team cath> [marked deleted] reply edited"
+              ]
+
+testChannelCommentCountIncrement :: HasCallStack => TestParams -> IO ()
+testChannelCommentCountIncrement ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            aliceParentId <- lastGroupItemId alice 1
+            cathParentId <- lastGroupItemId cath 1
+            danParentId <- lastGroupItemId dan 1
+            -- no comments yet
+            getCommentsTotal alice aliceParentId `shouldReturn` 0
+
+            -- cath comments (capture cath's comment id immediately for later delete)
+            cath ##> ("/_comment #1 " <> cathParentId <> " text reply one")
+            cath <# "#team reply one"
+            cathCommentId <- lastGroupItemId cath 1
+            bob <# "#team cath> reply one"
+            concurrentlyN_
+              [ alice <# "#team cath> reply one [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> reply one [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> reply one [>>]"
+              ]
+            getCommentsTotal alice aliceParentId `shouldReturn` 1
+
+            -- dan comments on the parent (danParentId captured before cath's comment)
+            dan ##> ("/_comment #1 " <> danParentId <> " text reply two")
+            dan <# "#team reply two"
+            bob <# "#team dan> reply two"
+            concurrentlyN_
+              [ alice <# "#team dan> reply two [>>]",
+                do
+                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
+                  cath <# "#team dan> reply two [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
+                  eve <# "#team dan> reply two [>>]"
+              ]
+            getCommentsTotal alice aliceParentId `shouldReturn` 2
+
+            -- cath soft-deletes her own comment
+            cath #$> ("/_delete item #1 " <> cathCommentId <> " broadcast", id, "message marked deleted")
+            bob <# "#team cath> [marked deleted] reply one"
+            concurrentlyN_
+              [ alice <# "#team cath> [marked deleted] reply one",
+                dan <# "#team cath> [marked deleted] reply one",
+                eve <# "#team cath> [marked deleted] reply one"
+              ]
+            getCommentsTotal alice aliceParentId `shouldReturn` 1
+  where
+    getCommentsTotal cc parentId = do
+      rows <-
+        withCCTransaction cc $ \db ->
+          DB.query db "SELECT comments_total FROM chat_items WHERE chat_item_id = ?" (Only parentId) :: IO [[Int]]
+      case rows of
+        [[n]] -> pure n
+        _ -> error $ "unexpected rows for comments_total: " <> show rows
+
+testChannelCommentObserverRejected :: HasCallStack => TestParams -> IO ()
+testChannelCommentObserverRejected ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- make cath known to other subscribers
+            cath #> "#team hi from cath"
+            bob <# "#team cath> hi from cath"
+            concurrentlyN_
+              [ alice <# "#team cath> hi from cath [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> hi from cath [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> hi from cath [>>]"
+              ]
+
+            -- alice demotes cath to observer
+            threadDelay 1000000
+            alice ##> "/mr #team cath observer"
+            alice <## "#team: you changed the role of cath to observer (signed)"
+            bob <## "#team: alice changed the role of cath from member to observer (signed)"
+            concurrentlyN_
+              [ cath <## "#team: alice changed your role from member to observer (signed)",
+                dan <## "#team: alice changed the role of cath from member to observer (signed)",
+                eve <## "#team: alice changed the role of cath from member to observer (signed)"
+              ]
+
+            -- cath's comment attempt is rejected by local role check
+            cathParentId <- lastGroupItemId cath 1
+            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath <## "#team: you have insufficient permissions for this action, the required role is commenter"
+
+testChannelCommentMainChatExclusion :: HasCallStack => TestParams -> IO ()
+testChannelCommentMainChatExclusion ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            cathParentId <- lastGroupItemId cath 1
+            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath <# "#team reply"
+            bob <# "#team cath> reply"
+            concurrentlyN_
+              [ alice <# "#team cath> reply [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> reply [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> reply [>>]"
+              ]
+
+            -- main channel pagination must show the parent post as the most recent text item,
+            -- not the comment that was just sent — comments are excluded from main pagination.
+            -- content=text filters out connection / feature events which are not message content.
+            alice #$> ("/_get chat #1 content=text count=1", chat, [(1, "hello")])
+            bob #$> ("/_get chat #1 content=text count=1", chat, [(0, "hello")])
+            cath #$> ("/_get chat #1 content=text count=1", chat, [(0, "hello")])
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
