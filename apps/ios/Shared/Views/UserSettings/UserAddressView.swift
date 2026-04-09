@@ -66,11 +66,15 @@ struct UserAddressView: View {
     private func userAddressView() -> some View {
         List {
             if let userAddress = chatModel.userAddress {
-                existingAddressView(userAddress)
-                    .onAppear {
-                        settings = AddressSettingsState(settings: userAddress.addressSettings)
-                        savedSettings = AddressSettingsState(settings: userAddress.addressSettings)
-                    }
+                if onboarding {
+                    onboardingAddressView(userAddress)
+                } else {
+                    existingAddressView(userAddress)
+                        .onAppear {
+                            settings = AddressSettingsState(settings: userAddress.addressSettings)
+                            savedSettings = AddressSettingsState(settings: userAddress.addressSettings)
+                        }
+                }
             } else if !onboarding {
                 Section {
                     createAddressButton()
@@ -136,109 +140,110 @@ struct UserAddressView: View {
         }
     }
 
-    private func addressQRCode(_ userAddress: UserContactLink) -> some View {
-        SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
-            .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
-    }
-
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            if onboarding {
-                HStack {
-                    let link = userAddress.connLinkContact.simplexChatUri(short: showShortLink)
-                    linkTextView(link)
-                    Button { UIPasteboard.general.string = link } label: {
-                        Image(systemName: "doc.on.doc").padding(.top, -7)
-                    }
-                    Button { showShareSheet(items: [link]) } label: {
-                        Image(systemName: "square.and.arrow.up").padding(.top, -7)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            } else {
-                addressQRCode(userAddress)
-                if userAddress.shouldBeUpgraded {
-                    upgradeAddressButton()
-                }
-                shareAddressButton(userAddress)
-                // if MFMailComposeViewController.canSendMail() {
-                //     shareViaEmailButton(userAddress)
-                // }
-                settingsRow("briefcase", color: theme.colors.secondary) {
-                    Toggle("Business address", isOn: $settings.businessAddress)
-                        .onChange(of: settings.businessAddress) { ba in
-                            if ba {
-                                settings.autoAccept = true
-                                settings.autoAcceptIncognito = false
-                            }
-                            saveAddressSettings(settings, $savedSettings)
+            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
+                .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+            if userAddress.shouldBeUpgraded {
+                upgradeAddressButton()
+            }
+            shareAddressButton(userAddress)
+            // if MFMailComposeViewController.canSendMail() {
+            //     shareViaEmailButton(userAddress)
+            // }
+            settingsRow("briefcase", color: theme.colors.secondary) {
+                Toggle("Business address", isOn: $settings.businessAddress)
+                    .onChange(of: settings.businessAddress) { ba in
+                        if ba {
+                            settings.autoAccept = true
+                            settings.autoAcceptIncognito = false
                         }
-                }
-                addressSettingsButton(userAddress)
+                        saveAddressSettings(settings, $savedSettings)
+                    }
             }
+            addressSettingsButton(userAddress)
         } header: {
-            let text = Group {
-                if onboarding {
-                    Text("Use this address in your social media profile, website, or email signature.")
-                        .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
-                } else {
-                    ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
-                }
-            }
             #if SIMPLEX_ASSETS
             VStack(alignment: .leading, spacing: 0) {
-                Image(colorScheme == .light
-                    ? (onboarding ? "simplex-address" : "simplex-address-small")
-                    : (onboarding ? "simplex-address-light" : "simplex-address-small-light"))
+                Image(colorScheme == .light ? "simplex-address-small" : "simplex-address-small-light")
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: .infinity)
-                text
+                ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
             }
             #else
-            text
+            ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
             #endif
         } footer: {
-            if !onboarding, settings.businessAddress {
+            if settings.businessAddress {
                 Text("Add your team members to the conversations.")
                     .foregroundColor(theme.colors.secondary)
             }
         }
-        .if(onboarding) { $0.listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10)) }
 
-        if onboarding {
-            Section {
-                addressQRCode(userAddress)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
-                    )
-                    .padding(.horizontal)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            } header: {
-                Text("Or use this QR - print or show online.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
-            }
-        } else {
-            Section {
-                createOneTimeLinkButton()
-            } header: {
-                Text("Or to share privately")
-                    .foregroundColor(theme.colors.secondary)
-            }
+        Section {
+            createOneTimeLinkButton()
+        } header: {
+            Text("Or to share privately")
+                .foregroundColor(theme.colors.secondary)
+        }
 
-            Section {
-                learnMoreButton()
-            }
+        Section {
+            learnMoreButton()
+        }
 
-            Section {
-                deleteAddressButton()
-            } footer: {
-                Text("Your contacts will remain connected.")
-                    .foregroundColor(theme.colors.secondary)
+        Section {
+            deleteAddressButton()
+        } footer: {
+            Text("Your contacts will remain connected.")
+                .foregroundColor(theme.colors.secondary)
+        }
+    }
+
+    @ViewBuilder private func onboardingAddressView(_ userAddress: UserContactLink) -> some View {
+        Section {
+            HStack {
+                let link = userAddress.connLinkContact.simplexChatUri(short: showShortLink)
+                linkTextView(link)
+                Button { UIPasteboard.general.string = link } label: {
+                    Image(systemName: "doc.on.doc").padding(.top, -7)
+                }
+                Button { showShareSheet(items: [link]) } label: {
+                    Image(systemName: "square.and.arrow.up").padding(.top, -7)
+                }
             }
+            .frame(maxWidth: .infinity)
+        } header: {
+            #if SIMPLEX_ASSETS
+            VStack(alignment: .leading, spacing: 0) {
+                Image(colorScheme == .light ? "simplex-address" : "simplex-address-light")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                Text("Use this address in your social media profile, website, or email signature.")
+                    .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            }
+            #else
+            Text("Use this address in your social media profile, website, or email signature.")
+                .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            #endif
+        }
+        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
+
+        Section {
+            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
+                .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                )
+                .padding(.horizontal)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        } header: {
+            Text("Or use this QR - print or show online.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
         }
     }
 
