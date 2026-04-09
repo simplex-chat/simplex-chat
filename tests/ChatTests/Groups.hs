@@ -251,6 +251,8 @@ chatGroupTests = do
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
     describe "channel operations" $ do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
+      it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
+      it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -8545,7 +8547,7 @@ memberJoinChannel gName relays owners shortLink fullLink member = do
           ]
     ]
       <> [ do
-             relay <## (mFullName <> ": accepting request to join group #team...")
+             relay <## (mFullName <> ": accepting request to join group #" <> gName <> "...")
              relay <## ("#" <> gName <> ": " <> mName <> " joined the group")
          | relay <- relays
          ]
@@ -8577,7 +8579,7 @@ memberJoinChannelIncognito gName relays owners shortLink fullLink member = do
           ]
     ]
       <> [ do
-             relay <## (memIncognito <> ": accepting request to join group #team...")
+             relay <## (memIncognito <> ": accepting request to join group #" <> gName <> "...")
              relay <## ("#" <> gName <> ": " <> memIncognito <> " joined the group")
          | relay <- relays
          ]
@@ -8777,6 +8779,78 @@ testChannelUpdateProfileSigned ps =
                   eve <## "welcome to team"
               ]
             alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
+
+testChannelLinkAfterProfileUpdate :: HasCallStack => TestParams -> IO ()
+testChannelLinkAfterProfileUpdate ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+          -- owner updates channel profile
+          alice ##> "/gp team my_team My team description"
+          alice <## "changed to #my_team (My team description)"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #team: (signed)"
+                bob <## "changed to #my_team (My team description)",
+              do
+                cath <## "alice updated group #team: (signed)"
+                cath <## "changed to #my_team (My team description)"
+            ]
+          alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
+
+          -- late subscriber joins via the same channel link after profile update
+          threadDelay 100000
+          alice ##> "/show link #my_team"
+          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRMember False
+          shortLink' `shouldBe` shortLink
+          fullLink' `shouldBe` fullLink
+          memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
+
+          alice #> "#my_team hi"
+          bob <# "#my_team> hi"
+          [cath, dan] *<# "#my_team> hi [>>]"
+
+testChannelLinkAfterWelcomeUpdate :: HasCallStack => TestParams -> IO ()
+testChannelLinkAfterWelcomeUpdate ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+          -- owner updates channel welcome message
+          alice ##> "/set welcome #team welcome to team"
+          alice <## "welcome message changed to:"
+          alice <## "welcome to team"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #team: (signed)"
+                bob <## "welcome message changed to:"
+                bob <## "welcome to team",
+              do
+                cath <## "alice updated group #team: (signed)"
+                cath <## "welcome message changed to:"
+                cath <## "welcome to team"
+            ]
+          alice #$> ("/_get chat #1 count=1", chat, [(1, "group profile updated (signed)")])
+
+          -- re-fetch updated link, late subscriber joins
+          threadDelay 100000
+          alice ##> "/show link #team"
+          (shortLink', fullLink') <- getGroupLinks alice "team" GRMember False
+          shortLink' `shouldBe` shortLink
+          fullLink' `shouldBe` fullLink
+          memberJoinChannel "team" [bob] [alice] shortLink' fullLink' dan
+          dan #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
+
+          alice #> "#team hi"
+          bob <# "#team> hi"
+          [cath, dan] *<# "#team> hi [>>]"
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =

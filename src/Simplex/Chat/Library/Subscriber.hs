@@ -3154,7 +3154,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
                 groupMsgToView cInfo ci
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
-              void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
+              -- in channels, link data is updated by the owner making the change in runUpdateGroupProfile;
+              -- other owners receiving the update do not refresh the same link
+              unless (useRelays' g'') $
+                void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ msgSigned g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
