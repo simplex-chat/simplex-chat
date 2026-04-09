@@ -229,7 +229,7 @@ struct UserAddressView: View {
             .frame(maxWidth: .infinity)
         } header: {
             #if SIMPLEX_ASSETS
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading) {
                 Image(colorScheme == .light ? "simplex-address" : "simplex-address-light")
                     .resizable()
                     .scaledToFit()
