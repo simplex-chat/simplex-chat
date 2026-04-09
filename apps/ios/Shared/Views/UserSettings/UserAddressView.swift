@@ -137,31 +137,10 @@ struct UserAddressView: View {
     }
 
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
-        if onboarding {
-            Section {
+        Section {
+            if onboarding {
                 shareAddressLinkView(userAddress)
-            } header: {
-                existingAddressHeader(userAddress)
-            }
-            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
-
-            Section {
-                SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
-                    .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
-                    )
-                    .padding(.horizontal)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            } header: {
-                Text("Or use this QR - print or show online.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
-            }
-        } else {
-            Section {
+            } else {
                 SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
                     .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
                 if userAddress.shouldBeUpgraded {
@@ -182,15 +161,34 @@ struct UserAddressView: View {
                         }
                 }
                 addressSettingsButton(userAddress)
-            } header: {
-                existingAddressHeader(userAddress)
-            } footer: {
-                if settings.businessAddress {
-                    Text("Add your team members to the conversations.")
-                        .foregroundColor(theme.colors.secondary)
-                }
             }
+        } header: {
+            existingAddressHeader(userAddress)
+        } footer: {
+            if !onboarding, settings.businessAddress {
+                Text("Add your team members to the conversations.")
+                    .foregroundColor(theme.colors.secondary)
+            }
+        }
+        .if(onboarding) { $0.listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10)) }
 
+        if onboarding {
+            Section {
+                SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
+                    .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    )
+                    .padding(.horizontal)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            } header: {
+                Text("Or use this QR - print or show online.").font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+            }
+        } else {
             Section {
                 createOneTimeLinkButton()
             } header: {

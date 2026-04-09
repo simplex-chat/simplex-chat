@@ -131,22 +131,23 @@ struct NewChatView: View {
                     .fill(theme.base == DefaultTheme.LIGHT ? theme.colors.background.asGroupedBackground(theme.base.mode) : theme.colors.background)
             )
             .animation(.easeInOut(duration: 0.3333), value: selection)
-            .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
-                .onChanged { value in
-                    if onboarding { return }
-                    switch(value.translation.width, value.translation.height) {
-                    case (...0, -30...30): // left swipe
-                        if selection == .invite {
-                            selection = .connect
+            .if(!onboarding) { v in
+                v.gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
+                    .onChanged { value in
+                        switch(value.translation.width, value.translation.height) {
+                        case (...0, -30...30): // left swipe
+                            if selection == .invite {
+                                selection = .connect
+                            }
+                        case (0..., -30...30): // right swipe
+                            if selection == .connect {
+                                selection = .invite
+                            }
+                        default: ()
                         }
-                    case (0..., -30...30): // right swipe
-                        if selection == .connect {
-                            selection = .invite
-                        }
-                    default: ()
                     }
-                }
-            )
+                )
+            }
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
