@@ -763,9 +763,9 @@ swipe action</note>
         <target>Všechny chaty a zprávy budou smazány – tuto akci nelze vrátit zpět!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve" approved="no">
         <source>All chats will be removed from the list %@, and the list deleted.</source>
-        <target>Všechny chaty budou odstraněny ze seznamu %@ a seznam bude odstraněn.</target>
+        <target state="translated">Všechny chaty budou odstraněny ze seznamu %@ a seznam bude smazán.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
