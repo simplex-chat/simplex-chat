@@ -1707,7 +1707,9 @@
   <string name="rcv_group_event_member_deleted">removed %1$s</string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_channel_event_channel_deleted">deleted channel</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
+  <string name="rcv_channel_event_updated_channel_profile">updated channel profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
@@ -1718,6 +1720,7 @@
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+  <string name="snd_channel_event_channel_profile_updated">channel profile updated</string>
   <string name="snd_group_event_member_accepted">you accepted this member</string>
   <string name="snd_group_event_user_pending_review">Please wait for group moderators to review your request to join the group.</string>
 
@@ -1726,6 +1729,7 @@
   <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
   <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
   <string name="rcv_group_events_count">%d group events</string>
+  <string name="rcv_channel_events_count">%d channel events</string>
   <string name="rcv_group_and_other_events">and %d other events</string>
   <string name="group_members_2">%s and %s</string>
   <string name="group_members_n">%s, %s and %d members</string>

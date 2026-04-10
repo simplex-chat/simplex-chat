@@ -48,8 +48,8 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem): AnnotatedString =
-  chatEventText(ci.content.text, ci.timestampText)
+fun chatEventText(ci: ChatItem, isChannel: Boolean = false): AnnotatedString =
+  chatEventText(ci.content.text(isChannel), ci.timestampText)
 
 fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
@@ -612,7 +612,7 @@ fun ChatItemView(
               return if (count <= 1) {
                 null
               } else if (ns.isEmpty()) {
-                generalGetString(MR.strings.rcv_group_events_count).format(count)
+                generalGetString(if (cInfo.isChannel) MR.strings.rcv_channel_events_count else MR.strings.rcv_group_events_count).format(count)
               } else if (count > ns.size) {
                 members + " " + generalGetString(MR.strings.rcv_group_and_other_events).format(count - ns.size)
               } else {
@@ -629,9 +629,9 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(memberDisplayName) }
                   append(" ")
-                }.plus(chatEventText(cItem))
+                }.plus(chatEventText(cItem, cInfo.isChannel))
               } else {
-                chatEventText(cItem)
+                chatEventText(cItem, cInfo.isChannel)
               }
             }
 
@@ -643,7 +643,7 @@ fun ChatItemView(
             @Composable fun PendingReviewEventItemView() {
               Text(
                 buildAnnotatedString {
-                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
                 Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
               )

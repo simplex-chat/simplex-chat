@@ -74,7 +74,7 @@ public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ 
     return createNotification(
         categoryIdentifier: ntfCategoryMessageReceived,
         title: title,
-        body: previewMode == .message ? hideSecrets(cItem) : NSLocalizedString("new message", comment: "notification"),
+        body: previewMode == .message ? hideSecrets(cItem, isChannel: cInfo.isChannel) : NSLocalizedString("new message", comment: "notification"),
         targetContentIdentifier: cInfo.id,
         userInfo: ["userId": user.userId],
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
@@ -197,7 +197,7 @@ public func createNotification(
 }
 
 // Spec: spec/services/notifications.md#hideSecrets
-func hideSecrets(_ cItem: ChatItem) -> String {
+func hideSecrets(_ cItem: ChatItem, isChannel: Bool = false) -> String {
     if let md = cItem.formattedText {
         var res = ""
         for ft in md {
@@ -213,7 +213,7 @@ func hideSecrets(_ cItem: ChatItem) -> String {
         if case let .report(text, reason) = mc {
             return String.localizedStringWithFormat(NSLocalizedString("Report: %@", comment: "report in notification"), text.isEmpty ? reason.text : text)
         } else {
-            return cItem.text
+            return cItem.text(isChannel: isChannel)
         }
     }
 }
