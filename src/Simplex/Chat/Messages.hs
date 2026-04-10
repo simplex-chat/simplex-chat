@@ -158,7 +158,11 @@ chatTypeStr = \case
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
-data ChatRef = ChatRef {chatType :: ChatType, chatId :: Int64, chatScope :: Maybe GroupChatScope}
+data ChatRef = ChatRef
+  { chatType :: ChatType,
+    chatId :: Int64,
+    chatScope :: Maybe GroupChatScope
+  }
   deriving (Eq, Show, Ord)
 
 data ChatInfo (c :: ChatType) where
@@ -185,7 +189,8 @@ toMsgScope GroupInfo {membership} = \case
 chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> Just $ ChatRef CTDirect contactId Nothing
-  GroupChat GroupInfo {groupId} scopeInfo -> Just $ ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
+  GroupChat GroupInfo {groupId} scopeInfo ->
+    Just $ ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
   LocalChat NoteFolder {noteFolderId} -> Just $ ChatRef CTLocal noteFolderId Nothing
   ContactRequest UserContactRequest {contactRequestId} -> Just $ ChatRef CTContactRequest contactRequestId Nothing
   ContactConnection PendingContactConnection {pccConnId} -> Just $ ChatRef CTContactConnection pccConnId Nothing
@@ -336,6 +341,27 @@ data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
+
+-- | Resolved parent post for a channel comments thread.
+-- Threaded through the send/receive paths so the wire-side MsgRef and
+-- the DB-side parent_chat_item_id are derived from a single resolution.
+data ChannelMsgInfo = ChannelMsgInfo
+  { channelMsgItem :: CChatItem 'CTGroup,
+    channelMsgSharedId :: SharedMsgId
+  }
+  deriving (Show)
+
+-- Build a MsgRef pointing at a channel post for the wire-side `parent` field
+-- of a comment message. Channel posts have no member identity, so memberId
+-- is Nothing for both subscriber-received (CIChannelRcv) and owner-sent
+-- (CIGroupSnd with showGroupAsSender = True) cases.
+channelMsgRef :: ChannelMsgInfo -> MsgRef
+channelMsgRef ChannelMsgInfo {channelMsgItem = CChatItem _ ChatItem {chatDir, meta = CIMeta {itemTs}}, channelMsgSharedId} =
+  MsgRef {msgId = Just channelMsgSharedId, sentAt = itemTs, sent = isSnd, memberId = Nothing}
+  where
+    isSnd = case chatDir of
+      CIGroupSnd -> True
+      _ -> False
 
 cChatItemId :: CChatItem c -> ChatItemId
 cChatItemId (CChatItem _ ci) = chatItemId' ci
@@ -513,6 +539,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     forwardedByMember :: Maybe GroupMemberId,
     showGroupAsSender :: ShowGroupAsSender,
     msgSigned :: Maybe MsgSigStatus,
+    -- Set on a comment row; references the parent channel post.
+    parentChatItemId :: Maybe ChatItemId,
+    -- Set on a parent channel post; running total of non-deleted comments.
+    commentsTotal :: Int,
+    -- Set on a parent channel post; True locks the post against new comments.
+    commentsDisabled :: Bool,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -520,12 +552,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgSigStatus -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgSigStatus -> Maybe ChatItemId -> Int -> Bool -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned parentChatItemId commentsTotal commentsDisabled createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
       hasLink = BoolDef hasLink_
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgSigned, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgSigned, parentChatItemId, commentsTotal, commentsDisabled, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
@@ -557,6 +589,9 @@ dummyMeta itemId ts itemText =
       forwardedByMember = Nothing,
       showGroupAsSender = False,
       msgSigned = Nothing,
+      parentChatItemId = Nothing,
+      commentsTotal = 0,
+      commentsDisabled = False,
       createdAt = ts,
       updatedAt = ts
     }
@@ -1310,7 +1345,7 @@ data CIForwardedFrom
 
 cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
 cmForwardedFrom = \case
-  ACME _ (XMsgNew (MCForward _)) -> Just CIFFUnknown
+  ACME _ (XMsgNew mc) | isMCForward mc -> Just CIFFUnknown
   _ -> Nothing
 
 data CIForwardedFromTag

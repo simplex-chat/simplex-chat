@@ -48,6 +48,11 @@ module Simplex.Chat.Store.Messages
     getChatContentTypes,
     getDirectChat,
     getGroupChat,
+    getChannelMsgInfo,
+    getChannelMsgInfoBySharedMsgId,
+    adjustChannelMsgCommentCount,
+    setChannelMsgCommentsDisabled,
+    quotedItemInCommentSection,
     getGroupChatScopeInfoForItem,
     getLocalChat,
     getDirectChatItemLast,
@@ -535,9 +540,9 @@ setSupportChatMemberAttention db vr user g m memberAttention = do
       m_ <- runExceptT $ getGroupMemberById db vr user (groupMemberId' m)
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded timed live hasLink createdAt =
-  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing (MSSVerified <$ signedMsg_) createdAt
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe ChatItemId -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId, signedMsg_} ciContent quotedItem itemForwarded parentChatItemId_ timed live hasLink createdAt =
+  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded parentChatItemId_ timed live False hasLink createdAt Nothing (MSSVerified <$ signedMsg_) createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -551,10 +556,10 @@ createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, 
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
-createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
-createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, forwardedByMember} sharedMsgId_ ciContent timed live userMention hasLink itemTs createdAt = do
+createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe ChatItemId -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgSigned, forwardedByMember} sharedMsgId_ ciContent parentChatItemId_ timed live userMention hasLink itemTs createdAt = do
   let showAsGroup = case chatDirection of CDChannelRcv {} -> True; _ -> False
-  ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember msgSigned createdAt
+  ciId <- createNewChatItem_ db user chatDirection showAsGroup (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded parentChatItemId_ timed live userMention hasLink itemTs forwardedByMember msgSigned createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem, itemForwarded)
   where
@@ -573,19 +578,19 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgS
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Bool -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection showGroupAsSender ciContent sharedMsgId_ hasLink itemTs =
-  createNewChatItem_ db user chatDirection showGroupAsSender Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing False False hasLink itemTs Nothing Nothing
+  createNewChatItem_ db user chatDirection showGroupAsSender Nothing sharedMsgId_ ciContent quoteRow Nothing Nothing Nothing False False hasLink itemTs Nothing Nothing
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgSigStatus -> UTCTime -> IO ChatItemId
-createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention hasLink itemTs forwardedByMember msgSigned createdAt = do
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> ShowGroupAsSender -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe ChatItemId -> Maybe CITimed -> Bool -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> Maybe MsgSigStatus -> UTCTime -> IO ChatItemId
+createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ sharedMsgId ciContent quoteRow itemForwarded parentChatItemId_ timed live userMention hasLink itemTs forwardedByMember msgSigned createdAt = do
   DB.execute
     db
     [sql|
       INSERT INTO chat_items (
         -- user and IDs
-        user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
+        user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id, parent_chat_item_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
         forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, item_viewed, show_group_as_sender, msg_signed, timed_ttl, timed_delete_at,
@@ -593,11 +598,12 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((userId, msgId_) :. idsRow :. groupScopeRow :. itemRow :. quoteRow' :. forwardedFromRow)
+    ((userId, msgId_) :. idsRow :. groupScopeRow :. Only parentChatItemId_ :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
+  forM_ parentChatItemId_ $ \pId -> adjustChannelMsgCommentCount db pId 1
   pure ciId
   where
     itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgSigStatus) :. (Maybe Int, Maybe UTCTime)
@@ -623,8 +629,9 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
       Just (Just GCSIMemberSupport {groupMember_}) -> (Just GCSTMemberSupport_, groupMemberId' <$> groupMember_)
       _ -> (Nothing, Nothing)
     includeInHistory :: Bool
-    includeInHistory = case groupScope of
-      Just Nothing -> isJust mcTag_ && mcTag_ /= Just MCReport_
+    includeInHistory = case (groupScope, parentChatItemId_) of
+      (_, Just _) -> isJust mcTag_ && mcTag_ /= Just MCReport_
+      (Just Nothing, Nothing) -> isJust mcTag_ && mcTag_ /= Just MCReport_
       _ -> False
     itemViewed :: Bool
     itemViewed = case msgDirection @d of
@@ -888,7 +895,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL AND ci.parent_chat_item_id IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -901,13 +908,13 @@ findGroupChatPreviews_ db User {userId} pagination clq =
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
+          WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND parent_chat_item_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
+          WHERE user_id = ? AND group_id IS NOT NULL AND parent_chat_item_id IS NULL
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
@@ -1071,7 +1078,7 @@ getLocalChatPreview_ db user (LocalChatPD _ noteFolderId lastItemId_ stats) = do
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toLocalChatItem :: UTCTime -> ChatItemRow -> Either StoreError (CChatItem 'CTLocal)
-toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) =
+toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned) :. (parentChatItemId, commentsTotal, BI commentsDisabled) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -1104,7 +1111,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
             _ -> Just (CIDeleted @'CTLocal deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned parentChatItemId commentsTotal commentsDisabled createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -1199,7 +1206,7 @@ getChatContentTypes db User {userId} (ChatRef cType chatId chatScope_) = case cT
   CTDirect -> getTypes " contact_id = ? " ()
   CTLocal -> getTypes " note_folder_id = ? " ()
   CTGroup -> case chatScope_ of
-    Nothing -> getTypes " group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL " ()
+    Nothing -> getTypes " group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND parent_chat_item_id IS NULL " ()
     Just (GCSMemberSupport mId_) -> getTypes " group_id = ? AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? " (GCSTMemberSupport_, mId_)
   _ -> throwError $ SEInternalError "unsupported chat type"
   where
@@ -1228,7 +1235,7 @@ getDirectChat db vr user contactId contentFilter pagination search_ = do
 getDirectChatLast_ :: DB.Connection -> User -> Contact -> Maybe MsgContentTag -> Int -> Text -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db user ct contentFilter count search = do
   let cInfo = DirectChat ct
-  ciIds <- getChatItemIDs db user cInfo contentFilter CRLast count search
+  ciIds <- getChatItemIDs db user cInfo Nothing contentFilter CRLast count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetDirectItem db user ct ts) ciIds
   pure $ Chat cInfo (reverse cis) emptyChatStats
@@ -1285,7 +1292,7 @@ getDirectChatAfter_ db user ct@Contact {contactId} contentFilter afterId count s
   afterCI <- getDirectChatItem db user contactId afterId
   let cInfo = DirectChat ct
       range = CRAfter (ciCreatedAt afterCI) (cChatItemId afterCI)
-  ciIds <- getChatItemIDs db user cInfo contentFilter range count search
+  ciIds <- getChatItemIDs db user cInfo Nothing contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetDirectItem db user ct ts) ciIds
   pure $ Chat cInfo cis emptyChatStats
@@ -1295,7 +1302,7 @@ getDirectChatBefore_ db user ct@Contact {contactId} contentFilter beforeId count
   beforeCI <- getDirectChatItem db user contactId beforeId
   let cInfo = DirectChat ct
       range = CRBefore (ciCreatedAt beforeCI) (cChatItemId beforeCI)
-  ciIds <- getChatItemIDs db user cInfo contentFilter range count search  
+  ciIds <- getChatItemIDs db user cInfo Nothing contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetDirectItem db user ct ts) ciIds
   pure $ Chat cInfo (reverse cis) emptyChatStats
@@ -1310,8 +1317,8 @@ getDirectChatAround' db user ct@Contact {contactId} contentFilter aroundId count
   aroundCI <- getDirectChatItem db user contactId aroundId
   let cInfo = DirectChat ct
       range r = r (ciCreatedAt aroundCI) (cChatItemId aroundCI)
-  beforeIds <- getChatItemIDs db user cInfo contentFilter (range CRBefore) count search  
-  afterIds <- getChatItemIDs db user cInfo contentFilter (range CRAfter) count search  
+  beforeIds <- getChatItemIDs db user cInfo Nothing contentFilter (range CRBefore) count search
+  afterIds <- getChatItemIDs db user cInfo Nothing contentFilter (range CRAfter) count search
   ts <- liftIO getCurrentTime
   beforeCIs <- liftIO $ mapM (safeGetDirectItem db user ct ts) beforeIds
   afterCIs <- liftIO $ mapM (safeGetDirectItem db user ct ts) afterIds
@@ -1431,19 +1438,109 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
               :. (userId, contactId, ciCreatedAt afterCI, cChatItemId afterCI)
           )
 
-getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe GroupChatScope -> Maybe MsgContentTag -> ChatPagination -> Maybe Text -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
+getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe GroupChatScope -> Maybe ChatItemId -> Maybe MsgContentTag -> ChatPagination -> Maybe Text -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChat db vr user groupId scope_ parentChatItemId_ contentFilter pagination search_ = do
+  when (isJust scope_ && isJust parentChatItemId_) $
+    throwError $ SEInternalError "group chat scope and parent chat item are mutually exclusive"
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
   scopeInfo <- mapM (getCreateGroupChatScopeInfo db vr user g) scope_
+  -- Validate parent post if comments thread is requested.
+  forM_ parentChatItemId_ $ \pId -> void $ getChannelMsgInfo db user groupId pId
   case pagination of
-    CPLast count -> (,Nothing) <$> getGroupChatLast_ db user g scopeInfo contentFilter count search emptyChatStats
-    CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo contentFilter afterId count search
-    CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g scopeInfo contentFilter beforeId count search
-    CPAround aroundId count -> getGroupChatAround_ db user g scopeInfo contentFilter aroundId count search
+    CPLast count -> (,Nothing) <$> getGroupChatLast_ db user g scopeInfo parentChatItemId_ contentFilter count search emptyChatStats
+    CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo parentChatItemId_ contentFilter afterId count search
+    CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g scopeInfo parentChatItemId_ contentFilter beforeId count search
+    CPAround aroundId count -> getGroupChatAround_ db user g scopeInfo parentChatItemId_ contentFilter aroundId count search
     CPInitial count -> do
       unless (T.null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
-      getGroupChatInitial_ db user g scopeInfo contentFilter count
+      getGroupChatInitial_ db user g scopeInfo parentChatItemId_ contentFilter count
+
+-- | Resolve a channel post by its local ChatItemId, returning both the post
+-- itself and its SharedMsgId. Used by the send and receive paths to derive
+-- the wire-side MsgRef while keeping the DB-side parent_chat_item_id linkage.
+getChannelMsgInfo :: DB.Connection -> User -> GroupId -> ChatItemId -> ExceptT StoreError IO ChannelMsgInfo
+getChannelMsgInfo db user groupId parentChatItemId = do
+  parent@(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) <-
+    getGroupChatItem db user groupId parentChatItemId
+  case itemSharedMsgId of
+    Just sId -> pure ChannelMsgInfo {channelMsgItem = parent, channelMsgSharedId = sId}
+    Nothing -> throwError $ SEChatItemNotFound parentChatItemId
+
+-- | Resolve a channel post by its wire SharedMsgId, returning both the post
+-- itself and its SharedMsgId. Used by the receive path to look up the parent
+-- post referenced by an incoming comment's MsgContainer.parent.
+getChannelMsgInfoBySharedMsgId :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> ExceptT StoreError IO ChannelMsgInfo
+getChannelMsgInfoBySharedMsgId db user g sharedMsgId = do
+  parent <- getGroupChatItemBySharedMsgId db user g Nothing sharedMsgId
+  pure ChannelMsgInfo {channelMsgItem = parent, channelMsgSharedId = sharedMsgId}
+
+-- | Increment or decrement the live comment count of a channel post.
+-- Clamped at 0 to guard against transient negative counts under concurrent deletes.
+adjustChannelMsgCommentCount :: DB.Connection -> ChatItemId -> Int -> IO ()
+adjustChannelMsgCommentCount db parentChatItemId delta =
+  DB.execute
+    db
+    "UPDATE chat_items SET comments_total = MAX(0, comments_total + ?) WHERE chat_item_id = ?"
+    (delta, parentChatItemId)
+
+-- | Persist the per-post comments-disabled flag.
+setChannelMsgCommentsDisabled :: DB.Connection -> ChatItemId -> Bool -> IO ()
+setChannelMsgCommentsDisabled db parentChatItemId disabled =
+  DB.execute
+    db
+    "UPDATE chat_items SET comments_disabled = ? WHERE chat_item_id = ?"
+    (BI disabled, parentChatItemId)
+
+-- | Check that a quoted item either IS the parent post or belongs to the same
+-- comment section. Returns True if the quote is valid for this parent.
+quotedItemInCommentSection :: DB.Connection -> ChatItemId -> ChatItemId -> IO Bool
+quotedItemInCommentSection db parentChatItemId quotedItemId
+  | quotedItemId == parentChatItemId = pure True
+  | otherwise = do
+      rows <-
+        DB.query
+          db
+          "SELECT parent_chat_item_id FROM chat_items WHERE chat_item_id = ?"
+          (Only quotedItemId) ::
+          IO [Only (Maybe ChatItemId)]
+      pure $ case rows of
+        [Only (Just pId)] -> pId == parentChatItemId
+        _ -> False
+
+-- | Decrement parent comment counts for live comments by a given group member.
+-- Used by batch member-removal paths (markMemberCIsDeleted, updateMemberCIsModerated)
+-- before they bulk-mark items deleted, so comments_total stays accurate.
+-- When member is the user's own membership, queries by item_sent = 1 AND group_member_id IS NULL.
+-- Otherwise queries by group_member_id = ?.
+-- Already-deleted comments are excluded so no double-decrement occurs.
+decrementMemberCommentCounts_ :: DB.Connection -> UserId -> Int64 -> Bool -> GroupMemberId -> IO ()
+decrementMemberCommentCounts_ db userId groupId isMembership memId = do
+  decrements <-
+    if isMembership
+      then
+        DB.query
+          db
+          [sql|
+            SELECT parent_chat_item_id, COUNT(*) FROM chat_items
+            WHERE user_id = ? AND group_id = ?
+              AND group_member_id IS NULL AND item_sent = 1
+              AND parent_chat_item_id IS NOT NULL AND item_deleted = 0
+            GROUP BY parent_chat_item_id
+          |]
+          (userId, groupId)
+      else
+        DB.query
+          db
+          [sql|
+            SELECT parent_chat_item_id, COUNT(*) FROM chat_items
+            WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+              AND parent_chat_item_id IS NOT NULL AND item_deleted = 0
+            GROUP BY parent_chat_item_id
+          |]
+          (userId, groupId, memId)
+  forM_ (decrements :: [(ChatItemId, Int)]) $ \(pId, n) ->
+    adjustChannelMsgCommentCount db pId (negate n)
 
 getCreateGroupChatScopeInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
 getCreateGroupChatScopeInfo db vr user GroupInfo {membership} = \case
@@ -1493,45 +1590,55 @@ getGroupChatScopeForItem_ db itemId =
         (Nothing, Nothing) -> Nothing
         (Nothing, Just _) -> Nothing -- shouldn't happen
 
-getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Int -> Text -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatLast_ db user g scopeInfo_ contentFilter count search stats = do
+getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> Int -> Text -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatLast_ db user g scopeInfo_ parentChatItemId_ contentFilter count search stats = do
   let cInfo = GroupChat g scopeInfo_
-  ciIds <- getChatItemIDs db user cInfo contentFilter CRLast count search
+  ciIds <- getChatItemIDs db user cInfo parentChatItemId_ contentFilter CRLast count search
   ts <- liftIO getCurrentTime
   cis <- mapM (liftIO . safeGetGroupItem db user g ts) ciIds
   pure $ Chat cInfo (reverse cis) stats
 
 data ChatItemIDsRange = CRLast | CRAfter UTCTime ChatItemId | CRBefore UTCTime ChatItemId
 
-getChatItemIDs :: DB.Connection -> User -> ChatInfo c -> Maybe MsgContentTag -> ChatItemIDsRange -> Int -> Text -> ExceptT StoreError IO [ChatItemId]
-getChatItemIDs db User {userId} cInfo contentFilter range count search = case cInfo of
-  GroupChat GroupInfo {groupId} scopeInfo_ -> case (scopeInfo_, contentFilter) of
-    (Nothing, Nothing) ->
+getChatItemIDs :: DB.Connection -> User -> ChatInfo c -> Maybe ChatItemId -> Maybe MsgContentTag -> ChatItemIDsRange -> Int -> Text -> ExceptT StoreError IO [ChatItemId]
+getChatItemIDs db User {userId} cInfo parentChatItemId_ contentFilter range count search = case cInfo of
+  GroupChat GroupInfo {groupId} scopeInfo_ -> case (scopeInfo_, parentChatItemId_, contentFilter) of
+    (Nothing, Nothing, Nothing) ->
       liftIO $
         idsQuery
-          (grCond <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL ")
+          (grCond <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND parent_chat_item_id IS NULL ")
           (userId, groupId)
           "item_ts"
-    (Nothing, Just MCLink_) ->
+    (Nothing, Nothing, Just MCLink_) ->
       liftIO $
         idsQuery
-          (grCond <> " AND has_link = 1 ")
+          (grCond <> " AND has_link = 1 AND parent_chat_item_id IS NULL ")
           (userId, groupId)
           "item_ts"
-    (Nothing, Just mcTag) ->
+    (Nothing, Nothing, Just mcTag) ->
       liftIO $
         idsQuery
-          (grCond <> " AND msg_content_tag = ? ")
+          (grCond <> " AND msg_content_tag = ? AND parent_chat_item_id IS NULL ")
           (userId, groupId, mcTag)
           "item_ts"
-    (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
+    (Just GCSIMemberSupport {groupMember_ = m}, Nothing, Nothing) ->
       liftIO $
         idsQuery
           (grCond <> " AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? ")
           (userId, groupId, GCSTMemberSupport_, groupMemberId' <$> m)
           "item_ts"
-    (Just _scope, Just _mcTag) ->
+    (Nothing, Just parentId, Nothing) ->
+      liftIO $
+        idsQuery
+          (grCond <> " AND parent_chat_item_id = ? ")
+          (userId, groupId, parentId)
+          "item_ts"
+    (Just _scope, _, Just _mcTag) ->
       throwError $ SEInternalError "group scope and content filter are not supported together"
+    (Just _scope, Just _, _) ->
+      throwError $ SEInternalError "group scope and parent chat item are mutually exclusive"
+    (Nothing, Just _, Just _) ->
+      throwError $ SEInternalError "channel comments thread and content filter are not supported together"
     where
       grCond = " user_id = ? AND group_id = ? "
   DirectChat Contact {contactId} -> liftIO $ case contentFilter of
@@ -1626,38 +1733,38 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
         (userId, groupId, groupMemberId)
   getGroupChatItem db user groupId chatItemId
 
-getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user g@GroupInfo {groupId} scopeInfo contentFilter afterId count search = do
+getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatAfter_ db user g@GroupInfo {groupId} scopeInfo parentChatItemId_ contentFilter afterId count search = do
   afterCI <- getGroupChatItem db user groupId afterId
   let cInfo = GroupChat g scopeInfo
       range = CRAfter (chatItemTs afterCI) (cChatItemId afterCI)
-  ciIds <- getChatItemIDs db user cInfo contentFilter range count search
+  ciIds <- getChatItemIDs db user cInfo parentChatItemId_ contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetGroupItem db user g ts) ciIds
   pure $ Chat cInfo cis emptyChatStats
 
-getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user g@GroupInfo {groupId} scopeInfo contentFilter beforeId count search = do
+getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatBefore_ db user g@GroupInfo {groupId} scopeInfo parentChatItemId_ contentFilter beforeId count search = do
   beforeCI <- getGroupChatItem db user groupId beforeId
   let cInfo = GroupChat g scopeInfo
       range = CRBefore (chatItemTs beforeCI) (cChatItemId beforeCI)
-  ciIds <- getChatItemIDs db user cInfo contentFilter range count search
+  ciIds <- getChatItemIDs db user cInfo parentChatItemId_ contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetGroupItem db user g ts) ciIds
   pure $ Chat cInfo (reverse cis) emptyChatStats
 
-getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatAround_ db user g scopeInfo contentFilter aroundId count search = do
+getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround_ db user g scopeInfo parentChatItemId_ contentFilter aroundId count search = do
   stats <- getGroupStats_ db user g scopeInfo
-  getGroupChatAround' db user g scopeInfo contentFilter aroundId count search stats
+  getGroupChatAround' db user g scopeInfo parentChatItemId_ contentFilter aroundId count search stats
 
-getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatAround' db user g scopeInfo contentFilter aroundId count search stats = do
+getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround' db user g scopeInfo parentChatItemId_ contentFilter aroundId count search stats = do
   aroundCI <- getGroupCIWithReactions db user g aroundId
   let cInfo = GroupChat g scopeInfo
       range r = r (chatItemTs aroundCI) (cChatItemId aroundCI)
-  beforeIds <- getChatItemIDs db user cInfo contentFilter (range CRBefore) count search
-  afterIds <- getChatItemIDs db user cInfo contentFilter (range CRAfter) count search
+  beforeIds <- getChatItemIDs db user cInfo parentChatItemId_ contentFilter (range CRBefore) count search
+  afterIds <- getChatItemIDs db user cInfo parentChatItemId_ contentFilter (range CRAfter) count search
   ts <- liftIO getCurrentTime
   beforeCIs <- liftIO $ mapM (safeGetGroupItem db user g ts) beforeIds
   afterCIs <- liftIO $ mapM (safeGetGroupItem db user g ts) afterIds
@@ -1669,17 +1776,23 @@ getGroupChatAround' db user g scopeInfo contentFilter aroundId count search stat
       [] -> pure $ NavigationInfo 0 0
       cis -> getGroupNavInfo_ db user g (last cis)
 
-getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatInitial_ db user g scopeInfo_ contentFilter count = do
-  getGroupMinUnreadId_ db user g scopeInfo_ contentFilter >>= \case
-    Just minUnreadItemId -> do
-      unreadCounts <- getGroupUnreadCount_ db user g scopeInfo_ Nothing
-      stats <- liftIO $ getStats minUnreadItemId unreadCounts
-      pivotId <- fromMaybe minUnreadItemId <$> getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter
-      getGroupChatAround' db user g scopeInfo_ contentFilter pivotId count "" stats
-    Nothing -> do
+getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe ChatItemId -> Maybe MsgContentTag -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatInitial_ db user g scopeInfo_ parentChatItemId_ contentFilter count = do
+  -- Comments threads have no unread tracking; fall through to a "last" page directly.
+  case parentChatItemId_ of
+    Just _ -> do
       stats <- liftIO $ getStats 0 (0, 0)
-      (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g scopeInfo_ contentFilter count "" stats
+      (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g scopeInfo_ parentChatItemId_ contentFilter count "" stats
+    Nothing ->
+      getGroupMinUnreadId_ db user g scopeInfo_ contentFilter >>= \case
+        Just minUnreadItemId -> do
+          unreadCounts <- getGroupUnreadCount_ db user g scopeInfo_ Nothing
+          stats <- liftIO $ getStats minUnreadItemId unreadCounts
+          pivotId <- fromMaybe minUnreadItemId <$> getGroupMaxViewedItemId_ db user g scopeInfo_ contentFilter
+          getGroupChatAround' db user g scopeInfo_ parentChatItemId_ contentFilter pivotId count "" stats
+        Nothing -> do
+          stats <- liftIO $ getStats 0 (0, 0)
+          (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g scopeInfo_ parentChatItemId_ contentFilter count "" stats
   where
     getStats minUnreadItemId (unreadCount, unreadMentions) = do
       reportsCount <- getGroupReportsCount_ db user g False
@@ -1720,7 +1833,7 @@ getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
   fromOnly . head
     <$> DB.query
       db
-      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0"
+      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND parent_chat_item_id IS NULL AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0"
       (userId, groupId, MCReport_, BI archived)
 
 queryUnreadGroupItems :: (ToField p, FromRow r) => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> p -> Query -> Query -> ExceptT StoreError IO [r]
@@ -1730,13 +1843,13 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFil
       liftIO $
         DB.query
           db
-          (baseQuery <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND " <> statusCond <> orderLimit)
+          (baseQuery <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND parent_chat_item_id IS NULL AND " <> statusCond <> orderLimit)
           (userId, groupId, statusParam)
     (Nothing, Just mcTag) ->
       liftIO $
         DB.query
           db
-          (baseQuery <> " AND msg_content_tag = ? AND " <> statusCond <> orderLimit)
+          (baseQuery <> " AND parent_chat_item_id IS NULL AND msg_content_tag = ? AND " <> statusCond <> orderLimit)
           (userId, groupId, mcTag, statusParam)
     (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
       liftIO $
@@ -1814,7 +1927,7 @@ getLocalChat db user folderId contentFilter pagination search_ = do
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Maybe MsgContentTag -> Int -> Text -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatLast_ db user nf contentFilter count search = do
   let cInfo = LocalChat nf
-  ciIds <- getChatItemIDs db user cInfo contentFilter CRLast count search
+  ciIds <- getChatItemIDs db user cInfo Nothing contentFilter CRLast count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetLocalItem db user nf ts) ciIds
   pure $ Chat cInfo (reverse cis) emptyChatStats
@@ -1851,7 +1964,7 @@ getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} contentFilter afterId co
   afterCI <- getLocalChatItem db user noteFolderId afterId
   let cInfo = LocalChat nf
       range = CRAfter (ciCreatedAt afterCI) (cChatItemId afterCI)
-  ciIds <- getChatItemIDs db user cInfo contentFilter range count search
+  ciIds <- getChatItemIDs db user cInfo Nothing contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetLocalItem db user nf ts) ciIds
   pure $ Chat cInfo cis emptyChatStats
@@ -1861,7 +1974,7 @@ getLocalChatBefore_ db user nf@NoteFolder {noteFolderId} contentFilter beforeId 
   beforeCI <- getLocalChatItem db user noteFolderId beforeId
   let cInfo = LocalChat nf
       range = CRBefore (ciCreatedAt beforeCI) (cChatItemId beforeCI)
-  ciIds <- getChatItemIDs db user cInfo contentFilter range count search
+  ciIds <- getChatItemIDs db user cInfo Nothing contentFilter range count search
   ts <- liftIO getCurrentTime
   cis <- liftIO $ mapM (safeGetLocalItem db user nf ts) ciIds
   pure $ Chat cInfo (reverse cis) emptyChatStats
@@ -1876,8 +1989,8 @@ getLocalChatAround' db user nf@NoteFolder {noteFolderId} contentFilter aroundId 
   aroundCI <- getLocalChatItem db user noteFolderId aroundId
   let cInfo = LocalChat nf
       range r = r (ciCreatedAt aroundCI) (cChatItemId aroundCI)
-  beforeIds <- getChatItemIDs db user cInfo contentFilter (range CRBefore) count search
-  afterIds <- getChatItemIDs db user cInfo contentFilter (range CRAfter) count search
+  beforeIds <- getChatItemIDs db user cInfo Nothing contentFilter (range CRBefore) count search
+  afterIds <- getChatItemIDs db user cInfo Nothing contentFilter (range CRAfter) count search
   ts <- liftIO getCurrentTime
   beforeCIs <- liftIO $ mapM (safeGetLocalItem db user nf ts) beforeIds
   afterCIs <- liftIO $ mapM (safeGetLocalItem db user nf ts) afterIds
@@ -2071,6 +2184,7 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId} = do
     [sql|
       UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
       WHERE user_id = ? AND group_id = ?
+        AND parent_chat_item_id IS NULL
         AND item_status = ?
     |]
     (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
@@ -2127,6 +2241,7 @@ getGroupUnreadTimedItems db User {userId} groupId scope =
           SELECT chat_item_id, timed_ttl
           FROM chat_items
           WHERE user_id = ? AND group_id = ?
+            AND parent_chat_item_id IS NULL
             AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
         |]
         (userId, groupId, CISRcvNew)
@@ -2260,6 +2375,7 @@ type ChatItemRow =
     :. (Int, Maybe UTCTime, Maybe BoolInt, UTCTime, UTCTime)
     :. ChatItemForwardedFromRow
     :. ChatItemModeRow
+    :. (Maybe ChatItemId, Int, BoolInt)
     :. MaybeCIFIleRow
 
 type QuoteRow = (Maybe ChatItemId, Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe BoolInt)
@@ -2275,7 +2391,7 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toDirectChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
+toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned) :. (parentChatItemId, commentsTotal, BI commentsDisabled) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -2308,7 +2424,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
             _ -> Just (CIDeleted @'CTDirect deletedTs)
           itemEdited' = maybe False unBI itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
-       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned createdAt updatedAt
+       in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs Nothing False msgSigned parentChatItemId commentsTotal commentsDisabled createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2347,6 +2463,7 @@ toGroupChatItem
         :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt)
         :. forwardedFromRow
         :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned)
+        :. (parentChatItemId, commentsTotal, BI commentsDisabled)
         :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)
       )
       :. (forwardedByMember, BI showGroupAsSender)
@@ -2397,7 +2514,7 @@ toGroupChatItem
               _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
             itemEdited' = maybe False unBI itemEdited
             itemForwarded = toCIForwardedFrom forwardedFromRow
-         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt
+         in mkCIMeta itemId content itemText status (unBI <$> sentViaProxy) sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed (unBI <$> itemLive) userMention hasLink currentTs itemTs forwardedByMember showGroupAsSender msgSigned parentChatItemId commentsTotal commentsDisabled createdAt updatedAt
       ciTimed :: Maybe CITimed
       ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
@@ -2671,6 +2788,8 @@ getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
+            -- ChannelComments
+            i.parent_chat_item_id, i.comments_total, i.comments_disabled,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- DirectQuote
@@ -2780,8 +2899,9 @@ updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
     createMentions = createGroupCIMentions db g ci mentions'
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
-deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
-  let itemId = chatItemId' ci
+deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci@ChatItem {meta} = do
+  let CIMeta {parentChatItemId, itemDeleted} = meta
+      itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
   deleteGroupCIReactions_ db g ci
@@ -2792,11 +2912,16 @@ deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (userId, groupId, itemId)
+  -- Decrement parent's live comment count when a non-deleted comment is hard-deleted.
+  -- Already-soft-deleted comments were decremented at soft-delete time.
+  forM_ parentChatItemId $ \pId ->
+    when (isNothing itemDeleted) $ adjustChannelMsgCommentCount db pId (-1)
 
 updateGroupChatItemModerated :: forall d. MsgDirectionI d => DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
-updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMember {groupMemberId} deletedTs = do
+updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci@ChatItem {meta} m@GroupMember {groupMemberId} deletedTs = do
   currentTs <- getCurrentTime
-  let toContent = msgDirToModeratedContent_ $ msgDirection @d
+  let CIMeta {parentChatItemId, itemDeleted = wasDeleted} = meta
+      toContent = msgDirToModeratedContent_ $ msgDirection @d
       toText = ciModeratedText
       itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
@@ -2810,10 +2935,16 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
+  -- Decrement parent's live comment count when a moderator soft-deletes a comment.
+  -- Already-deleted comments were decremented at first soft-delete time.
+  forM_ parentChatItemId $ \pId ->
+    when (isNothing wasDeleted) $ adjustChannelMsgCommentCount db pId (-1)
+  pure ci {content = toContent, meta = meta {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
 updateMemberCIsModerated :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO ()
 updateMemberCIsModerated db User {userId} GroupInfo {groupId, membership} member byGroupMember md deletedTs = do
+  -- Decrement parent comment counts BEFORE the bulk UPDATE marks comments deleted.
+  decrementMemberCommentCounts_ db userId groupId (memId == groupMemberId' membership) memId
   itemIds <- updateCIs =<< getCurrentTime
 #if defined(dbPostgres)
   let inItemIds = Only $ In (map fromOnly itemIds)
@@ -2847,9 +2978,10 @@ updateMemberCIsModerated db User {userId} GroupInfo {groupId, membership} member
         columns = (deletedTs, groupMemberId' byGroupMember, msgDirToModeratedContent_ md, ciModeratedText, currentTs)
 
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
-updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
+updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta} deletedTs = do
   currentTs <- getCurrentTime
-  let itemId = chatItemId' ci
+  let CIMeta {parentChatItemId, itemDeleted = wasDeleted} = meta
+      itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
   liftIO $
@@ -2861,7 +2993,10 @@ updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = 
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (DBCIBlockedByAdmin, deletedTs, currentTs, userId, groupId, itemId)
-  pure $ ci {meta = (meta ci) {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False, deletable = False}, formattedText = Nothing}
+  -- Decrement parent's live comment count when a comment is blocked by admin.
+  forM_ parentChatItemId $ \pId ->
+    when (isNothing wasDeleted) $ adjustChannelMsgCommentCount db pId (-1)
+  pure $ ci {meta = meta {itemDeleted = Just (CIBlockedByAdmin $ Just deletedTs), editable = False, deletable = False}, formattedText = Nothing}
 
 pattern DBCINotDeleted :: Int
 pattern DBCINotDeleted = 0
@@ -2878,7 +3013,8 @@ pattern DBCIBlockedByAdmin = 3
 markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
 markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} byGroupMember_ deletedTs = do
   currentTs <- liftIO getCurrentTime
-  let itemId = chatItemId' ci
+  let CIMeta {parentChatItemId, itemDeleted = wasDeleted} = meta
+      itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
         _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
@@ -2890,10 +3026,15 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, deletedByGroupMemberId, currentTs, userId, groupId, itemId)
+  -- Decrement parent's live comment count on first soft-delete of a comment.
+  forM_ parentChatItemId $ \pId ->
+    when (isNothing wasDeleted) $ adjustChannelMsgCommentCount db pId (-1)
   pure ci {meta = meta {itemDeleted, editable = False, deletable = False}}
 
 markMemberCIsDeleted :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> UTCTime -> IO ()
-markMemberCIsDeleted db User {userId} GroupInfo {groupId, membership} member byGroupMember deletedTs =
+markMemberCIsDeleted db User {userId} GroupInfo {groupId, membership} member byGroupMember deletedTs = do
+  -- Decrement parent comment counts BEFORE the bulk UPDATE marks comments deleted.
+  decrementMemberCommentCounts_ db userId groupId (memId == groupMemberId' membership) memId
   updateCIs =<< getCurrentTime
   where
     memId = groupMemberId' member
@@ -2920,6 +3061,7 @@ markMemberCIsDeleted db User {userId} GroupInfo {groupId, membership} member byG
 markGroupChatItemBlocked :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
   deletedTs <- getCurrentTime
+  let CIMeta {parentChatItemId, itemDeleted = wasDeleted} = meta
   DB.execute
     db
     [sql|
@@ -2928,11 +3070,15 @@ markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIBlocked, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
+  -- Decrement parent's live comment count when a comment is locally blocked.
+  forM_ parentChatItemId $ \pId ->
+    when (isNothing wasDeleted) $ adjustChannelMsgCommentCount db pId (-1)
   pure ci {meta = meta {itemDeleted = Just $ CIBlocked $ Just deletedTs, editable = False, deletable = False}}
 
 markGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
   deletedTs <- getCurrentTime
+  let CIMeta {parentChatItemId, itemDeleted = wasDeleted} = meta
   DB.execute
     db
     [sql|
@@ -2941,6 +3087,9 @@ markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIBlockedByAdmin, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
+  -- Decrement parent's live comment count when a comment is blocked by admin.
+  forM_ parentChatItemId $ \pId ->
+    when (isNothing wasDeleted) $ adjustChannelMsgCommentCount db pId (-1)
   pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs, editable = False, deletable = False}}
 
 markMessageReportsDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> GroupMember -> UTCTime -> IO [ChatItemId]
@@ -3026,6 +3175,8 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
+            -- ChannelComments
+            i.parent_chat_item_id, i.comments_total, i.comments_disabled,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- CIMeta forwardedByMember, showGroupAsSender
@@ -3135,6 +3286,8 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
+            -- ChannelComments
+            i.parent_chat_item_id, i.comments_total, i.comments_disabled,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol
           FROM chat_items i
@@ -3541,6 +3694,22 @@ deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTim
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ? AND reaction_ts <= ? AND created_at <= ?" (groupId, expirationDate, createdAtCutoff)
+  -- Decrement parent comment counts for expiring live comments BEFORE the bulk DELETE.
+  -- Decrements of parents that are themselves being deleted are harmless no-ops
+  -- (the row vanishes immediately after).
+  decrements <-
+    DB.query
+      db
+      [sql|
+        SELECT parent_chat_item_id, COUNT(*) FROM chat_items
+        WHERE user_id = ? AND group_id = ?
+          AND parent_chat_item_id IS NOT NULL AND item_deleted = 0
+          AND item_ts <= ? AND created_at <= ?
+        GROUP BY parent_chat_item_id
+      |]
+      (userId, groupId, expirationDate, createdAtCutoff)
+  forM_ (decrements :: [(ChatItemId, Int)]) $ \(pId, n) ->
+    adjustChannelMsgCommentCount db pId (negate n)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ? AND item_content_tag != 'chatBanner'" (userId, groupId, expirationDate, createdAtCutoff)
 
 createCIModeration :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> MessageId -> UTCTime -> IO ()

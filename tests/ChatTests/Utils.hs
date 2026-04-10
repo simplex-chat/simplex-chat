@@ -289,6 +289,9 @@ groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 groupFeaturesNoE2E :: [(Int, String)]
 groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0
 
+channelFeaturesNoE2E :: [(Int, String)]
+channelFeaturesNoE2E = map (\(d, s) -> if s == "Comments: off" then (d, "Comments: on") else (d, s)) groupFeaturesNoE2E
+
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
 
@@ -308,7 +311,8 @@ groupFeatures_ dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing)
+    ((dir, "Recent history: on"), Nothing, Nothing),
+    ((dir, "Comments: off"), Nothing, Nothing)
   ]
 
 businessGroupFeatures :: [(Int, String)]
@@ -697,6 +701,25 @@ lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
   getTermLine' (Just "last item id") cc
+
+-- Highest chat_item_id in the given group. Uses chat_item_id DESC ordering
+-- (strictly monotonic via autoincrement), not item_ts, which can reverse
+-- between a local "connected" event and an incoming message due to clock
+-- skew across members. Captures any item type, including comments — use
+-- this to capture a comment id right after sending, since the default
+-- group pagination filters out rows with parent_chat_item_id set.
+lastGroupItemId :: HasCallStack => TestCC -> Int -> IO String
+lastGroupItemId cc gId = do
+  rows <-
+    withCCTransaction cc $ \db ->
+      DB.query
+        db
+        "SELECT chat_item_id FROM chat_items WHERE group_id = ? ORDER BY chat_item_id DESC LIMIT 1"
+        (Only gId) ::
+      IO [Only Int]
+  case rows of
+    [Only n] -> pure (show n)
+    _ -> error "lastGroupItemId: no items in group"
 
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do

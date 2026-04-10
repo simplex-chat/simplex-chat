@@ -319,11 +319,13 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
+  | APIGetChat {chatRef :: ChatRef, parentItemId :: Maybe ChatItemId, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APISendComment {groupId :: GroupId, parentChatItemId :: ChatItemId, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APISetCommentsDisabled {groupId :: GroupId, parentChatItemId :: ChatItemId, disabled :: Bool}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
   | APIDeleteChatTag ChatTagId
