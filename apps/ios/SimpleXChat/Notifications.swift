@@ -65,7 +65,6 @@ public func createContactConnectedNtf(_ user: any UserLike, _ contact: Contact, 
 // Spec: spec/services/notifications.md#createMessageReceivedNtf
 public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem, _ badgeCount: Int) -> UNMutableNotificationContent {
     let previewMode = ntfPreviewModeGroupDefault.get()
-    let isChannel = cInfo.groupInfo?.useRelays == true
     var title: String
     if case let .group(groupInfo, _) = cInfo, case let .groupRcv(groupMember) = cItem.chatDir {
         title = groupMsgNtfTitle(groupInfo, groupMember, hideContent: previewMode == .hidden)
@@ -75,7 +74,7 @@ public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ 
     return createNotification(
         categoryIdentifier: ntfCategoryMessageReceived,
         title: title,
-        body: previewMode == .message ? hideSecrets(cItem, isChannel: isChannel) : NSLocalizedString("new message", comment: "notification"),
+        body: previewMode == .message ? hideSecrets(cItem, isChannel: cInfo.isChannel) : NSLocalizedString("new message", comment: "notification"),
         targetContentIdentifier: cInfo.id,
         userInfo: ["userId": user.userId],
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]

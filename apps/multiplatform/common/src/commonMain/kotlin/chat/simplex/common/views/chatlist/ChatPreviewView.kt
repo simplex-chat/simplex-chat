@@ -240,9 +240,8 @@ fun ChatPreviewView(
     } else if (ci?.content?.hasMsgContent != true && previewText != null) {
       Text(previewText.first, color = previewText.second)
     } else if (ci != null && showChatPreviews) {
-      val isChannel = chat.chatInfo.groupInfo_?.useRelays == true
       val (text: CharSequence, inlineTextContent) = when {
-        ci.meta.itemDeleted == null -> ci.text(isChannel) to null
+        ci.meta.itemDeleted == null -> ci.text(chat.chatInfo.isChannel) to null
         else -> markedDeletedText(ci, chat.chatInfo) to null
       }
       val formattedText = when {

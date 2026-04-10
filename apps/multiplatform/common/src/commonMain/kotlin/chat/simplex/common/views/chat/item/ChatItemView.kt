@@ -601,19 +601,18 @@ fun ChatItemView(
             }
 
             fun mergedGroupEventText(chatItem: ChatItem, reversedChatItems: List<ChatItem>): String? {
-              val isChannel = cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays
               val (count, ns) = chatModel.getConnectedMemberNames(chatItem, reversedChatItems)
               val members = when {
                 ns.size == 1 -> String.format(generalGetString(MR.strings.rcv_group_event_1_member_connected), ns[0])
                 ns.size == 2 -> String.format(generalGetString(MR.strings.rcv_group_event_2_members_connected), ns[0], ns[1])
                 ns.size == 3 -> String.format(generalGetString(MR.strings.rcv_group_event_3_members_connected), ns[0], ns[1], ns[2])
-                ns.size > 3 -> String.format(generalGetString(if (isChannel) MR.strings.rcv_channel_event_n_subscribers_connected else MR.strings.rcv_group_event_n_members_connected), ns[0], ns[1], ns.size - 2)
+                ns.size > 3 -> String.format(generalGetString(if (cInfo.isChannel) MR.strings.rcv_channel_event_n_subscribers_connected else MR.strings.rcv_group_event_n_members_connected), ns[0], ns[1], ns.size - 2)
                 else -> ""
               }
               return if (count <= 1) {
                 null
               } else if (ns.isEmpty()) {
-                generalGetString(if (isChannel) MR.strings.rcv_channel_events_count else MR.strings.rcv_group_events_count).format(count)
+                generalGetString(if (cInfo.isChannel) MR.strings.rcv_channel_events_count else MR.strings.rcv_group_events_count).format(count)
               } else if (count > ns.size) {
                 members + " " + generalGetString(MR.strings.rcv_group_and_other_events).format(count - ns.size)
               } else {
@@ -622,7 +621,6 @@ fun ChatItemView(
             }
 
             fun eventItemViewText(reversedChatItems: List<ChatItem>): AnnotatedString {
-              val isChannel = cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays
               val memberDisplayName = cItem.memberDisplayName
               val t = mergedGroupEventText(cItem, reversedChatItems)
               return if (!revealed.value && t != null) {
@@ -631,9 +629,9 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(memberDisplayName) }
                   append(" ")
-                }.plus(chatEventText(cItem, isChannel))
+                }.plus(chatEventText(cItem, cInfo.isChannel))
               } else {
-                chatEventText(cItem, isChannel)
+                chatEventText(cItem, cInfo.isChannel)
               }
             }
 
@@ -643,10 +641,9 @@ fun ChatItemView(
             }
 
             @Composable fun PendingReviewEventItemView() {
-              val isChannel = cInfo is ChatInfo.Group && cInfo.groupInfo.useRelays
               Text(
                 buildAnnotatedString {
-                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(isChannel)) }
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
                 Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
               )

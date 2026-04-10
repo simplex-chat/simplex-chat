@@ -1652,6 +1652,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var isChannel: Bool {
+        groupInfo?.useRelays == true
+    }
+
     // this works for features that are common for contacts and groups
     public func featureEnabled(_ feature: ChatFeature) -> Bool {
         switch self {

@@ -44,8 +44,7 @@ abstract class NtfManager {
               chatModel.chatId.value != cInfo.id ||
               chatModel.remoteHostId() != rhId)
     ) {
-      val isChannel = cInfo.groupInfo_?.useRelays == true
-      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, isChannel))
+      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, cInfo.isChannel))
     }
   }
 

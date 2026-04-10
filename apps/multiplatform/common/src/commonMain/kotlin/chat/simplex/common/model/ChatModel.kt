@@ -1748,6 +1748,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo
       else -> null
     }
+
+  val isChannel: Boolean
+    get() = groupInfo_?.useRelays == true
 }
 
 @Serializable
