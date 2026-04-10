@@ -228,9 +228,7 @@ struct ChatItemContentView<Content: View>: View {
             case 3: "\(ns[0] + ", " + ns[1]) and \(ns[2]) connected"
             default:
                 ns.count > 3
-                ? chat.chatInfo.isChannel
-                    ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other subscribers connected"
-                    : "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
+                ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
                 : ""
             }
         return if count <= 1 {

@@ -1731,7 +1731,6 @@
   <string name="rcv_group_event_2_members_connected">%s and %s connected</string>
   <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
   <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
-  <string name="rcv_channel_event_n_subscribers_connected">%s, %s and %d other subscribers connected</string>
   <string name="rcv_group_events_count">%d group events</string>
   <string name="rcv_channel_events_count">%d channel events</string>
   <string name="rcv_group_and_other_events">and %d other events</string>

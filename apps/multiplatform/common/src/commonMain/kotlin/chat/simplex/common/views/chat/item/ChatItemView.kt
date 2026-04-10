@@ -606,7 +606,7 @@ fun ChatItemView(
                 ns.size == 1 -> String.format(generalGetString(MR.strings.rcv_group_event_1_member_connected), ns[0])
                 ns.size == 2 -> String.format(generalGetString(MR.strings.rcv_group_event_2_members_connected), ns[0], ns[1])
                 ns.size == 3 -> String.format(generalGetString(MR.strings.rcv_group_event_3_members_connected), ns[0], ns[1], ns[2])
-                ns.size > 3 -> String.format(generalGetString(if (cInfo.isChannel) MR.strings.rcv_channel_event_n_subscribers_connected else MR.strings.rcv_group_event_n_members_connected), ns[0], ns[1], ns.size - 2)
+                ns.size > 3 -> String.format(generalGetString(MR.strings.rcv_group_event_n_members_connected), ns[0], ns[1], ns.size - 2)
                 else -> ""
               }
               return if (count <= 1) {
