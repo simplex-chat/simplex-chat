@@ -342,3 +342,7 @@ This threat model compliments SMP, XFTP, push notifications and XRCP protocols t
 *cannot:*
 
 - prove that two group members with incognito profiles is the same user.
+
+## Sub-protocol for push notifications
+
+![iOS notifications](./diagrams/ios-notifications.svg)
