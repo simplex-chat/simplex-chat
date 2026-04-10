@@ -131,7 +131,7 @@ The operator shares the link with team members. They must join within the 10-min
 
 > Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is `N:name`
 
-This ID is needed for `--auto-add-team-members` (`-a`) config. The DM is sent as soon as the member joins the team group — the bot proactively creates a DM contact via raw SimpleX commands (`/_create member contact` + `/_invite member contact`) and delivers the message with the invitation. If the contact already exists, the message is sent directly. Multiple delivery paths ensure the DM arrives regardless of connection timing.
+This ID is needed for `--auto-add-team-members` (`-a`) config. The DM is sent as soon as the member joins the team group — the bot proactively creates a DM contact via `apiCreateMemberContact` and delivers the message with the invitation via `apiSendMemberContactInvitation`. If the contact already exists, the message is sent directly. Multiple delivery paths ensure the DM arrives regardless of connection timing.
 
 Team members are configured as a single comma-separated `--auto-add-team-members` flag (shortcut `-a`; e.g., `--auto-add-team-members "42:alice,55:bob"` or `-a "42:alice,55:bob"`), using the IDs from the DMs above. The bot validates every configured member against its contact list at startup and exits if any ID is missing or the display name does not match.
 

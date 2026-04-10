@@ -750,14 +750,10 @@ export class SupportBot {
     if (!contactId) {
       // No DM contact yet — create one and send invitation with message
       try {
-        const createResp: any = await this.withMainProfile(() =>
-          this.chat.sendChatCmd(`/_create member contact #${this.config.teamGroup.id} ${member.groupMemberId}`)
+        const contact = await this.withMainProfile(() =>
+          this.chat.apiCreateMemberContact(this.config.teamGroup.id, member.groupMemberId)
         )
-        if (createResp.type !== "newMemberContact" || !createResp.contact?.contactId) {
-          logError(`Unexpected response creating member contact for ${name}`, createResp)
-          return
-        }
-        contactId = createResp.contact.contactId as number
+        contactId = contact.contactId as number
         log(`Created DM contact ${contactId} for team member ${name}`)
       } catch (err) {
         logError(`Failed to create member contact for ${name}`, err)
@@ -767,7 +763,7 @@ export class SupportBot {
       const msg = `Added you to be able to invite you to customer chats later, keep this contact. Your contact ID is ${contactId}:${formatted}`
       try {
         await this.withMainProfile(() =>
-          this.chat.sendChatCmd(`/_invite member contact @${contactId} text ${msg}`)
+          this.chat.apiSendMemberContactInvitation(contactId!, msg)
         )
         this.sentTeamDMs.add(contactId)
         this.pendingTeamDMs.delete(contactId)
