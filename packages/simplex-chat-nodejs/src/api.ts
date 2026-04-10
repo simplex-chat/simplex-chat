@@ -813,7 +813,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiCreateActiveUser(profile?: T.Profile): Promise<T.User> {
-    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false}}))
+    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false, userChatRelay: false}}))
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }
@@ -871,5 +871,35 @@ export class ChatApi {
   async apiSetContactPrefs(contactId: number, preferences: T.Preferences): Promise<void> {
     const r = await this.sendChatCmd(CC.APISetContactPrefs.cmdString({contactId, preferences}))
     if (r.type !== "contactPrefsUpdated") throw new ChatCommandError("error setting contact prefs", r)
+  }
+
+  /**
+   * Create a direct message contact with a group member.
+   * Returns the created contact.
+   * Network usage: interactive.
+   */
+  async apiCreateMemberContact(groupId: number, groupMemberId: number): Promise<T.Contact> {
+    const r: any = await this.sendChatCmd(`/_create member contact #${groupId} ${groupMemberId}`)
+    if (r.type === "newMemberContact") return r.contact
+    throw new ChatCommandError("error creating member contact", r)
+  }
+
+  /**
+   * Send a direct message invitation to a group member contact.
+   * The contact must have been created with {@link apiCreateMemberContact}.
+   * Network usage: interactive.
+   */
+  async apiSendMemberContactInvitation(contactId: number, message?: T.MsgContent | string): Promise<T.Contact> {
+    let cmd = `/_invite member contact @${contactId}`
+    if (message !== undefined) {
+      if (typeof message === "string") {
+        cmd += ` text ${message}`
+      } else {
+        cmd += ` json ${JSON.stringify(message)}`
+      }
+    }
+    const r: any = await this.sendChatCmd(cmd)
+    if (r.type === "newMemberContactSentInv") return r.contact
+    throw new ChatCommandError("error sending member contact invitation", r)
   }
 }
