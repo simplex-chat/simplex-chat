@@ -1,9 +1,11 @@
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
@@ -20,16 +22,26 @@ import chat.simplex.common.views.onboarding.SelectableCard
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 
+private val SectionCardShape = RoundedCornerShape(16.dp)
+
 @Composable
-fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = 8.dp, content: (@Composable ColumnScope.() -> Unit)) {
+  val cardColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
   Column {
     if (title != null) {
       Text(
         title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = headerBottomPadding), fontSize = 12.sp
+        modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding), fontSize = 12.sp
       )
     }
-    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
+    Column(
+      Modifier
+        .padding(horizontal = DEFAULT_PADDING_HALF)
+        .fillMaxWidth()
+        .clip(SectionCardShape)
+        .background(cardColor)
+        .padding(contentPadding)
+    ) { content() }
   }
 }
 
@@ -42,22 +54,31 @@ fun SectionView(
   padding: PaddingValues = PaddingValues(),
   content: (@Composable ColumnScope.() -> Unit)
 ) {
+  val cardColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
   Column {
     val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
       if (leadingIcon) Icon(icon, null, Modifier.padding(end = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
       Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       if (!leadingIcon) Icon(icon, null, Modifier.padding(start = DEFAULT_PADDING_HALF).size(iconSize), tint = iconTint)
     }
-    Column(Modifier.padding(padding).fillMaxWidth()) { content() }
+    Column(
+      Modifier
+        .padding(horizontal = DEFAULT_PADDING_HALF)
+        .fillMaxWidth()
+        .clip(SectionCardShape)
+        .background(cardColor)
+        .padding(padding)
+    ) { content() }
   }
 }
 
 @Composable
-fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = 8.dp, content: (@Composable ColumnScope.() -> Unit)) {
+  val cardColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f)
   Column {
     if (title != null || titleButton != null) {
-      Row(modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = headerBottomPadding).fillMaxWidth()) {
+      Row(modifier = Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, bottom = headerBottomPadding).fillMaxWidth()) {
         if (title != null) {
           Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
         }
@@ -67,7 +88,14 @@ fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () ->
         }
       }
     }
-    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
+    Column(
+      Modifier
+        .padding(horizontal = DEFAULT_PADDING_HALF)
+        .fillMaxWidth()
+        .clip(SectionCardShape)
+        .background(cardColor)
+        .padding(contentPadding)
+    ) { content() }
   }
 }
 
@@ -239,7 +267,7 @@ fun SectionTextFooter(text: String, color: Color = MaterialTheme.colors.secondar
 fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start, color: Color = MaterialTheme.colors.secondary) {
   Text(
     text,
-    Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
+    Modifier.padding(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
     color = color,
     lineHeight = 18.sp,
     fontSize = 14.sp,
@@ -248,7 +276,7 @@ fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.St
 }
 
 @Composable
-fun SectionCustomFooter(padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = 5.dp), content: (@Composable () -> Unit)) {
+fun SectionCustomFooter(padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING + DEFAULT_PADDING_HALF, end = DEFAULT_PADDING + DEFAULT_PADDING_HALF, top = 5.dp), content: (@Composable () -> Unit)) {
   Row(
     Modifier.padding(padding)
   ) {
@@ -263,13 +291,7 @@ fun SectionDivider() {
 
 @Composable
 fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boolean = true) {
-  Divider(
-    Modifier.padding(
-      start = DEFAULT_PADDING_HALF,
-      top = if (maxTopPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp,
-      end = DEFAULT_PADDING_HALF,
-      bottom = if (maxBottomPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp)
-  )
+  Spacer(Modifier.height(if (maxTopPadding || maxBottomPadding) DEFAULT_PADDING else DEFAULT_PADDING_HALF))
 }
 
 @Composable
