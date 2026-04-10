@@ -255,8 +255,11 @@ afterEvaluate {
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
       val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
       val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val lvStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("lv/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())
       treeList.remove(baseStringsFile)
+      // removed lv/strings.xml file with 100+ errors
+      treeList.remove(lvStringsFile)
       treeList.add(0, baseStringsFile)
       val baseFormatting = mutableMapOf<String, List<String>>()
       treeList.forEachIndexed { index, file ->

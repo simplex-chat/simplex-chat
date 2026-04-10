@@ -10,6 +10,9 @@ export type ChatResponse =
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
   | CR.ChatItemsDeleted
+  | CR.ChatRunning
+  | CR.ChatStarted
+  | CR.ChatStopped
   | CR.CmdOk
   | CR.ChatCmdError
   | CR.ConnectionPlan
@@ -24,6 +27,8 @@ export type ChatResponse =
   | CR.GroupLinkCreated
   | CR.GroupLinkDeleted
   | CR.GroupCreated
+  | CR.PublicGroupCreated
+  | CR.GroupRelays
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
@@ -58,6 +63,9 @@ export namespace CR {
     | "chatItemReaction"
     | "chatItemUpdated"
     | "chatItemsDeleted"
+    | "chatRunning"
+    | "chatStarted"
+    | "chatStopped"
     | "cmdOk"
     | "chatCmdError"
     | "connectionPlan"
@@ -72,6 +80,8 @@ export namespace CR {
     | "groupLinkCreated"
     | "groupLinkDeleted"
     | "groupCreated"
+    | "publicGroupCreated"
+    | "groupRelays"
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
@@ -140,6 +150,18 @@ export namespace CR {
     timed: boolean
   }
 
+  export interface ChatRunning extends Interface {
+    type: "chatRunning"
+  }
+
+  export interface ChatStarted extends Interface {
+    type: "chatStarted"
+  }
+
+  export interface ChatStopped extends Interface {
+    type: "chatStopped"
+  }
+
   export interface CmdOk extends Interface {
     type: "cmdOk"
     user_?: T.User
@@ -199,6 +221,7 @@ export namespace CR {
     type: "groupDeletedUser"
     user: T.User
     groupInfo: T.GroupInfo
+    msgSigned: boolean
   }
 
   export interface GroupLink extends Interface {
@@ -227,6 +250,21 @@ export namespace CR {
     groupInfo: T.GroupInfo
   }
 
+  export interface PublicGroupCreated extends Interface {
+    type: "publicGroupCreated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+  }
+
+  export interface GroupRelays extends Interface {
+    type: "groupRelays"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupRelays: T.GroupRelay[]
+  }
+
   export interface GroupMembers extends Interface {
     type: "groupMembers"
     user: T.User
@@ -239,12 +277,13 @@ export namespace CR {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
+    msgSigned: boolean
   }
 
   export interface GroupsList extends Interface {
     type: "groupsList"
     user: T.User
-    groups: T.GroupInfoSummary[]
+    groups: T.GroupInfo[]
   }
 
   export interface Invitation extends Interface {
@@ -273,6 +312,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     blocked: boolean
+    msgSigned: boolean
   }
 
   export interface MembersRoleUser extends Interface {
@@ -281,6 +321,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     toRole: T.GroupMemberRole
+    msgSigned: boolean
   }
 
   export interface NewChatItems extends Interface {
@@ -374,6 +415,7 @@ export namespace CR {
     groupInfo: T.GroupInfo
     members: T.GroupMember[]
     withMessages: boolean
+    msgSigned: boolean
   }
 
   export interface UserProfileUpdated extends Interface {

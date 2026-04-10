@@ -53,12 +53,19 @@ add_library( support SHARED IMPORTED )
 set_target_properties( support PROPERTIES IMPORTED_LOCATION
     ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libsupport.so)
 
+target_compile_options(app-lib PRIVATE
+    -g0
+)
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
 # https://developer.android.com/guide/practices/page-sizes#cmake
-target_link_options(app-lib PRIVATE "-Wl,-z,max-page-size=16384")
+target_link_options(app-lib PRIVATE
+    "-Wl,-z,max-page-size=16384"
+    "-Wl,--build-id=none"
+)
 
 target_link_libraries( # Specifies the target library.
     app-lib
@@ -67,4 +74,10 @@ target_link_libraries( # Specifies the target library.
 
     # Links the target library to the log library
     # included in the NDK.
-    ${log-lib})
+    ${log-lib}
+)
+
+add_custom_command(TARGET app-lib POST_BUILD
+        COMMAND ${CMAKE_STRIP} --remove-section=.comment $<TARGET_FILE:app-lib>
+        COMMENT "Stripping .comment section from app-lib"
+)

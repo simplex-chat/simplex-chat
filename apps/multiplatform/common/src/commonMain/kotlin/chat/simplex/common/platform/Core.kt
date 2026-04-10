@@ -14,12 +14,14 @@ import java.io.File
 import java.nio.ByteBuffer
 
 // ghc's rts
+// Spec: spec/architecture.md#initHS
 external fun initHS()
 // android-support
 external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
+// Spec: spec/architecture.md#chatMigrateInit
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
 external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
@@ -45,6 +47,7 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
+// Spec: spec/architecture.md#initChatControllerOnStart
 fun initChatControllerOnStart() {
   withLongRunningApi {
     if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
@@ -55,6 +58,7 @@ fun initChatControllerOnStart() {
   }
 }
 
+// Spec: spec/architecture.md#initChatController
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
   Log.d(TAG, "initChatController")
   try {
@@ -182,6 +186,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   }
 }
 
+// Spec: spec/architecture.md#chatInitTemporaryDatabase
 fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation: MigrationConfirmation = MigrationConfirmation.Error): Pair<DBMigrationResult, ChatCtrl?> {
   val dbKey = key ?: randomDatabasePassword()
   Log.d(TAG, "chatInitTemporaryDatabase path: $dbPath")
@@ -193,6 +198,7 @@ fun chatInitTemporaryDatabase(dbPath: String, key: String? = null, confirmation:
   return res to migrated[1] as ChatCtrl
 }
 
+// Spec: spec/architecture.md#chatInitControllerRemovingDatabases
 fun chatInitControllerRemovingDatabases() {
   val dbPath = dbAbsolutePrefixPath
   // Remove previous databases, otherwise, can be .errorNotADatabase with null controller

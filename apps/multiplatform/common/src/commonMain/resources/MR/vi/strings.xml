@@ -2034,7 +2034,7 @@
     <string name="la_notice_turn_on">Bật</string>
     <string name="servers_info_subscriptions_total">Tổng</string>
     <string name="group_member_status_unknown_short">không xác định</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Đang cố gắng kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này (lỗi: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Đang cố gắng kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này (lỗi: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Đang cố gắng kết nối tới máy chủ dùng để nhận tin nhắn từ liên hệ này.</string>
     <string name="to_verify_compare">Để xác minh mã hóa đầu cuối với liên hệ của bạn, so sánh (hoặc quét) mã trên các thiết bị của các bạn.</string>
     <string name="network_session_mode_transport_isolation">Cách ly truyền tải</string>

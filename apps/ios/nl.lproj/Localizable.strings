@@ -1158,7 +1158,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Voorwaarden zijn reeds geaccepteerd voor de volgende operator(s): **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Gebruiksvoorwaarden";
 
 /* No comment provided by engineer. */
@@ -1688,7 +1688,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Verwijder bericht?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Verwijder berichten";
 
 /* No comment provided by engineer. */
@@ -3197,10 +3198,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "De rol van lid wordt gewijzigd in \"%@\". Het lid ontvangt een nieuwe uitnodiging.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Lid wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!";
 
 /* alert message */
@@ -3437,7 +3438,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Netwerk instellingen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Netwerk status";
 
 /* delete after time */
@@ -4123,9 +4124,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "bevestiging ontvangen…";
 
-/* notification */
-"Received file event" = "Ontvangen bestandsgebeurtenis";
-
 /* message info title */
 "Received message" = "Ontvangen bericht";
 
@@ -4221,7 +4219,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Relay server beschermt uw IP-adres, maar kan de duur van het gesprek observeren.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Verwijderen";
 
 /* No comment provided by engineer. */
@@ -4233,7 +4231,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Lid verwijderen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Lid verwijderen?";
 
 /* No comment provided by engineer. */
@@ -4650,9 +4648,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Sent directly" = "Direct verzonden";
-
-/* notification */
-"Sent file event" = "Verzonden bestandsgebeurtenis";
 
 /* message info title */
 "Sent message" = "Verzonden bericht";
@@ -5344,12 +5339,6 @@ report reason */
 "Transport sessions" = "Transportsessies";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Turkse interface";
 
 /* No comment provided by engineer. */
@@ -5816,9 +5805,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Je sluit je al aan bij de groep!\nDeelnameverzoek herhalen?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Je bent uitgenodigd voor de groep";

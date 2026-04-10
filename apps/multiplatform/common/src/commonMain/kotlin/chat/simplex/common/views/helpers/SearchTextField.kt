@@ -10,6 +10,7 @@ import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -112,18 +113,26 @@ fun SearchTextField(
         placeholder = {
           Text(placeholder, style = textStyle.copy(color = MaterialTheme.colors.secondary), maxLines = 1, overflow = TextOverflow.Ellipsis)
         },
-        trailingIcon = if (searchText.value.text.isNotEmpty()) {{
-          IconButton({
-            if (alwaysVisible) {
-              keyboard?.hide()
-              focusManager.clearFocus()
+        trailingIcon = if (searchText.value.text.isNotEmpty() || trailingContent != null) {{
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.offset(x = 8.dp)
+          ) {
+            if (searchText.value.text.isNotEmpty()) {
+              IconButton({
+                if (alwaysVisible) {
+                  keyboard?.hide()
+                  focusManager.clearFocus()
+                }
+                searchText.value = TextFieldValue("")
+                onValueChange("")
+              }) {
+                Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary)
+              }
             }
-            searchText.value = TextFieldValue("");
-            onValueChange("")
-          }, Modifier.offset(x = reducedCloseButtonPadding)) {
-            Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
+            trailingContent?.invoke()
           }
-        }} else trailingContent,
+        }} else null,
         singleLine = true,
         enabled = enabled,
         interactionSource = interactionSource,

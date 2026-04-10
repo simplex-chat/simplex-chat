@@ -21,9 +21,14 @@ import kotlin.math.sqrt
 private fun errorBitmap(): ImageBitmap =
   ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="))).toComposeImageBitmap()
 
+private val base64BitmapCache = Collections.synchronizedMap(object : LinkedHashMap<String, ImageBitmap>(200, 0.75f, true) {
+  override fun removeEldestEntry(eldest: Map.Entry<String, ImageBitmap>): Boolean = size > 200
+})
+
 private const val MAX_IMAGE_DIMENSION = 4320
 
 actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
+  base64BitmapCache[base64ImageString]?.let { return it }
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
@@ -40,7 +45,9 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     }
     val image = reader.read(0)
     reader.dispose()
-    image.toComposeImageBitmap()
+    image.toComposeImageBitmap().also {
+      base64BitmapCache[base64ImageString] = it
+    }
   } catch (e: Throwable) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap()

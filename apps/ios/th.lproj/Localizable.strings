@@ -910,7 +910,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "ลบข้อความ?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "ลบข้อความ";
 
 /* No comment provided by engineer. */
@@ -1815,7 +1816,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "บทบาทของสมาชิกจะถูกเปลี่ยนเป็น \"%@\" สมาชิกจะได้รับคำเชิญใหม่";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";
 
 /* No comment provided by engineer. */
@@ -1926,7 +1927,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "การตั้งค่าเครือข่าย";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "สถานะเครือข่าย";
 
 /* delete after time */
@@ -2285,9 +2286,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "ได้รับการยืนยัน…";
 
-/* notification */
-"Received file event" = "ได้รับไฟล์";
-
 /* message info title */
 "Received message" = "ได้รับข้อความ";
 
@@ -2335,13 +2333,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "เซิร์ฟเวอร์รีเลย์ปกป้องที่อยู่ IP ของคุณ แต่สามารถสังเกตระยะเวลาของการโทรได้";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "ลบ";
 
 /* No comment provided by engineer. */
 "Remove member" = "ลบสมาชิกออก";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "ลบสมาชิกออก?";
 
 /* No comment provided by engineer. */
@@ -2569,9 +2567,6 @@ chat item action */
 
 /* copied message info */
 "Sent at: %@" = "ส่งเมื่อ: %@";
-
-/* notification */
-"Sent file event" = "เหตุการณ์ไฟล์ที่ส่ง";
 
 /* message info title */
 "Sent message" = "ข้อความที่ส่งแล้ว";
@@ -2896,12 +2891,6 @@ chat item action */
 "Transport isolation" = "การแยกการขนส่ง";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %@)";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
-
-/* No comment provided by engineer. */
 "Turn off" = "ปิด";
 
 /* No comment provided by engineer. */
@@ -3122,9 +3111,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "คุณได้เชื่อมต่อกับ %@ แล้ว";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";

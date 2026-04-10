@@ -1404,7 +1404,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Jūsų profilis bus išsiųstas kontaktui iš kurio gavote šią nuorodą.</string>
     <string name="you_will_join_group">Prisijungsite prie visų grupės narių.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Esate prisijungę prie serverio skirto gauti žinutes iš šio kontakto.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto (klaida: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto (klaida: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Bandoma prisijungti prie serverio skirto žinučių gavimui iš šio kontakto.</string>
     <string name="no_details">nėra detalių</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Kad išlaikyti jūsų privatumą, vietoj tiesioginių pranešimų, programėlė turi <b>SimpleX fono tarnybą</b> - ji naudoja kelis procentus akumuliatoriaus per dieną.]]></string>

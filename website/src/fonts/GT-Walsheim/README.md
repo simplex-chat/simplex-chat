@@ -1,0 +1,1 @@
+Please note that these fonts are not free open-source and cannot be re-used in other projects.

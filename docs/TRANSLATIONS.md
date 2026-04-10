@@ -1,5 +1,5 @@
 ---
-title: Contributing translations to SimpleX Chat
+title: Contributing SimpleX app translations
 revision: 19.03.2023
 ---
 

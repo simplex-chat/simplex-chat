@@ -65,7 +65,7 @@
 "No active profile" = "Kein aktives Profil";
 
 /* No comment provided by engineer. */
-"Ok" = "OK";
+"Ok" = "Ok";
 
 /* No comment provided by engineer. */
 "Open the app to downgrade the database." = "Öffnen Sie die App, um die Datenbank herunterzustufen.";
@@ -77,10 +77,10 @@
 "Passphrase" = "Passwort";
 
 /* No comment provided by engineer. */
-"Please create a profile in the SimpleX app" = "Bitte erstellen Sie ein Profil in der SimpleX-App";
+"Please create a profile in the SimpleX app" = "Bitte erstellen Sie in der SimpleX-App ein Profil";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.";
+"Selected chat preferences prohibit this message." = "Die gewählten Chat-Einstellungen erlauben diese Nachricht nicht.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Das Senden einer Nachricht dauert länger als erwartet.";

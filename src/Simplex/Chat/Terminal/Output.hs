@@ -33,11 +33,9 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
 import Simplex.Chat.View
-import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (tshow)
 import System.Console.ANSI.Types
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Mem.Weak (Weak)
@@ -182,7 +180,8 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo m, text)
+        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo (Just m), text)
+        (GroupChat g scopeInfo, CIChannelRcv) -> sendNtf (fromGroup_ g scopeInfo Nothing, text)
         _ -> pure ()
     where
       text = msgText mc formattedText
@@ -196,8 +195,6 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   CEvtContactAnotherClient u ct -> do
     whenCurrUser cc u $ unsetActiveContact t ct
     when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
-  CEvtContactsDisconnected srv _ -> serverNtf srv "disconnected"
-  CEvtContactsSubscribed srv _ -> serverNtf srv "connected"
   CEvtReceivedGroupInvitation u g ct _ _ ->
     when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
@@ -212,10 +209,21 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} _ ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
+  CEvtDeletedMemberUser _u g m _withMessages _signed ->
+    sendNtf ("#" <> viewGroupName g, viewMemberName m <> " removed you from the group")
   _ -> pure ()
   where
     sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
-    serverNtf (SMPServer host _ _) str = sendNtf ("server " <> str, safeDecodeUtf8 $ strEncode host)
+
+chatResponseNotification :: ChatTerminal -> Either ChatError ChatResponse -> IO ()
+chatResponseNotification ChatTerminal {sendNotification} = \case
+  Right r -> case r of
+    CRUserContactLinkCreated {} -> sendNtf ("SimpleX", "contact link created")
+    CRUserProfileUpdated {} -> sendNtf ("SimpleX", "profile updated")
+    _ -> pure ()
+  Left _ -> pure ()
+  where
+    sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
 
 msgText :: MsgContent -> Maybe MarkdownList -> Text
 msgText (MCFile _) _ = "wants to send a file"

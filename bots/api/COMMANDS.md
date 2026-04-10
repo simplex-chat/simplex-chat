@@ -30,6 +30,8 @@ This file is generated automatically.
 - [APILeaveGroup](#apileavegroup)
 - [APIListMembers](#apilistmembers)
 - [APINewGroup](#apinewgroup)
+- [APINewPublicGroup](#apinewpublicgroup)
+- [APIGetGroupRelays](#apigetgrouprelays)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -50,6 +52,9 @@ This file is generated automatically.
 - [APIListContacts](#apilistcontacts)
 - [APIListGroups](#apilistgroups)
 - [APIDeleteChat](#apideletechat)
+- [APISetGroupCustomData](#apisetgroupcustomdata)
+- [APISetContactCustomData](#apisetcontactcustomdata)
+- [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -59,6 +64,10 @@ This file is generated automatically.
 - [APIDeleteUser](#apideleteuser)
 - [APIUpdateProfile](#apiupdateprofile)
 - [APISetContactPrefs](#apisetcontactprefs)
+
+[Chat management](#chat-management)
+- [StartChat](#startchat)
+- [APIStopChat](#apistopchat)
 
 ---
 
@@ -98,7 +107,7 @@ UserContactLinkCreated: User contact address created.
 - user: [User](./TYPES.md#user)
 - connLinkContact: [CreatedConnLink](./TYPES.md#createdconnlink)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -134,7 +143,7 @@ UserContactLinkDeleted: User contact address deleted.
 - type: "userContactLinkDeleted"
 - user: [User](./TYPES.md#user)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -171,7 +180,7 @@ UserContactLink: User contact address.
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -211,7 +220,7 @@ UserProfileUpdated: User profile updated.
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -249,7 +258,7 @@ UserContactLinkUpdated: User contact address updated.
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -280,7 +289,7 @@ Send messages.
 ```
 
 ```javascript
-'/_send ' + sendRef.toString() + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
+'/_send ' + ChatRef.cmdString(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
 ```
 
 ```python
@@ -294,7 +303,7 @@ NewChatItems: New messages.
 - user: [User](./TYPES.md#user)
 - chatItems: [[AChatItem](./TYPES.md#achatitem)]
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -320,7 +329,7 @@ Update message.
 ```
 
 ```javascript
-'/_update item ' + chatRef.toString() + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
+'/_update item ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
 ```
 
 ```python
@@ -339,7 +348,7 @@ ChatItemNotChanged: Message not changed.
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -367,7 +376,7 @@ Delete message.
 ```
 
 ```javascript
-'/_delete item ' + chatRef.toString() + ' ' + chatItemIds.join(',') + ' ' + deleteMode // JavaScript
+'/_delete item ' + ChatRef.cmdString(chatRef) + ' ' + chatItemIds.join(',') + ' ' + deleteMode // JavaScript
 ```
 
 ```python
@@ -383,7 +392,7 @@ ChatItemsDeleted: Messages deleted.
 - byUser: bool
 - timed: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -423,7 +432,7 @@ ChatItemsDeleted: Messages deleted.
 - byUser: bool
 - timed: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -449,7 +458,7 @@ Add/remove message reaction.
 ```
 
 ```javascript
-'/_reaction ' + chatRef.toString() + ' ' + chatItemId + ' ' + (add ? 'on' : 'off') + ' ' + JSON.stringify(reaction) // JavaScript
+'/_reaction ' + ChatRef.cmdString(chatRef) + ' ' + chatItemId + ' ' + (add ? 'on' : 'off') + ' ' + JSON.stringify(reaction) // JavaScript
 ```
 
 ```python
@@ -464,7 +473,7 @@ ChatItemReaction: Message reaction.
 - added: bool
 - reaction: [ACIReaction](./TYPES.md#acireaction)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -515,7 +524,7 @@ RcvFileAcceptedSndCancelled: File accepted, but no longer sent.
 - user: [User](./TYPES.md#user)
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -560,7 +569,7 @@ RcvFileCancelled: Cancelled receiving file.
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -589,7 +598,7 @@ Add contact to group. Requires bot to have Admin role.
 **Syntax**:
 
 ```
-/_add #<groupId> <contactId> observer|author|member|moderator|admin|owner
+/_add #<groupId> <contactId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -609,7 +618,7 @@ SentGroupInvitation: Group invitation sent.
 - contact: [Contact](./TYPES.md#contact)
 - member: [GroupMember](./TYPES.md#groupmember)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -647,7 +656,7 @@ UserAcceptedGroupSent: User accepted group invitation.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - hostContact: [Contact](./TYPES.md#contact)?
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -668,7 +677,7 @@ Accept group member. Requires Admin role.
 **Syntax**:
 
 ```
-/_accept member #<groupId> <groupMemberId> observer|author|member|moderator|admin|owner
+/_accept member #<groupId> <groupMemberId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -687,7 +696,7 @@ MemberAccepted: Member accepted to group.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -711,7 +720,7 @@ Set members role. Requires Admin role.
 **Syntax**:
 
 ```
-/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] observer|author|member|moderator|admin|owner
+/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -730,8 +739,9 @@ MembersRoleUser: Members role changed by user.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- msgSigned: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -771,8 +781,9 @@ MembersBlockedForAllUser: Members blocked for all by admin.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - blocked: bool
+- msgSigned: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -812,8 +823,9 @@ UserDeletedMembers: Members deleted.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - withMessages: bool
+- msgSigned: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -853,7 +865,7 @@ LeftMemberUser: User left group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -890,7 +902,7 @@ GroupMembers: Group members.
 - user: [User](./TYPES.md#user)
 - group: [Group](./TYPES.md#group)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -929,7 +941,87 @@ GroupCreated: Group created.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APINewPublicGroup
+
+Create public group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- incognito: bool
+- relayIds: [int64]
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
+
+**Syntax**:
+
+```
+/_public group <userId>[ incognito=on] <relayIds[0]>[,<relayIds[1]>...] <json(groupProfile)>
+```
+
+```javascript
+'/_public group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + relayIds.join(',') + ' ' + JSON.stringify(groupProfile) // JavaScript
+```
+
+```python
+'/_public group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + ','.join(map(str, relayIds)) + ' ' + json.dumps(groupProfile) # Python
+```
+
+**Responses**:
+
+PublicGroupCreated: Public group created.
+- type: "publicGroupCreated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetGroupRelays
+
+Get group relays.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_get relays #<groupId>
+```
+
+```javascript
+'/_get relays #' + groupId // JavaScript
+```
+
+```python
+'/_get relays #' + str(groupId) # Python
+```
+
+**Responses**:
+
+GroupRelays: Group relays.
+- type: "groupRelays"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -968,8 +1060,9 @@ GroupUpdated: Group updated.
 - fromGroup: [GroupInfo](./TYPES.md#groupinfo)
 - toGroup: [GroupInfo](./TYPES.md#groupinfo)
 - member_: [GroupMember](./TYPES.md#groupmember)?
+- msgSigned: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -994,7 +1087,7 @@ Create group link.
 **Syntax**:
 
 ```
-/_create link #<groupId> observer|author|member|moderator|admin|owner
+/_create link #<groupId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1013,7 +1106,7 @@ GroupLinkCreated: Group link created.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1033,7 +1126,7 @@ Set member role for group link.
 **Syntax**:
 
 ```
-/_set link role #<groupId> observer|author|member|moderator|admin|owner
+/_set link role #<groupId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1052,7 +1145,7 @@ GroupLink: Group link.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1089,7 +1182,7 @@ GroupLinkDeleted: Group link deleted.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1127,7 +1220,7 @@ GroupLink: Group link.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1171,7 +1264,7 @@ Invitation: One-time invitation.
 - connLinkInvitation: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1210,7 +1303,7 @@ ConnectionPlan: Connection link information.
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1219,7 +1312,7 @@ ChatCmdError: Command error.
 
 ### APIConnect
 
-Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
+Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.
 
 *Network usage*: interactive.
 
@@ -1235,7 +1328,7 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 ```
 
 ```javascript
-'/_connect ' + userId + (preparedLink_ ? ' ' + preparedLink_.toString() : '') // JavaScript
+'/_connect ' + userId + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
 ```
 
 ```python
@@ -1261,7 +1354,7 @@ SentInvitation: Invitation sent to contact address.
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1311,7 +1404,7 @@ SentInvitation: Invitation sent to contact address.
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1348,7 +1441,7 @@ AcceptingContactRequest: Contact request accepted.
 - user: [User](./TYPES.md#user)
 - contact: [Contact](./TYPES.md#contact)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1386,7 +1479,7 @@ ContactRequestRejected: Contact request rejected.
 - contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
 - contact_: [Contact](./TYPES.md#contact)?
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1428,7 +1521,7 @@ ContactsList: Contacts.
 - user: [User](./TYPES.md#user)
 - contacts: [[Contact](./TYPES.md#contact)]
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1465,9 +1558,9 @@ Get groups.
 GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
-- groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]
+- groups: [[GroupInfo](./TYPES.md#groupinfo)]
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1491,7 +1584,7 @@ Delete chat.
 ```
 
 ```javascript
-'/_delete ' + chatRef.toString() + ' ' + chatDeleteMode.toString() // JavaScript
+'/_delete ' + ChatRef.cmdString(chatRef) + ' ' + ChatDeleteMode.cmdString(chatDeleteMode) // JavaScript
 ```
 
 ```python
@@ -1514,8 +1607,120 @@ GroupDeletedUser: User deleted group.
 - type: "groupDeletedUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- msgSigned: bool
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetGroupCustomData
+
+Set group custom data.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+- customData: JSONObject?
+
+**Syntax**:
+
+```
+/_set custom #<groupId>[ <json(customData)>]
+```
+
+```javascript
+'/_set custom #' + groupId + (customData ? ' ' + JSON.stringify(customData) : '') // JavaScript
+```
+
+```python
+'/_set custom #' + str(groupId) + ((' ' + json.dumps(customData)) if customData is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetContactCustomData
+
+Set contact custom data.
+
+*Network usage*: no.
+
+**Parameters**:
+- contactId: int64
+- customData: JSONObject?
+
+**Syntax**:
+
+```
+/_set custom @<contactId>[ <json(customData)>]
+```
+
+```javascript
+'/_set custom @' + contactId + (customData ? ' ' + JSON.stringify(customData) : '') // JavaScript
+```
+
+```python
+'/_set custom @' + str(contactId) + ((' ' + json.dumps(customData)) if customData is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserAutoAcceptMemberContacts
+
+Set auto-accept member contacts.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- onOff: bool
+
+**Syntax**:
+
+```
+/_set accept member contacts <userId> on|off
+```
+
+```javascript
+'/_set accept member contacts ' + userId + ' ' + (onOff ? 'on' : 'off') // JavaScript
+```
+
+```python
+'/_set accept member contacts ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1529,7 +1734,7 @@ Most bots don't need to use these commands, as bot profile can be configured man
 
 ### ShowActiveUser
 
-Get active user profile
+Get active user profile.
 
 *Network usage*: no.
 
@@ -1545,7 +1750,7 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1554,7 +1759,7 @@ ChatCmdError: Command error.
 
 ### CreateActiveUser
 
-Create new user profile
+Create new user profile.
 
 *Network usage*: no.
 
@@ -1581,7 +1786,7 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1594,7 +1799,7 @@ ChatCmdError: Command error.
 
 ### ListUsers
 
-Get all user profiles
+Get all user profiles.
 
 *Network usage*: no.
 
@@ -1610,7 +1815,7 @@ UsersList: Users.
 - type: "usersList"
 - users: [[UserInfo](./TYPES.md#userinfo)]
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1619,7 +1824,7 @@ ChatCmdError: Command error.
 
 ### APISetActiveUser
 
-Set active user profile
+Set active user profile.
 
 *Network usage*: no.
 
@@ -1647,7 +1852,7 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1688,7 +1893,7 @@ CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1732,7 +1937,7 @@ UserProfileNoChange: User profile was not changed.
 - type: "userProfileNoChange"
 - user: [User](./TYPES.md#user)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
@@ -1771,8 +1976,60 @@ ContactPrefsUpdated: Contact preferences updated.
 - fromContact: [Contact](./TYPES.md#contact)
 - toContact: [Contact](./TYPES.md#contact)
 
-ChatCmdError: Command error.
+ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+## Chat management
+
+These commands should not be used with CLI-based bots
+
+
+### StartChat
+
+Start chat controller.
+
+*Network usage*: no.
+
+**Parameters**:
+- mainApp: bool
+- enableSndFiles: bool
+
+**Syntax**:
+
+```
+/_start
+```
+
+**Responses**:
+
+ChatStarted: Chat started.
+- type: "chatStarted"
+
+ChatRunning: Chat running.
+- type: "chatRunning"
+
+---
+
+
+### APIStopChat
+
+Stop chat controller.
+
+*Network usage*: no.
+
+**Syntax**:
+
+```
+/_stop
+```
+
+**Response**:
+
+ChatStopped: Chat stopped.
+- type: "chatStopped"
 
 ---

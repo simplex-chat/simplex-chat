@@ -15,6 +15,7 @@ func apiLoadMessages(
     _ chatId: ChatId,
     _ im: ItemsModel,
     _ pagination: ChatPagination,
+    _ contentTag: MsgContentTag? = nil,
     _ search: String = "",
     _ openAroundItemId: ChatItem.ID? = nil,
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
@@ -22,7 +23,7 @@ func apiLoadMessages(
     let chat: Chat
     let navInfo: NavigationInfo
     do {
-        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: im.groupScopeInfo?.toChatScope(), contentTag: im.contentTag, pagination: pagination, search: search)
+        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: im.groupScopeInfo?.toChatScope(), contentTag: contentTag ?? im.contentTag, pagination: pagination, search: search)
     } catch let error {
         logger.error("apiLoadMessages error: \(responseError(error))")
         return

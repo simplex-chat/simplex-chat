@@ -1143,7 +1143,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Les conditions sont déjà acceptées pour ces opérateurs : **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Conditions d'utilisation";
 
 /* No comment provided by engineer. */
@@ -1661,7 +1661,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Supprimer le message ?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Supprimer les messages";
 
 /* No comment provided by engineer. */
@@ -3104,10 +3105,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Le rôle du membre sera changé pour \"%@\". Ce membre recevra une nouvelle invitation.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Le membre sera retiré de la discussion - cela ne peut pas être annulé !";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Ce membre sera retiré du groupe - impossible de revenir en arrière !";
 
 /* No comment provided by engineer. */
@@ -3323,7 +3324,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Paramètres réseau";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "État du réseau";
 
 /* delete after time */
@@ -3925,9 +3926,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "confimation reçu…";
 
-/* notification */
-"Received file event" = "Événement de fichier reçu";
-
 /* message info title */
 "Received message" = "Message reçu";
 
@@ -4008,7 +4006,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Le serveur relais protège votre adresse IP, mais il peut observer la durée de l'appel.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Supprimer";
 
 /* No comment provided by engineer. */
@@ -4020,7 +4018,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Retirer le membre";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Retirer ce membre ?";
 
 /* No comment provided by engineer. */
@@ -4377,9 +4375,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Sent directly" = "Envoyé directement";
-
-/* notification */
-"Sent file event" = "Événement de fichier envoyé";
 
 /* message info title */
 "Sent message" = "Message envoyé";
@@ -5031,12 +5026,6 @@ chat item action */
 "Transport sessions" = "Sessions de transport";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Interface en turc";
 
 /* No comment provided by engineer. */
@@ -5485,9 +5474,6 @@ chat item action */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Vous êtes déjà membre de ce groupe !\nRépéter la demande d'adhésion ?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Vous êtes connecté·e au serveur utilisé pour recevoir les messages de ce contact.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Vous êtes invité·e au groupe";

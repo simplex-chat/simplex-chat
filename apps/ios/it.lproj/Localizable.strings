@@ -513,6 +513,9 @@ swipe action */
 "all members" = "tutti i membri";
 
 /* No comment provided by engineer. */
+"All messages" = "Tutti i messaggi";
+
+/* No comment provided by engineer. */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Tutti i messaggi e i file vengono inviati **crittografati end-to-end**, con sicurezza resistenti alla quantistica nei messaggi diretti.";
 
 /* No comment provided by engineer. */
@@ -733,6 +736,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Chiamate audio e video";
+
+/* No comment provided by engineer. */
+"Audio call" = "Chiamata audio";
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "chiamata audio (non crittografata e2e)";
@@ -1191,7 +1197,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Le condizioni sono già state accettate per i seguenti operatori: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Condizioni d'uso";
 
 /* No comment provided by engineer. */
@@ -1731,9 +1737,16 @@ swipe action */
 "Delete member message?" = "Eliminare il messaggio del membro?";
 
 /* No comment provided by engineer. */
+"Delete member messages" = "Elimina i messaggi del membro";
+
+/* alert title */
+"Delete member messages?" = "Eliminare i messaggi del membro?";
+
+/* No comment provided by engineer. */
 "Delete message?" = "Eliminare il messaggio?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Elimina messaggi";
 
 /* No comment provided by engineer. */
@@ -2238,6 +2251,9 @@ chat item action */
 /* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Errore di connessione al server di inoltro %@. Riprova più tardi.";
 
+/* subscription status explanation */
+"Error connecting to the server used to receive messages from this connection: %@" = "Errore di connessione al server usato per ricevere messaggi da questa connessione: %@";
+
 /* No comment provided by engineer. */
 "Error creating address" = "Errore nella creazione dell'indirizzo";
 
@@ -2438,6 +2454,9 @@ file error text
 snd error text */
 "Error: %@" = "Errore: %@";
 
+/* server test error */
+"Error: %@." = "Errore: %@.";
+
 /* No comment provided by engineer. */
 "Error: no database file" = "Errore: nessun file di database";
 
@@ -2559,6 +2578,9 @@ snd error text */
 "Files and media prohibited!" = "File e contenuti multimediali vietati!";
 
 /* No comment provided by engineer. */
+"Filter" = "Filtro";
+
+/* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Filtra le chat non lette e preferite.";
 
 /* No comment provided by engineer. */
@@ -2573,8 +2595,17 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Trova le chat più velocemente";
 
+/* No comment provided by engineer. */
+"Fingerprint in destination server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server di destinazione non corrisponde al certificato: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in forwarding server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server di inoltro non corrisponde al certificato: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato: %@.";
+
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
+"Fingerprint in server address does not match certificate." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato.";
 
 /* No comment provided by engineer. */
 "Fix" = "Correggi";
@@ -2853,6 +2884,9 @@ snd error text */
 "Image will be received when your contact is online, please wait or check later!" = "L'immagine verrà ricevuta quando il tuo contatto sarà in linea, aspetta o controlla più tardi!";
 
 /* No comment provided by engineer. */
+"Images" = "Immagini";
+
+/* No comment provided by engineer. */
 "Immediately" = "Immediatamente";
 
 /* No comment provided by engineer. */
@@ -3036,6 +3070,9 @@ snd error text */
 "Invite friends" = "Invita amici";
 
 /* No comment provided by engineer. */
+"Invite member" = "Invita membro";
+
+/* No comment provided by engineer. */
 "Invite members" = "Invita membri";
 
 /* No comment provided by engineer. */
@@ -3188,6 +3225,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Linked desktops" = "Desktop collegati";
 
+/* No comment provided by engineer. */
+"Links" = "Link";
+
 /* swipe action */
 "List" = "Elenco";
 
@@ -3281,6 +3321,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Member is deleted - can't accept request" = "Il membro è eliminato - impossibile accettare la richiesta";
 
+/* alert message */
+"Member messages will be deleted - this cannot be undone!" = "I messaggi del membro verranno eliminati. Non è reversibile!";
+
 /* chat feature */
 "Member reports" = "Segnalazioni dei membri";
 
@@ -3293,10 +3336,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Il ruolo del membro verrà cambiato in \"%@\". Il membro riceverà un invito nuovo.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Il membro verrà rimosso dalla chat, non è reversibile!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Il membro verrà rimosso dal gruppo, non è reversibile!";
 
 /* alert message */
@@ -3539,7 +3582,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Impostazioni di rete";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Stato della rete";
 
 /* delete after time */
@@ -3697,6 +3740,9 @@ snd error text */
 
 /* servers error */
 "No servers to send files." = "Nessun server per inviare file.";
+
+/* No comment provided by engineer. */
+"no subscription" = "nessuna iscrizione";
 
 /* copied message info in history */
 "no text" = "nessun testo";
@@ -3881,7 +3927,7 @@ new chat action */
 "Open new chat" = "Apri una chat nuova";
 
 /* new chat action */
-"Open new group" = "Apri un gruppo nuovo";
+"Open new group" = "Apri il nuovo gruppo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Apri le impostazioni";
@@ -4267,9 +4313,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "conferma ricevuta…";
 
-/* notification */
-"Received file event" = "Evento file ricevuto";
-
 /* message info title */
 "Received message" = "Messaggio ricevuto";
 
@@ -4365,8 +4408,11 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Il server relay protegge il tuo indirizzo IP, ma può osservare la durata della chiamata.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Rimuovi";
+
+/* alert action */
+"Remove and delete messages" = "Rimuovi ed elimina i messaggi";
 
 /* No comment provided by engineer. */
 "Remove archive?" = "Rimuovere l'archivio?";
@@ -4380,7 +4426,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Rimuovi membro";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Rimuovere il membro?";
 
 /* No comment provided by engineer. */
@@ -4676,7 +4722,22 @@ chat item action */
 "Search bar accepts invitation links." = "La barra di ricerca accetta i link di invito.";
 
 /* No comment provided by engineer. */
+"Search files" = "Cerca file";
+
+/* No comment provided by engineer. */
+"Search images" = "Cerca immagini";
+
+/* No comment provided by engineer. */
+"Search links" = "Cerca link";
+
+/* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Cerca o incolla un link SimpleX";
+
+/* No comment provided by engineer. */
+"Search videos" = "Cerca video";
+
+/* No comment provided by engineer. */
+"Search voice messages" = "Cerca messaggi vocali";
 
 /* network option */
 "sec" = "sec";
@@ -4831,9 +4892,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Inviato direttamente";
 
-/* notification */
-"Sent file event" = "Evento file inviato";
-
 /* message info title */
 "Sent message" = "Messaggio inviato";
 
@@ -4880,10 +4938,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "info coda server: %1$@\n\nultimo msg ricevuto: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Il server richiede l'autorizzazione di creare code, controlla la password";
+"Server requires authorization to create queues, check password." = "Il server richiede l'autorizzazione di creare code, controlla la password.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Il server richiede l'autorizzazione per il caricamento, controllare la password";
+"Server requires authorization to upload, check password." = "Il server richiede l'autorizzazione per l'invio, controlla la password.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test del server fallito!";
@@ -5577,11 +5635,8 @@ report reason */
 /* No comment provided by engineer. */
 "Transport sessions" = "Sessioni di trasporto";
 
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Tentativo di connessione al server usato per ricevere messaggi da questo contatto (errore: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Tentativo di connessione al server usato per ricevere messaggi da questo contatto.";
+/* subscription status explanation */
+"Trying to connect to the server used to receive messages from this connection." = "Tentativo di connessione al server usato per ricevere messaggi da questa connessione.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Interfaccia in turco";
@@ -5890,6 +5945,9 @@ report reason */
 "Video will be received when your contact is online, please wait or check later!" = "Il video verrà ricevuto quando il tuo contatto sarà in linea, attendi o controlla più tardi!";
 
 /* No comment provided by engineer. */
+"Videos" = "Video";
+
+/* No comment provided by engineer. */
 "Videos and files up to 1gb" = "Video e file fino a 1 GB";
 
 /* No comment provided by engineer. */
@@ -6075,11 +6133,14 @@ report reason */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Stai già entrando nel gruppo!\nRipetere la richiesta di ingresso?";
 
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Sei connesso/a al server usato per ricevere messaggi da questo contatto.";
+/* subscription status explanation */
+"You are connected to the server used to receive messages from this connection." = "Sei connesso/a al server usato per ricevere messaggi da questa connessione.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sei stato/a invitato/a al gruppo";
+
+/* subscription status explanation */
+"You are not connected to the server used to receive messages from this connection (no subscription)." = "Non sei connesso/a al server usato per ricevere messaggi da questa connessione (nessuna iscrizione).";
 
 /* No comment provided by engineer. */
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "Non sei connesso/a a questi server. L'instradamento privato è usato per consegnare loro i messaggi.";

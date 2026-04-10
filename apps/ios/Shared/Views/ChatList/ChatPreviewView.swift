@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -460,12 +461,6 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         let size = dynamicSize(userFont).incognitoSize
         switch chat.chatInfo {
-        case let .direct(contact):
-            if contact.active, let status = contact.activeConn?.connStatus, status == .ready || status == .sndReady {
-                NetworkStatusView(contact: contact, size: size)
-            } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-            }
         case .group:
             if progressByTimeout {
                 ProgressView()
@@ -480,30 +475,6 @@ struct ChatPreviewView: View {
             }
         default:
             incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-        }
-    }
-
-    struct NetworkStatusView: View {
-        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
-        @EnvironmentObject var theme: AppTheme
-        @ObservedObject var networkModel = NetworkModel.shared
-
-        let contact: Contact
-        let size: CGFloat
-
-        var body: some View {
-            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
-            switch (networkModel.contactNetworkStatus(contact)) {
-            case .connected: incognitoIcon(contact.contactConnIncognito, theme.colors.secondary, size: size)
-            case .error:
-                Image(systemName: "exclamationmark.circle")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
-                    .foregroundColor(theme.colors.secondary)
-            default:
-                ProgressView()
-            }
         }
     }
 }

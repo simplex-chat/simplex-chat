@@ -5,10 +5,12 @@
 //  Created by Ian Davies on 07/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CILinkView
 struct CILinkView: View {
     @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview

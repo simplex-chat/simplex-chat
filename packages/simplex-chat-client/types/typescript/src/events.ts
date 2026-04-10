@@ -29,6 +29,8 @@ export type ChatEvent =
   | CEvt.MemberAcceptedByOther
   | CEvt.MemberBlockedForAll
   | CEvt.GroupMemberUpdated
+  | CEvt.GroupLinkDataUpdated
+  | CEvt.GroupRelayUpdated
   | CEvt.RcvFileDescrReady
   | CEvt.RcvFileComplete
   | CEvt.SndFileCompleteXFTP
@@ -46,6 +48,9 @@ export type ChatEvent =
   | CEvt.JoinedGroupMemberConnecting
   | CEvt.SentGroupInvitation
   | CEvt.GroupLinkConnecting
+  | CEvt.HostConnected
+  | CEvt.HostDisconnected
+  | CEvt.SubscriptionStatus
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
@@ -77,6 +82,8 @@ export namespace CEvt {
     | "memberAcceptedByOther"
     | "memberBlockedForAll"
     | "groupMemberUpdated"
+    | "groupLinkDataUpdated"
+    | "groupRelayUpdated"
     | "rcvFileDescrReady"
     | "rcvFileComplete"
     | "sndFileCompleteXFTP"
@@ -94,6 +101,9 @@ export namespace CEvt {
     | "joinedGroupMemberConnecting"
     | "sentGroupInvitation"
     | "groupLinkConnecting"
+    | "hostConnected"
+    | "hostDisconnected"
+    | "subscriptionStatus"
     | "messageError"
     | "chatError"
     | "chatErrors"
@@ -207,6 +217,7 @@ export namespace CEvt {
     fromGroup: T.GroupInfo
     toGroup: T.GroupInfo
     member_?: T.GroupMember
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface JoinedGroupMember extends Interface {
@@ -224,6 +235,7 @@ export namespace CEvt {
     member: T.GroupMember
     fromRole: T.GroupMemberRole
     toRole: T.GroupMemberRole
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface DeletedMember extends Interface {
@@ -233,6 +245,7 @@ export namespace CEvt {
     byMember: T.GroupMember
     deletedMember: T.GroupMember
     withMessages: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface LeftMember extends Interface {
@@ -240,6 +253,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface DeletedMemberUser extends Interface {
@@ -248,6 +262,7 @@ export namespace CEvt {
     groupInfo: T.GroupInfo
     member: T.GroupMember
     withMessages: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface GroupDeleted extends Interface {
@@ -255,6 +270,7 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     member: T.GroupMember
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface ConnectedToGroupMember extends Interface {
@@ -280,6 +296,7 @@ export namespace CEvt {
     byMember: T.GroupMember
     member: T.GroupMember
     blocked: boolean
+    msgSigned?: T.MsgSigStatus
   }
 
   export interface GroupMemberUpdated extends Interface {
@@ -288,6 +305,23 @@ export namespace CEvt {
     groupInfo: T.GroupInfo
     fromMember: T.GroupMember
     toMember: T.GroupMember
+  }
+
+  export interface GroupLinkDataUpdated extends Interface {
+    type: "groupLinkDataUpdated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    groupLink: T.GroupLink
+    groupRelays: T.GroupRelay[]
+    relaysChanged: boolean
+  }
+
+  export interface GroupRelayUpdated extends Interface {
+    type: "groupRelayUpdated"
+    user: T.User
+    groupInfo: T.GroupInfo
+    member: T.GroupMember
+    groupRelay: T.GroupRelay
   }
 
   export interface RcvFileDescrReady extends Interface {
@@ -409,6 +443,25 @@ export namespace CEvt {
     user: T.User
     groupInfo: T.GroupInfo
     hostMember: T.GroupMember
+  }
+
+  export interface HostConnected extends Interface {
+    type: "hostConnected"
+    protocol: string
+    transportHost: string
+  }
+
+  export interface HostDisconnected extends Interface {
+    type: "hostDisconnected"
+    protocol: string
+    transportHost: string
+  }
+
+  export interface SubscriptionStatus extends Interface {
+    type: "subscriptionStatus"
+    server: string
+    subscriptionStatus: T.SubscriptionStatus
+    connections: string[]
   }
 
   export interface MessageError extends Interface {

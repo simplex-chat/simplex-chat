@@ -50,8 +50,7 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
-    createBot :: Maybe CreateBotOpts,
-    maintenance :: Bool
+    createBot :: Maybe CreateBotOpts
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -66,9 +65,11 @@ data CoreChatOpts = CoreChatOpts
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
     deviceName :: Maybe Text,
+    chatRelay :: Bool,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
-    migrationBackupPath :: Maybe FilePath
+    migrationBackupPath :: Maybe FilePath,
+    maintenance :: Bool    
   }
 
 data CreateBotOpts = CreateBotOpts
@@ -198,7 +199,7 @@ coreChatOptsP appDir defaultDbName = do
     switch
       ( long "connections"
           <> short 'c'
-          <> help "Log every contact and group connection on start (also with `-l info`)"
+          <> help "Log connections subscription errors on start (also with `-l info`)"
       )
   logServerHosts <-
     switch
@@ -233,6 +234,11 @@ coreChatOptsP appDir defaultDbName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
+  chatRelay <-
+    switch
+      ( long "relay"
+          <> help "Run as a chat relay client"
+      )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -245,6 +251,12 @@ coreChatOptsP appDir defaultDbName = do
           <> help "Automatically confirm \"up\" database migrations"
       )
   migrationBackupPath <- migrationBackupPathP
+  maintenance <-
+    switch
+      ( long "maintenance"
+          <> short 'm'
+          <> help "Run in maintenance mode (/_start to start chat)"
+      )
   pure
     CoreChatOpts
       { dbOptions,
@@ -269,9 +281,11 @@ coreChatOptsP appDir defaultDbName = do
         logFile,
         tbqSize,
         deviceName,
+        chatRelay,
         highlyAvailable,
         yesToUpMigrations,
-        migrationBackupPath
+        migrationBackupPath,
+        maintenance
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
@@ -376,12 +390,6 @@ chatOptsP appDir defaultDbName = do
       ( long "create-bot-allow-files"
           <> help "Flag for created bot to allow files (only allowed together with --create-bot option)"
       )
-  maintenance <-
-    switch
-      ( long "maintenance"
-          <> short 'm'
-          <> help "Run in maintenance mode (/_start to start chat)"
-      )
   pure
     ChatOpts
       { coreOptions,
@@ -400,8 +408,7 @@ chatOptsP appDir defaultDbName = do
           Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles}
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
-            | otherwise -> Nothing,
-        maintenance
+            | otherwise -> Nothing
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]

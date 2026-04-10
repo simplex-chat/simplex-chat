@@ -14,7 +14,7 @@
     <string name="server_error">ошибка</string>
     <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>
@@ -42,7 +42,7 @@
     <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
     <string name="simplex_link_group">SimpleX ссылка группы</string>
     <string name="simplex_link_connection">через %1$s</string>
-    <string name="simplex_link_mode">SimpleX ссылки</string>
+    <string name="simplex_link_mode">Ссылки SimpleX</string>
     <string name="simplex_link_mode_description">Описание</string>
     <string name="simplex_link_mode_full">Полная ссылка</string>
     <string name="simplex_link_mode_browser">В браузере</string>
@@ -207,7 +207,7 @@
     <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет %1$s.</string>
     <string name="waiting_for_file">Ожидается приём файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
-    <string name="file_saved">Файл сохранен</string>
+    <string name="file_saved">Файл сохранён</string>
     <string name="file_not_found">Файл не найден</string>
     <string name="error_saving_file">Ошибка сохранения файла</string>
     <!-- Voice messages -->
@@ -340,7 +340,7 @@
     <string name="one_time_link">Одноразовая ссылка</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
-    <string name="your_simplex_contact_address">Ваш SimpleX адрес</string>
+    <string name="your_simplex_contact_address">Ваш адрес SimpleX</string>
     <string name="database_passphrase_and_export">База данных</string>
     <string name="about_simplex_chat">Подробнее о SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
@@ -379,12 +379,12 @@
     <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
-    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
-    <string name="your_ICE_servers">Ваши ICE серверы</string>
-    <string name="configure_ICE_servers">Настройка ICE серверов</string>
-    <string name="enter_one_ICE_server_per_line">ICE серверы (один на строке)</string>
-    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE серверов</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
+    <string name="saved_ICE_servers_will_be_removed">Сохранённые WebRTC ICE-серверы будут удалены.</string>
+    <string name="your_ICE_servers">Ваши ICE-серверы</string>
+    <string name="configure_ICE_servers">Настройка ICE-серверов</string>
+    <string name="enter_one_ICE_server_per_line">ICE-серверы (один на строке)</string>
+    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE-серверов</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
@@ -412,7 +412,7 @@
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">Полное имя:</string>
     <string name="your_current_profile">Ваш активный профиль</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. Серверы SimpleX не могут получить доступ к Вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
     <string name="save_preferences_question">Сохранить предпочтения?</string>
@@ -428,7 +428,7 @@
     <string name="your_profile_is_stored_on_your_device">Ваш профиль, контакты и доставленные сообщения хранятся на Вашем устройстве.</string>
     <string name="profile_is_only_shared_with_your_contacts">Профиль отправляется только Вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Имя профиля не может содержать пробелы.</string>
-    <string name="display_name">Введите ваше имя:</string>
+    <string name="display_name">Имя:</string>
     <string name="create_profile_button">Создать</string>
     <string name="about_simplex">О SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
@@ -496,15 +496,15 @@
     <string name="icon_descr_video_call">видеозвонок</string>
     <string name="icon_descr_audio_call">аудиозвонок</string>
     <!-- Call settings -->
-    <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
+    <string name="settings_audio_video_calls">Аудио и видеозвонки</string>
     <string name="your_calls">Ваши звонки</string>
     <string name="always_use_relay">Всегда соединяться через relay</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
-    <string name="your_ice_servers">Ваши ICE серверы</string>
-    <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
+    <string name="your_ice_servers">Ваши ICE-серверы</string>
+    <string name="webrtc_ice_servers">WebRTC ICE-серверы</string>
     <string name="relay_server_protects_ip">Relay-сервер защищает Ваш IP-адрес, но может отслеживать продолжительность звонка.</string>
     <string name="relay_server_if_necessary">Relay-сервер используется только при необходимости. Другая сторона может видеть Ваш IP-адрес.</string>
     <!-- Call Lock Screen -->
@@ -627,28 +627,28 @@
     <string name="current_passphrase">Текущий пароль…</string>
     <string name="new_passphrase">Новый пароль…</string>
     <string name="confirm_new_passphrase">Подтвердите новый пароль…</string>
-    <string name="update_database_passphrase">Поменять пароль</string>
+    <string name="update_database_passphrase">Сменить пароль</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
     <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить Ваши данные.</string>
     <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, Вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Внимание</b>: Вы не сможете восстановить или поменять пароль, если потеряете его.]]></string>
-    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
-    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранен на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранён в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
+    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранён на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
-    <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
+    <string name="change_database_passphrase_question">Сменить пароль базы данных?</string>
     <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранен в Keystore.</string>
-    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранён в Keystore.</string>
+    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменён и сохранён в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
-    <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
-    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
+    <string name="store_passphrase_securely">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
+    <string name="store_passphrase_securely_without_recover">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
     <!-- DatabaseErrorView.kt -->
     <string name="wrong_passphrase">Неправильный пароль базы данных</string>
     <string name="encrypted_database">База данных зашифрована</string>
     <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
-    <string name="passphrase_is_different">Пароль базы данных отличается от сохраненного в Keystore.</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от сохранённого в Keystore.</string>
     <string name="file_with_path">Файл: %s</string>
     <string name="database_passphrase_is_required">Введите пароль базы данных, чтобы открыть чат.</string>
     <string name="error_with_info">Ошибка: %s</string>
@@ -660,7 +660,7 @@
     <string name="enter_passphrase">Введите пароль…</string>
     <string name="save_passphrase_and_open_chat">Сохранить пароль и открыть чат</string>
     <string name="open_chat">Открыть чат</string>
-    <string name="database_backup_can_be_restored">Попытка поменять пароль базы данных не была завершена.</string>
+    <string name="database_backup_can_be_restored">Попытка изменить пароль базы данных не была завершена.</string>
     <string name="restore_database">Восстановить резервную копию</string>
     <string name="restore_database_alert_title">Восстановить резервную копию?</string>
     <string name="restore_database_alert_desc">Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.</string>
@@ -682,7 +682,7 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="icon_descr_add_members"> Пригласить членов группы</string>
+    <string name="icon_descr_add_members">Пригласить в группу</string>
     <string name="icon_descr_group_inactive">Группа неактивна</string>
     <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
@@ -713,7 +713,7 @@
     <string name="snd_group_event_changed_role_for_yourself">Вы поменяли роль себе на: %s</string>
     <string name="snd_group_event_member_deleted">Вы удалили %1$s</string>
     <string name="snd_group_event_user_left">Вы покинули группу</string>
-    <string name="snd_group_event_group_profile_updated">профиль группы обновлен</string>
+    <string name="snd_group_event_group_profile_updated">профиль группы обновлён</string>
     <!-- Conn event chat items -->
     <string name="rcv_conn_event_switch_queue_phase_completed">поменял(а) адрес для Вас</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">смена адреса…</string>
@@ -752,7 +752,7 @@
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
     <string name="invite_prohibited_description">Вы пытаетесь пригласить контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль.</string>
     <!-- GroupChatInfoView.kt -->
-    <string name="button_add_members">Пригласить членов группы</string>
+    <string name="button_add_members">Пригласить в группу</string>
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
@@ -818,7 +818,7 @@
     <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
     <string name="network_options_save">Сохранить</string>
     <string name="update_network_settings_question">Обновить настройки сети?</string>
-    <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведёт к переподключению клиента ко всем серверам.</string>
     <string name="update_network_settings_confirmation">Обновить</string>
     <!-- Incognito mode -->
     <string name="incognito">Инкогнито</string>
@@ -880,7 +880,7 @@
     <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены могут необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено.</string>
-    <string name="group_members_can_send_voice">Члены могут отправлять голосовые сообщения.</string>
+    <string name="group_members_can_send_voice">Участники могут отправлять голосовые сообщения.</string>
     <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Минимальный расход батареи</b>. Вы получите уведомления только когда приложение запущено, без фонового сервиса.]]></string>
     <string name="onboarding_notifications_mode_title">Уведомления</string>
@@ -981,7 +981,7 @@
     <string name="users_delete_data_only">Только локальные данные профиля</string>
     <string name="messages_section_title">Сообщения</string>
     <string name="smp_servers_per_user">Серверы для новых соединений Вашего текущего профиля чата</string>
-    <string name="your_chat_profiles">Ваши профили</string>
+    <string name="your_chat_profiles">Профили</string>
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
@@ -1059,7 +1059,7 @@
     <string name="v4_6_group_welcome_message_descr">Установите приветственное сообщение для новых членов группы.</string>
     <string name="tap_to_activate_profile">Нажмите на профиль, чтобы переключиться на него.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям - добавьте переводы через Weblate!</string>
-    <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
+    <string name="you_will_still_receive_calls_and_ntfs">Вы всё равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
     <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть или отключить уведомления профиля - нажмите и удерживайте профиль, чтобы открыть меню.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Изображение будет принято когда Ваш контакт его загрузит.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Файл будет принят когда Ваш контакт загрузит его.</string>
@@ -1074,7 +1074,7 @@
     <string name="mtr_error_no_down_migration">версия базы данных новее чем приложения, но нет миграции для отката: %s</string>
     <string name="mtr_error_different">разная миграция в приложении/базе данных: %s / %s</string>
     <string name="downgrade_and_open_chat">Откатить версию и открыть чат</string>
-    <string name="database_downgrade_warning">Предупреждение: Вы можете потерять какие то данные!</string>
+    <string name="database_downgrade_warning">Предупреждение: Вы можете потерять некоторые данные!</string>
     <string name="developer_options">ID базы данных и опция Отдельные транспортные сессии.</string>
     <string name="show_developer_options">Показать опции для разработчиков</string>
     <string name="delete_chat_profile">Удалить профиль чата</string>
@@ -1203,7 +1203,7 @@
     <string name="change_self_destruct_passcode">Изменить код самоуничтожения</string>
     <string name="self_destruct">Самоуничтожение</string>
     <string name="self_destruct_passcode_enabled">Код самоуничтожения включен!</string>
-    <string name="app_passcode_replaced_with_self_destruct">Код доступа в приложение будет заменен кодом самоуничтожения.</string>
+    <string name="app_passcode_replaced_with_self_destruct">Код доступа в приложение будет заменён кодом самоуничтожения.</string>
     <string name="enable_self_destruct">Включить код самоуничтожения</string>
     <string name="self_destruct_passcode">Код самоуничтожения</string>
     <string name="self_destruct_passcode_changed">Код самоуничтожения изменен!</string>
@@ -1243,13 +1243,13 @@
     <string name="your_contacts_will_remain_connected">Ваши контакты сохранятся.</string>
     <string name="customize_theme_title">Настроить тему</string>
     <string name="create_address_and_let_people_connect">Создайте адрес, чтобы можно было соединиться с Вами.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохранятся. Обновленный профиль будет отправлен Вашим контактам.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохранятся. Обновлённый профиль будет отправлен Вашим контактам.</string>
     <string name="add_address_to_your_profile">Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.</string>
     <string name="create_simplex_address">Создать адрес SimpleX</string>
     <string name="share_with_contacts">Поделиться с контактами</string>
     <string name="stop_sharing_address">Прекратить делиться адресом\?</string>
     <string name="auto_accept_contact">Автоприём</string>
-    <string name="enter_welcome_message_optional">Введите приветственное сообщение... (опционально)</string>
+    <string name="enter_welcome_message_optional">Введите приветственное сообщение... (по желанию)</string>
     <string name="save_settings_question">Сохранить настройки\?</string>
     <string name="stop_sharing">Прекратить делиться</string>
     <string name="continue_to_next_step">Продолжить</string>
@@ -1373,7 +1373,7 @@
     <string name="renegotiate_encryption">Пересогласовать шифрование</string>
     <string name="v5_2_favourites_filter">Быстрый поиск чатов</string>
     <string name="v5_2_message_delivery_receipts">Отчёты о доставке сообщений!</string>
-    <string name="v5_2_more_things">Еще несколько изменений</string>
+    <string name="v5_2_more_things">Ещё несколько изменений</string>
     <string name="delivery_receipts_title">Отчёты о доставке!</string>
     <string name="enable_receipts_all">Включить</string>
     <string name="v5_2_disappear_one_message_descr">Даже когда они выключены в разговоре.</string>
@@ -1433,8 +1433,8 @@
     <string name="connect_use_current_profile">Использовать активный профиль</string>
     <string name="connect_use_new_incognito_profile">Использовать новый профиль инкогнито</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
-    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
-    <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранён в настройках.</string>
+    <string name="v5_3_encrypt_local_files">Шифруйте сохранённые файлы и медиа</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
@@ -1496,7 +1496,7 @@
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%1$d сообщений отмодерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
-    <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
+    <string name="v5_4_better_groups_descr">Быстрое вступление и надёжная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
     <string name="linked_mobiles">Связанные мобильные</string>
     <string name="desktop_device">Компьютер</string>
@@ -1622,7 +1622,7 @@
     <string name="error_creating_message">Ошибка создания сообщения</string>
     <string name="error_deleting_note_folder">Ошибка удаления заметки</string>
     <string name="v5_5_new_interface_languages">Венгерский и Турецкий интерфейс</string>
-    <string name="search_or_paste_simplex_link">Искать или вставьте ссылку SimpleX</string>
+    <string name="search_or_paste_simplex_link">Поиск или вставить ссылку SimpleX</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Этот QR-код не является SimpleX-ccылкой.</string>
     <string name="v5_5_private_notes_descr">С зашифрованными файлами и медиа.</string>
     <string name="v5_5_message_delivery_descr">С уменьшенным потреблением батареи.</string>
@@ -1682,15 +1682,15 @@
     <string name="saved_message_title">Сохранённое сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
-    <string name="blocked_by_admin_items_description">%d сообщений заблокировано администратором</string>
+    <string name="blocked_by_admin_items_description">%d сообщений заблокировано админом</string>
     <string name="rcv_group_event_member_blocked">%s заблокирован</string>
     <string name="rcv_group_event_member_unblocked">%s разблокирован</string>
     <string name="snd_group_event_member_unblocked">Вы разблокировали %s</string>
     <string name="unblock_for_all">Разблокировать для всех</string>
     <string name="block_for_all_question">Заблокировать члена группы для всех?</string>
     <string name="member_info_member_blocked">заблокирован</string>
-    <string name="blocked_by_admin_item_description">заблокировано администратором</string>
-    <string name="member_blocked_by_admin">Заблокирован администратором</string>
+    <string name="blocked_by_admin_item_description">заблокировано админом</string>
+    <string name="member_blocked_by_admin">Заблокирован админом</string>
     <string name="block_for_all">Заблокировать для всех</string>
     <string name="error_blocking_member_for_all">Ошибка при блокировании члена группы для всех</string>
     <string name="unblock_for_all_question">Разблокировать члена группы для всех?</string>
@@ -1739,7 +1739,7 @@
     <string name="migrate_from_device_stopping_chat">Остановка чата</string>
     <string name="migrate_from_device_archive_and_upload">Архивировать и загрузить</string>
     <string name="migrate_from_device_confirm_upload">Подтвердить загрузку</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP-серверы.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надёжно зашифрованы и загружены на выбранные XFTP-серверы.</string>
     <string name="migrate_from_device_upload_failed">Ошибка загрузки</string>
     <string name="migrate_from_device_repeat_upload">Повторить загрузку</string>
     <string name="migrate_from_device_try_again">Вы можете попробовать ещё раз.</string>
@@ -1750,7 +1750,7 @@
     <string name="migrate_from_device_finalize_migration">Завершить миграцию</string>
     <string name="migrate_from_device_or_share_this_file_link">Или передайте эту ссылку</string>
     <string name="migrate_from_device_migration_complete">Миграция завершена</string>
-    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений.</string>
+    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Внимание: запуск чата на нескольких устройствах не поддерживается и приведёт к сбоям доставки сообщений.</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Вы <b>не должны</b> использовать одну и ту же базу данных на двух устройствах.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Проверьте подключение к Интернету и повторите попытку</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для её миграции.</string>
@@ -1801,7 +1801,7 @@
     <string name="audio_device_wired_headphones">Наушники</string>
     <string name="audio_device_speaker">Громкоговоритель</string>
     <string name="v5_7_call_sounds">Звуки во время звонков</string>
-    <string name="v5_7_network_descr">Более надежное соединение с сетью.</string>
+    <string name="v5_7_network_descr">Более надёжное соединение с сетью.</string>
     <string name="v5_7_network">Статус сети</string>
     <string name="saved_description">сохранено</string>
     <string name="saved_from_description">сохранено из %s</string>
@@ -1815,7 +1815,7 @@
     <string name="simplex_links">Ссылки SimpleX</string>
     <string name="allow_to_send_simplex_links">Разрешить отправлять ссылки SimpleX.</string>
     <string name="prohibit_sending_simplex_links">Запретить отправку ссылок SimpleX</string>
-    <string name="group_members_can_send_simplex_links">Члены могут отправлять ссылки SimpleX</string>
+    <string name="group_members_can_send_simplex_links">Участники могут отправлять ссылки SimpleX.</string>
     <string name="feature_roles_admins">админы</string>
     <string name="feature_roles_all_members">все члены</string>
     <string name="feature_roles_owners">владельцы</string>
@@ -1836,9 +1836,9 @@
     <string name="settings_section_title_files">ФАЙЛЫ</string>
     <string name="v5_8_chat_themes">Новые темы чатов</string>
     <string name="message_queue_info_none">нет</string>
-    <string name="color_mode_light">Светлая</string>
-    <string name="color_mode_system">Системная</string>
-    <string name="dark_mode_colors">Цвета тёмного режима</string>
+    <string name="color_mode_light">Светлый</string>
+    <string name="color_mode_system">Системный</string>
+    <string name="dark_mode_colors">Цвета темного режима</string>
     <string name="v5_8_safe_files">Получайте файлы безопасно</string>
     <string name="v5_8_private_routing">Конфиденциальная доставка 🚀</string>
     <string name="v5_8_message_delivery">Улучшенная доставка сообщений</string>
@@ -1871,7 +1871,7 @@
     <string name="network_smp_proxy_mode_always">Всегда</string>
     <string name="v5_8_safe_files_descr">Подтверждать файлы с неизвестных серверов.</string>
     <string name="network_smp_proxy_mode_always_description">Всегда использовать конфиденциальную доставку.</string>
-    <string name="color_mode_dark">Тёмная</string>
+    <string name="color_mode_dark">Тёмный</string>
     <string name="info_row_debug_delivery">Отладка доставки</string>
     <string name="error_initializing_web_view">Ошибка инициализации WebView. Обновите Вашу систему до новой версии. Свяжитесь с разработчиками.
 \nОшибка: %s</string>
@@ -1948,7 +1948,7 @@
     <string name="file_error_auth">Неверный ключ или неизвестный адрес блока файла - скорее всего, файл удален.</string>
     <string name="cannot_share_message_alert_text">Выбранные настройки чата запрещают это сообщение.</string>
     <string name="file_error">Ошибка файла</string>
-    <string name="scan_paste_link">Сканировать / Вставить ссылку</string>
+    <string name="scan_paste_link">Сканировать QR-код/ Вставить ссылку</string>
     <string name="xftp_servers_other">Другие XFTP-серверы</string>
     <string name="xftp_servers_configured">Настроенные XFTP-серверы</string>
     <string name="app_check_for_updates_button_download">Загрузка %s (%s)</string>
@@ -2000,7 +2000,7 @@
     <string name="chunks_deleted">Блоков удалено</string>
     <string name="chunks_downloaded">Блоков принято</string>
     <string name="subscription_results_ignored">Подписок игнорировано</string>
-    <string name="copy_error">Ошибка копирования</string>
+    <string name="copy_error">Скопировать ошибку</string>
     <string name="info_view_video_button">видеозвонок</string>
     <string name="delete_contact_cannot_undo_warning">Контакт будет удален — это нельзя отменить!</string>
     <string name="keep_conversation">Оставить разговор</string>
@@ -2016,7 +2016,7 @@
     <string name="privacy_media_blur_radius_soft">Слабое</string>
     <string name="privacy_media_blur_radius_medium">Среднее</string>
     <string name="privacy_media_blur_radius_off">Выключено</string>
-    <string name="one_hand_ui">Доступная панель приложения</string>
+    <string name="one_hand_ui">Панель приложения внизу</string>
     <string name="current_user">Текущий профиль</string>
     <string name="servers_info_missing">Нет информации, попробуйте перезагрузить</string>
     <string name="servers_info">Информация о серверах</string>
@@ -2217,7 +2217,7 @@
     <string name="operator_conditions_accepted_for_some"><![CDATA[Условия уже приняты для следующих операторов: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Эти условия также будут применены к: <b>%s</b>.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Чтобы использовать серверы оператора <b>%s</b>, примите условия использования.]]></string>
-    <string name="operator_use_for_sending">Для оправки</string>
+    <string name="operator_use_for_sending">Для отправки</string>
     <string name="operator_added_message_servers">Дополнительные серверы сообщений</string>
     <string name="operator_use_for_files">Использовать для файлов</string>
     <string name="operator_open_conditions">Открыть условия</string>
@@ -2341,11 +2341,11 @@
     <string name="error_updating_chat_tags">Ошибка обновления списка чата</string>
     <string name="error_creating_chat_tags">Ошибка создания списка чатов</string>
     <string name="list_menu">Список</string>
-    <string name="no_chats_in_list">Никаких чатов в списке %s.</string>
+    <string name="no_chats_in_list">Нет чатов в списке %s.</string>
     <string name="no_unread_chats">Без непрочитанных чатов</string>
     <string name="no_chats">Никаких чатов</string>
     <string name="no_chats_found">Чаты не найдены</string>
-    <string name="delete_chat_list_warning">Все чаты будут удалены из списка %s, а сам список удален</string>
+    <string name="delete_chat_list_warning">Все чаты будут удалены из списка %s, а сам список удалён</string>
     <string name="chat_list_add_list">Добавить список</string>
     <string name="chat_list_notes">Примечания</string>
     <string name="open_with_app">Открыть в %s</string>
@@ -2380,7 +2380,7 @@
     <string name="v6_3_better_privacy_and_security">Улучшенная приватность и безопасность</string>
     <string name="v6_3_faster_deletion_of_groups">Ускорено удаление групп.</string>
     <string name="v6_3_faster_sending_messages">Ускорена отправка сообщений.</string>
-    <string name="v6_3_reports_descr">Помогайте администраторам модерировать их группы.</string>
+    <string name="v6_3_reports_descr">Помогайте админам модерировать их группы.</string>
     <string name="v6_3_organize_chat_lists">Организуйте чаты в списки</string>
     <string name="v6_3_reports">Вы можете сообщить о нарушениях</string>
     <string name="v6_3_set_message_expiration_in_chats">Установите время исчезания сообщений в чатах.</string>
@@ -2426,7 +2426,7 @@
     <string name="group_member_role_moderator">модератор</string>
     <string name="group_member_status_pending_approval">ожидает утверждения</string>
     <string name="group_member_status_pending_approval_short">ожидает</string>
-    <string name="operator_updated_conditions">Обновленные условия</string>
+    <string name="operator_updated_conditions">Обновлённые условия</string>
     <string name="disable_sending_member_reports">Запретить жаловаться модераторам группы.</string>
     <string name="group_members_can_send_reports">Члены группы могут пожаловаться модераторам.</string>
     <string name="disable_automatic_deletion_message">Сообщения в этом чате никогда не будут удалены.</string>
@@ -2464,7 +2464,7 @@
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
     <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
-    <string name="member_criteria_all">все</string>
+    <string name="member_criteria_all">всех</string>
     <string name="accept_pending_member_button">Принять</string>
     <string name="accept_pending_member_alert_question">Член группы хочет присоединиться. Принять?</string>
     <string name="cant_send_message_group_deleted">группа удалена</string>
@@ -2492,7 +2492,7 @@
     <string name="admission_stage_review">Одобрять членов группы</string>
     <string name="member_support">Чаты с членами группы</string>
     <string name="member_admission">Приём членов в группу</string>
-    <string name="admission_stage_review_descr">Одобрять членов для вступления в группу.</string>
+    <string name="admission_stage_review_descr">Вручную одобрять членов для вступления в группу.</string>
     <string name="no_support_chats">Нет чатов с членами группы</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Принять как читателя</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Принять в группу</string>
@@ -2512,7 +2512,7 @@
     <string name="set_member_admission">Установить вступление в группу</string>
     <string name="delete_member_support_chat_alert_title">Удалить чат с членом группы?</string>
     <string name="delete_member_support_chat_button">Удалить разговор</string>
-    <string name="rcv_group_event_member_accepted">принят %1$s</string>
+    <string name="rcv_group_event_member_accepted">принял %1$s</string>
     <string name="support_chat">Чат с админами</string>
     <string name="rcv_group_event_user_accepted">Вы приняты</string>
     <string name="group_new_support_chat_one">1 чат с членом группы</string>
@@ -2566,7 +2566,7 @@
     <string name="member_is_deleted_cant_accept_request">Член группы удалён - невозможно принять запрос</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Чтобы использовать другой профиль после попытки соединения, удалите чат и используйте ссылку снова.</string>
     <string name="address_welcome_message">Приветственное сообщение</string>
-    <string name="short_descr">О Вас:</string>
+    <string name="short_descr">О себе:</string>
     <string name="context_user_picker_your_profile">Ваш профиль</string>
     <string name="bio_too_large">Описание слишком длинное</string>
     <string name="connect_use_incognito_profile">Использовать профиль инкогнито</string>
@@ -2615,4 +2615,23 @@
     <string name="network_error_unknown_ca">Хэш в адресе сервера не соответствует сертификату: %1$s.</string>
     <string name="simplex_link_relay">Ссылка SimpleX relay</string>
     <string name="proxy_destination_error_unknown_ca">Хэш в адресе сервера назначения не соответствует сертификату: %1$s.</string>
+    <string name="button_delete_member_messages">Удалить сообщения участника</string>
+    <string name="button_delete_member_messages_question">Удалить сообщения участника?</string>
+    <string name="delete_member_messages_confirmation">Удалить сообщения</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Сообщения участника будут удалены - это действие не обратимо!</string>
+    <string name="server_no_sub">нет подписки</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Вы не подключенны к серверу через который Вы получали сообщения от этого контакта (без подписки).</string>
+    <string name="remove_member_delete_messages_confirmation">Удалить члена группы и удалить сообщения</string>
+    <string name="content_filter_all_messages">Все сообщения</string>
+    <string name="content_filter_files">Файлы</string>
+    <string name="content_filter_menu_item">Фильтр</string>
+    <string name="content_filter_images">Изображения</string>
+    <string name="content_filter_links">Ссылки</string>
+    <string name="placeholder_search_files">Поиск файлов</string>
+    <string name="placeholder_search_images">Поиск изображений</string>
+    <string name="placeholder_search_links">Поиск ссылок</string>
+    <string name="placeholder_search_videos">Поиск видео</string>
+    <string name="placeholder_search_voice_messages">Поиск голосовых сообщений</string>
+    <string name="content_filter_videos">Видео</string>
+    <string name="content_filter_voice_messages">Голосовые сообщения</string>
 </resources>

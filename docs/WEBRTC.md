@@ -1,5 +1,5 @@
 ---
-title: Using custom WebRTC ICE servers in SimpleX Chat
+title: Using custom WebRTC ICE servers
 revision: 31.01.2023
 ---
 
@@ -155,4 +155,3 @@ This is it - you now can make audio and video calls via your own server, without
      <img src="./stun_3.png">
 
      If results show `srflx` and `relay` candidates, everything is set up correctly!
-

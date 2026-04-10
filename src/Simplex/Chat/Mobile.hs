@@ -253,9 +253,11 @@ mobileChatOpts dbOptions =
             logFile = Nothing,
             tbqSize = 4096,
             deviceName = Nothing,
+            chatRelay = False,
             highlyAvailable = False,
             yesToUpMigrations = False,
-            migrationBackupPath = Just ""
+            migrationBackupPath = Just "",
+            maintenance = True
           },
       chatCmd = "",
       chatCmdDelay = 3,
@@ -268,8 +270,7 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Nothing,
-      maintenance = True
+      createBot = Nothing
     }
 
 defaultMobileConfig :: ChatConfig
@@ -277,7 +278,6 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      coreApi = True,
       deviceNameForRemote = "Mobile"
     }
 
@@ -296,8 +296,8 @@ chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigra
 chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   let migrationConfig = MigrationConfig confirmMigrations (Just "")
-  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey) migrationConfig
-  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) migrationConfig
+  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey chatDBFunctions) migrationConfig
+  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey []) migrationConfig
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     opts = mobileChatOpts $ removeDbKey chatDbOpts

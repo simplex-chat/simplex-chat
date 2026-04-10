@@ -72,7 +72,7 @@ instance IsString ErrorTypeDoc where fromString s = TD s ""
 
 
 -- category name, category description, commands
--- inner: constructor, description, responses, errors (ChatErrorType constructors), network usage, syntax
+-- inner: constructor, hidden params, description, responses, errors (ChatErrorType constructors), network usage, syntax
 chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName], [ErrorTypeDoc], Maybe UsesNetwork, Expr)])]
 chatCommandsDocsData =
   [ ( "Address commands",
@@ -117,6 +117,8 @@ chatCommandsDocsData =
         ("APILeaveGroup", [], "Leave group.", ["CRLeftMemberUser", "CRChatCmdError"], [], Just UNBackground, "/_leave #" <> Param "groupId"),
         ("APIListMembers", [], "Get group members.", ["CRGroupMembers", "CRChatCmdError"], [], Nothing, "/_members #" <> Param "groupId"),
         ("APINewGroup", [], "Create group.", ["CRGroupCreated", "CRChatCmdError"], [], Nothing, "/_group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Json "groupProfile"),
+        ("APINewPublicGroup", [], "Create public group.", ["CRPublicGroupCreated", "CRChatCmdError"], [], Just UNInteractive, "/_public group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Join ',' "relayIds" <> " " <> Json "groupProfile"),
+        ("APIGetGroupRelays", [], "Get group relays.", ["CRGroupRelays", "CRChatCmdError"], [], Nothing, "/_get relays #" <> Param "groupId"),
         ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated", "CRChatCmdError"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
       ]
     ),
@@ -132,7 +134,7 @@ chatCommandsDocsData =
       "These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
       [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
         ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"),
-        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
+        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
         ("Connect", [], "Connect via SimpleX link as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connLink_"),
         ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest", "CRChatCmdError"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
         ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected", "CRChatCmdError"], [], Nothing, "/_reject " <> Param "contactReqId")
@@ -142,7 +144,10 @@ chatCommandsDocsData =
       "Commands to list and delete conversations.",
       [ ("APIListContacts", [], "Get contacts.", ["CRContactsList", "CRChatCmdError"], [], Nothing, "/_contacts " <> Param "userId"),
         ("APIListGroups", [], "Get groups.", ["CRGroupsList", "CRChatCmdError"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"),
-        ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode")
+        ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser", "CRChatCmdError"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode"),
+        ("APISetGroupCustomData", [], "Set group custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom #" <> Param "groupId" <> Optional "" (" " <> Json "$0") "customData"),
+        ("APISetContactCustomData", [], "Set contact custom data.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set custom @" <> Param "contactId" <> Optional "" (" " <> Json "$0") "customData"),
+        ("APISetUserAutoAcceptMemberContacts", [], "Set auto-accept member contacts.", ["CRCmdOk", "CRChatCmdError"], [], Nothing, "/_set accept member contacts " <> Param "userId" <> " " <> OnOff "onOff")
         -- ("APIChatItemsRead", [], "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),
@@ -163,20 +168,26 @@ chatCommandsDocsData =
     ),
     ( "User profile commands",
       "Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).",
-      [ ("ShowActiveUser", [], "Get active user profile", ["CRActiveUser", "CRChatCmdError"], [], Nothing, "/user"),
+      [ ("ShowActiveUser", [], "Get active user profile.", ["CRActiveUser", "CRChatCmdError"], [], Nothing, "/user"),
         ( "CreateActiveUser",
           [],
-          "Create new user profile",
+          "Create new user profile.",
           ["CRActiveUser", "CRChatCmdError"],
           [TD "CEUserExists" "User or contact with this name already exists", TD "CEInvalidDisplayName" "Invalid user display name"],
           Nothing,
           "/_create user " <> Json "newUser"
         ),
-        ("ListUsers", [], "Get all user profiles", ["CRUsersList", "CRChatCmdError"], [], Nothing, "/users"),
-        ("APISetActiveUser", [], "Set active user profile", ["CRActiveUser", "CRChatCmdError"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
+        ("ListUsers", [], "Get all user profiles.", ["CRUsersList", "CRChatCmdError"], [], Nothing, "/users"),
+        ("APISetActiveUser", [], "Set active user profile.", ["CRActiveUser", "CRChatCmdError"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile"),
         ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated", "CRChatCmdError"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
+      ]
+    ),
+    ( "Chat management",
+      "These commands should not be used with CLI-based bots",
+      [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start"),
+        ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop")
       ]
     )
   ]
@@ -234,6 +245,7 @@ cliCommands =
     "MemberRole",
     "MuteUser",
     "NewGroup",
+    "NewPublicGroup",
     "QuitChat",
     "ReactToMessage",
     "RejectContact",
@@ -340,6 +352,7 @@ undocumentedCommands =
     "APIGetAppSettings",
     "APIGetCallInvitations",
     "APIGetChat",
+    "APIGetChatContentTypes",
     "APIGetChatItemInfo",
     "APIGetChatItems",
     "APIGetChatItemTTL",
@@ -349,7 +362,6 @@ undocumentedCommands =
     "APIGetContactCode",
     "APIGetGroupMemberCode",
     "APIGetNetworkConfig",
-    "APIGetNetworkStatuses",
     "APIGetNtfConns",
     "APIGetNtfToken",
     "APIGetReactionMembers",
@@ -357,6 +369,7 @@ undocumentedCommands =
     "APIGetUsageConditions",
     "APIGetUserServers",
     "APIGroupInfo",
+    "APIGetUpdatedGroupLinkData",
     "APIGroupMemberInfo",
     "APIGroupMemberQueueInfo",
     "APIHideUser",
@@ -392,17 +405,16 @@ undocumentedCommands =
     "APISetServerOperators",
     "APISetUserContactReceipts",
     "APISetUserGroupReceipts",
-    "APISetUserAutoAcceptMemberContacts",
     "APISetUserServers",
     "APISetUserUIThemes",
     "APIStandaloneFileInfo",
-    "APIStopChat",
     "APIStorageEncryption",
     "APISuspendChat",
     "APISwitchContact",
     "APISwitchGroupMember",
     "APISyncContactRatchet",
     "APISyncGroupMemberRatchet",
+    "APITestChatRelay",
     "APITestProtoServer",
     "APIUnhideUser",
     "APIUnmuteUser",
@@ -435,11 +447,13 @@ undocumentedCommands =
     "GetChatItemTTL",
     "GetRemoteFile",
     "GetUserProtoServers",
+    "GetUserChatRelays",
     "ListRemoteCtrls",
     "ListRemoteHosts",
     "ReconnectAllServers",
     "ReconnectServer",
     "ResetAgentServersStats",
+    "ShowConnectionsDiff",
     "ResubscribeAllConnections",
     "SetAllContactReceipts",
     "SetChatItemTTL",
@@ -451,13 +465,14 @@ undocumentedCommands =
     "SetServerOperators",
     "SetTempFolder",
     "SetUserProtoServers",
+    "SetUserChatRelays",
     "SlowSQLQueries",
-    "StartChat",
     "StartRemoteHost",
     "StopRemoteCtrl",
     "StopRemoteHost",
     "StoreRemoteFile",
     "SwitchRemoteHost",
+    "TestChatRelay",
     "TestProtoServer",
     "TestStorageEncryption",
     "VerifyRemoteCtrlSession"

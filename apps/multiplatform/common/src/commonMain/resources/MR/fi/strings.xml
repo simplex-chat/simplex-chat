@@ -1036,7 +1036,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Profiilisi lähetetään kontaktille, jolta sait tämän linkin.</string>
     <string name="you_will_join_group">Liityt ryhmään, johon tämä linkki viittaa, ja muodostat yhteyden sen ryhmän jäseniin.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta (virhe: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta (virhe: %1$s).</string>
     <string name="sender_you_pronoun">sinä</string>
     <string name="description_via_one_time_link">kertalinkillä</string>
     <string name="simplex_link_connection">%1$s:n kautta</string>

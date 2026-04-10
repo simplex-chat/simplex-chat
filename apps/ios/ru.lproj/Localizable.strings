@@ -164,7 +164,7 @@
 "%d file(s) were not downloaded." = "%d файлов не было загружено.";
 
 /* time interval */
-"%d hours" = "%d час.";
+"%d hours" = "%d ч.";
 
 /* alert title */
 "%d messages not forwarded" = "%d сообщений не переслано";
@@ -729,7 +729,7 @@ swipe action */
 "attempts" = "попытки";
 
 /* No comment provided by engineer. */
-"Audio & video calls" = "Аудио- и видеозвонки";
+"Audio & video calls" = "Аудио и видеозвонки";
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Аудио и видео звонки";
@@ -1191,7 +1191,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Условия уже приняты для следующих оператора(ов): **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Условия использования";
 
 /* No comment provided by engineer. */
@@ -1733,7 +1733,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Удалить сообщения";
 
 /* No comment provided by engineer. */
@@ -2238,6 +2239,9 @@ chat item action */
 /* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Ошибка подключения к пересылающему серверу %@. Попробуйте позже.";
 
+/* subscription status explanation */
+"Error connecting to the server used to receive messages from this connection: %@" = "Ошибка подключения к серверу, используемому для получения сообщений от этого соединения: %@";
+
 /* No comment provided by engineer. */
 "Error creating address" = "Ошибка при создании адреса";
 
@@ -2586,7 +2590,7 @@ snd error text */
 "Fingerprint in server address does not match certificate: %@." = "Хэш в адресе сервера не соответствует сертификату: %@.";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный";
+"Fingerprint in server address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный.";
 
 /* No comment provided by engineer. */
 "Fix" = "Починить";
@@ -3305,10 +3309,10 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена будет изменена на \"%@\". Будет отправлено новое приглашение.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from chat - this cannot be undone!" = "Член будет удален из разговора - это действие нельзя отменить!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Член группы будет удален - это действие нельзя отменить!";
 
 /* alert message */
@@ -3531,7 +3535,7 @@ snd error text */
 "Name" = "Имя";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Сеть & серверы";
+"Network & servers" = "Сеть и серверы";
 
 /* No comment provided by engineer. */
 "Network connection" = "Интернет-соединение";
@@ -3551,7 +3555,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Настройки сети";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Состояние сети";
 
 /* delete after time */
@@ -3709,6 +3713,9 @@ snd error text */
 
 /* servers error */
 "No servers to send files." = "Нет серверов для отправки файлов.";
+
+/* No comment provided by engineer. */
+"no subscription" = "нет подписки";
 
 /* copied message info in history */
 "no text" = "нет текста";
@@ -4279,9 +4286,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "получено подтверждение…";
 
-/* notification */
-"Received file event" = "Загрузка файла";
-
 /* message info title */
 "Received message" = "Полученное сообщение";
 
@@ -4377,7 +4381,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Relay сервер защищает Ваш IP адрес, но может отслеживать продолжительность звонка.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Удалить";
 
 /* No comment provided by engineer. */
@@ -4392,7 +4396,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Удалить члена группы";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Удалить члена группы?";
 
 /* No comment provided by engineer. */
@@ -4552,7 +4556,7 @@ swipe action */
 "Review members" = "Одобрять членов";
 
 /* admission stage description */
-"Review members before admitting (\"knocking\")." = "Одобрять членов для вступления в группу.";
+"Review members before admitting (\"knocking\")." = "Вручную одобрять членов для вступления в группу.";
 
 /* No comment provided by engineer. */
 "reviewed by admins" = "одобрен админами";
@@ -4843,9 +4847,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Отправлено напрямую";
 
-/* notification */
-"Sent file event" = "Отправка файла";
-
 /* message info title */
 "Sent message" = "Отправленное сообщение";
 
@@ -4892,10 +4893,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "информация сервера об очереди: %1$@\n\nпоследнее полученное сообщение: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Сервер требует авторизации для создания очередей, проверьте пароль";
+"Server requires authorization to create queues, check password." = "Сервер требует авторизации для создания очередей, проверьте пароль.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Сервер требует авторизации для загрузки, проверьте пароль";
+"Server requires authorization to upload, check password." = "Сервер требует авторизации для загрузки, проверьте пароль.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Ошибка теста сервера!";
@@ -5284,7 +5285,7 @@ report reason */
 "Tap Connect to send request" = "Нажмите Соединиться, чтобы отправить запрос";
 
 /* No comment provided by engineer. */
-"Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот.";
+"Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот";
 
 /* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.";
@@ -5551,7 +5552,7 @@ report reason */
 "To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." = "Чтобы показать Ваш скрытый профиль, введите его пароль в поле поиска на странице **Ваши профили чата**.";
 
 /* No comment provided by engineer. */
-"To send" = "Для оправки";
+"To send" = "Для отправки";
 
 /* alert message */
 "To send commands you must be connected." = "Вы должны быть соединены, чтобы отправлять команды.";
@@ -5589,11 +5590,8 @@ report reason */
 /* No comment provided by engineer. */
 "Transport sessions" = "Транспортные сессии";
 
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.";
+/* subscription status explanation */
+"Trying to connect to the server used to receive messages from this connection." = "Попытка подключиться к серверу, используемому для получения сообщений от этого соединения.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Турецкий интерфейс";
@@ -6087,11 +6085,14 @@ report reason */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Вы уже вступаете в группу!\nПовторить запрос на вступление?";
 
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.";
+/* subscription status explanation */
+"You are connected to the server used to receive messages from this connection." = "Вы подключены к серверу, используемому для приема сообщений от этого соединения.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Вы приглашены в группу";
+
+/* subscription status explanation */
+"You are not connected to the server used to receive messages from this connection (no subscription)." = "Вы не подключены к серверу, используемому для получения сообщений по этому соединению (нет подписки).";
 
 /* No comment provided by engineer. */
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "Вы не подключены к этим серверам. Для доставки сообщений на них используется конфиденциальная доставка.";

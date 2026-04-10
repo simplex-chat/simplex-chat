@@ -1258,7 +1258,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Smazat zprávu?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Smazat zprávy";
 
 /* No comment provided by engineer. */
@@ -1753,7 +1754,7 @@ snd error text */
 "Find chats faster" = "Najděte chaty rychleji";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
+"Fingerprint in server address does not match certificate." = "Otisk certifikátu v adrese serveru neodpovídá.";
 
 /* No comment provided by engineer. */
 "Fix" = "Opravit";
@@ -2193,7 +2194,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Role člena se změní na \"%@\". Člen obdrží novou pozvánku.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Člen bude odstraněn ze skupiny - toto nelze vzít zpět!";
 
 /* No comment provided by engineer. */
@@ -2307,7 +2308,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Nastavení sítě";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Stav sítě";
 
 /* delete after time */
@@ -2389,7 +2390,7 @@ snd error text */
 "no text" = "žádný text";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Bez uživatelských identifikátorů";
+"No user identifiers." = "Bez uživatelských identifikátorů.";
 
 /* No comment provided by engineer. */
 "Notifications" = "Oznámení";
@@ -2678,9 +2679,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "obdržel potvrzení…";
 
-/* notification */
-"Received file event" = "Událost přijatého souboru";
-
 /* message info title */
 "Received message" = "Přijatá zpráva";
 
@@ -2731,13 +2729,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Přenosový server chrání vaši IP adresu, ale může sledovat dobu trvání hovoru.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Odstranit";
 
 /* No comment provided by engineer. */
 "Remove member" = "Odstranit člena";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Odebrat člena?";
 
 /* No comment provided by engineer. */
@@ -2975,9 +2973,6 @@ chat item action */
 /* copied message info */
 "Sent at: %@" = "Posláno v: % @";
 
-/* notification */
-"Sent file event" = "Odeslaná událost souboru";
-
 /* message info title */
 "Sent message" = "Poslaná zpráva";
 
@@ -2985,10 +2980,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Odeslané zprávy se po uplynutí nastavené doby odstraní.";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
+"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
+"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serveru se nezdařil!";
@@ -3319,12 +3314,6 @@ chat item action */
 "Transport isolation" = "Izolace transportu";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Pokus o připojení k serveru používanému k přijímání zpráv od tohoto kontaktu (chyba: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Pokus o připojení k serveru používanému pro příjem zpráv od tohoto kontaktu.";
-
-/* No comment provided by engineer. */
 "Turn off" = "Vypnout";
 
 /* No comment provided by engineer. */
@@ -3551,9 +3540,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Již jste připojeni k %@.";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Jste pozváni do skupiny";

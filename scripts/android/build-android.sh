@@ -102,6 +102,7 @@ build() {
   sed -i.bak 's/jniLibs.useLegacyPackaging =.*/jniLibs.useLegacyPackaging = true/' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak '/android {/a lint {abortOnError = false}' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak '/tasks/Q' "$folder/apps/multiplatform/android/build.gradle.kts"
+  sed -i.bak "s/android.version_code=.*/android.version_code=${vercode}/" "$folder/apps/multiplatform/gradle.properties"
 
   for arch in $arches; do
     if [ "$arch" = "armv7a" ]; then
@@ -138,10 +139,15 @@ build() {
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"
 
+    # Determenistic build
+    find "$android_tmp_folder" -type f -exec chmod 644 {} +
+    find "$android_tmp_folder" -type d -exec chmod 755 {} +
+    find "$android_tmp_folder" -exec touch -h -d '@1764547200' {} +
+
     (
      cd "$android_tmp_folder" && \
-     zip -rq5 "$tmp/$android_apk_output_final" . && \
-     zip -rq0 "$tmp/$android_apk_output_final" resources.arsc res
+     find . -type f -print0 | sort -z | xargs -0 zip -X -rq5 "$tmp/$android_apk_output_final" && \
+     find res resources.arsc -type f -print0 | sort -z | xargs -0 zip -X -rq0 "$tmp/$android_apk_output_final"
     )
 
     zipalign -p -f 4 "$tmp/$android_apk_output_final" "$PWD/$android_apk_output_final"
@@ -164,8 +170,10 @@ pre() {
   done
   
   shift $(( $OPTIND - 1 ))
-  
-  commit="${1:-HEAD}"
+
+  vercode="${1}"
+
+  commit="${2:-HEAD}"
 }
 
 main() {

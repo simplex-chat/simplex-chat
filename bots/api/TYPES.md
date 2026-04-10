@@ -47,6 +47,7 @@ This file is generated automatically.
 - [ChatType](#chattype)
 - [ChatWallpaper](#chatwallpaper)
 - [ChatWallpaperScale](#chatwallpaperscale)
+- [ClientNotice](#clientnotice)
 - [Color](#color)
 - [CommandError](#commanderror)
 - [CommandErrorType](#commanderrortype)
@@ -89,7 +90,7 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupInfoSummary](#groupinfosummary)
+- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -102,9 +103,13 @@ This file is generated automatically.
 - [GroupPreference](#grouppreference)
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
+- [GroupRelay](#grouprelay)
+- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
+- [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
+- [GroupType](#grouptype)
 - [HandshakeError](#handshakeerror)
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
@@ -121,6 +126,7 @@ This file is generated automatically.
 - [MsgFilter](#msgfilter)
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
+- [MsgSigStatus](#msgsigstatus)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -132,15 +138,18 @@ This file is generated automatically.
 - [Profile](#profile)
 - [ProxyClientError](#proxyclienterror)
 - [ProxyError](#proxyerror)
+- [PublicGroupData](#publicgroupdata)
+- [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
 - [RcvConnEvent](#rcvconnevent)
 - [RcvDirectEvent](#rcvdirectevent)
 - [RcvFileDescr](#rcvfiledescr)
-- [RcvFileInfo](#rcvfileinfo)
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
+- [RelayProfile](#relayprofile)
+- [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -154,6 +163,7 @@ This file is generated automatically.
 - [SndGroupEvent](#sndgroupevent)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
+- [SubscriptionStatus](#subscriptionstatus)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -164,6 +174,7 @@ This file is generated automatically.
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
+- [UserChatRelay](#userchatrelay)
 - [UserContact](#usercontact)
 - [UserContactLink](#usercontactlink)
 - [UserContactRequest](#usercontactrequest)
@@ -290,6 +301,12 @@ AGENT:
 - type: "AGENT"
 - agentErr: [SMPAgentError](#smpagenterror)
 
+NOTICE:
+- type: "NOTICE"
+- server: string
+- preset: bool
+- expiresAt: UTCTime?
+
 INTERNAL:
 - type: "INTERNAL"
 - internalErr: string
@@ -317,6 +334,7 @@ INACTIVE:
 
 **Record type**:
 - reason: [BlockingReason](#blockingreason)
+- notice: [ClientNotice](#clientnotice)?
 
 
 ---
@@ -594,6 +612,9 @@ GroupRcv:
 - type: "groupRcv"
 - groupMember: [GroupMember](#groupmember)
 
+ChannelRcv:
+- type: "channelRcv"
+
 LocalSnd:
 - type: "localSnd"
 
@@ -759,10 +780,12 @@ Group:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- hasLink: bool
 - deletable: bool
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
+- msgSigned: [MsgSigStatus](#msgsigstatus)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -913,6 +936,7 @@ Error:
 ErrorAgent:
 - type: "errorAgent"
 - agentError: [AgentErrorType](#agenterrortype)
+- agentConnId: string
 - connectionEntity_: [ConnectionEntity](#connectionentity)?
 
 ErrorStore:
@@ -950,6 +974,9 @@ ActiveUserExists:
 UserExists:
 - type: "userExists"
 - contactName: string
+
+ChatRelayExists:
+- type: "chatRelayExists"
 
 DifferentActiveUser:
 - type: "differentActiveUser"
@@ -1103,11 +1130,6 @@ FileAlreadyExists:
 - type: "fileAlreadyExists"
 - filePath: string
 
-FileRead:
-- type: "fileRead"
-- filePath: string
-- message: string
-
 FileWrite:
 - type: "fileWrite"
 - filePath: string
@@ -1202,6 +1224,10 @@ ConnectionUserChangeProhibited:
 
 PeerChatVRangeIncompatible:
 - type: "peerChatVRangeIncompatible"
+
+RelayTestError:
+- type: "relayTestError"
+- message: string
 
 InternalError:
 - type: "internalError"
@@ -1307,7 +1333,7 @@ Used in API commands. Chat scope can only be passed with groups.
 ```
 
 ```javascript
-chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaScript
+ChatType.cmdString(chatType) + chatId + (chatScope ? GroupChatScope.cmdString(chatScope) : '') // JavaScript
 ```
 
 ```python
@@ -1382,6 +1408,14 @@ self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // J
 - "fill"
 - "fit"
 - "repeat"
+
+
+---
+
+## ClientNotice
+
+**Record type**:
+- ttl: int64?
 
 
 ---
@@ -1461,15 +1495,35 @@ LARGE:
 
 ## ConnStatus
 
-**Enum type**:
-- "new"
-- "prepared"
-- "joined"
-- "requested"
-- "accepted"
-- "snd-ready"
-- "ready"
-- "deleted"
+**Discriminated union type**:
+
+New:
+- type: "new"
+
+Prepared:
+- type: "prepared"
+
+Joined:
+- type: "joined"
+
+Requested:
+- type: "requested"
+
+Accepted:
+- type: "accepted"
+
+SndReady:
+- type: "sndReady"
+
+Ready:
+- type: "ready"
+
+Deleted:
+- type: "deleted"
+
+Failed:
+- type: "failed"
+- connError: string
 
 
 ---
@@ -1529,16 +1583,6 @@ RcvGroupMsgConnection:
 - entityConnection: [Connection](#connection)
 - groupInfo: [GroupInfo](#groupinfo)
 - groupMember: [GroupMember](#groupmember)
-
-SndFileConnection:
-- type: "sndFileConnection"
-- entityConnection: [Connection](#connection)
-- sndFileTransfer: [SndFileTransfer](#sndfiletransfer)
-
-RcvFileConnection:
-- type: "rcvFileConnection"
-- entityConnection: [Connection](#connection)
-- rcvFileTransfer: [RcvFileTransfer](#rcvfiletransfer)
 
 UserContactConnection:
 - type: "userContactConnection"
@@ -1609,7 +1653,6 @@ Error:
 - localDisplayName: string
 - profile: [LocalProfile](#localprofile)
 - activeConn: [Connection](#connection)?
-- viaGroup: int64?
 - contactUsed: bool
 - contactStatus: [ContactStatus](#contactstatus)
 - chatSettings: [ChatSettings](#chatsettings)
@@ -1966,6 +2009,9 @@ Snippet:
 Secret:
 - type: "secret"
 
+Small:
+- type: "small"
+
 Colored:
 - type: "colored"
 - color: [Color](#color)
@@ -2131,6 +2177,8 @@ MemberSupport:
 
 **Record type**:
 - groupId: int64
+- useRelays: bool
+- relayOwnStatus: [RelayStatus](#relaystatus)?
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2147,17 +2195,20 @@ MemberSupport:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
+- groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
+- groupKeys: [GroupKeys](#groupkeys)?
 
 
 ---
 
-## GroupInfoSummary
+## GroupKeys
 
 **Record type**:
-- groupInfo: [GroupInfo](#groupinfo)
-- groupSummary: [GroupSummary](#groupsummary)
+- publicGroupId: string
+- groupRootKey: [GroupRootKey](#grouprootkey)
+- memberPrivKey: string
 
 
 ---
@@ -2181,6 +2232,7 @@ MemberSupport:
 
 Ok:
 - type: "ok"
+- groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 OwnLink:
@@ -2206,6 +2258,7 @@ Known:
 **Record type**:
 - groupMemberId: int64
 - groupId: int64
+- indexInGroup: int64
 - memberId: string
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
@@ -2223,6 +2276,8 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
+- memberPubKey: string?
+- relayLink: string?
 
 
 ---
@@ -2259,6 +2314,7 @@ Known:
 ## GroupMemberRole
 
 **Enum type**:
+- "relay"
 - "observer"
 - "author"
 - "member"
@@ -2333,8 +2389,36 @@ Known:
 - shortDescr: string?
 - description: string?
 - image: string?
+- publicGroup: [PublicGroupProfile](#publicgroupprofile)?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+
+
+---
+
+## GroupRelay
+
+**Record type**:
+- groupRelayId: int64
+- groupMemberId: int64
+- userChatRelay: [UserChatRelay](#userchatrelay)
+- relayStatus: [RelayStatus](#relaystatus)
+- relayLink: string?
+
+
+---
+
+## GroupRootKey
+
+**Discriminated union type**:
+
+Private:
+- type: "private"
+- rootPrivKey: string
+
+Public:
+- type: "public"
+- rootPubKey: string
 
 
 ---
@@ -2343,6 +2427,17 @@ Known:
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
+- publicGroupData: [PublicGroupData](#publicgroupdata)?
+
+
+---
+
+## GroupShortLinkInfo
+
+**Record type**:
+- direct: bool
+- groupRelays: [string]
+- publicGroupId: string?
 
 
 ---
@@ -2350,7 +2445,8 @@ Known:
 ## GroupSummary
 
 **Record type**:
-- currentMembers: int
+- currentMembers: int64
+- publicMemberCount: int64?
 
 
 ---
@@ -2363,6 +2459,14 @@ Known:
 - memberAttention: int64
 - mentions: int64
 - lastMsgFromMemberTs: UTCTime?
+
+
+---
+
+## GroupType
+
+**Enum type**:
+- "channel"
 
 
 ---
@@ -2639,6 +2743,15 @@ Unknown:
 
 ---
 
+## MsgSigStatus
+
+**Enum type**:
+- "verified"
+- "signedNoKey"
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -2672,6 +2785,7 @@ SubscribeError:
 **Record type**:
 - profile: [Profile](#profile)?
 - pastTimestamp: bool
+- userChatRelay: bool
 
 
 ---
@@ -2809,6 +2923,24 @@ NO_SESSION:
 
 ---
 
+## PublicGroupData
+
+**Record type**:
+- publicMemberCount: int64
+
+
+---
+
+## PublicGroupProfile
+
+**Record type**:
+- groupType: [GroupType](#grouptype)
+- groupLink: string
+- publicGroupId: string
+
+
+---
+
 ## RCErrorType
 
 **Discriminated union type**:
@@ -2932,16 +3064,6 @@ GroupInvLinkReceived:
 
 ---
 
-## RcvFileInfo
-
-**Record type**:
-- filePath: string
-- connId: int64?
-- agentConnId: string?
-
-
----
-
 ## RcvFileStatus
 
 **Discriminated union type**:
@@ -2951,19 +3073,19 @@ New:
 
 Accepted:
 - type: "accepted"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Connected:
 - type: "connected"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Complete:
 - type: "complete"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Cancelled:
 - type: "cancelled"
-- fileInfo_: [RcvFileInfo](#rcvfileinfo)?
+- filePath_: string?
 
 
 ---
@@ -3052,6 +3174,31 @@ MemberProfileUpdated:
 
 NewMemberPendingReview:
 - type: "newMemberPendingReview"
+
+MsgBadSignature:
+- type: "msgBadSignature"
+
+
+---
+
+## RelayProfile
+
+**Record type**:
+- displayName: string
+- fullName: string
+- shortDescr: string?
+- image: string?
+
+
+---
+
+## RelayStatus
+
+**Enum type**:
+- "new"
+- "invited"
+- "accepted"
+- "active"
 
 
 ---
@@ -3292,6 +3439,9 @@ UserNotFound:
 - type: "userNotFound"
 - userId: int64
 
+RelayUserNotFound:
+- type: "relayUserNotFound"
+
 UserNotFoundByName:
 - type: "userNotFoundByName"
 - contactName: string
@@ -3366,6 +3516,14 @@ GroupMemberNotFound:
 - type: "groupMemberNotFound"
 - groupMemberId: int64
 
+GroupMemberNotFoundByIndex:
+- type: "groupMemberNotFoundByIndex"
+- groupMemberIndex: int64
+
+MemberRelationsVectorNotFound:
+- type: "memberRelationsVectorNotFound"
+- groupMemberId: int64
+
 GroupHostMemberNotFound:
 - type: "groupHostMemberNotFound"
 - groupId: int64
@@ -3378,11 +3536,17 @@ MemberContactGroupMemberNotFound:
 - type: "memberContactGroupMemberNotFound"
 - contactId: int64
 
+InvalidMemberRelationUpdate:
+- type: "invalidMemberRelationUpdate"
+
 GroupWithoutUser:
 - type: "groupWithoutUser"
 
 DuplicateGroupMember:
 - type: "duplicateGroupMember"
+
+DuplicateMemberId:
+- type: "duplicateMemberId"
 
 GroupAlreadyJoined:
 - type: "groupAlreadyJoined"
@@ -3463,9 +3627,6 @@ ConnectionNotFoundByMemberId:
 PendingConnectionNotFound:
 - type: "pendingConnectionNotFound"
 - connId: int64
-
-IntroNotFound:
-- type: "introNotFound"
 
 UniqueID:
 - type: "uniqueID"
@@ -3575,11 +3736,63 @@ OperatorNotFound:
 UsageConditionsNotFound:
 - type: "usageConditionsNotFound"
 
+UserChatRelayNotFound:
+- type: "userChatRelayNotFound"
+- chatRelayId: int64
+
+GroupRelayNotFound:
+- type: "groupRelayNotFound"
+- groupRelayId: int64
+
+GroupRelayNotFoundByMemberId:
+- type: "groupRelayNotFoundByMemberId"
+- groupMemberId: int64
+
 InvalidQuote:
 - type: "invalidQuote"
 
 InvalidMention:
 - type: "invalidMention"
+
+InvalidDeliveryTask:
+- type: "invalidDeliveryTask"
+- taskId: int64
+
+DeliveryTaskNotFound:
+- type: "deliveryTaskNotFound"
+- taskId: int64
+
+InvalidDeliveryJob:
+- type: "invalidDeliveryJob"
+- jobId: int64
+
+DeliveryJobNotFound:
+- type: "deliveryJobNotFound"
+- jobId: int64
+
+WorkItemError:
+- type: "workItemError"
+- errContext: string
+
+
+---
+
+## SubscriptionStatus
+
+**Discriminated union type**:
+
+Active:
+- type: "active"
+
+Pending:
+- type: "pending"
+
+Removed:
+- type: "removed"
+- subError: string
+
+NoSub:
+- type: "noSub"
 
 
 ---
@@ -3713,6 +3926,22 @@ Handshake:
 - autoAcceptMemberContacts: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- userChatRelay: bool
+
+
+---
+
+## UserChatRelay
+
+**Record type**:
+- chatRelayId: int64
+- address: string
+- relayProfile: [RelayProfile](#relayprofile)
+- domains: [string]
+- preset: bool
+- tested: bool?
+- enabled: bool
+- deleted: bool
 
 
 ---

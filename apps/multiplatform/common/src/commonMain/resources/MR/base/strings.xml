@@ -32,9 +32,11 @@
   <string name="server_connected">connected</string>
   <string name="server_error">error</string>
   <string name="server_connecting">connecting</string>
-  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: %1$s).</string>
-  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
+  <string name="server_no_sub">no subscription</string>
+  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this connection.</string>
+  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this connection.</string>
+  <string name="error_connecting_to_server_to_receive_messages">Error connecting to the server used to receive messages from this connection: %1$s.</string>
+  <string name="not_connected_to_server_to_receive_messages_no_sub">You are not connected to the server used to receive messages from this connection (no subscription).</string>
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
@@ -52,6 +54,7 @@
   <string name="blocked_by_admin_items_description">%d messages blocked by admin</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
+  <string name="voice_recording_not_supported">Voice recording is not supported on your platform</string>
   <string name="sender_you_pronoun">you</string>
   <string name="unknown_message_format">unknown message format</string>
   <string name="invalid_message_format">invalid message format</string>
@@ -98,7 +101,7 @@
   <string name="simplex_link_invitation">SimpleX one-time invitation</string>
   <string name="simplex_link_group">SimpleX group link</string>
   <string name="simplex_link_channel">SimpleX channel link</string>
-  <string name="simplex_link_relay">SimpleX relay link</string>
+  <string name="simplex_link_relay">SimpleX relay address</string>
   <string name="simplex_link_connection">via %1$s</string>
   <string name="simplex_link_mode">SimpleX links</string>
   <string name="simplex_link_mode_description">Description</string>
@@ -139,6 +142,8 @@
   <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
   <string name="for_chat_profile">For chat profile %s:</string>
   <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
+  <string name="no_chat_relays_enabled">No chat relays enabled.</string>
+  <string name="server_warning">Server warning</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
   <string name="blocking_reason_spam">Spam</string>
   <string name="blocking_reason_content">Content violates conditions of use</string>
@@ -366,6 +371,18 @@
   <string name="edit_verb">Edit</string>
   <string name="info_menu">Info</string>
   <string name="search_verb">Search</string>
+  <string name="placeholder_search_images">Search images</string>
+  <string name="placeholder_search_videos">Search videos</string>
+  <string name="placeholder_search_voice_messages">Search voice messages</string>
+  <string name="placeholder_search_files">Search files</string>
+  <string name="placeholder_search_links">Search links</string>
+  <string name="content_filter_images">Images</string>
+  <string name="content_filter_videos">Videos</string>
+  <string name="content_filter_voice_messages">Voice messages</string>
+  <string name="content_filter_files">Files</string>
+  <string name="content_filter_links">Links</string>
+  <string name="content_filter_all_messages">All messages</string>
+  <string name="content_filter_menu_item">Filter</string>
   <string name="archive_verb">Archive</string>
   <string name="archive_report">Archive report</string>
   <string name="archive_reports">Archive reports</string>
@@ -500,8 +517,11 @@
   <string name="chat_banner_your_contact">Your contact</string>
   <string name="chat_banner_bot">Bot</string>
   <string name="chat_banner_join_group">Tap Join group</string>
+  <string name="chat_banner_join_channel">Tap Join channel</string>
   <string name="chat_banner_your_group">Your group</string>
+  <string name="chat_banner_your_channel">Your channel</string>
   <string name="chat_banner_group">Group</string>
+  <string name="chat_banner_channel">Channel</string>
   <string name="chat_banner_business_connection">Business connection</string>
   <string name="chat_banner_your_business_contact">Your business contact</string>
 
@@ -547,6 +567,8 @@
   <string name="report_sent_alert_title">Report sent to moderators</string>
   <string name="report_sent_alert_msg_view_in_support_chat">You can view your reports in Chat with admins.</string>
   <string name="compose_view_join_group">Join group</string>
+  <string name="compose_view_join_channel">Join channel</string>
+  <string name="compose_view_broadcast">Broadcast</string>
   <string name="compose_view_add_message">Add message</string>
   <string name="compose_view_connect">Connect</string>
   <string name="compose_view_send_contact_request_alert_question">Send contact request?</string>
@@ -561,7 +583,9 @@
   <string name="cant_send_message_contact_not_synchronized">not synchronized</string>
   <string name="cant_send_message_contact_disabled">contact disabled</string>
   <string name="observer_cant_send_message_title">you are observer</string>
+  <string name="you_are_subscriber">you are subscriber</string>
   <string name="observer_cant_send_message_desc">Please contact group admin.</string>
+  <string name="channel_role_label">channel</string>
   <string name="cant_send_message_rejected">request to join rejected</string>
   <string name="cant_send_message_group_deleted">group is deleted</string>
   <string name="cant_send_message_mem_removed">removed from group</string>
@@ -1147,6 +1171,7 @@
   <string name="save_and_notify_contact">Save and notify contact</string>
   <string name="save_and_notify_contacts">Save and notify contacts</string>
   <string name="save_and_notify_group_members">Save and notify group members</string>
+  <string name="save_and_notify_channel_subscribers">Save and notify channel subscribers</string>
   <string name="exit_without_saving">Exit without saving</string>
 
   <!-- HiddenProfileView.kt -->
@@ -1624,6 +1649,7 @@
   <string name="mtr_error_different">different migration in the app/database: %s / %s</string>
   <string name="database_migrations">Migrations: %s</string>
   <string name="database_downgrade_warning">Warning: you may lose some data!</string>
+  <string name="down_migration_warning_chat_relays">If you joined or created channels, they will stop working permanently.</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
@@ -1641,8 +1667,10 @@
   <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
   <string name="leave_group_button">Leave</string>
   <string name="leave_group_question">Leave group?</string>
+  <string name="leave_channel_question">Leave channel?</string>
   <string name="leave_chat_question">Leave chat?</string>
   <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
+  <string name="you_will_stop_receiving_messages_from_this_channel_chat_history_will_be_preserved">You will stop receiving messages from this channel. Chat history will be preserved.</string>
   <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">You will stop receiving messages from this chat. Chat history will be preserved.</string>
   <string name="icon_descr_add_members">Invite members</string>
   <string name="icon_descr_group_inactive">Group inactive</string>
@@ -1741,6 +1769,7 @@
   <string name="group_member_role_moderator">moderator</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
+  <string name="group_member_role_relay">relay</string>
 
   <!-- GroupMemberStatus -->
   <string name="group_member_status_rejected">rejected</string>
@@ -1789,24 +1818,32 @@
   <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
+  <string name="button_delete_channel">Delete channel</string>
   <string name="button_delete_chat">Delete chat</string>
   <string name="delete_group_question">Delete group?</string>
+  <string name="delete_channel_question">Delete channel?</string>
   <string name="delete_chat_question">Delete chat?</string>
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
+  <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Channel will be deleted for all subscribers - this cannot be undone!</string>
   <string name="delete_chat_for_all_members_cannot_undo_warning">Chat will be deleted for all members - this cannot be undone!</string>
   <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
+  <string name="delete_channel_for_self_cannot_undo_warning">Channel will be deleted for you - this cannot be undone!</string>
   <string name="delete_chat_for_self_cannot_undo_warning">Chat will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
+  <string name="button_leave_channel">Leave channel</string>
   <string name="button_leave_chat">Leave chat</string>
   <string name="button_edit_group_profile">Edit group profile</string>
+  <string name="button_edit_channel_profile">Edit channel profile</string>
   <string name="button_add_welcome_message">Add welcome message</string>
   <string name="button_welcome_message">Welcome message</string>
   <string name="group_link">Group link</string>
+  <string name="channel_link">Channel link</string>
   <string name="create_group_link">Create group link</string>
   <string name="button_create_group_link">Create link</string>
   <string name="delete_link_question">Delete link?</string>
   <string name="delete_link">Delete link</string>
   <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group. You won\'t lose members of the group if you later delete it.</string>
+  <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the channel.</string>
   <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
   <string name="error_creating_link_for_group">Error creating group link</string>
   <string name="error_updating_link_for_group">Error updating group link</string>
@@ -1823,7 +1860,10 @@
   <string name="send_receipts_disabled_alert_title">Receipts are disabled</string>
   <string name="send_receipts_disabled_alert_msg">This group has over %1$d members, delivery receipts are not sent.</string>
   <string name="action_button_add_members">Invite</string>
+  <string name="action_button_channel_link">Link</string>
   <string name="button_support_chat">Chat with admins</string>
+  <string name="button_channel_members">Channel members</string>
+  <string name="button_channel_relays">Chat relays</string>
 
   <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -1858,15 +1898,22 @@
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member_question">Remove member?</string>
+  <string name="button_remove_subscriber_question">Remove subscriber?</string>
   <string name="button_remove_members_question">Remove members?</string>
+  <string name="button_delete_member_messages_question">Delete member messages?</string>
   <string name="button_remove_member">Remove member</string>
+  <string name="button_delete_member_messages">Delete member messages</string>
   <string name="button_support_chat_member">Chat with member</string>
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="subscriber_will_be_removed_from_channel_cannot_be_undone">Subscriber will be removed from channel - this cannot be undone!</string>
   <string name="members_will_be_removed_from_group_cannot_be_undone">Members will be removed from group - this cannot be undone!</string>
   <string name="member_will_be_removed_from_chat_cannot_be_undone">Member will be removed from chat - this cannot be undone!</string>
   <string name="members_will_be_removed_from_chat_cannot_be_undone">Members will be removed from chat - this cannot be undone!</string>
+  <string name="member_messages_will_be_deleted_cannot_be_undone">Member messages will be deleted - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
+  <string name="remove_member_delete_messages_confirmation">Remove and delete messages</string>
+  <string name="delete_member_messages_confirmation">Delete messages</string>
   <string name="remove_member_button">Remove member</string>
   <string name="block_member_question">Block member?</string>
   <string name="block_member_button">Block member</string>
@@ -1887,6 +1934,7 @@
   <string name="member_blocked_by_admin">Blocked by admin</string>
   <string name="member_info_member_blocked">blocked</string>
   <string name="member_info_member_disabled">disabled</string>
+  <string name="member_info_member_failed">failed</string>
   <string name="member_info_member_inactive">inactive</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="role_in_group">Role</string>
@@ -1905,6 +1953,7 @@
   <string name="info_row_group">Group</string>
   <string name="info_row_chat">Chat</string>
   <string name="info_row_connection">Connection</string>
+  <string name="info_row_connection_failed">CONNECTION FAILED</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
   <string name="message_queue_info">Message queue info</string>
@@ -1951,6 +2000,7 @@
   <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
+  <string name="channel_full_name_field">Channel full name:</string>
   <string name="group_short_descr_field">Short description:</string>
   <string name="group_descr_too_large">Description too large</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
@@ -1959,8 +2009,11 @@
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="channel_profile_is_stored_on_subscribers_devices">Channel profile is stored on subscribers\' devices and on the chat relays.</string>
   <string name="save_group_profile">Save group profile</string>
+  <string name="save_channel_profile">Save channel profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+  <string name="error_saving_channel_profile">Error saving channel profile</string>
 
   <!-- NetworkAndServers.kt -->
   <string name="network_preset_servers_title">Preset servers</string>
@@ -2773,4 +2826,107 @@
 
   <!-- GroupMentions.kt -->
   <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>
+
+  <!-- ChannelMembersView.kt -->
+  <string name="channel_members_title_subscribers">Subscribers</string>
+  <string name="channel_members_section_owners">Owners</string>
+  <string name="channel_subscriber_count_singular">%1$d subscriber</string>
+  <string name="channel_subscriber_count_plural">%1$d subscribers</string>
+  <string name="channel_member_you">you</string>
+
+  <!-- ChatRelayView.kt -->
+  <string name="chat_relay">Chat relay</string>
+  <string name="new_chat_relay">New chat relay</string>
+  <string name="preset_relay_name">Preset relay name</string>
+  <string name="preset_relay_address">Preset relay address</string>
+  <string name="your_relay_name">Your relay name</string>
+  <string name="your_relay_address">Your relay address</string>
+  <string name="enter_relay_name">Enter relay name…</string>
+  <string name="use_relay">Use relay</string>
+  <string name="test_relay">Test relay</string>
+  <string name="use_for_new_channels">Use for new channels</string>
+  <string name="delete_relay">Delete relay</string>
+  <string name="test_relay_to_retrieve_name"><![CDATA[<b>Test relay</b> to retrieve its name.]]></string>
+  <string name="relay_test_failed_alert">Relay test failed!</string>
+  <string name="relay_test_step_get_link">Get link</string>
+  <string name="relay_test_step_decode_link">Decode link</string>
+  <string name="relay_test_step_connect">Connect</string>
+  <string name="relay_test_step_wait_response">Wait response</string>
+  <string name="relay_test_step_verify">Verify</string>
+  <string name="error_relay_test_failed_at_step">Test failed at step %s.</string>
+  <string name="error_relay_test_server_auth">Server requires authorization to connect to relay, check password.</string>
+  <string name="invalid_relay_name">Invalid relay name!</string>
+  <string name="check_relay_name">Check relay name and try again.</string>
+  <string name="invalid_relay_address">Invalid relay address!</string>
+  <string name="check_relay_address">Check relay address and try again.</string>
+  <string name="error_adding_relay">Error adding relay</string>
+
+  <!-- OperatorView.kt / ProtocolServersView.kt -->
+  <string name="chat_relays">Chat relays</string>
+  <string name="chat_relays_forward_messages_in_channels">Chat relays forward messages in channels you create.</string>
+
+  <!-- ChannelRelaysView.kt -->
+  <string name="channel_relays_title">Chat relays</string>
+  <string name="no_chat_relays">No chat relays</string>
+  <string name="chat_relays_forward_messages">Chat relays forward messages to channel subscribers.</string>
+  <string name="relay_conn_status_connected">connected</string>
+  <string name="relay_conn_status_connecting">connecting</string>
+  <string name="relay_conn_status_deleted">deleted</string>
+  <string name="relay_conn_status_failed">failed</string>
+  <string name="relay_status_new">new</string>
+  <string name="relay_status_invited">invited</string>
+  <string name="relay_status_accepted">accepted</string>
+  <string name="relay_status_active">active</string>
+
+  <!-- ComposeView.kt channel relay bars -->
+  <string name="relay_bar_active_with_failures">%1$d/%2$d relays active, %3$d failed</string>
+  <string name="relay_bar_active">%1$d/%2$d relays active</string>
+  <string name="relay_bar_connected_with_errors">%1$d/%2$d relays connected, %3$d errors</string>
+  <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
+  <string name="relay_bar_count">%1$d relays</string>
+
+  <!-- GroupMemberInfoView.kt channel-related -->
+  <string name="member_info_section_title_relay">RELAY</string>
+  <string name="member_info_section_title_owner">OWNER</string>
+  <string name="member_info_section_title_subscriber">SUBSCRIBER</string>
+  <string name="info_row_channel">Channel</string>
+  <string name="info_row_relay_link">Relay link</string>
+  <string name="info_row_relay_address">Relay address</string>
+  <string name="via_relay_hostname">via %1$s</string>
+  <string name="share_relay_address">Share relay address</string>
+  <string name="relay_section_footer_owner">Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel.</string>
+  <string name="relay_section_footer_subscriber">You connected to the channel via this relay link.</string>
+  <string name="button_remove_subscriber">Remove subscriber</string>
+  <string name="block_subscriber_for_all_question">Block subscriber for all?</string>
+
+  <!-- AddChannelView.kt -->
+  <string name="create_channel_title">Create public channel</string>
+  <string name="create_channel_button">Create public channel</string>
+  <string name="create_channel_beta_button">Create public channel (BETA)</string>
+  <string name="channel_display_name_field">Channel name</string>
+  <string name="creating_channel">Creating channel</string>
+  <string name="error_creating_channel">Error creating channel</string>
+  <string name="cancel_creating_channel_question">Cancel creating channel?</string>
+  <string name="cancel_creating_channel_confirm">Cancel</string>
+  <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
+  <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
+  <string name="configure_relays">Configure relays</string>
+  <string name="relay_status_failed">failed</string>
+  <string name="relay_connection_failed">Relay connection failed</string>
+  <string name="not_all_relays_connected">Not all relays connected</string>
+  <string name="wait_verb">Wait</string>
+  <string name="proceed_verb">Proceed</string>
+  <string name="channel_will_start_with_relays">Channel will start working with %1$d of %2$d relays. Proceed?</string>
+
+  <!-- ConnectPlan.kt channel-related -->
+  <string name="relay_address_alert_title">Relay address</string>
+  <string name="relay_address_alert_message">This is a chat relay address, it cannot be used to connect.</string>
+  <string name="connect_plan_open_channel">Open channel</string>
+  <string name="connect_plan_open_new_channel">Open new channel</string>
+  <string name="connect_plan_this_is_your_link_for_channel">Your channel</string>
+  <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[This is your link for channel <b>%1$s</b>!]]></string>
+  <string name="error_opening_channel">Error opening channel</string>
+
+  <!-- ChatListNavLinkView.kt channel-related -->
+  <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
 </resources>

@@ -35,6 +35,7 @@ import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 @Composable
 fun ChatPreviewView(
   chat: Chat,
@@ -42,7 +43,6 @@ fun ChatPreviewView(
   chatModelDraft: ComposeState?,
   chatModelDraftChatId: ChatId?,
   currentUserProfileDisplayName: String?,
-  contactNetworkStatus: NetworkStatus?,
   disabled: Boolean,
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
@@ -349,33 +349,7 @@ fun ChatPreviewView(
 
   @Composable
   fun chatStatusImage() {
-    if (cInfo is ChatInfo.Direct) {
-      if (
-        cInfo.contact.active &&
-        (cInfo.contact.activeConn?.connStatus == ConnStatus.Ready || cInfo.contact.activeConn?.connStatus == ConnStatus.SndReady)
-      ) {
-        val descr = contactNetworkStatus?.statusString
-        when (contactNetworkStatus) {
-          is NetworkStatus.Connected ->
-            IncognitoIcon(chat.chatInfo.incognito)
-
-          is NetworkStatus.Error ->
-            Icon(
-              painterResource(MR.images.ic_error),
-              contentDescription = descr,
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier
-                .size(19.sp.toDp())
-                .offset(x = 2.sp.toDp())
-            )
-
-          else ->
-            progressView()
-        }
-      } else {
-        IncognitoIcon(chat.chatInfo.incognito)
-      }
-    } else if (cInfo is ChatInfo.Group) {
+    if (cInfo is ChatInfo.Group) {
       if (progressByTimeout) {
         progressView()
       } else if (chat.chatStats.reportsCount > 0) {
@@ -636,6 +610,6 @@ private data class ActiveVoicePreview(
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
+    ChatPreviewView(Chat.sampleData, true, null, null, "", disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
   }
 }
