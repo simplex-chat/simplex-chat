@@ -2217,18 +2217,19 @@ object ChatController {
     return emptyList()
   }
 
-  suspend fun apiUpdateGroup(rh: Long?, groupId: Long, groupProfile: GroupProfile): GroupInfo? {
+  suspend fun apiUpdateGroup(rh: Long?, groupId: Long, groupProfile: GroupProfile, isChannel: Boolean): GroupInfo? {
     val r = sendCmd(rh, CC.ApiUpdateGroupProfile(groupId, groupProfile))
+    val errorTitle = if (isChannel) MR.strings.error_saving_channel_profile else MR.strings.error_saving_group_profile
     return when {
       r is API.Result && r.res is CR.GroupUpdated -> r.res.toGroup
       r is API.Error -> {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_group_profile), "$r.err")
+        AlertManager.shared.showAlertMsg(generalGetString(errorTitle), "$r.err")
         null
       }
       else -> {
         Log.e(TAG, "apiUpdateGroup bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.error_saving_group_profile),
+          generalGetString(errorTitle),
           "${r.responseType}: ${r.details}"
         )
         null

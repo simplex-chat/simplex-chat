@@ -32,10 +32,11 @@ import java.net.URI
 fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   GroupProfileLayout(
     close = close,
+    groupInfo = groupInfo,
     groupProfile = groupInfo.groupProfile,
     saveProfile = { p ->
       withBGApi {
-        val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
+        val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p, groupInfo.useRelays)
         if (gInfo != null) {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, gInfo)
@@ -50,9 +51,11 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
 @Composable
 fun GroupProfileLayout(
   close: () -> Unit,
+  groupInfo: GroupInfo,
   groupProfile: GroupProfile,
   saveProfile: (GroupProfile) -> Unit,
 ) {
+  val isChannel = groupInfo.useRelays
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = rememberSaveable { mutableStateOf(groupProfile.displayName) }
   val fullName = rememberSaveable { mutableStateOf(groupProfile.fullName) }
@@ -71,7 +74,7 @@ fun GroupProfileLayout(
     if (dataUnchanged || !canUpdateProfile(displayName.value, shortDescr.value, groupProfile)) {
       close()
     } else {
-      showUnsavedChangesAlert({
+      showUnsavedChangesAlert(isChannel, {
         saveProfile(
           groupProfile.copy(
             displayName = displayName.value.trim(),
@@ -103,7 +106,11 @@ fun GroupProfileLayout(
             Modifier.fillMaxWidth()
               .padding(horizontal = DEFAULT_PADDING)
           ) {
-            ReadableText(MR.strings.group_profile_is_stored_on_members_devices, TextAlign.Center)
+            ReadableText(
+              if (isChannel) MR.strings.channel_profile_is_stored_on_subscribers_devices
+              else MR.strings.group_profile_is_stored_on_members_devices,
+              TextAlign.Center
+            )
             Box(
               Modifier
                 .fillMaxWidth()
@@ -122,7 +129,7 @@ fun GroupProfileLayout(
             }
             Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
               Text(
-                stringResource(MR.strings.group_display_name_field),
+                stringResource(if (isChannel) MR.strings.channel_display_name_field else MR.strings.group_display_name_field),
                 fontSize = 16.sp
               )
               if (!isValidNewProfileName(displayName.value, groupProfile)) {
@@ -136,7 +143,7 @@ fun GroupProfileLayout(
             if (groupProfile.fullName.trim().isNotEmpty() && groupProfile.fullName.trim() != groupProfile.displayName.trim()) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
-                stringResource(MR.strings.group_full_name_field),
+                stringResource(if (isChannel) MR.strings.channel_full_name_field else MR.strings.group_full_name_field),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
               )
@@ -164,9 +171,10 @@ fun GroupProfileLayout(
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile)
+            val saveProfileLabel = if (isChannel) MR.strings.save_channel_profile else MR.strings.save_group_profile
             if (enabled) {
               Text(
-                stringResource(MR.strings.save_group_profile),
+                stringResource(saveProfileLabel),
                 modifier = Modifier.clickable {
                   saveProfile(
                     groupProfile.copy(
@@ -181,7 +189,7 @@ fun GroupProfileLayout(
               )
             } else {
               Text(
-                stringResource(MR.strings.save_group_profile),
+                stringResource(saveProfileLabel),
                 color = MaterialTheme.colors.secondary
               )
             }
@@ -204,10 +212,10 @@ private fun canUpdateProfile(displayName: String, shortDescr: String, groupProfi
 private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile): Boolean =
   displayName == groupProfile.displayName || isValidDisplayName(displayName.trim())
 
-private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+private fun showUnsavedChangesAlert(isChannel: Boolean, save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(
     title = generalGetString(MR.strings.save_preferences_question),
-    confirmText = generalGetString(MR.strings.save_and_notify_group_members),
+    confirmText = generalGetString(if (isChannel) MR.strings.save_and_notify_channel_subscribers else MR.strings.save_and_notify_group_members),
     dismissText = generalGetString(MR.strings.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,
@@ -224,6 +232,7 @@ fun PreviewGroupProfileLayout() {
   SimpleXTheme {
     GroupProfileLayout(
       close = {},
+      groupInfo = GroupInfo.sampleData,
       groupProfile = GroupProfile.sampleData,
       saveProfile = { _ -> }
     )

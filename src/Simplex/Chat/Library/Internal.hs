@@ -1195,6 +1195,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   where
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)
     descrEvent_
+      -- in channels sendHistory runs on the relay, which cannot author XMsgNew (GRRelay < GRObserver);
+      -- the welcome message reaches new members via the channel link data instead
+      | useRelays' gInfo = Nothing
       | m `supportsVersion` groupHistoryIncludeWelcomeVersion = do
           let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
           fmap (\descr -> XMsgNew $ MCSimple $ extMsgContent (MCText descr) Nothing) description
@@ -1299,7 +1302,8 @@ setGroupLinkData nm user gInfo gLink = do
   (conn, groupRelays) <- withFastStore $ \db ->
     (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
-  sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
+      tagShortLink = if useRelays' gInfo then toShortChannelLink else toShortGroupLink
+  sLnk <- shortenShortLink' . tagShortLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
 
 setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()

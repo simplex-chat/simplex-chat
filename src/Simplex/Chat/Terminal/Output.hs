@@ -209,7 +209,7 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} _ ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
-  CEvtDeletedMemberUser _u g m _withMessages ->
+  CEvtDeletedMemberUser _u g m _withMessages _signed ->
     sendNtf ("#" <> viewGroupName g, viewMemberName m <> " removed you from the group")
   _ -> pure ()
   where
