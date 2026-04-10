@@ -5189,9 +5189,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .groupUpdated: return isChannel
             ? NSLocalizedString("updated channel profile", comment: "rcv group event chat item")
             : NSLocalizedString("updated group profile", comment: "rcv group event chat item")
-        case .invitedViaGroupLink: return isChannel
-            ? NSLocalizedString("invited via your channel link", comment: "rcv group event chat item")
-            : NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
+        case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
         case .newMemberPendingReview: return isChannel

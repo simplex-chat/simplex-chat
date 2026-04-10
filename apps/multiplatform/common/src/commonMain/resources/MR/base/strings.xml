@@ -1711,7 +1711,6 @@
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
   <string name="rcv_channel_event_updated_channel_profile">updated channel profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
-  <string name="rcv_channel_event_invited_via_your_channel_link">invited via your channel link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
   <string name="rcv_channel_event_new_subscriber_pending_review">New subscriber wants to join the channel.</string>

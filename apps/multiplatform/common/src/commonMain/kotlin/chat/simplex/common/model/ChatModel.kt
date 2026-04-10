@@ -4790,7 +4790,7 @@ sealed class RcvGroupEvent() {
     is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_channel_deleted else MR.strings.rcv_group_event_group_deleted)
     is GroupUpdated -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_updated_channel_profile else MR.strings.rcv_group_event_updated_group_profile)
-    is InvitedViaGroupLink -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_invited_via_your_channel_link else MR.strings.rcv_group_event_invited_via_your_group_link)
+    is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
     is NewMemberPendingReview -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_new_subscriber_pending_review else MR.strings.rcv_group_event_new_member_pending_review)
