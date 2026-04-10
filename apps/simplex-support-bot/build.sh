@@ -21,10 +21,10 @@ echo "Building simplex-support-bot..."
 cd "$SCRIPT_DIR"
 npm install
 
-# npm install copies the file: dependency but doesn't run its build script,
-# so simplex.js/simplex.d.ts (native addon loader) are missing from dist/.
-cp node_modules/simplex-chat/src/simplex.js node_modules/simplex-chat/dist/
-cp node_modules/simplex-chat/src/simplex.d.ts node_modules/simplex-chat/dist/
+# npm install copies file: dependencies, missing the native addon (build/)
+# and some dist files. Replace the copy with a symlink to the local package.
+rm -rf node_modules/simplex-chat
+ln -s "$REPO_ROOT/packages/simplex-chat-nodejs" node_modules/simplex-chat
 
 npm run build
 

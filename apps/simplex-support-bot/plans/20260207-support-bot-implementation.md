@@ -417,7 +417,7 @@ chat.on("connectedToGroupMember", (evt) => {
 | `newChatItems` | `onNewChatItems` | Route: team group → handle `/join`; customer group → derive state, dispatch; direct message → reply with business address link |
 | `chatItemUpdated` | `onChatItemUpdated` | Schedule card update |
 | `leftMember` | `onLeftMember` | Customer left → cleanup, card remains. Grok left → cleanup. Team member left → revert if no message sent. |
-| `joinedGroupMember` | `onJoinedGroupMember` | Team group joiner (link-join): initiate DM via raw `/_create member contact` + `/_invite member contact` commands. Fires for any member joining via group invite link. |
+| `joinedGroupMember` | `onJoinedGroupMember` | Team group joiner (link-join): initiate DM via `apiCreateMemberContact` + `apiSendMemberContactInvitation`. Fires for any member joining via group invite link. |
 | `connectedToGroupMember` | `onMemberConnected` | In team group: send DM with contact ID (if not already sent by `onJoinedGroupMember`). In customer group: promote to Owner (unless customer or Grok). |
 | `chatItemReaction` | `onChatItemReaction` | Team/Grok reaction in customer group → schedule card update (auto-complete) |
 | `newMemberContactReceivedInv` | `onMemberContactReceivedInv` | Team group member DM contact received: send contact ID message immediately (dedup via `sentTeamDMs`) |
@@ -556,10 +556,10 @@ Customer messages always in `user` role, never `system`.
 
 **DM handshake:** When a team member joins or connects in the team group, the bot sends a DM with the member's contact ID. Four delivery paths, deduplicated via `sentTeamDMs` Set:
 
-1. **`onJoinedGroupMember`** — fires when ANY member joins the team group via invite link (`joinedGroupMember` event). Calls `sendTeamMemberDM` without a `memberContact`. Since link-joiners typically have no existing DM contact, this triggers the raw command path: `/_create member contact #<groupId> <groupMemberId>` (creates the contact), then `/_invite member contact @<contactId> text <msg>` (sends invitation with message). This is the same protocol SimpleX's CLI uses for `@#group @member message`.
+1. **`onJoinedGroupMember`** — fires when ANY member joins the team group via invite link (`joinedGroupMember` event). Calls `sendTeamMemberDM` without a `memberContact`. Since link-joiners typically have no existing DM contact, this creates the contact via `apiCreateMemberContact(groupId, groupMemberId)`, then sends the invitation with message via `apiSendMemberContactInvitation(contactId, msg)`.
 2. **`onMemberConnected`** — `sendTeamMemberDM` called with `memberContact` from the event. If not already sent by path 1:
    - If `contactId` exists: sends DM via `apiSendTextMessage`.
-   - If `contactId` is null: uses the same raw command path as path 1.
+   - If `contactId` is null: uses the same `apiCreateMemberContact` + `apiSendMemberContactInvitation` path as path 1.
 3. **`onMemberContactReceivedInv`** — fires when the member initiates a DM first. Sends the contact ID message immediately. If send fails, queues for `contactConnected`/`contactSndReady`.
 4. **`onContactConnected` / `onContactSndReady`** — delivers any pending DM queued by paths 1, 2, or 3.
 
@@ -689,8 +689,8 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | 23 | List members | main | `apiListMembers(gId)` | State derivation, duplicate check |
 | 24 | Register team commands | main | `apiUpdateGroupProfile(teamGId, profile)` | Startup — register `/join` in team group |
 | 25 | Get group info | main | `apiListGroups()` + find by ID | Card compose — read `customData.cardItemId` from `groupInfo` |
-| 26 | Create DM contact | main | `sendChatCmd("/_create member contact #gId memberId")` | `joinedGroupMember` / `onMemberConnected` — bot-initiated DM with team member |
-| 27 | Send DM invitation | main | `sendChatCmd("/_invite member contact @contactId text msg")` | After #26 — sends invite with message in one step |
+| 26 | Create DM contact | main | `apiCreateMemberContact(gId, memberId)` | `joinedGroupMember` / `onMemberConnected` — bot-initiated DM with team member |
+| 27 | Send DM invitation | main | `apiSendMemberContactInvitation(contactId, msg)` | After #26 — sends invite with message in one step |
 
 ## 17. Implementation Sequence
 
@@ -774,7 +774,7 @@ GROK_API_KEY=xai-... npx ts-node src/index.ts \
 19. Team/Grok reaction → verify card auto-complete (✅ icon, "done")
 20. DM contact text message → verify business address link reply
 21. DM contact non-message event (e.g. contactConnected) → verify no reply (rcvMsgContent guard)
-22. DM handshake via `joinedGroupMember` → team member joins team group via link → verify raw `/_create member contact` + `/_invite member contact` called, contact ID message sent
+22. DM handshake via `joinedGroupMember` → team member joins team group via link → verify `apiCreateMemberContact` + `apiSendMemberContactInvitation` called, contact ID message sent
 23. DM handshake via `connectedToGroupMember` → verify contact ID message sent (dedup with #22)
 24. Restart → verify same team group + Grok contact from state file, cards resume via `customData`
 25. No `--auto-add-team-members` (`-a`) → `/team` → verify "no team members available"
@@ -825,13 +825,14 @@ export default defineConfig({
 
 **`MockChatApi`** — inline class in `bot.test.ts`:
 
-- **Tracking arrays:** `sent`, `added`, `removed`, `joined`, `deleted`, `customData`, `roleChanges`, `profileUpdates`, `rawCmds`
+- **Tracking arrays:** `sent`, `added`, `removed`, `joined`, `deleted`, `customData`, `roleChanges`, `profileUpdates`, `memberContacts`, `memberContactInvitations`
 - **Simulated DB:** `members` (Map), `chatItems` (Map), `groups` (Map), `activeUserId`
 - **Failure injection:** `apiAddMemberWillFail(err?)`, `apiDeleteChatItemsWillFail()`
 - **Query helpers:** `sentTo(groupId)`, `lastSentTo(groupId)`, `sentDirect(contactId)`
 - `apiSendTextMessage` returns `[{chatItem: {meta: {itemId: N}}}]` — auto-incrementing IDs
 - `apiGetChat` returns from `chatItems` map with `chatInfo.groupInfo` from `groups` map
-- `sendChatCmd(cmd)` — parses `/_create member contact` and `/_invite member contact` raw commands, returns appropriate response objects (`newMemberContact`, `newMemberContactSentInv`). Tracks all raw commands in `rawCmds` array.
+- `apiCreateMemberContact(groupId, groupMemberId)` — returns a contact object with auto-incrementing `contactId`. Tracks calls in `memberContacts` array.
+- `apiSendMemberContactInvitation(contactId, msg)` — returns a contact object. Tracks calls in `memberContactInvitations` array.
 
 **`MockGrokApi`** — inline class:
 
@@ -887,7 +888,8 @@ expectDmSent(contactId, substring)        // DM containing substring sent to con
 expectAnySent(substring)                  // any message (group or DM) containing substring
 expectMemberAdded(groupId, contactId)     // apiAddMember called with groupId + contactId
 expectCardDeleted(cardItemId)             // apiDeleteChatItems called with cardItemId
-expectRawCmd(substring)                   // sendChatCmd called with substring
+expectMemberContactCreated(groupId, memberId)  // apiCreateMemberContact called
+expectMemberContactInvSent(contactId)          // apiSendMemberContactInvitation called
 ```
 
 ### 20.3 State Setup Helpers
@@ -984,8 +986,8 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - team member joins team group → DM with contact ID
 - name with spaces → single-quoted
 - pending DM delivered on contactConnected
-- team member with no DM contact → creates member contact via raw command and sends invitation
-- joinedGroupMember in team group → creates member contact and sends invitation
+- team member with no DM contact → creates member contact via `apiCreateMemberContact` and sends invitation via `apiSendMemberContactInvitation`
+- joinedGroupMember in team group → creates member contact via `apiCreateMemberContact` and sends invitation via `apiSendMemberContactInvitation`
 - no duplicate DM when sendTeamMemberDM succeeds AND onMemberContactReceivedInv fires
 
 #### 12. Direct Messages (3 tests)
