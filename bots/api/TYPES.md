@@ -51,6 +51,7 @@ This file is generated automatically.
 - [Color](#color)
 - [CommandError](#commanderror)
 - [CommandErrorType](#commanderrortype)
+- [CommentsGroupPreference](#commentsgrouppreference)
 - [ComposedMessage](#composedmessage)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
@@ -1482,6 +1483,15 @@ LARGE:
 
 ---
 
+## CommentsGroupPreference
+
+**Record type**:
+- enable: [GroupFeatureEnabled](#groupfeatureenabled)
+- closeAfter: int?
+
+
+---
+
 ## ComposedMessage
 
 **Record type**:
@@ -2070,6 +2080,7 @@ Phone:
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
 - sessions: [RoleGroupPreference](#rolegrouppreference)
+- comments: [CommentsGroupPreference](#commentsgrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2160,6 +2171,7 @@ MemberSupport:
 - "reports"
 - "history"
 - "sessions"
+- "comments"
 
 
 ---
@@ -2376,6 +2388,7 @@ Known:
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
+- comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 

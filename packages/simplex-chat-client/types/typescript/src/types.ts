@@ -1714,6 +1714,11 @@ export namespace CommandErrorType {
   }
 }
 
+export interface CommentsGroupPreference {
+  enable: GroupFeatureEnabled
+  closeAfter?: number // int
+}
+
 export interface ComposedMessage {
   fileSource?: CryptoFile
   quotedItemId?: number // int64
@@ -2420,6 +2425,7 @@ export interface FullGroupPreferences {
   reports: GroupPreference
   history: GroupPreference
   sessions: RoleGroupPreference
+  comments: CommentsGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -2492,6 +2498,7 @@ export enum GroupFeature {
   Reports = "reports",
   History = "history",
   Sessions = "sessions",
+  Comments = "comments",
 }
 
 export enum GroupFeatureEnabled {
@@ -2669,6 +2676,7 @@ export interface GroupPreferences {
   reports?: GroupPreference
   history?: GroupPreference
   sessions?: RoleGroupPreference
+  comments?: CommentsGroupPreference
   commands?: ChatBotCommand[]
 }
 
