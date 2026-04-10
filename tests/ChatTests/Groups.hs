@@ -289,6 +289,7 @@ chatGroupTests = do
       it "comments_total should increment on insert and decrement on delete" testChannelCommentCountIncrement
       it "observer should not be able to comment" testChannelCommentObserverRejected
       it "comments should not appear in main channel pagination" testChannelCommentMainChatExclusion
+      it "subscriber should quote comment on channel post" testChannelCommentQuote
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8846,7 +8847,7 @@ testChannelLinkAfterWelcomeUpdate ps =
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "team" [bob] [alice] shortLink' fullLink' dan
-          dan #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
+          dan #$> ("/_get chat #1 count=100", chat, channelFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
 
           alice #> "#team hi"
           bob <# "#team> hi"
@@ -10021,6 +10022,14 @@ testChannelCommentDisabledRejected ps =
             alice ##> ("/_comment #1 " <> aliceParentId <> " text reply")
             alice <## "bad chat command: feature not allowed Comments"
 
+            -- wait for XMsgUpdate with prefs to propagate through relay to subscribers
+            threadDelay 1000000
+
+            -- subscriber's comment attempt is also rejected (relay forwarded XMsgUpdate with prefs)
+            cathParentId <- lastGroupItemId cath 1
+            cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
+            cath <## "bad chat command: feature not allowed Comments"
+
 testChannelCommentEditDelete :: HasCallStack => TestParams -> IO ()
 testChannelCommentEditDelete ps =
   withNewTestChat ps "alice" aliceProfile $ \alice ->
@@ -10083,10 +10092,18 @@ testChannelCommentCountIncrement ps =
             [cath, dan, eve] *<# "#team> hello [>>]"
 
             aliceParentId <- lastGroupItemId alice 1
+            bobParentId <- lastGroupItemId bob 1
             cathParentId <- lastGroupItemId cath 1
             danParentId <- lastGroupItemId dan 1
-            -- no comments yet
-            getCommentsTotal alice aliceParentId `shouldReturn` 0
+            eveParentId <- lastGroupItemId eve 1
+            let checkAllCounts expected = do
+                  getCommentsTotal alice aliceParentId `shouldReturn` expected
+                  getCommentsTotal bob bobParentId `shouldReturn` expected
+                  getCommentsTotal cath cathParentId `shouldReturn` expected
+                  getCommentsTotal dan danParentId `shouldReturn` expected
+                  getCommentsTotal eve eveParentId `shouldReturn` expected
+            -- no comments yet — all members see 0
+            checkAllCounts 0
 
             -- cath comments (capture cath's comment id immediately for later delete)
             cath ##> ("/_comment #1 " <> cathParentId <> " text reply one")
@@ -10102,7 +10119,7 @@ testChannelCommentCountIncrement ps =
                   eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
                   eve <# "#team cath> reply one [>>]"
               ]
-            getCommentsTotal alice aliceParentId `shouldReturn` 1
+            checkAllCounts 1
 
             -- dan comments on the parent (danParentId captured before cath's comment)
             dan ##> ("/_comment #1 " <> danParentId <> " text reply two")
@@ -10117,7 +10134,7 @@ testChannelCommentCountIncrement ps =
                   eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
                   eve <# "#team dan> reply two [>>]"
               ]
-            getCommentsTotal alice aliceParentId `shouldReturn` 2
+            checkAllCounts 2
 
             -- cath soft-deletes her own comment
             cath #$> ("/_delete item #1 " <> cathCommentId <> " broadcast", id, "message marked deleted")
@@ -10127,7 +10144,7 @@ testChannelCommentCountIncrement ps =
                 dan <# "#team cath> [marked deleted] reply one",
                 eve <# "#team cath> [marked deleted] reply one"
               ]
-            getCommentsTotal alice aliceParentId `shouldReturn` 1
+            checkAllCounts 1
   where
     getCommentsTotal cc parentId = do
       rows <-
@@ -10192,6 +10209,7 @@ testChannelCommentMainChatExclusion ps =
             bob <# "#team> hello"
             [cath, dan, eve] *<# "#team> hello [>>]"
 
+            aliceParentId <- lastGroupItemId alice 1
             cathParentId <- lastGroupItemId cath 1
             cath ##> ("/_comment #1 " <> cathParentId <> " text reply")
             cath <# "#team reply"
@@ -10212,6 +10230,98 @@ testChannelCommentMainChatExclusion ps =
             alice #$> ("/_get chat #1 content=text count=1", chat, [(1, "hello")])
             bob #$> ("/_get chat #1 content=text count=1", chat, [(0, "hello")])
             cath #$> ("/_get chat #1 content=text count=1", chat, [(0, "hello")])
+
+            -- reverse: comment section pagination must only show comments,
+            -- not the parent post or other main channel messages.
+            alice #$> ("/_get chat #1 parent=" <> aliceParentId <> " count=10", chat, [(0, "reply")])
+            cath #$> ("/_get chat #1 parent=" <> cathParentId <> " count=10", chat, [(1, "reply")])
+
+testChannelCommentQuote :: HasCallStack => TestParams -> IO ()
+testChannelCommentQuote ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner posts a channel message
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- capture parent post ids before any comments are sent
+            cathParentId <- lastGroupItemId cath 1
+            danParentId <- lastGroupItemId dan 1
+
+            -- cath comments on the post
+            cath ##> ("/_comment #1 " <> cathParentId <> " text first comment")
+            cath <# "#team first comment"
+            cathCommentId <- lastGroupItemId cath 1
+            bob <# "#team cath> first comment"
+            concurrentlyN_
+              [ alice <# "#team cath> first comment [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> first comment [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> first comment [>>]"
+              ]
+
+            -- dan quotes cath's comment (another comment in the same section)
+            danQuotedId <- lastGroupItemId dan 1 -- cath's comment
+            let cm1 = "{\"quotedItemId\": " <> danQuotedId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"quoting comment\"}}"
+            dan ##> ("/_comment #1 " <> danParentId <> " json [" <> cm1 <> "]")
+            dan <# "#team > cath first comment"
+            dan <## "      quoting comment"
+            bob <# "#team dan> > cath first comment"
+            bob <## "      quoting comment"
+            concurrentlyN_
+              [ do
+                  alice <# "#team dan> > cath first comment [>>]"
+                  alice <## "      quoting comment [>>]",
+                do
+                  cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
+                  cath <# "#team dan!> > cath first comment [>>]"
+                  cath <## "      quoting comment [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record dan"
+                  eve <# "#team dan> > cath first comment [>>]"
+                  eve <## "      quoting comment [>>]"
+              ]
+
+            -- cath quotes the parent post itself in a comment
+            let cm2 = "{\"quotedItemId\": " <> cathParentId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"quoting parent\"}}"
+            cath ##> ("/_comment #1 " <> cathParentId <> " json [" <> cm2 <> "]")
+            cath <# "#team > hello"
+            cath <## "      quoting parent"
+            bob <# "#team cath> > hello"
+            bob <## "      quoting parent"
+            concurrentlyN_
+              [ do
+                  alice <# "#team cath> > hello [>>]"
+                  alice <## "      quoting parent [>>]",
+                do
+                  dan <# "#team cath> > hello [>>]"
+                  dan <## "      quoting parent [>>]",
+                do
+                  eve <# "#team cath> > hello [>>]"
+                  eve <## "      quoting parent [>>]"
+              ]
+
+            -- quoting an item from a different post's section should be rejected
+            -- first, create a second channel post
+            alice #> "#team second post"
+            bob <# "#team> second post"
+            [cath, dan, eve] *<# "#team> second post [>>]"
+
+            -- cath's cathCommentId belongs to the first post's comment section
+            -- try to quote it while commenting on the second post — should fail
+            cathSecondParentId <- lastGroupItemId cath 1
+            let cm3 = "{\"quotedItemId\": " <> cathCommentId <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"cross-section quote\"}}"
+            cath ##> ("/_comment #1 " <> cathSecondParentId <> " json [" <> cm3 <> "]")
+            cath <## "bad chat command: quoted item does not belong to the same comment section"
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =

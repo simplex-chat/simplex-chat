@@ -289,6 +289,9 @@ groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 groupFeaturesNoE2E :: [(Int, String)]
 groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0
 
+channelFeaturesNoE2E :: [(Int, String)]
+channelFeaturesNoE2E = map (\(d, s) -> if s == "Comments: off" then (d, "Comments: on") else (d, s)) groupFeaturesNoE2E
+
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
 
@@ -308,7 +311,8 @@ groupFeatures_ dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing)
+    ((dir, "Recent history: on"), Nothing, Nothing),
+    ((dir, "Comments: off"), Nothing, Nothing)
   ]
 
 businessGroupFeatures :: [(Int, String)]

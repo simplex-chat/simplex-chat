@@ -557,13 +557,13 @@ processChatCommand vr nm = \case
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRApiChats user previews
-  APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
+  APIGetChat (ChatRef cType cId scope_) parentItemId_ contentFilter pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
       (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
-      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ Nothing contentFilter pagination search)
+      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ parentItemId_ contentFilter pagination search)
       groupChat' <- checkSupportChatAttention user groupChat
       pure $ CRApiChat user (AChat SCTGroup groupChat') navInfo
     CTLocal -> do
@@ -636,6 +636,11 @@ processChatCommand vr nm = \case
         cmi <- getChannelMsgInfo db user groupId parentItemId
         cmrs' <- mapM (composedMessageReqMentions db user gInfo) cms
         pure (cmi, cmrs')
+      -- Validate that quoted items belong to the same comment section.
+      forM_ cms $ \ComposedMessage {quotedItemId} ->
+        forM_ quotedItemId $ \qId ->
+          unlessM (withFastStore' $ \db -> quotedItemInCommentSection db parentItemId qId) $
+            throwCmdError "quoted item does not belong to the same comment section"
       assertMultiSendable live cmrs
       recipients <- getGroupRecipients vr user gInfo Nothing groupKnockingVersion
       sendGroupContentMessages_ user gInfo Nothing False Nothing (Just channelMsgInfo) recipients live itemTTL cmrs
@@ -647,10 +652,13 @@ processChatCommand vr nm = \case
       let GroupInfo {membership = GroupMember {memberRole = userRole}} = gInfo
       when (userRole < GRModerator) $ throwCmdError "user is not allowed to disable comments"
       withFastStore' $ \db -> setChannelMsgCommentsDisabled db parentItemId disabled
-      let ChannelMsgInfo {channelMsgSharedId} = channelMsgInfo
-          chatMsgEvent = XMsgPrefs {msgId = channelMsgSharedId, comments = MsgCommentsPref {disabled}}
-      recipients <- getGroupRecipients vr user gInfo Nothing groupKnockingVersion
-      void $ sendGroupMessages user gInfo Nothing False recipients (chatMsgEvent :| [])
+      case channelMsgInfo of
+        ChannelMsgInfo {channelMsgItem = CChatItem _ ChatItem {content = ciContent}, channelMsgSharedId} ->
+          forM_ (ciMsgContent ciContent) $ \mc -> do
+            let prefs = MsgPrefs {commentsDisabled = disabled}
+                chatMsgEvent = XMsgUpdate channelMsgSharedId mc M.empty Nothing Nothing Nothing (Just True) (Just prefs)
+            recipients <- getGroupRecipients vr user gInfo Nothing groupKnockingVersion
+            void $ sendGroupMessages user gInfo Nothing False recipients (chatMsgEvent :| [])
       ok user
   APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
     _ <- createChatTag db user emoji text
@@ -698,7 +706,7 @@ processChatCommand vr nm = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing
+                  let event = XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) Nothing Nothing Nothing
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct event
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
@@ -732,7 +740,7 @@ processChatCommand vr nm = \case
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let msgScope = toMsgScope gInfo <$> chatScopeInfo
                           mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender)
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope (Just showGroupAsSender) Nothing
                       SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
@@ -1304,7 +1312,7 @@ processChatCommand vr nm = \case
       sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
         forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
           Just smId ->
-            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing Nothing
           Nothing -> do
             (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
@@ -3079,14 +3087,14 @@ processChatCommand vr nm = \case
     pure $ CRChats previews
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    chatResp <- processChatCommand vr nm $ APIGetChat chatRef Nothing (CPLast count) search
+    chatResp <- processChatCommand vr nm $ APIGetChat chatRef Nothing Nothing (CPLast count) search
     pure $ CRChatItems user (Just chatName) (aChatItems . chat $ chatResp)
   LastMessages Nothing count search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast count) search
     pure $ CRChatItems user Nothing chatItems
   LastChatItemId (Just chatName) index -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    chatResp <- processChatCommand vr nm $ APIGetChat chatRef Nothing (CPLast $ index + 1) Nothing
+    chatResp <- processChatCommand vr nm $ APIGetChat chatRef Nothing Nothing (CPLast $ index + 1) Nothing
     pure $ CRChatItemId user (fmap aChatItemId . listToMaybe . aChatItems . chat $ chatResp)
   LastChatItemId Nothing index -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast $ index + 1) Nothing
@@ -4798,7 +4806,7 @@ chatCommandP =
               <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
-      "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
+      "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" parent=" *> A.decimal) <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get content types " *> (APIGetChatContentTypes <$> chatRefP),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),

@@ -319,7 +319,7 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
+  | APIGetChat {chatRef :: ChatRef, parentItemId :: Maybe ChatItemId, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}

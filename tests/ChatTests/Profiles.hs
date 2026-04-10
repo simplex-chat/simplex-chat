@@ -3459,7 +3459,7 @@ testGroupShortLinkWelcome = testChat2 aliceProfile bobProfile test
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
-      bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!")])
+      bob #$> ("/_get chat #1 count=100", chat, channelFeaturesNoE2E <> [(0, "Welcome!")])
       threadDelay 1000000 -- TODO [short links] to compensate for rounding of timestamps of received messages
       bob ##> "/_connect group #1"
       bob <## "#team: connection started"
@@ -3470,7 +3470,7 @@ testGroupShortLinkWelcome = testChat2 aliceProfile bobProfile test
             bob <## "#team: joining the group..."
             bob <### ["#team: you joined the group"]
         ]
-      bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!"), (0, e2eeInfoNoPQStr), (0, "connected")])
+      bob #$> ("/_get chat #1 count=100", chat, channelFeaturesNoE2E <> [(0, "Welcome!"), (0, e2eeInfoNoPQStr), (0, "connected")])
       alice #> "#team 1"
       bob <# "#team alice> 1"
       bob #> "#team 2"

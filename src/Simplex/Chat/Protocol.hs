@@ -155,7 +155,7 @@ shortLinkDataVersion = VersionChat 16
 memberSupportVoiceVersion :: VersionChat
 memberSupportVoiceVersion = VersionChat 17
 
--- support comments on channel posts (merged MsgContainer with optional `parent`, XMsgPrefs)
+-- support comments on channel posts (merged MsgContainer with optional `parent`, MsgPrefs in XMsgUpdate)
 commentsVersion :: VersionChat
 commentsVersion = VersionChat 18
 
@@ -258,14 +258,14 @@ data MsgRef = MsgRef
 
 $(JQ.deriveJSON defaultJSON ''MsgRef)
 
--- Per-message comment preferences carried by XMsgPrefs.
--- `disabled = True` locks commenting on the addressed channel post.
-data MsgCommentsPref = MsgCommentsPref
-  { disabled :: Bool
+-- Per-message preferences carried in XMsgUpdate.
+-- `commentsDisabled = True` locks commenting on the addressed channel post.
+data MsgPrefs = MsgPrefs
+  { commentsDisabled :: Bool
   }
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''MsgCommentsPref)
+$(JQ.deriveJSON defaultJSON ''MsgPrefs)
 
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
   deriving (Eq, Show)
@@ -430,7 +430,7 @@ data MsgSigning = MsgSigning
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, prefs :: Maybe MsgPrefs} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -465,8 +465,6 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
-  -- Per-message preferences for a specific channel post addressed by its SharedMsgId.
-  XMsgPrefs :: {msgId :: SharedMsgId, comments :: MsgCommentsPref} -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMsgForward :: GrpMsgForward -> ChatMessage 'Json -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
@@ -509,7 +507,6 @@ isForwardedGroupMsg ev = case ev of
   XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
-  XMsgPrefs {} -> True
   _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -1017,7 +1014,6 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
   XGrpPrefs_ :: CMEventTag 'Json
-  XMsgPrefs_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
@@ -1075,7 +1071,6 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
     XGrpPrefs_ -> "x.grp.prefs"
-    XMsgPrefs_ -> "x.msg.prefs"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
@@ -1134,7 +1129,6 @@ instance StrEncoding ACMEventTag where
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
         "x.grp.prefs" -> XGrpPrefs_
-        "x.msg.prefs" -> XMsgPrefs_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
@@ -1189,7 +1183,6 @@ toCMEventTag msg = case msg of
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
-  XMsgPrefs {} -> XMsgPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
@@ -1301,7 +1294,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         live <- opt "live"
         scope <- opt "scope"
         asGroup <- opt "asGroup"
-        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup}
+        prefs <- opt "prefs"
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, prefs}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope"
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
@@ -1346,7 +1340,6 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
-      XMsgPrefs_ -> XMsgPrefs <$> p "msgId" <*> p "comments"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpMsgForward_ -> do
         fwdSender <- opt "memberId" >>= \case
@@ -1380,7 +1373,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     params = \case
       XMsgNew container -> msgContainerJSON container
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, prefs} -> o $ ("prefs" .=? prefs) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
@@ -1417,7 +1410,6 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
-      XMsgPrefs {msgId = msgId', comments} -> o ["msgId" .= msgId', "comments" .= comments]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
       XGrpMsgForward GrpMsgForward {fwdSender, fwdBrokerTs} msg -> o $ encodeFwdSender fwdSender ["msg" .= msg, "msgTs" .= fwdBrokerTs]
         where

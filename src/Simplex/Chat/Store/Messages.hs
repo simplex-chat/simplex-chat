@@ -52,6 +52,7 @@ module Simplex.Chat.Store.Messages
     getChannelMsgInfoBySharedMsgId,
     adjustChannelMsgCommentCount,
     setChannelMsgCommentsDisabled,
+    quotedItemInCommentSection,
     getGroupChatScopeInfoForItem,
     getLocalChat,
     getDirectChatItemLast,
@@ -1490,6 +1491,22 @@ setChannelMsgCommentsDisabled db parentChatItemId disabled =
     db
     "UPDATE chat_items SET comments_disabled = ? WHERE chat_item_id = ?"
     (BI disabled, parentChatItemId)
+
+-- | Check that a quoted item either IS the parent post or belongs to the same
+-- comment section. Returns True if the quote is valid for this parent.
+quotedItemInCommentSection :: DB.Connection -> ChatItemId -> ChatItemId -> IO Bool
+quotedItemInCommentSection db parentChatItemId quotedItemId
+  | quotedItemId == parentChatItemId = pure True
+  | otherwise = do
+      rows <-
+        DB.query
+          db
+          "SELECT parent_chat_item_id FROM chat_items WHERE chat_item_id = ?"
+          (Only quotedItemId) ::
+          IO [Only (Maybe ChatItemId)]
+      pure $ case rows of
+        [Only (Just pId)] -> pId == parentChatItemId
+        _ -> False
 
 -- | Decrement parent comment counts for live comments by a given group member.
 -- Used by batch member-removal paths (markMemberCIsDeleted, updateMemberCIsModerated)
