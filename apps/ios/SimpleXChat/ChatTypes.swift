@@ -5241,7 +5241,8 @@ public enum SndGroupEvent: Decodable, Hashable {
             ? NSLocalizedString("channel profile updated", comment: "snd group event chat item")
             : NSLocalizedString("group profile updated", comment: "snd group event chat item")
         case .memberAccepted: return NSLocalizedString("you accepted this member", comment: "snd group event chat item")
-        case .userPendingReview: return NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
+        case .userPendingReview:
+            return NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
         }
     }
 }
