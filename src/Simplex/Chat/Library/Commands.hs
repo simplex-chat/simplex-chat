@@ -344,7 +344,7 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 processChatCommand :: VersionRangeChat -> NetworkRequestMode -> ChatCommand -> CM ChatResponse
 processChatCommand vr nm = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay} -> do
+  CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay, clientService} -> do
     forM_ profile $ \Profile {displayName} -> checkValidName displayName
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
@@ -352,12 +352,13 @@ processChatCommand vr nm = \case
     forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash, userChatRelay = userChatRelay'} -> do
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
-      when (userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
+      when (isTrue userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
     (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
-    auId <- withAgent $ \a -> createUser a smp' xftp'
+    let service = isTrue clientService
+    auId <- withAgent $ \a -> createUser a service smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
-      user <- createUserRecordAt db (AgentUserId auId) p userChatRelay True ts
+      user <- createUserRecordAt db (AgentUserId auId) (isTrue userChatRelay) service p True ts
       mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
@@ -456,6 +457,19 @@ processChatCommand vr nm = \case
   UnhideUser viewPwd -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUnhideUser userId viewPwd
   MuteUser -> withUser $ \User {userId} -> processChatCommand vr nm $ APIMuteUser userId
   UnmuteUser -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUnmuteUser userId
+  SetClientService userId' name enable -> checkChatStopped $ withUser' $ \currUser@User {userId} -> do
+    user@User {agentUserId = AgentUserId auId, clientService, profile = LocalProfile {displayName}} <-
+      if userId == userId' then pure currUser else privateGetUser userId'
+    unless (name == displayName) $ throwChatError CEUserUnknown
+    if enable == isTrue clientService
+      then ok user
+      else do
+        withStore' $ \db -> updateClientService db userId' enable
+        withAgent $ \a -> setUserService a auId enable
+        let user' = user {clientService = BoolDef enable} :: User
+        when (userId == userId') $ chatWriteVar currentUser $ Just user'
+        setStoreChanged
+        ok user'
   APIDeleteUser userId' delSMPQueues viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' viewPwd_
@@ -1668,7 +1682,7 @@ processChatCommand vr nm = \case
     pure $ CRChatItemTTL user (Just ttl)
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand vr nm $ APIGetChatItemTTL userId
-  APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
+  APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
     CRNetworkConfig <$> lift getNetworkConfig
   SetNetworkConfig simpleNetCfg -> do
@@ -1881,8 +1895,7 @@ processChatCommand vr nm = \case
     subMode <- chatReadVar subscriptionMode
     let userData = contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
         userLinkData = UserInvLinkData userData
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
@@ -1923,8 +1936,7 @@ processChatCommand vr nm = \case
             userLinkData_
               | short = Just $ UserInvLinkData $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
               | otherwise = Nothing
-        -- TODO [certs rcv]
-        (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation userLinkData_ Nothing IKPQOn subMode
+        (agConnId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation userLinkData_ Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
         conn' <- withFastStore' $ \db -> do
           deleteConnectionRecord db user connId
@@ -2213,8 +2225,7 @@ processChatCommand vr nm = \case
           | isTrue userChatRelay = relayShortLinkData (userProfileDirect user Nothing Nothing True)
           | otherwise = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     let ccLink'' = if isTrue userChatRelay then createdRelayLink ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode
@@ -2484,8 +2495,7 @@ processChatCommand vr nm = \case
       Nothing -> do
         gVar <- asks random
         subMode <- chatReadVar subscriptionMode
-        -- TODO [certs rcv]
-        (agentConnId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
+        (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
         member <- withFastStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -2908,8 +2918,7 @@ processChatCommand vr nm = \case
     let userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = Nothing}
         userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
         crClientData = encodeJSON $ CRDataGroup groupLinkId
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
     gVar <- asks random
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
@@ -2949,8 +2958,7 @@ processChatCommand vr nm = \case
         when (isJust $ memberContactId m) $ throwCmdError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
         -- TODO PQ should negotitate contact connection with PQSupportOn?
-        -- TODO [certs rcv]
-        (connId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
+        (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True False SCMInvitation Nothing Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
@@ -3011,7 +3019,7 @@ processChatCommand vr nm = \case
             -- [incognito] send membership incognito profile
             let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
             dm <- encodeConnInfo $ XInfo p
-            (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+            sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
             void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
   CreateGroupLink gName mRole -> withUser $ \user -> do
@@ -3318,11 +3326,11 @@ processChatCommand vr nm = \case
       (chatRef,) <$> case cType of
         CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
-#if !defined(dbPostgres)
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
+#if !defined(dbPostgres)
     withStoreChanged :: CM () -> CM ChatResponse
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged >> ok_
 #endif
@@ -3388,7 +3396,7 @@ processChatCommand vr nm = \case
               joinPreparedConn conn incognitoProfile chatV = do
                 let profileToSend = userProfileDirect user incognitoProfile Nothing True
                 dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-                (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
+                sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
                 pure (conn', incognitoProfile)
@@ -3820,7 +3828,7 @@ processChatCommand vr nm = \case
                     groupLink = groupSLink
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv
-              (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+              sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
               let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
               withFastStore' $ \db -> do
                 void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
@@ -4503,7 +4511,7 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   forever (atomically (readTBQueue q) >>= process)
     `catchOwn` \e -> do
-      eToView' $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) (AgentConnId "") Nothing
+      eToView' $ chatErrorAgent $ CRITICAL True $ "Message reception stopped: " <> show e
       E.throwIO e
   where
     process :: (ACorrId, AEntityId, AEvt) -> CM' ()
@@ -4515,7 +4523,7 @@ agentSubscriber = do
       where
         run action = action `catchAllOwnErrors'` eToView'
 
-type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
+type AgentSubResult = Map ConnId (Either AgentErrorType ())
 
 cleanupManager :: CM ()
 cleanupManager = do
@@ -4701,6 +4709,7 @@ chatCommandP =
       "/unhide user " *> (UnhideUser <$> pwdP),
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
+      "/set client service " *> (SetClientService <$> A.decimal <* A.char ':' <*> displayNameP <* A.space <*> onOffP),
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayNameP <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
@@ -5141,18 +5150,20 @@ chatCommandP =
                 k : ws -> pure (k, if null ws then Nothing else Just $ T.unwords ws)
               pure CBCCommand {label, keyword, params}
         quoted = A.char '\'' *> A.takeTill (== '\'') <* A.char '\''
-    newUserP userChatRelay = do
+    newUserP relay = do
       (cName, shortDescr) <- profileNameDescr
+      service <- (" service=" *> onOffP) <|> pure False
       let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
-      pure NewUser {profile, pastTimestamp = False, userChatRelay}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef relay, clientService = BoolDef service}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
+      service <- ("service=" *> onOffP <* A.space) <|> pure False
       (cName, shortDescr) <- profileNameDescr
       let preferences = case files_ of
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
           profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences}
-      pure NewUser {profile, pastTimestamp = False, userChatRelay = False}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = BoolDef False, clientService = BoolDef service}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do

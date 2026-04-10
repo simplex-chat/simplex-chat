@@ -151,6 +151,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260108_chat_indices
 import Simplex.Chat.Store.SQLite.Migrations.M20260122_has_link
 import Simplex.Chat.Store.SQLite.Migrations.M20260222_chat_relays
 import Simplex.Chat.Store.SQLite.Migrations.M20260403_item_viewed
+import Simplex.Chat.Store.SQLite.Migrations.M20260407_client_services
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -301,7 +302,8 @@ schemaMigrations =
     ("20260108_chat_indices", m20260108_chat_indices, Just down_m20260108_chat_indices),
     ("20260122_has_link", m20260122_has_link, Just down_m20260122_has_link),
     ("20260222_chat_relays", m20260222_chat_relays, Just down_m20260222_chat_relays),
-    ("20260403_item_viewed", m20260403_item_viewed, Just down_m20260403_item_viewed)
+    ("20260403_item_viewed", m20260403_item_viewed, Just down_m20260403_item_viewed),
+    ("20260407_client_services", m20260407_client_services, Just down_m20260407_client_services)
   ]
 
 -- | The list of migrations in ascending order by date

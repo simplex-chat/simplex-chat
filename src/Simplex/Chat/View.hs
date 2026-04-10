@@ -469,7 +469,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> tshow (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtServiceSubStatus srv event -> [plain $ serviceSubEventStr srv event]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
   CEvtGroupLinkDataUpdated u g groupLink relays relaysChanged
@@ -605,13 +606,14 @@ viewUsersList us =
    in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
-    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, peerType}, activeUser, showNtfs, viewPwdHash} count)
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, peerType}, activeUser, showNtfs, viewPwdHash, clientService} count)
       | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr <> bot
       | otherwise = Nothing
       where
         infoStr = if null info then "" else " (" <> mconcat (intersperse ", " info) <> ")"
         info =
           [highlight' "active" | activeUser]
+            <> [highlight' "service" | isTrue clientService]
             <> [highlight' "hidden" | isJust viewPwdHash]
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
@@ -619,8 +621,8 @@ viewUsersList us =
           Just CPTBot -> " (bot)"
           _ -> ""
 
-showSMPServer :: SMPServer -> String
-showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
+showSMPServer :: SMPServer -> Text
+showSMPServer ProtocolServer {host} = safeDecodeUtf8 $ strEncode host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -1450,7 +1452,7 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
 
 viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
 viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
-  | isTrue (autoAcceptMemberContacts user) =
+  | autoAcceptMemberContacts user =
       [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   | otherwise =
       [ ttyGroup' g <> " " <> ttyMember m <> " requests to create direct contact with you",
@@ -1536,12 +1538,22 @@ viewConnDiffIds userDiff connDiff
       where
         showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
 
-subStatusStr :: SubscriptionStatus -> String
+subStatusStr :: SubscriptionStatus -> Text
 subStatusStr = \case
   SSActive -> "subscribed"
   SSPending -> "disconnected"
-  SSRemoved e -> "removed: " <> e
+  SSRemoved e -> "removed: " <> T.pack e
   SSNoSub -> "no subscription"
+
+serviceSubEventStr :: SMPServer -> ServiceSubEvent -> Text
+serviceSubEventStr srv = \case
+  ServiceSubUp e_ n -> "subscribed service " <> conns n <> srvStr <> ": " <> fromMaybe "ok" e_
+  ServiceSubDown n -> "disconnected service " <> conns n <> srvStr
+  ServiceSubAll -> "received messages from service" <> srvStr -- "(" <> n <> "connections)"
+  ServiceSubEnd n -> "service subscription ended " <> conns n <> srvStr
+  where
+    conns n = "(" <> tshow n <> " connections)"
+    srvStr = " on server " <> showSMPServer srv
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] [] []) = []
@@ -1767,7 +1779,7 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
-viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
+viewRcvQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
   where
     showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus, canAbortSwitch} =
       let switchCanBeAborted = if canAbortSwitch then ", can be aborted" else ""
@@ -1780,7 +1792,7 @@ viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
       RSReceivedMessage -> "switch secured"
 
 viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
-viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
+viewSndQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
   where
     showQueueInfo SndQueueInfo {sndServer, sndSwitchStatus} =
       showSMPServer sndServer
@@ -2516,7 +2528,6 @@ viewChatError isCmd logLevel testView = \case
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
-    CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEChatRelayExists -> ["chat realy user already exists"]
     CEUserUnknown -> ["user does not exist or incorrect password"]

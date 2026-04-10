@@ -981,7 +981,6 @@ export type ChatErrorType =
   | ChatErrorType.NoSndFileUser
   | ChatErrorType.NoRcvFileUser
   | ChatErrorType.UserUnknown
-  | ChatErrorType.ActiveUserExists
   | ChatErrorType.UserExists
   | ChatErrorType.ChatRelayExists
   | ChatErrorType.DifferentActiveUser
@@ -1059,7 +1058,6 @@ export namespace ChatErrorType {
     | "noSndFileUser"
     | "noRcvFileUser"
     | "userUnknown"
-    | "activeUserExists"
     | "userExists"
     | "chatRelayExists"
     | "differentActiveUser"
@@ -1155,10 +1153,6 @@ export namespace ChatErrorType {
 
   export interface UserUnknown extends Interface {
     type: "userUnknown"
-  }
-
-  export interface ActiveUserExists extends Interface {
-    type: "activeUserExists"
   }
 
   export interface UserExists extends Interface {
@@ -3099,6 +3093,7 @@ export interface NewUser {
   profile?: Profile
   pastTimestamp: boolean
   userChatRelay: boolean
+  clientService: boolean
 }
 
 export interface NoteFolder {
@@ -4648,8 +4643,9 @@ export interface User {
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
-  uiThemes?: UIThemeEntityOverrides
   userChatRelay: boolean
+  clientService: boolean
+  uiThemes?: UIThemeEntityOverrides
 }
 
 export interface UserChatRelay {

@@ -266,6 +266,7 @@ cliCommands =
     "SetAddressSettings",
     "SetBotCommands",
     "SetChatTTL",
+    "SetClientService",
     "SetContactFeature",
     "SetContactTimedMessages",
     "SetGroupFeature",
