@@ -5192,9 +5192,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
-        case .newMemberPendingReview: return isChannel
-            ? NSLocalizedString("New subscriber wants to join the channel.", comment: "rcv group event chat item")
-            : NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
+        case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
         }
     }
 
@@ -5243,9 +5241,7 @@ public enum SndGroupEvent: Decodable, Hashable {
             ? NSLocalizedString("channel profile updated", comment: "snd group event chat item")
             : NSLocalizedString("group profile updated", comment: "snd group event chat item")
         case .memberAccepted: return NSLocalizedString("you accepted this member", comment: "snd group event chat item")
-        case .userPendingReview: return isChannel
-            ? NSLocalizedString("Please wait for channel moderators to review your request to join the channel.", comment: "snd group event chat item")
-            : NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
+        case .userPendingReview: return NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
         }
     }
 }

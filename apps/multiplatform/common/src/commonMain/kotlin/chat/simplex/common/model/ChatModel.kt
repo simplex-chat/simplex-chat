@@ -4793,7 +4793,7 @@ sealed class RcvGroupEvent() {
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
-    is NewMemberPendingReview -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_new_subscriber_pending_review else MR.strings.rcv_group_event_new_member_pending_review)
+    is NewMemberPendingReview -> generalGetString(MR.strings.rcv_group_event_new_member_pending_review)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =
@@ -4835,7 +4835,7 @@ sealed class SndGroupEvent() {
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(if (isChannel) MR.strings.snd_channel_event_channel_profile_updated else MR.strings.snd_group_event_group_profile_updated)
     is MemberAccepted -> generalGetString(MR.strings.snd_group_event_member_accepted)
-    is UserPendingReview -> generalGetString(if (isChannel) MR.strings.snd_channel_event_user_pending_review else MR.strings.snd_group_event_user_pending_review)
+    is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
   }
 }
 

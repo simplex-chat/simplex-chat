@@ -1713,7 +1713,6 @@
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
-  <string name="rcv_channel_event_new_subscriber_pending_review">New subscriber wants to join the channel.</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
   <string name="snd_group_event_member_blocked">you blocked %s</string>
@@ -1724,7 +1723,6 @@
   <string name="snd_channel_event_channel_profile_updated">channel profile updated</string>
   <string name="snd_group_event_member_accepted">you accepted this member</string>
   <string name="snd_group_event_user_pending_review">Please wait for group moderators to review your request to join the group.</string>
-  <string name="snd_channel_event_user_pending_review">Please wait for channel moderators to review your request to join the channel.</string>
 
   <string name="rcv_group_event_1_member_connected">%s connected</string>
   <string name="rcv_group_event_2_members_connected">%s and %s connected</string>
