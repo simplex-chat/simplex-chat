@@ -195,13 +195,15 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func pendingReviewEventItemText() -> Text {
-        Text(chatItem.content.text)
+        let isChannel = chat.chatInfo.groupInfo?.useRelays == true
+        return Text(chatItem.content.text(isChannel: isChannel))
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .fontWeight(.bold)
     }
 
     private func eventItemViewText(_ secondaryColor: Color) -> Text {
+        let isChannel = chat.chatInfo.groupInfo?.useRelays == true
         if !revealed, let t = mergedGroupEventText {
             return chatEventText(t + textSpace + chatItem.timestampText, secondaryColor)
         } else if let member = chatItem.memberDisplayName {
@@ -209,9 +211,9 @@ struct ChatItemContentView<Content: View>: View {
                     .font(.caption)
                     .foregroundColor(secondaryColor)
                     .fontWeight(.light)
-                + chatEventText(chatItem, secondaryColor)
+                + chatEventText(chatItem, secondaryColor, isChannel: isChannel)
         } else {
-            return chatEventText(chatItem, secondaryColor)
+            return chatEventText(chatItem, secondaryColor, isChannel: isChannel)
         }
     }
 
@@ -220,6 +222,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private var mergedGroupEventText: Text? {
+        let isChannel = chat.chatInfo.groupInfo?.useRelays == true
         let (count, ns) = chatModel.getConnectedMemberNames(chatItem)
         let members: LocalizedStringKey =
             switch ns.count {
@@ -228,13 +231,15 @@ struct ChatItemContentView<Content: View>: View {
             case 3: "\(ns[0] + ", " + ns[1]) and \(ns[2]) connected"
             default:
                 ns.count > 3
-                ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
+                ? isChannel
+                    ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other subscribers connected"
+                    : "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
                 : ""
             }
         return if count <= 1 {
             nil
         } else if ns.count == 0 {
-            Text("\(count) group events")
+            isChannel ? Text("\(count) channel events") : Text("\(count) group events")
         } else if count > ns.count {
             Text(members) + textSpace + Text("and \(count - ns.count) other events")
         } else {
@@ -275,8 +280,8 @@ func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor
     chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
-func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
-    chatEventText("\(ci.content.text)", ci.timestampText, secondaryColor)
+func chatEventText(_ ci: ChatItem, _ secondaryColor: Color, isChannel: Bool = false) -> Text {
+    chatEventText("\(ci.content.text(isChannel: isChannel))", ci.timestampText, secondaryColor)
 }
 
 struct ChatItemView_Previews: PreviewProvider {

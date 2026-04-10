@@ -44,7 +44,8 @@ abstract class NtfManager {
               chatModel.chatId.value != cInfo.id ||
               chatModel.remoteHostId() != rhId)
     ) {
-      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+      val isChannel = cInfo.groupInfo_?.useRelays == true
+      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, isChannel))
     }
   }
 
@@ -119,7 +120,7 @@ abstract class NtfManager {
     }
   }
 
-  private fun hideSecrets(cItem: ChatItem): String {
+  private fun hideSecrets(cItem: ChatItem, isChannel: Boolean = false): String {
     val md = cItem.formattedText
     return if (md != null) {
       var res = ""
@@ -130,9 +131,9 @@ abstract class NtfManager {
     } else {
       val mc = cItem.content.msgContent
       if (mc is MsgContent.MCReport) {
-        generalGetString(MR.strings.notification_group_report).format(cItem.text.ifEmpty { mc.reason.text })
+        generalGetString(MR.strings.notification_group_report).format(cItem.text(isChannel).ifEmpty { mc.reason.text })
       } else {
-        cItem.text
+        cItem.text(isChannel)
       }
     }
   }
