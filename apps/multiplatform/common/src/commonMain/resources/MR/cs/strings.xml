@@ -1117,7 +1117,7 @@
     <string name="auth_open_chat_profiles">Změnit chat profily</string>
     <string name="edit_history">Historie</string>
     <string name="received_message">Přijatá zpráva</string>
-    <string name="sent_message">Poslaná zpráva</string>
+    <string name="sent_message">Odeslaná zpráva</string>
     <string name="disappearing_message">Mizící zpráva</string>
     <string name="send_disappearing_message">Poslat mizící zprávu</string>
     <string name="send_disappearing_message_1_minute">1 minutu</string>
@@ -1902,7 +1902,7 @@
     <string name="chat_database_exported_title">Chat databáze exportována</string>
     <string name="cant_send_message_to_member_alert_title">Členu skupiny nelze odeslat zprávu</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Požádejte váš kontakt ať povolí volání.</string>
-    <string name="color_sent_quote">Odeslaných odpovědí</string>
+    <string name="color_sent_quote">Odeslaná odpověď</string>
     <string name="wallpaper_scale">Škálovat</string>
     <string name="wallpaper_scale_fit">Přizpůsobit</string>
     <string name="v6_0_privacy_blur">Rozmazání pro lepší soukromí.</string>
