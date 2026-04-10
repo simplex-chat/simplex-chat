@@ -233,6 +233,11 @@ groupFeatureMemberAllowed' feature role prefs =
   let pref = getGroupPreference feature prefs
    in getField @"enable" pref == FEOn && maybe True (role >=) (getField @"role" pref)
 
+-- TODO: some preferences are channel-only (e.g., comments) and should not generate
+-- UI items or be configurable in regular groups. Currently they are simply excluded
+-- from this list. When more channel-only or group-only preferences are added,
+-- consider adding a scope property to GroupFeatureI (e.g., GFScopeAll | GFScopeChannel | GFScopeGroup)
+-- and filtering at the call sites in createGroupFeatureItems_ / createGroupFeatureChangedItems.
 allGroupFeatures :: [AGroupFeature]
 allGroupFeatures =
   [ AGF SGFTimedMessages,
@@ -243,8 +248,7 @@ allGroupFeatures =
     AGF SGFFiles,
     AGF SGFSimplexLinks,
     AGF SGFReports,
-    AGF SGFHistory,
-    AGF SGFComments
+    AGF SGFHistory
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
