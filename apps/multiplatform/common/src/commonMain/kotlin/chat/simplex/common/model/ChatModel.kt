@@ -1748,6 +1748,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo
       else -> null
     }
+
+  val isChannel: Boolean
+    get() = groupInfo_?.useRelays == true
 }
 
 @Serializable
@@ -2891,12 +2894,14 @@ data class ChatItem (
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
 
-  val text: String get() {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String {
     val mc = content.msgContent
     return when {
-      content.text == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(MR.strings.voice_message_with_duration), durationText(mc.duration))
-      content.text == "" && file != null -> file.fileName
-      else -> content.text
+      content.text(isChannel) == "" && file != null && mc is MsgContent.MCVoice -> String.format(generalGetString(MR.strings.voice_message_with_duration), durationText(mc.duration))
+      content.text(isChannel) == "" && file != null -> file.fileName
+      else -> content.text(isChannel)
     }
   }
 
@@ -3035,6 +3040,7 @@ data class ChatItem (
       is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
       is CIContent.RcvIntegrityError -> false
       is CIContent.RcvDecryptionError -> false
+      is CIContent.RcvMsgErrorContent -> false
       is CIContent.RcvGroupInvitation -> true
       is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
@@ -3729,6 +3735,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvDecryptionError") class RcvDecryptionError(val msgDecryptError: MsgDecryptError, val msgCount: UInt): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvMsgError") class RcvMsgErrorContent(val rcvMsgError: RcvMsgError): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvDirectEvent") class RcvDirectEventContent(val rcvDirectEvent: RcvDirectEvent): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -3754,7 +3761,9 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("chatBanner") object ChatBanner: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
-  override val text: String get() = when (this) {
+  override val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
       is SndMsgContent -> msgContent.text
       is RcvMsgContent -> msgContent.text
       is SndDeleted -> generalGetString(MR.strings.deleted_description)
@@ -3763,11 +3772,12 @@ sealed class CIContent: ItemContent {
       is RcvCall -> status.text(duration)
       is RcvIntegrityError -> msgError.text
       is RcvDecryptionError -> msgDecryptError.text
+      is RcvMsgErrorContent -> rcvMsgError.text
       is RcvGroupInvitation -> groupInvitation.text
       is SndGroupInvitation -> groupInvitation.text
       is RcvDirectEventContent -> rcvDirectEvent.text
-      is RcvGroupEventContent -> rcvGroupEvent.text
-      is SndGroupEventContent -> sndGroupEvent.text
+      is RcvGroupEventContent -> rcvGroupEvent.text(isChannel)
+      is SndGroupEventContent -> sndGroupEvent.text(isChannel)
       is RcvConnEventContent -> rcvConnEvent.text
       is SndConnEventContent -> sndConnEvent.text
       is RcvChatFeature -> featureText(feature, enabled.text, param)
@@ -3803,6 +3813,7 @@ sealed class CIContent: ItemContent {
       is RcvCall -> true
       is RcvIntegrityError -> true
       is RcvDecryptionError -> true
+      is RcvMsgErrorContent -> true
       is RcvGroupInvitation -> true
       is RcvModerated -> true
       is RcvBlocked -> true
@@ -4715,6 +4726,17 @@ sealed class MsgErrorType() {
 }
 
 @Serializable
+sealed class RcvMsgError() {
+  @Serializable @SerialName("dropped") class Dropped(val attempts: Int): RcvMsgError()
+  @Serializable @SerialName("parseError") class ParseError(val parseError: String): RcvMsgError()
+
+  val text: String get() = when (this) {
+    is Dropped -> String.format(generalGetString(MR.strings.rcv_msg_error_dropped), attempts)
+    is ParseError -> String.format(generalGetString(MR.strings.rcv_msg_error_parse), parseError)
+  }
+}
+
+@Serializable
 sealed class RcvDirectEvent() {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(): RcvDirectEvent()
   @Serializable @SerialName("profileUpdated") class ProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvDirectEvent()
@@ -4764,7 +4786,9 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
   @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
 
-  val text: String get() = when (this) {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(MR.strings.rcv_group_event_member_connected)
     is MemberAccepted -> String.format(generalGetString(MR.strings.rcv_group_event_member_accepted), profile.profileViewName)
@@ -4779,8 +4803,8 @@ sealed class RcvGroupEvent() {
     is UserRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_your_role), role.text)
     is MemberDeleted -> String.format(generalGetString(MR.strings.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(MR.strings.rcv_group_event_user_deleted)
-    is GroupDeleted -> generalGetString(MR.strings.rcv_group_event_group_deleted)
-    is GroupUpdated -> generalGetString(MR.strings.rcv_group_event_updated_group_profile)
+    is GroupDeleted -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_channel_deleted else MR.strings.rcv_group_event_group_deleted)
+    is GroupUpdated -> generalGetString(if (isChannel) MR.strings.rcv_channel_event_updated_channel_profile else MR.strings.rcv_group_event_updated_group_profile)
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
@@ -4812,7 +4836,9 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userPendingReview") class UserPendingReview(): SndGroupEvent()
 
-  val text: String get() = when (this) {
+  val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when (this) {
     is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
     is UserRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_role_for_yourself), role.text)
     is MemberBlocked -> if (blocked) {
@@ -4822,7 +4848,7 @@ sealed class SndGroupEvent() {
     }
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
-    is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
+    is GroupUpdated -> generalGetString(if (isChannel) MR.strings.snd_channel_event_channel_profile_updated else MR.strings.snd_group_event_group_profile_updated)
     is MemberAccepted -> generalGetString(MR.strings.snd_group_event_member_accepted)
     is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
   }

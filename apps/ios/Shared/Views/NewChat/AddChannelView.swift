@@ -83,7 +83,7 @@ struct AddChannelView: View {
                 }
                 let canCreate = canCreateProfile() && hasRelays && !creationInProgress
                 Button(action: createChannel) {
-                    settingsRow("checkmark", color: canCreate ? theme.colors.primary : theme.colors.secondary) { Text("Create channel") }
+                    settingsRow("checkmark", color: canCreate ? theme.colors.primary : theme.colors.secondary) { Text("Create public channel") }
                 }
                 .disabled(!canCreate)
             } footer: {
@@ -91,7 +91,7 @@ struct AddChannelView: View {
                     ServersWarningView(warnStr: NSLocalizedString("Enable at least one chat relay in Network & Servers.", comment: "channel creation warning"))
                 } else {
                     let name = ChatModel.shared.currentUser?.displayName ?? ""
-                    Text("Your profile **\(name)** will be shared with channel relays and subscribers.")
+                    Text("Your profile **\(name)** will be shared with channel relays and subscribers.\nRelays can access channel messages.")
                         .foregroundColor(theme.colors.secondary)
                 }
             }

@@ -1171,6 +1171,7 @@
   <string name="save_and_notify_contact">Save and notify contact</string>
   <string name="save_and_notify_contacts">Save and notify contacts</string>
   <string name="save_and_notify_group_members">Save and notify group members</string>
+  <string name="save_and_notify_channel_subscribers">Save and notify channel subscribers</string>
   <string name="exit_without_saving">Exit without saving</string>
 
   <!-- HiddenProfileView.kt -->
@@ -1376,6 +1377,10 @@
   <string name="integrity_msg_bad_hash">bad message hash</string>
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
+  <string name="rcv_msg_error_dropped">dropped (%1$d attempts)</string>
+  <string name="rcv_msg_error_parse">error: %s</string>
+  <string name="alert_title_msg_error">Message error</string>
+  <string name="alert_text_msg_reception_error">The app removed this message after %1$d attempts to receive it.</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
   <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
   <string name="alert_title_msg_bad_hash">Bad message hash</string>
@@ -1706,7 +1711,9 @@
   <string name="rcv_group_event_member_deleted">removed %1$s</string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_channel_event_channel_deleted">deleted channel</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
+  <string name="rcv_channel_event_updated_channel_profile">updated channel profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
@@ -1717,6 +1724,7 @@
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+  <string name="snd_channel_event_channel_profile_updated">channel profile updated</string>
   <string name="snd_group_event_member_accepted">you accepted this member</string>
   <string name="snd_group_event_user_pending_review">Please wait for group moderators to review your request to join the group.</string>
 
@@ -1725,6 +1733,7 @@
   <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
   <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
   <string name="rcv_group_events_count">%d group events</string>
+  <string name="rcv_channel_events_count">%d channel events</string>
   <string name="rcv_group_and_other_events">and %d other events</string>
   <string name="group_members_2">%s and %s</string>
   <string name="group_members_n">%s, %s and %d members</string>
@@ -1999,6 +2008,7 @@
   <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
+  <string name="channel_full_name_field">Channel full name:</string>
   <string name="group_short_descr_field">Short description:</string>
   <string name="group_descr_too_large">Description too large</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
@@ -2007,8 +2017,11 @@
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="channel_profile_is_stored_on_subscribers_devices">Channel profile is stored on subscribers\' devices and on the chat relays.</string>
   <string name="save_group_profile">Save group profile</string>
+  <string name="save_channel_profile">Save channel profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+  <string name="error_saving_channel_profile">Error saving channel profile</string>
 
   <!-- NetworkAndServers.kt -->
   <string name="network_preset_servers_title">Preset servers</string>
@@ -2895,16 +2908,16 @@
   <string name="block_subscriber_for_all_question">Block subscriber for all?</string>
 
   <!-- AddChannelView.kt -->
-  <string name="create_channel_title">Create channel</string>
-  <string name="create_channel_button">Create channel</string>
-  <string name="create_channel_beta_button">Create channel (BETA)</string>
+  <string name="create_channel_title">Create public channel</string>
+  <string name="create_channel_button">Create public channel</string>
+  <string name="create_channel_beta_button">Create public channel (BETA)</string>
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
   <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
-  <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.</string>
+  <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
   <string name="configure_relays">Configure relays</string>
   <string name="relay_status_failed">failed</string>
   <string name="relay_connection_failed">Relay connection failed</string>

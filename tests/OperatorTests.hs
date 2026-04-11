@@ -56,7 +56,7 @@ validateServersTest = describe "validate user servers" $ do
     validateUserServers [duplicateChatRelayName] [] `shouldBe` ([], [])
   it "should fail with duplicate chat relay address" $ do
     validateUserServers [invalidDuplicateChatRelayAddress] []
-      `shouldBe` ( [ USEDuplicateChatRelayAddress "chat_relay_1" duplicateAddr,
+      `shouldBe` ( [ USEDuplicateChatRelayAddress "SimpleX Chat Relay 2" duplicateAddr,
                      USEDuplicateChatRelayAddress "chat_relay_4" duplicateAddr
                    ],
                    []
@@ -180,4 +180,4 @@ invalidDuplicateChatRelayAddress =
     }
 
 duplicateAddr :: ShortLinkContact
-duplicateAddr = either error id $ strDecode "https://smp111.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
+duplicateAddr = either error id $ strDecode "https://smp6.simplex.im/r#_qlQfogHGDJ8MAF2wKmkglRBM-xHR142gDJstKiGRQQ"
