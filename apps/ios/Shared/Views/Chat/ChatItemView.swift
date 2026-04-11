@@ -145,6 +145,7 @@ struct ChatItemContentView<Content: View>: View {
             } else {
                 ZStack {}
             }
+        case let .rcvMsgError(rcvMsgError): RcvMsgErrorItemView(chat: chat, rcvMsgError: rcvMsgError, chatItem: chatItem)
         case let .rcvDecryptionError(msgDecryptError, msgCount): CIRcvDecryptionError(chat: chat, msgDecryptError: msgDecryptError, msgCount: msgCount, chatItem: chatItem)
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
