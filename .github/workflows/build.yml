@@ -110,13 +110,6 @@ jobs:
             os_underscore: 22_04
             arch: x86_64
             runner: "ubuntu-22.04"
-            ghc: "8.10.7"
-            hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
-            should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
-          - os: 22.04
-            os_underscore: 22_04
-            arch: x86_64
-            runner: "ubuntu-22.04"
             should_run: true
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             hash: 'sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5'
@@ -238,7 +231,7 @@ jobs:
         if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          version=${{ github.ref }}
+          version='refs/tags/v6.5.0-beta.8'
           version=${version#refs/tags/v}
           version=${version%-*}
 
@@ -344,7 +337,7 @@ jobs:
           java_ver: ${{ needs.variables.outputs.JAVA_VER }}
           ghc_ver: ${{ matrix.ghc }}
           os: ${{ matrix.os }}
-          github_ref: ${{ github.ref }}
+          github_ref: 'refs/tags/v6.5.0-beta.8'
 
       - name: Install OpenSSL
         run: brew install openssl@3.0
@@ -416,7 +409,7 @@ jobs:
           ghc_ver: ${{ matrix.ghc }}
           os: ${{ matrix.os }}
           cache_path: "C:/cabal"
-          github_ref: ${{ github.ref }}
+          github_ref: 'refs/tags/v6.5.0-beta.8'
 
       - name: Configure pagefile (Windows)
         uses: simplex-chat/configure-pagefile-action@v1.4
