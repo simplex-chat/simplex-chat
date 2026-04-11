@@ -299,7 +299,7 @@ fun MarkdownText (
       }
       val clampedRange = selectionRange?.let { it.first .. minOf(it.last, selectableEnd) }
       if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
-        val icon = remember { mutableStateOf(PointerIcon.Default) }
+        val icon = remember { mutableStateOf(PointerIcon.Text) }
         ClickableText(annotatedText, style = style, selectionRange = clampedRange, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             if (hasLinks) {
@@ -336,7 +336,7 @@ fun MarkdownText (
               if (hasAnnotation("WEB_URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("OTHER_URL") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
                 PointerIcon.Hand
               } else {
-                PointerIcon.Default
+                PointerIcon.Text
               }
           },
           shouldConsumeEvent = { offset ->
@@ -431,7 +431,7 @@ private fun SelectableText(
 
   BasicText(
     text = text,
-    modifier = modifier.then(selectionHighlight(selectionRange, text.length, layoutResult)),
+    modifier = modifier.pointerHoverIcon(PointerIcon.Text).then(selectionHighlight(selectionRange, text.length, layoutResult)),
     style = style,
     maxLines = maxLines,
     overflow = overflow,
