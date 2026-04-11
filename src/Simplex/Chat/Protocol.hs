@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -22,7 +23,7 @@
 module Simplex.Chat.Protocol where
 
 import Control.Applicative ((<|>))
-import Control.Monad (when, (<=<))
+import Control.Monad (foldM, when, (<=<))
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -800,20 +801,15 @@ parseChatMessages msg = case B.head msg of
     decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
       Right (compressed :: L.NonEmpty Compressed) ->
-        case decompressLimited (L.toList compressed) of
+        case foldM decompressEntry (0, []) compressed of
           Left e -> [Left e]
-          Right chunks -> concatMap parseUncompressed' chunks
-    decompressLimited :: [Compressed] -> Either String [ByteString]
-    decompressLimited = go 0
-      where
-        go _ [] = Right []
-        go total (c : cs) = case decompress1 maxDecompressedMsgLength c of
-          Left e -> Left e
-          Right bs
-            | total' > maxDecompressedMsgLength -> Left "total decompressed size exceeds limit"
-            | otherwise -> (bs :) <$> go total' cs
-            where
-              total' = total + B.length bs
+          Right (_, chunks) -> foldMap parseUncompressed' (reverse chunks)
+    decompressEntry :: (Int, [ByteString]) -> Compressed -> Either String (Int, [ByteString])
+    decompressEntry (!total, acc) c = do
+      bs <- decompress1 maxDecompressedMsgLength c
+      let total' = total + B.length bs
+      when (total' > maxDecompressedMsgLength) $ Left "total decompressed size exceeds limit"
+      pure (total', bs : acc)
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*
