@@ -714,6 +714,9 @@ fun ChatItemView(
                 } else {
                   Box(Modifier.size(0.dp)) {}
                 }
+                is CIContent.RcvMsgErrorContent -> {
+                  RcvMsgErrorItemView(c.rcvMsgError, cItem, showTimestamp, cInfo.timedMessagesTTL)
+                }
                 is CIContent.RcvDecryptionError -> {
                   CIRcvDecryptionError(c.msgDecryptError, c.msgCount, cInfo, cItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember)
                   DeleteItemMenu()
@@ -1310,6 +1313,7 @@ fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVis
     is CIContent.SndMsgContent,
     is CIContent.RcvMsgContent,
     is CIContent.RcvDecryptionError,
+    is CIContent.RcvMsgErrorContent,
     is CIContent.SndDeleted,
     is CIContent.RcvDeleted,
     is CIContent.RcvIntegrityError,

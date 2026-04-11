@@ -77,6 +77,24 @@ struct CIMsgError: View {
     }
 }
 
+struct RcvMsgErrorItemView: View {
+    @ObservedObject var chat: Chat
+    var rcvMsgError: RcvMsgError
+    var chatItem: ChatItem
+
+    var body: some View {
+        CIMsgError(chat: chat, chatItem: chatItem) {
+            switch rcvMsgError {
+            case let .dropped(attempts):
+                AlertManager.shared.showAlertMsg(
+                    title: NSLocalizedString("Message reception error", comment: "alert title"),
+                    message: String.localizedStringWithFormat(NSLocalizedString("This message failed to be received after %d attempts and was removed by the app.", comment: "alert message"), attempts)
+                )
+            }
+        }
+    }
+}
+
 struct IntegrityErrorItemView_Previews: PreviewProvider {
     static var previews: some View {
         IntegrityErrorItemView(chat: Chat.sampleData, msgError: .msgBadHash, chatItem: ChatItem.getIntegrityErrorSample())

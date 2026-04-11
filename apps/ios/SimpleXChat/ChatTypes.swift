@@ -3271,6 +3271,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case .rcvCall: return false // notification is shown on .callInvitation instead
         case .rcvIntegrityError: return false
         case .rcvDecryptionError: return false
+        case .rcvMsgError: return false
         case .rcvGroupInvitation: return true
         case .sndGroupInvitation: return false
         case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
@@ -4028,6 +4029,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
     case rcvDecryptionError(msgDecryptError: MsgDecryptError, msgCount: UInt32)
+    case rcvMsgError(rcvMsgError: RcvMsgError)
     case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case rcvDirectEvent(rcvDirectEvent: RcvDirectEvent)
@@ -4065,6 +4067,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case let .rcvCall(status, duration): return status.text(duration)
         case let .rcvIntegrityError(msgError): return msgError.text
         case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
+        case let .rcvMsgError(rcvMsgError): return rcvMsgError.text
         case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
         case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
         case let .rcvDirectEvent(rcvDirectEvent): return rcvDirectEvent.text
@@ -4156,6 +4159,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvCall: return true
         case .rcvIntegrityError: return true
         case .rcvDecryptionError: return true
+        case .rcvMsgError: return true
         case .rcvGroupInvitation: return true
         case .rcvModerated: return true
         case .rcvBlocked: return true
@@ -5078,6 +5082,17 @@ public enum MsgErrorType: Decodable, Hashable {
         case .msgBadHash: return NSLocalizedString("bad message hash", comment: "integrity error chat item") // not used now
         case .msgBadId: return NSLocalizedString("bad message ID", comment: "integrity error chat item") // not used now
         case .msgDuplicate: return NSLocalizedString("duplicate message", comment: "integrity error chat item") // not used now
+        }
+    }
+}
+
+public enum RcvMsgError: Decodable, Hashable {
+    case dropped(attempts: Int)
+
+    var text: String {
+        switch self {
+        case let .dropped(attempts):
+            return String.localizedStringWithFormat(NSLocalizedString("removed after %d attempts", comment: "receive error chat item"), attempts)
         }
     }
 }

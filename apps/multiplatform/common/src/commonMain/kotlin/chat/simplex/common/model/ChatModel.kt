@@ -3040,6 +3040,7 @@ data class ChatItem (
       is CIContent.RcvCall -> false // notification is shown on CallInvitation instead
       is CIContent.RcvIntegrityError -> false
       is CIContent.RcvDecryptionError -> false
+      is CIContent.RcvMsgErrorContent -> false
       is CIContent.RcvGroupInvitation -> true
       is CIContent.SndGroupInvitation -> false
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
@@ -3734,6 +3735,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvDecryptionError") class RcvDecryptionError(val msgDecryptError: MsgDecryptError, val msgCount: UInt): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvMsgError") class RcvMsgErrorContent(val rcvMsgError: RcvMsgError): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvDirectEvent") class RcvDirectEventContent(val rcvDirectEvent: RcvDirectEvent): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -3770,6 +3772,7 @@ sealed class CIContent: ItemContent {
       is RcvCall -> status.text(duration)
       is RcvIntegrityError -> msgError.text
       is RcvDecryptionError -> msgDecryptError.text
+      is RcvMsgErrorContent -> rcvMsgError.text
       is RcvGroupInvitation -> groupInvitation.text
       is SndGroupInvitation -> groupInvitation.text
       is RcvDirectEventContent -> rcvDirectEvent.text
@@ -3810,6 +3813,7 @@ sealed class CIContent: ItemContent {
       is RcvCall -> true
       is RcvIntegrityError -> true
       is RcvDecryptionError -> true
+      is RcvMsgErrorContent -> true
       is RcvGroupInvitation -> true
       is RcvModerated -> true
       is RcvBlocked -> true
@@ -4718,6 +4722,15 @@ sealed class MsgErrorType() {
     is MsgBadHash -> generalGetString(MR.strings.integrity_msg_bad_hash) // not used now
     is MsgBadId -> generalGetString(MR.strings.integrity_msg_bad_id) // not used now
     is MsgDuplicate -> generalGetString(MR.strings.integrity_msg_duplicate) // not used now
+  }
+}
+
+@Serializable
+sealed class RcvMsgError() {
+  @Serializable @SerialName("dropped") class Dropped(val attempts: Int): RcvMsgError()
+
+  val text: String get() = when (this) {
+    is Dropped -> String.format(generalGetString(MR.strings.rcv_msg_error_dropped), attempts)
   }
 }
 

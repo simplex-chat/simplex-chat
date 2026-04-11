@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgErrorType
+import chat.simplex.common.model.RcvMsgError
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
@@ -69,6 +70,19 @@ fun CIMsgError(ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?, onC
         modifier = Modifier.padding(end = 8.dp)
       )
       CIMetaView(ci, timedMessagesTTL, showViaProxy = false, showTimestamp = showTimestamp)
+    }
+  }
+}
+
+@Composable
+fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: Boolean, timedMessagesTTL: Int?) {
+  CIMsgError(ci, showTimestamp, timedMessagesTTL) {
+    when (rcvMsgError) {
+      is RcvMsgError.Dropped ->
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.alert_title_msg_reception_error),
+          text = String.format(generalGetString(MR.strings.alert_text_msg_reception_error), rcvMsgError.attempts)
+        )
     }
   }
 }

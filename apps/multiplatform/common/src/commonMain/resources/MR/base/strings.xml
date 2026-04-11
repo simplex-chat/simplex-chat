@@ -1377,6 +1377,9 @@
   <string name="integrity_msg_bad_hash">bad message hash</string>
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
+  <string name="rcv_msg_error_dropped">removed after %1$d attempts</string>
+  <string name="alert_title_msg_reception_error">Message reception error</string>
+  <string name="alert_text_msg_reception_error">This message failed to be received after %1$d attempts and was removed by the app.</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
   <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
   <string name="alert_title_msg_bad_hash">Bad message hash</string>
