@@ -139,9 +139,9 @@ You may participate in a public group and receive content from a public channel 
 
 #### Public channels and chat relays (beta)
 
-Public channels are currently experimental — their functionality and privacy properties may change.
+Public channels are experimental - their functionality and privacy properties may change.
 
-Channel owners use chat relays that retain messages to deliver them to channel subscribers. The chat relays may be operated by the channel owners, by preset operators or by 3rd parties. The chat relays are client applications on SimpleX network — they cannot identify subscribers. Neither you nor channel owners grant any content license to chat relay operators.
+Channel owners use chat relays that retain messages to deliver them to channel subscribers. The chat relays may be operated by the channel owners, by preset operators or by 3rd parties. The chat relays are client applications on SimpleX network - they cannot identify subscribers. Neither you nor channel owners grant any content license to chat relay operators.
 
 #### User Support
 
