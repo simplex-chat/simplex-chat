@@ -145,6 +145,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
   CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
+  CIRcvMsgError :: RcvMsgError -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvDirectEvent :: RcvDirectEvent -> CIContent 'MDRcv
@@ -196,6 +197,9 @@ data MsgDecryptError
   | MDERatchetSync
   deriving (Eq, Show)
 
+data RcvMsgError = RMEDropped {attempts :: Int}
+  deriving (Eq, Show)
+
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
   SMDSnd -> True
@@ -205,6 +209,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvCall {} -> True
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
+    CIRcvMsgError _ -> False
     CIRcvGroupInvitation {} -> True
     CIRcvDirectEvent rde -> case rde of
       RDEContactDeleted -> False
@@ -275,6 +280,7 @@ ciContentToText = \case
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
   CIRcvDecryptionError err n -> msgDecryptErrorText err n
+  CIRcvMsgError err -> rcvMsgErrorText err
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
   CIRcvDirectEvent event -> rcvDirectEventToText event
@@ -421,6 +427,10 @@ msgIntegrityError = \case
   MsgBadHash -> "incorrect message hash"
   MsgDuplicate -> "duplicate message ID"
 
+rcvMsgErrorText :: RcvMsgError -> Text
+rcvMsgErrorText = \case
+  RMEDropped {attempts} -> "message removed after " <> tshow attempts <> " attempts"
+
 msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
 msgDecryptErrorText err n =
   "decryption error, possibly due to the device change"
@@ -457,6 +467,7 @@ data JSONCIContent
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
   | JCIRcvIntegrityError {msgError :: MsgErrorType}
   | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
+  | JCIRcvMsgError {rcvMsgError :: RcvMsgError}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCIRcvDirectEvent {rcvDirectEvent :: RcvDirectEvent}
@@ -492,6 +503,7 @@ jsonCIContent = \case
   CIRcvCall status duration -> JCIRcvCall {status, duration}
   CIRcvIntegrityError err -> JCIRcvIntegrityError err
   CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
+  CIRcvMsgError err -> JCIRcvMsgError err
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvDirectEvent rcvDirectEvent -> JCIRcvDirectEvent {rcvDirectEvent}
@@ -527,6 +539,7 @@ aciContentJSON = \case
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
   JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
+  JCIRcvMsgError err -> ACIContent SMDRcv $ CIRcvMsgError err
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   JCIRcvDirectEvent {rcvDirectEvent} -> ACIContent SMDRcv $ CIRcvDirectEvent rcvDirectEvent
@@ -563,6 +576,7 @@ data DBJSONCIContent
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
   | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
+  | DBJCIRcvMsgError {rcvMsgError :: RcvMsgError}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvDirectEvent {rcvDirectEvent :: DBRcvDirectEvent}
@@ -598,6 +612,7 @@ dbJsonCIContent = \case
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
   CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
+  CIRcvMsgError err -> DBJCIRcvMsgError err
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvDirectEvent rde -> DBJCIRcvDirectEvent $ RDE rde
@@ -633,6 +648,7 @@ aciContentDBJSON = \case
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
   DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
+  DBJCIRcvMsgError err -> ACIContent SMDRcv $ CIRcvMsgError err
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvDirectEvent (RDE rde) -> ACIContent SMDRcv $ CIRcvDirectEvent rde
@@ -693,6 +709,8 @@ $(JQ.deriveJSON defaultJSON ''E2EInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
 
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RME") ''RcvMsgError)
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CIGIS") ''CIGroupInvitationStatus)
 
 $(JQ.deriveJSON defaultJSON ''CIGroupInvitation)
@@ -751,6 +769,7 @@ toCIContentTag ciContent = case ciContent of
   CIRcvCall {} -> "rcvCall"
   CIRcvIntegrityError _ -> "rcvIntegrityError"
   CIRcvDecryptionError {} -> "rcvDecryptionError"
+  CIRcvMsgError _ -> "rcvMsgError"
   CIRcvGroupInvitation {} -> "rcvGroupInvitation"
   CISndGroupInvitation {} -> "sndGroupInvitation"
   CIRcvDirectEvent _ -> "rcvDirectEvent"

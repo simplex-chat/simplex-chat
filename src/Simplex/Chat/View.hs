@@ -671,6 +671,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
         CIDirectRcv -> case content of
           CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+          CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
@@ -694,6 +695,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           rcvGroupItem m_ = case content of
             CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
             CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+            CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
             CIRcvGroupInvitation {} | isJust m_ -> showRcvItemProhibited from
             CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
@@ -715,6 +717,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
         CILocalRcv -> case content of
           CIRcvMsgContent mc -> withLocalFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+          CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
@@ -990,6 +993,9 @@ viewRcvIntegrityError from msgErr ts tz meta = receivedWithTime_ ts tz from [] m
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = [ttyError $ msgIntegrityError err]
+
+viewRcvMsgError :: StyledString -> RcvMsgError -> CurrentTime -> TimeZone -> CIMeta c 'MDRcv -> [StyledString]
+viewRcvMsgError from rcvErr ts tz meta = receivedWithTime_ ts tz from [] meta [ttyError $ rcvMsgErrorText rcvErr] False
 
 viewInvalidConnReq :: [StyledString]
 viewInvalidConnReq =

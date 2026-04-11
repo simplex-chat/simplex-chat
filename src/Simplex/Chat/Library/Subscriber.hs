@@ -687,6 +687,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- error cannot be AUTH error here
           updateDirectItemsStatusMsgs ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
           eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
+        ERR (AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts}))) ->
+          createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgError $ RMEDropped attempts) (Just brokerTs)
         ERR err -> do
           eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -1178,6 +1180,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
+      ERR (AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts}))) -> do
+        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+        createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEDropped attempts) (Just brokerTs)
       ERR err -> do
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
