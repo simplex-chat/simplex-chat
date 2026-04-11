@@ -479,7 +479,7 @@ defaultGroupPrefs =
       reports = ReportsGroupPreference {enable = FEOn},
       history = HistoryGroupPreference {enable = FEOff},
       sessions = SessionsGroupPreference {enable = FEOff, role = Nothing},
-      comments = CommentsGroupPreference {enable = FEOff, closeAfter = Nothing},
+      comments = CommentsGroupPreference {enable = FEOff, duration = Nothing},
       commands = ListDef []
     }
 
@@ -651,11 +651,11 @@ data SessionsGroupPreference = SessionsGroupPreference
   {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
--- Channel comments. `closeAfter` is the duration in seconds since post creation
--- after which a channel post stops accepting new comments; `Nothing` means never close.
+-- Channel comments. ``duration` is time in seconds since post creation
+-- after which a channel post stops accepting new comments; `Nothing` means accept comments indefinitely.
 data CommentsGroupPreference = CommentsGroupPreference
   { enable :: GroupFeatureEnabled,
-    closeAfter :: Maybe Int
+    duration :: Maybe Int
   }
   deriving (Eq, Show)
 
@@ -768,7 +768,7 @@ instance GroupFeatureI 'GFSessions where
 instance GroupFeatureI 'GFComments where
   type GroupFeaturePreference 'GFComments = CommentsGroupPreference
   sGroupFeature = SGFComments
-  groupPrefParam CommentsGroupPreference {closeAfter} = closeAfter
+  groupPrefParam CommentsGroupPreference {duration} = duration
   groupPrefRole _ = Nothing
 
 instance GroupFeatureNoRoleI 'GFTimedMessages
@@ -1133,7 +1133,7 @@ $(J.deriveToJSON defaultJSON ''CommentsGroupPreference)
 
 instance FromJSON CommentsGroupPreference where
   parseJSON v = $(J.mkParseJSON defaultJSON ''CommentsGroupPreference) v
-  omittedField = Just CommentsGroupPreference {enable = FEOff, closeAfter = Nothing}
+  omittedField = Just CommentsGroupPreference {enable = FEOff, duration = Nothing}
 
 $(J.deriveJSON defaultJSON ''GroupPreferences)
 
