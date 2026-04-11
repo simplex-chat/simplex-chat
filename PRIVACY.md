@@ -141,6 +141,10 @@ Public channels are experimental - their functionality and privacy properties ma
 
 Channel owners use chat relays that retain messages to deliver them to channel subscribers. The chat relays may be operated by the channel owners, by preset operators or by 3rd parties. The chat relays are client applications on SimpleX network - they cannot identify subscribers. Neither you nor channel owners grant any content license to chat relay operators.
 
+#### Public contact, group and channel addresses
+
+Public addresses contain profile name, picture and other profile details. This data is encrypted on the servers, and can only be accessed via the address. Server operators cannot list addresses and cannot access this data without having the address. Public address data remains on the servers until removed by the user via the app. If you lose access to the app without a backup, server operators have no way to verify address ownership and can only remove addresses following due process.
+
 #### User Support
 
 The app includes support contact operated by SimpleX Chat Ltd. If you contact support, any personal data you share is kept only for the purposes of researching the issue and contacting you about your case. We recommend contacting support [via chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw) when it is possible, and avoid sharing any personal information.
