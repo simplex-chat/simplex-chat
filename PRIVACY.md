@@ -186,7 +186,7 @@ This Privacy Policy may be updated as needed so that it is current, accurate, an
 
 Please also read The Conditions of Use of Software and Infrastructure below.
 
-SimpleX Chat Ltd (company number 13691484, registered at 20-22 Wenlock Road, London, United Kingdom N1 7GU) is responsible for this Privacy Policy. For questions about this Privacy Policy or data protection, please contact us via [email](mailto:chat@simplex.chat) or [chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw).
+If you have questions about this Privacy Policy or data protection please contact SimpleX Chat Ltd (company number 13691484, registered at 20-22 Wenlock Road, London, United Kingdom N1 7GU) via [email](mailto:chat@simplex.chat) or [chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw).
 
 ## Conditions of Use of Software and Infrastructure
 
