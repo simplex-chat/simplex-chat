@@ -347,7 +347,7 @@
     <string name="database_passphrase">データベースパスフレーズ</string>
     <string name="export_database">データベースをエクスポート</string>
     <string name="delete_database">データベースを削除</string>
-    <string name="import_database">データベースを読み込みますか？</string>
+    <string name="import_database">データベースのインポート</string>
     <string name="new_database_archive">新しいデータベースのアーカイブ</string>
     <string name="old_database_archive">過去のデータベースアーカイブ</string>
     <string name="delete_files_and_media_all">ファイルを全て削除</string>
@@ -1826,7 +1826,7 @@
     <string name="smp_servers_configured">SMPサーバーの構成</string>
     <string name="servers_info_sessions_connected">接続中</string>
     <string name="xftp_servers_configured">XFTPサーバーの構成</string>
-    <string name="one_hand_ui_card_title">チャトリスト切り替え</string>
+    <string name="one_hand_ui_card_title">チャットリスト表示切り替え</string>
     <string name="contact_list_header_title">連絡先</string>
     <string name="message_servers">メッセージサーバ</string>
     <string name="media_and_file_servers">メディア&amp;ファイルサーバ</string>
@@ -2042,4 +2042,23 @@
     <string name="no_message_servers_configured_for_private_routing">プライベートメッセージルーティング用のサーバーがありません。</string>
     <string name="no_media_servers_configured">メディアおよびファイルサーバーは存在しません。</string>
     <string name="no_media_servers_configured_for_sending">ファイルを送信するサーバーがありません。</string>
+    <string name="for_social_media">ソーシャルメディア向け</string>
+    <string name="operator_use_operator_toggle_description">サーバを利用する</string>
+    <string name="your_servers">あなたのサーバ</string>
+    <string name="content_filter_videos">ビデオ</string>
+    <string name="content_filter_files">ファイル</string>
+    <string name="content_filter_images">画像</string>
+    <string name="content_filter_links">リンク</string>
+    <string name="content_filter_all_messages">すべて</string>
+    <string name="content_filter_voice_messages">音声メッセージ</string>
+    <string name="content_filter_menu_item">フィルター</string>
+    <string name="accept_pending_member_alert_confirmation_as_member">メンバーとして承認する</string>
+    <string name="accept_pending_member_alert_confirmation_as_observer">オブザーバーとして承認する</string>
+    <string name="blocking_reason_spam">スパム</string>
+    <string name="archive_verb">アーカイブ</string>
+    <string name="short_descr__field">自己紹介</string>
+    <string name="bio_too_large">自己紹介の文字数が上限を超えています</string>
+    <string name="appearance_bars_blur_radius">ぼかし</string>
+    <string name="chat_list_contacts">連絡先</string>
+    <string name="chat_list_favorites">お気に入り</string>
 </resources>

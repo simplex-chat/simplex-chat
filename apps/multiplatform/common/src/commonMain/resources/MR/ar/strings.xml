@@ -2522,4 +2522,23 @@
     <string name="network_error_unknown_ca">البصمة في عنوان الخادم لا تتطابق مع الشهادة: %1$s.</string>
     <string name="server_no_sub">لا اشتراك</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">أنت غير متصل بالخادم المستخدم لاستقبال الرسائل من هذا الاتصال (لا يوجد اشتراك).</string>
+    <string name="button_delete_member_messages">احذف رسائل العضو</string>
+    <string name="button_delete_member_messages_question">حذف رسائل العضو؟</string>
+    <string name="delete_member_messages_confirmation">احذف الرسائل</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">ستُحذف رسائل العضو - ولا يمكن التراجع عن ذلك!</string>
+    <string name="remove_member_delete_messages_confirmation">أزل واحذف الرسائل</string>
+    <string name="content_filter_all_messages">كل الرسائل</string>
+    <string name="info_row_connection_failed">فشل الاتصال</string>
+    <string name="member_info_member_failed">فشل</string>
+    <string name="content_filter_files">ملفات</string>
+    <string name="content_filter_menu_item">تصفية</string>
+    <string name="content_filter_images">صور</string>
+    <string name="content_filter_links">روابط</string>
+    <string name="placeholder_search_files">ابحث عن ملفات</string>
+    <string name="placeholder_search_images">ابحث عن صور</string>
+    <string name="placeholder_search_links">ابحث عن روابط</string>
+    <string name="placeholder_search_videos">ابحث عن فيديوهات</string>
+    <string name="placeholder_search_voice_messages">ابحث عن رسائل صوتية</string>
+    <string name="content_filter_videos">فيديوهات</string>
+    <string name="content_filter_voice_messages">رسائل صوتية</string>
 </resources>

@@ -18,16 +18,53 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderEntries('top', bySortPriority, topBtn)
-  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim()));
+
+  applyHash();
+
+  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim(), true));
   liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
+  window.addEventListener('popstate', applyHash);
+
+  function applyHash() {
+    const hash = location.hash;
+    let mode, comparator, btn, search = '';
+    switch (hash) {
+      case '#active':
+        mode = 'live';
+        comparator = byActiveAtDesc;
+        btn = liveBtn;
+      case '#new':
+        mode = 'new';
+        comparator = byCreatedAtDesc;
+        btn = newBtn;
+      default:
+        mode = 'top';
+        comparator = bySortPriority;
+        btn = topBtn;
+        try {
+          if (hash.startsWith('#q=')) {
+            search = decodeURIComponent(hash.slice(3));
+            if (search) searchInput.value = search;
+          }
+        } catch(e) {}
+      }
+    currentSortMode = '';
+    currentSearch = '';
+    currentPage = 1;
+    renderEntries(mode, comparator, btn, search);
+  }
 
   function renderEntries(mode, comparator, btn, search = '') {
     if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
-    if (location.hash) location.hash = '';
+    const hash = search ? '#q=' + encodeURIComponent(search)
+              : mode === 'live' ? '#active'
+              : mode === 'new' ? '#new'
+              : '';
+    const url = hash || (location.pathname + location.search);
+    history.replaceState(null, '', url);
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
@@ -246,6 +283,13 @@ function displayEntries(entries) {
         textContainer.appendChild(memberCountElement);
       }
 
+      if (entryType?.admission?.review === "all") {
+        const knockingElement = document.createElement('p');
+        knockingElement.textContent = 'New members are reviewed by admins';
+        knockingElement.className = 'text-sm';
+        textContainer.appendChild(knockingElement);
+      }
+
       const imgLinkElement = document.createElement('a');
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {
@@ -432,6 +476,9 @@ function renderMarkdown(fts) {
           break;
         case 'secret':
           html += `<span class="secret">${escapeHtml(text)}</span>`;
+          break;
+        case 'small':
+          html += `<span class="small-text">${escapeHtml(text)}</span>`;
           break;
         case 'colored':
           html += `<span class="${format.color}">${escapeHtml(text)}</span>`;

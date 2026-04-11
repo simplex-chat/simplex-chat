@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 27/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/api.md | spec/architecture.md
 
 import Foundation
 import UIKit
@@ -49,6 +50,7 @@ enum TerminalItem: Identifiable {
     }
 }
 
+// Spec: spec/architecture.md#beginBGTask
 func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
     var id: UIBackgroundTaskIdentifier!
     var running = true
@@ -86,12 +88,14 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
+// Spec: spec/api.md#chatSendCmdSync
 @inline(__always)
 func chatSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, log: Bool = true) throws -> R {
     let res: APIResult<R> = chatApiSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl: ctrl, log: log)
     return try apiResult(res)
 }
 
+// Spec: spec/api.md#chatApiSendCmdSync
 func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, retryNum: Int32 = 0, log: Bool = true) -> APIResult<R> {
     if log {
         logger.debug("chatSendCmd \(cmd.cmdType)")
@@ -112,12 +116,14 @@ func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = tru
     return resp
 }
 
+// Spec: spec/api.md#chatSendCmd
 @inline(__always)
 func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, log: Bool = true) async throws -> R {
     let res: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl: ctrl, log: log)
     return try apiResult(res)
 }
 
+// Spec: spec/api.md#chatApiSendCmdWithRetry
 func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
     let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
     if inProgress == nil || inProgress?.boxedValue == true,
@@ -210,6 +216,7 @@ func proxyDestinationErrorAlertMessage(proxyServer: String, destServer: String) 
     String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: "alert message"), serverHostname(proxyServer), serverHostname(destServer))
 }
 
+// Spec: spec/api.md#chatApiSendCmd
 @inline(__always)
 func chatApiSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, retryNum: Int32 = 0, log: Bool = true) async -> APIResult<R> {
     await withCheckedContinuation { cont in
@@ -226,6 +233,7 @@ func apiResult<R: ChatAPIResult>(_ res: APIResult<R>) throws -> R {
     }
 }
 
+// Spec: spec/api.md#chatRecvMsg
 func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> APIResult<ChatEvent>? {
     await withCheckedContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> APIResult<ChatEvent>? in
@@ -346,6 +354,7 @@ func apiStopChat() async throws {
     }
 }
 
+// Spec: spec/architecture.md#apiActivateChat
 func apiActivateChat() {
     chatReopenStore()
     do {
@@ -355,6 +364,7 @@ func apiActivateChat() {
     }
 }
 
+// Spec: spec/architecture.md#apiSuspendChat
 func apiSuspendChat(timeoutMicroseconds: Int) {
     do {
         try sendCommandOkRespSync(.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
@@ -363,12 +373,14 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     }
 }
 
+// Spec: spec/services/files.md#apiSetAppFilePaths
 func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, ctrl: chat_ctrl? = nil) throws {
     let r: ChatResponse2 = try chatSendCmdSync(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder), ctrl: ctrl)
     if case .cmdOk = r { return }
     throw r.unexpected
 }
 
+// Spec: spec/services/files.md#apiSetEncryptLocalFiles
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     try sendCommandOkRespSync(.apiSetEncryptLocalFiles(enable: enable))
 }
@@ -491,8 +503,8 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, 
     throw r.unexpected
 }
 
-func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
+func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool = false, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
@@ -524,8 +536,8 @@ func apiReorderChatTags(tagIds: [Int64]) async throws {
     try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
-func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, live: live, ttl: ttl, composedMessages: composedMessages)
+func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, sendAsGroup: Bool = false, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, sendAsGroup: sendAsGroup, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
 }
 
@@ -746,6 +758,15 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r.unexpected
 }
 
+func testChatRelay(address: String) async throws -> (RelayProfile?, RelayTestFailure?) {
+    let userId = try currentUserId("testChatRelay")
+    let r: ChatResponse0 = try await chatSendCmd(.apiTestChatRelay(userId: userId, address: address))
+    if case let .chatRelayTestResult(_, relayProfile, relayTestFailure) = r {
+        return (relayProfile, relayTestFailure)
+    }
+    throw r.unexpected
+}
+
 func getServerOperators() async throws -> ServerOperatorConditions {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetServerOperators)
     if case let .serverOperatorConditions(conditions) = r { return conditions }
@@ -783,10 +804,10 @@ func setUserServers(userServers: [UserOperatorServers]) async throws {
     throw r.unexpected
 }
 
-func validateServers(userServers: [UserOperatorServers]) async throws -> [UserServersError] {
+func validateServers(userServers: [UserOperatorServers]) async throws -> ([UserServersError], [UserServersWarning]) {
     let userId = try currentUserId("validateServers")
     let r: ChatResponse0 = try await chatSendCmd(.apiValidateServers(userId: userId, userServers: userServers))
-    if case let .userServersValidation(_, serverErrors) = r { return serverErrors }
+    if case let .userServersValidation(_, serverErrors, serverWarnings) = r { return (serverErrors, serverWarnings) }
     logger.error("validateServers error: \(String(describing: r))")
     throw r.unexpected
 }
@@ -876,6 +897,12 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
 
 func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSettings: GroupMemberSettings) async throws {
     try await sendCommandOkResp(.apiSetMemberSettings(groupId: groupId, groupMemberId: groupMemberId, memberSettings: memberSettings))
+}
+
+func apiGetUpdatedGroupLinkData(_ groupId: Int64) async -> GroupInfo? {
+    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiGetUpdatedGroupLinkData(groupId: groupId))
+    if case let .result(.groupInfo(_, groupInfo)) = r { return groupInfo }
+    return nil
 }
 
 func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
@@ -1109,9 +1136,9 @@ func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactS
     throw r.unexpected
 }
 
-func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
+func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareGroup")
-    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, groupShortLinkData: groupShortLinkData))
+    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, directLink: directLink, groupShortLinkData: groupShortLinkData))
     if case let .newPreparedChat(_, chat) = r { return chat }
     throw r.unexpected
 }
@@ -1135,9 +1162,9 @@ func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgConten
     return nil
 }
 
-func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> GroupInfo? {
+func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> (GroupInfo, [RelayConnectionResult])? {
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
-    if case let .result(.startedConnectionToGroup(_, groupInfo)) = r { return groupInfo }
+    if case let .result(.startedConnectionToGroup(_, groupInfo, relayResults)) = r { return (groupInfo, relayResults) }
     if let r { AlertManager.shared.showAlert(apiConnectResponseAlert(r)) }
     return nil
 }
@@ -1455,6 +1482,7 @@ func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationF
     }
 }
 
+// Spec: spec/services/files.md#receiveFile
 func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = false, auto: Bool = false) async {
     await receiveFiles(
         user: user,
@@ -1573,6 +1601,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
     }
 }
 
+// Spec: spec/services/files.md#cancelFile
 func cancelFile(user: User, fileId: Int64) async {
     if let chatItem = await apiCancelFile(fileId: fileId) {
         await chatItemSimpleUpdate(user, chatItem)
@@ -1595,12 +1624,14 @@ func setLocalDeviceName(_ displayName: String) throws {
     try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
 }
 
+// Spec: spec/architecture.md#connectRemoteCtrl
 func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
     let r: ChatResponse2 = try await chatSendCmd(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
     if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
     throw r.unexpected
 }
 
+// Spec: spec/architecture.md#findKnownRemoteCtrl
 func findKnownRemoteCtrl() async throws {
     try await sendCommandOkResp(.findKnownRemoteCtrl)
 }
@@ -1808,6 +1839,22 @@ func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInf
     let r: ChatResponse2 = try chatSendCmdSync(.apiNewGroup(userId: userId, incognito: incognito, groupProfile: groupProfile))
     if case let .groupCreated(_, groupInfo) = r { return groupInfo }
     throw r.unexpected
+}
+
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay])? {
+    let userId = try currentUserId("apiNewPublicGroup")
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
+    switch r {
+    case let .result(.publicGroupCreated(_, groupInfo, groupLink, groupRelays)):
+        return (groupInfo, groupLink, groupRelays)
+    default: if let r { throw r.unexpected } else { return nil }
+    }
+}
+
+func apiGetGroupRelays(_ groupId: Int64) async -> [GroupRelay] {
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiGetGroupRelays(groupId: groupId))
+    if case let .result(.groupRelays(_, _, relays)) = r { return relays }
+    return []
 }
 
 func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
@@ -2078,6 +2125,7 @@ private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
     }
 }
 
+// Spec: spec/architecture.md#startChat
 func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
@@ -2199,6 +2247,7 @@ private func getUserChatDataAsync(keepingChatId: String?) async throws {
     }
 }
 
+// Spec: spec/architecture.md#ChatReceiver
 class ChatReceiver {
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
@@ -2244,6 +2293,7 @@ class ChatReceiver {
     }
 }
 
+// Spec: spec/api.md#processReceivedMsg
 func processReceivedMsg(_ res: ChatEvent) async {
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
@@ -2442,9 +2492,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
         if !active(user) { return }
-
         await MainActor.run {
             m.updateGroup(groupInfo)
+            _ = m.upsertGroupMember(groupInfo, hostMember)
             if let hostConn = hostMember.activeConn {
                 m.dismissConnReqView(hostConn.id)
                 m.removeChat(hostConn.id)
@@ -2507,10 +2557,11 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 m.updateGroup(groupInfo)
             }
         }
-    case let .userJoinedGroup(user, groupInfo):
+    case let .userJoinedGroup(user, groupInfo, hostMember):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, hostMember)
             }
             if m.chatId == groupInfo.id {
                 if groupInfo.membership.memberPending {
@@ -2540,6 +2591,23 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if active(user) {
             await MainActor.run {
                 m.updateGroup(toGroup)
+            }
+        }
+    case let .groupLinkDataUpdated(user, groupInfo, _, groupRelays, _):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroup(groupInfo)
+                let relaysModel = ChannelRelaysModel.shared
+                if relaysModel.groupId == groupInfo.groupId {
+                    relaysModel.set(groupId: groupInfo.groupId, groupRelays: groupRelays)
+                }
+            }
+        }
+    case let .groupRelayUpdated(user, groupInfo, member, groupRelay):
+        if active(user) {
+            await MainActor.run {
+                _ = m.upsertGroupMember(groupInfo, member)
+                ChannelRelaysModel.shared.updateRelay(groupInfo, groupRelay)
             }
         }
     case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):

@@ -341,6 +341,37 @@ export namespace APINewGroup {
   }
 }
 
+// Create public group.
+// Network usage: interactive.
+export interface APINewPublicGroup {
+  userId: number // int64
+  incognito: boolean
+  relayIds: number[] // int64, non-empty
+  groupProfile: T.GroupProfile
+}
+
+export namespace APINewPublicGroup {
+  export type Response = CR.PublicGroupCreated | CR.ChatCmdError
+
+  export function cmdString(self: APINewPublicGroup): string {
+    return '/_public group ' + self.userId + (self.incognito ? ' incognito=on' : '') + ' ' + self.relayIds.join(',') + ' ' + JSON.stringify(self.groupProfile)
+  }
+}
+
+// Get group relays.
+// Network usage: no.
+export interface APIGetGroupRelays {
+  groupId: number // int64
+}
+
+export namespace APIGetGroupRelays {
+  export type Response = CR.GroupRelays | CR.ChatCmdError
+
+  export function cmdString(self: APIGetGroupRelays): string {
+    return '/_get relays #' + self.groupId
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {
@@ -554,6 +585,51 @@ export namespace APIDeleteChat {
 
   export function cmdString(self: APIDeleteChat): string {
     return '/_delete ' + T.ChatRef.cmdString(self.chatRef) + ' ' + T.ChatDeleteMode.cmdString(self.chatDeleteMode)
+  }
+}
+
+// Set group custom data.
+// Network usage: no.
+export interface APISetGroupCustomData {
+  groupId: number // int64
+  customData?: object
+}
+
+export namespace APISetGroupCustomData {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetGroupCustomData): string {
+    return '/_set custom #' + self.groupId + (self.customData ? ' ' + JSON.stringify(self.customData) : '')
+  }
+}
+
+// Set contact custom data.
+// Network usage: no.
+export interface APISetContactCustomData {
+  contactId: number // int64
+  customData?: object
+}
+
+export namespace APISetContactCustomData {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetContactCustomData): string {
+    return '/_set custom @' + self.contactId + (self.customData ? ' ' + JSON.stringify(self.customData) : '')
+  }
+}
+
+// Set auto-accept member contacts.
+// Network usage: no.
+export interface APISetUserAutoAcceptMemberContacts {
+  userId: number // int64
+  onOff: boolean
+}
+
+export namespace APISetUserAutoAcceptMemberContacts {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APISetUserAutoAcceptMemberContacts): string {
+    return '/_set accept member contacts ' + self.userId + ' ' + (self.onOff ? 'on' : 'off')
   }
 }
 

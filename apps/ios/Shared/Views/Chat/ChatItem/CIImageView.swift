@@ -5,10 +5,12 @@
 //  Created by JRoberts on 12/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CIImageView
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
@@ -96,12 +98,13 @@ struct CIImageView: View {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
-                        .scaledToFit()
-                        .frame(width: w)
+                        .scaledToFill()
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             } else {
-                SwiftyGif(image: img)
-                        .frame(width: w, height: w * img.size.height / img.size.width)
-                        .scaledToFit()
+                SwiftyGif(image: img, contentMode: .scaleAspectFill)
+                        .frame(width: w, height: w * heightRatio(img.size))
+                        .clipped()
             }
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 loadingIndicator()

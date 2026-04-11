@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-list.md#ChatPreviewView
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -295,7 +296,7 @@ struct ChatPreviewView: View {
     }
 
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
-        let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
+        let itemText = cItem.meta.itemDeleted == nil ? cItem.text(isChannel: chat.chatInfo.isChannel) : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
         let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)

@@ -748,6 +748,47 @@ export class ChatApi {
   }
 
   /**
+   * Set group custom data.
+   * Network usage: no.
+   */
+  async apiSetGroupCustomData(groupId: number, customData?: object): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetGroupCustomData.cmdString({groupId, customData}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting group custom data", r)
+  }
+
+  /**
+   * Set contact custom data.
+   * Network usage: no.
+   */
+  async apiSetContactCustomData(contactId: number, customData?: object): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetContactCustomData.cmdString({contactId, customData}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting contact custom data", r)
+  }
+
+  /**
+   * Set auto-accept member contacts.
+   * Network usage: no.
+   */
+  async apiSetAutoAcceptMemberContacts(userId: number, onOff: boolean): Promise<void> {
+    const r = await this.sendChatCmd(CC.APISetUserAutoAcceptMemberContacts.cmdString({userId, onOff}))
+    if (r.type === "cmdOk") return
+    throw new ChatCommandError("error setting auto-accept member contacts", r)
+  }
+
+  /**
+   * Get chat items.
+   * Network usage: no.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async apiGetChat(chatType: T.ChatType, chatId: number, count: number): Promise<any> {
+    const r: any = await this.sendChatCmd(`/_get chat ${T.ChatType.cmdString(chatType)}${chatId} count=${count}`)
+    if (r.type === "apiChat") return r.chat
+    throw new ChatCommandError("error getting chat", r)
+  }
+
+  /**
    * Get active user profile
    * Network usage: no.
    */
@@ -772,7 +813,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiCreateActiveUser(profile?: T.Profile): Promise<T.User> {
-    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false}}))
+    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false, userChatRelay: false}}))
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }
@@ -830,5 +871,35 @@ export class ChatApi {
   async apiSetContactPrefs(contactId: number, preferences: T.Preferences): Promise<void> {
     const r = await this.sendChatCmd(CC.APISetContactPrefs.cmdString({contactId, preferences}))
     if (r.type !== "contactPrefsUpdated") throw new ChatCommandError("error setting contact prefs", r)
+  }
+
+  /**
+   * Create a direct message contact with a group member.
+   * Returns the created contact.
+   * Network usage: interactive.
+   */
+  async apiCreateMemberContact(groupId: number, groupMemberId: number): Promise<T.Contact> {
+    const r: any = await this.sendChatCmd(`/_create member contact #${groupId} ${groupMemberId}`)
+    if (r.type === "newMemberContact") return r.contact
+    throw new ChatCommandError("error creating member contact", r)
+  }
+
+  /**
+   * Send a direct message invitation to a group member contact.
+   * The contact must have been created with {@link apiCreateMemberContact}.
+   * Network usage: interactive.
+   */
+  async apiSendMemberContactInvitation(contactId: number, message?: T.MsgContent | string): Promise<T.Contact> {
+    let cmd = `/_invite member contact @${contactId}`
+    if (message !== undefined) {
+      if (typeof message === "string") {
+        cmd += ` text ${message}`
+      } else {
+        cmd += ` json ${JSON.stringify(message)}`
+      }
+    }
+    const r: any = await this.sendChatCmd(cmd)
+    if (r.type === "newMemberContactSentInv") return r.contact
+    throw new ChatCommandError("error sending member contact invitation", r)
   }
 }

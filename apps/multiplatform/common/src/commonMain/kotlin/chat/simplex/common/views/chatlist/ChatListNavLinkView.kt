@@ -32,6 +32,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
+// Spec: spec/client/chat-list.md#ChatListNavLinkView
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
@@ -315,7 +316,7 @@ fun GroupMenuItems(
       }
     }
     GroupMemberStatus.MemAccepted -> {
-      if (groupInfo.membership.memberCurrentOrPending) {
+      if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -337,7 +338,7 @@ fun GroupMenuItems(
         }
       }
       ClearChatAction(chat, showMenu)
-      if (groupInfo.membership.memberCurrentOrPending) {
+      if (groupInfo.membership.memberCurrentOrPending && !(groupInfo.useRelays && groupInfo.isOwner)) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {

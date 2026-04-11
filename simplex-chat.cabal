@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.5.0.9
+version:        6.5.0.14
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -80,6 +80,7 @@ library
       Simplex.Chat.Store.Messages
       Simplex.Chat.Store.NoteFolders
       Simplex.Chat.Store.Profiles
+      Simplex.Chat.Store.RelayRequests
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
@@ -127,6 +128,8 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20251230_strict_tables
           Simplex.Chat.Store.Postgres.Migrations.M20260108_chat_indices
           Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
+          Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays
+          Simplex.Chat.Store.Postgres.Migrations.M20260403_item_viewed
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -277,6 +280,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20251230_strict_tables
           Simplex.Chat.Store.SQLite.Migrations.M20260108_chat_indices
           Simplex.Chat.Store.SQLite.Migrations.M20260122_has_link
+          Simplex.Chat.Store.SQLite.Migrations.M20260222_chat_relays
+          Simplex.Chat.Store.SQLite.Migrations.M20260403_item_viewed
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -542,6 +547,7 @@ test-suite simplex-chat-test
       ChatClient
       ChatTests
       ChatTests.ChatList
+      ChatTests.ChatRelays
       ChatTests.Direct
       ChatTests.DBUtils
       ChatTests.Files

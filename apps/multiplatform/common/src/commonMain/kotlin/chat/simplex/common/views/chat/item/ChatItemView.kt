@@ -10,6 +10,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -47,8 +48,8 @@ private val msgTailMaxHeightDp = msgTailWidthDp * 1.732f // 60deg
 
 val chatEventStyle = SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = CurrentColors.value.colors.secondary)
 
-fun chatEventText(ci: ChatItem): AnnotatedString =
-  chatEventText(ci.content.text, ci.timestampText)
+fun chatEventText(ci: ChatItem, isChannel: Boolean = false): AnnotatedString =
+  chatEventText(ci.content.text(isChannel), ci.timestampText)
 
 fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
@@ -61,6 +62,7 @@ data class ChatItemReactionMenuItem (
   val onClick: (() -> Unit)?
 )
 
+// Spec: spec/client/chat-view.md#ChatItemView
 @Composable
 fun ChatItemView(
   chatsCtx: ChatModel.ChatsContext,
@@ -108,6 +110,7 @@ fun ChatItemView(
   showTimestamp: Boolean,
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
+  swipeOffset: Float = 0f,
 ) {
   val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
@@ -297,8 +300,11 @@ fun ChatItemView(
     }
 
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        val bubbleInteractionSource = remember { MutableInteractionSource() }
+      val canReply = (cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) &&
+          cInfo !is ChatInfo.Local && !cItem.isReport && !cItem.meta.isLive && cItem.meta.itemDeleted == null
+      Box {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          val bubbleInteractionSource = remember { MutableInteractionSource() }
         val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
         if (cItem.chatDir.sent) {
           GoToItemButton(true, bubbleHovered)
@@ -606,7 +612,7 @@ fun ChatItemView(
               return if (count <= 1) {
                 null
               } else if (ns.isEmpty()) {
-                generalGetString(MR.strings.rcv_group_events_count).format(count)
+                generalGetString(if (cInfo.isChannel) MR.strings.rcv_channel_events_count else MR.strings.rcv_group_events_count).format(count)
               } else if (count > ns.size) {
                 members + " " + generalGetString(MR.strings.rcv_group_and_other_events).format(count - ns.size)
               } else {
@@ -623,9 +629,9 @@ fun ChatItemView(
                 buildAnnotatedString {
                   withStyle(chatEventStyle) { append(memberDisplayName) }
                   append(" ")
-                }.plus(chatEventText(cItem))
+                }.plus(chatEventText(cItem, cInfo.isChannel))
               } else {
-                chatEventText(cItem)
+                chatEventText(cItem, cInfo.isChannel)
               }
             }
 
@@ -637,7 +643,7 @@ fun ChatItemView(
             @Composable fun PendingReviewEventItemView() {
               Text(
                 buildAnnotatedString {
-                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text(cInfo.isChannel)) }
                 },
                 Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
               )
@@ -798,6 +804,15 @@ fun ChatItemView(
         }
         if (!cItem.chatDir.sent) {
           GoToItemButton(false, bubbleHovered)
+        }
+        }
+        if (canReply && swipeOffset < 0) {
+          Icon(
+            painterResource(MR.images.ic_reply),
+            contentDescription = null,
+            modifier = Modifier.align(Alignment.CenterEnd).offset(x = 26.dp).size(18.dp).alpha(minOf(1f, -swipeOffset / 30f)),
+            tint = MaterialTheme.colors.secondary
+          )
         }
       }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {

@@ -162,7 +162,9 @@ private fun ModalData.MemberSupportViewLayout(
 @Composable
 fun SupportChatRow(member: GroupMember) {
   fun memberStatus(): String {
-    return if (member.activeConn?.connDisabled == true) {
+    return if (member.activeConn?.connStatus is ConnStatus.Failed) {
+      generalGetString(MR.strings.member_info_member_failed)
+    } else if (member.activeConn?.connDisabled == true) {
       generalGetString(MR.strings.member_info_member_disabled)
     } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)

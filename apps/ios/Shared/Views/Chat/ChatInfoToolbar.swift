@@ -57,6 +57,18 @@ struct ChatInfoToolbar: View {
                             .padding(.top, -2)
                     }
                 }
+                .if (channelSubscriberCount != nil) { v in
+                    VStack(spacing: 0) {
+                        v
+                        if let count = channelSubscriberCount {
+                            Text(subscriberCountStr(count))
+                                .font(.caption)
+                                .foregroundColor(theme.colors.secondary)
+                                .lineLimit(1)
+                                .padding(.top, -2)
+                        }
+                    }
+                }
             if let contact = chat.chatInfo.contact,
                contact.ready && contact.active,
                let chatSubStatus = m.chatSubStatus,
@@ -67,6 +79,17 @@ struct ChatInfoToolbar: View {
         }
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
+    }
+
+    private var channelSubscriberCount: Int64? {
+        if case let .group(groupInfo, _) = chat.chatInfo,
+           groupInfo.useRelays,
+           let count = groupInfo.groupSummary.publicMemberCount,
+           count > 0 {
+            count
+        } else {
+            nil
+        }
     }
 
     private var contactVerifiedShield: Text {
@@ -100,6 +123,12 @@ struct ChatInfoToolbar: View {
                 .foregroundColor(theme.colors.secondary)
         }
     }
+}
+
+public func subscriberCountStr(_ count: Int64) -> String {
+    count == 1
+        ? String.localizedStringWithFormat(NSLocalizedString("%d subscriber", comment: "channel subscriber count"), count)
+        : String.localizedStringWithFormat(NSLocalizedString("%d subscribers", comment: "channel subscriber count"), count)
 }
 
 struct ChatInfoToolbar_Previews: PreviewProvider {

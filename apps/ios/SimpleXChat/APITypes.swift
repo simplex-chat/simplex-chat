@@ -5,6 +5,7 @@
 //  Created by Evgeny on 26/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/api.md
 
 import Foundation
 import SwiftUI
@@ -22,6 +23,7 @@ public func onOff(_ b: Bool) -> String {
     b ? "on" : "off"
 }
 
+// Spec: spec/api.md#APIResult
 public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     case result(R)
     case error(ChatError)
@@ -59,6 +61,7 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#ChatAPIResult
 public protocol ChatAPIResult: Decodable {
     var responseType: String { get }
     var details: String { get }
@@ -79,6 +82,7 @@ extension ChatAPIResult {
     }
 }
 
+// Spec: spec/api.md#decodeAPIResult
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
 //    print("decodeAPIResult \(String(describing: R.self))")
     do {
@@ -691,6 +695,7 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
+// Spec: spec/api.md#ChatError
 public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
@@ -713,6 +718,7 @@ public enum ChatError: Decodable, Hashable, Error {
     }
 }
 
+// Spec: spec/api.md#ChatErrorType
 public enum ChatErrorType: Decodable, Hashable {
     case noActiveUser
     case noConnectionUser(agentConnId: String)
@@ -721,6 +727,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case userUnknown
     case activeUserExists
     case userExists
+    case chatRelayExists
     case invalidDisplayName
     case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
     case cantDeleteActiveUser(userId: Int64)
@@ -788,6 +795,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case connectionIncognitoChangeProhibited
     case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
+    case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
 }
@@ -795,6 +803,7 @@ public enum ChatErrorType: Decodable, Hashable {
 public enum StoreError: Decodable, Hashable {
     case duplicateName
     case userNotFound(userId: Int64)
+    case relayUserNotFound
     case userNotFoundByName(contactName: ContactName)
     case userNotFoundByContactId(contactId: Int64)
     case userNotFoundByGroupId(groupId: Int64)
@@ -819,6 +828,7 @@ public enum StoreError: Decodable, Hashable {
     case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser
     case duplicateGroupMember
+    case duplicateMemberId
     case groupAlreadyJoined
     case groupInvitationNotFound
     case sndFileNotFound(fileId: Int64)
@@ -853,6 +863,9 @@ public enum StoreError: Decodable, Hashable {
     case hostMemberIdNotFound(groupId: Int64)
     case contactNotFoundByFileId(fileId: Int64)
     case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
+    case userChatRelayNotFound(chatRelayId: Int64)
+    case groupRelayNotFound(groupRelayId: Int64)
+    case groupRelayNotFoundByMemberId(groupMemberId: Int64)
     case dBException(message: String)
 }
 

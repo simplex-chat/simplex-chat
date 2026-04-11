@@ -1,3 +1,4 @@
+// Spec: spec/client/compose.md
 
 import SwiftUI
 import SimpleXChat
@@ -6,6 +7,7 @@ import PhotosUI
 
 let MAX_NUMBER_OF_MENTIONS = 3
 
+// Spec: spec/client/compose.md#ComposePreview
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
@@ -14,6 +16,7 @@ enum ComposePreview {
     case filePreview(fileName: String, file: URL)
 }
 
+// Spec: spec/client/compose.md#ComposeContextItem
 enum ComposeContextItem: Equatable {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
@@ -22,12 +25,14 @@ enum ComposeContextItem: Equatable {
     case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
+// Spec: spec/client/compose.md#VoiceMessageRecordingState
 enum VoiceMessageRecordingState {
     case noRecording
     case recording
     case finished
 }
 
+// Spec: spec/client/compose.md#LiveMessage
 struct LiveMessage {
     var chatItem: ChatItem
     var typedMsg: String
@@ -36,6 +41,7 @@ struct LiveMessage {
 
 typealias MentionedMembers = [String: CIMention]
 
+// Spec: spec/client/compose.md#ComposeState
 struct ComposeState {
     var message: String
     var parsedMessage: [FormattedText]
@@ -256,6 +262,7 @@ struct ComposeState {
     }
 }
 
+// Spec: spec/client/compose.md#chatItemPreview
 func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     switch chatItem.content.msgContent {
     case .text:
@@ -276,6 +283,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     }
 }
 
+// Spec: spec/client/compose.md#UploadContent
 enum UploadContent: Equatable {
     case simpleImage(image: UIImage)
     case animatedImage(image: UIImage)
@@ -317,6 +325,7 @@ enum UploadContent: Equatable {
     }
 }
 
+// Spec: spec/client/compose.md#ComposeView
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -355,12 +364,16 @@ struct ComposeView: View {
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @State private var updatingCompose = false
+    @State private var relayListExpanded = false
+    @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
 
+    // Spec: spec/client/compose.md#body
     var body: some View {
         VStack(spacing: 0) {
             Divider()
 
             if chat.chatInfo.nextConnectPrepared,
+               !composeState.inProgress,
                let user = chatModel.currentUser {
                 ContextProfilePickerView(
                     chat: chat,
@@ -369,85 +382,152 @@ struct ComposeView: View {
                 Divider()
             }
 
-            if let groupInfo = chat.chatInfo.groupInfo,
-               case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
-               case let .memberSupport(member) = groupScopeInfo,
-               let member = member,
-               member.memberPending,
-               composeState.contextItem == .noContextItem,
-               composeState.noPreview {
-                ContextPendingMemberActionsView(
-                    groupInfo: groupInfo,
-                    member: member
-                )
-                Divider()
-            }
-
-            if case let .reportedItem(_, reason) = composeState.contextItem {
-                reportReasonView(reason)
-                Divider()
-            }
-            // preference checks should match checks in forwarding list
-            let simplexLinkProhibited = im.secondaryIMFilter == nil && hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
-            let fileProhibited = im.secondaryIMFilter == nil && composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
-            let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
-            let disableSendButton = simplexLinkProhibited || fileProhibited || voiceProhibited
-            if simplexLinkProhibited {
-                msgNotAllowedView("SimpleX links not allowed", icon: "link")
-                Divider()
-            } else if fileProhibited {
-                msgNotAllowedView("Files and media not allowed", icon: "doc")
-                Divider()
-            } else if voiceProhibited {
-                msgNotAllowedView("Voice messages not allowed", icon: "mic")
-                Divider()
-            }
-            contextItemView()
-            switch (composeState.editing, composeState.preview) {
-            case (true, .filePreview): EmptyView()
-            case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
-            default: previewView()
-            }
-
-            let contact = chat.chatInfo.contact
-
-            if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
-                if chat.chatInfo.groupInfo?.businessChat == nil {
-                    connectButtonView("Join group", icon: "person.2.fill", connect: connectPreparedGroup)
+            if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
+               ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
+                if gInfo.membership.memberRole == .owner {
+                    let relays = channelRelaysModel.groupId == gInfo.groupId
+                        ? channelRelaysModel.groupRelays : []
+                    let failedCount = relays.filter { relayMemberConnFailed($0) != nil }.count
+                    let activeCount = relays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+                    if !relays.isEmpty && activeCount < relays.count {
+                        ownerChannelRelayBar(relays: relays, activeCount: activeCount, failedCount: failedCount)
+                    }
                 } else {
-                    sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
-                }
-            } else if contact?.nextSendGrpInv == true {
-                contextSendMessageToConnect("Send direct message to connect")
-                Divider()
-                HStack (alignment: .center) {
-                    attachmentAndCommandsButtons().disabled(true)
-                    sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
-                }
-                .padding(.horizontal, 12)
-            } else if let contact,
-                      contact.nextConnectPrepared == true,
-                      let linkType = contact.preparedContact?.uiConnLinkType {
-                switch linkType {
-                case .inv:
-                    connectButtonView("Connect", icon: "person.fill.badge.plus", connect: sendConnectPreparedContact)
-                case .con:
-                    if contact.isBot {
-                        connectButtonView("Connect", icon: "bolt.fill", connect: sendConnectPreparedContact)
-                    } else {
-                        sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                    let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
+                    let relayMembers = chatModel.groupMembers
+                        .filter { $0.wrapped.memberRole == .relay }
+                        .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
+                    let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
+                    let connectedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .ready }.count
+                    let deletedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .deleted }.count
+                    let failedCount = relayMembers.filter { $0.wrapped.activeConn?.connFailedErr != nil }.count
+                    let errorCount = deletedCount + failedCount
+                    let resolvedCount = connectedCount + deletedCount
+                    let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
+                    if total > 0, !showProgress || resolvedCount < total {
+                        subscriberChannelRelayBar(
+                            hostnames: hostnames,
+                            relayMembers: relayMembers,
+                            connectedCount: connectedCount,
+                            errorCount: errorCount,
+                            total: total,
+                            showProgress: showProgress
+                        )
                     }
                 }
-            } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
-                ContextContactRequestActionsView(contactRequestId: crId)
-            } else if let ct = contact, ct.nextAcceptContactRequest, let groupDirectInv = ct.groupDirectInv {
-                ContextMemberContactActionsView(contact: ct, groupDirectInv: groupDirectInv)
-            } else {
-                HStack (alignment: .center) {
-                    attachmentAndCommandsButtons()
-                    sendMessageView(disableSendButton)
+            }
+
+            let composeEnabled = (
+                chat.chatInfo.sendMsgEnabled ||
+                (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
+                (chat.chatInfo.contact?.nextAcceptContactRequest ?? false)
+            )
+            Group {
+
+                if let groupInfo = chat.chatInfo.groupInfo,
+                   case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+                   case let .memberSupport(member) = groupScopeInfo,
+                   let member = member,
+                   member.memberPending,
+                   composeState.contextItem == .noContextItem,
+                   composeState.noPreview {
+                    ContextPendingMemberActionsView(
+                        groupInfo: groupInfo,
+                        member: member
+                    )
+                    Divider()
                 }
-                .padding(.horizontal, 12)
+
+                if case let .reportedItem(_, reason) = composeState.contextItem {
+                    reportReasonView(reason)
+                    Divider()
+                }
+                // preference checks should match checks in forwarding list
+                let simplexLinkProhibited = im.secondaryIMFilter == nil && hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
+                let fileProhibited = im.secondaryIMFilter == nil && composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
+                let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
+                let disableSendButton = simplexLinkProhibited || fileProhibited || voiceProhibited
+                if simplexLinkProhibited {
+                    msgNotAllowedView("SimpleX links not allowed", icon: "link")
+                    Divider()
+                } else if fileProhibited {
+                    msgNotAllowedView("Files and media not allowed", icon: "doc")
+                    Divider()
+                } else if voiceProhibited {
+                    msgNotAllowedView("Voice messages not allowed", icon: "mic")
+                    Divider()
+                }
+                contextItemView()
+                switch (composeState.editing, composeState.preview) {
+                case (true, .filePreview): EmptyView()
+                case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
+                default: previewView()
+                }
+
+                let contact = chat.chatInfo.contact
+
+                if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
+                    if chat.chatInfo.groupInfo?.businessChat == nil {
+                        let isChannel = chat.chatInfo.groupInfo?.useRelays == true
+                        connectButtonView(
+                            isChannel ? "Join channel" : "Join group",
+                            icon: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.fill",
+                            connect: connectPreparedGroup
+                        )
+                    } else {
+                        sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
+                    }
+                } else if contact?.nextSendGrpInv == true {
+                    contextSendMessageToConnect("Send direct message to connect")
+                    Divider()
+                    HStack (alignment: .center) {
+                        attachmentAndCommandsButtons().disabled(true)
+                        sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
+                    }
+                    .padding(.horizontal, 12)
+                } else if let contact,
+                          contact.nextConnectPrepared == true,
+                          let linkType = contact.preparedContact?.uiConnLinkType {
+                    switch linkType {
+                    case .inv:
+                        connectButtonView("Connect", icon: "person.fill.badge.plus", connect: sendConnectPreparedContact)
+                    case .con:
+                        if contact.isBot {
+                            connectButtonView("Connect", icon: "bolt.fill", connect: sendConnectPreparedContact)
+                        } else {
+                            sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                        }
+                    }
+                } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
+                    ContextContactRequestActionsView(contactRequestId: crId)
+                } else if let ct = contact, ct.nextAcceptContactRequest, let groupDirectInv = ct.groupDirectInv {
+                    ContextMemberContactActionsView(contact: ct, groupDirectInv: groupDirectInv)
+                } else {
+                    HStack (alignment: .center) {
+                        attachmentAndCommandsButtons()
+                        sendMessageView(
+                            disableSendButton,
+                            placeholder: chat.chatInfo.groupInfo.map { gi in
+                                gi.useRelays && gi.membership.memberRole >= .owner
+                                ? NSLocalizedString("Broadcast", comment: "compose placeholder for channel owner")
+                                : nil
+                            } ?? nil
+                        )
+                    }
+                    .padding(.horizontal, 12)
+                }
+
+            } // Group
+            .disabled(!composeEnabled)
+            .if(!composeEnabled) { v in
+                v.onTapGesture {
+                    if let reason = chat.chatInfo.userCantSendReason {
+                        AlertManager.shared.showAlertMsg(
+                            title: "You can't send messages!",
+                            message: reason.alertMessage
+                        )
+                    }
+                }
             }
         }
         .background {
@@ -643,18 +723,175 @@ struct ComposeView: View {
         }
     }
 
+    private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int) -> some View {
+        let total = relays.count
+        let sorted = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
+        return VStack(spacing: 0) {
+            relayBarHeader {
+                if activeCount + failedCount < total {
+                    RelayProgressIndicator(active: activeCount, total: total)
+                }
+                if failedCount > 0 {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel relay bar progress with errors"), activeCount, total, failedCount))
+                } else {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel relay bar progress"), activeCount, total))
+                }
+            }
+            if relayListExpanded {
+                ForEach(sorted) { relay in
+                    let failedErr = relayMemberConnFailed(relay)
+                    if let err = failedErr {
+                        Button {
+                            showAlert(
+                                NSLocalizedString("Relay connection failed", comment: "alert title"),
+                                message: err
+                            )
+                        } label: {
+                            ownerRelayDetailRow(relay, connFailed: true)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        ownerRelayDetailRow(relay, connFailed: false)
+                    }
+                }
+            }
+        }
+        .padding(.bottom, relayListExpanded ? 4 : 0)
+        .animation(nil, value: relayListExpanded)
+    }
+
+    private func ownerRelayDetailRow(_ relay: GroupRelay, connFailed: Bool) -> some View {
+        relayBarDetailRow {
+            Text(relayDisplayName(relay)).foregroundColor(theme.colors.secondary)
+            Spacer()
+            relayStatusIndicator(relay.relayStatus, connFailed: connFailed)
+        }
+    }
+
+    private func subscriberChannelRelayBar(
+        hostnames: [String],
+        relayMembers: [GMember],
+        connectedCount: Int,
+        errorCount: Int,
+        total: Int,
+        showProgress: Bool
+    ) -> some View {
+        VStack(spacing: 0) {
+            relayBarHeader {
+                if showProgress && connectedCount + errorCount < total {
+                    RelayProgressIndicator(active: connectedCount, total: total)
+                }
+                if showProgress {
+                    if errorCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar progress with errors"), connectedCount, total, errorCount))
+                    } else {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
+                    }
+                } else {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
+                }
+            }
+            if relayListExpanded {
+                if relayMembers.isEmpty {
+                    ForEach(hostnames, id: \.self) { relay in
+                        relayBarDetailRow {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), hostFromRelayLink(relay)))
+                                .foregroundColor(theme.colors.secondary)
+                            Spacer()
+                        }
+                    }
+                } else {
+                    ForEach(relayMembers) { member in
+                        let m = member.wrapped
+                        let host = m.relayLink.map { hostFromRelayLink($0) }
+                        let failedErr = m.activeConn?.connFailedErr
+                        if let err = failedErr {
+                            Button {
+                                showAlert(
+                                    NSLocalizedString("Relay connection failed", comment: "alert title"),
+                                    message: err
+                                )
+                            } label: {
+                                subscriberRelayDetailRow(m, host: host, connFailed: true)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            subscriberRelayDetailRow(m, host: host, connFailed: false)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.bottom, relayListExpanded ? 4 : 0)
+        .animation(nil, value: relayListExpanded)
+    }
+
+    private func subscriberRelayDetailRow(_ m: GroupMember, host: String?, connFailed: Bool) -> some View {
+        relayBarDetailRow {
+            Text(String.localizedStringWithFormat(NSLocalizedString("via %@", comment: "relay hostname"), host ?? m.chatViewName))
+                .foregroundColor(theme.colors.secondary)
+            Spacer()
+            let status = relayConnStatus(m)
+            Circle()
+                .fill(status.color)
+                .frame(width: 8, height: 8)
+            Text(status.text)
+                .foregroundColor(theme.colors.secondary)
+            if connFailed {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundColor(.accentColor)
+            }
+        }
+    }
+
+    private func relayBarHeader<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        Button {
+            withAnimation(nil) { relayListExpanded.toggle() }
+        } label: {
+            HStack(spacing: 8) {
+                content()
+                Spacer()
+                Image(systemName: relayListExpanded ? "chevron.down" : "chevron.up")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(theme.colors.secondary)
+                    .opacity(0.7)
+            }
+            .font(.callout)
+            .foregroundColor(theme.colors.secondary)
+            .padding(.top, 8)
+            .padding(.bottom, relayListExpanded ? 4 : 8)
+            .padding(.leading, 12)
+            .padding(.trailing)
+        }
+    }
+
+    private func relayBarDetailRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            content()
+        }
+        .font(.caption)
+        .padding(.leading, 12)
+        .padding(.trailing)
+        .padding(.vertical, 2)
+    }
+
+    private func relayMemberConnFailed(_ relay: GroupRelay) -> String? {
+        chatModel.groupMembers.first(where: { $0.wrapped.groupMemberId == relay.groupMemberId })?
+            .wrapped.activeConn?.connFailedErr
+    }
+
     private func connectButtonView(_ label: LocalizedStringKey, icon: String, connect: @escaping () -> Void) -> some View {
         Button(action: connect) {
             ZStack(alignment: .trailing) {
                 Label(label, systemImage: icon)
                     .frame(maxWidth: .infinity)
-                if composeState.progressByTimeout {
+                if composeState.progressByTimeout && chat.chatInfo.groupInfo?.useRelays != true {
                     ProgressView()
                         .padding()
                 }
             }
         }
-        .frame(height: 60)
+        .frame(height: 57)
         .disabled(composeState.inProgress)
     }
 
@@ -679,6 +916,7 @@ struct ComposeView: View {
         .padding(.horizontal, 12)
     }
 
+    // Spec: spec/client/compose.md#sendMessageView
     private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
         ZStack(alignment: .leading) {
             SendMessageView(
@@ -840,9 +1078,12 @@ struct ComposeView: View {
             await sending()
             let mc = connectCheckLinkPreview()
             let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
-            if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
+            if let (groupInfo, relayResults) = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateGroup(groupInfo)
+                    self.chatModel.channelRelayHostnames.removeValue(forKey: groupInfo.groupId)
+                    self.chatModel.groupMembers = relayResults.map { GMember($0.relayMember) }
+                    self.chatModel.populateGroupMembersIndexes()
                     clearState()
                 }
             } else {
@@ -878,6 +1119,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#addMediaContent
     private func addMediaContent(_ content: UploadContent) async {
         if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
@@ -906,6 +1148,7 @@ struct ComposeView: View {
         getMaxFileSize(.xftp)
     }
 
+    // Spec: spec/client/compose.md#sendLiveMessage
     private func sendLiveMessage() async {
         let typedMsg = composeState.message
         let lm = composeState.liveMessage
@@ -923,6 +1166,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#updateLiveMessage
     private func updateLiveMessage() async {
         let typedMsg = composeState.message
         if let liveMessage = composeState.liveMessage {
@@ -941,6 +1185,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#liveMessageToSend
     private func liveMessageToSend(_ lm: LiveMessage, _ t: String) -> String? {
         let s = t != lm.typedMsg ? truncateToWords(t) : t
         return s != lm.sentMsg && (lm.sentMsg != nil || !s.isEmpty) ? s : nil
@@ -1087,6 +1332,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#sendMessage
     private func sendMessage(ttl: Int?) {
         logger.debug("ChatView sendMessage")
         Task {
@@ -1095,6 +1341,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#sendMessageAsync
     private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
@@ -1305,6 +1552,7 @@ struct ComposeView: View {
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
                     scope: chat.chatInfo.groupChatScope(),
+                    sendAsGroup: chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false,
                     live: live,
                     ttl: ttl,
                     composedMessages: msgs
@@ -1330,6 +1578,7 @@ struct ComposeView: View {
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
                 toScope: chat.chatInfo.groupChatScope(),
+                sendAsGroup: chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
                 fromScope: fromChatInfo.groupChatScope(),
@@ -1361,6 +1610,7 @@ struct ComposeView: View {
         await MainActor.run { composeState.inProgress = true }
     }
 
+    // Spec: spec/client/compose.md#startVoiceMessageRecording
     private func startVoiceMessageRecording() async {
         startingRecording = true
         let fileName = generateNewFileName("voice", "m4a")
@@ -1401,6 +1651,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#finishVoiceMessageRecording
     private func finishVoiceMessageRecording() {
         audioRecorder?.stop()
         audioRecorder = nil
@@ -1411,6 +1662,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#allowVoiceMessagesToContact
     private func allowVoiceMessagesToContact() {
         if case let .direct(contact) = chat.chatInfo {
             allowFeatureToContact(contact, .voice)
@@ -1436,12 +1688,14 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#cancelVoiceMessageRecording
     private func cancelVoiceMessageRecording(_ fileName: String) {
         stopPlayback.toggle()
         audioRecorder?.stop()
         removeFile(fileName)
     }
 
+    // Spec: spec/client/compose.md#clearState
     private func clearState(live: Bool = false) {
         if live {
             composeState.inProgress = false
@@ -1455,11 +1709,13 @@ struct ComposeView: View {
         startingRecording = false
     }
 
+    // Spec: spec/client/compose.md#saveCurrentDraft
     private func saveCurrentDraft() {
         chatModel.draft = composeState
         chatModel.draftChatId = chat.id
     }
 
+    // Spec: spec/client/compose.md#clearCurrentDraft
     private func clearCurrentDraft() {
         if chatModel.draftChatId == chat.id {
             chatModel.draft = nil
@@ -1467,6 +1723,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#showLinkPreview
     private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
         (linkUrl, hasSimplexLink) = getMessageLinks(parsedMsg)
@@ -1486,6 +1743,7 @@ struct ComposeView: View {
         }
     }
 
+    // Spec: spec/client/compose.md#getMessageLinks
     private func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
         guard let parsedMsg else { return (nil, false) }
         let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
@@ -1512,6 +1770,7 @@ struct ComposeView: View {
         composeState = composeState.copy(preview: .noPreview)
     }
 
+    // Spec: spec/client/compose.md#loadLinkPreview
     private func loadLinkPreview(_ urlStr: String) {
         if pendingLinkUrl == urlStr, let url = URL(string: urlStr) {
             composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))

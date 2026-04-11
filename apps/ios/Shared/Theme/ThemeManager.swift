@@ -5,12 +5,15 @@
 //  Created by Avently on 03.06.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/theme.md
 
 import Foundation
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/services/theme.md#ThemeManager
 class ThemeManager {
+    // Spec: spec/services/theme.md#ActiveTheme
     struct ActiveTheme: Equatable {
         let name: String
         let base: DefaultTheme
@@ -41,6 +44,7 @@ class ThemeManager {
         }
     }
 
+    // Spec: spec/services/theme.md#defaultActiveTheme
     static func defaultActiveTheme(_ appSettingsTheme: [ThemeOverrides]) -> ThemeOverrides? {
         let nonSystemThemeName = nonSystemThemeName()
         let defaultThemeId = currentThemeIdsDefault.get()[nonSystemThemeName]
@@ -56,6 +60,7 @@ class ThemeManager {
         return ThemeModeOverride(mode: CurrentColors.base.mode, colors: defaultTheme?.colors ?? ThemeColors(), wallpaper: defaultTheme?.wallpaper ?? ThemeWallpaper.from(PresetWallpaper.school.toType(CurrentColors.base), nil, nil))
     }
 
+    // Spec: spec/services/theme.md#currentColors
     static func currentColors(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?, _ appSettingsTheme: [ThemeOverrides]) -> ActiveTheme {
         let themeName = currentThemeDefault.get()
         let nonSystemThemeName = nonSystemThemeName()
@@ -96,6 +101,7 @@ class ThemeManager {
         )
     }
 
+    // Spec: spec/services/theme.md#currentThemeOverridesForExport
     static func currentThemeOverridesForExport(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?) -> ThemeOverrides {
         let current = currentColors(themeOverridesForType, perChatTheme, perUserTheme, themeOverridesDefault.get())
         let wType = current.wallpaper.type
@@ -114,6 +120,7 @@ class ThemeManager {
         )
     }
 
+    // Spec: spec/services/theme.md#applyTheme
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
@@ -125,6 +132,7 @@ class ThemeManager {
 //        applyNavigationBarColors(CurrentColors.toAppTheme())
     }
 
+    // Spec: spec/services/theme.md#adjustWindowStyle
     static func adjustWindowStyle() {
         let style = switch currentThemeDefault.get() {
         case DefaultTheme.LIGHT.themeName: UIUserInterfaceStyle.light
@@ -161,6 +169,7 @@ class ThemeManager {
         AppTheme.shared.updateFromCurrentColors()
     }
 
+    // Spec: spec/services/theme.md#saveAndApplyThemeColor
     static func saveAndApplyThemeColor(_ baseTheme: DefaultTheme, _ name: ThemeColor, _ color: Color? = nil, _ pref: CodableDefault<[ThemeOverrides]>? = nil) {
         let nonSystemThemeName = baseTheme.themeName
         let pref = pref ?? themeOverridesDefault
@@ -178,6 +187,7 @@ class ThemeManager {
         pref.wrappedValue = pref.wrappedValue.withUpdatedColor(name, color?.toReadableHex())
     }
 
+    // Spec: spec/services/theme.md#saveAndApplyWallpaper
     static func saveAndApplyWallpaper(_ baseTheme: DefaultTheme, _ type: WallpaperType?, _ pref: CodableDefault<[ThemeOverrides]>?) {
         let nonSystemThemeName = baseTheme.themeName
         let pref = pref ?? themeOverridesDefault
@@ -253,6 +263,7 @@ class ThemeManager {
         pref.wrappedValue = prevValue
     }
 
+    // Spec: spec/services/theme.md#saveAndApplyThemeOverrides
     static func saveAndApplyThemeOverrides(_ theme: ThemeOverrides, _ pref: CodableDefault<[ThemeOverrides]>? = nil) {
         let wallpaper = theme.wallpaper?.importFromString()
         let nonSystemThemeName = theme.base.themeName
@@ -273,6 +284,7 @@ class ThemeManager {
         applyTheme(nonSystemThemeName)
     }
 
+    // Spec: spec/services/theme.md#resetAllThemeColors
     static func resetAllThemeColors(_ pref: CodableDefault<[ThemeOverrides]>? = nil) {
         let nonSystemThemeName = nonSystemThemeName()
         let pref: CodableDefault<[ThemeOverrides]> = pref ?? themeOverridesDefault
@@ -295,6 +307,7 @@ class ThemeManager {
         pref.wrappedValue = prevValue
     }
 
+    // Spec: spec/services/theme.md#removeTheme
     static func removeTheme(_ themeId: String?) {
         var themes = themeOverridesDefault.get().map { $0 }
         themes.removeAll(where: { $0.themeId == themeId })

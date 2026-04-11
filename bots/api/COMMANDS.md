@@ -30,6 +30,8 @@ This file is generated automatically.
 - [APILeaveGroup](#apileavegroup)
 - [APIListMembers](#apilistmembers)
 - [APINewGroup](#apinewgroup)
+- [APINewPublicGroup](#apinewpublicgroup)
+- [APIGetGroupRelays](#apigetgrouprelays)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -50,6 +52,9 @@ This file is generated automatically.
 - [APIListContacts](#apilistcontacts)
 - [APIListGroups](#apilistgroups)
 - [APIDeleteChat](#apideletechat)
+- [APISetGroupCustomData](#apisetgroupcustomdata)
+- [APISetContactCustomData](#apisetcontactcustomdata)
+- [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -593,7 +598,7 @@ Add contact to group. Requires bot to have Admin role.
 **Syntax**:
 
 ```
-/_add #<groupId> <contactId> observer|author|member|moderator|admin|owner
+/_add #<groupId> <contactId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -672,7 +677,7 @@ Accept group member. Requires Admin role.
 **Syntax**:
 
 ```
-/_accept member #<groupId> <groupMemberId> observer|author|member|moderator|admin|owner
+/_accept member #<groupId> <groupMemberId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -715,7 +720,7 @@ Set members role. Requires Admin role.
 **Syntax**:
 
 ```
-/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] observer|author|member|moderator|admin|owner
+/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -734,6 +739,7 @@ MembersRoleUser: Members role changed by user.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -775,6 +781,7 @@ MembersBlockedForAllUser: Members blocked for all by admin.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - blocked: bool
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -816,6 +823,7 @@ UserDeletedMembers: Members deleted.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - withMessages: bool
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -940,6 +948,86 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APINewPublicGroup
+
+Create public group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- incognito: bool
+- relayIds: [int64]
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
+
+**Syntax**:
+
+```
+/_public group <userId>[ incognito=on] <relayIds[0]>[,<relayIds[1]>...] <json(groupProfile)>
+```
+
+```javascript
+'/_public group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + relayIds.join(',') + ' ' + JSON.stringify(groupProfile) // JavaScript
+```
+
+```python
+'/_public group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + ','.join(map(str, relayIds)) + ' ' + json.dumps(groupProfile) # Python
+```
+
+**Responses**:
+
+PublicGroupCreated: Public group created.
+- type: "publicGroupCreated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIGetGroupRelays
+
+Get group relays.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_get relays #<groupId>
+```
+
+```javascript
+'/_get relays #' + groupId // JavaScript
+```
+
+```python
+'/_get relays #' + str(groupId) # Python
+```
+
+**Responses**:
+
+GroupRelays: Group relays.
+- type: "groupRelays"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ### APIUpdateGroupProfile
 
 Update group profile.
@@ -972,6 +1060,7 @@ GroupUpdated: Group updated.
 - fromGroup: [GroupInfo](./TYPES.md#groupinfo)
 - toGroup: [GroupInfo](./TYPES.md#groupinfo)
 - member_: [GroupMember](./TYPES.md#groupmember)?
+- msgSigned: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -998,7 +1087,7 @@ Create group link.
 **Syntax**:
 
 ```
-/_create link #<groupId> observer|author|member|moderator|admin|owner
+/_create link #<groupId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1037,7 +1126,7 @@ Set member role for group link.
 **Syntax**:
 
 ```
-/_set link role #<groupId> observer|author|member|moderator|admin|owner
+/_set link role #<groupId> relay|observer|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1518,6 +1607,118 @@ GroupDeletedUser: User deleted group.
 - type: "groupDeletedUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- msgSigned: bool
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetGroupCustomData
+
+Set group custom data.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+- customData: JSONObject?
+
+**Syntax**:
+
+```
+/_set custom #<groupId>[ <json(customData)>]
+```
+
+```javascript
+'/_set custom #' + groupId + (customData ? ' ' + JSON.stringify(customData) : '') // JavaScript
+```
+
+```python
+'/_set custom #' + str(groupId) + ((' ' + json.dumps(customData)) if customData is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetContactCustomData
+
+Set contact custom data.
+
+*Network usage*: no.
+
+**Parameters**:
+- contactId: int64
+- customData: JSONObject?
+
+**Syntax**:
+
+```
+/_set custom @<contactId>[ <json(customData)>]
+```
+
+```javascript
+'/_set custom @' + contactId + (customData ? ' ' + JSON.stringify(customData) : '') // JavaScript
+```
+
+```python
+'/_set custom @' + str(contactId) + ((' ' + json.dumps(customData)) if customData is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserAutoAcceptMemberContacts
+
+Set auto-accept member contacts.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- onOff: bool
+
+**Syntax**:
+
+```
+/_set accept member contacts <userId> on|off
+```
+
+```javascript
+'/_set accept member contacts ' + userId + ' ' + (onOff ? 'on' : 'off') // JavaScript
+```
+
+```python
+'/_set accept member contacts ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

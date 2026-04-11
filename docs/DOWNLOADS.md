@@ -4,10 +4,11 @@ permalink: /downloads/index.html
 revision: 09.09.2024
 ---
 
-| Updated 09.09.2024 | Languages: EN |
 # Download SimpleX apps
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
+
+If you cannot access GitHub, you can download SimpleX Chat apps from our mirror at [git.simplex.chat](https://git.simplex.chat/simplex-chat/simplex-chat/releases)
 
 - [desktop](#desktop-app)
 - [mobile](#mobile-apps)

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 fun ModalData.YourServersView(
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   rhId: Long?
 ) {
@@ -40,7 +41,7 @@ fun ModalData.YourServersView(
   LaunchedEffect(userServers) {
     snapshotFlow { userServers.value }
       .collect { updatedServers ->
-        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors)
+        validateServers_(rhId = rhId, userServersToValidate = updatedServers, serverErrors = serverErrors, serverWarnings = serverWarnings)
       }
   }
 
@@ -51,9 +52,10 @@ fun ModalData.YourServersView(
         scope,
         userServers,
         serverErrors,
+        serverWarnings,
         operatorIndex,
         navigateToProtocolView = { serverIndex, server, protocol ->
-          navigateToProtocolView(userServers, serverErrors, operatorIndex, rhId, serverIndex, server, protocol)
+          navigateToProtocolView(userServers, serverErrors, serverWarnings, operatorIndex, rhId, serverIndex, server, protocol)
         },
         currentUser,
         rhId,
@@ -72,6 +74,7 @@ fun YourServersViewLayout(
   scope: CoroutineScope,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   operatorIndex: Int,
   navigateToProtocolView: (Int, UserServer, ServerProtocol) -> Unit,
   currentUser: User?,
@@ -81,7 +84,21 @@ fun YourServersViewLayout(
   val duplicateHosts = findDuplicateHosts(serverErrors.value)
 
   Column {
+    if (userServers.value[operatorIndex].chatRelays.any { !it.deleted }) {
+      val duplicateRelayAddresses = findDuplicateRelayAddresses(serverErrors.value)
+      SectionView(generalGetString(MR.strings.chat_relays).uppercase()) {
+        userServers.value[operatorIndex].chatRelays.forEachIndexed { i, relay ->
+          if (relay.deleted) return@forEachIndexed
+          ChatRelayViewLink(relay, duplicateRelayAddresses) {
+            navigateToChatRelayView(userServers, serverErrors, serverWarnings, operatorIndex, i, relay, rhId)
+          }
+        }
+      }
+      SectionTextFooter(generalGetString(MR.strings.chat_relays_forward_messages_in_channels))
+    }
+
     if (userServers.value[operatorIndex].smpServers.any { !it.deleted }) {
+      SectionDividerSpaced()
       SectionView(generalGetString(MR.strings.message_servers).uppercase()) {
         userServers.value[operatorIndex].smpServers.forEachIndexed { i, server  ->
           if (server.deleted) return@forEachIndexed
@@ -150,7 +167,8 @@ fun YourServersViewLayout(
 
     if (
       userServers.value[operatorIndex].smpServers.any { !it.deleted } ||
-      userServers.value[operatorIndex].xftpServers.any { !it.deleted }
+      userServers.value[operatorIndex].xftpServers.any { !it.deleted } ||
+      userServers.value[operatorIndex].chatRelays.any { !it.deleted }
       ) {
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
     }
@@ -159,7 +177,7 @@ fun YourServersViewLayout(
       SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
-        click = { showAddServerDialog(scope, userServers, serverErrors, rhId) },
+        click = { showAddServerDialog(scope, userServers, serverErrors, serverWarnings, rhId) },
         disabled = testing.value,
         textColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
         iconColor = if (testing.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
@@ -171,6 +189,12 @@ fun YourServersViewLayout(
         ServersErrorFooter(serversErr)
       }
     }
+    val serversWarn = globalServersWarning(serverWarnings.value)
+    if (serversWarn != null) {
+      SectionCustomFooter {
+        ServersWarningFooter(serversWarn)
+      }
+    }
     SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
 
     SectionView {
@@ -178,21 +202,30 @@ fun YourServersViewLayout(
         testing = testing,
         smpServers = userServers.value[operatorIndex].smpServers,
         xftpServers = userServers.value[operatorIndex].xftpServers,
-      ) { p, l ->
-        when (p) {
-          ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
-            this[operatorIndex] = this[operatorIndex].copy(
-              xftpServers = l
-            )
-          }
+        chatRelays = userServers.value[operatorIndex].chatRelays,
+        onUpdate = { p, l ->
+          when (p) {
+            ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                xftpServers = l
+              )
+            }
 
-          ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+            ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                smpServers = l
+              )
+            }
+          }
+        },
+        onUpdateRelays = { relays ->
+          userServers.value = userServers.value.toMutableList().apply {
             this[operatorIndex] = this[operatorIndex].copy(
-              smpServers = l
+              chatRelays = relays
             )
           }
         }
-      }
+      )
 
       HowToButton()
     }
@@ -204,16 +237,20 @@ fun YourServersViewLayout(
 fun TestServersButton(
   smpServers: List<UserServer>,
   xftpServers: List<UserServer>,
+  chatRelays: List<UserChatRelay> = emptyList(),
   testing: MutableState<Boolean>,
-  onUpdate: (ServerProtocol, List<UserServer>) -> Unit
+  onUpdate: (ServerProtocol, List<UserServer>) -> Unit,
+  onUpdateRelays: ((List<UserChatRelay>) -> Unit)? = null
 ) {
   val scope = rememberCoroutineScope()
-  val disabled = derivedStateOf { (smpServers.none { it.enabled } && xftpServers.none { it.enabled }) || testing.value }
+  val disabled = derivedStateOf {
+    (smpServers.none { it.enabled } && xftpServers.none { it.enabled } && chatRelays.filter { !it.deleted }.none { it.enabled }) || testing.value
+  }
 
   SectionItemView(
     {
       scope.launch {
-        testServers(testing, smpServers, xftpServers, chatModel, onUpdate)
+        testServers(testing, smpServers, xftpServers, chatRelays, chatModel, onUpdate, onUpdateRelays)
       }
     },
     disabled = disabled.value
@@ -226,6 +263,7 @@ fun showAddServerDialog(
   scope: CoroutineScope,
   userServers: MutableState<List<UserOperatorServers>>,
   serverErrors: MutableState<List<UserServersError>>,
+  serverWarnings: MutableState<List<UserServersWarning>>,
   rhId: Long?
 ) {
   AlertManager.shared.showAlertDialogButtonsColumn(
@@ -235,7 +273,7 @@ fun showAddServerDialog(
         SectionItemView({
           AlertManager.shared.hideAlert()
           ModalManager.start.showCustomModal { close ->
-            NewServerView(userServers, serverErrors, rhId, close)
+            NewServerView(userServers, serverErrors, serverWarnings, rhId, close)
           }
         }) {
           Text(stringResource(MR.strings.smp_servers_enter_manually), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
@@ -250,6 +288,7 @@ fun showAddServerDialog(
                   server,
                   userServers,
                   serverErrors,
+                  serverWarnings,
                   rhId,
                   close = close
                 )
@@ -259,6 +298,14 @@ fun showAddServerDialog(
           ) {
             Text(stringResource(MR.strings.smp_servers_scan_qr), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          ModalManager.start.showCustomModal { close ->
+            NewChatRelayView(userServers, serverErrors, serverWarnings, rhId, close)
+          }
+        }) {
+          Text(stringResource(MR.strings.chat_relay), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
     }
@@ -303,20 +350,28 @@ private suspend fun testServers(
   testing: MutableState<Boolean>,
   smpServers: List<UserServer>,
   xftpServers: List<UserServer>,
+  chatRelays: List<UserChatRelay>,
   m: ChatModel,
-  onUpdate: (ServerProtocol, List<UserServer>) -> Unit
+  onUpdate: (ServerProtocol, List<UserServer>) -> Unit,
+  onUpdateRelays: ((List<UserChatRelay>) -> Unit)?
 ) {
+  val relaysResetStatus = resetRelayTestStatus(chatRelays)
+  onUpdateRelays?.invoke(relaysResetStatus)
   val smpResetStatus = resetTestStatus(smpServers)
   onUpdate(ServerProtocol.SMP, smpResetStatus)
   val xftpResetStatus = resetTestStatus(xftpServers)
   onUpdate(ServerProtocol.XFTP, xftpResetStatus)
   testing.value = true
+  val relayFailures = runRelaysTest(relaysResetStatus) { onUpdateRelays?.invoke(it) }
   val smpFailures = runServersTest(smpResetStatus, m) { onUpdate(ServerProtocol.SMP, it) }
   val xftpFailures = runServersTest(xftpResetStatus, m) { onUpdate(ServerProtocol.XFTP, it) }
   testing.value = false
-  val fs = smpFailures + xftpFailures
-  if (fs.isNotEmpty()) {
-    val msg = fs.map { it.key + ": " + it.value.localizedDescription }.joinToString("\n")
+  val failures = mutableListOf<String>()
+  failures += relayFailures.map { (name, f) -> "$name: ${f.localizedDescription}" }
+  failures += smpFailures.map { (srv, f) -> "$srv: ${f.localizedDescription}" }
+  failures += xftpFailures.map { (srv, f) -> "$srv: ${f.localizedDescription}" }
+  if (failures.isNotEmpty()) {
+    val msg = failures.joinToString("\n")
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.smp_servers_test_failed),
       text = generalGetString(MR.strings.smp_servers_test_some_failed) + "\n" + msg
@@ -348,6 +403,37 @@ private suspend fun runServersTest(servers: List<UserServer>, m: ChatModel, onUp
       onUpdated(updatedServers.toList())
       if (f != null) {
         fs[serverHostname(updatedServer.server)] = f
+      }
+    }
+  }
+  return fs
+}
+
+private fun resetRelayTestStatus(relays: List<UserChatRelay>): List<UserChatRelay> {
+  val copy = ArrayList(relays)
+  for ((index, relay) in relays.withIndex()) {
+    if (relay.enabled && !relay.deleted) {
+      copy.removeAt(index)
+      copy.add(index, relay.copy(tested = null))
+    }
+  }
+  return copy
+}
+
+private suspend fun runRelaysTest(relays: List<UserChatRelay>, onUpdated: (List<UserChatRelay>) -> Unit): Map<String, RelayTestFailure> {
+  val fs: MutableMap<String, RelayTestFailure> = mutableMapOf()
+  val updatedRelays = ArrayList<UserChatRelay>(relays)
+  for ((index, relay) in relays.withIndex()) {
+    if (relay.enabled && !relay.deleted) {
+      interruptIfCancelled()
+      val relayState = mutableStateOf(relay)
+      val f = testRelayConnection(relayState)
+      updatedRelays.removeAt(index)
+      updatedRelays.add(index, relayState.value)
+      onUpdated(updatedRelays.toList())
+      if (f != null) {
+        val name = relayState.value.displayName.ifEmpty { relayState.value.domains.firstOrNull() ?: relayState.value.address }
+        fs[name] = f
       }
     }
   }
@@ -400,6 +486,31 @@ fun deleteSMPServer(
       this[operatorServersIndex] = this[operatorServersIndex].copy(
         smpServers = this[operatorServersIndex].smpServers.toMutableList().apply {
           this.removeAt(serverIndex)
+        }
+      )
+    }
+  }
+}
+
+fun deleteChatRelay(
+  userServers: MutableState<List<UserOperatorServers>>,
+  operatorServersIndex: Int,
+  relayIndex: Int
+) {
+  val relay = userServers.value[operatorServersIndex].chatRelays[relayIndex]
+  if (relay.chatRelayId == null) {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        chatRelays = this[operatorServersIndex].chatRelays.toMutableList().apply {
+          this.removeAt(relayIndex)
+        }
+      )
+    }
+  } else {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        chatRelays = this[operatorServersIndex].chatRelays.toMutableList().apply {
+          this[relayIndex] = this[relayIndex].copy(deleted = true)
         }
       )
     }

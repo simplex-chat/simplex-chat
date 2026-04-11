@@ -5,6 +5,7 @@
 //  Created by Evgeny Poberezkin on 22/01/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/state.md
 
 import Foundation
 import Combine
@@ -53,6 +54,7 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
 }
 
 // analogue for SecondaryContextFilter in Kotlin
+// Spec: spec/state.md#SecondaryItemsModelFilter
 enum SecondaryItemsModelFilter {
     case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
     case msgContentTagContext(contentTag: MsgContentTag)
@@ -68,6 +70,7 @@ enum SecondaryItemsModelFilter {
 }
 
 // analogue for ChatsContext in Kotlin
+// Spec: spec/state.md#ItemsModel
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel(secondaryIMFilter: nil)
     public var secondaryIMFilter: SecondaryItemsModelFilter?
@@ -103,12 +106,14 @@ class ItemsModel: ObservableObject {
             .store(in: &bag)
     }
 
+    // Spec: spec/state.md#loadSecondaryChat
     static func loadSecondaryChat(_ chatId: ChatId, chatFilter: SecondaryItemsModelFilter, willNavigate: @escaping () -> Void = {}) {
         let im = ItemsModel(secondaryIMFilter: chatFilter)
         ChatModel.shared.secondaryIM = im
         im.loadOpenChat(chatId, willNavigate: willNavigate)
     }
 
+    // Spec: spec/state.md#loadOpenChat
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
         navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
@@ -134,6 +139,7 @@ class ItemsModel: ObservableObject {
         }
     }
 
+    // Spec: spec/state.md#loadOpenChatNoWait
     func loadOpenChatNoWait(_ chatId: ChatId, _ openAroundItemId: ChatItem.ID? = nil) {
         navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
@@ -179,6 +185,7 @@ class PreloadState {
     }
 }
 
+// Spec: spec/state.md#ChatTagsModel
 class ChatTagsModel: ObservableObject {
     static let shared = ChatTagsModel()
 
@@ -326,6 +333,30 @@ class ConnectProgressManager: ObservableObject {
     }
 }
 
+class ChannelRelaysModel: ObservableObject {
+    static let shared = ChannelRelaysModel()
+    @Published var groupId: Int64? = nil
+    @Published var groupRelays: [GroupRelay] = []
+
+    func set(groupId: Int64, groupRelays: [GroupRelay]) {
+        self.groupId = groupId
+        self.groupRelays = groupRelays
+    }
+
+    func updateRelay(_ groupInfo: GroupInfo, _ relay: GroupRelay) {
+        if groupId == groupInfo.groupId,
+           let i = groupRelays.firstIndex(where: { $0.groupRelayId == relay.groupRelayId }) {
+            groupRelays[i] = relay
+        }
+    }
+
+    func reset() {
+        groupId = nil
+        groupRelays = []
+    }
+}
+
+// Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -355,9 +386,13 @@ final class ChatModel: ObservableObject {
     @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
     @Published var chatToTop: String?
+    @Published var creatingChannelId: String?
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
+    // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
+    // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
+    @Published var channelRelayHostnames: [Int64: [String]] = [:]
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -383,6 +418,7 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     @Published var activeCallViewIsCollapsed = false
     // remote desktop
+    // Spec: spec/architecture.md#remoteCtrlSession
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation
     @Published var showingInvitation: ShowingInvitation?
@@ -423,6 +459,7 @@ final class ChatModel: ObservableObject {
         userAddress?.shortLinkDataSet ?? true
     }
 
+    // Spec: spec/state.md#getUser
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
         ? currentUser
@@ -433,6 +470,7 @@ final class ChatModel: ObservableObject {
         users.firstIndex { $0.user.userId == user.userId }
     }
 
+    // Spec: spec/state.md#updateUser
     func updateUser(_ user: User) {
         if let i = getUserIndex(user) {
             users[i].user = user
@@ -442,6 +480,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    // Spec: spec/state.md#removeUser
     func removeUser(_ user: User) {
         if let i = getUserIndex(user) {
             users.remove(at: i)
@@ -452,6 +491,7 @@ final class ChatModel: ObservableObject {
         chats.first(where: { $0.id == id }) != nil
     }
 
+    // Spec: spec/state.md#getChat
     func getChat(_ id: String) -> Chat? {
         chats.first(where: { $0.id == id })
     }
@@ -506,6 +546,7 @@ final class ChatModel: ObservableObject {
         chats.firstIndex(where: { $0.id == id })
     }
 
+    // Spec: spec/state.md#addChat
     func addChat(_ chat: Chat) {
         if chatId == nil {
             withAnimation { addChat_(chat, at: 0) }
@@ -519,6 +560,7 @@ final class ChatModel: ObservableObject {
         chats.insert(chat, at: position)
     }
 
+    // Spec: spec/state.md#updateChatInfo
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
@@ -570,6 +612,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    // Spec: spec/state.md#replaceChat
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
             chats[i] = chat
@@ -1054,6 +1097,7 @@ final class ChatModel: ObservableObject {
         NtfManager.shared.changeNtfBadgeCount(by: by)
     }
 
+    // Spec: spec/state.md#totalUnreadCountForAllUsers
     func totalUnreadCountForAllUsers() -> Int {
         var unread: Int = 0
         for chat in chats {
@@ -1153,6 +1197,7 @@ final class ChatModel: ObservableObject {
         return (prevMember, memberIds.count)
     }
 
+    // Spec: spec/state.md#popChat
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
             // no animation here, for it not to look like it just moved when leaving the chat
@@ -1176,13 +1221,25 @@ final class ChatModel: ObservableObject {
         showingInvitation?.connChatUsed = true
     }
 
+    // Spec: spec/state.md#removeChat
     func removeChat(_ id: String) {
+        var groupId: Int64?
         withAnimation {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
+                groupId = removed.chatInfo.groupInfo?.groupId
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
                 removeWallpaperFilesFromChat(removed)
             }
+        }
+        if chatId == id {
+            groupMembers = []
+            groupMembersIndexes.removeAll()
+            // Remove channelRelayHostnames for this channel only, preserving other prepared channels
+            if let gId = groupId {
+                channelRelayHostnames.removeValue(forKey: gId)
+            }
+            membersLoaded = false
         }
     }
 
@@ -1192,12 +1249,18 @@ final class ChatModel: ObservableObject {
             updateGroup(groupInfo)
             return false
         }
-        // update current chat
-        if chatId == groupInfo.id {
+        // update current chat or channel being created
+        if chatId == groupInfo.id || creatingChannelId == groupInfo.id {
             if let i = groupMembersIndexes[member.groupMemberId] {
+                let connStatusChanged = self.groupMembers[i].wrapped.activeConn?.connStatus != member.activeConn?.connStatus
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
+                }
+                // Updating wrapped on a reference-type GMember doesn't mutate the groupMembers array,
+                // so ChatModel.objectWillChange doesn't fire automatically — notify views explicitly.
+                if connStatusChanged {
+                    objectWillChange.send()
                 }
                 return false
             } else {
@@ -1248,6 +1311,7 @@ struct NTFContactRequest {
     var chatId: String
 }
 
+// Spec: spec/state.md#Chat
 final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]

@@ -5,6 +5,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
+import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -41,6 +42,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.TtlOptions
+import chat.simplex.common.views.newchat.SimpleXLinkQRCode
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -114,7 +116,7 @@ fun ModalData.GroupChatInfoView(
           }
         }
       },
-      showMemberInfo = { member ->
+      showMemberInfo = { member, groupRelay ->
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
@@ -126,7 +128,7 @@ fun ModalData.GroupChatInfoView(
           }
           ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, closeCurrent) {
+              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, groupRelay = groupRelay, close = closeCurrent) {
                 closeCurrent()
                 close()
               }
@@ -165,7 +167,7 @@ fun ModalData.GroupChatInfoView(
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays) }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -175,9 +177,14 @@ fun ModalData.GroupChatInfoView(
 
 fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val chatInfo = chat.chatInfo
-  val titleId = if (groupInfo.businessChat == null) MR.strings.delete_group_question else MR.strings.delete_chat_question
+  val titleId = if (groupInfo.useRelays) MR.strings.delete_channel_question
+    else if (groupInfo.businessChat == null) MR.strings.delete_group_question
+    else MR.strings.delete_chat_question
   val messageId =
-    if (groupInfo.businessChat == null) {
+    if (groupInfo.useRelays) {
+      if (groupInfo.membership.memberCurrent) MR.strings.delete_channel_for_all_subscribers_cannot_undo_warning
+      else MR.strings.delete_channel_for_self_cannot_undo_warning
+    } else if (groupInfo.businessChat == null) {
       if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
       else MR.strings.delete_group_for_self_cannot_undo_warning
     } else {
@@ -209,8 +216,12 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
 }
 
 fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  val titleId = if (groupInfo.businessChat == null) MR.strings.leave_group_question else MR.strings.leave_chat_question
-  val messageId = if (groupInfo.businessChat == null)
+  val titleId = if (groupInfo.useRelays) MR.strings.leave_channel_question
+    else if (groupInfo.businessChat == null) MR.strings.leave_group_question
+    else MR.strings.leave_chat_question
+  val messageId = if (groupInfo.useRelays)
+    MR.strings.you_will_stop_receiving_messages_from_this_channel_chat_history_will_be_preserved
+  else if (groupInfo.businessChat == null)
     MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved
   else
     MR.strings.you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved
@@ -229,12 +240,16 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
 }
 
 private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
-  val messageId = if (groupInfo.businessChat == null)
+  val titleId = if (groupInfo.useRelays) MR.strings.button_remove_subscriber_question
+    else MR.strings.button_remove_member_question
+  val messageId = if (groupInfo.useRelays)
+    MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone
+  else if (groupInfo.businessChat == null)
     MR.strings.member_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.member_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialogButtonsColumn(
-    generalGetString(MR.strings.button_remove_member_question),
+    generalGetString(titleId),
     generalGetString(messageId),
     buttons = {
       Column {
@@ -359,6 +374,22 @@ fun AddGroupMembersButton(
 }
 
 @Composable
+fun ChannelLinkActionButton(
+  modifier: Modifier,
+  groupInfo: GroupInfo,
+  manageGroupLink: () -> Unit
+) {
+  InfoViewActionButton(
+    modifier = modifier,
+    icon = painterResource(MR.images.ic_link),
+    title = stringResource(MR.strings.action_button_channel_link),
+    disabled = !groupInfo.ready,
+    disabledLook = !groupInfo.ready,
+    onClick = manageGroupLink
+  )
+}
+
+@Composable
 fun UserSupportChatButton(
   chat: Chat,
   groupInfo: GroupInfo,
@@ -409,7 +440,7 @@ fun ModalData.GroupChatInfoLayout(
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
   addMembers: () -> Unit,
-  showMemberInfo: (GroupMember) -> Unit,
+  showMemberInfo: (GroupMember, GroupRelay?) -> Unit,
   editGroupProfile: () -> Unit,
   addOrEditWelcomeMessage: () -> Unit,
   openMemberSupport: () -> Unit,
@@ -478,14 +509,19 @@ fun ModalData.GroupChatInfoLayout(
         Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
       ) {
+        val showThreeButtons = if (groupInfo.useRelays) groupInfo.isOwner else groupInfo.canAddMembers
         Row(
           Modifier
-            .widthIn(max = if (groupInfo.canAddMembers) 320.dp else 230.dp)
+            .widthIn(max = if (showThreeButtons) 320.dp else 230.dp)
             .padding(horizontal = DEFAULT_PADDING),
           horizontalArrangement = Arrangement.SpaceEvenly,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          if (groupInfo.canAddMembers) {
+          if (groupInfo.useRelays && groupInfo.isOwner) {
+            SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
+            ChannelLinkActionButton(modifier = Modifier.fillMaxWidth(0.5f), groupInfo, manageGroupLink)
+            MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
+          } else if (!groupInfo.useRelays && groupInfo.canAddMembers) {
             SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
             AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo)
             MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
@@ -498,59 +534,100 @@ fun ModalData.GroupChatInfoLayout(
 
       SectionSpacer()
 
-      var anyTopSectionRowShow = false
-      SectionView {
-        if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
-          anyTopSectionRowShow = true
-          if (groupLink == null) {
-            CreateGroupLinkButton(manageGroupLink)
-          } else {
-            GroupLinkButton(manageGroupLink)
+      if (groupInfo.useRelays && groupInfo.membership.memberIncognito) {
+        SectionView(generalGetString(MR.strings.incognito).uppercase()) {
+          SectionItemViewSpaceBetween {
+            Text(generalGetString(MR.strings.incognito_random_profile))
+            Text(groupInfo.membership.chatViewName, color = Indigo)
           }
         }
-        if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-          anyTopSectionRowShow = true
-          MemberSupportButton(chat, openMemberSupport)
+        SectionDividerSpaced()
+      }
+
+      var anyTopSectionRowShow = false
+      val channelLink = groupInfo.groupProfile.publicGroup?.groupLink
+      if (groupInfo.useRelays) {
+        SectionView {
+          if (groupInfo.isOwner && groupLink != null) {
+            anyTopSectionRowShow = true
+            ChannelLinkButton(manageGroupLink)
+          } else if (channelLink != null) {
+            anyTopSectionRowShow = true
+            ChannelLinkQRCodeSection(channelLink)
+          }
+          if (groupInfo.isOwner || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
+            anyTopSectionRowShow = true
+            ChannelMembersButton(chat.remoteHostId, groupInfo, showMemberInfo)
+          }
         }
-        if (groupInfo.canModerate) {
-          anyTopSectionRowShow = true
-          GroupReportsButton(chat) {
-            scope.launch {
-              showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
+        if (!groupInfo.isOwner && channelLink != null) {
+          SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))
+        }
+      } else {
+        SectionView {
+          if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
+            anyTopSectionRowShow = true
+            if (groupLink == null) {
+              CreateGroupLinkButton(manageGroupLink)
+            } else {
+              GroupLinkButton(manageGroupLink)
             }
           }
-        }
-        if (
-          groupInfo.membership.memberActive &&
-          (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
-        ) {
-          anyTopSectionRowShow = true
-          UserSupportChatButton(chat, groupInfo, scrollToItemId)
+          if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+            anyTopSectionRowShow = true
+            MemberSupportButton(chat, openMemberSupport)
+          }
+          if (groupInfo.canModerate) {
+            anyTopSectionRowShow = true
+            GroupReportsButton(chat) {
+              scope.launch {
+                showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
+              }
+            }
+          }
+          if (
+            groupInfo.membership.memberActive &&
+            (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
+          ) {
+            anyTopSectionRowShow = true
+            UserSupportChatButton(chat, groupInfo, scrollToItemId)
+          }
         }
       }
+      val showEditSection = (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)
+        || groupInfo.groupProfile.description != null
+        || !groupInfo.useRelays
       if (anyTopSectionRowShow) {
         SectionDividerSpaced(maxBottomPadding = false)
       }
-
-      SectionView {
-        if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
-          EditGroupProfileButton(editGroupProfile)
+      if (showEditSection) {
+        SectionView {
+          if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
+            val editProfileTitleId = if (groupInfo.useRelays) MR.strings.button_edit_channel_profile else MR.strings.button_edit_group_profile
+            EditGroupProfileButton(editProfileTitleId, editGroupProfile)
+          }
+          if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
+            AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
+          }
+          if (!groupInfo.useRelays) {
+            val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
+            GroupPreferencesButton(prefsTitleId, openPreferences)
+          }
         }
-        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
-          AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
+        if (!groupInfo.useRelays) {
+          val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
+          SectionTextFooter(stringResource(footerId))
         }
-        val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
-        GroupPreferencesButton(prefsTitleId, openPreferences)
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       }
-      val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
-      SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
       SectionView {
-        if (activeSortedMembers.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
-          SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
-        } else {
-          SendReceiptsOptionDisabled()
+        if (!groupInfo.useRelays) {
+          if (activeSortedMembers.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
+            SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
+          } else {
+            SendReceiptsOptionDisabled()
+          }
         }
         WallpaperButton {
           ModalManager.end.showModal {
@@ -566,7 +643,7 @@ fun ModalData.GroupChatInfoLayout(
       }
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
-      if (!groupInfo.nextConnectPrepared) {
+      if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
         SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
           if (groupInfo.canAddMembers) {
             val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
@@ -589,7 +666,7 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
     }
-    if (!groupInfo.nextConnectPrepared) {
+    if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
       items(filteredMembers.value, key = { it.groupMemberId }) { member ->
         Divider()
         val showMenu = remember { mutableStateOf(false) }
@@ -601,7 +678,7 @@ fun ModalData.GroupChatInfoLayout(
                 toggleItemSelection(member.groupMemberId, selectedItems)
               }
             } else {
-              showMemberInfo(member)
+              showMemberInfo(member, null)
             }
           },
           longClick = { showMenu.value = true },
@@ -622,18 +699,30 @@ fun ModalData.GroupChatInfoLayout(
       }
     }
     item {
-      if (!groupInfo.nextConnectPrepared) {
+      if (!groupInfo.nextConnectPrepared && !groupInfo.useRelays) {
         SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       }
       SectionView {
+        if (groupInfo.useRelays && (groupInfo.isOwner || activeSortedMembers.any { it.memberRole == GroupMemberRole.Relay })) {
+          ChannelRelaysButton(chat.remoteHostId, groupInfo, showMemberInfo)
+        }
         ClearChatButton(clearChat)
         if (groupInfo.canDelete) {
-          val titleId = if (groupInfo.businessChat == null) MR.strings.button_delete_group else MR.strings.button_delete_chat
+          val titleId = if (groupInfo.useRelays) MR.strings.button_delete_channel
+            else if (groupInfo.businessChat == null) MR.strings.button_delete_group
+            else MR.strings.button_delete_chat
           DeleteGroupButton(titleId, deleteGroup)
         }
         if (groupInfo.membership.memberCurrentOrPending) {
-          val titleId = if (groupInfo.businessChat == null) MR.strings.button_leave_group else MR.strings.button_leave_chat
-          LeaveGroupButton(titleId, leaveGroup)
+          val hasOtherOwner = activeSortedMembers.any {
+            it.memberRole == GroupMemberRole.Owner && it.groupMemberId != groupInfo.membership.groupMemberId
+          }
+          if (!groupInfo.useRelays || !groupInfo.isOwner || hasOtherOwner) {
+            val titleId = if (groupInfo.useRelays) MR.strings.button_leave_channel
+              else if (groupInfo.businessChat == null) MR.strings.button_leave_group
+              else MR.strings.button_leave_chat
+            LeaveGroupButton(titleId, leaveGroup)
+          }
         }
       }
 
@@ -775,6 +864,17 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
     ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+    if (groupInfo.useRelays) {
+      val count = groupInfo.groupSummary.publicMemberCount
+      if (count != null && count > 0) {
+        Text(
+          subscriberCountStr(count),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
+          modifier = Modifier.padding(bottom = 2.dp)
+        )
+      }
+    }
   }
 }
 
@@ -878,9 +978,11 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
   }
 
   fun memberConnStatus(): String {
-    return if (member.activeConn?.connDisabled == true) {
-      generalGetString(MR.strings.member_info_member_disabled)
+    return if (member.activeConn?.connStatus is ConnStatus.Failed) {
+      generalGetString(MR.strings.member_info_member_failed)
     } else if (member.activeConn?.connDisabled == true) {
+      generalGetString(MR.strings.member_info_member_disabled)
+    } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
     } else {
       member.memberStatus.shortText
@@ -1014,10 +1116,72 @@ private fun CreateGroupLinkButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun EditGroupProfileButton(onClick: () -> Unit) {
+private fun ChannelLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_link),
+    stringResource(MR.strings.channel_link),
+    onClick,
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+private fun ChannelLinkQRCodeSection(groupLink: String) {
+  val clipboard = LocalClipboardManager.current
+  SimpleXLinkQRCode(connReq = groupLink)
+  SectionItemView({
+    clipboard.shareText(simplexChatLink(groupLink))
+  }) {
+    Icon(painterResource(MR.images.ic_share), null, tint = MaterialTheme.colors.primary)
+    Spacer(Modifier.width(8.dp))
+    Text(stringResource(MR.strings.share_link), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ChannelMembersButton(rhId: Long?, groupInfo: GroupInfo, showMemberInfo: (GroupMember, GroupRelay?) -> Unit) {
+  val title = if (groupInfo.isOwner) {
+    stringResource(MR.strings.channel_members_title_subscribers)
+  } else {
+    stringResource(MR.strings.channel_members_section_owners)
+  }
+  SettingsActionItem(
+    painterResource(MR.images.ic_group),
+    title,
+    click = {
+      withBGApi {
+        setGroupMembers(rhId, groupInfo, chatModel)
+        ModalManager.end.showModalCloseable(true) { close ->
+          ChannelMembersView(rhId, groupInfo, chatModel, close) { member -> showMemberInfo(member, null) }
+        }
+      }
+    },
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+private fun ChannelRelaysButton(rhId: Long?, groupInfo: GroupInfo, showMemberInfo: (GroupMember, GroupRelay?) -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_wifi_tethering),
+    stringResource(MR.strings.button_channel_relays),
+    click = {
+      withBGApi {
+        setGroupMembers(rhId, groupInfo, chatModel)
+        ModalManager.end.showModalCloseable(true) { close ->
+          ChannelRelaysView(rhId, groupInfo, chatModel, close, showMemberInfo)
+        }
+      }
+    },
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+fun EditGroupProfileButton(titleId: StringResource = MR.strings.button_edit_group_profile, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_edit),
-    stringResource(MR.strings.button_edit_group_profile),
+    stringResource(titleId),
     onClick,
     iconColor = MaterialTheme.colors.secondary
   )
@@ -1145,7 +1309,7 @@ fun PreviewGroupChatInfoLayout() {
       appBar = remember { mutableStateOf(null) },
       scrollToItemId = remember { mutableStateOf(null) },
       addMembers = {},
-      showMemberInfo = {},
+      showMemberInfo = { _, _ -> },
       editGroupProfile = {},
       addOrEditWelcomeMessage = {},
       openMemberSupport = {},

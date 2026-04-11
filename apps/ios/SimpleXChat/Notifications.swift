@@ -5,6 +5,7 @@
 //  Created by Evgeny on 28/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/services/notifications.md
 
 import Foundation
 import UserNotifications
@@ -22,6 +23,7 @@ public let appNotificationId = "chat.simplex.app.notification"
 
 let contactHidden = NSLocalizedString("Contact hidden:", comment: "notification")
 
+// Spec: spec/services/notifications.md#createContactRequestNtf
 public func createContactRequestNtf(_ user: any UserLike, _ contactRequest: UserContactRequest, _ badgeCount: Int) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     return createNotification(
@@ -40,6 +42,7 @@ public func createContactRequestNtf(_ user: any UserLike, _ contactRequest: User
     )
 }
 
+// Spec: spec/services/notifications.md#createContactConnectedNtf
 public func createContactConnectedNtf(_ user: any UserLike, _ contact: Contact, _ badgeCount: Int) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     return createNotification(
@@ -59,6 +62,7 @@ public func createContactConnectedNtf(_ user: any UserLike, _ contact: Contact, 
     )
 }
 
+// Spec: spec/services/notifications.md#createMessageReceivedNtf
 public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem, _ badgeCount: Int) -> UNMutableNotificationContent {
     let previewMode = ntfPreviewModeGroupDefault.get()
     var title: String
@@ -70,7 +74,7 @@ public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ 
     return createNotification(
         categoryIdentifier: ntfCategoryMessageReceived,
         title: title,
-        body: previewMode == .message ? hideSecrets(cItem) : NSLocalizedString("new message", comment: "notification"),
+        body: previewMode == .message ? hideSecrets(cItem, isChannel: cInfo.isChannel) : NSLocalizedString("new message", comment: "notification"),
         targetContentIdentifier: cInfo.id,
         userInfo: ["userId": user.userId],
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
@@ -78,6 +82,7 @@ public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ 
     )
 }
 
+// Spec: spec/services/notifications.md#createCallInvitationNtf
 public func createCallInvitationNtf(_ invitation: RcvCallInvitation, _ badgeCount: Int) -> UNMutableNotificationContent {
     let text = invitation.callType.media == .video
                 ? NSLocalizedString("Incoming video call", comment: "notification")
@@ -93,6 +98,7 @@ public func createCallInvitationNtf(_ invitation: RcvCallInvitation, _ badgeCoun
     )
 }
 
+// Spec: spec/services/notifications.md#createConnectionEventNtf
 public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntity, _ badgeCount: Int) -> UNMutableNotificationContent {
     let hideContent = ntfPreviewModeGroupDefault.get() == .hidden
     var title: String
@@ -124,6 +130,7 @@ public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntit
     )
 }
 
+// Spec: spec/services/notifications.md#createErrorNtf
 public func createErrorNtf(_ dbStatus: DBMigrationResult, _ badgeCount: Int) -> UNMutableNotificationContent {
     var title: String
     switch dbStatus {
@@ -149,6 +156,7 @@ public func createErrorNtf(_ dbStatus: DBMigrationResult, _ badgeCount: Int) -> 
     )
 }
 
+// Spec: spec/services/notifications.md#createAppStoppedNtf
 public func createAppStoppedNtf(_ badgeCount: Int) -> UNMutableNotificationContent {
     return createNotification(
         categoryIdentifier: ntfCategoryConnectionEvent,
@@ -163,6 +171,7 @@ private func groupMsgNtfTitle(_ groupInfo: GroupInfo, _ groupMember: GroupMember
     : "#\(groupInfo.displayName) \(groupMember.chatViewName):"
 }
 
+// Spec: spec/services/notifications.md#createNotification
 public func createNotification(
     categoryIdentifier: String,
     title: String,
@@ -187,7 +196,8 @@ public func createNotification(
     return content
 }
 
-func hideSecrets(_ cItem: ChatItem) -> String {
+// Spec: spec/services/notifications.md#hideSecrets
+func hideSecrets(_ cItem: ChatItem, isChannel: Bool = false) -> String {
     if let md = cItem.formattedText {
         var res = ""
         for ft in md {
@@ -203,7 +213,7 @@ func hideSecrets(_ cItem: ChatItem) -> String {
         if case let .report(text, reason) = mc {
             return String.localizedStringWithFormat(NSLocalizedString("Report: %@", comment: "report in notification"), text.isEmpty ? reason.text : text)
         } else {
-            return cItem.text
+            return cItem.text(isChannel: isChannel)
         }
     }
 }

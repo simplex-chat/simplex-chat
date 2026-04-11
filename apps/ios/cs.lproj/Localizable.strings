@@ -1258,7 +1258,8 @@ swipe action */
 /* No comment provided by engineer. */
 "Delete message?" = "Smazat zprávu?";
 
-/* alert button */
+/* alert action
+alert button */
 "Delete messages" = "Smazat zprávy";
 
 /* No comment provided by engineer. */
@@ -1753,7 +1754,7 @@ snd error text */
 "Find chats faster" = "Najděte chaty rychleji";
 
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
+"Fingerprint in server address does not match certificate." = "Otisk certifikátu v adrese serveru neodpovídá.";
 
 /* No comment provided by engineer. */
 "Fix" = "Opravit";
@@ -2193,7 +2194,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Role člena se změní na \"%@\". Člen obdrží novou pozvánku.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Member will be removed from group - this cannot be undone!" = "Člen bude odstraněn ze skupiny - toto nelze vzít zpět!";
 
 /* No comment provided by engineer. */
@@ -2389,7 +2390,7 @@ snd error text */
 "no text" = "žádný text";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Bez uživatelských identifikátorů";
+"No user identifiers." = "Bez uživatelských identifikátorů.";
 
 /* No comment provided by engineer. */
 "Notifications" = "Oznámení";
@@ -2728,13 +2729,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Přenosový server chrání vaši IP adresu, ale může sledovat dobu trvání hovoru.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Remove" = "Odstranit";
 
 /* No comment provided by engineer. */
 "Remove member" = "Odstranit člena";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Odebrat člena?";
 
 /* No comment provided by engineer. */
@@ -2979,10 +2980,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Odeslané zprávy se po uplynutí nastavené doby odstraní.";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
+"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
+"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serveru se nezdařil!";

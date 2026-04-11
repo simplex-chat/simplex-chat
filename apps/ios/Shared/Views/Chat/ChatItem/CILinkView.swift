@@ -5,10 +5,12 @@
 //  Created by Ian Davies on 07/04/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
+// Spec: spec/client/chat-view.md
 
 import SwiftUI
 import SimpleXChat
 
+// Spec: spec/client/chat-view.md#CILinkView
 struct CILinkView: View {
     @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview
@@ -19,7 +21,8 @@ struct CILinkView: View {
             if let uiImage = imageFromBase64(linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
-                    .scaledToFit()
+                    .aspectRatio(1 / heightRatio(uiImage.size), contentMode: .fill)
+                    .clipped()
                     .modifier(PrivacyBlur(blurred: $blurred))
                     .if(!blurred) { v in
                         v.simultaneousGesture(TapGesture().onEnded {
