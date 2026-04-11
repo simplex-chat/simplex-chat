@@ -365,6 +365,7 @@
     "file-proto-p-4": "文件被分割成多个片段后，会通过独立运营商运营的网络路由器进行传输。任何运营商都无法看到文件的实际大小或名称。即使路由器遭到入侵，也只能看到固定大小的加密片段。网络路由器会将文件片段缓存约48小时。",
     "file-proto-spec": "阅读 XFTP 协议规范 →",
     "navbar-token": "Token 令牌",
+    "index-roadmap-now": "现在",
     "index-roadmap-1": "2026",
     "index-roadmap-2": "2027年6月",
     "index-roadmap-3": "2027年12月",
