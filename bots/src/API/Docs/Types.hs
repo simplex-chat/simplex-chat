@@ -237,6 +237,7 @@ chatTypesDocsData =
     (sti @Color, STEnum, "", [], "", ""),
     (sti @CommandError, STUnion, "", [], "", ""),
     (sti @CommandErrorType, STUnion, "", [], "", ""),
+    (sti @CommentsGroupPreference, STRecord, "", [], "", ""),
     (sti @ComposedMessage, STRecord, "", [], "", ""),
     (sti @Connection, STRecord, "", [], "", ""),
     (sti @ConnectionEntity, STUnion, "", [], "", ""),
@@ -435,6 +436,7 @@ deriving instance Generic ClientNotice
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
+deriving instance Generic CommentsGroupPreference
 deriving instance Generic ComposedMessage
 deriving instance Generic Connection
 deriving instance Generic ConnectionEntity
