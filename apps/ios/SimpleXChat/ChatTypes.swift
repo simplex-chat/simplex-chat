@@ -5093,9 +5093,9 @@ public enum RcvMsgError: Decodable, Hashable {
     var text: String {
         switch self {
         case let .dropped(attempts):
-            return String.localizedStringWithFormat(NSLocalizedString("removed after %d attempts", comment: "receive error chat item"), attempts)
+            return String.localizedStringWithFormat(NSLocalizedString("removed (%d attempts)", comment: "receive error chat item"), attempts)
         case let .parseError(parseError):
-            return String.localizedStringWithFormat(NSLocalizedString("message error: %@", comment: "receive error chat item"), parseError)
+            return String.localizedStringWithFormat(NSLocalizedString("error: %@", comment: "receive error chat item"), parseError)
         }
     }
 }
