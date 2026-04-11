@@ -135,7 +135,7 @@ You may participate in a public group and receive content from a public channel 
   - to retain a copy of your messages according to the Group settings (e.g., the Group may allow irreversible message deletion from the recipient devices for a limited period of time, or it may only allow to edit and mark messages as deleted on recipient devices). Deleting message from the recipient devices or marking message as deleted revokes the license to share the message.
 - to Group owners: to share your messages with the new Group members as history of the Group. Currently, the Group history shared with the new members is limited to 100 messages.
 
-Group owners may use chat relays or other automated bots to re-broadcast member messages to all members, for efficiency. The chat relays may be operated by the group owners, by preset operators or by 3rd parties. The chat relays receive and re-send messages as group members — they access the same end-to-end encrypted content as other members. Messages are retained by chat relays only for the duration needed to deliver them to group members, in line with Group settings. Neither you nor group owners grant any content license to chat relay operators.
+Group owners may use chat relays or other automated bots to re-broadcast member messages to all members, for efficiency. The chat relays may be operated by the group owners, by preset operators or by 3rd parties. The chat relays are client applications on SimpleX network — they can see the content of public group messages, but cannot identify participants. Messages are retained only for the duration needed to deliver them to group members, in line with Group settings. Neither you nor group owners grant any content license to chat relay operators.
 
 #### User Support
 
