@@ -5088,11 +5088,14 @@ public enum MsgErrorType: Decodable, Hashable {
 
 public enum RcvMsgError: Decodable, Hashable {
     case dropped(attempts: Int)
+    case parseError(parseError: String)
 
     var text: String {
         switch self {
         case let .dropped(attempts):
             return String.localizedStringWithFormat(NSLocalizedString("removed after %d attempts", comment: "receive error chat item"), attempts)
+        case let .parseError(parseError):
+            return String.localizedStringWithFormat(NSLocalizedString("message error: %@", comment: "receive error chat item"), parseError)
         }
     }
 }

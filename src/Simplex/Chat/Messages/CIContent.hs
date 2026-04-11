@@ -197,7 +197,9 @@ data MsgDecryptError
   | MDERatchetSync
   deriving (Eq, Show)
 
-data RcvMsgError = RMEDropped {attempts :: Int}
+data RcvMsgError
+  = RMEDropped {attempts :: Int}
+  | RMEParseError {parseError :: Text}
   deriving (Eq, Show)
 
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
@@ -430,6 +432,7 @@ msgIntegrityError = \case
 rcvMsgErrorText :: RcvMsgError -> Text
 rcvMsgErrorText = \case
   RMEDropped {attempts} -> "message removed after " <> tshow attempts <> " attempts"
+  RMEParseError {parseError} -> "message error: " <> parseError
 
 msgDecryptErrorText :: MsgDecryptError -> Word32 -> Text
 msgDecryptErrorText err n =

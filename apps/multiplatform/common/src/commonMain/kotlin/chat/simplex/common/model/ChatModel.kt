@@ -4728,9 +4728,11 @@ sealed class MsgErrorType() {
 @Serializable
 sealed class RcvMsgError() {
   @Serializable @SerialName("dropped") class Dropped(val attempts: Int): RcvMsgError()
+  @Serializable @SerialName("parseError") class ParseError(val parseError: String): RcvMsgError()
 
   val text: String get() = when (this) {
     is Dropped -> String.format(generalGetString(MR.strings.rcv_msg_error_dropped), attempts)
+    is ParseError -> String.format(generalGetString(MR.strings.rcv_msg_error_parse), parseError)
   }
 }
 

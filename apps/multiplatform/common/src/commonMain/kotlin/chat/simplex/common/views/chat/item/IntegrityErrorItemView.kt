@@ -80,8 +80,13 @@ fun RcvMsgErrorItemView(rcvMsgError: RcvMsgError, ci: ChatItem, showTimestamp: B
     when (rcvMsgError) {
       is RcvMsgError.Dropped ->
         AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.alert_title_msg_reception_error),
+          title = generalGetString(MR.strings.alert_title_msg_error),
           text = String.format(generalGetString(MR.strings.alert_text_msg_reception_error), rcvMsgError.attempts)
+        )
+      is RcvMsgError.ParseError ->
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.alert_title_msg_error),
+          text = rcvMsgError.parseError
         )
     }
   }

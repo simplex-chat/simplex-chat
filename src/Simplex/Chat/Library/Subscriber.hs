@@ -493,7 +493,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
-                eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+                createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                  `catchAllErrors` \_ -> pure ()
             withRcpt <- checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
             pure (withRcpt, False)
           where
@@ -964,7 +965,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
-              eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+              unless (isUserGrpFwdRelay gInfo') $
+                createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                  `catchAllErrors` \_ -> pure ()
               pure newDeliveryTasks
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
           processEvent gInfo' m' verifiedMsg = do

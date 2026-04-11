@@ -87,8 +87,13 @@ struct RcvMsgErrorItemView: View {
             switch rcvMsgError {
             case let .dropped(attempts):
                 AlertManager.shared.showAlertMsg(
-                    title: NSLocalizedString("Message reception error", comment: "alert title"),
-                    message: String.localizedStringWithFormat(NSLocalizedString("This message failed to be received after %d attempts and was removed by the app.", comment: "alert message"), attempts)
+                    title: "Message error",
+                    message: "This message failed to be received after \(attempts) attempts and was removed by the app."
+                )
+            case let .parseError(parseError):
+                AlertManager.shared.showAlertMsg(
+                    title: "Message error",
+                    message: "\(parseError)"
                 )
             }
         }
