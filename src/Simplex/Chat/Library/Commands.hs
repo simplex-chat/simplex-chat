@@ -1486,20 +1486,6 @@ processChatCommand vr nm = \case
       aUserServer (AProtoServerWithAuth p' srv) = case testEquality p p' of
         Just Refl -> pure $ AUS SDBNew $ newUserServer srv
         Nothing -> throwCmdError $ "incorrect server protocol: " <> B.unpack (strEncode srv)
-  APITestDroppedMsg (ChatRef cType chatId _scope) -> withUser $ \user -> case cType of
-    CTDirect -> do
-      ct <- withFastStore $ \db -> getContact db vr user chatId
-      createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgError $ RMEDropped 5) Nothing
-      ok user
-    CTGroup -> do
-      g <- withFastStore $ \db -> getGroupInfo db vr user chatId
-      ms <- withFastStore' $ \db -> getGroupMembers db vr user g
-      case filter memberCurrent ms of
-        (m : _) -> do
-          createInternalChatItem user (CDGroupRcv g Nothing m) (CIRcvMsgError $ RMEDropped 5) Nothing
-          ok user
-        _ -> throwCmdError "no members"
-    _ -> throwCmdError "not supported"
   APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
@@ -4830,7 +4816,6 @@ chatCommandP =
       "/_members #" *> (APIListMembers <$> A.decimal),
       -- "/_archive conversations #" *> (APIArchiveGroupConversations <$> A.decimal <*> _strP),
       -- "/_delete conversations #" *> (APIDeleteGroupConversations <$> A.decimal <*> _strP),
-      "/_test_dropped " *> (APITestDroppedMsg <$> chatRefP),
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
       "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
