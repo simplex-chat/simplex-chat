@@ -117,7 +117,9 @@ You can read more about the design of iOS push notifications [here](./blog/20220
 
 #### Another information stored on the servers
 
-Additional technical information can be stored on the network servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX network design limits this additional technical information to the minimum required to operate the software and servers. To prevent server overloading or attacks, the servers can temporarily store data that can link to particular user devices, including IP addresses, geographic location, or information related to the transport sessions. Because SimpleX servers do not create user accounts and do not store any identifiers linking transport data to message queues or user profiles, this technical data cannot be used by server operators to identify any person. This information is not stored for the absolute majority of the app users, even for those who use the servers very actively.
+Additional technical information can be stored on the network servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX network design limits this additional technical information to the minimum required to operate the software and servers. To prevent server overloading or attacks, the servers can temporarily store data that can link to particular users or devices, including IP addresses, geographic location, or information related to the transport sessions. This information is not stored for the absolute majority of the app users, even for those who use the servers very actively.
+
+Because SimpleX servers do not create user accounts and do not store any identifiers linking transport data to message queues or user profiles, this technical data cannot be used by server operators to identify any person.
 
 #### SimpleX Directory
 
