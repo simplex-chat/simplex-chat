@@ -799,12 +799,11 @@ parseChatMessages msg = case B.head msg of
     decodeCompressed :: ByteString -> [Either String AParsedMsg]
     decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) ->
-        case traverse decompressedSize compressed of
-          Nothing -> [Left "compressed size not specified"]
-          Just sizes
-            | sum sizes > maxDecompressedMsgLength -> [Left "total decompressed size exceeds limit"]
-            | otherwise -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> case traverse decompressedSize compressed of
+        Nothing -> [Left "compressed size not specified"]
+        Just sizes
+          | sum sizes > maxDecompressedMsgLength -> [Left "decompressed size exceeds limit"]
+          | otherwise -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1) compressed
     parseUncompressed' "" = [Left "empty string"]
     parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*

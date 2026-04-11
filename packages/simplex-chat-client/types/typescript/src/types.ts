@@ -278,6 +278,7 @@ export type CIContent =
   | CIContent.RcvCall
   | CIContent.RcvIntegrityError
   | CIContent.RcvDecryptionError
+  | CIContent.RcvMsgError
   | CIContent.RcvGroupInvitation
   | CIContent.SndGroupInvitation
   | CIContent.RcvDirectEvent
@@ -312,6 +313,7 @@ export namespace CIContent {
     | "rcvCall"
     | "rcvIntegrityError"
     | "rcvDecryptionError"
+    | "rcvMsgError"
     | "rcvGroupInvitation"
     | "sndGroupInvitation"
     | "rcvDirectEvent"
@@ -381,6 +383,11 @@ export namespace CIContent {
     type: "rcvDecryptionError"
     msgDecryptError: MsgDecryptError
     msgCount: number // word32
+  }
+
+  export interface RcvMsgError extends Interface {
+    type: "rcvMsgError"
+    rcvMsgError: RcvMsgError
   }
 
   export interface RcvGroupInvitation extends Interface {
@@ -2075,6 +2082,11 @@ export interface CryptoFileArgs {
   fileNonce: string
 }
 
+export interface DroppedMsg {
+  brokerTs: string // ISO-8601 timestamp
+  attempts: number // int
+}
+
 export interface E2EInfo {
   pqEnabled?: boolean
 }
@@ -3606,6 +3618,26 @@ export namespace RcvGroupEvent {
   }
 }
 
+export type RcvMsgError = RcvMsgError.Dropped | RcvMsgError.ParseError
+
+export namespace RcvMsgError {
+  export type Tag = "dropped" | "parseError"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Dropped extends Interface {
+    type: "dropped"
+    attempts: number // int
+  }
+
+  export interface ParseError extends Interface {
+    type: "parseError"
+    parseError: string
+  }
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3681,6 +3713,7 @@ export namespace SMPAgentError {
 
   export interface A_DUPLICATE extends Interface {
     type: "A_DUPLICATE"
+    droppedMsg_?: DroppedMsg
   }
 
   export interface A_QUEUE extends Interface {
