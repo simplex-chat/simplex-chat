@@ -395,6 +395,7 @@ data ChatCommand
   | APIAcceptMemberContact ContactId
   | GetUserProtoServers AProtocolType
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
+  | APITestDroppedMsg ChatRef
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
   | GetUserChatRelays
