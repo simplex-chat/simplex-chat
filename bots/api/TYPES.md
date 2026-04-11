@@ -70,6 +70,7 @@ This file is generated automatically.
 - [CreatedConnLink](#createdconnlink)
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
+- [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
 - [FeatureAllowed](#featureallowed)
@@ -149,6 +150,7 @@ This file is generated automatically.
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
+- [RcvMsgError](#rcvmsgerror)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
@@ -453,6 +455,10 @@ RcvDecryptionError:
 - type: "rcvDecryptionError"
 - msgDecryptError: [MsgDecryptError](#msgdecrypterror)
 - msgCount: word32
+
+RcvMsgError:
+- type: "rcvMsgError"
+- rcvMsgError: [RcvMsgError](#rcvmsgerror)
 
 RcvGroupInvitation:
 - type: "rcvGroupInvitation"
@@ -1811,6 +1817,15 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 **Record type**:
 - fileKey: string
 - fileNonce: string
+
+
+---
+
+## DroppedMsg
+
+**Record type**:
+- brokerTs: UTCTime
+- attempts: int
 
 
 ---
@@ -3194,6 +3209,21 @@ MsgBadSignature:
 
 ---
 
+## RcvMsgError
+
+**Discriminated union type**:
+
+Dropped:
+- type: "dropped"
+- attempts: int
+
+ParseError:
+- type: "parseError"
+- parseError: string
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3261,6 +3291,7 @@ A_CRYPTO:
 
 A_DUPLICATE:
 - type: "A_DUPLICATE"
+- droppedMsg_: [DroppedMsg](#droppedmsg)?
 
 A_QUEUE:
 - type: "A_QUEUE"
