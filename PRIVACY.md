@@ -178,7 +178,7 @@ Users can independently [reproduce builds](./docs/REPRODUCE.md) to verify that t
 
 This Privacy Policy applies to SimpleX Chat Ltd and all other preset server operators you use in the app.
 
-This Privacy Policy may be updated as needed so that it is current, accurate, and as clear as possible. When it is updated, the updated version will be published at the same location. This Privacy Policy describes how data is handled in SimpleX network — it is not an agreement, and it applies to the extent that any data is processed through the operation of SimpleX network. We encourage you to review it periodically.
+This Privacy Policy may be updated as needed so that it is current, accurate, and as clear as possible. When it is updated, you will have to review and accept the changed policy within 30 days of such changes to continue using preset relay servers. Even if you fail to accept the changed policy, your continued use of SimpleX Chat software applications and preset relay servers confirms your acceptance of the updated Privacy Policy.
 
 Please also read The Conditions of Use of Software and Infrastructure below.
 
