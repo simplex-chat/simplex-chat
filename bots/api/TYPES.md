@@ -1487,7 +1487,7 @@ LARGE:
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
-- closeAfter: int?
+- duration: int?
 
 
 ---

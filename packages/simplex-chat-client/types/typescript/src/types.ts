@@ -1716,7 +1716,7 @@ export namespace CommandErrorType {
 
 export interface CommentsGroupPreference {
   enable: GroupFeatureEnabled
-  closeAfter?: number // int
+  duration?: number // int
 }
 
 export interface ComposedMessage {
