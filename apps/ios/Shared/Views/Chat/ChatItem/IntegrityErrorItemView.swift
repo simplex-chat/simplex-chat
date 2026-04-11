@@ -88,7 +88,7 @@ struct RcvMsgErrorItemView: View {
             case let .dropped(attempts):
                 AlertManager.shared.showAlertMsg(
                     title: "Message error",
-                    message: "This message failed to be received after \(attempts) attempts and was removed by the app."
+                    message: "The app removed this message after \(attempts) failed attempts to receive it."
                 )
             case let .parseError(parseError):
                 AlertManager.shared.showAlertMsg(
