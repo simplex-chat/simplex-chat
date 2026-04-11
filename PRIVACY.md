@@ -99,9 +99,7 @@ Preset and unmodified SimpleX relay servers do not store information about which
 
 When you create a connection with another user, the app generates a one-time link/QR code that can be shared with the user to establish the connection via any channel (email, any other messenger, or a video call). This link is safe to share via insecure channels, as long as you can identify the recipient and also trust that this channel did not replace this link (to mitigate the latter risk you can validate the security code via the app).
 
-Starting from v6.4 of SimpleX Chat apps the connection links contain the domain name of the server that will be used to establish the connection.
-
-One-time connection link provides access to profile name and picture that you shared with your contact, but only once. Once the link is used by your contact it becomes inaccessible. Profile name and picture are temporarily stored on the server used to establish the connection in encrypted form, the server cannot access this data without having the link, and this data is removed from the server once the connection is established.
+The connection link contains the address of the server used to establish the connection. Your profile name and picture are stored on this server in encrypted form until your contact uses the link, after which this data is removed. The server cannot access this data without the link.
 
 The old connection "links" contained SimpleX Chat Ltd domain name `simplex.chat`, but this site is never accessed by the app - you could replace the initial part of the old link `https://simplex.chat/` either with `simplex:/` or with any other domain name.
 
