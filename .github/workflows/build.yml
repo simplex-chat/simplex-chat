@@ -235,7 +235,7 @@ jobs:
           strip /out/simplex-chat
 
       - name: Build CLI deb
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           version=${{ github.ref }}
@@ -252,7 +252,7 @@ jobs:
 
       - name: Copy CLI from container and prepare it
         id: linux_cli_prepare
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        if: matrix.should_run == true
         shell: bash
         run: |
           cli_name="simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}"
@@ -270,104 +270,47 @@ jobs:
           echo "deb_path=${cli_path}/${cli_deb_name}" >> $GITHUB_OUTPUT
           echo "deb_hash=$(echo SHA2-256\(${cli_deb_name}\)= $(openssl sha256 "${cli_path}/${cli_deb_name}" | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_name: ${{ steps.linux_cli_prepare.outputs.bin_name }}
-          bin_path: ${{ steps.linux_cli_prepare.outputs.bin_path }}
-          bin_hash: ${{ steps.linux_cli_prepare.outputs.bin_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload CLI deb
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_name: ${{ steps.linux_cli_prepare.outputs.deb_name }}
-          bin_path: ${{ steps.linux_cli_prepare.outputs.deb_path }}
-          bin_hash: ${{ steps.linux_cli_prepare.outputs.deb_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build Desktop
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/make-deb-linux.sh
 
       - name: Prepare Desktop
         id: linux_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        if: matrix.should_run == true
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_${{ matrix.arch }}.deb )
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload Desktop
-        uses: ./.github/actions/prepare-release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+      - uses: actions/upload-artifact@v6
+        if: matrix.should_run == true
         with:
-          bin_path: ${{ steps.linux_desktop_build.outputs.package_path }}
-          bin_name: simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb
-          bin_hash: ${{ steps.linux_desktop_build.outputs.package_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          name: simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb
+          path: ${{ steps.linux_desktop_build.outputs.package_path }}
 
       - name: Build AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
+        if: matrix.os == '22.04' && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/make-appimage-linux.sh
 
       - name: Prepare AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
+        if: matrix.os == '22.04' && matrix.should_run == true
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
           echo "appimage_path=$path" >> $GITHUB_OUTPUT
           echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-${{ matrix.arch }}.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
-          bin_name: "simplex-desktop-${{ matrix.arch }}.AppImage"
-          bin_hash: ${{ steps.linux_appimage_build.outputs.appimage_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fix permissions for cache
+      - uses: actions/upload-artifact@v6
         if: matrix.should_run == true
-        shell: bash
-        run: |
-          sudo chmod -R 777 dist-newstyle ~/.cabal
-          sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
-
-      - name: Run tests
-        if: matrix.should_run == true && matrix.arch == 'x86_64'
-        timeout-minutes: 120
-        shell: bash
-        run: |
-          i=1
-          attempts=1
-          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
-          while [ "$i" -le "$attempts" ]; do
-            if ./simplex-chat-test; then
-              break
-            else
-              echo "Attempt $i failed, retrying..."
-              i=$((i + 1))
-              sleep 1
-            fi
-          done
-          if [ "$i" -gt "$attempts" ]; then
-            echo "All "$attempts" attempts failed."
-            exit 1
-          fi
+        with:
+          name: "simplex-desktop-${{ matrix.arch }}.AppImage"
+          path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
 
 # =========================
 #        MacOS Build
@@ -428,19 +371,8 @@ jobs:
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.mac_cli_build.outputs.bin_path }}
-          bin_name: ${{ matrix.cli_asset_name }}
-          bin_hash: ${{ steps.mac_cli_build.outputs.bin_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build Desktop
         id: mac_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -452,36 +384,10 @@ jobs:
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload Desktop
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
+      - uses: actions/upload-artifact@v6
         with:
-          bin_path: ${{ steps.mac_desktop_build.outputs.package_path }}
-          bin_name: ${{ matrix.desktop_asset_name }}
-          bin_hash: ${{ steps.mac_desktop_build.outputs.package_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run tests
-        timeout-minutes: 120
-        shell: bash
-        run: |
-          i=1
-          attempts=1
-          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
-          while [ "$i" -le "$attempts" ]; do
-            if cabal test --test-show-details=direct; then
-              break
-            else
-              echo "Attempt $i failed, retrying..."
-              i=$((i + 1))
-              sleep 1
-            fi
-          done
-          if [ "$i" -gt "$attempts" ]; then
-            echo "All "$attempts" attempts failed."
-            exit 1
-          fi
+          name: ${{ matrix.desktop_asset_name }}
+          path: ${{ steps.mac_desktop_build.outputs.package_path }}
 
 # =========================
 #      Windows Build
@@ -555,19 +461,8 @@ jobs:
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
-        with:
-          bin_path: ${{ steps.windows_cli_build.outputs.bin_path }}
-          bin_name: ${{ matrix.cli_asset_name }}
-          bin_hash: ${{ steps.windows_cli_build.outputs.bin_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build Desktop
         id: windows_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
@@ -579,101 +474,7 @@ jobs:
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
-      - name: Upload Desktop
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: ./.github/actions/prepare-release
+      - uses: actions/upload-artifact@v6
         with:
-          bin_path: ${{ steps.windows_desktop_build.outputs.package_path }}
-          bin_name: ${{ matrix.desktop_asset_name }}
-          bin_hash: ${{ steps.windows_desktop_build.outputs.package_hash }}
-          github_ref: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-# =========================
-#   NodeJS libs release
-# =========================
-
-# Downloads Desktop builds, extracts and archives libraries for NodeJS addon.
-# Depends on Linux/MacOS, executes only on release.
-
-# Secrets:
-# -------
-# NODEJS_REPO_TOKEN
-#  Only select repositories: simplex-chat-libs 
-#  Permissions:
-#   * Contents (Read and Write)
-
-  release-nodejs-libs:
-    runs-on: ubuntu-latest
-    needs: [build-linux, build-macos]
-    if: startsWith(github.ref, 'refs/tags/v') && (!cancelled())
-    steps:
-      - name: Checkout current repository
-        uses: actions/checkout@v6
-
-      - name: Install packages for archiving
-        run: sudo apt install -y msitools gcc-mingw-w64
-
-      - name: Build archives
-        run: |
-          INIT_DIR='${{ runner.temp }}/artifacts'
-          RELEASE_DIR='${{ runner.temp }}/release-assets'
-          TAG='${{ github.ref_name }}'
-          URL='https://github.com/${{ github.repository }}/releases/download'
-          PREFIX='${{ github.event.repository.name }}-libs'
-          # Windows-specific
-          FILE_URL='https://raw.githubusercontent.com/${{ github.repository }}/refs/tags/${{ github.ref_name }}'
-
-          # Setup directories
-          mkdir "$INIT_DIR" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Downlaod desktop release
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-ubuntu-22_04-x86_64.deb" -o linux.deb
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-aarch64.dmg" -o macos-aarch64.dmg
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-x86_64.dmg" -o macos-x86_64.dmg
-          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-windows-x86_64.msi" -o windows-x86_64.msi
-
-          # Linux
-          # -----
-          # Extract libraries
-          dpkg-deb -R linux.deb linux-out/ && cd linux-out/opt/simplex/lib/app/resources
-          # Preprare directory
-          mkdir libs && cp *.so libs/
-          # Archive
-          zip -r "${PREFIX}-linux-x86_64.zip" libs
-          # Back to original dir
-          mv "${PREFIX}-linux-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # MacOS: aarch64
-          # --------------
-          7z x macos-aarch64.dmg -omacos1-out/ && cd macos1-out/SimpleX/SimpleX.app/Contents/app/resources/
-          mkdir libs && cp *.dylib libs/
-          zip -r "${PREFIX}-macos-aarch64.zip" libs
-          mv "${PREFIX}-macos-aarch64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Macos: x86_64
-          # -------------
-          7z x macos-x86_64.dmg -omacos2-out/ && cd macos2-out/SimpleX/SimpleX.app/Contents/app/resources/
-          mkdir libs && cp *.dylib libs/
-          zip -r "${PREFIX}-macos-x86_64.zip" libs
-          mv "${PREFIX}-macos-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-          # Windows: x86_64
-          # ---------------
-          msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
-
-          # We need to generate library that exports symbols from Windows dll
-          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
-          x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
-
-          mkdir libs && cp *.dll *.lib libs/
-          zip -r "${PREFIX}-windows-x86_64.zip" libs
-          mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
-
-      - name: Create release in libs repo and upload artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: ${{ github.repository }}-libs
-          tag_name: ${{ github.ref_name }}
-          files: ${{ runner.temp }}/release-assets/*
-          token: ${{ secrets.NODEJS_REPO_TOKEN }}
+          name: ${{ matrix.desktop_asset_name }}
+          path: ${{ steps.windows_desktop_build.outputs.package_path }}
