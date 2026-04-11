@@ -2330,7 +2330,7 @@
     <string name="network_smp_web_port_footer">Použít TCP port %1$s, když není zadán žádný port.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Tento odkaz byl použit s jiným mobilním zařízením, vytvořte na počítači nový odkaz.</string>
     <string name="v6_3_mentions_descr">Získejte upozornění, když jste zmíněni.</string>
-    <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX adresa a 1 rázové odkazy je bezpečné sdílet přes všechny komunikátory.</string>
+    <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX adresa a jednorázové odkazy je bezpečné sdílet přes všechny komunikátory.</string>
     <string name="moderate_messages_will_be_deleted_warning">Zprávy budou smazány pro všechny členy.</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikace vyžaduje potvrzení stahování z neznámých serverů (s výjimkou .onion nebo při aktivaci SOCKS proxy).</string>
     <string name="you_need_to_allow_calls">Musíte povolit kontaktům volání, abyste jim mohli zavolat.</string>
