@@ -965,9 +965,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
-              unless (isUserGrpFwdRelay gInfo') $
-                createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
-                  `catchAllErrors` \_ -> pure ()
+              if let GroupInfo {membership = ms} = gInfo' in isRelay ms
+                then eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+                else
+                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                    `catchAllErrors` \_ -> pure ()
               pure newDeliveryTasks
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
           processEvent gInfo' m' verifiedMsg = do
