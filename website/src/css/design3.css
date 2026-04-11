@@ -699,10 +699,10 @@ main .section-bg {
     color: #ffffff;
 }
 
-.label-now  { left: 46.54%; top: 88.16%; }
-.label-2025 { left: 59.5%; top: 75.0%; }
-.label-2026 { left: 72.5%; top: 61.8%; }
-.label-2027 { left: 85.5%; top: 48.5%; }
+.roadmap-label-1  { left: 46.54%; top: 88.16%; }
+.roadmap-label-2 { left: 59.5%; top: 75.0%; }
+.roadmap-label-3 { left: 72.5%; top: 61.8%; }
+.roadmap-label-4 { left: 85.5%; top: 48.5%; }
 
 
 .dark .page-5 {
@@ -804,10 +804,10 @@ main .section-bg {
 
     .dark .roadmap-label { background: rgba(30, 58, 112, 0.85); }
 
-    .label-now  { display: none; }
-    .label-2025 { left: 75.36%; top: 45.8%; }
-    .label-2026 { left: 7.6%;  top: 34.9%; }
-    .label-2027 { left: 75.36%; top: 24.54%; }
+    .roadmap-label-1  { display: none; }
+    .roadmap-label-2 { left: 75.36%; top: 45.8%; }
+    .roadmap-label-3 { left: 7.6%;  top: 34.9%; }
+    .roadmap-label-4 { left: 75.36%; top: 24.54%; }
 }
 
 .page .text-container {
