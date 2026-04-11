@@ -45,7 +45,7 @@ SimpleX software is similar in its design approach to email clients and browsers
 
 SimpleX network operators are not communication service provider, and provide public relays "as is", as experimental, without any guarantees of availability or data retention. The operators of the relay servers preset in the app ("Preset Server Operators"), including SimpleX Chat Ltd, are committed to maintain a high level of availability, reliability and security. SimpleX client apps can have multiple preset relay server operators that you can opt-in or opt-out of using. You are and will continue to be able to use any other operators or your own servers.
 
-SimpleX network design is based on the principles of users' and data sovereignty, and device and operator portability.
+SimpleX network design is based on the principles of user and data sovereignty, and device and operator portability.
 
 The implementation security assessment of SimpleX cryptography and networking was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about), and most fixes were released in v4.2 – see [the announcement](/blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
 
@@ -117,7 +117,7 @@ You can read more about the design of iOS push notifications [here](./blog/20220
 
 #### Another information stored on the servers
 
-Additional technical information can be stored on the network servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX network design limits this additional technical information to the minimum required to operate the software and servers. To prevent server overloading or attacks, the servers can temporarily store data that can link to particular user devices, including IP addresses, geographic location, or information related to the transport sessions. This information is not stored for the absolute majority of the app users, even for those who use the servers very actively.
+Additional technical information can be stored on the network servers, including randomly generated authentication tokens, keys, push tokens, and other material that is necessary to transmit messages. SimpleX network design limits this additional technical information to the minimum required to operate the software and servers. To prevent server overloading or attacks, the servers can temporarily store data that can link to particular user devices, including IP addresses, geographic location, or information related to the transport sessions. Because SimpleX servers do not create user accounts and do not store any identifiers linking transport data to message queues or user profiles, this technical data cannot be used by server operators to identify any person. This information is not stored for the absolute majority of the app users, even for those who use the servers very actively.
 
 #### SimpleX Directory
 
@@ -135,7 +135,7 @@ You may participate in a public group and receive content from a public channel 
   - to retain a copy of your messages according to the Group settings (e.g., the Group may allow irreversible message deletion from the recipient devices for a limited period of time, or it may only allow to edit and mark messages as deleted on recipient devices). Deleting message from the recipient devices or marking message as deleted revokes the license to share the message.
 - to Group owners: to share your messages with the new Group members as history of the Group. Currently, the Group history shared with the new members is limited to 100 messages.
 
-Group owners may use chat relays or other automated bots to re-broadcast member messages to all members, for efficiency. The chat relays may be operated by the group owners, by preset operators or by 3rd parties. The chat relays have access to and will retain messages in line with Group settings, for technical functioning of the Group. Neither you nor group owners grant any content license to chat relay operators.
+Group owners may use chat relays or other automated bots to re-broadcast member messages to all members, for efficiency. The chat relays may be operated by the group owners, by preset operators or by 3rd parties. The chat relays receive and re-send messages as group members — they access the same end-to-end encrypted content as other members. Messages are retained by chat relays only for the duration needed to deliver them to group members, in line with Group settings. Neither you nor group owners grant any content license to chat relay operators.
 
 #### User Support
 
@@ -178,11 +178,11 @@ Users can independently [reproduce builds](./docs/REPRODUCE.md) to verify that t
 
 This Privacy Policy applies to SimpleX Chat Ltd and all other preset server operators you use in the app.
 
-This Privacy Policy may be updated as needed so that it is current, accurate, and as clear as possible. When it is updated, you will have to review and accept the changed policy within 30 days of such changes to continue using preset relay servers. Even if you fail to accept the changed policy, your continued use of SimpleX Chat software applications and preset relay servers confirms your acceptance of the updated Privacy Policy.
+This Privacy Policy may be updated as needed so that it is current, accurate, and as clear as possible. When it is updated, the updated version will be published at the same location. This Privacy Policy describes how data is handled in SimpleX network — it is not an agreement, and it applies to the extent that any data is processed through the operation of SimpleX network. We encourage you to review it periodically.
 
 Please also read The Conditions of Use of Software and Infrastructure below.
 
-If you have questions about this Privacy Policy please contact SimpleX Chat Ltd via [email](mailto:chat@simplex.chat) or [chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw).
+SimpleX Chat Ltd (company number 13691484, registered at 20-22 Wenlock Road, London, United Kingdom N1 7GU) is responsible for this Privacy Policy. For questions about this Privacy Policy or data protection, please contact us via [email](mailto:chat@simplex.chat) or [chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw).
 
 ## Conditions of Use of Software and Infrastructure
 
@@ -192,7 +192,7 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Infrastructure**. Infrastructure of the preset server operators includes messaging and file relay servers. SimpleX Chat Ltd also provides iOS push notification servers for public use. This infrastructure does not have any modifications from the [published open-source code](https://github.com/simplex-chat/simplexmq) available under AGPLv3 license. Any infrastructure provider, whether commercial or not, is required by the Affero clause (named after Affero Inc. company that pioneered the community-based Q&A sites in early 2000s) to publish any modifications under the same license. The statements in relation to Infrastructure and relay servers anywhere in this document assume no modifications to the published code, even in the cases when it is not explicitly stated.
 
-**Client applications**. SimpleX Chat client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on SimpleX Chat code are required to publish any modifications under the same AGPLv3 license. Client applications must not include any tracking code, and do not share any tracking information with SimpleX Chat Ltd, preset server operators or any other third parties. If you ever discover any tracking or analytics code, please report it to SimpleX Chat Ltd, so it can be removed. Client applications must not include any code that could compromise the security of end-to-end encryption of file and messages. Client applications must not send anything not directly required for users communications without explicit users' consent.
+**Client applications**. SimpleX Chat client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on SimpleX Chat code are required to publish any modifications under the same AGPLv3 license. Client applications must not include any tracking code, and do not share any tracking information with SimpleX Chat Ltd, preset server operators or any other third parties. If you ever discover any tracking or analytics code, please report it to SimpleX Chat Ltd, so it can be removed. Client applications must not include any code that could compromise the security of end-to-end encryption of files and messages. Client applications must not send anything not directly required for users communications without explicit users' consent.
 
 **Opt-in usage analytics**. Currently the client applications do not include any usage analytics, but we are considering to add opt-in aggregate analytics to improve the quality and reliability of software.
 
@@ -202,7 +202,7 @@ Analytics data:
 - must only contain aggregate event counts associated with the app features and/or specific preset server addresses.
 - must NOT contain any content, display names, 3rd party server addresses, message or event timestamps <sup>*</sup>, or any other data or metadata associated with the user.
 - must NOT be sent more frequently than once per day <sup>*</sup>.
-- must only be sent only via SimpleX messaging, not by directly connecting to any servers, to prevent correlation of analytics data with user IP addresses.
+- must only be sent via SimpleX messaging, not by directly connecting to any servers, to prevent correlation of analytics data with user IP addresses.
 
 Users should be able to review analytics data before or after it is sent, depending on the choice during enabling analytics.
 
