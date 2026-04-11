@@ -193,7 +193,7 @@
     "simplex-explained-tab-1-p-1": "Můžete vytvářet kontakty a skupiny a vést obousměrné konverzace, stejně jako v jakémkoli jiném messengeru.",
     "simplex-explained-tab-3-p-2": "Uživatelé mohou dále zlepšit soukromí metadat pomocí Tor pro přístup k serverům, což zabraňuje korelaci podle IP adresy.",
     "hero-p-1": "Jiné aplikace mají uživatelská ID: Signal, Matrix, Session, Briar, Jami, Cwtch atd.<br> SimpleX ne, <strong>ani náhodná čísla</strong>.<br> To radikálně zlepšuje vaše soukromí.",
-    "hero-2-header-desc": "Video ukazuje, jak se spojit se svým přítelem prostřednictvím jeho jednorázového QR kódu, osobně nebo prostřednictvím QR kódu ve videu. Můžete se také připojit sdílením pozvánky.",
+    "hero-2-header-desc": "Video ukazuje, jak se spojit s jedním přítelem prostřednictvím jeho jednorázového QR kódu, osobně nebo prostřednictvím QR kódu ve videu. Můžete se také připojit sdílením odkazu pozvánky.",
     "feature-2-title": "E2E šifrované<br>obrázky, videa a soubory",
     "feature-5-title": "Mizící tajné konverzace",
     "simplex-private-1-title": "2-vrstvé<br>end-to-end šifrování",
