@@ -168,9 +168,7 @@ The cases when the preset server operators may share the data temporarily stored
 - To detect, prevent, or otherwise address fraud, security, or technical issues.
 - To protect against harm to the rights, property, or safety of software users, operators of preset servers, or the public as required or permitted by law.
 
-By the time of updating this document, the preset server operators did not provide any information from the servers to any third parties. If the preset server operators are ever requested to provide such access or information, they will follow the due legal process to limit any information shared with the third parties to the minimally required by law.
-
-Preset server operators will publish information they are legally allowed to share about such requests in the [Transparency reports](./docs/TRANSPARENCY.md).
+The preset server operators have received law enforcement requests (see [Transparency reports](./docs/TRANSPARENCY.md)). No user data was provided in response to any requests. If the preset server operators are ever required to provide information, they will follow the due legal process to limit any information shared to the minimally required by law.
 
 ### Source code license
 
