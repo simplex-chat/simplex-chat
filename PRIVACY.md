@@ -194,20 +194,6 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Client applications**. SimpleX Chat client application Software (referred to as "app" or "apps") also has no modifications compared with published open-source code, and any developers of the alternative client apps based on SimpleX Chat code are required to publish any modifications under the same AGPLv3 license. Client applications must not include any tracking code, and do not share any tracking information with SimpleX Chat Ltd, preset server operators or any other third parties. If you ever discover any tracking or analytics code, please report it to SimpleX Chat Ltd, so it can be removed. Client applications must not include any code that could compromise the security of end-to-end encryption of files and messages. Client applications must not send anything not directly required for users communications without explicit users' consent.
 
-**Opt-in usage analytics**. Currently the client applications do not include any usage analytics, but we are considering to add opt-in aggregate analytics to improve the quality and reliability of software.
-
-Before any analytics data can be sent, the user should be asked to opt-in into sharing such data.
-
-Analytics data:
-- must only contain aggregate event counts associated with the app features and/or specific preset server addresses.
-- must NOT contain any content, display names, 3rd party server addresses, message or event timestamps <sup>*</sup>, or any other data or metadata associated with the user.
-- must NOT be sent more frequently than once per day <sup>*</sup>.
-- must only be sent via SimpleX messaging, not by directly connecting to any servers, to prevent correlation of analytics data with user IP addresses.
-
-Users should be able to review analytics data before or after it is sent, depending on the choice during enabling analytics.
-
-<sup>*</sup> It prevents correlating analytics between users.
-
 **Accessing the infrastructure**. For the efficiency of the network access, the client Software by default accesses all queues your app creates on any relay server within one user profile via the same network (TCP/IP) connection. At the cost of additional traffic this configuration can be changed to use different transport session for each connection. Relay servers do not log or collect information about which queues were created or accessed via the same connection, so the relay servers cannot establish which queues belong to the same user profile. Whoever might observe your network traffic would know which relay servers you use, and how much data you send, but not to whom it is sent - the data that leaves the servers is always different from the data they receive - there are no identifiers or ciphertext in common, even inside TLS encryption layer. Please refer to the [technical design document](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information about the privacy model and known security and privacy limitations.
 
 **Privacy of user data**. Servers do not retain any data you transmit for any longer than necessary to deliver the messages between apps. Preset server operators collect aggregate statistics across all their servers, as supported by published code and can be enabled by any infrastructure operator, but not any statistics per-user, or per geographic location, or per IP address, or per transport session. SimpleX Chat Ltd does not have information about how many people use SimpleX Chat applications, it only knows an approximate number of app installations and the aggregate traffic through the preset servers. In any case, preset server operators do not and will not sell or in any way monetize user data. The future business model assumes charging for some optional Software features or for the provision of server infrastructure to large channels and groups instead, in a transparent and fair way.
