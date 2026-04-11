@@ -37,7 +37,7 @@ If you believe that any part of this document is not aligned with SimpleX networ
 
 ### General principles
 
-SimpleX network software uses the best industry practices for security and encryption to provide client and server software for secure [end-to-end encrypted](/docs/GLOSSARY.md#end-to-end-encryption) messaging via private connections. This encryption is protected from being compromised by the relays servers, even if they are modified or compromised, via [man-in-the-middle attack](/docs/GLOSSARY.md#man-in-the-middle-attack).
+SimpleX network uses established industry practices for security and encryption to provide secure [end-to-end encrypted](/docs/GLOSSARY.md#end-to-end-encryption) messaging via private connections. This encryption is protected from [man-in-the-middle attack](/docs/GLOSSARY.md#man-in-the-middle-attack) by the relay servers, even if they are modified or compromised.
 
 SimpleX software is built on top of SimpleX messaging and application protocols, based on a new message routing protocol allowing to establish private connections without having identifiers assigned to its users - it does not use emails, phone numbers, usernames, identity keys or any other user profile identifiers to pass messages between the user applications.
 
