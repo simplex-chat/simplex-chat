@@ -966,7 +966,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               if isRelay membership
-                then eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+                then
+                  eToView (ChatError . CEException $ "error parsing chat message: " <> e)
                 else
                   createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
                     `catchAllErrors` \_ -> pure ()
@@ -1185,8 +1186,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
-      ERR e@(AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts})))
-        | isRelay membership -> eToView $ ChatErrorAgent e (AgentConnId agentConnId) (Just connEntity)
+      ERR err@(AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts})))
+        | isRelay membership ->
+            eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         | otherwise -> do
             (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
             createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEDropped attempts) (Just brokerTs)
