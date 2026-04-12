@@ -84,12 +84,13 @@ struct RcvMsgErrorItemView: View {
 
     var body: some View {
         CIMsgError(chat: chat, chatItem: chatItem) {
-            AlertManager.shared.showAlertMsg(
-                title: "Message error",
-                message: switch rcvMsgError {
+            let message: LocalizedStringKey = switch rcvMsgError {
                 case let .dropped(attempts): "The app removed this message after \(attempts) attempts to receive it."
                 case let .parseError(parseError): "\(parseError)"
                 }
+            AlertManager.shared.showAlertMsg(
+                title: "Message error",
+                message: message
             )
         }
     }
