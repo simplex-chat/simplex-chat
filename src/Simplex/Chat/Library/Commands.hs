@@ -1919,7 +1919,7 @@ processChatCommand vr nm = \case
     where
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
-        let short = isJust $ connShortLink =<< connLinkInv
+        let short = isJust $ connShortLink' =<< connLinkInv
             userLinkData_
               | short = Just $ UserInvLinkData $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
               | otherwise = Nothing
@@ -2060,7 +2060,7 @@ processChatCommand vr nm = \case
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
       GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
-        sLnk <- case toShortLinkContact connLinkToConnect of
+        sLnk <- case connShortLink' connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
@@ -2216,7 +2216,7 @@ processChatCommand vr nm = \case
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
-    let ccLink'' = if isTrue userChatRelay then createdRelayLink ccLink' else ccLink'
+    let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
     withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode
     pure $ CRUserContactLinkCreated user ccLink''
   CreateMyAddress -> withUser $ \User {userId} ->
@@ -2438,8 +2438,8 @@ processChatCommand vr nm = \case
             crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with entityId as linkEntityId (no server request)
         (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) rootKey entityId True (Just crClientData)
-        ccLink' <- createdChannelLink <$> shortenCreatedLink ccLink
-        sLnk <- case toShortLinkContact ccLink' of
+        ccLink' <- setShortLinkType CCTChannel <$> shortenCreatedLink ccLink
+        sLnk <- case connShortLink' ccLink' of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
         -- generate owner key, OwnerAuth signed by root key
@@ -2910,7 +2910,7 @@ processChatCommand vr nm = \case
         crClientData = encodeJSON $ CRDataGroup groupLinkId
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
-    ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+    ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
     gVar <- asks random
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo gLink
@@ -4070,7 +4070,7 @@ processChatCommand vr nm = \case
       encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {displayName, fullName, shortDescr, image}}
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
-      forM (connShortLink =<< connLinkInv) $ \_ -> do
+      forM (connShortLink' =<< connLinkInv) $ \_ -> do
         let userData = contactShortLinkData profile Nothing
             userLinkData = UserInvLinkData userData
         shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userLinkData Nothing)
