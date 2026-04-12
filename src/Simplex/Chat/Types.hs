@@ -29,7 +29,7 @@ module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -880,13 +880,18 @@ data GroupRelayInvitation = GroupRelayInvitation
 data PublicGroupInvitation = PublicGroupInvitation
   { groupProfile :: GroupProfile,
     groupOwner :: Maybe GroupOwnerSig,
-    groupSize :: Maybe Int
+    groupSize :: Int
   }
   deriving (Eq, Show)
 
+-- | Owner's proof of channel ownership, included in PublicGroupInvitation.
+-- Signature is over: smpEncode chatBinding <> binding <> invitationBody
+-- where chatBinding is determined from context (CBDirect / CBGroup).
 data GroupOwnerSig = GroupOwnerSig
   { memberId :: MemberId,
-    bindingData :: ByteString,
+    -- | Context binding: ratchetAdHash (direct chat) or smpEncode (publicGroupId, memberId) (public group).
+    -- Verifier computes expected value from context and compares — mismatch indicates MitM or wrong context.
+    binding :: B64UrlByteString,
     ownerSig :: C.Signature 'C.Ed25519
   }
   deriving (Eq, Show)
@@ -2117,19 +2122,7 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
-instance ToJSON GroupOwnerSig where
-  toJSON GroupOwnerSig {memberId, bindingData, ownerSig} =
-    J.object ["memberId" .= memberId, "bindingData" .= strToJSON bindingData, "ownerSig" .= strToJSON (C.signatureBytes ownerSig)]
-  toEncoding GroupOwnerSig {memberId, bindingData, ownerSig} =
-    J.pairs ("memberId" .= memberId <> "bindingData" .= strToJSON bindingData <> "ownerSig" .= strToJSON (C.signatureBytes ownerSig))
-
-instance FromJSON GroupOwnerSig where
-  parseJSON = J.withObject "GroupOwnerSig" $ \o -> do
-    memberId <- o .: "memberId"
-    bindingData <- strParseJSON "bindingData" =<< o .: "bindingData"
-    sigBytes <- strParseJSON "ownerSig" =<< o .: "ownerSig"
-    ownerSig <- either fail pure $ C.decodeSignature sigBytes
-    pure GroupOwnerSig {memberId, bindingData, ownerSig}
+$(JQ.deriveJSON defaultJSON ''GroupOwnerSig)
 
 $(JQ.deriveJSON defaultJSON ''PublicGroupInvitation)
 
