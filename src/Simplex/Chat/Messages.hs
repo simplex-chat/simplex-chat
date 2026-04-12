@@ -563,7 +563,8 @@ dummyMeta itemId ts itemText =
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
-    deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
+    deleteAt :: Maybe UTCTime, -- this is initially Nothing for received items, the timer starts when they are read
+    hardExpiryAt :: Maybe UTCTime -- absolute wall-clock expiry, set at send time, independent of read state
   }
   deriving (Show)
 
@@ -584,6 +585,11 @@ groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessa
   | enable == FEOn = Just ttl
   | otherwise = Nothing
 
+-- | Get the group's hard expiry duration (seconds), if set.
+groupHardExpiryDuration :: GroupInfo -> Maybe Int
+groupHardExpiryDuration GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {hardExpiryDuration}}} =
+  hardExpiryDuration
+
 rcvContactCITimed :: Contact -> Maybe Int -> Maybe CITimed
 rcvContactCITimed = rcvCITimed_ . contactTimedTTL
 
@@ -591,7 +597,7 @@ rcvGroupCITimed :: GroupInfo -> Maybe Int -> Maybe CITimed
 rcvGroupCITimed = rcvCITimed_ . groupTimedTTL
 
 rcvCITimed_ :: Maybe (Maybe Int) -> Maybe Int -> Maybe CITimed
-rcvCITimed_ chatTTL itemTTL = (`CITimed` Nothing) <$> (chatTTL >> itemTTL)
+rcvCITimed_ chatTTL itemTTL = (\t -> CITimed t Nothing Nothing) <$> (chatTTL >> itemTTL)
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,

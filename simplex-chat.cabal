@@ -130,6 +130,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
           Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays
           Simplex.Chat.Store.Postgres.Migrations.M20260403_item_viewed
+          Simplex.Chat.Store.Postgres.Migrations.M20260412_hard_expiry
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -282,6 +283,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260122_has_link
           Simplex.Chat.Store.SQLite.Migrations.M20260222_chat_relays
           Simplex.Chat.Store.SQLite.Migrations.M20260403_item_viewed
+          Simplex.Chat.Store.SQLite.Migrations.M20260412_hard_expiry
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

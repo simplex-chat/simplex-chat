@@ -469,7 +469,7 @@ emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing Not
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
   FullGroupPreferences
-    { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = Just 86400},
+    { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = Just 86400, hardExpiryDuration = Just 604800},
       directMessages = DirectMessagesGroupPreference {enable = FEOff, role = Nothing},
       fullDelete = FullDeleteGroupPreference {enable = FEOff, role = Nothing},
       reactions = ReactionsGroupPreference {enable = FEOn},
@@ -489,7 +489,7 @@ emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothi
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
   defaultBusinessGroupPrefs
-    { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages},
+    { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages, hardExpiryDuration = Just 604800},
       fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete, role = Nothing},
       reactions = Just ReactionsGroupPreference {enable = maybe FEOn enableFeature reactions},
       voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing},
@@ -506,7 +506,7 @@ businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, fil
 defaultBusinessGroupPrefs :: GroupPreferences
 defaultBusinessGroupPrefs =
   GroupPreferences
-    { timedMessages = Just $ TimedMessagesGroupPreference FEOff Nothing,
+    { timedMessages = Just $ TimedMessagesGroupPreference FEOff Nothing (Just 604800),
       directMessages = Just $ DirectMessagesGroupPreference FEOff Nothing,
       fullDelete = Just $ FullDeleteGroupPreference FEOn (Just GRModerator),
       reactions = Just $ ReactionsGroupPreference FEOn,
@@ -611,7 +611,8 @@ data GroupPreference = GroupPreference
 
 data TimedMessagesGroupPreference = TimedMessagesGroupPreference
   { enable :: GroupFeatureEnabled,
-    ttl :: Maybe Int
+    ttl :: Maybe Int,
+    hardExpiryDuration :: Maybe Int -- seconds; mandatory hard expiry for group messages, min 3600 (1h), max 2592000 (30d), default 604800 (7d)
   }
   deriving (Eq, Show)
 

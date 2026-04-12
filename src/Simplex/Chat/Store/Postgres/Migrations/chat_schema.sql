@@ -324,6 +324,7 @@ CREATE TABLE test_chat_schema.chat_items (
     item_edited smallint,
     timed_ttl bigint,
     timed_delete_at timestamp with time zone,
+    hard_expiry_at timestamp with time zone,
     item_live smallint,
     item_deleted_by_group_member_id bigint,
     item_deleted_ts timestamp with time zone,
@@ -2024,6 +2025,8 @@ CREATE INDEX idx_chat_items_notes_created_at ON test_chat_schema.chat_items USIN
 
 
 CREATE INDEX idx_chat_items_timed_delete_at ON test_chat_schema.chat_items USING btree (user_id, timed_delete_at);
+
+CREATE INDEX idx_chat_items_hard_expiry_at ON test_chat_schema.chat_items USING btree (user_id, hard_expiry_at);
 
 
 
