@@ -29,7 +29,7 @@ module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
-import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -874,6 +874,20 @@ data GroupRelayInvitation = GroupRelayInvitation
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
     groupLink :: ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data PublicGroupInvitation = PublicGroupInvitation
+  { groupProfile :: GroupProfile,
+    groupOwner :: Maybe GroupOwnerSig,
+    groupSize :: Maybe Int
+  }
+  deriving (Eq, Show)
+
+data GroupOwnerSig = GroupOwnerSig
+  { memberId :: MemberId,
+    bindingData :: ByteString,
+    ownerSig :: C.Signature 'C.Ed25519
   }
   deriving (Eq, Show)
 
@@ -2102,6 +2116,22 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
+
+instance ToJSON GroupOwnerSig where
+  toJSON GroupOwnerSig {memberId, bindingData, ownerSig} =
+    J.object ["memberId" .= memberId, "bindingData" .= strToJSON bindingData, "ownerSig" .= strToJSON (C.signatureBytes ownerSig)]
+  toEncoding GroupOwnerSig {memberId, bindingData, ownerSig} =
+    J.pairs ("memberId" .= memberId <> "bindingData" .= strToJSON bindingData <> "ownerSig" .= strToJSON (C.signatureBytes ownerSig))
+
+instance FromJSON GroupOwnerSig where
+  parseJSON = J.withObject "GroupOwnerSig" $ \o -> do
+    memberId <- o .: "memberId"
+    bindingData <- strParseJSON "bindingData" =<< o .: "bindingData"
+    sigBytes <- strParseJSON "ownerSig" =<< o .: "ownerSig"
+    ownerSig <- either fail pure $ C.decodeSignature sigBytes
+    pure GroupOwnerSig {memberId, bindingData, ownerSig}
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

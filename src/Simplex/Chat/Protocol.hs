@@ -318,7 +318,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding = CBGroup
+data ChatBinding = CBGroup | CBDirect
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -381,10 +381,13 @@ instance Encoding KeyRef where
       c -> fail $ "invalid KeyRef tag: " <> show c
 
 instance Encoding ChatBinding where
-  smpEncode CBGroup = "G"
+  smpEncode = \case
+    CBGroup -> "G"
+    CBDirect -> "D"
   smpP =
     A.anyChar >>= \case
       'G' -> pure CBGroup
+      'D' -> pure CBDirect
       c -> fail $ "invalid ChatBinding: " <> show c
 
 instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode

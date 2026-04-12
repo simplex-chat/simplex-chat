@@ -3781,7 +3781,7 @@ processChatCommand vr nm = \case
                 groupSize = Just currentMemCount
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
-      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = Nothing}) memRole
       timed_ <- contactCITimed ct
       ci <- saveSndChatItem' user (CDDirectSnd ct) msg content Nothing Nothing Nothing timed_ False
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
