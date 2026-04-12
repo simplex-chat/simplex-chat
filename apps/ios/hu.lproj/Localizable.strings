@@ -543,7 +543,7 @@ swipe action */
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Az összes partnerével továbbra is kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Az összes partnere, -beszélgetése és -fájlja biztonságosan titkosítva lesz, majd töredékekre bontva feltöltődnek a beállított XFTP-továbbítókiszolgálókra.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Az összes partnere, -beszélgetése és -fájlja biztonságosan titkosítva lesz, majd töredékekre bontva feltöltődnek a beállított XFTP-átjátszókra.";
 
 /* No comment provided by engineer. */
 "Allow" = "Engedélyezés";
@@ -636,7 +636,7 @@ swipe action */
 "Always use private routing." = "Mindig legyen használva privát útválasztás.";
 
 /* No comment provided by engineer. */
-"Always use relay" = "Mindig legyen használva továbbítókiszolgáló";
+"Always use relay" = "Mindig legyen használva átjátszó";
 
 /* No comment provided by engineer. */
 "An empty chat profile with the provided name is created, and the app opens as usual." = "Egy üres csevegési profil lesz létrehozva a megadott névvel, és az alkalmazás a szokásos módon megnyílik.";
@@ -1248,7 +1248,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Megerősítve";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Kapcsolódás";
 
 /* No comment provided by engineer. */
@@ -1352,6 +1353,9 @@ set passcode view */
 
 /* chat list item title (it should not be shown */
 "connection established" = "kapcsolat létrehozva";
+
+/* No comment provided by engineer. */
+"Connection failed" = "Nem sikerült létrehozni a kapcsolatot";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "A kiszolgáló üzemeltetője letiltotta a kapcsolatot:\n%@";
@@ -1464,7 +1468,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Sarok";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Helyesbíti a nevet a következőre: %@?";
 
 /* No comment provided by engineer. */
@@ -1834,13 +1838,13 @@ alert button */
 "Desktop devices" = "Számítógépek";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "A(z) %@ célkiszolgáló címe nem kompatibilis a(z) %@ továbbítókiszolgáló beállításaival.";
+"Destination server address of %@ is incompatible with forwarding server %@ settings." = "A(z) %@ célkiszolgáló címe nem kompatibilis a(z) %@ továbbító kiszolgáló beállításaival.";
 
 /* snd error text */
 "Destination server error: %@" = "Célkiszolgáló-hiba: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "A(z) %@ célkiszolgáló verziója nem kompatibilis a(z) %@ továbbítókiszolgálóval.";
+"Destination server version of %@ is incompatible with forwarding server %@." = "A(z) %@ célkiszolgáló verziója nem kompatibilis a(z) %@ továbbító kiszolgálóval.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Részletes statisztikák";
@@ -2249,7 +2253,7 @@ chat item action */
 "Error checking token status" = "Hiba történt a token állapotának ellenőrzésekor";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "Hiba történt a(z) %@ továbbítókiszolgálóhoz való kapcsolódáskor. Próbálja meg később.";
+"Error connecting to forwarding server %@. Please try later." = "Hiba történt a(z) %@ továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.";
 
 /* subscription status explanation */
 "Error connecting to the server used to receive messages from this connection: %@" = "Hiba történt a kapcsolódáskor ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál: %@";
@@ -2337,9 +2341,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error opening chat" = "Hiba történt a csevegés megnyitásakor";
-
-/* No comment provided by engineer. */
-"Error opening group" = "Hiba történt a csoport megnyitásakor";
 
 /* alert title */
 "Error receiving file" = "Hiba történt a fájl fogadásakor";
@@ -2454,7 +2455,8 @@ file error text
 snd error text */
 "Error: %@" = "Hiba: %@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "Hiba: %@.";
 
 /* No comment provided by engineer. */
@@ -2501,6 +2503,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Exporting database archive…" = "Adatbázis-archívum exportálása…";
+
+/* No comment provided by engineer. */
+"failed" = "sikertelen";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Nem sikerült eltávolítani a jelmondatot";
@@ -2599,12 +2604,13 @@ snd error text */
 "Fingerprint in destination server address does not match certificate: %@." = "A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
 
 /* No comment provided by engineer. */
-"Fingerprint in forwarding server address does not match certificate: %@." = "A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
+"Fingerprint in forwarding server address does not match certificate: %@." = "A továbbító kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
 
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal.";
 
 /* No comment provided by engineer. */
@@ -2628,7 +2634,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Az összes moderátor számára";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "A(z) %@ nevű csevegési profilhoz:";
 
 /* No comment provided by engineer. */
@@ -2677,19 +2684,19 @@ snd error text */
 "Forwarding %lld messages" = "%lld üzenet továbbítása";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "A(z) %1$@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %2$@ célkiszolgálóhoz. Próbálja meg később.";
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "A(z) %1$@ továbbító kiszolgáló nem tudott kapcsolódni a(z) %2$@ célkiszolgálóhoz. Próbálja meg később.";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "A továbbítókiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.";
+"Forwarding server address is incompatible with network settings: %@." = "A továbbító kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "A továbbítókiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %@.";
+"Forwarding server version is incompatible with network settings: %@." = "A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %@.";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "Továbbítókiszolgáló: %1$@\nCélkiszolgáló-hiba: %2$@";
+"Forwarding server: %@\nDestination server error: %@" = "Továbbító kiszolgáló: %1$@\nCélkiszolgáló-hiba: %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "Továbbítókiszolgáló: %1$@\nHiba: %2$@";
+"Forwarding server: %@\nError: %@" = "Továbbító kiszolgáló: %1$@\nHiba: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Megtalált számítógép";
@@ -2871,6 +2878,9 @@ snd error text */
 /* No comment provided by engineer. */
 "If you enter your self-destruct passcode while opening the app:" = "Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:";
 
+/* down migration warning */
+"If you joined or created channels, they will stop working permanently." = "Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.";
+
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Ha most kell használnia a csevegést, koppintson lentebb a **Befejezés később** beállításra (az alkalmazás újraindításakor fel lesz ajánlva az adatbázis átköltöztetése).";
 
@@ -3042,7 +3052,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Érvénytelen átköltöztetési visszaigazolás";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Érvénytelen név!";
 
 /* No comment provided by engineer. */
@@ -4128,7 +4138,7 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Az előre beállított kiszolgáló címe";
+"Preset server address" = "Előre beállított kiszolgáló címe";
 
 /* No comment provided by engineer. */
 "Preset servers" = "Előre beállított kiszolgálók";
@@ -4236,7 +4246,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "Védje meg a csevegési profiljait egy jelszóval!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Védje az IP-címét a partnerei által kiválasztott üzenetváltási továbbítókiszolgálókkal szemben.\nEngedélyezze a *Hálózat és kiszolgálók* menüben.";
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Védje az IP-címét a partnerei által kiválasztott üzenetváltási átjátszókkal szemben.\nEngedélyezze a *Hálózat és kiszolgálók* menüben.";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "Protokoll időtúllépése a háttérben";
@@ -4403,10 +4413,10 @@ swipe action */
 "rejected call" = "elutasított hívás";
 
 /* No comment provided by engineer. */
-"Relay server is only used if necessary. Another party can observe your IP address." = "A továbbítókiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címét.";
+"Relay server is only used if necessary. Another party can observe your IP address." = "Az átjátszó csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címét.";
 
 /* No comment provided by engineer. */
-"Relay server protects your IP address, but it can observe the duration of the call." = "A továbbítókiszolgáló megvédi az IP-címét, de megfigyelheti a hívás időtartamát.";
+"Relay server protects your IP address, but it can observe the duration of the call." = "Az átjátszó megvédi az IP-címét, de megfigyelheti a hívás időtartamát.";
 
 /* alert action */
 "Remove" = "Eltávolítás";
@@ -5172,9 +5182,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "A SimpleX protokollokat a Trail of Bits auditálta.";
 
-/* simplex link type */
-"SimpleX relay link" = "SimpleX továbbítókiszolgáló-hivatkozás";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Egyszerűsített inkognitómód";
 
@@ -5380,7 +5387,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Ideiglenes fájlhiba";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "A teszt a(z) %@ lépésnél sikertelen volt.";
 
 /* No comment provided by engineer. */
@@ -5924,7 +5932,7 @@ report reason */
 "via one-time link" = "egy egyszer használható meghívón keresztül";
 
 /* No comment provided by engineer. */
-"via relay" = "továbbítókiszolgálón keresztül";
+"via relay" = "átjátszón keresztül";
 
 /* No comment provided by engineer. */
 "Via secure quantum resistant protocol." = "Biztonságos kvantumbiztos protokollon keresztül.";
@@ -6071,7 +6079,7 @@ report reason */
 "Without Tor or VPN, your IP address will be visible to file servers." = "Tor vagy VPN nélkül az IP-címe láthatóvá válik a fájlkiszolgálók számára.";
 
 /* alert message */
-"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő XFTP-továbbítókiszolgálók számára: %@.";
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő XFTP-átjátszók számára: %@.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Érvénytelen adatbázis-jelmondat";

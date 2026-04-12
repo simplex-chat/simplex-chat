@@ -650,7 +650,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Confirm password" = "Vahvista salasana";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Yhdistä";
 
 /* No comment provided by engineer. */
@@ -1429,7 +1430,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Löydä keskustelut nopeammin";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
 
 /* No comment provided by engineer. */
@@ -2848,7 +2850,8 @@ chat item action */
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Testi epäonnistui vaiheessa %@.";
 
 /* No comment provided by engineer. */

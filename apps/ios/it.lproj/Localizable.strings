@@ -1248,7 +1248,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Confermato";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Connetti";
 
 /* No comment provided by engineer. */
@@ -1352,6 +1353,9 @@ set passcode view */
 
 /* chat list item title (it should not be shown */
 "connection established" = "connessione stabilita";
+
+/* No comment provided by engineer. */
+"Connection failed" = "Connessione fallita";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "La connessione è bloccata dall'operatore del server:\n%@";
@@ -1464,7 +1468,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Angolo";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Correggere il nome a %@?";
 
 /* No comment provided by engineer. */
@@ -2338,9 +2342,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Errore di apertura della chat";
 
-/* No comment provided by engineer. */
-"Error opening group" = "Errore di preparazione del gruppo";
-
 /* alert title */
 "Error receiving file" = "Errore nella ricezione del file";
 
@@ -2454,7 +2455,8 @@ file error text
 snd error text */
 "Error: %@" = "Errore: %@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "Errore: %@.";
 
 /* No comment provided by engineer. */
@@ -2501,6 +2503,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Exporting database archive…" = "Esportazione archivio database…";
+
+/* No comment provided by engineer. */
+"failed" = "fallito";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Rimozione della password fallita";
@@ -2604,7 +2609,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato: %@.";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato.";
 
 /* No comment provided by engineer. */
@@ -2628,7 +2634,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Per tutti i moderatori";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Per il profilo di chat %@:";
 
 /* No comment provided by engineer. */
@@ -2871,6 +2878,9 @@ snd error text */
 /* No comment provided by engineer. */
 "If you enter your self-destruct passcode while opening the app:" = "Se inserisci il tuo codice di autodistruzione mentre apri l'app:";
 
+/* down migration warning */
+"If you joined or created channels, they will stop working permanently." = "Se sei dentro canali o ne hai creati, essi smetteranno di funzionare definitivamente.";
+
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Se devi usare la chat adesso, tocca **Fallo più tardi** qui sotto (ti verrà offerto di migrare il database quando riavvii l'app).";
 
@@ -3042,7 +3052,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Conferma di migrazione non valida";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Nome non valido!";
 
 /* No comment provided by engineer. */
@@ -5172,9 +5182,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolli di SimpleX esaminati da Trail of Bits.";
 
-/* simplex link type */
-"SimpleX relay link" = "Link del relay SimpleX";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Modalità incognito semplificata";
 
@@ -5380,7 +5387,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Errore del file temporaneo";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Test fallito al passo %@.";
 
 /* No comment provided by engineer. */
