@@ -632,6 +632,38 @@ private let versionDescriptions: [VersionDescription] = [
             ))
         ]
     ),
+    VersionDescription(
+        version: "v6.5",
+        post: URL(string: "https://simplex.chat/blog/20260421-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"),
+        features: [
+            .feature(Description(
+                icon: nil,
+                title: "Power to speak freely",
+                description: nil,
+                subfeatures: [
+                    ("dot.radiowaves.left.and.right", "A public channel anyone can join."),
+                    ("server.rack", "Each channel uses many chat relays."),
+                    ("network", "You can run your own relays."),
+                    ("eye.slash", "Stay private from others and relays.")
+                ]
+            )),
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Easier to invite friends",
+                description: "We made connecting via your link simpler."
+            )),
+            .feature(Description(
+                icon: "network.badge.shield.half.filled",
+                title: "Safe web links",
+                description: "- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking."
+            )),
+            .feature(Description(
+                icon: "building.columns",
+                title: "Non-profit governance",
+                description: "SimpleX Network Consortium."
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
