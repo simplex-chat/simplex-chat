@@ -691,7 +691,7 @@ main .section-bg {
     font-size: calc(var(--sec-vwu) * 1.5);
     color: #333333;
     /* Isometric projection: rotate then skew */
-    transform: rotate(-30deg) skewX(30.6deg);
+    transform: rotate(-30deg) skewX(30.6deg) translateX(-50%);
     transform-origin: 0 0;
 }
 
@@ -699,10 +699,10 @@ main .section-bg {
     color: #ffffff;
 }
 
-.roadmap-label-now { left: 46.54%; top: 88.16%; }
-.roadmap-label-1 { left: 59.5%; top: 75.0%; }
-.roadmap-label-2 { left: 72.5%; top: 61.8%; }
-.roadmap-label-3 { left: 85.5%; top: 48.5%; }
+.roadmap-label-now { left: 47.84%; top: 86.87%; }
+.roadmap-label-1   { left: 60.8%;  top: 73.7%; }
+.roadmap-label-2   { left: 73.8%;  top: 60.5%; }
+.roadmap-label-3   { left: 86.8%;  top: 47.2%; }
 
 
 .dark .page-5 {
