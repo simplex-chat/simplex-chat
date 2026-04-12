@@ -318,7 +318,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding = CBGroup
+data ChatBinding = CBGroup | CBDirect
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -381,10 +381,13 @@ instance Encoding KeyRef where
       c -> fail $ "invalid KeyRef tag: " <> show c
 
 instance Encoding ChatBinding where
-  smpEncode CBGroup = "G"
+  smpEncode = \case
+    CBGroup -> "G"
+    CBDirect -> "D"
   smpP =
     A.anyChar >>= \case
       'G' -> pure CBGroup
+      'D' -> pure CBDirect
       c -> fail $ "invalid ChatBinding: " <> show c
 
 instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
@@ -429,6 +432,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
+  XGrpInvPub :: PublicGroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
@@ -962,6 +966,7 @@ data CMEventTag (e :: MsgEncoding) where
   XMember_ :: CMEventTag 'Json
   XDirectDel_ :: CMEventTag 'Json
   XGrpInv_ :: CMEventTag 'Json
+  XGrpInvPub_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
   XGrpLinkInv_ :: CMEventTag 'Json
   XGrpLinkReject_ :: CMEventTag 'Json
@@ -1019,6 +1024,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XMember_ -> "x.member"
     XDirectDel_ -> "x.direct.del"
     XGrpInv_ -> "x.grp.inv"
+    XGrpInvPub_ -> "x.grp.inv.pub"
     XGrpAcpt_ -> "x.grp.acpt"
     XGrpLinkInv_ -> "x.grp.link.inv"
     XGrpLinkReject_ -> "x.grp.link.reject"
@@ -1077,6 +1083,7 @@ instance StrEncoding ACMEventTag where
         "x.member" -> XMember_
         "x.direct.del" -> XDirectDel_
         "x.grp.inv" -> XGrpInv_
+        "x.grp.inv.pub" -> XGrpInvPub_
         "x.grp.acpt" -> XGrpAcpt_
         "x.grp.link.inv" -> XGrpLinkInv_
         "x.grp.link.reject" -> XGrpLinkReject_
@@ -1131,6 +1138,7 @@ toCMEventTag msg = case msg of
   XMember {} -> XMember_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
+  XGrpInvPub _ -> XGrpInvPub_
   XGrpAcpt _ -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkReject _ -> XGrpLinkReject_
@@ -1189,6 +1197,7 @@ hasNotification = \case
   XFile_ -> True
   XContact_ -> True
   XGrpInv_ -> True
+  XGrpInvPub_ -> True
   XGrpMemFwd_ -> True
   XGrpDel_ -> True
   XCallInv_ -> True
@@ -1198,6 +1207,7 @@ hasDeliveryReceipt :: CMEventTag e -> Bool
 hasDeliveryReceipt = \case
   XMsgNew_ -> True
   XGrpInv_ -> True
+  XGrpInvPub_ -> True
   XCallInv_ -> True
   _ -> False
 
@@ -1284,6 +1294,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
+      XGrpInvPub_ -> XGrpInvPub <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
@@ -1355,6 +1366,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMember {profile, newMemberId, newMemberKey} -> o ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
+      XGrpInvPub groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]

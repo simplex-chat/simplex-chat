@@ -1919,7 +1919,7 @@ processChatCommand vr nm = \case
     where
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
-        let short = isJust $ connShortLink =<< connLinkInv
+        let short = isJust $ (\(CCLink _ sl) -> sl) =<< connLinkInv
             userLinkData_
               | short = Just $ UserInvLinkData $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
               | otherwise = Nothing
@@ -2059,8 +2059,8 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
-      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
-        sLnk <- case toShortLinkContact connLinkToConnect of
+      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect = PreparedGroupLink {connShortLink = sLnk_}}} -> do
+        sLnk <- case sLnk_ of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
@@ -2136,6 +2136,9 @@ processChatCommand vr nm = \case
             newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
+        ccLink <- case toCreatedLinkContact connLinkToConnect of
+          Just cl -> pure cl
+          Nothing -> throwChatError $ CEException "no full link to connect"
         hostMember <- withFastStore $ \db -> getHostMember db vr user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)
@@ -2143,7 +2146,7 @@ processChatCommand vr nm = \case
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
             pure (smId, mc)
-        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
+        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito ccLink welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
           -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
           -- user or incognito profile for group or business chat, in case server received request while client got network error
           gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -3781,7 +3784,7 @@ processChatCommand vr nm = \case
                 groupSize = Just currentMemCount
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
-      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = Nothing}) memRole
       timed_ <- contactCITimed ct
       ci <- saveSndChatItem' user (CDDirectSnd ct) msg content Nothing Nothing Nothing timed_ False
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
@@ -4070,7 +4073,7 @@ processChatCommand vr nm = \case
       encodeShortLinkData $ RelayAddressLinkData {relayProfile = RelayProfile {displayName, fullName, shortDescr, image}}
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
-      forM (connShortLink =<< connLinkInv) $ \_ -> do
+      forM ((\(CCLink _ sl) -> sl) =<< connLinkInv) $ \_ -> do
         let userData = contactShortLinkData profile Nothing
             userLinkData = UserInvLinkData userData
         shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userLinkData Nothing)

@@ -2396,7 +2396,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   updateGroupMemberStatus db userId membership GSMemAccepted
                 toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
               else do
-                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = Nothing}) memRole
                 (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
                 withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
                 toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]

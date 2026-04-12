@@ -256,12 +256,19 @@ instance ToJSON DBMsgErrorType where
   toJSON (DBME v) = $(JQ.mkToJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
   toEncoding (DBME v) = $(JQ.mkToEncoding (singleFieldJSON fstToLower) ''MsgErrorType) v
 
+data OwnerSigStatus
+  = OSSPending
+  | OSSVerified
+  | OSSFailed {reason :: Text}
+  deriving (Eq, Show)
+
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
     groupMemberId :: GroupMemberId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    status :: CIGroupInvitationStatus
+    status :: CIGroupInvitationStatus,
+    ownerSigStatus :: Maybe OwnerSigStatus
   }
   deriving (Eq, Show)
 
@@ -715,6 +722,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RME") ''RcvMsgError)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CIGIS") ''CIGroupInvitationStatus)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "OSS") ''OwnerSigStatus)
 
 $(JQ.deriveJSON defaultJSON ''CIGroupInvitation)
 

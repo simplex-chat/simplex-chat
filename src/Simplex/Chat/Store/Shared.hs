@@ -38,7 +38,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
 import Simplex.Messaging.Agent.Store (AnyStoreError (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.Common (withSavepoint)
@@ -456,9 +456,9 @@ toPreparedContactRow = \case
 
 type NewPreparedGroupRow m = (Maybe (ConnectionRequestUri m), Maybe (ConnShortLink m), Maybe SharedMsgId)
 
-toPreparedGroupRow :: Maybe (CreatedConnLink m, Maybe SharedMsgId) -> NewPreparedGroupRow m
+toPreparedGroupRow :: Maybe (PreparedGroupLink, Maybe SharedMsgId) -> NewPreparedGroupRow 'CMContact
 toPreparedGroupRow = \case
-  Just (CCLink fullLink shortLink, welcomeSharedMsgId) -> (Just fullLink, shortLink, welcomeSharedMsgId)
+  Just (PreparedGroupLink {connFullLink, connShortLink}, welcomeSharedMsgId) -> (connFullLink, connShortLink, welcomeSharedMsgId)
   Nothing -> (Nothing, Nothing, Nothing)
 {-# INLINE toPreparedGroupRow #-}
 
@@ -686,8 +686,9 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
-  (Just fullLink, shortLink_, BI connLinkPreparedConnection, BI connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId) ->
-    Just PreparedGroup {connLinkToConnect = CCLink fullLink shortLink_, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
+  (fullLink_, shortLink_, BI connLinkPreparedConnection, BI connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId)
+    | isJust fullLink_ || isJust shortLink_ ->
+        Just PreparedGroup {connLinkToConnect = PreparedGroupLink {connFullLink = fullLink_, connShortLink = shortLink_}, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
   _ -> Nothing
 
 toPublicGroupProfile :: Maybe GroupType -> Maybe ShortLinkContact -> Maybe B64UrlByteString -> Maybe PublicGroupProfile

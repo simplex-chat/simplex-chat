@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -518,8 +518,21 @@ instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
 
+data PreparedGroupLink = PreparedGroupLink
+  { connFullLink :: Maybe ConnReqContact,
+    connShortLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+toPreparedGroupLink :: CreatedLinkContact -> PreparedGroupLink
+toPreparedGroupLink (CCLink fl sl) = PreparedGroupLink (Just fl) sl
+
+toCreatedLinkContact :: PreparedGroupLink -> Maybe CreatedLinkContact
+toCreatedLinkContact PreparedGroupLink {connFullLink = Just fl, connShortLink} = Just $ CCLink fl connShortLink
+toCreatedLinkContact _ = Nothing
+
 data PreparedGroup = PreparedGroup
-  { connLinkToConnect :: CreatedLinkContact,
+  { connLinkToConnect :: PreparedGroupLink,
     connLinkPreparedConnection :: Bool,
     connLinkStartedConnection :: Bool,
     welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
@@ -874,6 +887,25 @@ data GroupRelayInvitation = GroupRelayInvitation
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
     groupLink :: ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data PublicGroupInvitation = PublicGroupInvitation
+  { groupProfile :: GroupProfile,
+    groupOwner :: Maybe GroupOwnerSig,
+    groupSize :: Int
+  }
+  deriving (Eq, Show)
+
+-- | Owner's proof of channel ownership, included in PublicGroupInvitation.
+-- Signature is over: smpEncode chatBinding <> binding <> invitationBody
+-- where chatBinding is determined from context (CBDirect / CBGroup).
+data GroupOwnerSig = GroupOwnerSig
+  { memberId :: MemberId,
+    -- | Context binding: ratchetAdHash (direct chat) or smpEncode (publicGroupId, memberId) (public group).
+    -- Verifier computes expected value from context and compares — mismatch indicates MitM or wrong context.
+    binding :: B64UrlByteString,
+    ownerSig :: C.Signature 'C.Ed25519
   }
   deriving (Eq, Show)
 
@@ -1881,6 +1913,7 @@ data CommandFunction
   | CFSetShortLink
   | CFGetRelayDataJoin
   | CFGetRelayDataAccept
+  | CFGetGroupDataInv
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1901,6 +1934,7 @@ instance TextEncoding CommandFunction where
     "set_short_link" -> Just CFSetShortLink
     "get_relay_data_join" -> Just CFGetRelayDataJoin
     "get_relay_data_accept" -> Just CFGetRelayDataAccept
+    "get_group_data_inv" -> Just CFGetGroupDataInv
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1915,6 +1949,7 @@ instance TextEncoding CommandFunction where
     CFSetShortLink -> "set_short_link"
     CFGetRelayDataJoin -> "get_relay_data_join"
     CFGetRelayDataAccept -> "get_relay_data_accept"
+    CFGetGroupDataInv -> "get_group_data_inv"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1930,6 +1965,7 @@ commandExpectedResponse = \case
   CFSetShortLink -> t LINK_
   CFGetRelayDataJoin -> t LDATA_
   CFGetRelayDataAccept -> t LDATA_
+  CFGetGroupDataInv -> t LDATA_
   where
     t = AEvtTag SAEConn
 
@@ -2067,6 +2103,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
+$(JQ.deriveJSON defaultJSON ''PreparedGroupLink)
+
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
 $(JQ.deriveToJSON defaultJSON ''GroupSummary)
@@ -2102,6 +2140,10 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
+
+$(JQ.deriveJSON defaultJSON ''GroupOwnerSig)
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
