@@ -1900,6 +1900,7 @@ data CommandFunction
   | CFSetShortLink
   | CFGetRelayDataJoin
   | CFGetRelayDataAccept
+  | CFGetGroupDataInv
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1920,6 +1921,7 @@ instance TextEncoding CommandFunction where
     "set_short_link" -> Just CFSetShortLink
     "get_relay_data_join" -> Just CFGetRelayDataJoin
     "get_relay_data_accept" -> Just CFGetRelayDataAccept
+    "get_group_data_inv" -> Just CFGetGroupDataInv
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1934,6 +1936,7 @@ instance TextEncoding CommandFunction where
     CFSetShortLink -> "set_short_link"
     CFGetRelayDataJoin -> "get_relay_data_join"
     CFGetRelayDataAccept -> "get_relay_data_accept"
+    CFGetGroupDataInv -> "get_group_data_inv"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1949,6 +1952,7 @@ commandExpectedResponse = \case
   CFSetShortLink -> t LINK_
   CFGetRelayDataJoin -> t LDATA_
   CFGetRelayDataAccept -> t LDATA_
+  CFGetGroupDataInv -> t LDATA_
   where
     t = AEvtTag SAEConn
 
