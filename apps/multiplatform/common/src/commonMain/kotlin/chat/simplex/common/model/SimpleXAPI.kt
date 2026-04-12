@@ -1043,7 +1043,7 @@ object ChatController {
 
   suspend fun apiGetChatContentTypes(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?): List<MsgContentTag>? {
     val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
-    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
+    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes.filter { it !is MsgContentTag.Unknown }
     Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
@@ -3790,7 +3790,7 @@ sealed class CC {
       val tag = if (contentTag == null) {
         ""
       } else {
-        " content=${contentTag.name.lowercase()}"
+        " content=${contentTag.cmdString}"
       }
       "/_get chat ${chatRef(type, id, scope)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
