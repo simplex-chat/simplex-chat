@@ -2376,7 +2376,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 2500000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])

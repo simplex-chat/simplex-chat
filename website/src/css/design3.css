@@ -671,6 +671,40 @@ main .section-bg {
     background-repeat: no-repeat;
 }
 
+/* --- Roadmap year labels (CSS text over clean illustration) --- */
+.page-5 .area {
+    position: relative;
+}
+
+.roadmap-labels {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.roadmap-label {
+    position: absolute;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 300;
+    white-space: nowrap;
+    font-size: calc(var(--sec-vwu) * 1.5);
+    color: #333333;
+    /* Isometric projection: rotate then skew */
+    transform: rotate(-30deg) skewX(30.6deg);
+    transform-origin: 0 0;
+}
+
+.dark .roadmap-label {
+    color: #ffffff;
+}
+
+.roadmap-label-now { left: 46.54%; top: 88.16%; }
+.roadmap-label-1 { left: 59.5%; top: 75.0%; }
+.roadmap-label-2 { left: 72.5%; top: 61.8%; }
+.roadmap-label-3 { left: 85.5%; top: 48.5%; }
+
+
 .dark .page-5 {
     background-image: url("/img/design_3/section-5-desktop.webp");
 }
@@ -751,6 +785,29 @@ main .section-bg {
     .dark .page-5 {
         background-image: url("/img/design_3/section-5-mobile.webp");
     }
+
+    /* --- Mobile roadmap labels --- */
+    .roadmap-label {
+        transform: none;
+        transform-origin: center center;
+        font-size: calc(var(--sec-vwu) * 3.97);
+        font-weight: 300;
+        color: #009df7;
+        background: #fff;
+        padding: calc(var(--sec-vwu) * 0.2) calc(var(--sec-vwu) * 1.0);
+        border-radius: calc(var(--sec-vwu) * 0.8);
+    }
+
+    .dark .roadmap-label {
+        color: #fff;
+    }
+
+    .dark .roadmap-label { background: rgba(30, 58, 112, 0.85); }
+
+    .roadmap-label-now { display: none; }
+    .roadmap-label-1 { left: 75.36%; top: 45.8%; }
+    .roadmap-label-2 { left: 7.6%;  top: 34.9%; }
+    .roadmap-label-3 { left: 75.36%; top: 24.54%; }
 }
 
 .page .text-container {

@@ -127,11 +127,11 @@ struct NewChatSheet: View {
                     }
                     NavigationLink {
                         AddChannelView()
-                            .navigationTitle("Create channel")
+                            .navigationTitle("Create public channel")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create channel (BETA)", systemImage: "antenna.radiowaves.left.and.right.circle.fill")
+                        Label("Create public channel (BETA)", systemImage: "antenna.radiowaves.left.and.right.circle.fill")
                     }
                 }
                 
