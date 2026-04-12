@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -518,8 +518,21 @@ instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
 
+data PreparedGroupLink = PreparedGroupLink
+  { connFullLink :: Maybe ConnReqContact,
+    connShortLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+toPreparedGroupLink :: CreatedLinkContact -> PreparedGroupLink
+toPreparedGroupLink (CCLink fl sl) = PreparedGroupLink (Just fl) sl
+
+toCreatedLinkContact :: PreparedGroupLink -> Maybe CreatedLinkContact
+toCreatedLinkContact PreparedGroupLink {connFullLink = Just fl, connShortLink} = Just $ CCLink fl connShortLink
+toCreatedLinkContact _ = Nothing
+
 data PreparedGroup = PreparedGroup
-  { connLinkToConnect :: CreatedLinkContact,
+  { connLinkToConnect :: PreparedGroupLink,
     connLinkPreparedConnection :: Bool,
     connLinkStartedConnection :: Bool,
     welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
@@ -2089,6 +2102,8 @@ $(JQ.deriveJSON defaultJSON ''ChatSettings)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
+
+$(JQ.deriveJSON defaultJSON ''PreparedGroupLink)
 
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
