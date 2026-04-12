@@ -641,8 +641,8 @@ private let versionDescriptions: [VersionDescription] = [
                 title: "Public channels - speak freely 🚀",
                 description: nil,
                 subfeatures: [
-                    ("antenna.radiowaves.left.and.right", "Reliability: channel uses many relays."),
-                    ("server.rack", "Ownership: you can run channel relays."),
+                    ("antenna.radiowaves.left.and.right", "Reliability: each channel uses many relays."),
+                    ("server.rack", "Ownership: you can run your own relays."),
                     ("key.2.on.ring", "Security: owners hold channel keys."),
                     ("person.badge.shield.checkmark", "Privacy: for owners and subscribers."),
                 ]
