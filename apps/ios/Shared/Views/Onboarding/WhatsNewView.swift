@@ -653,7 +653,7 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "We made connecting simpler for new users."
             )),
             .feature(Description(
-                icon: "shield",
+                icon: "network.badge.shield.half.filled",
                 title: "Safe web links",
                 description: "- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking."
             )),
