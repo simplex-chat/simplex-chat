@@ -37,7 +37,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
@@ -1726,7 +1726,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
-      let ExtMsgContent content _ fInv_ _ _ _ _ = mcExtMsgContent mc
+      let ExtMsgContent content _ fInv_ _ _ _ _ _ = mcExtMsgContent mc
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
@@ -1737,7 +1737,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then do
           void $ newChatItem (ciContentNoParse $ CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
         else do
-          let ExtMsgContent _ _ _ itemTTL live_ _ _ = mcExtMsgContent mc
+          let ExtMsgContent _ _ _ itemTTL live_ _ _ _ = mcExtMsgContent mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
@@ -1977,9 +1977,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   pure $ Just $ infoToDeliveryContext gInfo' scopeInfo sentAsGroup
       where
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
-        timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
+        timed_ gInfo' =
+          let base = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
+           in case (base, hardExpiryAt_) of
+                (Just t, hea) -> Just (t :: CITimed) {hardExpiryAt = hea}
+                (Nothing, Just hea) -> Just CITimed {ttl = 0, deleteAt = Nothing, hardExpiryAt = Just hea}
+                _ -> base
         live' = fromMaybe False live_
-        ExtMsgContent content mentions fInv_ itemTTL live_ msgScope_ asGroup_ = mcExtMsgContent mc
+        ExtMsgContent content mentions fInv_ itemTTL live_ msgScope_ asGroup_ hardExpiryAt_ = mcExtMsgContent mc
         sentAsGroup = asGroup_ == Just True
         ts@(_, ft_) = msgContentTexts content
         -- m' is Maybe GroupMember
@@ -2037,7 +2042,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- This patches initial sharedMsgId into chat item when locally deleted chat item
             -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
             -- Chat item and update message which created it will have different sharedMsgId in this case...
-            let timed_ = rcvGroupCITimed gInfo ttl_
+            let baseTimed = rcvGroupCITimed gInfo ttl_
+                timed_ = case (baseTimed, groupHardExpiryDuration gInfo) of
+                  (Just t, Just dur) -> Just (t :: CITimed) {hardExpiryAt = Just $ addUTCTime (realToFrac dur) brokerTs}
+                  (Nothing, Just dur) -> Just CITimed {ttl = 0, deleteAt = Nothing, hardExpiryAt = Just $ addUTCTime (realToFrac dur) brokerTs}
+                  _ -> baseTimed
                 showGroupAsSender = fromMaybe (isNothing m_) asGroup_
             if showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_
               then messageError "x.msg.update: member attempted to update as group" $> Nothing

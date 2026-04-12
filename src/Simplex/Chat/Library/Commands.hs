@@ -1071,7 +1071,7 @@ processChatCommand vr nm = \case
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
     CTDirect -> do
-      user <- withFastStore $ \db -> getUserByContactId db chatId
+      user <- withFastStore (`getUserByContactId` chatId)
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
         timedItems <- getDirectUnreadTimedItems db user chatId
@@ -3201,9 +3201,26 @@ processChatCommand vr nm = \case
         prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupTimedMessages gName ttl_ -> do
-    let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
+    let (en, t) = maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
+        pref = TimedMessagesGroupPreference {enable = en, ttl = t, hardExpiryDuration = Just 604800}
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
+  SetGroupHardExpiry gName dur_ -> do
+    updateGroupProfileByName gName $ \p ->
+      let curTimed = getGroupPreference SGFTimedMessages (groupPreferences p)
+          TimedMessagesGroupPreference {enable = en, ttl = t} = curTimed
+          pref = TimedMessagesGroupPreference {enable = en, ttl = t, hardExpiryDuration = dur_}
+       in p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
+  ShowGroupHardExpiry gName -> withUser $ \user -> do
+    gInfo <- withFastStore $ \db -> getGroupInfoByName db vr user gName
+    let dur_ = groupHardExpiryDuration gInfo
+        msg = case dur_ of
+          Nothing -> "Hard expiry: off"
+          Just d
+            | d >= 86400 -> "Hard expiry: " <> show (d `div` 86400) <> " day(s)"
+            | d >= 3600 -> "Hard expiry: " <> show (d `div` 3600) <> " hour(s)"
+            | otherwise -> "Hard expiry: " <> show d <> " seconds"
+    pure $ CRCustomChatResponse (Just user) (T.pack msg)
   SetLocalDeviceName name -> chatWriteVar localDeviceName name >> ok_
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> CRCurrentRemoteHost <$> switchRemoteHost rh_
@@ -4135,8 +4152,8 @@ processChatCommand vr nm = \case
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, _), fInv_) -> do
                 case (quotedItemId, itemForwarded) of
-                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing Nothing), Nothing)
-                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing Nothing), Nothing)
+                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing Nothing Nothing), Nothing)
+                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing Nothing Nothing), Nothing)
                   (Just qiId, Nothing) -> do
                     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
                       getDirectChatItem db user contactId qiId
@@ -4144,7 +4161,7 @@ processChatCommand vr nm = \case
                     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                         qmc = quoteContent mc origQmc file
                         quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing Nothing), Just quotedItem)
+                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live) Nothing Nothing Nothing), Just quotedItem)
                   (Just _, Just _) -> throwError SEInvalidQuote
               where
                 quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
@@ -4542,9 +4559,14 @@ cleanupManager = do
       lift waitChatStartedAndActivated
       users <- withStore' getUsers
       let (us, us') = partition activeUser users
-      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchAllErrors` eToView
-      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchAllErrors` eToView
+      forM_ us $ \u -> do
+        cleanupHardExpiredItems u `catchAllErrors` eToView
+        cleanupTimedItems cleanupInterval u `catchAllErrors` eToView
+      forM_ us' $ \u -> do
+        cleanupHardExpiredItems u `catchAllErrors` eToView
+        cleanupTimedItems cleanupInterval u `catchAllErrors` eToView
     cleanupUser cleanupInterval stepDelay user = do
+      cleanupHardExpiredItems user `catchAllErrors` eToView
       cleanupTimedItems cleanupInterval user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
       -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
@@ -4554,6 +4576,25 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupStaleRelayTestConns user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+    cleanupHardExpiredItems user = do
+      now <- liftIO getCurrentTime
+      hardExpired <- withStore' $ \db -> getHardExpiredItems db user now
+      forM_ hardExpired $ \(itemRef, _) ->
+        deleteHardExpiredItem user itemRef `catchAllErrors` const (pure ())
+    deleteHardExpiredItem user (ChatRef cType chatId scope, itemId) = do
+      vr <- chatVersionRange
+      case cType of
+        CTDirect -> do
+          (ct, ci) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
+          deletions <- deleteDirectCIs user ct [ci]
+          toView $ CEvtChatItemsDeleted user deletions True True
+        CTGroup -> do
+          (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
+          deletedTs <- liftIO getCurrentTime
+          chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
+          deletions <- deleteGroupCIs user gInfo chatScopeInfo [ci] Nothing deletedTs
+          toView $ CEvtChatItemsDeleted user deletions True True
+        _ -> pure ()
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -5025,6 +5066,8 @@ chatCommandP =
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set disappear #" *> (SetGroupTimedMessages <$> displayNameP <*> (A.space *> timedTTLOnOffP)),
+      "/set expiry #" *> (SetGroupHardExpiry <$> displayNameP <*> (A.space *> hardExpiryP)),
+      "/show expiry #" *> (ShowGroupHardExpiry <$> displayNameP),
       "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
@@ -5237,6 +5280,19 @@ chatCommandP =
         <|> ("day" $> 86400)
         <|> ("week" $> (7 * 86400))
         <|> ("month" $> (30 * 86400))
+        <|> A.decimal
+    hardExpiryP =
+      ("off" $> Nothing)
+        <|> (Just <$> hardExpiryDurationP)
+    hardExpiryDurationP =
+      ("1h" $> 3600)
+        <|> ("6h" $> (6 * 3600))
+        <|> ("12h" $> (12 * 3600))
+        <|> ("1d" $> 86400)
+        <|> ("3d" $> (3 * 86400))
+        <|> ("7d" $> (7 * 86400))
+        <|> ("14d" $> (14 * 86400))
+        <|> ("30d" $> (30 * 86400))
         <|> A.decimal
     timedTTLOnOffP =
       optional ("on" *> A.space) *> (Just <$> timedTTLP)

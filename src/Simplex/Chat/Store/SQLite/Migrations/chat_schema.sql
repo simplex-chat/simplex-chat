@@ -444,6 +444,7 @@ CREATE TABLE chat_items(
   item_edited INTEGER,
   timed_ttl INTEGER,
   timed_delete_at TEXT,
+  hard_expiry_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   item_deleted_ts TEXT,
@@ -910,6 +911,10 @@ CREATE INDEX idx_chat_item_reactions_created_by_msg_id ON chat_item_reactions(
 CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(
   user_id,
   timed_delete_at
+);
+CREATE INDEX idx_chat_items_hard_expiry_at ON chat_items(
+  user_id,
+  hard_expiry_at
 );
 CREATE INDEX idx_group_members_group_id ON group_members(user_id, group_id);
 CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(

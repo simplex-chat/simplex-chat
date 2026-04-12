@@ -732,7 +732,8 @@ data ExtMsgContent = ExtMsgContent
     ttl :: Maybe Int,
     live :: Maybe Bool,
     scope :: Maybe MsgScope,
-    asGroup :: Maybe Bool
+    asGroup :: Maybe Bool,
+    hardExpiryAt :: Maybe UTCTime -- absolute wall-clock expiry, set by sender at send time
   }
   deriving (Eq, Show)
 
@@ -853,10 +854,11 @@ parseMsgContainer v =
       mentions <- fromMaybe M.empty <$> (v .:? "mentions")
       scope <- v .:? "scope"
       asGroup <- v .:? "asGroup"
-      pure ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup}
+      hardExpiryAt <- v .:? "hardExpiryAt"
+      pure ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup, hardExpiryAt}
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -909,8 +911,8 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) $ ("asGroup" .=? asGroup) ["content" .= content]
+    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup, hardExpiryAt} =
+      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) $ ("asGroup" .=? asGroup) $ ("hardExpiryAt" .=? hardExpiryAt) ["content" .= content]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m

@@ -172,15 +172,26 @@ sndContactCITimed :: Bool -> Contact -> Maybe Int -> CM (Maybe CITimed)
 sndContactCITimed live = sndCITimed_ live . contactTimedTTL
 
 sndGroupCITimed :: Bool -> GroupInfo -> Maybe Int -> CM (Maybe CITimed)
-sndGroupCITimed live = sndCITimed_ live . groupTimedTTL
+sndGroupCITimed live gInfo itemTTL = do
+  timed_ <- sndCITimed_ live (groupTimedTTL gInfo) itemTTL
+  case (timed_, groupHardExpiryDuration gInfo) of
+    (Just t, Just dur) -> do
+      now <- liftIO getCurrentTime
+      let hea = addUTCTime (realToFrac dur) now
+      pure $ Just (t :: CITimed) {hardExpiryAt = Just hea}
+    (Nothing, Just dur) -> do
+      now <- liftIO getCurrentTime
+      let hea = addUTCTime (realToFrac dur) now
+      pure $ Just CITimed {ttl = dur, deleteAt = Nothing, hardExpiryAt = Just hea}
+    _ -> pure timed_
 
 sndCITimed_ :: Bool -> Maybe (Maybe Int) -> Maybe Int -> CM (Maybe CITimed)
 sndCITimed_ live chatTTL itemTTL =
-  forM (chatTTL >>= (itemTTL <|>)) $ \ttl ->
-    CITimed ttl
-      <$> if live
-        then pure Nothing
-        else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
+  forM (chatTTL >>= (itemTTL <|>)) $ \ttl -> do
+    deleteAt <- if live
+      then pure Nothing
+      else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
+    pure CITimed {ttl, deleteAt, hardExpiryAt = Nothing}
 
 callTimed :: Contact -> ACIContent -> CM (Maybe CITimed)
 callTimed ct aciContent =
@@ -204,10 +215,10 @@ toggleNtf m ntfOn =
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
   (Nothing, Nothing) ->
-    let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender)
+    let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender) hea
      in pure (XMsgNew mc', Nothing)
   (Nothing, Just _) ->
-    let mc' = MCForward $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender)
+    let mc' = MCForward $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender) hea
      in pure (XMsgNew mc', Nothing)
   (Just quotedItemId, Nothing) -> do
     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
@@ -217,10 +228,11 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc m
         qmc = quoteContent mc origQmc file
         (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
         quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
-        mc' = MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender))
+        mc' = MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender) hea)
     pure (XMsgNew mc', Just quotedItem)
   (Just _, Just _) -> throwError SEInvalidQuote
   where
+    hea = timed_ >>= \CITimed {hardExpiryAt} -> hardExpiryAt
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, Maybe GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
     quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc, meta = CIMeta {showGroupAsSender = sentAsGroup}} membership'
