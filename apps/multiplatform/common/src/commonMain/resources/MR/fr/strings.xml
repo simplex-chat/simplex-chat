@@ -2399,7 +2399,7 @@
     <string name="cant_send_message_contact_not_synchronized">non synchronisé</string>
     <string name="network_smp_web_port_off">Désactivé</string>
     <string name="open_to_connect">Ouvrir pour se connecter</string>
-    <string name="group_preview_open_to_join">Ouvrir pour rejoindre</string>
+    <string name="group_preview_open_to_join">Ouvrez pour rejoindre</string>
     <string name="group_member_status_pending_approval_short">en attente</string>
     <string name="group_member_status_pending_approval">en attente d\'approbation</string>
     <string name="snd_group_event_user_pending_review">Veuillez attendre que les modérateurs de groupe examinent votre demande pour rejoindre le groupe.</string>

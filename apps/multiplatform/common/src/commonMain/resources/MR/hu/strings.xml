@@ -2524,7 +2524,7 @@
     <string name="content_filter_voice_messages">Hangüzenetek</string>
     <string name="info_row_connection_failed">NEM SIKERÜLT LÉTREHOZNI A KAPCSOLATOT</string>
     <string name="member_info_member_failed">sikertelen</string>
-    <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
+    <string name="down_migration_warning_chat_relays">Ha csatornákat hozott létre vagy csak csatlakozott hozzájuk, akkor azok véglegesen le fognak állni.</string>
     <string name="relay_status_active">aktív</string>
     <string name="compose_view_broadcast">Közvetítés…</string>
     <string name="cancel_creating_channel_confirm">Mégse</string>
@@ -2568,7 +2568,7 @@
     <string name="delete_channel_question">Törli a csatornát?</string>
     <string name="compose_view_join_channel">Csatlakozás a csatornához</string>
     <string name="chat_banner_join_channel">Koppintson a „Csatlakozás a csatornához” gombra</string>
-    <string name="voice_recording_not_supported">A hangrögzítés nem támogatott az Ön által használt platformon</string>
+    <string name="voice_recording_not_supported">A hangrögzítés nem támogatott az Ön által használt eszközön</string>
     <string name="no_chat_relays_enabled">Nincsenek engedélyezve csevegési átjátszók.</string>
     <string name="server_warning">Kiszolgáló-figyelmeztetés</string>
     <string name="you_are_subscriber">Ön feliratkozó</string>
