@@ -641,7 +641,7 @@ private let versionDescriptions: [VersionDescription] = [
                 title: "Public channels - speak freely 🚀",
                 description: nil,
                 subfeatures: [
-                    ("antenna.radiowaves.left.and.right", "Reliability: each channel uses many relays."),
+                    ("antenna.radiowaves.left.and.right", "Reliability: many relays per channel."),
                     ("server.rack", "Ownership: you can run your own relays."),
                     ("key.2.on.ring", "Security: owners hold channel keys."),
                     ("person.badge.shield.checkmark", "Privacy: for owners and subscribers."),
@@ -660,7 +660,7 @@ private let versionDescriptions: [VersionDescription] = [
             .feature(Description(
                 icon: "network",
                 title: "Non-profit governance",
-                description: "SimpleX Network Consortium - to make it last."
+                description: "To make SimpleX Network last."
             ))
         ]
     ),
