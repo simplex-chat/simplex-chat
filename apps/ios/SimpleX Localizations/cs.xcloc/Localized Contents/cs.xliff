@@ -1354,7 +1354,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
-        <target state="translated">Podle profilu chat (výchozí) nebo [podle připojení](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
+        <target state="translated">Podle profilu chatu (výchozí) nebo [podle připojení](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">

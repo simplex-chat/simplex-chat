@@ -10152,7 +10152,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="failed" xml:space="preserve" approved="no">
         <source>failed</source>
-        <target state="translated">niepowodzenie</target>
+        <target state="translated">nieudane</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">

@@ -2654,7 +2654,7 @@
     <string name="use_relay">Usa relay</string>
     <string name="relay_test_step_verify">Verifica</string>
     <string name="via_relay_hostname">via %1$s</string>
-    <string name="voice_recording_not_supported">La registrazione vocale non è supportata nella tua piattaforma</string>
+    <string name="voice_recording_not_supported">La registrazione vocale non è supportata sulla tua piattaforma</string>
     <string name="wait_verb">Attendi</string>
     <string name="relay_test_step_wait_response">Attendi risposta</string>
     <string name="channel_member_you">tu</string>

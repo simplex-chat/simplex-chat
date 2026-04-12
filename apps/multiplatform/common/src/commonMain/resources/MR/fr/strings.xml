@@ -2380,7 +2380,7 @@
     <string name="info_row_connection_failed">CONNEXION ÉCHOUÉE</string>
     <string name="cant_send_message_contact_deleted">contact supprimé</string>
     <string name="cant_send_message_contact_disabled">contact désactivé</string>
-    <string name="contact_should_accept">le contact devrait accepter..</string>
+    <string name="contact_should_accept">le contact devrait accepter…</string>
     <string name="v6_4_1_short_address_create">Créez votre adresse</string>
     <string name="relay_conn_status_deleted">supprimé</string>
     <string name="delete_member_messages_confirmation">Supprimer les messages</string>
@@ -2399,7 +2399,7 @@
     <string name="cant_send_message_contact_not_synchronized">non synchronisé</string>
     <string name="network_smp_web_port_off">Désactivé</string>
     <string name="open_to_connect">Ouvrir pour se connecter</string>
-    <string name="group_preview_open_to_join">Ouvrez pour rejoindre</string>
+    <string name="group_preview_open_to_join">Ouvrir pour rejoindre</string>
     <string name="group_member_status_pending_approval_short">en attente</string>
     <string name="group_member_status_pending_approval">en attente d\'approbation</string>
     <string name="snd_group_event_user_pending_review">Veuillez attendre que les modérateurs de groupe examinent votre demande pour rejoindre le groupe.</string>
@@ -2439,12 +2439,12 @@
     <string name="share_old_link_alert_button">Partager l\'ancien lien</string>
     <string name="share_relay_address">Partager l\'adresse de relais</string>
     <string name="group_short_descr_field">Description courte:</string>
-    <string name="short_link_button_text">Lien court:</string>
-    <string name="v6_4_1_short_address">Adresse SimpleX courte:</string>
+    <string name="short_link_button_text">Lien court</string>
+    <string name="v6_4_1_short_address">Adresse SimpleX courte</string>
     <string name="simplex_link_relay">Adresse du relais SimpleX</string>
     <string name="network_smp_web_port_section_title">Port TCP pour la messagerie</string>
     <string name="error_relay_test_failed_at_step">Échec du test à l\'étape %s.</string>
-    <string name="test_relay">Relais de test</string>
+    <string name="test_relay">Tester le relais</string>
     <string name="share_profile_via_link_alert_text">L\'adresse sera courte et votre profil sera partagé via l\'adresse.</string>
     <string name="share_group_profile_via_link_alert_text">Le lien sera court, et le profil de groupe sera partagé via le lien.</string>
     <string name="the_sender_will_not_be_notified">L\'expéditeur n\'en sera PAS informé.</string>
