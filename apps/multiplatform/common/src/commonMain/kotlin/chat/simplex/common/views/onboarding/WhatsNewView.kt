@@ -880,6 +880,38 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
+  VersionDescription(
+    version = "v6.5",
+    post = "https://simplex.chat/blog/20260421-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_5_public_channels,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_wifi_tethering to MR.strings.v6_5_reliability,
+          MR.images.ic_dns to MR.strings.v6_5_ownership,
+          MR.images.ic_vpn_key_filled to MR.strings.v6_5_security,
+          MR.images.ic_shield to MR.strings.v6_5_privacy,
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_add_link,
+        titleId = MR.strings.v6_5_invite_friends,
+        descrId = MR.strings.v6_5_invite_friends_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_security,
+        titleId = MR.strings.v6_5_safe_web_links,
+        descrId = MR.strings.v6_5_safe_web_links_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_verified_user,
+        titleId = MR.strings.v6_5_non_profit_governance,
+        descrId = MR.strings.v6_5_non_profit_governance_descr
+      ),
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version

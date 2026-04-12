@@ -2546,6 +2546,17 @@
   <string name="v6_4_1_short_address_share">Share your address</string>
   <string name="v6_4_1_new_interface_languages">4 new interface languages</string>
   <string name="v6_4_1_new_interface_languages_descr">Catalan, Indonesian, Romanian and Vietnamese - thanks to our users!</string>
+  <string name="v6_5_public_channels">Public channels - speak freely 🚀</string>
+  <string name="v6_5_reliability">Reliability: many relays per channel.</string>
+  <string name="v6_5_ownership">Ownership: you can run your own relays.</string>
+  <string name="v6_5_security">Security: owners hold channel keys.</string>
+  <string name="v6_5_privacy">Privacy: for owners and subscribers.</string>
+  <string name="v6_5_invite_friends">Easier to invite your friends 👋</string>
+  <string name="v6_5_invite_friends_descr">We made connecting simpler for new users.</string>
+  <string name="v6_5_safe_web_links">Safe web links</string>
+  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
+  <string name="v6_5_non_profit_governance">Non-profit governance</string>
+  <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
