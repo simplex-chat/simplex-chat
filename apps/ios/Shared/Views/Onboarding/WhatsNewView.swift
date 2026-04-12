@@ -638,13 +638,12 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             .feature(Description(
                 icon: nil,
-                title: "Power to speak freely 🚀",
+                title: "Public channels - speak freely 🚀",
                 description: nil,
                 subfeatures: [
-                    ("dot.radiowaves.left.and.right", "Public channels anyone can join."),
-                    ("server.rack", "Each channel uses many chat relays."),
-                    ("network", "You can run your own relays."),
-                    ("eye.slash", "Privacy for owners and subscribers.")
+                    ("server.rack", "Reliability: each channel uses many relays."),
+                    ("network", "Ownership: you can run your own relays."),
+                    ("eye.slash", "Privacy: for owners and subscribers.")
                 ]
             )),
             .feature(Description(
