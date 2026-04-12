@@ -1248,7 +1248,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Potwierdzony";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Połącz";
 
 /* No comment provided by engineer. */
@@ -1352,6 +1353,9 @@ set passcode view */
 
 /* chat list item title (it should not be shown */
 "connection established" = "połączenie ustanowione";
+
+/* No comment provided by engineer. */
+"Connection failed" = "Połączenie nie powiodło się";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Połączenie zostało zablokowane przez operatora serwera:\n%@";
@@ -1464,7 +1468,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Róg";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Poprawić imię na %@?";
 
 /* No comment provided by engineer. */
@@ -2338,9 +2342,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Błąd otwierania czatu";
 
-/* No comment provided by engineer. */
-"Error opening group" = "Błąd otwierania grupy";
-
 /* alert title */
 "Error receiving file" = "Błąd odbioru pliku";
 
@@ -2454,7 +2455,8 @@ file error text
 snd error text */
 "Error: %@" = "Błąd: %@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "Błąd: %@.";
 
 /* No comment provided by engineer. */
@@ -2501,6 +2503,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Exporting database archive…" = "Eksportowanie archiwum bazy danych…";
+
+/* No comment provided by engineer. */
+"failed" = "nieudane";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Nie udało się usunąć hasła";
@@ -2604,7 +2609,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "Odcisk palca w adresie serwera nie zgadza się z certyfikatem: %@.";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy.";
 
 /* No comment provided by engineer. */
@@ -2628,7 +2634,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Dla wszystkich moderatorów";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Dla profilu czatu %@:";
 
 /* No comment provided by engineer. */
@@ -2871,6 +2878,9 @@ snd error text */
 /* No comment provided by engineer. */
 "If you enter your self-destruct passcode while opening the app:" = "Jeśli wpiszesz swój pin samodestrukcji podczas otwierania aplikacji:";
 
+/* down migration warning */
+"If you joined or created channels, they will stop working permanently." = "Jeśli dołączyłeś do kanałów lub je utworzyłeś, przestaną one działać na stałe.";
+
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Jeśli potrzebujesz użyć czatu teraz, dotknij **Zrób to później** poniżej (zostanie Ci zaproponowana migracja bazy danych po ponownym uruchomieniu aplikacji).";
 
@@ -3042,7 +3052,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Nieprawidłowe potwierdzenie migracji";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Nieprawidłowa nazwa!";
 
 /* No comment provided by engineer. */
@@ -5172,9 +5182,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protokoły SimpleX sprawdzone przez Trail of Bits.";
 
-/* simplex link type */
-"SimpleX relay link" = "łącze przekaźnikowe SimpleX";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Uproszczony tryb incognito";
 
@@ -5380,7 +5387,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Tymczasowy błąd pliku";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Test nie powiódł się na etapie %@.";
 
 /* No comment provided by engineer. */
