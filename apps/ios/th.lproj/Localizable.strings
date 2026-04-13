@@ -626,7 +626,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Confirm password" = "ยืนยันรหัสผ่าน";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "เชื่อมต่อ";
 
 /* No comment provided by engineer. */
@@ -1381,7 +1382,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "ค้นหาแชทได้เร็วขึ้น";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
 
 /* No comment provided by engineer. */
@@ -2770,7 +2772,8 @@ chat item action */
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "การทดสอบล้มเหลวในขั้นตอน %@";
 
 /* No comment provided by engineer. */

@@ -1242,7 +1242,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Подтвержденный";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
@@ -1458,7 +1459,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Угол";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Исправить имя на %@?";
 
 /* No comment provided by engineer. */
@@ -2326,9 +2327,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Ошибка при открытии чата";
 
-/* No comment provided by engineer. */
-"Error opening group" = "Ошибка при открытии группы";
-
 /* alert title */
 "Error receiving file" = "Ошибка при получении файла";
 
@@ -2442,7 +2440,8 @@ file error text
 snd error text */
 "Error: %@" = "Ошибка: %@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "Ошибка: %@.";
 
 /* No comment provided by engineer. */
@@ -2589,7 +2588,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "Хэш в адресе сервера не соответствует сертификату: %@.";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный.";
 
 /* No comment provided by engineer. */
@@ -2613,7 +2613,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Для всех модераторов";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Для профиля чата %@:";
 
 /* No comment provided by engineer. */
@@ -3024,7 +3025,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Ошибка подтверждения миграции";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Неверное имя!";
 
 /* No comment provided by engineer. */
@@ -5127,9 +5128,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Аудит SimpleX протоколов от Trail of Bits.";
 
-/* simplex link type */
-"SimpleX relay link" = "Ссылка SimpleX relay";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Упрощенный режим Инкогнито";
 
@@ -5335,7 +5333,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Временная ошибка файла";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Ошибка теста на шаге %@.";
 
 /* No comment provided by engineer. */

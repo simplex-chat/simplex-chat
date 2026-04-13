@@ -1245,7 +1245,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "已确定";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "连接";
 
 /* No comment provided by engineer. */
@@ -1461,7 +1462,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "拐角";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "将名称更正为 %@？";
 
 /* No comment provided by engineer. */
@@ -2329,9 +2330,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "打开聊天时出错";
 
-/* No comment provided by engineer. */
-"Error opening group" = "打开群时出错";
-
 /* alert title */
 "Error receiving file" = "接收文件错误";
 
@@ -2445,7 +2443,8 @@ file error text
 snd error text */
 "Error: %@" = "错误： ％@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "错误：%@。";
 
 /* No comment provided by engineer. */
@@ -2595,7 +2594,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "服务器的指纹与证书不符：%@。";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "服务器地址中的证书指纹可能不正确";
 
 /* No comment provided by engineer. */
@@ -2619,7 +2619,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "所有 moderators";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "为聊天资料 %@：";
 
 /* No comment provided by engineer. */
@@ -3033,7 +3034,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "迁移确认无效";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "无效名称！";
 
 /* No comment provided by engineer. */
@@ -5151,9 +5152,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "SimpleX 协议由 Trail of Bits 审阅。";
 
-/* simplex link type */
-"SimpleX relay link" = "SimpleX 中继链接";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "简化的隐身模式";
 
@@ -5356,7 +5354,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "临时文件错误";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "在步骤 %@ 上测试失败。";
 
 /* No comment provided by engineer. */

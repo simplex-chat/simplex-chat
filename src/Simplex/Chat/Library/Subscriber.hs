@@ -493,7 +493,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
-                eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+                createInternalChatItem user (CDDirectRcv ct') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                  `catchAllErrors` \_ -> pure ()
             withRcpt <- checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
             pure (withRcpt, False)
           where
@@ -687,6 +688,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- error cannot be AUTH error here
           updateDirectItemsStatusMsgs ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
           eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
+        ERR (AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts}))) ->
+          createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgError $ RMEDropped attempts) (Just brokerTs)
         ERR err -> do
           eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -962,7 +965,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
-              eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+              if isRelay membership
+                then
+                  eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+                else
+                  createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEParseError $ T.pack e) Nothing
+                    `catchAllErrors` \_ -> pure ()
               pure newDeliveryTasks
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> VerifiedMsg e -> CM (Maybe NewMessageDeliveryTask)
           processEvent gInfo' m' verifiedMsg = do
@@ -1178,6 +1186,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
+      ERR err@(AGENT (A_DUPLICATE (Just DroppedMsg {brokerTs, attempts})))
+        | isRelay membership ->
+            eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
+        | otherwise -> do
+            (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvMsgError $ RMEDropped attempts) (Just brokerTs)
       ERR err -> do
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -3710,8 +3724,8 @@ runRelayRequestWorker a Worker {doWork} = do
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
                   (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData)
-                  ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-                  sLnk <- case toShortLinkContact ccLink' of
+                  ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
+                  sLnk <- case connShortLink' ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
                   let userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile p}

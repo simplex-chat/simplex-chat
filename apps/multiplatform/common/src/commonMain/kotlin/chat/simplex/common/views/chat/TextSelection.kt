@@ -312,7 +312,6 @@ fun BoxScope.SelectionHandler(
     manager.listState = listState
     manager.onCopySelection = {
         clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, linkMode)))
-        manager.clearSelection()
         showToast(generalGetString(MR.strings.copied))
     }
 
@@ -509,7 +508,10 @@ fun SelectionCopyButton() {
             .background(MaterialTheme.colors.surface, RoundedCornerShape(20.dp))
             .border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .clickable { manager.onCopySelection?.invoke() }
+            .clickable {
+                manager.onCopySelection?.invoke()
+                manager.clearSelection()
+            }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
