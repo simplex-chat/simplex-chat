@@ -73,8 +73,8 @@ struct PrivacySettings: View {
                 Section {
                     settingsRow("network", color: theme.colors.secondary) {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
-                            .onChange(of: useLinkPreviews) { value in
-                                UserDefaults.standard.set(value, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+                            .onChange(of: useLinkPreviews) { linkPreviews in
+                                UserDefaults.standard.set(linkPreviews, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
                                 privacyLinkPreviewsShowAlertGroupDefault.set(false)
                             }
                     }
