@@ -518,16 +518,17 @@ instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
 
-class HasShortLink a where
-  connShortLink' :: a -> Maybe ShortLinkContact
-  setShortLinkType :: ContactConnType -> a -> a
+class HasShortLink l where
+  connShortLink' :: l c -> Maybe (ConnShortLink c)
 
-instance HasShortLink CreatedLinkContact where
+instance HasShortLink CreatedConnLink where
   connShortLink' (CCLink _ sl) = sl
-  setShortLinkType cct (CCLink cReq sl) = CCLink cReq (setShortLinkType_ cct <$> sl)
+
+setShortLinkType :: ContactConnType -> CreatedLinkContact -> CreatedLinkContact
+setShortLinkType ct (CCLink cReq sl) = CCLink cReq (setShortLinkType_ ct <$> sl)
 
 setShortLinkType_ :: ContactConnType -> ShortLinkContact -> ShortLinkContact
-setShortLinkType_ cct (CSLContact sch _ srv k) = CSLContact sch cct srv k
+setShortLinkType_ ct (CSLContact sch _ srv k) = CSLContact sch ct srv k
 
 data PreparedGroup = PreparedGroup
   { connLinkToConnect :: CreatedLinkContact,
