@@ -26,7 +26,7 @@ public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer 
 let GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED = "appLocalAuthEnabled"
 public let GROUP_DEFAULT_ALLOW_SHARE_EXTENSION = "allowShareExtension"
 // replaces DEFAULT_PRIVACY_LINK_PREVIEWS
-let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+public let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 public let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "privacyLinkPreviewsShowAlert"
 public let GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS = "privacySanitizeLinks"
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES

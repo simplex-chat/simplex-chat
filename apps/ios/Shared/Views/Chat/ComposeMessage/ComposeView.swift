@@ -1817,9 +1817,9 @@ struct ComposeView: View {
             message: NSLocalizedString("Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.", comment: "alert message"),
             actions: {
                 [
-                    UIAlertAction(title: NSLocalizedString("OK", comment: "alert button"), style: .default) { _ in onChoice(true) },
-                    UIAlertAction(title: NSLocalizedString("Don't ask again", comment: "alert button"), style: .destructive) { _ in onChoice(false) },
-                    UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in onChoice(nil) }
+                    UIAlertAction(title: NSLocalizedString("Don't ask again", comment: "alert button"), style: .default) { _ in onChoice(false) },
+                    UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in onChoice(nil) },
+                    UIAlertAction(title: NSLocalizedString("OK", comment: "alert button"), style: .default) { _ in onChoice(true) }
                 ]
             }
         )
