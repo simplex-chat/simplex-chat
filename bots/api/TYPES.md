@@ -3242,6 +3242,7 @@ ParseError:
 - "invited"
 - "accepted"
 - "active"
+- "inactive"
 
 
 ---
