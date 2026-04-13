@@ -922,7 +922,8 @@ data GroupOwnerSig = GroupOwnerSig
     -- | Context binding: ratchetAdHash (direct chat) or smpEncode (publicGroupId, memberId) (public group).
     -- Verifier computes expected value from context and compares — mismatch indicates MitM or wrong context.
     binding :: B64UrlByteString,
-    ownerSig :: C.Signature 'C.Ed25519
+    -- | Signature bytes, base64url encoded.
+    ownerSig :: B64UrlByteString
   }
   deriving (Eq, Show)
 

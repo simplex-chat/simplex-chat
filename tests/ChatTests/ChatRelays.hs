@@ -14,6 +14,8 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
     it "relay profile updated in address" testRelayProfileUpdateInAddress
+  describe "public group invitations" $ do
+    it "share public group in direct chat" testSharePublicGroupDirect
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
@@ -164,6 +166,22 @@ testRelayProfileUpdateInAddress ps =
 
       alice ##> ("/relay test " <> bobSLink)
       alice <## "relay test passed, profile: bob2 (Bob relay)"
+
+testSharePublicGroupDirect :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupDirect ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        connectUsers alice cath
+        alice ##> "/share #team @cath"
+        alice <## "shared public group #team"
+        cath <## "#team: alice invites you to join the group as observer"
+        cath <## "use /j team to accept"
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

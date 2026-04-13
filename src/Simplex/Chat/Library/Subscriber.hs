@@ -519,6 +519,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 XInfo p -> xInfo ct'' p
                 XDirectDel -> xDirectDel ct'' msg msgMeta
                 XGrpInv gInv -> processGroupInvitation ct'' gInv msg msgMeta
+                XGrpInvPub pubGrpInv -> processPublicGroupInvitation ct'' conn' pubGrpInv msg msgMeta
                 XInfoProbe probe -> xInfoProbe (COMContact ct'') probe
                 XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct'') probeHash
                 XInfoProbeOk probe -> xInfoProbeOk (COMContact ct'') probe
@@ -675,6 +676,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 forM_ (autoReply $ addressSettings ucl) $ \mc -> do
                   connReq_ <- pure (contactRequestId' ct) $>>= \connReqId -> withStore' (\db -> getContactRequest' db user connReqId)
                   sendAutoReply ct mc connReq_
+        LDATA fixedLinkData cData ->
+          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+            case cmdFunction of
+              CFGetGroupDataInv -> processPublicGroupLinkData user ct conn fixedLinkData cData
+              _ -> throwChatError $ CECommandError "unexpected cmdFunction"
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
@@ -2407,6 +2413,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
         sameGroupLinkId _ _ = False
+
+    processPublicGroupInvitation :: Contact -> Connection -> PublicGroupInvitation -> RcvMessage -> MsgMeta -> CM ()
+    processPublicGroupInvitation ct conn PublicGroupInvitation {groupProfile, groupOwner, groupSize} msg msgMeta = do
+      unless (isJust $ publicGroup groupProfile) $ messageError "x.grp.inv.pub: not a public group"
+      let oss = case groupOwner of
+            Nothing -> Nothing
+            Just _ -> Just OSSPending
+          sLnk_ = (\PublicGroupProfile {groupLink = gl} -> gl) <$> publicGroup groupProfile
+          prepLink = PreparedConnLink {connFullLink = Nothing, connShortLink = sLnk_}
+      gVar <- asks random
+      subRole <- asks $ channelSubscriberRole . config
+      (gInfo@GroupInfo {groupId, localDisplayName = gName, membership}, _) <- withStore $ \db ->
+        createPreparedGroup db gVar vr user groupProfile False prepLink Nothing True subRole (Just $ fromIntegral groupSize)
+      withStore' $ \db -> setGroupChatHidden db user groupId True
+      let GroupMember {groupMemberId} = membership
+          content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName = gName, groupProfile, status = CIGISPending, ownerSigStatus = oss}) GRObserver
+      (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
+      withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
+      toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
+      toView $ CEvtReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = GROwner, memberRole = GRObserver}
+      -- start async link resolution for signature verification
+      forM_ groupOwner $ \_ ->
+        forM_ sLnk_ $ \sLnk ->
+          void $ getAgentConnShortLinkAsync user CFGetGroupDataInv (Just conn) sLnk
+      where
+        brokerTs = metaBrokerTs msgMeta
+
+    processPublicGroupLinkData :: User -> Contact -> Connection -> FixedLinkData 'CMContact -> ConnLinkData 'CMContact -> CM ()
+    processPublicGroupLinkData _user _ct _conn _fixedLinkData _cData = do
+      -- TODO: verify owner signature, update chat item ownerSigStatus
+      pure ()
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> CM ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of

@@ -40,6 +40,7 @@ module Simplex.Chat.Store.Groups
     createGroupInvitedViaLink,
     createGroupRejectedViaLink,
     setGroupInvitationChatItemId,
+    setGroupChatHidden,
     getGroup,
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoViaUserShortLink,
@@ -878,6 +879,11 @@ setGroupInvitationChatItemId :: DB.Connection -> User -> GroupId -> ChatItemId -
 setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (chatItemId, currentTs, userId, groupId)
+
+setGroupChatHidden :: DB.Connection -> User -> GroupId -> Bool -> IO ()
+setGroupChatHidden db User {userId} groupId hidden = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET chat_hidden = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (BI hidden, currentTs, userId, groupId)
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
