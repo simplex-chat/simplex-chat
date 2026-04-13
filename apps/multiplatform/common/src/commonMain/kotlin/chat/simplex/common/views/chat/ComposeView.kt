@@ -1,6 +1,7 @@
 @file:UseSerializers(UriSerializer::class, ComposeMessageSerializer::class)
 package chat.simplex.common.views.chat
 
+import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -401,36 +402,6 @@ fun ComposeView(
       composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
       pendingLinkUrl.value = null
     }
-  }
-
-  fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      title = generalGetString(MR.strings.link_previews_alert_title),
-      text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
-      onDismissRequest = { onChoice(null) },
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            onChoice(true)
-          }) {
-            Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            onChoice(false)
-          }) {
-            Text(stringResource(MR.strings.link_previews_alert_dont_ask_again), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            onChoice(null)
-          }) {
-            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
-          }
-        }
-      }
-    )
   }
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
@@ -1689,6 +1660,36 @@ fun ComposeView(
       }
     }
   }
+}
+
+private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.link_previews_alert_title),
+    text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+    onDismissRequest = { onChoice(null) },
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(true)
+        }) {
+          Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(false)
+        }) {
+          Text(stringResource(MR.strings.link_previews_alert_dont_ask_again), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(null)
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+        }
+      }
+    }
+  )
 }
 
 @Composable
