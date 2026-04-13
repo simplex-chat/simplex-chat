@@ -2939,8 +2939,7 @@
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
 
   <!-- ComposeView.kt link previews opt-in alert -->
-  <string name="link_previews_alert_title">Link previews</string>
-  <string name="link_previews_alert_desc">Generating a link preview may reveal your IP address to the website.</string>
-  <string name="enable_link_previews">Enable</string>
-  <string name="disable_link_previews">Disable</string>
+  <string name="link_previews_alert_title">Enable link previews?</string>
+  <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
+  <string name="link_previews_alert_dont_ask_again">Don't ask again</string>
 </resources>

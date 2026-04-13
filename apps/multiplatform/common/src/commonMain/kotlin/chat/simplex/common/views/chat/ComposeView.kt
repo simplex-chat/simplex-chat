@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -401,14 +403,33 @@ fun ComposeView(
     }
   }
 
-  fun showLinkPreviewsConfirmAlert(onChoice: (Boolean) -> Unit) {
-    AlertManager.shared.showAlertDialog(
+  fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+    AlertManager.shared.showAlertDialogButtonsColumn(
       title = generalGetString(MR.strings.link_previews_alert_title),
-      text = generalGetString(MR.strings.link_previews_alert_desc),
-      confirmText = generalGetString(MR.strings.enable_link_previews),
-      onConfirm = { onChoice(true) },
-      dismissText = generalGetString(MR.strings.disable_link_previews),
-      onDismiss = { onChoice(false) }
+      text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+      onDismissRequest = { onChoice(null) },
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            onChoice(true)
+          }) {
+            Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            onChoice(false)
+          }) {
+            Text(stringResource(MR.strings.link_previews_alert_dont_ask_again), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            onChoice(null)
+          }) {
+            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+          }
+        }
+      }
     )
   }
 
@@ -421,13 +442,21 @@ fun ComposeView(
         if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
             && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
           showLinkPreviewsConfirmAlert { enable ->
-            chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
-            chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
-            if (enable) {
-              withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
-            } else if (pendingLinkUrl.value == url) {
-              composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-              pendingLinkUrl.value = null
+            if (enable != null) {
+              chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
+              chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
+              if (enable) {
+                withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
+              } else if (pendingLinkUrl.value == url) {
+                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+                pendingLinkUrl.value = null
+              }
+            } else {
+              cancelledLinks.add(url)
+              if (pendingLinkUrl.value == url) {
+                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+                pendingLinkUrl.value = null
+              }
             }
           }
           return@withLongRunningApi

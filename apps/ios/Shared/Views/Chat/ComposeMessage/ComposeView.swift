@@ -1777,14 +1777,18 @@ struct ComposeView: View {
         if pendingLinkUrl == urlStr, let url = URL(string: urlStr) {
             if linkPreviewsShowAlert {
                 showLinkPreviewsConfirmAlert { enable in
-                    linkPreviewsShowAlert = false
-                    useLinkPreviews = enable
-                    UserDefaults.standard.set(enable, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
-                    if enable {
-                        fetchLinkPreview(url, urlStr: urlStr)
+                    if let enable {
+                        linkPreviewsShowAlert = false
+                        useLinkPreviews = enable
+                        UserDefaults.standard.set(enable, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+                        if enable {
+                            fetchLinkPreview(url, urlStr: urlStr)
+                        } else {
+                            pendingLinkUrl = nil
+                            composeState = composeState.copy(preview: .noPreview)
+                        }
                     } else {
-                        pendingLinkUrl = nil
-                        composeState = composeState.copy(preview: .noPreview)
+                        cancelLinkPreview()
                     }
                 }
                 return
@@ -1807,14 +1811,15 @@ struct ComposeView: View {
         }
     }
 
-    private func showLinkPreviewsConfirmAlert(onChoice: @escaping (Bool) -> Void) {
+    private func showLinkPreviewsConfirmAlert(onChoice: @escaping (Bool?) -> Void) {
         showAlert(
-            NSLocalizedString("Link previews", comment: "alert title"),
-            message: NSLocalizedString("Generating a link preview may reveal your IP address to the website.", comment: "alert message"),
+            NSLocalizedString("Enable link previews?", comment: "alert title"),
+            message: NSLocalizedString("Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.", comment: "alert message"),
             actions: {
                 [
-                    UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .default) { _ in onChoice(true) },
-                    UIAlertAction(title: NSLocalizedString("Disable", comment: "alert button"), style: .destructive) { _ in onChoice(false) }
+                    UIAlertAction(title: NSLocalizedString("OK", comment: "alert button"), style: .default) { _ in onChoice(true) },
+                    UIAlertAction(title: NSLocalizedString("Don't ask again", comment: "alert button"), style: .destructive) { _ in onChoice(false) },
+                    UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in onChoice(nil) }
                 ]
             }
         )
