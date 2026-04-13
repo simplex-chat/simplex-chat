@@ -390,6 +390,28 @@ fun ComposeView(
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
+  suspend fun fetchAndUpdateLinkPreview(url: String) {
+    val lp = getLinkPreview(url)
+    if (lp != null && pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+      pendingLinkUrl.value = null
+    } else if (pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+      pendingLinkUrl.value = null
+    }
+  }
+
+  fun showLinkPreviewsConfirmAlert(onChoice: (Boolean) -> Unit) {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.link_previews_alert_title),
+      text = generalGetString(MR.strings.link_previews_alert_desc),
+      confirmText = generalGetString(MR.strings.enable_link_previews),
+      onConfirm = { onChoice(true) },
+      dismissText = generalGetString(MR.strings.disable_link_previews),
+      onDismiss = { onChoice(false) }
+    )
+  }
+
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
@@ -413,28 +435,6 @@ fun ComposeView(
         fetchAndUpdateLinkPreview(url)
       }
     }
-  }
-
-  suspend fun fetchAndUpdateLinkPreview(url: String) {
-    val lp = getLinkPreview(url)
-    if (lp != null && pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-      pendingLinkUrl.value = null
-    } else if (pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-      pendingLinkUrl.value = null
-    }
-  }
-
-  fun showLinkPreviewsConfirmAlert(onChoice: (Boolean) -> Unit) {
-    AlertManager.shared.showAlertDialog(
-      title = generalGetString(MR.strings.link_previews_alert_title),
-      text = generalGetString(MR.strings.link_previews_alert_desc),
-      confirmText = generalGetString(MR.strings.enable_link_previews),
-      onConfirm = { onChoice(true) },
-      dismissText = generalGetString(MR.strings.disable_link_previews),
-      onDismiss = { onChoice(false) }
-    )
   }
 
   fun showLinkPreview(parsedMessage: List<FormattedText>?) {
