@@ -458,7 +458,7 @@ type NewPreparedGroupRow m = (Maybe (ConnectionRequestUri m), Maybe (ConnShortLi
 
 toPreparedGroupRow :: Maybe (PreparedGroupLink, Maybe SharedMsgId) -> NewPreparedGroupRow 'CMContact
 toPreparedGroupRow = \case
-  Just (PreparedGroupLink {connFullLink, connShortLink}, welcomeSharedMsgId) -> (connFullLink, connShortLink, welcomeSharedMsgId)
+  Just (PreparedConnLink {connFullLink, connShortLink}, welcomeSharedMsgId) -> (connFullLink, connShortLink, welcomeSharedMsgId)
   Nothing -> (Nothing, Nothing, Nothing)
 {-# INLINE toPreparedGroupRow #-}
 
@@ -688,7 +688,7 @@ toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
   (fullLink_, shortLink_, BI connLinkPreparedConnection, BI connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId)
     | isJust fullLink_ || isJust shortLink_ ->
-        Just PreparedGroup {connLinkToConnect = PreparedGroupLink {connFullLink = fullLink_, connShortLink = shortLink_}, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
+        Just PreparedGroup {connLinkToConnect = PreparedConnLink {connFullLink = fullLink_, connShortLink = shortLink_}, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
   _ -> Nothing
 
 toPublicGroupProfile :: Maybe GroupType -> Maybe ShortLinkContact -> Maybe B64UrlByteString -> Maybe PublicGroupProfile

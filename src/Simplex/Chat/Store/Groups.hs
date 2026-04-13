@@ -601,10 +601,10 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> PreparedGroupLink -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
 createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ = do
   currentTs <- liftIO getCurrentTime
-  let prepared = Just (toPreparedGroupLink connLinkToConnect, welcomeSharedMsgId)
+  let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
   (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs
   hostMemberId_ <-
     if useRelays

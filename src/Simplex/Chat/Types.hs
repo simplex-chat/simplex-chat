@@ -52,7 +52,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -518,9 +518,9 @@ instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
 
-data PreparedGroupLink = PreparedGroupLink
-  { connFullLink :: Maybe ConnReqContact,
-    connShortLink :: Maybe ShortLinkContact
+data PreparedConnLink (m :: ConnectionMode) = PreparedConnLink
+  { connFullLink :: Maybe (ConnectionRequestUri m),
+    connShortLink :: Maybe (ConnShortLink m)
   }
   deriving (Eq, Show)
 
@@ -530,18 +530,23 @@ class HasShortLink l where
 instance HasShortLink CreatedConnLink where
   connShortLink' (CCLink _ sl) = sl
 
+instance HasShortLink PreparedConnLink where
+  connShortLink' PreparedConnLink {connShortLink} = connShortLink
+
 setShortLinkType :: ContactConnType -> CreatedLinkContact -> CreatedLinkContact
 setShortLinkType ct (CCLink cReq sl) = CCLink cReq (setShortLinkType_ ct <$> sl)
 
 setShortLinkType_ :: ContactConnType -> ShortLinkContact -> ShortLinkContact
 setShortLinkType_ ct (CSLContact sch _ srv k) = CSLContact sch ct srv k
 
-toPreparedGroupLink :: CreatedLinkContact -> PreparedGroupLink
-toPreparedGroupLink (CCLink fl sl) = PreparedGroupLink (Just fl) sl
+toPreparedConnLink :: CreatedConnLink m -> PreparedConnLink m
+toPreparedConnLink (CCLink fl sl) = PreparedConnLink (Just fl) sl
 
-toCreatedLinkContact :: PreparedGroupLink -> Maybe CreatedLinkContact
-toCreatedLinkContact PreparedGroupLink {connFullLink = Just fl, connShortLink} = Just $ CCLink fl connShortLink
-toCreatedLinkContact _ = Nothing
+toCreatedConnLink :: PreparedConnLink m -> Maybe (CreatedConnLink m)
+toCreatedConnLink PreparedConnLink {connFullLink = Just fl, connShortLink} = Just $ CCLink fl connShortLink
+toCreatedConnLink _ = Nothing
+
+type PreparedGroupLink = PreparedConnLink 'CMContact
 
 data PreparedGroup = PreparedGroup
   { connLinkToConnect :: PreparedGroupLink,
@@ -2115,7 +2120,12 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
-$(JQ.deriveJSON defaultJSON ''PreparedGroupLink)
+instance ConnectionModeI m => FromJSON (PreparedConnLink m) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''PreparedConnLink)
+
+instance ConnectionModeI m => ToJSON (PreparedConnLink m) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''PreparedConnLink)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''PreparedConnLink)
 
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 

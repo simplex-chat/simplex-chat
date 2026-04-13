@@ -1946,7 +1946,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True (toPreparedConnLink ccLink) welcomeSharedMsgId False GRMember Nothing
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -1978,7 +1978,7 @@ processChatCommand vr nm = \case
     let useRelays = not direct
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False (toPreparedConnLink ccLink) welcomeSharedMsgId useRelays subRole publicMemberCount_
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2059,7 +2059,7 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
-      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect = PreparedGroupLink {connShortLink = sLnk_}}} -> do
+      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect = PreparedConnLink {connShortLink = sLnk_}}} -> do
         sLnk <- case sLnk_ of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
@@ -2136,7 +2136,7 @@ processChatCommand vr nm = \case
             newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
-        ccLink <- case toCreatedLinkContact connLinkToConnect of
+        ccLink <- case toCreatedConnLink connLinkToConnect of
           Just cl -> pure cl
           Nothing -> throwChatError $ CEException "no full link to connect"
         hostMember <- withFastStore $ \db -> getHostMember db vr user groupId
