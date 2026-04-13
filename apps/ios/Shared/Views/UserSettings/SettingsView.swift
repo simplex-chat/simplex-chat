@@ -150,6 +150,10 @@ let hintDefaults = [
     DEFAULT_SHOW_DELETE_CONTACT_NOTICE
 ]
 
+let hintGroupDefaults: [(BoolDefault, Bool)] = [
+    (privacyLinkPreviewsShowAlertGroupDefault, true)
+]
+
 // not used anymore
 enum ConnectViaLinkTab: String {
     case scan

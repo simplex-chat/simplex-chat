@@ -91,6 +91,9 @@ struct DeveloperView: View {
                 UserDefaults.standard.set(val, forKey: def)
             }
         }
+        for (pref, val) in hintGroupDefaults {
+            pref.set(val)
+        }
         hintsUnchanged = true
     }
 }
@@ -98,6 +101,8 @@ struct DeveloperView: View {
 private func hintDefaultsUnchanged() -> Bool {
     hintDefaults.allSatisfy { def in
         appDefaults[def] as? Bool == UserDefaults.standard.bool(forKey: def)
+    } && hintGroupDefaults.allSatisfy { (pref, val) in
+        pref.get() == val
     }
 }
 

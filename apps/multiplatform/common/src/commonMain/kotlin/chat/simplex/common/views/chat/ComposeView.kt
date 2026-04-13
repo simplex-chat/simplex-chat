@@ -398,7 +398,16 @@ fun ComposeView(
         if (pendingLinkUrl.value != url) return@withLongRunningApi
         if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
             && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
-          showLinkPreviewsConfirmAlert(url)
+          showLinkPreviewsConfirmAlert { enable ->
+            chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
+            chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
+            if (enable) {
+              withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
+            } else if (pendingLinkUrl.value == url) {
+              composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+              pendingLinkUrl.value = null
+            }
+          }
           return@withLongRunningApi
         }
         fetchAndUpdateLinkPreview(url)
@@ -417,24 +426,14 @@ fun ComposeView(
     }
   }
 
-  fun showLinkPreviewsConfirmAlert(url: String) {
+  fun showLinkPreviewsConfirmAlert(onChoice: (Boolean) -> Unit) {
     AlertManager.shared.showAlertDialog(
       title = generalGetString(MR.strings.link_previews_alert_title),
       text = generalGetString(MR.strings.link_previews_alert_desc),
       confirmText = generalGetString(MR.strings.enable_link_previews),
-      onConfirm = {
-        chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
-        withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
-      },
+      onConfirm = { onChoice(true) },
       dismissText = generalGetString(MR.strings.disable_link_previews),
-      onDismiss = {
-        chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
-        chatModel.controller.appPrefs.privacyLinkPreviews.set(false)
-        if (pendingLinkUrl.value == url) {
-          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-          pendingLinkUrl.value = null
-        }
-      }
+      onDismiss = { onChoice(false) }
     )
   }
 

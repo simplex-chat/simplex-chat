@@ -1778,11 +1778,11 @@ struct ComposeView: View {
             if linkPreviewsShowAlert {
                 showLinkPreviewsConfirmAlert { enable in
                     linkPreviewsShowAlert = false
+                    useLinkPreviews = enable
+                    UserDefaults.standard.set(enable, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
                     if enable {
                         fetchLinkPreview(url, urlStr: urlStr)
                     } else {
-                        useLinkPreviews = false
-                        UserDefaults.standard.set(false, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
                         pendingLinkUrl = nil
                         composeState = composeState.copy(preview: .noPreview)
                     }
