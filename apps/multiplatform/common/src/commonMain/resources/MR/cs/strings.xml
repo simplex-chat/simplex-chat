@@ -877,7 +877,7 @@
     <string name="group_preferences">Předvolby skupiny</string>
     <string name="direct_messages">Přímé zprávy</string>
     <string name="full_deletion">Mazání všem</string>
-    <string name="feature_enabled">zapnuty</string>
+    <string name="feature_enabled">zapnuto</string>
     <string name="feature_enabled_for_you">povoleno vám</string>
     <string name="feature_off">vypnuty</string>
     <string name="prohibit_sending_disappearing_messages">Mizící zprávy zakázány.</string>
