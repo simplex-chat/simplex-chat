@@ -1947,7 +1947,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True (toPreparedConnLink ccLink) welcomeSharedMsgId False GRMember Nothing
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True (toPreparedConnLink ccLink) welcomeSharedMsgId False GRMember Nothing False
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -1979,7 +1979,7 @@ processChatCommand vr nm = \case
     let useRelays = not direct
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False (toPreparedConnLink ccLink) welcomeSharedMsgId useRelays subRole publicMemberCount_
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False (toPreparedConnLink ccLink) welcomeSharedMsgId useRelays subRole publicMemberCount_ False
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2060,8 +2060,8 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
-      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect = PreparedConnLink {connShortLink = sLnk_}}} -> do
-        sLnk <- case sLnk_ of
+      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
+        sLnk <- case connShortLink' connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
         (FixedLinkData {linkConnReq = mainCReq@(CRContactUri crData), linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners, relays})) <- getShortLinkConnReq nm user sLnk
@@ -2484,7 +2484,8 @@ processChatCommand vr nm = \case
           pure $ CRSentPublicGroupInvitation user gInfo
     case toChatRef of
       ChatRef CTDirect contactId _ -> do
-        ct@Contact {activeConn = Just ctConn} <- withFastStore $ \db -> getContact db vr user contactId
+        ct <- withFastStore $ \db -> getContact db vr user contactId
+        ctConn <- liftEither $ contactSendConn_ ct
         groupOwner <- forM (groupKeys gInfo) $ \GroupKeys {memberPrivKey} -> do
           adHash <- withAgent $ \a -> getConnectionRatchetAdHash a (aConnId ctConn)
           let invBody = encodeUtf8 $ encodeJSON groupProfile
@@ -2502,6 +2503,10 @@ processChatCommand vr nm = \case
         msg <- sendGroupMessage user toGInfo scope members $ XGrpInvPub inv
         sendInv Nothing msg (CDGroupSnd toGInfo Nothing) (GroupChat toGInfo Nothing)
       _ -> throwCmdError "unsupported chat type"
+  APIRevealPublicGroup groupId -> withUser $ \user -> do
+    withStore' $ \db -> setGroupChatHidden db user groupId False
+    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    pure $ CRSentPublicGroupInvitation user gInfo -- reusing response, just returns group info
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -4849,6 +4854,7 @@ chatCommandP =
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_share #" *> (APISharePublicGroup <$> A.decimal <* A.space <*> chatRefP),
+      "/_reveal #" *> (APIRevealPublicGroup <$> A.decimal),
       "/share " *> char_ '#' *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),

@@ -9,10 +9,12 @@ m20260413_chat_hidden :: Query
 m20260413_chat_hidden =
   [sql|
 ALTER TABLE groups ADD COLUMN chat_hidden INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE groups ADD COLUMN owner_sig BLOB;
 |]
 
 down_m20260413_chat_hidden :: Query
 down_m20260413_chat_hidden =
   [sql|
 ALTER TABLE groups DROP COLUMN chat_hidden;
+ALTER TABLE groups DROP COLUMN owner_sig;
 |]

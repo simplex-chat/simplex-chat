@@ -182,6 +182,8 @@ testSharePublicGroupDirect ps =
         alice ##> "/share #team @cath"
         alice <## "shared public group #team"
         cath <## "alice (Alice) shared public group #team"
+        -- wait for async verification
+        threadDelay 1000000
 
 testSharePublicGroupInGroup :: HasCallStack => TestParams -> IO ()
 testSharePublicGroupInGroup ps =

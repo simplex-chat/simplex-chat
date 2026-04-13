@@ -30,6 +30,7 @@ module Simplex.Chat.Types where
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
+import Text.Read (readMaybe)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -1931,7 +1932,7 @@ data CommandFunction
   | CFSetShortLink
   | CFGetRelayDataJoin
   | CFGetRelayDataAccept
-  | CFGetGroupDataInv
+  | CFGetGroupDataInv GroupId
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1952,7 +1953,7 @@ instance TextEncoding CommandFunction where
     "set_short_link" -> Just CFSetShortLink
     "get_relay_data_join" -> Just CFGetRelayDataJoin
     "get_relay_data_accept" -> Just CFGetRelayDataAccept
-    "get_group_data_inv" -> Just CFGetGroupDataInv
+    s | Just gId <- T.stripPrefix "get_group_data_inv:" s -> CFGetGroupDataInv <$> readMaybe (T.unpack gId)
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1967,7 +1968,7 @@ instance TextEncoding CommandFunction where
     CFSetShortLink -> "set_short_link"
     CFGetRelayDataJoin -> "get_relay_data_join"
     CFGetRelayDataAccept -> "get_relay_data_accept"
-    CFGetGroupDataInv -> "get_group_data_inv"
+    CFGetGroupDataInv gId -> "get_group_data_inv:" <> T.pack (show gId)
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1983,7 +1984,7 @@ commandExpectedResponse = \case
   CFSetShortLink -> t LINK_
   CFGetRelayDataJoin -> t LDATA_
   CFGetRelayDataAccept -> t LDATA_
-  CFGetGroupDataInv -> t LDATA_
+  CFGetGroupDataInv _ -> t LDATA_
   where
     t = AEvtTag SAEConn
 
