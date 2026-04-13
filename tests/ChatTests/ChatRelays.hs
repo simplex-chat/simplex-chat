@@ -16,6 +16,7 @@ chatRelayTests = do
     it "relay profile updated in address" testRelayProfileUpdateInAddress
   describe "public group invitations" $ do
     it "share public group in direct chat" testSharePublicGroupDirect
+    it "share public group in group chat" testSharePublicGroupInGroup
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
@@ -180,8 +181,23 @@ testSharePublicGroupDirect ps =
         connectUsers alice cath
         alice ##> "/share #team @cath"
         alice <## "shared public group #team"
-        cath <## "#team: alice invites you to join the group as observer"
-        cath <## "use /j team to accept"
+        cath <## "alice (Alice) shared public group #team"
+
+testSharePublicGroupInGroup :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupInGroup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        -- create a regular group with alice and cath
+        createGroup2 "friends" alice cath
+        alice ##> "/share #team #friends"
+        alice <## "shared public group #team"
+        cath <## "#friends: alice shared public group #team"
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

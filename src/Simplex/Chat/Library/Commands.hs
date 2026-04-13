@@ -2472,11 +2472,16 @@ processChatCommand vr nm = \case
       pure (gInfo, relays)
     pure $ CRGroupRelays user gInfo relays
   APISharePublicGroup groupId toChatRef -> withUser $ \user -> do
-    gInfo@GroupInfo {groupProfile, membership, groupSummary, localDisplayName = gName} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    gInfo@GroupInfo {groupProfile, membership = GroupMember {memberId, groupMemberId}, groupSummary, localDisplayName} <- withFastStore $ \db -> getGroupInfo db vr user groupId
     unless (useRelays' gInfo) $ throwCmdError "not a public group"
     let groupSize = fromIntegral $ currentMembers groupSummary
-        GroupMember {memberId = mId, groupMemberId = mGroupMemberId} = membership
-        ciGroupInv oss = CIGroupInvitation {groupId, groupMemberId = mGroupMemberId, localDisplayName = gName, groupProfile, status = CIGISPending, ownerSigStatus = oss}
+        sendInv :: forall c. ChatTypeI c => Maybe GroupOwnerSig -> SndMessage -> ChatDirection c 'MDSnd -> ChatInfo c -> CM ChatResponse
+        sendInv groupOwner msg cd cInfo = do
+          let oss = if isJust groupOwner then Just OSSVerified else Nothing
+              ciContent = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = oss}) GRObserver
+          ci <- saveSndChatItem' user cd msg ciContent Nothing Nothing Nothing Nothing False
+          toView $ CEvtNewChatItems user [AChatItem chatTypeI SMDSnd cInfo ci]
+          pure $ CRSentPublicGroupInvitation user gInfo
     case toChatRef of
       ChatRef CTDirect contactId _ -> do
         ct@Contact {activeConn = Just ctConn} <- withFastStore $ \db -> getContact db vr user contactId
@@ -2484,13 +2489,10 @@ processChatCommand vr nm = \case
           adHash <- withAgent $ \a -> getConnectionRatchetAdHash a (aConnId ctConn)
           let invBody = encodeUtf8 $ encodeJSON groupProfile
               sig = C.sign' memberPrivKey $ smpEncode CBDirect <> adHash <> invBody
-          pure GroupOwnerSig {memberId = mId, binding = B64UrlByteString adHash, ownerSig = B64UrlByteString $ C.signatureBytes sig}
+          pure GroupOwnerSig {memberId, binding = B64UrlByteString adHash, ownerSig = B64UrlByteString $ C.signatureBytes sig}
         let inv = PublicGroupInvitation {groupProfile, groupOwner, groupSize}
-            oss = if isJust groupOwner then Just OSSVerified else Nothing
         (msg, _) <- sendDirectContactMessage user ct $ XGrpInvPub inv
-        ci <- saveSndChatItem' user (CDDirectSnd ct) msg (CISndGroupInvitation (ciGroupInv oss) GRObserver) Nothing Nothing Nothing Nothing False
-        toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
-        pure $ CRSentPublicGroupInvitation user gInfo
+        sendInv groupOwner msg (CDDirectSnd ct) (DirectChat ct)
       ChatRef CTGroup toGroupId scope -> do
         (toGInfo, members) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user toGroupId
@@ -2498,9 +2500,7 @@ processChatCommand vr nm = \case
           pure (g, ms)
         let inv = PublicGroupInvitation {groupProfile, groupOwner = Nothing, groupSize}
         msg <- sendGroupMessage user toGInfo scope members $ XGrpInvPub inv
-        ci <- saveSndChatItem' user (CDGroupSnd toGInfo Nothing) msg (CISndGroupInvitation (ciGroupInv Nothing) GRObserver) Nothing Nothing Nothing Nothing False
-        toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat toGInfo Nothing) ci]
-        pure $ CRSentPublicGroupInvitation user gInfo
+        sendInv Nothing msg (CDGroupSnd toGInfo Nothing) (GroupChat toGInfo Nothing)
       _ -> throwCmdError "unsupported chat type"
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
@@ -2889,9 +2889,13 @@ processChatCommand vr nm = \case
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand vr nm $ APIAddMember groupId contactId memRole
-  SharePublicGroup gName cName -> withUser $ \user -> do
-    (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
-    processChatCommand vr nm $ APISharePublicGroup groupId (ChatRef CTDirect contactId Nothing)
+  SharePublicGroup gName (ChatName cType toName) -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    chatRef <- case cType of
+      CTDirect -> ChatRef CTDirect <$> withFastStore (\db -> getContactIdByName db user toName) <*> pure Nothing
+      CTGroup -> ChatRef CTGroup <$> withFastStore (\db -> getGroupIdByName db user toName) <*> pure Nothing
+      _ -> throwCmdError "unsupported chat type"
+    processChatCommand vr nm $ APISharePublicGroup groupId chatRef
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand vr nm $ APIJoinGroup groupId enableNtfs
@@ -4845,7 +4849,7 @@ chatCommandP =
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_share #" *> (APISharePublicGroup <$> A.decimal <* A.space <*> chatRefP),
-      "/share " *> char_ '#' *> (SharePublicGroup <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      "/share " *> char_ '#' *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),

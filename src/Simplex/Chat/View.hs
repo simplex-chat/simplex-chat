@@ -472,6 +472,11 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
      in ttyUser u [sShow connId <> ": END"]
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
+  CEvtReceivedPublicGroupInvitation {user = u, sharedGroupInfo = g, contact_ = ct_, fromGroupInfo_ = fromG_, fromMember_ = m_} ->
+    ttyUser u $ case (ct_, fromG_, m_) of
+      (Just ct, _, _) -> [ttyFullContact ct <> " shared public group " <> ttyGroup' g]
+      (_, Just fromG, Just m) -> [ttyGroup' fromG <> ": " <> ttyMember m <> " shared public group " <> ttyGroup' g]
+      _ -> ["received public group invitation " <> ttyGroup' g]
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
   CEvtGroupLinkDataUpdated u g groupLink relays relaysChanged
     | relaysChanged -> ttyUser u $ viewGroupLinkRelaysUpdated g groupLink relays

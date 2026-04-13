@@ -519,7 +519,7 @@ data ChatCommand
   | APIGetGroupRelays {groupId :: GroupId}
   | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
-  | SharePublicGroup GroupName ContactName
+  | SharePublicGroup GroupName ChatName
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
@@ -880,6 +880,7 @@ data ChatEvent
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
+  | CEvtReceivedPublicGroupInvitation {user :: User, sharedGroupInfo :: GroupInfo, contact_ :: Maybe Contact, fromGroupInfo_ :: Maybe GroupInfo, fromMember_ :: Maybe GroupMember}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtGroupLinkDataUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay], relaysChanged :: Bool}
   | CEvtGroupRelayUpdated {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRelay :: GroupRelay}

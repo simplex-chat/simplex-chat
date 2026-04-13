@@ -1029,6 +1029,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
+              XGrpInvPub pubGrpInv -> Nothing <$ processPublicGroupInvitationGroup gInfo' m'' conn' pubGrpInv msg brokerTs
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
@@ -2317,6 +2318,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ft <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId >>= getRcvFileTransfer db user
       receiveInlineChunk ft chunk meta
 
+    processPublicGroupInvitationGroup :: GroupInfo -> GroupMember -> Connection -> PublicGroupInvitation -> RcvMessage -> UTCTime -> CM ()
+    processPublicGroupInvitationGroup g m conn inv msg brokerTs = do
+      (gInfo, _) <- rcvPublicGroupInvitation conn inv msg brokerTs (CDGroupRcv g Nothing m) (GroupChat g Nothing)
+      toView $ CEvtReceivedPublicGroupInvitation {user, sharedGroupInfo = gInfo, contact_ = Nothing, fromGroupInfo_ = Just g, fromMember_ = Just m}
+
     bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunkGroup GroupInfo {groupId} sharedMsgId chunk meta = do
       ft <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId >>= getRcvFileTransfer db user
@@ -2415,7 +2421,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sameGroupLinkId _ _ = False
 
     processPublicGroupInvitation :: Contact -> Connection -> PublicGroupInvitation -> RcvMessage -> MsgMeta -> CM ()
-    processPublicGroupInvitation ct conn PublicGroupInvitation {groupProfile, groupOwner, groupSize} msg msgMeta = do
+    processPublicGroupInvitation ct conn inv msg msgMeta = do
+      (gInfo, _) <- rcvPublicGroupInvitation conn inv msg (metaBrokerTs msgMeta) (CDDirectRcv ct) (DirectChat ct)
+      toView $ CEvtReceivedPublicGroupInvitation {user, sharedGroupInfo = gInfo, contact_ = Just ct, fromGroupInfo_ = Nothing, fromMember_ = Nothing}
+
+    rcvPublicGroupInvitation :: forall c. (ChatTypeI c, ChatTypeQuotable c) => Connection -> PublicGroupInvitation -> RcvMessage -> UTCTime -> ChatDirection c 'MDRcv -> ChatInfo c -> CM (GroupInfo, ChatItem c 'MDRcv)
+    rcvPublicGroupInvitation conn PublicGroupInvitation {groupProfile, groupOwner, groupSize} msg brokerTs cd cInfo = do
       unless (isJust $ publicGroup groupProfile) $ messageError "x.grp.inv.pub: not a public group"
       let oss = case groupOwner of
             Nothing -> Nothing
@@ -2424,21 +2435,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           prepLink = PreparedConnLink {connFullLink = Nothing, connShortLink = sLnk_}
       gVar <- asks random
       subRole <- asks $ channelSubscriberRole . config
-      (gInfo@GroupInfo {groupId, localDisplayName = gName, membership}, _) <- withStore $ \db ->
+      (gInfo@GroupInfo {groupId, localDisplayName, membership = GroupMember {groupMemberId}}, _) <- withStore $ \db ->
         createPreparedGroup db gVar vr user groupProfile False prepLink Nothing True subRole (Just $ fromIntegral groupSize)
       withStore' $ \db -> setGroupChatHidden db user groupId True
-      let GroupMember {groupMemberId} = membership
-          content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName = gName, groupProfile, status = CIGISPending, ownerSigStatus = oss}) GRObserver
-      (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
+      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = oss}) GRObserver
+      (ci, _) <- saveRcvChatItemNoParse user cd msg brokerTs content
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
-      toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
-      toView $ CEvtReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = GROwner, memberRole = GRObserver}
-      -- start async link resolution for signature verification
+      toView $ CEvtNewChatItems user [AChatItem chatTypeI SMDRcv cInfo ci]
       forM_ groupOwner $ \_ ->
         forM_ sLnk_ $ \sLnk ->
           void $ getAgentConnShortLinkAsync user CFGetGroupDataInv (Just conn) sLnk
-      where
-        brokerTs = metaBrokerTs msgMeta
+      pure (gInfo, ci)
 
     processPublicGroupLinkData :: User -> Contact -> Connection -> FixedLinkData 'CMContact -> ConnLinkData 'CMContact -> CM ()
     processPublicGroupLinkData _user _ct _conn _fixedLinkData _cData = do
