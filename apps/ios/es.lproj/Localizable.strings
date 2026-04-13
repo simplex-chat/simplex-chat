@@ -1248,7 +1248,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Confirmado";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Conectar";
 
 /* No comment provided by engineer. */
@@ -1464,7 +1465,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Esquina";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "¿Corregir el nombre a %@?";
 
 /* No comment provided by engineer. */
@@ -2338,9 +2339,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Error al abrir chat";
 
-/* No comment provided by engineer. */
-"Error opening group" = "Error al abrir el grupo";
-
 /* alert title */
 "Error receiving file" = "Error al recibir archivo";
 
@@ -2454,7 +2452,8 @@ file error text
 snd error text */
 "Error: %@" = "Error: %@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "Error: %@.";
 
 /* No comment provided by engineer. */
@@ -2604,7 +2603,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "La huella en la dirección del servidor no coincide con el certificado: %@.";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "La huella en la dirección del servidor no coincide con el certificado.";
 
 /* No comment provided by engineer. */
@@ -2628,7 +2628,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Para todos los moderadores";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Para el perfil de chat %@:";
 
 /* No comment provided by engineer. */
@@ -3042,7 +3043,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Confirmación de migración no válida";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "¡Nombre no válido!";
 
 /* No comment provided by engineer. */
@@ -5172,9 +5173,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolos de SimpleX auditados por Trail of Bits.";
 
-/* simplex link type */
-"SimpleX relay link" = "Enlace de servidor SimpleX";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Modo incógnito simplificado";
 
@@ -5380,7 +5378,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Error en archivo temporal";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Prueba no superada en el paso %@.";
 
 /* No comment provided by engineer. */

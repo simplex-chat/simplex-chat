@@ -1230,7 +1230,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Підтверджений";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Підключіться";
 
 /* No comment provided by engineer. */
@@ -1443,7 +1444,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Кут";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Виправити ім'я на %@?";
 
 /* No comment provided by engineer. */
@@ -2305,9 +2306,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Помилка відкриття чату";
 
-/* No comment provided by engineer. */
-"Error opening group" = "Помилка відкриття групи";
-
 /* alert title */
 "Error receiving file" = "Помилка отримання файлу";
 
@@ -2550,7 +2548,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Швидше знаходьте чати";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Відбиток в адресі сервера не співпадає з сертифікатом.";
 
 /* No comment provided by engineer. */
@@ -2574,7 +2573,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Для всіх модераторів";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Для профілю чату %@:";
 
 /* No comment provided by engineer. */
@@ -2985,7 +2985,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Недійсне підтвердження міграції";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Неправильне ім'я!";
 
 /* No comment provided by engineer. */
@@ -5257,7 +5257,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Тимчасова помилка файлу";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Тест завершився невдало на кроці %@.";
 
 /* No comment provided by engineer. */
