@@ -9320,9 +9320,9 @@ testChannelRelayLeave ps =
 
               -- verify no delivery: owner sends but no relays to forward
               alice #> "#team no delivery"
-              dan </
-              eve </
-              frank </
+              (dan </)
+              (eve </)
+              (frank </)
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
     checkMemberStatus cc name expected = do

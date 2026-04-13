@@ -2828,7 +2828,7 @@ processChatCommand vr nm = \case
       cancelFilesInProgress user filesInfo
       msg <-
         if useRelays' gInfo && isRelay membership
-          then leaveChannelRelay user gInfo
+          then leaveChannelRelay gInfo
           else leaveGroupSendMsg user gInfo
       (gInfo', scopeInfo) <- mkLocalGroupChatScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo' scopeInfo) msg (CISndGroupEvent SGEUserLeft)
@@ -2840,7 +2840,7 @@ processChatCommand vr nm = \case
       pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
     where
       -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.
-      leaveChannelRelay user gInfo = do
+      leaveChannelRelay gInfo = do
         msg@SndMessage {msgBody, signedMsg_} <-
           liftEither . runIdentity =<< lift (createSndMessages $ Identity (GroupId groupId, groupMsgSigning gInfo XGrpLeave, XGrpLeave))
         let body = encodeBatchElement signedMsg_ msgBody
@@ -2855,7 +2855,6 @@ processChatCommand vr nm = \case
         msg <- sendGroupMessage' user gInfo recipients XGrpLeave
         deleteMembersConnections' user members True
         pure msg
-      -- Non-relay members leaving channel send only to relays.
       getRecipients user gInfo
         | useRelays' gInfo = do
             relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
