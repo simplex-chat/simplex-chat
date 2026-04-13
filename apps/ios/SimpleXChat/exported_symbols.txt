@@ -1,0 +1,11 @@
+# Swift mangled symbols (Swift 5+ ABI stable prefix)
+_$s*
+
+# ObjC class/metaclass symbols (for NSObject subclasses)
+_OBJC_CLASS_$_*
+_OBJC_METACLASS_$_*
+
+# C API (SimpleX.h bridging header)
+_chat_*
+_haskell_init*
+_hs_init*
