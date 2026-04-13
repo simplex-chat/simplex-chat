@@ -394,6 +394,7 @@ fun ComposeView(
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   suspend fun fetchAndUpdateLinkPreview(url: String) {
+    composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
     val lp = getLinkPreview(url)
     if (lp != null && pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
@@ -406,7 +407,6 @@ fun ComposeView(
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
         if (pendingLinkUrl.value != url) return@withLongRunningApi
