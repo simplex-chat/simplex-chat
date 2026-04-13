@@ -1302,8 +1302,8 @@ setGroupLinkData nm user gInfo gLink = do
   (conn, groupRelays) <- withFastStore $ \db ->
     (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getConnectedGroupRelays db gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
-      tagShortLink = if useRelays' gInfo then toShortChannelLink else toShortGroupLink
-  sLnk <- shortenShortLink' . tagShortLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
+      linkType = if useRelays' gInfo then CCTChannel else CCTGroup
+  sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
 
 setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
@@ -1381,27 +1381,6 @@ shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . 
 
 shortenCreatedLink :: CreatedConnLink m -> CM (CreatedConnLink m)
 shortenCreatedLink (CCLink cReq sLnk) = CCLink cReq <$> mapM shortenShortLink' sLnk
-
-createdGroupLink :: CreatedLinkContact -> CreatedLinkContact
-createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> shortLink)
-
-toShortGroupLink :: ShortLinkContact -> ShortLinkContact
-toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
-
-createdChannelLink :: CreatedLinkContact -> CreatedLinkContact
-createdChannelLink (CCLink cReq shortLink) = CCLink cReq (toShortChannelLink <$> shortLink)
-
-toShortChannelLink :: ShortLinkContact -> ShortLinkContact
-toShortChannelLink (CSLContact sch _ srv k) = CSLContact sch CCTChannel srv k
-
-createdRelayLink :: CreatedLinkContact -> CreatedLinkContact
-createdRelayLink (CCLink cReq shortLink) = CCLink cReq (toShortRelayLink <$> shortLink)
-
-toShortRelayLink :: ShortLinkContact -> ShortLinkContact
-toShortRelayLink (CSLContact sch _ srv k) = CSLContact sch CCTRelay srv k
-
-toShortLinkContact :: CreatedLinkContact -> Maybe ShortLinkContact
-toShortLinkContact (CCLink _cReq sLink) = sLink
 
 deleteGroupLink' :: User -> GroupInfo -> CM ()
 deleteGroupLink' user gInfo = do
