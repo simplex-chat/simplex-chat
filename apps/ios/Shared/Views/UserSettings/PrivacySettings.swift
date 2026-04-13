@@ -13,7 +13,7 @@ struct PrivacySettings: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
-    @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, store: groupDefaults) private var useLinkPreviews = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
@@ -73,9 +73,9 @@ struct PrivacySettings: View {
                 Section {
                     settingsRow("network", color: theme.colors.secondary) {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
-                            .onChange(of: useLinkPreviews) { linkPreviews in
-                                privacyLinkPreviewsGroupDefault.set(linkPreviews)
-                                privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
+                            .onChange(of: useLinkPreviews) { value in
+                                UserDefaults.standard.set(value, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+                                privacyLinkPreviewsShowAlertGroupDefault.set(false)
                             }
                     }
                     settingsRow("link", color: theme.colors.secondary) {
