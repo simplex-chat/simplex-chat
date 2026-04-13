@@ -1671,22 +1671,22 @@ private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          onChoice(true)
-        }) {
-          Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
           onChoice(false)
         }) {
-          Text(stringResource(MR.strings.link_previews_alert_dont_ask_again), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          onChoice(null)
+          onChoice(true)
         }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
+//        SectionItemView({
+//          AlertManager.shared.hideAlert()
+//          onChoice(null)
+//        }) {
+//          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+//        }
       }
     }
   )

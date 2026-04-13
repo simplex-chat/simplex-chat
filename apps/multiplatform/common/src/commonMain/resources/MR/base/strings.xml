@@ -2941,5 +2941,7 @@
   <!-- ComposeView.kt link previews opt-in alert -->
   <string name="link_previews_alert_title">Enable link previews?</string>
   <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
-  <string name="link_previews_alert_dont_ask_again">Don't ask again</string>
+  <string name="link_previews_alert_enable">Enable</string>
+  <string name="link_previews_alert_disable">Disable</string>
+  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
 </resources>
