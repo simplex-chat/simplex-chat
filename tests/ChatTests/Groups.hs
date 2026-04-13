@@ -261,7 +261,7 @@ chatGroupTests = do
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
       it "owner should leave channel (signed)" testChannelOwnerLeave
       it "subscriber should leave channel (signed)" testChannelSubscriberLeave
-      it "relay leaving channel" testChannelRelayLeave
+      it "relay should leave channel" testChannelRelayLeave
       it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
     describe "channel message operations" $ do
