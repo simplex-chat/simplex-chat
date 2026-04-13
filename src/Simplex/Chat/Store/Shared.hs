@@ -686,9 +686,9 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
-  (fullLink_, shortLink_, BI connLinkPreparedConnection, BI connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId)
-    | isJust fullLink_ || isJust shortLink_ ->
-        Just PreparedGroup {connLinkToConnect = PreparedConnLink {connFullLink = fullLink_, connShortLink = shortLink_}, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
+  (connFullLink, connShortLink, BI connLinkPreparedConnection, BI connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId)
+    | isJust connFullLink || isJust connShortLink ->
+        Just PreparedGroup {connLinkToConnect = PreparedConnLink {connFullLink, connShortLink}, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
   _ -> Nothing
 
 toPublicGroupProfile :: Maybe GroupType -> Maybe ShortLinkContact -> Maybe B64UrlByteString -> Maybe PublicGroupProfile
