@@ -3724,8 +3724,8 @@ runRelayRequestWorker a Worker {doWork} = do
                   let crClientData = encodeJSON $ CRDataGroup groupLinkId
                   -- prepare link with relayMemId as linkEntityId (no server request)
                   (ccLink, preparedParams) <- withAgent $ \a' -> prepareConnectionLink a' (aUserId user) sigKeys relayMemId True (Just crClientData)
-                  ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-                  sLnk <- case toShortLinkContact ccLink' of
+                  ccLink' <- setShortLinkType CCTGroup <$> shortenCreatedLink ccLink
+                  sLnk <- case connShortLink' ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
                   let userData = encodeShortLinkData $ RelayShortLinkData {relayProfile = fromLocalProfile p}
