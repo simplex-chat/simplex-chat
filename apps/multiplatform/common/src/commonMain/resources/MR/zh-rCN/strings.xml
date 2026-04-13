@@ -2581,9 +2581,9 @@
     <string name="relay_test_step_connect">连接</string>
     <string name="relay_conn_status_connected">已连接</string>
     <string name="relay_conn_status_connecting">正在连接</string>
-    <string name="create_channel_title">创建频道</string>
-    <string name="create_channel_button">创建频道</string>
-    <string name="create_channel_beta_button">创建频道（测试版）</string>
+    <string name="create_channel_title">创建公开频道</string>
+    <string name="create_channel_button">创建公开频道</string>
+    <string name="create_channel_beta_button">创建公开频道（测试版）</string>
     <string name="creating_channel">正在创建频道</string>
     <string name="relay_test_step_decode_link">解码链接</string>
     <string name="button_delete_channel">删除频道</string>
@@ -2651,8 +2651,21 @@
     <string name="relay_section_footer_subscriber">你通过此中继链接连接至该频道。</string>
     <string name="chat_banner_your_channel">你的频道</string>
     <string name="connect_plan_this_is_your_link_for_channel">你的频道</string>
-    <string name="your_profile_shared_with_channel_relays">你的个人资料 %1$s 将分享给频道中继和订阅者。</string>
+    <string name="your_profile_shared_with_channel_relays">你的个人资料 %1$s 将分享给频道中继和订阅者。中继可以访问频道消息。</string>
     <string name="your_relay_address">你的中继地址</string>
     <string name="your_relay_name">你的中继名</string>
     <string name="you_will_stop_receiving_messages_from_this_channel_chat_history_will_be_preserved">你会停止收到来自该频道的消息。聊天记录将被保留。</string>
+    <string name="channel_full_name_field">完整的频道名:</string>
+    <string name="channel_profile_is_stored_on_subscribers_devices">频道资料存储在订阅者设备和聊天中继上。</string>
+    <string name="snd_channel_event_channel_profile_updated">频道资料已更新</string>
+    <string name="rcv_channel_events_count">%d 个频道事件</string>
+    <string name="rcv_channel_event_channel_deleted">删除了频道</string>
+    <string name="rcv_msg_error_dropped">被丢弃 （%1$d 次尝试）</string>
+    <string name="rcv_msg_error_parse">错误: %s</string>
+    <string name="error_saving_channel_profile">保存频道资料出错</string>
+    <string name="alert_title_msg_error">消息错误</string>
+    <string name="save_and_notify_channel_subscribers">保存并通知频道订阅者</string>
+    <string name="save_channel_profile">保存频道资料</string>
+    <string name="alert_text_msg_reception_error">应用在尝试接受这条消息 %1$d 次后删除了这条消。</string>
+    <string name="rcv_channel_event_updated_channel_profile">更新了频道资料</string>
 </resources>
