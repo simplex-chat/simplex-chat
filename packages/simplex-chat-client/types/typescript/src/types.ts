@@ -2644,6 +2644,7 @@ export interface GroupMemberRef {
 export enum GroupMemberRole {
   Relay = "relay",
   Observer = "observer",
+  Commenter = "commenter",
   Author = "author",
   Member = "member",
   Moderator = "moderator",

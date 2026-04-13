@@ -2343,6 +2343,7 @@ Known:
 **Enum type**:
 - "relay"
 - "observer"
+- "commenter"
 - "author"
 - "member"
 - "moderator"

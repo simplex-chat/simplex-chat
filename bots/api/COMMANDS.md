@@ -598,7 +598,7 @@ Add contact to group. Requires bot to have Admin role.
 **Syntax**:
 
 ```
-/_add #<groupId> <contactId> relay|observer|author|member|moderator|admin|owner
+/_add #<groupId> <contactId> relay|observer|commenter|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -677,7 +677,7 @@ Accept group member. Requires Admin role.
 **Syntax**:
 
 ```
-/_accept member #<groupId> <groupMemberId> relay|observer|author|member|moderator|admin|owner
+/_accept member #<groupId> <groupMemberId> relay|observer|commenter|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -720,7 +720,7 @@ Set members role. Requires Admin role.
 **Syntax**:
 
 ```
-/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] relay|observer|author|member|moderator|admin|owner
+/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] relay|observer|commenter|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1087,7 +1087,7 @@ Create group link.
 **Syntax**:
 
 ```
-/_create link #<groupId> relay|observer|author|member|moderator|admin|owner
+/_create link #<groupId> relay|observer|commenter|author|member|moderator|admin|owner
 ```
 
 ```javascript
@@ -1126,7 +1126,7 @@ Set member role for group link.
 **Syntax**:
 
 ```
-/_set link role #<groupId> relay|observer|author|member|moderator|admin|owner
+/_set link role #<groupId> relay|observer|commenter|author|member|moderator|admin|owner
 ```
 
 ```javascript
