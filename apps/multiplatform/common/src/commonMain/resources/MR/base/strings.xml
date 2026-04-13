@@ -2937,4 +2937,10 @@
 
   <!-- ChatListNavLinkView.kt channel-related -->
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
+
+  <!-- ComposeView.kt link previews opt-in alert -->
+  <string name="link_previews_alert_title">Link previews</string>
+  <string name="link_previews_alert_desc">Generating a link preview may reveal your IP address to the website.</string>
+  <string name="enable_link_previews">Enable</string>
+  <string name="disable_link_previews">Disable</string>
 </resources>

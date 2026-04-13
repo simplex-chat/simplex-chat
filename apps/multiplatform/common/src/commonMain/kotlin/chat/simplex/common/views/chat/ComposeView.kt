@@ -395,17 +395,47 @@ fun ComposeView(
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
-        val lp = getLinkPreview(url)
-        if (lp != null && pendingLinkUrl.value == url) {
-          chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) // to avoid showing alert to current users, show alert in v6.5
-          composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-          pendingLinkUrl.value = null
-        } else if (pendingLinkUrl.value == url) {
+        if (pendingLinkUrl.value != url) return@withLongRunningApi
+        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
+            && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
+          showLinkPreviewsConfirmAlert(url)
+          return@withLongRunningApi
+        }
+        fetchAndUpdateLinkPreview(url)
+      }
+    }
+  }
+
+  suspend fun fetchAndUpdateLinkPreview(url: String) {
+    val lp = getLinkPreview(url)
+    if (lp != null && pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+      pendingLinkUrl.value = null
+    } else if (pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+      pendingLinkUrl.value = null
+    }
+  }
+
+  fun showLinkPreviewsConfirmAlert(url: String) {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.link_previews_alert_title),
+      text = generalGetString(MR.strings.link_previews_alert_desc),
+      confirmText = generalGetString(MR.strings.enable_link_previews),
+      onConfirm = {
+        chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
+        withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
+      },
+      dismissText = generalGetString(MR.strings.disable_link_previews),
+      onDismiss = {
+        chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
+        chatModel.controller.appPrefs.privacyLinkPreviews.set(false)
+        if (pendingLinkUrl.value == url) {
           composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
           pendingLinkUrl.value = null
         }
       }
-    }
+    )
   }
 
   fun showLinkPreview(parsedMessage: List<FormattedText>?) {
