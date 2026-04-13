@@ -9280,9 +9280,13 @@ testChannelRelayLeave ps =
               bob ##> "/leave #team"
               bob <## "#team: you left the group"
               bob <## "use /d #team to delete the group"
-              alice <## "#team: bob left the group (signed)"
-              -- cath: not notified (relays not connected to each other, owner doesn't forward)
-              -- subscribers: event muted (muteEventInChannel), no console output
+              concurrentlyN_
+                [ alice <## "#team: bob left the group (signed)",
+                  -- cath: not notified (relays not connected, owner doesn't forward)
+                  dan <## "#team: bob left the group (signed)",
+                  eve <## "#team: bob left the group (signed)",
+                  frank <## "#team: bob left the group (signed)"
+                ]
 
               -- verify relay1 member status is "left" on all clients that know bob
               checkMemberStatus alice "bob" (Just "left")
@@ -9301,8 +9305,12 @@ testChannelRelayLeave ps =
               cath ##> "/leave #team"
               cath <## "#team: you left the group"
               cath <## "use /d #team to delete the group"
-              alice <## "#team: cath left the group (signed)"
-              -- subscribers: event muted
+              concurrentlyN_
+                [ alice <## "#team: cath left the group (signed)",
+                  dan <## "#team: cath left the group (signed)",
+                  eve <## "#team: cath left the group (signed)",
+                  frank <## "#team: cath left the group (signed)"
+                ]
 
               -- verify relay2 member status
               checkMemberStatus alice "cath" (Just "left")
@@ -9312,10 +9320,9 @@ testChannelRelayLeave ps =
 
               -- verify no delivery: owner sends but no relays to forward
               alice #> "#team no delivery"
-              threadDelay 1000000
-              dan #$> ("/_get chat #1 count=1", chat, [(0, "still working")]) -- no new item
-              eve #$> ("/_get chat #1 count=1", chat, [(0, "still working")]) -- no new item
-              frank #$> ("/_get chat #1 count=1", chat, [(0, "still working")]) -- no new item
+              dan </
+              eve </
+              frank </
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
     checkMemberStatus cc name expected = do
