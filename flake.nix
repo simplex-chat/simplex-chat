@@ -102,6 +102,7 @@
 
         sha256sum $out/_pkg/*.a
 
+        find "$out/_pkg" -type f -name "*simplex-chat*.a" -exec chmod +w {} +
         find "$out/_pkg" -type f -name "*simplex-chat*.a" -exec ${pkgs.stdenv.cc.targetPrefix}strip -x {} +
 
         (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${bundleName}.zip *)
