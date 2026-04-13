@@ -216,6 +216,9 @@ html {
     font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
 }
 
+body {
+    overflow-x: hidden;
+}
 
 .dark html,
 .dark body {
