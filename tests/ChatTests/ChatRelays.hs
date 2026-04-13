@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ChatTests.ChatRelays where
 
 import ChatClient
@@ -17,6 +19,8 @@ chatRelayTests = do
   describe "public group invitations" $ do
     it "share public group in direct chat" testSharePublicGroupDirect
     it "share public group in group chat" testSharePublicGroupInGroup
+    it "share public group twice reuses hidden group" testSharePublicGroupDedup
+    it "cannot share non-public group" testShareNonPublicGroupFails
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
@@ -180,9 +184,12 @@ testSharePublicGroupDirect ps =
         createChannelWithRelay "team" alice bob
         connectUsers alice cath
         alice ##> "/share #team @cath"
-        alice <## "shared public group #team"
+        alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
+        cath <# "alice> invitation to join team (verifying...)"
         cath <## "alice (Alice) shared public group #team"
-        -- wait for async verification
+        -- TODO: async verification currently fails because groupLinkData (Internal.hs:1336)
+        -- overwrites owners=[] when updating link data after relay joins.
+        -- Once fixed, verify: cath ##> "/tail @alice 1"; cath <# "alice> invitation to join team (owner verified)"
         threadDelay 1000000
 
 testSharePublicGroupInGroup :: HasCallStack => TestParams -> IO ()
@@ -198,8 +205,41 @@ testSharePublicGroupInGroup ps =
         -- create a regular group with alice and cath
         createGroup2 "friends" alice cath
         alice ##> "/share #team #friends"
-        alice <## "shared public group #team"
+        alice <### [WithTime "#friends invitation to join team", "shared public group #team"]
+        cath <# "#friends alice> invitation to join team"
         cath <## "#friends: alice shared public group #team"
+
+testSharePublicGroupDedup :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupDedup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        connectUsers alice cath
+        -- share twice, second reuses hidden group
+        alice ##> "/share #team @cath"
+        alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
+        cath <# "alice> invitation to join team (verifying...)"
+        cath <## "alice (Alice) shared public group #team"
+        alice ##> "/share #team @cath"
+        alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
+        cath <# "alice> invitation to join team (verifying...)"
+        cath <## "alice (Alice) shared public group #team"
+        threadDelay 1000000
+
+testShareNonPublicGroupFails :: HasCallStack => TestParams -> IO ()
+testShareNonPublicGroupFails =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/share #team @bob"
+    alice <## "bad chat command: not a public group"
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

@@ -2320,9 +2320,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       receiveInlineChunk ft chunk meta
 
     processPublicGroupInvitationGroup :: GroupInfo -> GroupMember -> Connection -> PublicGroupInvitation -> RcvMessage -> UTCTime -> CM ()
-    processPublicGroupInvitationGroup g m conn inv msg brokerTs = do
-      (gInfo, _) <- rcvPublicGroupInvitation conn inv msg brokerTs (CDGroupRcv g Nothing m) (GroupChat g Nothing)
-      toView $ CEvtReceivedPublicGroupInvitation {user, sharedGroupInfo = gInfo, contact_ = Nothing, fromGroupInfo_ = Just g, fromMember_ = Just m}
+    processPublicGroupInvitationGroup g m conn inv msg brokerTs
+      | not (groupFeatureMemberAllowed SGFSimplexLinks m g) = messageError "x.grp.inv.pub: simplex links not allowed"
+      | otherwise = do
+          (gInfo, _) <- rcvPublicGroupInvitation conn inv msg brokerTs (CDGroupRcv g Nothing m) (GroupChat g Nothing)
+          toView $ CEvtReceivedPublicGroupInvitation {user, sharedGroupInfo = gInfo, contact_ = Nothing, fromGroupInfo_ = Just g, fromMember_ = Just m}
 
     bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunkGroup GroupInfo {groupId} sharedMsgId chunk meta = do
@@ -2466,7 +2468,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               PublicGroupProfile {publicGroupId = B64UrlByteString pgId} <- maybe (Left "no public group profile") Right (publicGroup gp)
               unless (linkEntityId == Just pgId) $ Left "group identity mismatch"
               unless (bd == adHash) $ Left "binding data mismatch"
-              OwnerAuth {ownerKey} <- maybe (Left "unknown member ID") Right $
+              OwnerAuth {ownerKey} <- maybe (Left $ "unknown member ID: " <> show (unMemberId mId) <> " not in " <> show (map (\OwnerAuth {ownerId} -> ownerId) owners)) Right $
                 find (\OwnerAuth {ownerId} -> ownerId == unMemberId mId) owners
               sig <- C.decodeSignature sigBytes
               let invBody = encodeUtf8 $ encodeJSON gp

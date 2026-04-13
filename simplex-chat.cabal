@@ -130,6 +130,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
           Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays
           Simplex.Chat.Store.Postgres.Migrations.M20260403_item_viewed
+          Simplex.Chat.Store.Postgres.Migrations.M20260413_chat_hidden
   else
       exposed-modules:
           Simplex.Chat.Archive

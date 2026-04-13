@@ -670,6 +670,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       DirectChat c -> case chatDir of
         CIDirectSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
+          CISndGroupInvitation gi _
+            | isPublicGroupInv gi -> sentWithTime_ ts tz [to <> plain (invItemText gi) <> ownerSigStr gi] meta
           CISndGroupEvent {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
@@ -678,6 +680,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
+          CIRcvGroupInvitation gi _
+            | isPublicGroupInv gi -> receivedWithTime_ ts tz from [] meta [plain (invItemText gi) <> ownerSigStr gi] False
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
@@ -691,7 +695,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       GroupChat g scopeInfo -> case chatDir of
         CIGroupSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
-          CISndGroupInvitation {} -> showSndItemProhibited to
+          CISndGroupInvitation gi _
+            | isPublicGroupInv gi -> sentWithTime_ ts tz [to <> plain (invItemText gi) <> ownerSigStr gi] meta
           _ -> showSndItem to
           where
             to = ttyToGroup g scopeInfo
@@ -702,7 +707,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
             CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
             CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
             CIRcvMsgError err -> viewRcvMsgError from err ts tz meta
-            CIRcvGroupInvitation {} | isJust m_ -> showRcvItemProhibited from
+            CIRcvGroupInvitation gi _
+              | isPublicGroupInv gi -> receivedWithTime_ ts tz from [] meta [plain (invItemText gi) <> ownerSigStr gi] False
             CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g scopeInfo m_) context meta [plainContent content] False
             _ -> showRcvItem from
@@ -749,6 +755,16 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir context (MCText $ T.pack fileName) ts tz meta
       _ -> view dir context mc ts tz meta
+    isPublicGroupInv CIGroupInvitation {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
+    invItemText CIGroupInvitation {groupProfile = GroupProfile {displayName}, status} =
+      (case status of
+        CIGISAccepted -> "joined "
+        _ -> "invitation to join ") <> displayName
+    ownerSigStr CIGroupInvitation {ownerSigStatus} = case ownerSigStatus of
+      Just OSSVerified -> styled (colored Green) (" (owner verified)" :: String)
+      Just OSSPending -> styled (colored Yellow) (" (verifying...)" :: String)
+      Just (OSSFailed reason) -> styled (colored Red) (" (verification failed: " <> T.unpack reason <> ")")
+      Nothing -> ""
     showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> sigStatusStr msgSigned] meta
     showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content <> sigStatusStr msgSigned] False
     showSndItemProhibited to = showItem $ sentWithTime_ ts tz [to <> plainContent content <> " " <> prohibited] meta

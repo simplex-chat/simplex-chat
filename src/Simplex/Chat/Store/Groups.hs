@@ -44,6 +44,7 @@ module Simplex.Chat.Store.Groups
     setGroupOwnerSig,
     getGroupOwnerSig,
     getHiddenGroupByPublicGroupId,
+    getHiddenGroups,
     getGroup,
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoViaUserShortLink,
@@ -903,6 +904,12 @@ getHiddenGroupByPublicGroupId :: DB.Connection -> UserId -> B64UrlByteString -> 
 getHiddenGroupByPublicGroupId db userId pgId =
   maybeFirstRow fromOnly $
     DB.query db "SELECT g.group_id FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND g.chat_hidden = 1 AND gp.public_group_id = ?" (userId, pgId)
+
+getHiddenGroups :: DB.Connection -> VersionRangeChat -> User -> UTCTime -> IO [GroupInfo]
+getHiddenGroups db vr user@User {userId} createdAtCutoff = do
+  groupIds <- map fromOnly <$>
+    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_hidden = 1 AND created_at <= ?" (userId, createdAtCutoff)
+  rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status

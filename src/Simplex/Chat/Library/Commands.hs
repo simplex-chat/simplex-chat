@@ -2499,14 +2499,14 @@ processChatCommand vr nm = \case
           g <- getGroupInfo db vr user toGroupId
           ms <- liftIO $ getGroupMembers db vr user g
           pure (g, ms)
+        unless (groupFeatureUserAllowed SGFSimplexLinks toGInfo) $ throwCmdError "simplex links not allowed in this group"
         let inv = PublicGroupInvitation {groupProfile, groupOwner = Nothing, groupSize}
         msg <- sendGroupMessage user toGInfo scope members $ XGrpInvPub inv
         sendInv Nothing msg (CDGroupSnd toGInfo Nothing) (GroupChat toGInfo Nothing)
       _ -> throwCmdError "unsupported chat type"
   APIRevealPublicGroup groupId -> withUser $ \user -> do
     withStore' $ \db -> setGroupChatHidden db user groupId False
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    pure $ CRSentPublicGroupInvitation user gInfo -- reusing response, just returns group info
+    ok user
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -4599,6 +4599,8 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupInProgressGroups user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+      cleanupHiddenGroups user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
       cleanupStaleRelayTestConns user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
@@ -4619,6 +4621,13 @@ cleanupManager = do
       let cutoffTs = addUTCTime (- 1800) ts
       inProgressGroups <- withStore' $ \db -> getInProgressGroups db vr user cutoffTs
       forM_ inProgressGroups $ \gInfo ->
+        deleteInProgressGroup user gInfo `catchAllErrors` eToView
+    cleanupHiddenGroups user = do
+      vr <- chatVersionRange
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-86400) ts -- older than 24 hours
+      hiddenGroups <- withStore' $ \db -> getHiddenGroups db vr user cutoffTs
+      forM_ hiddenGroups $ \gInfo ->
         deleteInProgressGroup user gInfo `catchAllErrors` eToView
     cleanupStaleRelayTestConns user = do
       ts <- liftIO getCurrentTime
