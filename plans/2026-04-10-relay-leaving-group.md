@@ -2,115 +2,192 @@
 
 ## Context
 
-SimpleX Chat channels use chat relays to forward messages from owners to subscribers. When a channel hosts prohibited content, the relay operator needs the ability to make their relay leave the group — a moderation capability. Currently `APILeaveGroup` doesn't work correctly for relay members: it sends `XGrpLeave` only to other relays (via `getGroupRelayMembers`), but the relay needs to notify the owner so the owner can update channel link data and forward the event to subscribers through remaining relays.
+SimpleX Chat channels use chat relays to forward messages from owners to subscribers. When a channel hosts prohibited content, the relay operator needs the ability to make their relay leave the group. Currently `APILeaveGroup` doesn't work correctly for relay members: the `getRecipients` helper always uses `getGroupRelayMembers` for channel groups, which returns only other relays (members with `GRRelay` role) — the owner is excluded. The relay needs to notify the owner (so it can update channel link data) and all subscribers directly (relay has connections to all of them).
 
 ## Flow
 
-1. **Relay** calls `APILeaveGroup` → sends `XGrpLeave` to owners only → deletes all connections (owners + subscribers)
-2. **Owner** receives `XGrpLeave` → updates relay member status to `GSMemLeft` → updates `GroupRelay.relayStatus` to `RSLeft` → removes relay link from channel link data via `updatePublicGroupData` → delivery system forwards event to subscribers via remaining relays
-3. **Subscribers** receive forwarded `XGrpLeave` → update relay member status to `GSMemLeft` → delete connection to relay (already dead)
+1. **Relay** calls `APILeaveGroup` → sends `XGrpLeave` directly to all members (owners + subscribers) → deletes all connections
+2. **Owner** receives `XGrpLeave` → updates relay member status to `GSMemLeft` → updates `GroupRelay.relayStatus` to `RSInactive` → removes relay link from channel link data via `updatePublicGroupData` → relay bar shows status
+3. **Subscribers** receive `XGrpLeave` directly from relay → update relay member status to `GSMemLeft` → delete connection to relay → relay bar shows status
 
 ## Changes
 
-### 1. Add `RSLeft` to `RelayStatus`
+### 1. Add `RSInactive` to `RelayStatus`
 
 **`src/Simplex/Chat/Types/Shared.hs`** (~L81-112)
 
-Add `RSLeft` after `RSActive` in the `RelayStatus` data type, and add `"left"` encoding in `relayStatusText`, `TextEncoding` instance.
+`GroupMemberStatus` already carries left/removed semantics (`GSMemLeft`, `GSMemRemoved`), so `RelayStatus` should not duplicate that. Add `RSInactive` as a generic terminal status meaning "no longer operational", complementing `RSActive`. Add `"inactive"` encoding in `relayStatusText` and `TextEncoding` instance.
+
+```haskell
+data RelayStatus
+  = RSNew
+  | RSInvited
+  | RSAccepted
+  | RSActive
+  | RSInactive
+  deriving (Eq, Show)
+```
 
 ### 2. Fix `APILeaveGroup` recipients for relay
 
 **`src/Simplex/Chat/Library/Commands.hs`** (~L2838-2844)
 
-Change `getRecipients`:
+Use nested condition inside `useRelays'` guard. When relay leaves, it sends `XGrpLeave` to all current/pending members directly (relay has connections to all of them).
 
 ```haskell
--- CURRENT:
-getRecipients user gInfo
-  | useRelays' gInfo = do
-      relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
-      pure (relays, relays)
-  | otherwise = do
-      ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-      pure (ms, filter memberCurrentOrPending ms)
-
--- NEW:
 getRecipients user gInfo@GroupInfo {membership}
-  | useRelays' gInfo, isRelay membership = do
-      -- Relay leaving: notify owners, clean up all connections
-      ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-      let owners = filter (\m -> memberRole' m >= GROwner && memberCurrent m) ms
-      pure (ms, owners)
-  | useRelays' gInfo = do
-      relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
-      pure (relays, relays)
+  | useRelays' gInfo =
+      if isRelay membership
+        then do
+          -- Relay leaving: notify all members directly, clean up all connections
+          ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+          pure (ms, filter memberCurrentOrPending ms)
+        else do
+          relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
+          pure (relays, relays)
   | otherwise = do
       ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
       pure (ms, filter memberCurrentOrPending ms)
 ```
 
-`members` (first tuple element) = all members → used by `deleteMembersConnections'` for cleanup.
-`recipients` (second tuple element) = owners only → efficient, delivery system forwards to subscribers.
+- `members` (first tuple) = all members → used by `deleteMembersConnections'` for connection cleanup
+- `recipients` (second tuple) = all current/pending members → XGrpLeave sent directly
 
-Existing functions reused: `getGroupMembers` (Store/Groups.hs), `isRelay` (Types.hs:1063), `memberRole'` (Types.hs:1066), `memberCurrent` (Types.hs — need to verify existence).
+Existing functions: `isRelay` (Types.hs:1063), `getGroupMembers` (Store/Groups.hs), `memberCurrentOrPending` (Types.hs:1308).
 
 ### 3. Update `xGrpLeave` to set relay status on owner
 
-**`src/Simplex/Chat/Library/Subscriber.hs`** (~L3099-3110)
+**`src/Simplex/Chat/Library/Subscriber.hs`** (~L3113-3124)
 
-After `updateMemberRecordDeleted` and before `updatePublicGroupData`, add relay status update:
+After `updateMemberRecordDeleted` and before `updatePublicGroupData`, set `RSInactive` on the owner's `GroupRelay` record. On subscribers this is a no-op because they have no `GroupRelay` record (`getGroupRelayByGMId` returns `Left`, `forM_` skips).
 
 ```haskell
 xGrpLeave gInfo m msg@RcvMessage {msgSigned} brokerTs = do
   deleteMemberConnection m
   gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
-  -- NEW: update relay status when a relay member leaves
+  -- Set relay status to inactive (owner-only; subscriber has no GroupRelay record)
   when (isRelay m) $
     withStore' $ \db -> do
       relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
-      forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSLeft
+      forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
   gInfo'' <- updatePublicGroupData user gInfo'
   -- ... rest unchanged
 ```
 
-On owner: `getGroupRelayByGMId` succeeds → relay status updated to `RSLeft`.
-On subscriber: `getGroupRelayByGMId` fails (no `GroupRelay` record) → `forM_` on `Left` is no-op.
+`updatePublicGroupData` calls `getConnectedGroupRelays` which filters by `member_status = GSMemConnected AND relay_status IN (RSAccepted, RSActive)`. The relay is excluded by member status (`GSMemLeft`), so the relay link is removed from channel link data.
 
-Existing functions reused: `isRelay` (Types.hs:1063), `getGroupRelayByGMId` (Store/Groups.hs:1296), `updateRelayStatus` (Store/Groups.hs:1418), `groupMemberId'` (Types.hs).
+Existing functions: `isRelay` (Types.hs:1063), `getGroupRelayByGMId` (Store/Groups.hs:1296), `updateRelayStatus` (Store/Groups.hs:1418), `groupMemberId'` (Types.hs).
 
 ### 4. Client type updates
 
-**`apps/ios/SimpleXChat/ChatTypes.swift`** (~L2558-2563, 2628-2637)
+**`apps/ios/SimpleXChat/ChatTypes.swift`** (~L2558-2563, L2628-2637)
 
-Add `case rsLeft = "left"` to `RelayStatus` enum and `case .rsLeft: "left"` to `text` property.
+Add `case rsInactive = "inactive"` to `RelayStatus` enum and `case .rsInactive: "inactive"` to `text` property.
 
 **`apps/multiplatform/common/src/commonMain/kotlin/chat/simplex/common/model/ChatModel.kt`** (~L2266-2276)
 
-Add `@SerialName("left") RsLeft` to `RelayStatus` enum and `RsLeft -> generalGetString(MR.strings.relay_status_left)` to `text` property.
+Add `@SerialName("inactive") RsInactive` to `RelayStatus` enum and `RsInactive -> generalGetString(MR.strings.relay_status_inactive)` to `text` property.
 
 **`apps/multiplatform/common/src/commonMain/resources/MR/base/strings.xml`** (~L2879)
 
-Add `<string name="relay_status_left">left</string>`.
+Add `<string name="relay_status_inactive">inactive</string>`.
 
 **`packages/simplex-chat-client/types/typescript/src/types.ts`** (~L3608-3613)
 
-Add `Left = "left"` to `RelayStatus` enum.
+Add `Inactive = "inactive"` to `RelayStatus` enum.
 
-### 5. Test
+### 5. UI: relay bar updates
+
+The relay bar (above compose area) currently shows for owners when `activeCount < relays.count`, and for subscribers in steady state. After relay leaves, the bar shows but needs better indication of what happened and whether delivery is broken.
+
+#### 5a. Fix `relayStatusIndicator` color for `RSInactive`
+
+Currently `relayStatusIndicator` shows yellow for any non-active status — yellow implies "connecting/in progress", which is wrong for an inactive relay.
+
+**iOS** (`apps/ios/Shared/Views/NewChat/AddChannelView.swift` L431-432):
+```swift
+// CURRENT:
+let color: Color = connFailed ? .red : (status == .rsActive ? .green : .yellow)
+// NEW:
+let color: Color = connFailed ? .red : (status == .rsActive ? .green : (status == .rsInactive ? .red : .yellow))
+```
+
+**Kotlin** (`apps/multiplatform/.../views/newchat/AddChannelView.kt` L551):
+```kotlin
+// CURRENT:
+val color = if (connFailed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
+// NEW:
+val color = if (connFailed) Color.Red else when (status) {
+    RelayStatus.RsActive -> Color.Green
+    RelayStatus.RsInactive -> Color.Red
+    else -> WarningYellow
+}
+```
+
+#### 5b. Owner relay bar: "no active relays" message
+
+When `activeCount == 0`, show a warning message inside the relay bar indicating delivery is broken and that adding new relays will be available in a future update.
+
+**iOS** (`apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift` ~L730-738):
+
+In `ownerChannelRelayBar`, when `activeCount == 0`, add footer text below the relay list:
+```swift
+if activeCount == 0 {
+    Text("Messages can't be delivered to subscribers.")
+    Text("Adding new relay will be available in a future update.")
+}
+```
+
+**Kotlin** (`apps/multiplatform/.../views/chat/ComposeView.kt` ~L1647-1657):
+
+Same logic — when `activeCount == 0`, show the warning texts.
+
+New strings needed in `strings.xml`:
+- `relay_bar_no_active_delivery` = "Messages can't be delivered to subscribers."
+- `relay_bar_add_relay_future` = "Adding new relay will be available in a future update."
+
+#### 5c. Subscriber relay bar: show errors in steady state
+
+Currently in steady state (`showProgress = false`), the subscriber relay bar header shows only "N relays" with no error indication. When relay connections are deleted (relay left), the subscriber sees no issue in collapsed view.
+
+**iOS** (`apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift` ~L780-792):
+
+When `!showProgress && errorCount > 0`, show error count in header:
+```swift
+if !showProgress {
+    if errorCount > 0 && errorCount == total {
+        Text("All relays disconnected")
+    } else if errorCount > 0 {
+        Text(String.localizedStringWithFormat("...", connectedCount, total, errorCount))
+    } else {
+        Text(String.localizedStringWithFormat("%d relays", total))
+    }
+}
+```
+
+When `errorCount == total` (all relays disconnected), add footer: "Messages can't be delivered until the channel owner adds new relays."
+
+**Kotlin** (`apps/multiplatform/.../views/chat/ComposeView.kt` ~L1695-1707):
+
+Same logic.
+
+New strings:
+- `relay_bar_all_disconnected` = "All relays disconnected"
+- `relay_bar_no_delivery_subscriber` = "Messages can't be delivered until the channel owner adds new relays."
+
+### 6. Test
 
 **`tests/ChatTests/Groups.hs`**
 
-Add `testChannelRelayLeave` test. Structure:
+Add `testChannelRelayLeave` test:
 
-1. Create channel with 2 relays (`relay1`, `relay2`) and 2 subscribers (`dan`, `eve`) using `prepareChannel2Relays` + `memberJoinChannel`
-2. Subscribers discover each other (send a message so relay forwards)
+1. Create channel with 2 relays and 2 subscribers via `prepareChannel2Relays` + `memberJoinChannel`
+2. Verify channel works: owner sends message → subscribers receive
 3. `relay1` leaves: `relay1 ##> "/leave #team"`
 4. Verify relay1 output: `"#team: you left the group"`
-5. Verify owner output: `"#team: <relay1> left the group (signed)"`
-6. Wait for async link data update
-7. Verify owner relay list: relay1 status = left, relay2 status = active
-8. Verify subscribers receive forwarded `XGrpLeave` via relay2 (subscriber member status for relay1 updated)
-9. Verify channel still works: owner sends message → relay2 forwards → subscribers receive
+5. Verify owner output: `"#team: <relay1_name> left the group (signed)"`
+6. Verify subscribers receive `XGrpLeave` directly (member status updated)
+7. Verify channel still works: owner sends message → relay2 forwards → subscribers receive
 
 Register test in test list at ~L261 (after `testChannelSubscriberLeave`).
 
@@ -118,13 +195,17 @@ Register test in test list at ~L261 (after `testChannelSubscriberLeave`).
 
 | File | Change |
 |------|--------|
-| `src/Simplex/Chat/Types/Shared.hs` | Add `RSLeft` to `RelayStatus` |
+| `src/Simplex/Chat/Types/Shared.hs` | Add `RSInactive` to `RelayStatus` |
 | `src/Simplex/Chat/Library/Commands.hs` | Fix `getRecipients` for relay in `APILeaveGroup` |
 | `src/Simplex/Chat/Library/Subscriber.hs` | Update `xGrpLeave` to set relay status |
-| `apps/ios/SimpleXChat/ChatTypes.swift` | Add `rsLeft` case |
-| `apps/multiplatform/.../ChatModel.kt` | Add `RsLeft` case |
-| `apps/multiplatform/.../strings.xml` | Add `relay_status_left` string |
-| `packages/.../types.ts` | Add `Left` to enum |
+| `apps/ios/SimpleXChat/ChatTypes.swift` | Add `rsInactive` case |
+| `apps/ios/Shared/Views/NewChat/AddChannelView.swift` | Fix `relayStatusIndicator` color for inactive |
+| `apps/ios/Shared/Views/Chat/ComposeMessage/ComposeView.swift` | Owner/subscriber relay bar messages |
+| `apps/multiplatform/.../ChatModel.kt` | Add `RsInactive` case |
+| `apps/multiplatform/.../AddChannelView.kt` | Fix `RelayStatusIndicator` color for inactive |
+| `apps/multiplatform/.../ComposeView.kt` | Owner/subscriber relay bar messages |
+| `apps/multiplatform/.../strings.xml` | Add `relay_status_inactive` + relay bar strings |
+| `packages/.../types.ts` | Add `Inactive` to enum |
 | `tests/ChatTests/Groups.hs` | Add `testChannelRelayLeave` test |
 
 ## Verification
@@ -134,21 +215,27 @@ cabal build --ghc-options=-O0
 cabal test simplex-chat-test --test-options='-m "channels"'
 ```
 
+Manual: verify relay bar appearance on iOS simulator and Android emulator after relay leaves.
+
 ## Adversarial Review
 
 **Pass 1:**
-- Relay's `sendGroupMessage'` signs `XGrpLeave` (relay has `groupKeys` with `memberPrivKey`; `requiresSignature XGrpLeave_ = True`). Owner verifies signature. Forwarded copies retain signature for subscriber verification. OK.
-- `deleteMembersConnections' user members True` with `waitDelivery=True` ensures `XGrpLeave` reaches owner's SMP queue before relay deletes connections. OK.
-- `updatePublicGroupData` reads `getConnectedGroupRelays` which filters by `member_status = GSMemConnected AND relay_status IN (RSAccepted, RSActive)`. Since member status is already `GSMemLeft`, relay link is excluded. OK.
-- `memberEventDeliveryScope` for relay (`GRRelay < GRModerator`): returns `DJDeliveryJob {includePending = False}`. Delivery worker forwards to subscribers via remaining relays. OK.
-- `muteEventInChannel` for relay member: muted for subscribers (no chat item shown), but DB is updated. Owner sees event (not muted since `GROwner >= GRModerator`). OK.
-- Relay's own `deleteGroupLinkIfExists` is no-op (relay doesn't own group link). OK.
+- Relay's `sendGroupMessage'` signs `XGrpLeave` (`requiresSignature XGrpLeave_ = True`; relay has `groupKeys` with `memberPrivKey`). Owner and subscribers verify signature. OK.
+- `deleteMembersConnections' user members True` with `waitDelivery=True` ensures `XGrpLeave` reaches SMP queues before relay deletes connections. OK.
+- Owner's `updatePublicGroupData` → `getConnectedGroupRelays` filters `member_status = GSMemConnected AND relay_status IN (RSAccepted, RSActive)`. Relay excluded by `GSMemLeft`. Relay link removed from channel link data. OK.
+- `muteEventInChannel` for relay member (`GRRelay < GRModerator`): muted for subscribers (no chat item), but DB is updated. Owner sees event (`GROwner >= GRModerator`). OK.
+- Relay's `deleteGroupLinkIfExists` is no-op (relay doesn't own group link). OK.
 - `getGroupRelayByGMId` on subscriber returns `Left` (no `GroupRelay` record) → `forM_` skips. No error. OK.
+- `memberEventDeliveryScope` returns `DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}` for relay member. On subscriber, creates a delivery task but subscriber has no forwarding role — delivery worker finds no eligible connections. Harmless no-op. OK.
+- Owner relay bar: `activeCount` drops (RSInactive ≠ RSActive) → bar shows → `relayStatusIndicator` shows red dot with "inactive". OK.
+- Subscriber relay bar: `connStatus = .deleted` → `deletedCount` increases → `errorCount` increases. In steady state with `errorCount > 0`, header now shows error indication. Expanded view shows "deleted" (red) for each left relay. OK.
 
 **Pass 2:**
-- Race condition: owner removes relay + relay leaves simultaneously. Both paths delete connection and update member status. `GroupRelay.relayStatus` ends as `RSLeft` from `xGrpLeave` or remains as-is from `xGrpMemDel` (which doesn't update relay status). No data corruption. OK.
-- Relay leaves when it's the only relay: owner receives `XGrpLeave`, updates link data (no relay links), delivery task has no relays to forward through — subscribers don't receive the event. Subscribers see dead connection. Channel is broken. Acceptable for MVP.
-- `getGroupMembers` for relay may return thousands of subscriber records (for `members` cleanup list). This is unavoidable — connections must be deleted. `deleteAgentConnectionsAsync'` handles batching. OK.
-- Relay's `membership` record doesn't have `activeConn` in `members` list (can't connect to self). `mapMaybe` in `deleteMembersConnections'` filters it out. OK.
+- Race condition: owner removes relay + relay leaves simultaneously. Both paths delete connection and update member status. No data corruption — idempotent. `GroupRelay.relayStatus` ends as `RSInactive` from `xGrpLeave` or unchanged from `xGrpMemDel` (which doesn't update relay status). OK.
+- `getGroupMembers` for relay may return thousands of subscribers. `deleteMembersConnections'` uses `deleteAgentConnectionsAsync'` which handles batching. `sendGroupMessage'` also handles sending to many members. OK.
+- Relay's own `membership` record has no `activeConn` in members list (can't connect to self). `mapMaybe` in `deleteMembersConnections'` filters it out. OK.
+- Relay is only relay: subscribers receive `XGrpLeave` directly, update member status, delete connection. Subscriber relay bar shows "All relays disconnected" + "Messages can't be delivered until the channel owner adds new relays." Owner relay bar shows "No active relays" + "Messages can't be delivered..." + "Adding new relay will be available in a future update." OK.
+- `getGroupRelays` (used by `apiGetGroupRelays`) returns ALL GroupRelay records including RSInactive — owner UI correctly includes left relays in bar. OK.
+- Subscriber `groupMembers` filter (`memberRole == .relay`) includes left members (memberRole unchanged) — subscriber UI correctly shows left relays. OK.
 
 **Result: 2 consecutive clean passes.**
