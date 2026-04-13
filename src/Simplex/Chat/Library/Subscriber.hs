@@ -1525,7 +1525,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               messageError "memberJoinRequestViaRelay: no group link info for relay link"
 
     muteEventInChannel :: GroupInfo -> GroupMember -> Bool
-    muteEventInChannel gInfo@GroupInfo {membership} m =
+    re gInfo@GroupInfo {membership} m =
       useRelays' gInfo && memberRole' membership < GRModerator && not (isRelay membership) && memberRole' m < GRModerator
 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
@@ -3115,6 +3115,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
+      when (isRelay m) $
+        withStore' $ \db -> do
+          relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
+          forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
       gInfo'' <- updatePublicGroupData user gInfo'
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m

@@ -2835,8 +2835,9 @@ processChatCommand vr nm = \case
       withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
     where
-      getRecipients user gInfo
-        | useRelays' gInfo = do
+      -- For relays leaving channel, send to all members directly (relay has connections to owner and subscribers).
+      getRecipients user gInfo@GroupInfo {membership}
+        | useRelays' gInfo, not (isRelay membership) = do
             relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
             pure (relays, relays)
         | otherwise = do
