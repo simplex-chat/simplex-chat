@@ -498,6 +498,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
+  XGrpInvPub _ -> True
   _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}

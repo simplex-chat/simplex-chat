@@ -1029,7 +1029,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
-              XGrpInvPub pubGrpInv -> Nothing <$ processPublicGroupInvitationGroup gInfo' m'' conn' pubGrpInv msg brokerTs
+              XGrpInvPub pubGrpInv
+                | let GroupInfo {membership = ms} = gInfo', isRelay ms -> pure $ Just $ ctx DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+                | otherwise -> Nothing <$ processPublicGroupInvitationGroup gInfo' m'' conn' pubGrpInv msg brokerTs
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
@@ -3384,6 +3386,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
+            XGrpInvPub pubGrpInv -> withAuthor XGrpInvPub_ $ \author ->
+              forM_ (memberConn m) $ \mConn ->
+                processPublicGroupInvitationGroup gInfo author mConn pubGrpInv rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()

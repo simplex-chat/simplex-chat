@@ -2105,6 +2105,7 @@ processChatCommand vr nm = \case
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
             let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+            updateCIGroupInvitationStatus user gInfo'' CIGISAccepted `catchAllErrors` eToView
             pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
           leftToMaybe (Left e) = Just e
@@ -2162,6 +2163,7 @@ processChatCommand vr nm = \case
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]
+            updateCIGroupInvitationStatus user gInfo' CIGISAccepted `catchAllErrors` eToView
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of

@@ -20,6 +20,7 @@ chatRelayTests = do
     it "share public group in direct chat" testSharePublicGroupDirect
     it "share public group in group chat" testSharePublicGroupInGroup
     it "share public group twice reuses hidden group" testSharePublicGroupDedup
+    it "share public group in channel" testSharePublicGroupInChannel
     it "cannot share non-public group" testShareNonPublicGroupFails
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
@@ -187,10 +188,11 @@ testSharePublicGroupDirect ps =
         alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
         cath <# "alice> invitation to join team (verifying...)"
         cath <## "alice (Alice) shared public group #team"
-        -- TODO: async verification currently fails because groupLinkData (Internal.hs:1336)
-        -- overwrites owners=[] when updating link data after relay joins.
-        -- Once fixed, verify: cath ##> "/tail @alice 1"; cath <# "alice> invitation to join team (owner verified)"
-        threadDelay 1000000
+        -- wait for async verification to complete
+        threadDelay 2000000
+        -- verify owner sig status updated to verified in chat history
+        cath ##> "/tail @alice 1"
+        cath <# "alice> invitation to join team (owner verified)"
 
 testSharePublicGroupInGroup :: HasCallStack => TestParams -> IO ()
 testSharePublicGroupInGroup ps =
@@ -230,6 +232,37 @@ testSharePublicGroupDedup ps =
         cath <# "alice> invitation to join team (verifying...)"
         cath <## "alice (Alice) shared public group #team"
         threadDelay 1000000
+
+testSharePublicGroupInChannel :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupInChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+        -- create two channels: "team" to share, "news" to share in
+        alice ##> ("/relays name=bob_relay " <> bobSLink <> " name=cath_relay " <> cathSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        -- second channel with cath as relay (relay id 2)
+        alice ##> "/public group relays=2 #news"
+        alice <## "group #news is created"
+        alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+        concurrentlyN_
+          [ do
+              alice <## "#news: group link relays updated, current relays:"
+              alice <## "  - relay id 2: active"
+              alice <## "group link:"
+              _ <- getTermLine alice
+              pure (),
+            cath <## "#news: you joined the group as relay"
+          ]
+        -- share team in news channel
+        alice ##> "/share #team #news"
+        alice <### [WithTime "#news invitation to join team", "shared public group #team"]
+        -- cath is relay, forwards but doesn't create hidden group
 
 testShareNonPublicGroupFails :: HasCallStack => TestParams -> IO ()
 testShareNonPublicGroupFails =
