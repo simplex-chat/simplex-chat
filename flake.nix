@@ -93,6 +93,7 @@
         for pkg in $out/_pkg/*.a; do
           chmod +w $pkg
           ${mac2ios.packages.${system}.mac2ios}/bin/mac2ios $pkg
+          [[ "$pkg" == *simplex-chat* ]] && ${pkgs.stdenv.cc.targetPrefix}strip -x $pkg
           chmod -w $pkg
         done
 
@@ -101,9 +102,6 @@
         (cd tmp; ${pkgs.tree}/bin/tree .; ar x libHS*.a; for o in *.o; do if /usr/bin/otool -xv $o|grep ldadd ; then echo $o; fi; done; cd ..; rm -fR tmp)
 
         sha256sum $out/_pkg/*.a
-
-        find "$out/_pkg" -type f -name "*simplex-chat*.a" -exec chmod +w {} +
-        find "$out/_pkg" -type f -name "*simplex-chat*.a" -exec ${pkgs.stdenv.cc.targetPrefix}strip -x {} +
 
         (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${bundleName}.zip *)
         rm -fR $out/_pkg
