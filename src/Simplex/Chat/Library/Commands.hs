@@ -101,6 +101,7 @@ import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
@@ -1946,7 +1947,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True (toPreparedConnLink ccLink) welcomeSharedMsgId False GRMember Nothing False
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -1978,7 +1979,7 @@ processChatCommand vr nm = \case
     let useRelays = not direct
     subRole <- if useRelays then asks $ channelSubscriberRole . config else pure GRMember
     gVar <- asks random
-    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False ccLink welcomeSharedMsgId useRelays subRole publicMemberCount_
+    (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar vr user gp False (toPreparedConnLink ccLink) welcomeSharedMsgId useRelays subRole publicMemberCount_ False
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing
@@ -2104,6 +2105,9 @@ processChatCommand vr nm = \case
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
             let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+            when (maybe False chatHidden $ preparedGroup gInfo'') $
+              withStore' $ \db -> setGroupChatHidden db user groupId False
+            updateCIGroupInvitationStatus user gInfo'' CIGISAccepted `catchAllErrors` eToView
             pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
           leftToMaybe (Left e) = Just e
@@ -2136,6 +2140,9 @@ processChatCommand vr nm = \case
             newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
+        ccLink <- case toCreatedConnLink connLinkToConnect of
+          Just cl -> pure cl
+          Nothing -> throwChatError $ CEException "no full link to connect"
         hostMember <- withFastStore $ \db -> getHostMember db vr user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)
@@ -2143,7 +2150,7 @@ processChatCommand vr nm = \case
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
             pure (smId, mc)
-        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
+        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito ccLink welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
           -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
           -- user or incognito profile for group or business chat, in case server received request while client got network error
           gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -2158,6 +2165,9 @@ processChatCommand vr nm = \case
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]
+            when (maybe False chatHidden $ preparedGroup gInfo') $
+              withStore' $ \db -> setGroupChatHidden db user groupId False
+            updateCIGroupInvitationStatus user gInfo' CIGISAccepted `catchAllErrors` eToView
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of
@@ -2467,6 +2477,39 @@ processChatCommand vr nm = \case
       relays <- liftIO $ getGroupRelays db gInfo
       pure (gInfo, relays)
     pure $ CRGroupRelays user gInfo relays
+  APISharePublicGroup groupId toChatRef -> withUser $ \user -> do
+    gInfo@GroupInfo {groupProfile, membership = GroupMember {memberId, groupMemberId}, groupSummary, localDisplayName} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    unless (useRelays' gInfo) $ throwCmdError "not a public group"
+    let groupSize = fromIntegral $ currentMembers groupSummary
+        sendInv :: forall c. ChatTypeI c => Maybe GroupOwnerSig -> SndMessage -> ChatDirection c 'MDSnd -> ChatInfo c -> CM ChatResponse
+        sendInv groupOwner msg cd cInfo = do
+          let oss = if isJust groupOwner then Just OSSVerified else Nothing
+              ciContent = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = oss}) GRObserver
+          ci <- saveSndChatItem' user cd msg ciContent Nothing Nothing Nothing Nothing False
+          toView $ CEvtNewChatItems user [AChatItem chatTypeI SMDSnd cInfo ci]
+          pure $ CRSentPublicGroupInvitation user gInfo
+    case toChatRef of
+      ChatRef CTDirect contactId _ -> do
+        ct <- withFastStore $ \db -> getContact db vr user contactId
+        ctConn <- liftEither $ contactSendConn_ ct
+        groupOwner <- forM (groupKeys gInfo) $ \GroupKeys {memberPrivKey} -> do
+          adHash <- withAgent $ \a -> getConnectionRatchetAdHash a (aConnId ctConn)
+          let invBody = encodeUtf8 $ encodeJSON groupProfile
+              sig = C.sign' memberPrivKey $ smpEncode CBDirect <> adHash <> invBody
+          pure GroupOwnerSig {memberId, binding = B64UrlByteString adHash, ownerSig = B64UrlByteString $ C.signatureBytes sig}
+        let inv = PublicGroupInvitation {groupProfile, groupOwner, groupSize}
+        (msg, _) <- sendDirectContactMessage user ct $ XGrpInvPub inv
+        sendInv groupOwner msg (CDDirectSnd ct) (DirectChat ct)
+      ChatRef CTGroup toGroupId scope -> do
+        (toGInfo, members) <- withFastStore $ \db -> do
+          g <- getGroupInfo db vr user toGroupId
+          ms <- liftIO $ getGroupMembers db vr user g
+          pure (g, ms)
+        unless (groupFeatureUserAllowed SGFSimplexLinks toGInfo) $ throwCmdError "simplex links not allowed in this group"
+        let inv = PublicGroupInvitation {groupProfile, groupOwner = Nothing, groupSize}
+        msg <- sendGroupMessage user toGInfo scope members $ XGrpInvPub inv
+        sendInv Nothing msg (CDGroupSnd toGInfo Nothing) (GroupChat toGInfo Nothing)
+      _ -> throwCmdError "unsupported chat type"
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -2854,6 +2897,13 @@ processChatCommand vr nm = \case
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand vr nm $ APIAddMember groupId contactId memRole
+  SharePublicGroup gName (ChatName cType toName) -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    chatRef <- case cType of
+      CTDirect -> ChatRef CTDirect <$> withFastStore (\db -> getContactIdByName db user toName) <*> pure Nothing
+      CTGroup -> ChatRef CTGroup <$> withFastStore (\db -> getGroupIdByName db user toName) <*> pure Nothing
+      _ -> throwCmdError "unsupported chat type"
+    processChatCommand vr nm $ APISharePublicGroup groupId chatRef
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand vr nm $ APIJoinGroup groupId enableNtfs
@@ -3781,7 +3831,7 @@ processChatCommand vr nm = \case
                 groupSize = Just currentMemCount
               }
       (msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
-      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = Nothing}) memRole
       timed_ <- contactCITimed ct
       ci <- saveSndChatItem' user (CDDirectSnd ct) msg content Nothing Nothing Nothing timed_ False
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
@@ -4552,6 +4602,8 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupInProgressGroups user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+      cleanupHiddenGroups user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
       cleanupStaleRelayTestConns user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
@@ -4572,6 +4624,13 @@ cleanupManager = do
       let cutoffTs = addUTCTime (- 1800) ts
       inProgressGroups <- withStore' $ \db -> getInProgressGroups db vr user cutoffTs
       forM_ inProgressGroups $ \gInfo ->
+        deleteInProgressGroup user gInfo `catchAllErrors` eToView
+    cleanupHiddenGroups user = do
+      vr <- chatVersionRange
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-86400) ts -- older than 24 hours
+      hiddenGroups <- withStore' $ \db -> getHiddenGroups db vr user cutoffTs
+      forM_ hiddenGroups $ \gInfo ->
         deleteInProgressGroup user gInfo `catchAllErrors` eToView
     cleanupStaleRelayTestConns user = do
       ts <- liftIO getCurrentTime
@@ -4806,6 +4865,8 @@ chatCommandP =
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_share #" *> (APISharePublicGroup <$> A.decimal <* A.space <*> chatRefP),
+      "/share " *> char_ '#' *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),

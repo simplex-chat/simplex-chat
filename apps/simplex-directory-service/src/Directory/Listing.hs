@@ -114,7 +114,7 @@ groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary
             fromMaybe (img, ".jpg") $
               (,".jpg") <$> T.stripPrefix "data:image/jpg;base64," img
                 <|> (,".png") <$> T.stripPrefix "data:image/png;base64," img
-          imgName = B.unpack $ B64URL.encodeUnpadded $ BA.convert $ (CH.hash :: ByteString -> Digest MD5) $ strEncode (connFullLink groupLink)
+          imgName = B.unpack $ B64URL.encodeUnpadded $ BA.convert $ (CH.hash :: ByteString -> Digest MD5) $ strEncode (let CCLink fl _ = groupLink in fl)
           imgFile = listingImageFolder </> imgName <> imgExt
        in case B64.decode $ encodeUtf8 img' of
             Right img'' -> Just (imgFile, img'')

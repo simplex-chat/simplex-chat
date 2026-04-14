@@ -33,10 +33,10 @@ import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
@@ -519,6 +519,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 XInfo p -> xInfo ct'' p
                 XDirectDel -> xDirectDel ct'' msg msgMeta
                 XGrpInv gInv -> processGroupInvitation ct'' gInv msg msgMeta
+                XGrpInvPub pubGrpInv -> processPublicGroupInvitation ct'' conn' pubGrpInv msg msgMeta
                 XInfoProbe probe -> xInfoProbe (COMContact ct'') probe
                 XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct'') probeHash
                 XInfoProbeOk probe -> xInfoProbeOk (COMContact ct'') probe
@@ -675,6 +676,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 forM_ (autoReply $ addressSettings ucl) $ \mc -> do
                   connReq_ <- pure (contactRequestId' ct) $>>= \connReqId -> withStore' (\db -> getContactRequest' db user connReqId)
                   sendAutoReply ct mc connReq_
+        LDATA fixedLinkData cData ->
+          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+            case cmdFunction of
+              CFGetGroupDataInv gId -> verifyPublicGroupOwnerSig gId conn fixedLinkData cData
+              _ -> throwChatError $ CECommandError "unexpected cmdFunction"
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
@@ -1023,6 +1029,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
+              XGrpInvPub pubGrpInv
+                | let GroupInfo {membership = ms} = gInfo', isRelay ms -> pure $ Just $ ctx DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+                | otherwise -> Nothing <$ processPublicGroupInvitationGroup gInfo' m'' conn' pubGrpInv msg brokerTs
               BFileChunk sharedMsgId chunk -> Nothing <$ bFileChunkGroup gInfo' sharedMsgId chunk msgMeta
               _ -> Nothing <$ messageError ("unsupported message: " <> tshow event)
             forM deliveryTaskContext_ $ \taskContext ->
@@ -1168,6 +1177,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 else
                   -- TODO [relays] owner: TBC failed RelayStatus?
                   messageError "relay link: relay member ID mismatch"
+            CFGetGroupDataInv gId -> verifyPublicGroupOwnerSig gId conn (FixedLinkData {agentVRange = supportedSMPAgentVRange, rootKey = relayKey, linkConnReq = cReq, linkEntityId}) cData
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
@@ -2311,6 +2321,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ft <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId >>= getRcvFileTransfer db user
       receiveInlineChunk ft chunk meta
 
+    processPublicGroupInvitationGroup :: GroupInfo -> GroupMember -> Connection -> PublicGroupInvitation -> RcvMessage -> UTCTime -> CM ()
+    processPublicGroupInvitationGroup g m conn inv msg brokerTs
+      | not (groupFeatureMemberAllowed SGFSimplexLinks m g) = messageError "x.grp.inv.pub: simplex links not allowed"
+      | otherwise = do
+          (gInfo, _) <- rcvPublicGroupInvitation conn inv msg brokerTs (CDGroupRcv g Nothing m) (GroupChat g Nothing)
+          toView $ CEvtReceivedPublicGroupInvitation {user, sharedGroupInfo = gInfo, contact_ = Nothing, fromGroupInfo_ = Just g, fromMember_ = Just m}
+
     bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> CM ()
     bFileChunkGroup GroupInfo {groupId} sharedMsgId chunk meta = do
       ft <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId >>= getRcvFileTransfer db user
@@ -2396,7 +2413,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   updateGroupMemberStatus db userId membership GSMemAccepted
                 toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
               else do
-                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+                let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = Nothing}) memRole
                 (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct) msg brokerTs content
                 withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
                 toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
@@ -2407,6 +2424,73 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
         sameGroupLinkId _ _ = False
+
+    processPublicGroupInvitation :: Contact -> Connection -> PublicGroupInvitation -> RcvMessage -> MsgMeta -> CM ()
+    processPublicGroupInvitation ct conn inv msg msgMeta = do
+      (gInfo, _) <- rcvPublicGroupInvitation conn inv msg (metaBrokerTs msgMeta) (CDDirectRcv ct) (DirectChat ct)
+      toView $ CEvtReceivedPublicGroupInvitation {user, sharedGroupInfo = gInfo, contact_ = Just ct, fromGroupInfo_ = Nothing, fromMember_ = Nothing}
+
+    rcvPublicGroupInvitation :: forall c. (ChatTypeI c, ChatTypeQuotable c) => Connection -> PublicGroupInvitation -> RcvMessage -> UTCTime -> ChatDirection c 'MDRcv -> ChatInfo c -> CM (GroupInfo, ChatItem c 'MDRcv)
+    rcvPublicGroupInvitation conn PublicGroupInvitation {groupProfile, groupOwner, groupSize} msg brokerTs cd cInfo = do
+      unless (isJust $ publicGroup groupProfile) $ messageError "x.grp.inv.pub: not a public group"
+      let PublicGroupProfile {publicGroupId} = fromJust $ publicGroup groupProfile
+      let oss = case groupOwner of
+            Nothing -> Nothing
+            Just _ -> Just OSSPending
+          sLnk_ = (\PublicGroupProfile {groupLink = gl} -> gl) <$> publicGroup groupProfile
+          prepLink = PreparedConnLink {connFullLink = Nothing, connShortLink = sLnk_}
+      -- reuse existing hidden group for same publicGroupId
+      existingGId <- withStore' $ \db -> getHiddenGroupByPublicGroupId db userId publicGroupId
+      (gInfo@GroupInfo {groupId, localDisplayName, membership = GroupMember {groupMemberId}}, _) <- case existingGId of
+        Just gId -> do
+          g <- withFastStore $ \db -> getGroupInfo db vr user gId
+          pure (g, Nothing)
+        Nothing -> do
+          gVar <- asks random
+          subRole <- asks $ channelSubscriberRole . config
+          withStore $ \db -> createPreparedGroup db gVar vr user groupProfile False prepLink Nothing True subRole (Just $ fromIntegral groupSize) True
+      forM_ groupOwner $ \sig -> withStore' $ \db -> setGroupOwnerSig db groupId sig
+      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, ownerSigStatus = oss}) GRObserver
+      (ci, _) <- saveRcvChatItemNoParse user cd msg brokerTs content
+      withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
+      toView $ CEvtNewChatItems user [AChatItem chatTypeI SMDRcv cInfo ci]
+      forM_ groupOwner $ \_ ->
+        forM_ sLnk_ $ \sLnk ->
+          void $ getAgentConnShortLinkAsync user (CFGetGroupDataInv groupId) (Just conn) sLnk
+      pure (gInfo, ci)
+
+    verifyPublicGroupOwnerSig :: GroupId -> Connection -> FixedLinkData 'CMContact -> ConnLinkData 'CMContact -> CM ()
+    verifyPublicGroupOwnerSig gId conn FixedLinkData {linkConnReq, linkEntityId} (ContactLinkData _ UserContactData {owners}) = do
+      ownerSig_ <- withStore' $ \db -> getGroupOwnerSig db gId
+      forM_ ownerSig_ $ \GroupOwnerSig {memberId = mId, binding = B64UrlByteString bd, ownerSig = B64UrlByteString sigBytes} -> do
+        gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
+        let GroupInfo {groupProfile = gp} = gInfo
+        adHash <- withAgent $ \a -> getConnectionRatchetAdHash a (aConnId conn)
+        let oss = either (OSSFailed . T.pack) (const OSSVerified) $ do
+              PublicGroupProfile {publicGroupId = B64UrlByteString pgId} <- maybe (Left "no public group profile") Right (publicGroup gp)
+              unless (linkEntityId == Just pgId) $ Left "group identity mismatch"
+              unless (bd == adHash) $ Left "binding data mismatch"
+              OwnerAuth {ownerKey} <- maybe (Left $ "unknown member ID: " <> show (unMemberId mId) <> " not in " <> show (map (\OwnerAuth {ownerId} -> ownerId) owners)) Right $
+                find (\OwnerAuth {ownerId} -> ownerId == unMemberId mId) owners
+              sig <- C.decodeSignature sigBytes
+              let invBody = encodeUtf8 $ encodeJSON gp
+                  signedContent = smpEncode CBDirect <> bd <> invBody
+              unless (C.verify' ownerKey sig signedContent) $ Left "signature verification failed"
+        -- update conn_full_link_to_connect from resolved link
+        currentTs <- liftIO getCurrentTime
+        withStore' $ \db ->
+          DB.execute db "UPDATE groups SET conn_full_link_to_connect = ?, updated_at = ? WHERE group_id = ?" (linkConnReq, currentTs, gId)
+        -- update chat item ownerSigStatus
+        updatePublicGroupInvitationStatus gId oss `catchAllErrors` eToView
+
+    updatePublicGroupInvitationStatus :: GroupId -> OwnerSigStatus -> CM ()
+    updatePublicGroupInvitationStatus gId oss = do
+      AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user gId
+      case (cInfo, content) of
+        (DirectChat ct, CIRcvGroupInvitation ciGroupInv memRole) -> do
+          let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation (ciGroupInv {ownerSigStatus = Just oss} :: CIGroupInvitation) memRole
+          updateDirectChatItemView user ct itemId aciContent False False Nothing Nothing
+        _ -> pure ()
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> CM ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
@@ -3302,6 +3386,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
+            XGrpInvPub pubGrpInv -> withAuthor XGrpInvPub_ $ \author ->
+              forM_ (memberConn m) $ \mConn ->
+                processPublicGroupInvitationGroup gInfo author mConn pubGrpInv rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
           where
             withAuthor :: CMEventTag e -> (GroupMember -> CM ()) -> CM ()

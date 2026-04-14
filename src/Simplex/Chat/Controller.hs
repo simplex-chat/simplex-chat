@@ -376,6 +376,7 @@ data ChatCommand
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}
+  | APISharePublicGroup {groupId :: GroupId, toChatRef :: ChatRef}
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId
@@ -518,6 +519,7 @@ data ChatCommand
   | APIGetGroupRelays {groupId :: GroupId}
   | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
+  | SharePublicGroup GroupName ChatName
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
@@ -732,6 +734,7 @@ data ChatResponse
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
+  | CRSentPublicGroupInvitation {user :: User, groupInfo :: GroupInfo}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
   | CRUserProfile {user :: User, profile :: Profile}
@@ -877,6 +880,7 @@ data ChatEvent
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
+  | CEvtReceivedPublicGroupInvitation {user :: User, sharedGroupInfo :: GroupInfo, contact_ :: Maybe Contact, fromGroupInfo_ :: Maybe GroupInfo, fromMember_ :: Maybe GroupMember}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtGroupLinkDataUpdated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay], relaysChanged :: Bool}
   | CEvtGroupRelayUpdated {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRelay :: GroupRelay}

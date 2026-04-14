@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ChatTests.ChatRelays where
 
 import ChatClient
@@ -14,6 +16,12 @@ chatRelayTests = do
     it "re-add soft-deleted relay by same name" testReAddRelaySameName
     it "test chat relay" testChatRelayTest
     it "relay profile updated in address" testRelayProfileUpdateInAddress
+  describe "public group invitations" $ do
+    it "share public group in direct chat" testSharePublicGroupDirect
+    it "share public group in group chat" testSharePublicGroupInGroup
+    it "share public group twice reuses hidden group" testSharePublicGroupDedup
+    it "share public group in channel" testSharePublicGroupInChannel
+    it "cannot share non-public group" testShareNonPublicGroupFails
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
@@ -164,6 +172,107 @@ testRelayProfileUpdateInAddress ps =
 
       alice ##> ("/relay test " <> bobSLink)
       alice <## "relay test passed, profile: bob2 (Bob relay)"
+
+testSharePublicGroupDirect :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupDirect ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        connectUsers alice cath
+        alice ##> "/share #team @cath"
+        alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
+        cath <# "alice> invitation to join team (verifying...)"
+        cath <## "alice (Alice) shared public group #team"
+        -- wait for async verification to complete
+        threadDelay 2000000
+        -- verify owner sig status updated to verified in chat history
+        cath ##> "/tail @alice 1"
+        cath <# "alice> invitation to join team (owner verified)"
+
+testSharePublicGroupInGroup :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupInGroup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        -- create a regular group with alice and cath
+        createGroup2 "friends" alice cath
+        alice ##> "/share #team #friends"
+        alice <### [WithTime "#friends invitation to join team", "shared public group #team"]
+        cath <# "#friends alice> invitation to join team"
+        cath <## "#friends: alice shared public group #team"
+
+testSharePublicGroupDedup :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupDedup ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        connectUsers alice cath
+        -- share twice, second reuses hidden group
+        alice ##> "/share #team @cath"
+        alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
+        cath <# "alice> invitation to join team (verifying...)"
+        cath <## "alice (Alice) shared public group #team"
+        alice ##> "/share #team @cath"
+        alice <### [WithTime "@cath invitation to join team (owner verified)", "shared public group #team"]
+        cath <# "alice> invitation to join team (verifying...)"
+        cath <## "alice (Alice) shared public group #team"
+        threadDelay 1000000
+
+testSharePublicGroupInChannel :: HasCallStack => TestParams -> IO ()
+testSharePublicGroupInChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _cLink) <- getContactLinks bob True
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+        -- create two channels: "team" to share, "news" to share in
+        alice ##> ("/relays name=bob_relay " <> bobSLink <> " name=cath_relay " <> cathSLink)
+        alice <## "ok"
+        createChannelWithRelay "team" alice bob
+        -- second channel with cath as relay (relay id 2)
+        alice ##> "/public group relays=2 #news"
+        alice <## "group #news is created"
+        alice <## "wait for selected relay(s) to join, then you can invite members via group link"
+        concurrentlyN_
+          [ do
+              alice <## "#news: group link relays updated, current relays:"
+              alice <## "  - relay id 2: active"
+              alice <## "group link:"
+              _ <- getTermLine alice
+              pure (),
+            cath <## "#news: you joined the group as relay"
+          ]
+        -- share team in news channel
+        alice ##> "/share #team #news"
+        alice <### [WithTime "#news invitation to join team", "shared public group #team"]
+        -- cath is relay, forwards but doesn't create hidden group
+
+testShareNonPublicGroupFails :: HasCallStack => TestParams -> IO ()
+testShareNonPublicGroupFails =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/share #team @bob"
+    alice <## "bad chat command: not a public group"
 
 -- Create a public group with relay=1, wait for relay to join
 createChannelWithRelay :: HasCallStack => String -> TestCC -> TestCC -> IO ()

@@ -30,6 +30,7 @@ module Simplex.Chat.Types where
 import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
+import Text.Read (readMaybe)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
@@ -52,7 +53,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink (..), ConnectionLink, ConnectionMode (..), ConnectionModeI, ConnectionRequestUri, ContactConnType (..), CreatedConnLink (..), InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -518,11 +519,20 @@ instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
 
+data PreparedConnLink (m :: ConnectionMode) = PreparedConnLink
+  { connFullLink :: Maybe (ConnectionRequestUri m),
+    connShortLink :: Maybe (ConnShortLink m)
+  }
+  deriving (Eq, Show)
+
 class HasShortLink l where
   connShortLink' :: l c -> Maybe (ConnShortLink c)
 
 instance HasShortLink CreatedConnLink where
   connShortLink' (CCLink _ sl) = sl
+
+instance HasShortLink PreparedConnLink where
+  connShortLink' PreparedConnLink {connShortLink} = connShortLink
 
 setShortLinkType :: ContactConnType -> CreatedLinkContact -> CreatedLinkContact
 setShortLinkType ct (CCLink cReq sl) = CCLink cReq (setShortLinkType_ ct <$> sl)
@@ -530,10 +540,20 @@ setShortLinkType ct (CCLink cReq sl) = CCLink cReq (setShortLinkType_ ct <$> sl)
 setShortLinkType_ :: ContactConnType -> ShortLinkContact -> ShortLinkContact
 setShortLinkType_ ct (CSLContact sch _ srv k) = CSLContact sch ct srv k
 
+toPreparedConnLink :: CreatedConnLink m -> PreparedConnLink m
+toPreparedConnLink (CCLink fl sl) = PreparedConnLink (Just fl) sl
+
+toCreatedConnLink :: PreparedConnLink m -> Maybe (CreatedConnLink m)
+toCreatedConnLink PreparedConnLink {connFullLink = Just fl, connShortLink} = Just $ CCLink fl connShortLink
+toCreatedConnLink _ = Nothing
+
+type PreparedGroupLink = PreparedConnLink 'CMContact
+
 data PreparedGroup = PreparedGroup
-  { connLinkToConnect :: CreatedLinkContact,
+  { connLinkToConnect :: PreparedGroupLink,
     connLinkPreparedConnection :: Bool,
     connLinkStartedConnection :: Bool,
+    chatHidden :: Bool,
     welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
     requestSharedMsgId :: Maybe SharedMsgId
   }
@@ -886,6 +906,26 @@ data GroupRelayInvitation = GroupRelayInvitation
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
     groupLink :: ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data PublicGroupInvitation = PublicGroupInvitation
+  { groupProfile :: GroupProfile,
+    groupOwner :: Maybe GroupOwnerSig,
+    groupSize :: Int
+  }
+  deriving (Eq, Show)
+
+-- | Owner's proof of channel ownership, included in PublicGroupInvitation.
+-- Signature is over: smpEncode chatBinding <> binding <> invitationBody
+-- where chatBinding is determined from context (CBDirect / CBGroup).
+data GroupOwnerSig = GroupOwnerSig
+  { memberId :: MemberId,
+    -- | Context binding: ratchetAdHash (direct chat) or smpEncode (publicGroupId, memberId) (public group).
+    -- Verifier computes expected value from context and compares — mismatch indicates MitM or wrong context.
+    binding :: B64UrlByteString,
+    -- | Signature bytes, base64url encoded.
+    ownerSig :: B64UrlByteString
   }
   deriving (Eq, Show)
 
@@ -1893,6 +1933,7 @@ data CommandFunction
   | CFSetShortLink
   | CFGetRelayDataJoin
   | CFGetRelayDataAccept
+  | CFGetGroupDataInv GroupId
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1913,6 +1954,7 @@ instance TextEncoding CommandFunction where
     "set_short_link" -> Just CFSetShortLink
     "get_relay_data_join" -> Just CFGetRelayDataJoin
     "get_relay_data_accept" -> Just CFGetRelayDataAccept
+    s | Just gId <- T.stripPrefix "get_group_data_inv:" s -> CFGetGroupDataInv <$> readMaybe (T.unpack gId)
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1927,6 +1969,7 @@ instance TextEncoding CommandFunction where
     CFSetShortLink -> "set_short_link"
     CFGetRelayDataJoin -> "get_relay_data_join"
     CFGetRelayDataAccept -> "get_relay_data_accept"
+    CFGetGroupDataInv gId -> "get_group_data_inv:" <> T.pack (show gId)
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1942,6 +1985,7 @@ commandExpectedResponse = \case
   CFSetShortLink -> t LINK_
   CFGetRelayDataJoin -> t LDATA_
   CFGetRelayDataAccept -> t LDATA_
+  CFGetGroupDataInv _ -> t LDATA_
   where
     t = AEvtTag SAEConn
 
@@ -2079,6 +2123,13 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
+instance ConnectionModeI m => FromJSON (PreparedConnLink m) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''PreparedConnLink)
+
+instance ConnectionModeI m => ToJSON (PreparedConnLink m) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''PreparedConnLink)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''PreparedConnLink)
+
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
 $(JQ.deriveToJSON defaultJSON ''GroupSummary)
@@ -2114,6 +2165,10 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
+
+$(JQ.deriveJSON defaultJSON ''GroupOwnerSig)
+
+$(JQ.deriveJSON defaultJSON ''PublicGroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

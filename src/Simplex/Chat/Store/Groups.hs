@@ -40,6 +40,11 @@ module Simplex.Chat.Store.Groups
     createGroupInvitedViaLink,
     createGroupRejectedViaLink,
     setGroupInvitationChatItemId,
+    setGroupChatHidden,
+    setGroupOwnerSig,
+    getGroupOwnerSig,
+    getHiddenGroupByPublicGroupId,
+    getHiddenGroups,
     getGroup,
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoViaUserShortLink,
@@ -184,6 +189,8 @@ import Data.Either (rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
+import qualified Data.Aeson as J
+import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -601,11 +608,11 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
-createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ = do
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> PreparedGroupLink -> Maybe SharedMsgId -> Bool -> GroupMemberRole -> Maybe Int64 -> Bool -> ExceptT StoreError IO (GroupInfo, Maybe GroupMember)
+createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays userMemberRole publicMemberCount_ chatHidden = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
-  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ currentTs
+  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing publicMemberCount_ chatHidden currentTs
   hostMemberId_ <-
     if useRelays
       then pure Nothing
@@ -814,7 +821,7 @@ createGroupViaLink'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business False Nothing Nothing currentTs
+    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business False Nothing Nothing False currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
@@ -841,8 +848,8 @@ createGroupViaLink'
             )
           insertedRowId db
 
-createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Bool -> Maybe RelayStatus -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
-createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus publicMemberCount_ currentTs = ExceptT $ do
+createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (PreparedGroupLink, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Bool -> Maybe RelayStatus -> Maybe Int64 -> Bool -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
+createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus publicMemberCount_ chatHidden currentTs = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission} = groupProfile
       (groupType_, groupLink_, publicGroupId_) = case publicGroup of
         Just PublicGroupProfile {groupType, groupLink, publicGroupId} -> (Just groupType, Just groupLink, Just publicGroupId)
@@ -867,10 +874,10 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count, chat_hidden)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_))
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI useRelays, relayOwnStatus, publicMemberCount_, BI chatHidden))
       groupId <- insertedRowId db
       pure (groupId, localDisplayName)
 
@@ -878,6 +885,31 @@ setGroupInvitationChatItemId :: DB.Connection -> User -> GroupId -> ChatItemId -
 setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (chatItemId, currentTs, userId, groupId)
+
+setGroupChatHidden :: DB.Connection -> User -> GroupId -> Bool -> IO ()
+setGroupChatHidden db User {userId} groupId hidden = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET chat_hidden = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (BI hidden, currentTs, userId, groupId)
+
+setGroupOwnerSig :: DB.Connection -> GroupId -> GroupOwnerSig -> IO ()
+setGroupOwnerSig db groupId sig =
+  DB.execute db "UPDATE groups SET owner_sig = ? WHERE group_id = ?" (Binary (LB.toStrict $ J.encode sig), groupId)
+
+getGroupOwnerSig :: DB.Connection -> GroupId -> IO (Maybe GroupOwnerSig)
+getGroupOwnerSig db groupId =
+  fmap (>>= (\(Binary bs) -> J.decodeStrict bs)) . maybeFirstRow fromOnly $
+    DB.query db "SELECT owner_sig FROM groups WHERE group_id = ?" (Only groupId)
+
+getHiddenGroupByPublicGroupId :: DB.Connection -> UserId -> B64UrlByteString -> IO (Maybe GroupId)
+getHiddenGroupByPublicGroupId db userId pgId =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT g.group_id FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND g.chat_hidden = 1 AND gp.public_group_id = ?" (userId, pgId)
+
+getHiddenGroups :: DB.Connection -> VersionRangeChat -> User -> UTCTime -> IO [GroupInfo]
+getHiddenGroups db vr user@User {userId} createdAtCutoff = do
+  groupIds <- map fromOnly <$>
+    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_hidden = 1 AND created_at <= ?" (userId, createdAtCutoff)
+  rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
@@ -1522,7 +1554,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           groupPreferences = Nothing,
           memberAdmission = Nothing
         }
-  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing currentTs
+  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) Nothing False currentTs
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId
   ownerMemberId <- insertOwner_ currentTs groupId
