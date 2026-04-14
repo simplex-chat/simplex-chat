@@ -748,6 +748,7 @@ struct ComposeView: View {
             if relayListExpanded {
                 if allBroken {
                     Text("Messages can't be delivered to subscribers. Adding new relays will be available in a future update.")
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
                         .padding(.leading, 12)
@@ -800,6 +801,10 @@ struct ComposeView: View {
                 if showProgress {
                     if errorCount > 0 {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar progress with errors"), connectedCount, total, errorCount))
+                        if errorCount == total {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(theme.colors.primary)
+                        }
                     } else {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
                     }
@@ -815,7 +820,8 @@ struct ComposeView: View {
             }
             if relayListExpanded {
                 if errorCount == total {
-                    Text("Messages can't be delivered until channel owner adds a new relay.")
+                    Text("Waiting for channel owner to add relays.")
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
                         .padding(.leading, 12)
