@@ -104,11 +104,15 @@ struct ChannelRelaysView: View {
 }
 
 func relayConnStatus(_ member: GroupMember) -> (text: LocalizedStringKey, color: Color) {
-    switch member.activeConn?.connStatus {
-    case .ready: ("connected", .green)
-    case .deleted: ("deleted", .red)
-    case .failed: ("failed", .red)
-    default: ("connecting", .yellow)
+    if !member.memberActive {
+        ("disconnected", .red)
+    } else {
+        switch member.activeConn?.connStatus {
+        case .ready: ("connected", .green)
+        case .deleted: ("deleted", .red)
+        case .failed: ("failed", .red)
+        default: ("connecting", .yellow)
+        }
     }
 }
 

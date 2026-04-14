@@ -398,9 +398,9 @@ struct ComposeView: View {
                         .filter { $0.wrapped.memberRole == .relay }
                         .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
-                    let connectedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .ready }.count
-                    let deletedCount = relayMembers.filter { $0.wrapped.activeConn?.connStatus == .deleted }.count
-                    let failedCount = relayMembers.filter { $0.wrapped.activeConn?.connFailedErr != nil }.count
+                    let connectedCount = relayMembers.filter { $0.wrapped.memberActive && $0.wrapped.activeConn?.connStatus == .ready }.count
+                    let deletedCount = relayMembers.filter { !$0.wrapped.memberActive || $0.wrapped.activeConn?.connStatus == .deleted }.count
+                    let failedCount = relayMembers.filter { $0.wrapped.memberActive && $0.wrapped.activeConn?.connFailedErr != nil }.count
                     let errorCount = deletedCount + failedCount
                     let resolvedCount = connectedCount + deletedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
@@ -725,13 +725,16 @@ struct ComposeView: View {
 
     private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int) -> some View {
         let total = relays.count
+        let inactiveCount = relays.filter { $0.relayStatus == .rsInactive }.count
         let sorted = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
         return VStack(spacing: 0) {
             relayBarHeader {
-                if activeCount + failedCount < total {
+                if activeCount + failedCount + inactiveCount < total {
                     RelayProgressIndicator(active: activeCount, total: total)
                 }
-                if failedCount > 0 {
+                if activeCount == 0 && inactiveCount == total {
+                    Text("No active relays – messages can't be delivered")
+                } else if failedCount > 0 {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel relay bar progress with errors"), activeCount, total, failedCount))
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel relay bar progress"), activeCount, total))
@@ -787,6 +790,10 @@ struct ComposeView: View {
                     } else {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
                     }
+                } else if errorCount == total {
+                    Text("All relays disconnected – messages can't be delivered")
+                } else if errorCount > 0 {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar steady state with errors"), connectedCount, total, errorCount))
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
                 }

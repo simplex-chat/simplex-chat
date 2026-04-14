@@ -2564,6 +2564,7 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case rsInvited = "invited"
     case rsAccepted = "accepted"
     case rsActive = "active"
+    case rsInactive = "inactive"
 }
 
 public struct RelayProfile: Codable, Equatable, Hashable {
@@ -2636,6 +2637,7 @@ extension RelayStatus {
         case .rsInvited: "invited"
         case .rsAccepted: "accepted"
         case .rsActive: "active"
+        case .rsInactive: "inactive"
         }
     }
 }
