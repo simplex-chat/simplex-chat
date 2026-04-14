@@ -1068,35 +1068,36 @@ processChatCommand vr nm = \case
             let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
-  APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user -> do
-    GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup}, membership = GroupMember {memberId}, groupKeys} <-
-      withFastStore $ \db -> getGroupInfo db vr user groupId
-    PublicGroupProfile {groupLink = connLink} <- maybe (throwCmdError "not a public group") pure publicGroup
-    let chatLink = MCLGroup connLink gp
-    ownerSig_ <- pure groupKeys
-      $>>= \GroupKeys {memberPrivKey} -> shareChatBinding user toChatRef
-      $>>= \(cb, bindingData) -> do
-        let fullBinding = smpEncode cb <> bindingData
-            signedData = fullBinding <> LB.toStrict (J.encode chatLink)
-            sig = C.sign' memberPrivKey signedData
-        pure $ Just LinkOwnerSig
-          { ownerId = Just $ B64UrlByteString (unMemberId memberId),
-            binding = B64UrlByteString fullBinding,
-            ownerSig = B64UrlByteString (C.signatureBytes sig)
-          }
-    pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
+  APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user ->
+    withFastStore (\db -> getGroupInfo db vr user groupId) >>= \case
+      GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink = connLink}}, membership = GroupMember {memberId}, groupKeys} -> do
+        let chatLink = MCLGroup connLink gp
+        ownerSig_ <- pure groupKeys
+          $>>= \GroupKeys {memberPrivKey} -> shareChatBinding user toChatRef
+          $>>= \(cb, bindingData) -> do
+            let fullBinding = smpEncode cb <> bindingData
+                signedData = fullBinding <> LB.toStrict (J.encode chatLink)
+                sig = C.sign' memberPrivKey signedData
+            pure $ Just LinkOwnerSig
+              { ownerId = Just $ B64UrlByteString (unMemberId memberId),
+                binding = B64UrlByteString fullBinding,
+                ownerSig = B64UrlByteString (C.signatureBytes sig)
+              }
+        pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
+      _ -> throwCmdError "not a public group"
     where
       shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
-      shareChatBinding u (ChatRef CTDirect contactId _) = do
-        ct <- withFastStore $ \db -> getContact db vr u contactId
-        forM (contactConn ct) $ \conn ->
-          (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
-      shareChatBinding u (ChatRef CTGroup toGroupId _) = do
-        GroupInfo {groupProfile = GroupProfile {publicGroup = toPubGroup}, membership = GroupMember {memberId = toMemberId}} <-
-          withFastStore $ \db -> getGroupInfo db vr u toGroupId
-        forM toPubGroup $ \PublicGroupProfile {publicGroupId = pgId} ->
-          pure (CBGroup, smpEncode (pgId, toMemberId))
-      shareChatBinding _ _ = pure Nothing
+      shareChatBinding u = \case
+        ChatRef CTDirect contactId _ -> do
+          ct <- withFastStore $ \db -> getContact db vr u contactId
+          forM (contactConn ct) $ \conn ->
+            (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+        ChatRef CTGroup toGroupId _ -> do
+          GroupInfo {groupProfile = GroupProfile {publicGroup = toPubGroup}, membership = GroupMember {memberId = toMemberId}} <-
+            withFastStore $ \db -> getGroupInfo db vr u toGroupId
+          forM toPubGroup $ \PublicGroupProfile {publicGroupId = pgId} ->
+            pure (CBGroup, smpEncode (pgId, toMemberId))
+        _ -> pure Nothing
   APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for public groups"
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
