@@ -930,7 +930,7 @@
     <string name="moderated_description">moderované</string>
     <string name="moderated_item_description">moderovaný %s</string>
     <string name="delete_member_message__question">Smazat zprávu člena\?</string>
-    <string name="moderate_verb">moderovaný</string>
+    <string name="moderate_verb">Moderovat</string>
     <string name="observer_cant_send_message_desc">Kontaktujte prosím správce skupiny.</string>
     <string name="you_are_observer">jste pozorovatel</string>
     <string name="group_member_role_observer">pozorovatel</string>
@@ -1543,7 +1543,7 @@
     <string name="rcv_group_event_member_blocked">blokováno %s</string>
     <string name="profile_update_event_contact_name_changed">kontakt %1$s změnen na %2$s</string>
     <string name="info_row_created_at">Vytvořeno v</string>
-    <string name="block_for_all">Blok všem</string>
+    <string name="block_for_all">Blokovat všem</string>
     <string name="block_for_all_question">Blokovat člena všem?</string>
     <string name="error_blocking_member_for_all">Chyba blokování člena všem</string>
     <string name="v5_5_message_delivery">Vylepšené doručovaní zpráv</string>
