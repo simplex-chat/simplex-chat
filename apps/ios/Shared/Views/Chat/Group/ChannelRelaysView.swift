@@ -105,7 +105,7 @@ struct ChannelRelaysView: View {
 
 func relayConnStatus(_ member: GroupMember) -> (text: LocalizedStringKey, color: Color) {
     if [.memLeft, .memRemoved, .memGroupDeleted].contains(member.memberStatus) {
-        ("disconnected", .red)
+        ("inactive", .red)
     } else {
         switch member.activeConn?.connStatus {
         case .ready: ("connected", .green)
