@@ -382,15 +382,12 @@ struct ComposeView: View {
                 Divider()
             }
 
+            let ownerState = ownerRelayState
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
-                    let relays = channelRelaysModel.groupId == gInfo.groupId
-                        ? channelRelaysModel.groupRelays : []
-                    let failedCount = relays.filter { relayMemberConnFailed($0) != nil }.count
-                    let activeCount = relays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
-                    if !relays.isEmpty && activeCount < relays.count {
-                        ownerChannelRelayBar(relays: relays, activeCount: activeCount, failedCount: failedCount)
+                    if let s = ownerState, s.activeCount < s.relays.count {
+                        ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount)
                     }
                 } else {
                     let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
@@ -399,9 +396,9 @@ struct ComposeView: View {
                         .sorted { hostFromRelayLink($0.wrapped.relayLink ?? "") < hostFromRelayLink($1.wrapped.relayLink ?? "") }
                     let showProgress = !gInfo.nextConnectPrepared || composeState.inProgress
                     let relayInactive: (GMember) -> Bool = { [.memLeft, .memRemoved, .memGroupDeleted].contains($0.wrapped.memberStatus) }
-                    let connectedCount = relayMembers.filter { !relayInactive($0) && $0.wrapped.activeConn?.connStatus == .ready }.count
+                    let connectedCount = relayMembers.filter { !relayInactive($0) && $0.wrapped.activeConn?.connStatus == .ready && $0.wrapped.activeConn?.connFailedErr == nil }.count
                     let deletedCount = relayMembers.filter { relayInactive($0) || $0.wrapped.activeConn?.connStatus == .deleted }.count
-                    let failedCount = relayMembers.filter { !relayInactive($0) && $0.wrapped.activeConn?.connFailedErr != nil }.count
+                    let failedCount = relayMembers.filter { !relayInactive($0) && $0.wrapped.activeConn?.connStatus != .deleted && $0.wrapped.activeConn?.connFailedErr != nil }.count
                     let errorCount = deletedCount + failedCount
                     let resolvedCount = connectedCount + deletedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
@@ -418,7 +415,7 @@ struct ComposeView: View {
                 }
             }
 
-            let composeEnabled = !ownerNoActiveRelays && (
+            let composeEnabled = !(ownerState?.noActiveRelays ?? false) && (
                 chat.chatInfo.sendMsgEnabled ||
                 (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
                 (chat.chatInfo.contact?.nextAcceptContactRequest ?? false)
@@ -724,18 +721,19 @@ struct ComposeView: View {
         }
     }
 
-    private var ownerNoActiveRelays: Bool {
+    private var ownerRelayState: (relays: [GroupRelay], activeCount: Int, failedCount: Int, noActiveRelays: Bool)? {
         guard let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
               gInfo.membership.memberRole == .owner,
               ![.memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
-        else { return false }
+        else { return nil }
         let relays = channelRelaysModel.groupId == gInfo.groupId
             ? channelRelaysModel.groupRelays : []
-        guard !relays.isEmpty else { return false }
+        guard !relays.isEmpty else { return nil }
         let activeCount = relays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
         let failedCount = relays.filter { relayMemberConnFailed($0) != nil }.count
         let inactiveCount = relays.filter { $0.relayStatus == .rsInactive }.count
-        return activeCount == 0 && (failedCount + inactiveCount) == relays.count
+        let noActiveRelays = activeCount == 0 && (failedCount + inactiveCount) == relays.count
+        return (relays, activeCount, failedCount, noActiveRelays)
     }
 
     private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int) -> some View {
