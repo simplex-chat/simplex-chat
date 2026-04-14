@@ -628,6 +628,14 @@ main .section-bg {
     pointer-events: none;
 }
 
+main .section-bg {
+    background-image: url("/img/design_3/bg-gradient-desktop-light.jpg"), var(--bg-grad);
+}
+
+.dark main .section-bg {
+    background-image: url("/img/design_3/bg-gradient-desktop.jpg"), var(--bg-grad);
+}
+
 .chrome-ios main .section-bg,
 .safari-ios main .section-bg {
     height: 110lvh;
@@ -713,6 +721,14 @@ main .section-bg {
 }
 
 @media screen and (max-width: 959px) {
+    main .section-bg {
+        background-image: url("/img/design_3/bg-gradient-mobile-light.jpg"), var(--bg-grad);
+    }
+
+    .dark main .section-bg {
+        background-image: url("/img/design_3/bg-gradient-mobile.jpg"), var(--bg-grad);
+    }
+
     .page-2 {
         background-image: url("/img/design_3/section-2-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
