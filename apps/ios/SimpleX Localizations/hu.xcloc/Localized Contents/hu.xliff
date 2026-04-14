@@ -4838,7 +4838,7 @@ További fejlesztések hamarosan!</target>
       </trans-unit>
       <trans-unit id="Invalid relay name!" xml:space="preserve" approved="no">
         <source>Invalid relay name!</source>
-        <target state="translated">Érvénytelen átjátszónév!</target>
+        <target state="translated">Érvénytelen az átjátszó neve!</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Invalid response" xml:space="preserve">
