@@ -1328,12 +1328,12 @@ updatePublicGroupData user gInfo
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
-groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId}, groupKeys = gKeys_} GroupLink {groupLinkId} groupRelays =
+groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId}, groupKeys} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo
       relays = mapMaybe (\GroupRelay {relayLink} -> relayLink) groupRelays
       publicGroupData_ = PublicGroupData <$> publicMemberCount
       userData = encodeShortLinkData $ GroupShortLinkData {groupProfile, publicGroupData = publicGroupData_}
-      owners = case gKeys_ of
+      owners = case groupKeys of
         Just GroupKeys {groupRootKey = GRKPrivate rootPrivKey, memberPrivKey} ->
           let ownerId = unMemberId memberId
               ownerKey = C.publicKey memberPrivKey
