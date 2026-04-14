@@ -750,7 +750,8 @@ struct ComposeView: View {
                     Text("Messages can't be delivered to subscribers. Adding new relays will be available in a future update.")
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
-                        .padding(.horizontal, 12)
+                        .padding(.leading, 12)
+                        .padding(.trailing)
                         .padding(.bottom, 4)
                 }
                 ForEach(sorted) { relay in
@@ -813,11 +814,12 @@ struct ComposeView: View {
                 }
             }
             if relayListExpanded {
-                if !showProgress && errorCount == total {
+                if errorCount == total {
                     Text("Messages can't be delivered until channel owner adds a new relay.")
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
-                        .padding(.horizontal, 12)
+                        .padding(.leading, 12)
+                        .padding(.trailing)
                         .padding(.bottom, 4)
                 }
                 if relayMembers.isEmpty {
