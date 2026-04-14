@@ -923,8 +923,17 @@ unknownMsgType = "unknown message type"
 
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
-  JM.fromList $
-    ("quote" .=? quote) (("parent" .=? parent) (("forward" .=? forward) (("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) ["content" .= content]))))))))
+  JM.fromList
+    $ ("quote" .=? quote)
+    $ ("parent" .=? parent)
+    $ ("forward" .=? forward)
+    $ ("file" .=? file)
+    $ ("ttl" .=? ttl)
+    $ ("live" .=? live)
+    $ ("mentions" .=? nonEmptyMap mentions)
+    $ ("scope" .=? scope)
+    $ ("asGroup" .=? asGroup)
+      ["content" .= content]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
