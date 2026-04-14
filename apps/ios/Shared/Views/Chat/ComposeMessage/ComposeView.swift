@@ -382,6 +382,7 @@ struct ComposeView: View {
                 Divider()
             }
 
+            let ownerNoActiveRelays: Bool
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
@@ -389,10 +390,13 @@ struct ComposeView: View {
                         ? channelRelaysModel.groupRelays : []
                     let failedCount = relays.filter { relayMemberConnFailed($0) != nil }.count
                     let activeCount = relays.filter { $0.relayStatus == .rsActive && relayMemberConnFailed($0) == nil }.count
+                    let inactiveCount = relays.filter { $0.relayStatus == .rsInactive }.count
+                    ownerNoActiveRelays = !relays.isEmpty && activeCount == 0 && (failedCount + inactiveCount) == relays.count
                     if !relays.isEmpty && activeCount < relays.count {
                         ownerChannelRelayBar(relays: relays, activeCount: activeCount, failedCount: failedCount)
                     }
                 } else {
+                    ownerNoActiveRelays = false
                     let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
                     let relayMembers = chatModel.groupMembers
                         .filter { $0.wrapped.memberRole == .relay }
@@ -416,9 +420,11 @@ struct ComposeView: View {
                         )
                     }
                 }
+            } else {
+                ownerNoActiveRelays = false
             }
 
-            let composeEnabled = (
+            let composeEnabled = !ownerNoActiveRelays && (
                 chat.chatInfo.sendMsgEnabled ||
                 (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
                 (chat.chatInfo.contact?.nextAcceptContactRequest ?? false)
