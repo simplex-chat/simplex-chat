@@ -387,7 +387,7 @@ struct ComposeView: View {
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
                     if let s = ownerState, s.activeCount < s.relays.count {
-                        ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount)
+                        ownerChannelRelayBar(relays: s.relays, activeCount: s.activeCount, failedCount: s.failedCount, inactiveCount: s.inactiveCount)
                     }
                 } else {
                     let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
@@ -721,7 +721,7 @@ struct ComposeView: View {
         }
     }
 
-    private var ownerRelayState: (relays: [GroupRelay], activeCount: Int, failedCount: Int, noActiveRelays: Bool)? {
+    private var ownerRelayState: (relays: [GroupRelay], activeCount: Int, failedCount: Int, inactiveCount: Int, noActiveRelays: Bool)? {
         guard let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
               gInfo.membership.memberRole == .owner,
               ![.memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus)
@@ -733,12 +733,11 @@ struct ComposeView: View {
         let failedCount = relays.filter { relayMemberConnFailed($0) != nil }.count
         let inactiveCount = relays.filter { $0.relayStatus == .rsInactive }.count
         let noActiveRelays = activeCount == 0 && (failedCount + inactiveCount) == relays.count
-        return (relays, activeCount, failedCount, noActiveRelays)
+        return (relays, activeCount, failedCount, inactiveCount, noActiveRelays)
     }
 
-    private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int) -> some View {
+    private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int, inactiveCount: Int) -> some View {
         let total = relays.count
-        let inactiveCount = relays.filter { $0.relayStatus == .rsInactive }.count
         let allBroken = activeCount == 0 && (failedCount + inactiveCount) == total
         let sorted = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
         return VStack(spacing: 0) {
