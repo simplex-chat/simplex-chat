@@ -2105,6 +2105,8 @@ processChatCommand vr nm = \case
             let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
             let relayResults = [RelayConnectionResult m (leftToMaybe r) | (_, m, r) <- rs]
+            when (maybe False chatHidden $ preparedGroup gInfo'') $
+              withStore' $ \db -> setGroupChatHidden db user groupId False
             updateCIGroupInvitationStatus user gInfo'' CIGISAccepted `catchAllErrors` eToView
             pure $ CRStartedConnectionToGroup user gInfo'' incognitoProfile relayResults
         where
@@ -2163,6 +2165,8 @@ processChatCommand vr nm = \case
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]
+            when (maybe False chatHidden $ preparedGroup gInfo') $
+              withStore' $ \db -> setGroupChatHidden db user groupId False
             updateCIGroupInvitationStatus user gInfo' CIGISAccepted `catchAllErrors` eToView
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile []
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
@@ -2506,9 +2510,6 @@ processChatCommand vr nm = \case
         msg <- sendGroupMessage user toGInfo scope members $ XGrpInvPub inv
         sendInv Nothing msg (CDGroupSnd toGInfo Nothing) (GroupChat toGInfo Nothing)
       _ -> throwCmdError "unsupported chat type"
-  APIRevealPublicGroup groupId -> withUser $ \user -> do
-    withStore' $ \db -> setGroupChatHidden db user groupId False
-    ok user
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -4865,7 +4866,6 @@ chatCommandP =
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_share #" *> (APISharePublicGroup <$> A.decimal <* A.space <*> chatRefP),
-      "/_reveal #" *> (APIRevealPublicGroup <$> A.decimal),
       "/share " *> char_ '#' *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),

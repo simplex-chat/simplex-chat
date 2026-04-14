@@ -553,6 +553,7 @@ data PreparedGroup = PreparedGroup
   { connLinkToConnect :: PreparedGroupLink,
     connLinkPreparedConnection :: Bool,
     connLinkStartedConnection :: Bool,
+    chatHidden :: Bool,
     welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
     requestSharedMsgId :: Maybe SharedMsgId
   }

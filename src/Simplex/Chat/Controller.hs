@@ -377,7 +377,6 @@ data ChatCommand
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}
   | APISharePublicGroup {groupId :: GroupId, toChatRef :: ChatRef}
-  | APIRevealPublicGroup {groupId :: GroupId}
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember {groupId :: GroupId, groupMemberId :: GroupMemberId, memberRole :: GroupMemberRole}
   | APIDeleteMemberSupportChat GroupId GroupMemberId

@@ -659,7 +659,7 @@ safeDeleteLDN db User {userId} localDisplayName = do
     |]
     (userId, localDisplayName, userId)
 
-type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, Maybe SharedMsgId, Maybe SharedMsgId)
+type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, Maybe SharedMsgId, Maybe SharedMsgId)
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
@@ -686,9 +686,9 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
-  (connFullLink, connShortLink, BI connLinkPreparedConnection, BI connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId)
+  (connFullLink, connShortLink, BI connLinkPreparedConnection, BI connLinkStartedConnection, BI chatHidden, welcomeSharedMsgId, requestSharedMsgId)
     | isJust connFullLink || isJust connShortLink ->
-        Just PreparedGroup {connLinkToConnect = PreparedConnLink {connFullLink, connShortLink}, connLinkPreparedConnection, connLinkStartedConnection, welcomeSharedMsgId, requestSharedMsgId}
+        Just PreparedGroup {connLinkToConnect = PreparedConnLink {connFullLink, connShortLink}, connLinkPreparedConnection, connLinkStartedConnection, chatHidden, welcomeSharedMsgId, requestSharedMsgId}
   _ -> Nothing
 
 toPublicGroupProfile :: Maybe GroupType -> Maybe ShortLinkContact -> Maybe B64UrlByteString -> Maybe PublicGroupProfile
@@ -763,7 +763,7 @@ groupInfoQueryFields =
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.chat_hidden, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.use_relays, g.relay_own_status,
       g.ui_themes, g.summary_current_members_count, g.public_member_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
