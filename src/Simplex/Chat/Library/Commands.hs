@@ -1081,7 +1081,7 @@ processChatCommand vr nm = \case
         let chatLink = MCLGroup groupLink gp
         ownerSig_ <-
           pure groupKeys $>>= \GroupKeys {memberPrivKey} ->
-            fmap (mkLinkOwnerSig memberPrivKey chatLink memberId) <$> shareChatBinding user toChatRef
+            mkLinkOwnerSig memberPrivKey chatLink memberId <$$> shareChatBinding user toChatRef
         pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
     where
       mkLinkOwnerSig :: C.PrivateKeyEd25519 -> MsgChatLink -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
@@ -2324,6 +2324,10 @@ processChatCommand vr nm = \case
     toChatRef <- getChatRef user toChatName
     asGroup <- getSendAsGroup user toChatRef
     processChatCommand vr nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
+  ShareChatMsg shareGroupName toChatName -> withUser $ \user -> do
+    groupId <- withFastStore $ \db -> getGroupIdByName db user shareGroupName
+    toChatRef <- getChatRef user toChatName
+    processChatCommand vr nm $ APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) toChatRef
   SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
     case sendName of
@@ -4830,7 +4834,7 @@ chatCommandP =
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
-      "/_share_chat " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> chatRefP),
+      "/_share chat " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> chatRefP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),
@@ -5019,6 +5023,7 @@ chatCommandP =
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
+      "/share chat #" *> (ShareChatMsg <$> displayNameP <* A.space <*> chatNameP),
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/accept_member_contact @" *> (AcceptMemberContact <$> displayNameP),
