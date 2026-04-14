@@ -4134,9 +4134,9 @@ processChatCommand vr nm = \case
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, _), fInv_) -> do
-                case (quotedItemId, itemForwarded) of
-                  (Nothing, Nothing) -> pure ((mcSimple mc) {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live}, Nothing)
-                  (Nothing, Just _) -> pure ((mcForward mc) {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live}, Nothing)
+                (mc', quotedItem_) <- case (quotedItemId, itemForwarded) of
+                  (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
+                  (Nothing, Just _) -> pure (mcForward mc, Nothing)
                   (Just qiId, Nothing) -> do
                     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
                       getDirectChatItem db user contactId qiId
@@ -4144,8 +4144,9 @@ processChatCommand vr nm = \case
                     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                         qmc = quoteContent mc origQmc file
                         quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-                    pure ((mcQuote QuotedMsg {msgRef, content = qmc} mc) {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live}, Just quotedItem)
+                    pure (mcQuote QuotedMsg {msgRef, content = qmc} mc, Just quotedItem)
                   (Just _, Just _) -> throwError SEInvalidQuote
+                pure (mc' {file = fInv_, ttl = ttl' <$> timed_, live = justTrue live}, quotedItem_)
               where
                 quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
                 quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwError SEInvalidQuote

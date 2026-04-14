@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -35,6 +36,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
+import GHC.Generics (Generic)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -650,7 +652,7 @@ data MsgContainer = MsgContainer
     parent :: Maybe MsgRef,
     forward :: Maybe Bool
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 -- Base value used by the smart constructors and for record-update on send sites.
 -- Named mcEmpty (not mc) to avoid shadowing the conventional local variable name
@@ -856,27 +858,23 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
-parseMsgContainer :: J.Object -> JT.Parser MsgContainer
-parseMsgContainer v = do
-  content <- v .: "content"
-  file <- v .:? "file"
-  ttl <- v .:? "ttl"
-  live <- v .:? "live"
-  mentions <- fromMaybe M.empty <$> (v .:? "mentions")
-  scope <- v .:? "scope"
-  asGroup <- v .:? "asGroup"
-  quote <- v .:? "quote"
-  parent <- v .:? "parent"
-  forward <- (v .:? "forward") >>= parseForward
-  pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward}
-  where
-    -- The support for arbitrary object in "forward" property is added to allow
-    -- forward compatibility with forwards that include public group links.
-    parseForward :: Maybe J.Value -> JT.Parser (Maybe Bool)
-    parseForward Nothing = pure Nothing
-    parseForward (Just (J.Bool b)) = pure (justTrue b)
-    parseForward (Just (J.Object _)) = pure (Just True)
-    parseForward (Just _) = fail "invalid forward field"
+instance FromJSON MsgContainer where
+  parseJSON = JT.withObject "MsgContainer" $ \v ->
+    MsgContainer
+      <$> v .: "content"
+      <*> (fromMaybe M.empty <$> v .:? "mentions")
+      <*> v .:? "file"
+      <*> v .:? "ttl"
+      <*> v .:? "live"
+      <*> v .:? "scope"
+      <*> v .:? "asGroup"
+      <*> v .:? "quote"
+      <*> v .:? "parent"
+      <*> v .:? "forward"
+
+instance ToJSON MsgContainer where
+  toJSON = J.genericToJSON defaultJSON
+  toEncoding = J.genericToEncoding defaultJSON
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -921,19 +919,6 @@ instance FromJSON MsgContent where
 unknownMsgType :: Text
 unknownMsgType = "unknown message type"
 
-msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
-  JM.fromList
-    $ ("quote" .=? quote)
-    $ ("parent" .=? parent)
-    $ ("forward" .=? forward)
-    $ ("file" .=? file)
-    $ ("ttl" .=? ttl)
-    $ ("live" .=? live)
-    $ ("mentions" .=? nonEmptyMap mentions)
-    $ ("scope" .=? scope)
-    $ ("asGroup" .=? asGroup)
-      ["content" .= content]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
@@ -1277,7 +1262,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     opt key = JT.parseEither (.:? key) params
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
-      XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
+      XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
       XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
@@ -1363,7 +1348,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     o = JM.fromList
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
-      XMsgNew container -> msgContainerJSON container
+      XMsgNew container -> case toJSON container of J.Object o -> o; _ -> JM.empty
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']

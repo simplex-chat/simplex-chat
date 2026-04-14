@@ -202,24 +202,22 @@ toggleNtf m ntfOn =
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
-prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
-  (Nothing, Nothing) ->
-    let mc' = (mcSimple mc) {mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
-     in pure (XMsgNew mc', Nothing)
-  (Nothing, Just _) ->
-    let mc' = (mcForward mc) {mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
-     in pure (XMsgNew mc', Nothing)
-  (Just quotedItemId, Nothing) -> do
-    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
-      getGroupCIWithReactions db user g quotedItemId
-    (origQmc, qd, sent, member_) <- quoteData qci membership
-    let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
-        qmc = quoteContent mc origQmc file
-        (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
-        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
-        mc' = (mcQuote QuotedMsg {msgRef, content = qmc'} mc) {mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
-    pure (XMsgNew mc', Just quotedItem)
-  (Just _, Just _) -> throwError SEInvalidQuote
+prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
+  (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of
+    (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
+    (Nothing, Just _) -> pure (mcForward mc, Nothing)
+    (Just quotedItemId, Nothing) -> do
+      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
+        getGroupCIWithReactions db user g quotedItemId
+      (origQmc, qd, sent, member_) <- quoteData qci membership
+      let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
+          qmc = quoteContent mc origQmc file
+          (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
+          quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
+      pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
+    (Just _, Just _) -> throwError SEInvalidQuote
+  let mc'' = mc' {mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
+  pure (XMsgNew mc'', quotedItem_)
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, Maybe GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
