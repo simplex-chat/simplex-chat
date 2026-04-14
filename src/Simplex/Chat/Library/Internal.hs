@@ -343,7 +343,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
   | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
-  | isNothing scopeInfo && prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
+  | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
     hostApprovalVoice
@@ -360,10 +360,13 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
       | sent = userRole >= GRModerator
       | otherwise = userRole < GRModerator
 
-prohibitedSimplexLinks :: GroupInfo -> GroupMember -> Maybe MarkdownList -> Bool
-prohibitedSimplexLinks gInfo m ft =
+prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Bool
+prohibitedSimplexLinks gInfo m mc ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
-    && maybe False (any ftIsSimplexLink) ft
+    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft)
+  where
+    isChatLink MCChat {} = True
+    isChatLink _ = False
 
 ftIsSimplexLink :: FormattedText -> Bool
 ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format

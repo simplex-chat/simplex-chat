@@ -222,6 +222,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
+  CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
@@ -2039,7 +2040,7 @@ viewGroupUserChanged
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk contactSLinkData -> [invOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
+    ILPOk contactSLinkData linkSigVerification_ -> [invOrBiz contactSLinkData "ok to connect"] <> viewLinkSigVerification linkSigVerification_ <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -2057,7 +2058,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData -> [addrOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData linkSigVerification_ -> [addrOrBiz contactSLinkData "ok to connect"] <> viewLinkSigVerification linkSigVerification_ <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2075,9 +2076,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ->
+    GLPOk groupSLinkInfo_ groupSLinkData linkSigVerification_ ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+            <> viewLinkSigVerification linkSigVerification_
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
@@ -2113,6 +2115,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
+    viewLinkSigVerification = \case
+      Just LSVVerified -> ["  owner signature: verified"]
+      Just (LSVFailed r) -> ["  owner signature: FAILED (" <> plain r <> ")"]
+      Nothing -> []
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -2212,7 +2218,25 @@ sentWithTime_ ts tz styledMsg CIMeta {itemTs} =
   prependFirst (ttyMsgTime ts tz itemTs <> " ") styledMsg
 
 ttyMsgContent :: MsgContent -> [StyledString]
-ttyMsgContent = msgPlain . msgContentText
+ttyMsgContent = \case
+  MCChat {text, chatLink, ownerSig} ->
+    let signed = if isJust ownerSig then " (signed)" else ""
+        linkInfo = case chatLink of
+          MCLGroup {groupProfile = GroupProfile {displayName}} ->
+            "channel #" <> plain displayName <> signed
+          MCLContact {profile = Profile {displayName}} ->
+            "contact @" <> plain displayName <> signed
+          MCLInvitation {profile = Profile {displayName}} ->
+            "invitation @" <> plain displayName <> signed
+        body = if T.null text || text == msgChatLinkName chatLink then [] else msgPlain text
+     in [linkInfo] <> body
+  mc -> msgPlain $ msgContentText mc
+
+msgChatLinkName :: MsgChatLink -> Text
+msgChatLinkName = \case
+  MCLGroup {groupProfile = GroupProfile {displayName}} -> displayName
+  MCLContact {profile = Profile {displayName}} -> displayName
+  MCLInvitation {profile = Profile {displayName}} -> displayName
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]

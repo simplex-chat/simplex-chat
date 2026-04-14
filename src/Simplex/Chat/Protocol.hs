@@ -318,7 +318,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding = CBGroup
+data ChatBinding = CBGroup | CBDirect
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -381,10 +381,13 @@ instance Encoding KeyRef where
       c -> fail $ "invalid KeyRef tag: " <> show c
 
 instance Encoding ChatBinding where
-  smpEncode CBGroup = "G"
+  smpEncode = \case
+    CBGroup -> "G"
+    CBDirect -> "D"
   smpP =
     A.anyChar >>= \case
       'G' -> pure CBGroup
+      'D' -> pure CBDirect
       c -> fail $ "invalid ChatBinding: " <> show c
 
 instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
@@ -658,7 +661,7 @@ data MsgContent
   | MCVoice {text :: Text, duration :: Int}
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
-  | MCChat {text :: Text, chatLink :: MsgChatLink}
+  | MCChat {text :: Text, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -666,6 +669,13 @@ data MsgChatLink
   = MCLContact {connLink :: ShortLinkContact, profile :: Profile, business :: Bool}
   | MCLInvitation {invLink :: ShortLinkInvitation, profile :: Profile}
   | MCLGroup {connLink :: ShortLinkContact, groupProfile :: GroupProfile}
+  deriving (Eq, Show)
+
+data LinkOwnerSig = LinkOwnerSig
+  { ownerId :: Maybe B64UrlByteString,
+    binding :: B64UrlByteString,
+    ownerSig :: B64UrlByteString
+  }
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
@@ -740,6 +750,8 @@ data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
+
+$(JQ.deriveJSON defaultJSON ''LinkOwnerSig)
 
 $(JQ.deriveJSON defaultJSON ''MsgMention)
 
@@ -891,7 +903,8 @@ instance FromJSON MsgContent where
       MCChat_ -> do
         text <- v .: "text"
         chatLink <- v .: "chatLink"
-        pure MCChat {text, chatLink}
+        ownerSig <- v .:? "ownerSig"
+        pure MCChat {text, chatLink, ownerSig}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -926,7 +939,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
     MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
-    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
+    MCChat {text, chatLink, ownerSig} -> J.object $ ("ownerSig" .=? ownerSig) ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
@@ -936,7 +949,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
-    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
+    MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
 
 instance ToField MsgContent where
   toField = toField . encodeJSON

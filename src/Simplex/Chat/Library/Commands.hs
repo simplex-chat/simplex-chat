@@ -101,6 +101,7 @@ import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQSupportOff, pattern PQSupportOn)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
@@ -690,7 +691,7 @@ processChatCommand vr nm = \case
       gInfo@GroupInfo {groupId, membership} <- withFastStore $ \db -> getGroupInfo db vr user chatId
       when (isNothing scope) $ assertUserGroupRole gInfo GRAuthor
       let (_, ft_) = msgContentTexts mc
-      if prohibitedSimplexLinks gInfo membership ft_
+      if prohibitedSimplexLinks gInfo membership mc ft_
         then throwCmdError ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
         else do
           -- TODO [knocking] check chat item scope?
@@ -1067,6 +1068,43 @@ processChatCommand vr nm = \case
             let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
+  APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user -> do
+    GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup}, membership = GroupMember {memberId}, groupKeys} <-
+      withFastStore $ \db -> getGroupInfo db vr user groupId
+    PublicGroupProfile {groupLink = connLink} <- maybe (throwCmdError "not a public group") pure publicGroup
+    ownerSig_ <- case groupKeys of
+      Just GroupKeys {memberPrivKey} -> do
+        binding_ <- shareChatBinding user toChatRef
+        pure $ case binding_ of
+          Just (cb, bindingData) ->
+            let chatLink = MCLGroup connLink gp
+                fullBinding = smpEncode cb <> bindingData
+                signedData = fullBinding <> LB.toStrict (J.encode chatLink)
+                sig = C.sign' memberPrivKey signedData
+             in Just LinkOwnerSig
+                  { ownerId = Just $ B64UrlByteString (unMemberId memberId),
+                    binding = B64UrlByteString fullBinding,
+                    ownerSig = B64UrlByteString (C.signatureBytes sig)
+                  }
+          Nothing -> Nothing
+      Nothing -> pure Nothing
+    pure $ CRChatMsgContent user MCChat {text = displayName, chatLink = MCLGroup connLink gp, ownerSig = ownerSig_}
+    where
+      shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
+      shareChatBinding u (ChatRef CTDirect contactId _) = do
+        ct <- withFastStore $ \db -> getContact db vr u contactId
+        case contactConn ct of
+          Just conn -> Just . (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+          Nothing -> pure Nothing
+      shareChatBinding u (ChatRef CTGroup toGroupId _) = do
+        GroupInfo {groupProfile = GroupProfile {publicGroup = toPubGroup}, membership = GroupMember {memberId = toMemberId}} <-
+          withFastStore $ \db -> getGroupInfo db vr u toGroupId
+        pure $ case toPubGroup of
+          Just PublicGroupProfile {publicGroupId = pgId} ->
+            Just (CBGroup, smpEncode (pgId, toMemberId))
+          Nothing -> Nothing
+      shareChatBinding _ _ = pure Nothing
+  APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for groups"
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
@@ -1933,9 +1971,11 @@ processChatCommand vr nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
-  APIConnectPlan userId (Just cLink) -> withUserId userId $ \user ->
-    uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIConnectPlan _ Nothing -> throwChatError CEInvalidConnReq
+  APIConnectPlan userId (Just cLink) linkOwnerSig_ -> withUserId userId $ \user -> do
+    (ccLink, plan) <- connectPlan user cLink
+    plan' <- maybe (pure plan) (verifyLinkOwnerSig user cLink plan) linkOwnerSig_
+    pure $ CRConnectionPlan user ccLink plan'
+  APIConnectPlan _ Nothing _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
@@ -2176,7 +2216,7 @@ processChatCommand vr nm = \case
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
     -- TODO [relays] member: /c api to support groups with relays
     -- TODO   - possibly by going through APIPrepareGroup -> APIConnectPreparedGroup
-    (ccLink, plan) <- connectPlan user cLink `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
+    (ccLink, plan) <- connectPlan user cLink `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
@@ -2194,7 +2234,7 @@ processChatCommand vr nm = \case
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
-    plan <- contactRequestPlan user adminContactReq Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing))
+    plan <- contactRequestPlan user adminContactReq Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing))
     connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) plan
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
@@ -3975,7 +4015,7 @@ processChatCommand vr nm = \case
       | otherwise = pure $ CRConnectionPlan user ccLink plan
     invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> CM ConnectionPlan
     invitationRequestPlan user cReq contactSLinkData_ = do
-      maybe (CPInvitationLink (ILPOk contactSLinkData_)) (invitationEntityPlan contactSLinkData_)
+      maybe (CPInvitationLink (ILPOk contactSLinkData_ Nothing)) (invitationEntityPlan contactSLinkData_)
         <$> withFastStore' (\db -> getConnectionEntityByConnReq db vr user $ invCReqSchemas cReq)
       where
         invCReqSchemas :: ConnReqInvitation -> (ConnReqInvitation, ConnReqInvitation)
@@ -3988,10 +4028,10 @@ processChatCommand vr nm = \case
       RcvDirectMsgConnection Connection {connStatus, contactConnInitiated} ct_ -> case ct_ of
         Just ct
           | contactActive ct -> CPInvitationLink (ILPKnown ct)
-          | otherwise -> CPInvitationLink (ILPOk contactSLinkData_)
+          | otherwise -> CPInvitationLink (ILPOk contactSLinkData_ Nothing)
         Nothing
           | connStatus == ConnNew && contactConnInitiated -> CPInvitationLink ILPOwnLink
-          | connStatus == ConnPrepared -> CPInvitationLink (ILPOk contactSLinkData_)
+          | connStatus == ConnPrepared -> CPInvitationLink (ILPOk contactSLinkData_ Nothing)
           | otherwise -> CPInvitationLink (ILPConnecting Nothing)
       _ -> CPError $ ChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
     contactOrGroupRequestPlan ::  User -> ConnReqContact -> CM ConnectionPlan
@@ -4012,13 +4052,13 @@ processChatCommand vr nm = \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
                 Just ct | not (contactDeleted ct) -> pure $ CPContactAddress (CAPContactViaAddress ct)
-                _ -> pure $ CPContactAddress (CAPOk contactSLinkData_)
+                _ -> pure $ CPContactAddress (CAPOk contactSLinkData_ Nothing)
             Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
-              | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk contactSLinkData_)
+              | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk contactSLinkData_ Nothing)
               | otherwise -> pure $ CPContactAddress CAPConnectingConfirmReconnect
             Just (RcvDirectMsgConnection _ (Just ct))
               | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
-              | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
+              | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_ Nothing)
               | otherwise -> pure $ CPContactAddress (CAPKnown ct)
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
             Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing Nothing
@@ -4033,12 +4073,12 @@ processChatCommand vr nm = \case
           connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db vr user cReqHashes
           gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db vr user cReqHashes
           case (gInfo_, connEnt_) of
-            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk groupSLinkInfo_ groupSLinkData_)
+            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk groupSLinkInfo_ groupSLinkData_ Nothing)
             -- TODO [short links] RcvDirectMsgConnection branches are deprecated? (old group link protocol?)
             (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
             (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
               | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
-              | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkInfo_ groupSLinkData_)
+              | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkInfo_ groupSLinkData_ Nothing)
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
             (Just gInfo, _) -> groupPlan gInfo groupSLinkInfo_ groupSLinkData_
     groupPlan :: GroupInfo -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> CM ConnectionPlan
@@ -4047,7 +4087,7 @@ processChatCommand vr nm = \case
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
-      | otherwise = pure $ CPGroupLink (GLPOk groupSLinkInfo_ groupSLinkData_)
+      | otherwise = pure $ CPGroupLink (GLPOk groupSLinkInfo_ groupSLinkData_ Nothing)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
       ( CRContactUri crData {crScheme = SSSimplex},
@@ -4059,6 +4099,51 @@ processChatCommand vr nm = \case
     serverShortLink = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
+    verifyLinkOwnerSig :: User -> AConnectionLink -> ConnectionPlan -> LinkOwnerSig -> CM ConnectionPlan
+    verifyLinkOwnerSig user (ACL SCMContact cLink) plan LinkOwnerSig {ownerId = losOwnerId, binding = B64UrlByteString bindingBytes, ownerSig = B64UrlByteString sigBytes} = case plan of
+      CPGroupLink (GLPOk sLinkInfo sLinkData _) -> do
+        v <- verifyLink cLink
+        pure $ CPGroupLink (GLPOk sLinkInfo sLinkData (Just v))
+      CPContactAddress (CAPOk sLinkData _) -> do
+        v <- verifyLink cLink
+        pure $ CPContactAddress (CAPOk sLinkData (Just v))
+      CPInvitationLink (ILPOk sLinkData _) -> do
+        v <- verifyLink cLink
+        pure $ CPInvitationLink (ILPOk sLinkData (Just v))
+      _ -> pure plan
+      where
+        verifyLink :: ConnectionLink 'CMContact -> CM LinkSigVerification
+        verifyLink = \case
+          CLShort l -> do
+            let l' = serverShortLink l
+            (fd, cData) <- getShortLinkConnReq nm user l'
+            let FixedLinkData {rootKey} = fd
+                ContactLinkData _ UserContactData {owners} = cData
+            groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+            let chatLink_ = case groupSLinkData_ of
+                  Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = connLnk}}} ->
+                    Just $ MCLGroup connLnk gp
+                  _ -> Nothing
+            pure $ case chatLink_ of
+              Just chatLink -> verifySig rootKey owners chatLink
+              Nothing -> LSVFailed "cannot reconstruct chat link"
+          CLFull _ -> pure $ LSVFailed "full link, cannot verify"
+        verifySig :: C.PublicKeyEd25519 -> [OwnerAuth] -> MsgChatLink -> LinkSigVerification
+        verifySig rootKey owners chatLink =
+          let signedData = bindingBytes <> LB.toStrict (J.encode chatLink)
+           in case losOwnerId of
+                Nothing ->
+                  case C.decodeSignature sigBytes of
+                    Right sig | C.verify' rootKey sig signedData -> LSVVerified
+                    _ -> LSVFailed "signature verification failed"
+                Just (B64UrlByteString oId) ->
+                  case find (\OwnerAuth {ownerId} -> ownerId == oId) owners of
+                    Nothing -> LSVFailed "unknown owner ID"
+                    Just OwnerAuth {ownerKey} ->
+                      case C.decodeSignature sigBytes of
+                        Right sig | C.verify' ownerKey sig signedData -> LSVVerified
+                        _ -> LSVFailed "signature verification failed"
+    verifyLinkOwnerSig _ _ plan _ = pure plan
     contactShortLinkData :: Profile -> Maybe AddressSettings -> UserLinkData
     contactShortLinkData p settings =
       let msg = autoReply =<< settings
@@ -4328,9 +4413,13 @@ processChatCommand vr nm = \case
         getLocalCI db itemId = runExceptT . withExceptT ChatErrorStore $ getLocalChatItem db user nfId itemId
     forwardMsgContent :: ChatItem c d -> CM (Maybe MsgContent)
     forwardMsgContent ChatItem {meta = CIMeta {itemDeleted = Just _}} = pure Nothing -- this can be deleted after selection
-    forwardMsgContent ChatItem {content = CISndMsgContent fmc} = pure $ Just fmc
-    forwardMsgContent ChatItem {content = CIRcvMsgContent fmc} = pure $ Just fmc
+    forwardMsgContent ChatItem {content = CISndMsgContent fmc} = pure $ Just $ dropOwnerSig fmc
+    forwardMsgContent ChatItem {content = CIRcvMsgContent fmc} = pure $ Just $ dropOwnerSig fmc
     forwardMsgContent _ = throwChatError CEInvalidForward
+    dropOwnerSig :: MsgContent -> MsgContent
+    dropOwnerSig = \case
+      MCChat {text, chatLink} -> MCChat {text, chatLink, ownerSig = Nothing}
+      mc -> mc
     createNoteFolderContentItems :: User -> NoteFolderId -> NonEmpty ComposedMessageReq -> CM ChatResponse
     createNoteFolderContentItems user folderId cmrs = do
       assertNoQuotes
@@ -4771,6 +4860,7 @@ chatCommandP =
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
+      "/_share_chat " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> chatRefP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),
@@ -4942,7 +5032,7 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing)),
+      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> optional (" sig=" *> jsonP)),
       "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
       "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
