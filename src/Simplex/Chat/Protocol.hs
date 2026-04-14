@@ -477,9 +477,8 @@ deriving instance Show AChatMsgEvent
 -- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
-  XMsgNew mc -> case mcExtMsgContent mc of
-    ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
-    _ -> True
+  XMsgNew MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
+  XMsgNew _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
   XMsgDel {} -> True
@@ -582,7 +581,7 @@ data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
 
 cmToQuotedMsg :: AChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
-  ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
+  ACME _ (XMsgNew MsgContainer {quote = Just quotedMsg}) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag
@@ -631,24 +630,60 @@ instance FromField MsgContentTag where fromField = fromTextField_ $ eitherToMayb
 
 instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
-data MsgContainer
-  = MCSimple ExtMsgContent
-  | MCQuote QuotedMsg ExtMsgContent
-  | MCComment MsgRef ExtMsgContent
-  | MCForward ExtMsgContent
+-- Wire JSON 1:1 with parsed form. The three discriminator fields `quote`, `parent`,
+-- and `forward` are independent and may co-occur (e.g. a comment that quotes another
+-- comment carries both `parent` and `quote`). `forward` is `Maybe Bool` for backwards
+-- compatibility with the previous wire encoding: the serializer omits the field when
+-- `Nothing` and the parser treats absent/false as "not a forward".
+data MsgContainer = MsgContainer
+  { content :: MsgContent,
+    -- the key used in mentions is a locally (per message) unique display name of member.
+    -- Suffixes _1, _2 should be appended to make names locally unique.
+    -- It should be done in the UI, as they will be part of the text, and validated in the API.
+    mentions :: Map MemberName MsgMention,
+    file :: Maybe FileInvitation,
+    ttl :: Maybe Int,
+    live :: Maybe Bool,
+    scope :: Maybe MsgScope,
+    asGroup :: Maybe Bool,
+    quote :: Maybe QuotedMsg,
+    parent :: Maybe MsgRef,
+    forward :: Maybe Bool
+  }
   deriving (Eq, Show)
 
-mcExtMsgContent :: MsgContainer -> ExtMsgContent
-mcExtMsgContent = \case
-  MCSimple c -> c
-  MCQuote _ c -> c
-  MCComment _ c -> c
-  MCForward c -> c
+-- Base value used by the smart constructors and for record-update on send sites.
+-- Named mcEmpty (not mc) to avoid shadowing the conventional local variable name
+-- `mc` used at MsgContainer pattern-match sites across the codebase.
+mcEmpty :: MsgContainer
+mcEmpty =
+  MsgContainer
+    { content = MCText "",
+      mentions = M.empty,
+      file = Nothing,
+      ttl = Nothing,
+      live = Nothing,
+      scope = Nothing,
+      asGroup = Nothing,
+      quote = Nothing,
+      parent = Nothing,
+      forward = Nothing
+    }
+
+mcSimple :: MsgContent -> MsgContainer
+mcSimple c = mcEmpty {content = c}
+
+mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
+mcQuote q c = mcEmpty {content = c, quote = Just q}
+
+mcComment :: MsgRef -> MsgContent -> MsgContainer
+mcComment p c = mcEmpty {content = c, parent = Just p}
+
+mcForward :: MsgContent -> MsgContainer
+mcForward c = mcEmpty {content = c, forward = Just True}
 
 isMCForward :: MsgContainer -> Bool
-isMCForward = \case
-  MCForward _ -> True
-  _ -> False
+isMCForward MsgContainer {forward} = forward == Just True
 
 data MsgContent
   = MCText {text :: Text}
@@ -721,20 +756,6 @@ msgContentTag = \case
   MCReport {} -> MCReport_
   MCChat {} -> MCChat_
   MCUnknown {tag} -> MCUnknown_ tag
-
-data ExtMsgContent = ExtMsgContent
-  { content :: MsgContent,
-    -- the key used in mentions is a locally (per message) unique display name of member.
-    -- Suffixes _1, _2 should be appended to make names locally unique.
-    -- It should be done in the UI, as they will be part of the text, and validated in the API.
-    mentions :: Map MemberName MsgMention,
-    file :: Maybe FileInvitation,
-    ttl :: Maybe Int,
-    live :: Maybe Bool,
-    scope :: Maybe MsgScope,
-    asGroup :: Maybe Bool
-  }
-  deriving (Eq, Show)
 
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
@@ -836,27 +857,26 @@ markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
-parseMsgContainer v =
-  MCQuote <$> v .: "quote" <*> mc
-    <|> MCComment <$> v .: "parent" <*> mc
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
-    -- The support for arbitrary object in "forward" property is added to allow
-    -- forward compatibility with forwards that include public group links.
-    <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
-    <|> MCSimple <$> mc
+parseMsgContainer v = do
+  content <- v .: "content"
+  file <- v .:? "file"
+  ttl <- v .:? "ttl"
+  live <- v .:? "live"
+  mentions <- fromMaybe M.empty <$> (v .:? "mentions")
+  scope <- v .:? "scope"
+  asGroup <- v .:? "asGroup"
+  quote <- v .:? "quote"
+  parent <- v .:? "parent"
+  forward <- (v .:? "forward") >>= parseForward
+  pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward}
   where
-    mc = do
-      content <- v .: "content"
-      file <- v .:? "file"
-      ttl <- v .:? "ttl"
-      live <- v .:? "live"
-      mentions <- fromMaybe M.empty <$> (v .:? "mentions")
-      scope <- v .:? "scope"
-      asGroup <- v .:? "asGroup"
-      pure ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup}
-
-extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing Nothing
+    -- Backward compatibility: legacy clients encode forward either as a Bool or as an
+    -- object (the latter is used by public group links). Any present form → Just True.
+    parseForward :: Maybe J.Value -> JT.Parser (Maybe Bool)
+    parseForward Nothing = pure Nothing
+    parseForward (Just (J.Bool b)) = pure (justTrue b)
+    parseForward (Just (J.Object _)) = pure (Just True)
+    parseForward (Just _) = fail "invalid forward field"
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -902,15 +922,15 @@ unknownMsgType :: Text
 unknownMsgType = "unknown message type"
 
 msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON = \case
-  MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
-  MCComment ref mc -> o $ ("parent" .= ref) : msgContent mc
-  MCForward mc -> o $ ("forward" .= True) : msgContent mc
-  MCSimple mc -> o $ msgContent mc
+msgContainerJSON MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward} =
+  JM.fromList $
+    discriminators
+      <> ("file" .=? file) (("ttl" .=? ttl) (("live" .=? live) (("mentions" .=? nonEmptyMap mentions) (("scope" .=? scope) (("asGroup" .=? asGroup) ["content" .= content])))))
   where
-    o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) $ ("asGroup" .=? asGroup) ["content" .= content]
+    discriminators =
+      ["quote" .= q | Just q <- [quote]]
+        <> ["parent" .= p | Just p <- [parent]]
+        <> ["forward" .= True | forward == Just True]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
