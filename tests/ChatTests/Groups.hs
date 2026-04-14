@@ -8875,7 +8875,7 @@ testChannelOwnerKeyAfterLinkUpdate ps =
           fullLink' `shouldBe` fullLink
           memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
 
-          -- -- Verify owner member record in late subscriber's DB has a public key.
+          -- Verify owner member record in late subscriber's DB has a public key.
           ownerKeyPresent <- withCCTransaction dan $ \db ->
             DB.query_ db "SELECT COUNT(1) FROM group_members WHERE member_role = 'owner' AND member_pub_key IS NOT NULL" :: IO [[Int]]
           ownerKeyPresent `shouldBe` [[1]]
