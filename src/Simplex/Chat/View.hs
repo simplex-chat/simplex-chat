@@ -2221,22 +2221,16 @@ ttyMsgContent :: MsgContent -> [StyledString]
 ttyMsgContent = \case
   MCChat {text, chatLink, ownerSig} ->
     let signed = if isJust ownerSig then " (signed)" else ""
-        linkInfo = case chatLink of
+        (linkName, linkInfo) = case chatLink of
           MCLGroup {groupProfile = GroupProfile {displayName}} ->
-            "channel #" <> plain displayName <> signed
+            (displayName, "channel #" <> plain displayName <> signed)
           MCLContact {profile = Profile {displayName}} ->
-            "contact @" <> plain displayName <> signed
+            (displayName, "contact @" <> plain displayName <> signed)
           MCLInvitation {profile = Profile {displayName}} ->
-            "invitation @" <> plain displayName <> signed
-        body = if T.null text || text == msgChatLinkName chatLink then [] else msgPlain text
+            (displayName, "invitation @" <> plain displayName <> signed)
+        body = if T.null text || text == linkName then [] else msgPlain text
      in [linkInfo] <> body
   mc -> msgPlain $ msgContentText mc
-
-msgChatLinkName :: MsgChatLink -> Text
-msgChatLinkName = \case
-  MCLGroup {groupProfile = GroupProfile {displayName}} -> displayName
-  MCLContact {profile = Profile {displayName}} -> displayName
-  MCLInvitation {profile = Profile {displayName}} -> displayName
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
