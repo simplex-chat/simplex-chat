@@ -404,7 +404,7 @@ struct ComposeView: View {
                     let errorCount = deletedCount + failedCount
                     let resolvedCount = connectedCount + deletedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total > 0, !showProgress || resolvedCount < total {
+                    if total > 0, errorCount > 0 || !showProgress || resolvedCount < total {
                         subscriberChannelRelayBar(
                             hostnames: hostnames,
                             relayMembers: relayMembers,
@@ -726,21 +726,33 @@ struct ComposeView: View {
     private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int) -> some View {
         let total = relays.count
         let inactiveCount = relays.filter { $0.relayStatus == .rsInactive }.count
+        let allBroken = activeCount == 0 && (failedCount + inactiveCount) == total
         let sorted = relays.sorted { relayDisplayName($0) < relayDisplayName($1) }
         return VStack(spacing: 0) {
             relayBarHeader {
                 if activeCount + failedCount + inactiveCount < total {
                     RelayProgressIndicator(active: activeCount, total: total)
                 }
-                if activeCount == 0 && inactiveCount == total {
-                    Text("No active relays – messages can't be delivered")
-                } else if failedCount > 0 {
+                if failedCount > 0 {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d failed", comment: "channel relay bar progress with errors"), activeCount, total, failedCount))
+                } else if inactiveCount > 0 {
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d inactive", comment: "channel relay bar with inactive relays"), activeCount, total, inactiveCount))
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active", comment: "channel relay bar progress"), activeCount, total))
                 }
+                if allBroken {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(theme.colors.primary)
+                }
             }
             if relayListExpanded {
+                if allBroken {
+                    Text("Messages can't be delivered to subscribers. Adding new relays will be available in a future update.")
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 4)
+                }
                 ForEach(sorted) { relay in
                     let failedErr = relayMemberConnFailed(relay)
                     if let err = failedErr {
@@ -790,15 +802,24 @@ struct ComposeView: View {
                     } else {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected", comment: "channel subscriber relay bar progress"), connectedCount, total))
                     }
-                } else if errorCount == total {
-                    Text("All relays disconnected – messages can't be delivered")
                 } else if errorCount > 0 {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar steady state with errors"), connectedCount, total, errorCount))
+                    if errorCount == total {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(theme.colors.primary)
+                    }
                 } else {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d relays", comment: "channel relay bar"), total))
                 }
             }
             if relayListExpanded {
+                if !showProgress && errorCount == total {
+                    Text("Messages can't be delivered until channel owner adds a new relay.")
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 4)
+                }
                 if relayMembers.isEmpty {
                     ForEach(hostnames, id: \.self) { relay in
                         relayBarDetailRow {
