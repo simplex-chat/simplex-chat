@@ -674,7 +674,7 @@ data MsgChatLink
 data LinkOwnerSig = LinkOwnerSig
   { ownerId :: Maybe B64UrlByteString,
     binding :: B64UrlByteString,
-    ownerSig :: B64UrlByteString
+    ownerSig :: C.Signature 'C.Ed25519
   }
   deriving (Eq, Show)
 
