@@ -2900,8 +2900,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               | otherwise ->
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _
-              | useRelays' gInfo ->
-                  void $ withStore $ \db -> createIntroReMember db user gInfo memInfo memRestrictions
+              | useRelays' gInfo -> do
+                  -- owner key must only come from link data, not from relay intro
+                  let memInfo' = case memInfo of
+                        MemberInfo mId mRole v p _
+                          | mRole == GROwner -> MemberInfo mId mRole v p Nothing
+                        _ -> memInfo
+                  void $ withStore $ \db -> createIntroReMember db user gInfo memInfo' memRestrictions
               | otherwise -> do
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
