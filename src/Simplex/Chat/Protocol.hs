@@ -870,8 +870,8 @@ parseMsgContainer v = do
   forward <- (v .:? "forward") >>= parseForward
   pure MsgContainer {content, mentions, file, ttl, live, scope, asGroup, quote, parent, forward}
   where
-    -- Backward compatibility: legacy clients encode forward either as a Bool or as an
-    -- object (the latter is used by public group links). Any present form → Just True.
+    -- The support for arbitrary object in "forward" property is added to allow
+    -- forward compatibility with forwards that include public group links.
     parseForward :: Maybe J.Value -> JT.Parser (Maybe Bool)
     parseForward Nothing = pure Nothing
     parseForward (Just (J.Bool b)) = pure (justTrue b)
