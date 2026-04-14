@@ -1068,23 +1068,26 @@ processChatCommand vr nm = \case
             let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
-  APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user ->
-    withFastStore (\db -> getGroupInfo db vr user groupId) >>= \case
-      GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup = Just PublicGroupProfile {groupLink = connLink}}, membership = GroupMember {memberId}, groupKeys} -> do
+  APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user -> do
+    GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup}, membership = GroupMember {memberId}, groupKeys} <-
+      withFastStore $ \db -> getGroupInfo db vr user groupId
+    case publicGroup of
+      Nothing -> throwCmdError "not a public group"
+      Just PublicGroupProfile {groupLink = connLink} -> do
         let chatLink = MCLGroup connLink gp
-        ownerSig_ <- pure groupKeys
-          $>>= \GroupKeys {memberPrivKey} -> shareChatBinding user toChatRef
-          $>>= \(cb, bindingData) -> do
-            let fullBinding = smpEncode cb <> bindingData
-                signedData = fullBinding <> LB.toStrict (J.encode chatLink)
-                sig = C.sign' memberPrivKey signedData
-            pure $ Just LinkOwnerSig
-              { ownerId = Just $ B64UrlByteString (unMemberId memberId),
-                binding = B64UrlByteString fullBinding,
-                ownerSig = B64UrlByteString (C.signatureBytes sig)
-              }
+        ownerSig_ <-
+          pure groupKeys
+            $>>= \GroupKeys {memberPrivKey} -> shareChatBinding user toChatRef
+            $>>= \(cb, bindingData) -> do
+              let fullBinding = smpEncode cb <> bindingData
+                  signedData = fullBinding <> LB.toStrict (J.encode chatLink)
+                  sig = C.sign' memberPrivKey signedData
+              pure $ Just LinkOwnerSig
+                { ownerId = Just $ B64UrlByteString (unMemberId memberId),
+                  binding = B64UrlByteString fullBinding,
+                  ownerSig = B64UrlByteString (C.signatureBytes sig)
+                }
         pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
-      _ -> throwCmdError "not a public group"
     where
       shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
       shareChatBinding u = \case
