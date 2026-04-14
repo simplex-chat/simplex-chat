@@ -944,7 +944,7 @@
     <string name="scan_code_from_contacts_app">Biztonsági kód beolvasása a partnere alkalmazásából.</string>
     <string name="observer_cant_send_message_desc">Lépjen kapcsolatba a csoport adminisztrátorával.</string>
     <string name="icon_descr_video_on">Videó bekapcsolva</string>
-    <string name="display_name__field">Profilnév:</string>
+    <string name="display_name__field">Profil neve:</string>
     <string name="paste_button">Beillesztés</string>
     <string name="thank_you_for_installing_simplex">Köszönjük, hogy telepítette a SimpleX Chatet!</string>
     <string name="star_on_github">Csillagozás a GitHubon</string>
@@ -2597,7 +2597,7 @@
     <string name="relay_test_step_decode_link">Hivatkozás dekódolása</string>
     <string name="error_relay_test_failed_at_step">A teszt a(z) %s. lépésnél sikertelen volt.</string>
     <string name="error_relay_test_server_auth">A kiszolgáló hitelesítést igényel az átjátszóhoz való kapcsolódáshoz, ellenőrizze a jelszavát.</string>
-    <string name="invalid_relay_name">Érvénytelen átjátszónév!</string>
+    <string name="invalid_relay_name">Érvénytelen az átjátszó neve!</string>
     <string name="check_relay_name">Ellenőrizze az átjátszó nevét, és próbálja újra.</string>
     <string name="invalid_relay_address">Érvénytelen az átjátszó címe!</string>
     <string name="check_relay_address">Ellenőrizze az átjátszó címét, és próbálja újra.</string>
