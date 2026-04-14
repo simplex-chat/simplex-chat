@@ -145,7 +145,7 @@ private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRel
 
 fun relayConnStatus(member: GroupMember): Pair<String, Color> {
   if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
-    return generalGetString(MR.strings.relay_conn_status_inactive) to Color.Red
+    return generalGetString(MR.strings.relay_status_inactive) to Color.Red
   }
   return when (member.activeConn?.connStatus) {
     is ConnStatus.Ready -> generalGetString(MR.strings.relay_conn_status_connected) to Color.Green

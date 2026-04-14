@@ -2881,7 +2881,6 @@
   <string name="relay_conn_status_connecting">connecting</string>
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
-  <string name="relay_conn_status_inactive">inactive</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
