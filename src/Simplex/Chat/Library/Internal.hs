@@ -365,8 +365,9 @@ prohibitedSimplexLinks gInfo m mc ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
     && (isChatLink mc || maybe False (any ftIsSimplexLink) ft)
   where
-    isChatLink MCChat {} = True
-    isChatLink _ = False
+    isChatLink = \case
+      MCChat {} -> True
+      _ -> False
 
 ftIsSimplexLink :: FormattedText -> Bool
 ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format

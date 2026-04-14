@@ -3937,11 +3937,11 @@ processChatCommand vr nm = \case
           Just r -> pure r
           Nothing -> do
             (FixedLinkData {linkConnReq = cReq, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq nm user l'
-            cld <- liftIO $ decodeLinkUserData cData
+            contactSLinkData_ <- liftIO $ decodeLinkUserData cData
             let lsv =
-                  cld >>= \ContactShortLinkData {profile} ->
+                  contactSLinkData_ >>= \ContactShortLinkData {profile} ->
                     verifyLinkSig linkOwnerSig_ rootKey owners (MCLInvitation l profile)
-            invitationReqAndPlan cReq (Just l') cld lsv
+            invitationReqAndPlan cReq (Just l') contactSLinkData_ lsv
       where
         knownLinkPlans l' = withFastStore $ \db -> do
           let inv cReq = ACCL SCMInvitation $ CCLink cReq (Just l')
@@ -3966,11 +3966,11 @@ processChatCommand vr nm = \case
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
                   _ -> do
-                    cld <- liftIO $ decodeLinkUserData cData
+                    contactSLinkData_ <- liftIO $ decodeLinkUserData cData
                     let lsv =
-                          cld >>= \ContactShortLinkData {profile, business} ->
+                          contactSLinkData_ >>= \ContactShortLinkData {profile, business} ->
                             verifyLinkSig linkOwnerSig_ rootKey owners (MCLContact l' profile business)
-                    plan <- contactRequestPlan user cReq cld lsv
+                    plan <- contactRequestPlan user cReq contactSLinkData_ lsv
                     pure (con cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
