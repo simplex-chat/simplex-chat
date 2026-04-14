@@ -414,6 +414,9 @@ data MsgSigning = MsgSigning
     privKey :: C.PrivateKeyEd25519
   }
 
+encodeChatBinding :: ChatBinding -> ByteString -> ByteString
+encodeChatBinding cb bindingData = smpEncode cb <> bindingData
+
 
 
 data ChatMsgEvent (e :: MsgEncoding) where
@@ -673,7 +676,7 @@ data MsgChatLink
 
 data LinkOwnerSig = LinkOwnerSig
   { ownerId :: Maybe B64UrlByteString,
-    binding :: B64UrlByteString,
+    chatBinding :: B64UrlByteString,
     ownerSig :: C.Signature 'C.Ed25519
   }
   deriving (Eq, Show)

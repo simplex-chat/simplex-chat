@@ -1085,12 +1085,11 @@ processChatCommand vr nm = \case
         pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
     where
       mkLinkOwnerSig :: C.PrivateKeyEd25519 -> MsgChatLink -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
-      mkLinkOwnerSig privKey chatLink MemberId {unMemberId} (cb, bindingData) =
+      mkLinkOwnerSig privKey chatLink MemberId {unMemberId} (cbTag, bindingData) =
         let ownerId = Just $ B64UrlByteString unMemberId
-            binding = B64UrlByteString fullBinding
-            ownerSig = C.sign' privKey (fullBinding <> LB.toStrict (J.encode chatLink))
-            fullBinding = smpEncode cb <> bindingData
-         in LinkOwnerSig {ownerId, binding, ownerSig}
+            cb = encodeChatBinding cbTag bindingData
+            ownerSig = C.sign' privKey (cb <> LB.toStrict (J.encode chatLink))
+         in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
       shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
       shareChatBinding u = \case
         ChatRef CTDirect contactId _ -> do
@@ -4107,7 +4106,7 @@ processChatCommand vr nm = \case
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     verifyLinkSig :: Maybe LinkOwnerSig -> C.PublicKeyEd25519 -> [OwnerAuth] -> MsgChatLink -> Maybe LinkSigVerification
     verifyLinkSig Nothing _ _ _ = Nothing
-    verifyLinkSig (Just LinkOwnerSig {ownerId, binding = B64UrlByteString bindingBytes, ownerSig}) rootKey owners chatLink =
+    verifyLinkSig (Just LinkOwnerSig {ownerId, chatBinding = B64UrlByteString bindingBytes, ownerSig}) rootKey owners chatLink =
       let signedData = bindingBytes <> LB.toStrict (J.encode chatLink)
        in Just $ case ownerId of
             Nothing
