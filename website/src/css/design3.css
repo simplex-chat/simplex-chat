@@ -830,10 +830,10 @@ main .section-bg {
 
 .page .text-container h2 {
     font-family: "GT-Walsheim", sans-serif;
-    font-weight: 300;
+    font-weight: 400;
     font-size: calc(var(--sec-vwu)*4.94);
     letter-spacing: -0.025em;
-    line-height: 1.05;
+    line-height: 1;
     max-width: calc(var(--sec-vwu)*26);
     color: #023789;
 }
@@ -846,6 +846,7 @@ main .section-bg {
     font-family: "Manrope", sans-serif;
     font-weight: 200;
     font-size: calc(var(--sec-vwu)*1.62);
+    line-height: 1.2;
     max-width: calc(var(--sec-vwu)*23);
     color: #000000;
 }
