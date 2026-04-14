@@ -253,6 +253,7 @@ chatGroupTests = do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
+      it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -8844,6 +8845,60 @@ testChannelLinkAfterWelcomeUpdate ps =
           alice #> "#team hi"
           bob <# "#team> hi"
           [cath, dan] *<# "#team> hi [>>]"
+
+testChannelOwnerKeyAfterLinkUpdate :: HasCallStack => TestParams -> IO ()
+testChannelOwnerKeyAfterLinkUpdate ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+          threadDelay 100000
+
+          -- Owner updates channel profile - triggers rebuilding link data.
+          alice ##> "/gp team my_team My team description"
+          alice <## "changed to #my_team (My team description)"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #team: (signed)"
+                bob <## "changed to #my_team (My team description)",
+              do
+                cath <## "alice updated group #team: (signed)"
+                cath <## "changed to #my_team (My team description)"
+            ]
+
+          threadDelay 100000
+
+          -- Late subscriber joins via the same channel link after profile update.
+          alice ##> "/show link #my_team"
+          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRMember False
+          shortLink' `shouldBe` shortLink
+          fullLink' `shouldBe` fullLink
+          memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
+
+          threadDelay 100000
+
+          -- Verify owner member record in late subscriber's DB has a public key.
+          ownerKeyPresent <- withCCTransaction dan $ \db ->
+            DB.query_ db "SELECT COUNT(1) FROM group_members WHERE member_role = 'owner' AND member_pub_key IS NOT NULL" :: IO [[Int]]
+          ownerKeyPresent `shouldBe` [[1]]
+
+          -- Verify signed event is received by late subscriber.
+          alice ##> "/gp my_team team"
+          alice <## "changed to #team"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #my_team: (signed)"
+                bob <## "changed to #team",
+              do
+                cath <## "alice updated group #my_team: (signed)"
+                cath <## "changed to #team",
+              do
+                dan <## "alice updated group #my_team: (signed)"
+                dan <## "changed to #team"
+            ]
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
