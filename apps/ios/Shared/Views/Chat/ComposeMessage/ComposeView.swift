@@ -382,7 +382,7 @@ struct ComposeView: View {
                 Divider()
             }
 
-            let ownerNoActiveRelays: Bool
+            var ownerNoActiveRelays = false
             if let gInfo = chat.chatInfo.groupInfo, gInfo.useRelays,
                ![.memRejected, .memLeft, .memRemoved, .memGroupDeleted].contains(gInfo.membership.memberStatus) {
                 if gInfo.membership.memberRole == .owner {
@@ -396,7 +396,6 @@ struct ComposeView: View {
                         ownerChannelRelayBar(relays: relays, activeCount: activeCount, failedCount: failedCount)
                     }
                 } else {
-                    ownerNoActiveRelays = false
                     let hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?? []).sorted()
                     let relayMembers = chatModel.groupMembers
                         .filter { $0.wrapped.memberRole == .relay }
@@ -420,8 +419,6 @@ struct ComposeView: View {
                         )
                     }
                 }
-            } else {
-                ownerNoActiveRelays = false
             }
 
             let composeEnabled = !ownerNoActiveRelays && (
