@@ -1308,11 +1308,6 @@ data CIForwardedFrom
   | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
   deriving (Show)
 
-cmForwardedFrom :: AChatMsgEvent -> Maybe CIForwardedFrom
-cmForwardedFrom = \case
-  ACME _ (XMsgNew mc) | isMCForward mc -> Just CIFFUnknown
-  _ -> Nothing
-
 data CIForwardedFromTag
   = CIFFUnknown_
   | CIFFContact_

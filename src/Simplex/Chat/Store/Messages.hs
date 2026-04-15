@@ -558,7 +558,9 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, msgS
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem, itemForwarded)
   where
-    itemForwarded = cmForwardedFrom chatMsgEvent
+    itemForwarded = case chatMsgEvent of
+      ACME _ (XMsgNew MsgContainer {forward}) | forward == Just True -> Just CIFFUnknown
+      _ -> Nothing
     quotedMsg = cmToQuotedMsg chatMsgEvent
     quoteRow :: NewQuoteRow
     quoteRow = case quotedMsg of

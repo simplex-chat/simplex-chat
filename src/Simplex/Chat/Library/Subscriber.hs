@@ -2021,7 +2021,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let fileMember_ = if sentAsGroup then Nothing else m'
            in processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_
         newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed live = do
-          let mentions' = if maybe False memberBlocked m' then [] else mentions
+          let mentions' = if maybe False memberBlocked m' then M.empty else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed live mentions'
           ci' <- maybe (pure ci) (\m -> blockedMemberCI gInfo' m ci) m'
           let memberId_ = memberId' <$> m'

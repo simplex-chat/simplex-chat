@@ -477,8 +477,9 @@ deriving instance Show AChatMsgEvent
 -- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
-  XMsgNew MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
-  XMsgNew _ -> True
+  XMsgNew mc -> case mc of
+    MsgContainer {file = Just FileInvitation {fileInline = Just _}} -> False
+    _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
   XMsgDel {} -> True
@@ -676,9 +677,6 @@ mcComment p c = (mcSimple c) {parent = Just p}
 mcForward :: MsgContent -> MsgContainer
 mcForward c = (mcSimple c) {forward = Just True}
 
-isMCForward :: MsgContainer -> Bool
-isMCForward MsgContainer {forward} = forward == Just True
-
 data MsgContent
   = MCText {text :: Text}
   | MCLink {text :: Text, preview :: LinkPreview}
@@ -754,7 +752,7 @@ msgContentTag = \case
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
 
-newtype MsgMentions = MsgMentions {unMsgMentions :: Map MemberName MsgMention}
+newtype MsgMentions = MsgMentions (Map MemberName MsgMention)
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
@@ -1339,7 +1337,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     o = JM.fromList
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
-      XMsgNew container -> case toJSON container of J.Object obj -> obj; _ -> JM.empty
+      XMsgNew mc -> case toJSON mc of
+        J.Object obj -> obj
+        _ -> JM.empty
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
