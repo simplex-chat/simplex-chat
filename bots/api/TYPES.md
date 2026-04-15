@@ -1038,6 +1038,9 @@ InvalidConnReq:
 UnsupportedConnReq:
 - type: "unsupportedConnReq"
 
+ConnLinkNoRelays:
+- type: "connLinkNoRelays"
+
 ConnReqMessageProhibited:
 - type: "connReqMessageProhibited"
 

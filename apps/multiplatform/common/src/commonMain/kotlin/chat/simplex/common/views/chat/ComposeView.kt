@@ -1671,7 +1671,7 @@ private fun OwnerChannelRelayBar(
       } else {
         String.format(generalGetString(MR.strings.relay_bar_active), activeCount, total)
       }
-      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
+      Text(statusText, color = MaterialTheme.colors.secondary)
       if (allBroken) {
         Icon(
           painterResource(MR.images.ic_info),
@@ -1741,7 +1741,7 @@ private fun SubscriberChannelRelayBar(
       } else {
         String.format(generalGetString(MR.strings.relay_bar_count), total)
       }
-      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
+      Text(statusText, color = MaterialTheme.colors.secondary)
       if (errorCount == total) {
         Icon(
           painterResource(MR.images.ic_info),
@@ -1827,6 +1827,7 @@ private fun RelayBarHeader(
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
+    Spacer(Modifier.weight(1f))
     Icon(
       painterResource(if (expanded.value) MR.images.ic_chevron_down else MR.images.ic_chevron_up),
       contentDescription = null,
