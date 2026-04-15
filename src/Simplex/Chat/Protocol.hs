@@ -417,7 +417,16 @@ data MsgSigning = MsgSigning
 encodeChatBinding :: ChatBinding -> ByteString -> ByteString
 encodeChatBinding cb bindingData = smpEncode cb <> bindingData
 
+dropOwnerSig :: MsgContent -> MsgContent
+dropOwnerSig = \case
+  MCChat {text, chatLink} -> MCChat {text, chatLink, ownerSig = Nothing}
+  mc -> mc
 
+verifyMsgBinding :: ByteString -> MsgContent -> MsgContent
+verifyMsgBinding expectedBinding = \case
+  mc@MCChat {ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}}
+    | binding == expectedBinding -> mc
+  mc -> dropOwnerSig mc
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -818,7 +827,8 @@ instance FromJSON MsgContent where
       MCChat_ -> do
         text <- v .: "text"
         chatLink <- v .: "chatLink"
-        pure MCChat {text, chatLink}
+        ownerSig <- v .:? "ownerSig"
+        pure MCChat {text, chatLink, ownerSig}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -827,6 +837,9 @@ instance FromJSON MsgContent where
 
 unknownMsgType :: Text
 unknownMsgType = "unknown message type"
+
+(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+key .=? value = maybe id ((:) . (key .=)) value
 
 instance ToJSON MsgContent where
   toJSON = \case
@@ -838,7 +851,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
     MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
-    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
+    MCChat {text, chatLink, ownerSig} -> J.object $ ("ownerSig" .=? ownerSig) ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
@@ -848,7 +861,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
-    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
+    MCChat {text, chatLink, ownerSig} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink <> maybe mempty ("ownerSig" .=) ownerSig
 
 $(JQ.deriveJSON defaultJSON ''MsgContainer)
 
@@ -1338,9 +1351,6 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XCallEnd_ -> XCallEnd <$> p "callId"
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
-
-(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
-key .=? value = maybe id ((:) . (key .=)) value
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
 chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
