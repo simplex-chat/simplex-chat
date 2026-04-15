@@ -2280,6 +2280,10 @@ Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
 
+NoRelays:
+- type: "noRelays"
+- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+
 
 ---
 

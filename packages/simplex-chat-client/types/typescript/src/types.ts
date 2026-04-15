@@ -2565,7 +2565,7 @@ export interface GroupLink {
   acceptMemberRole: GroupMemberRole
 }
 
-export type GroupLinkPlan =
+export type GroupLinkPlan = 
   | GroupLinkPlan.Ok
   | GroupLinkPlan.OwnLink
   | GroupLinkPlan.ConnectingConfirmReconnect
@@ -2574,7 +2574,13 @@ export type GroupLinkPlan =
   | GroupLinkPlan.NoRelays
 
 export namespace GroupLinkPlan {
-  export type Tag = "ok" | "ownLink" | "connectingConfirmReconnect" | "connectingProhibit" | "known" | "noRelays"
+  export type Tag = 
+    | "ok"
+    | "ownLink"
+    | "connectingConfirmReconnect"
+    | "connectingProhibit"
+    | "known"
+    | "noRelays"
 
   interface Interface {
     type: Tag
