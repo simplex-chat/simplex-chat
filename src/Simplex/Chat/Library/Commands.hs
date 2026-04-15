@@ -2327,7 +2327,14 @@ processChatCommand vr nm = \case
   ShareChatMsg shareGroupName toChatName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user shareGroupName
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm $ APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) toChatRef
+    processChatCommand vr nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) toChatRef) >>= \case
+      CRChatMsgContent _ mc -> do
+        sendRef <- case toChatRef of
+          ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
+          ChatRef CTGroup gId scope_ -> pure $ SRGroup gId scope_ False
+          _ -> throwCmdError "unsupported share target"
+        processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage Nothing mc]
+      r -> pure r
   SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
     case sendName of
@@ -4834,7 +4841,7 @@ chatCommandP =
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
-      "/_share chat " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> chatRefP),
+      "/_share chat content " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> chatRefP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),
