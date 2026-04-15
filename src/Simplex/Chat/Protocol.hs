@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -36,7 +35,6 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
-import GHC.Generics (Generic)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -642,7 +640,7 @@ data MsgContainer = MsgContainer
     -- the key used in mentions is a locally (per message) unique display name of member.
     -- Suffixes _1, _2 should be appended to make names locally unique.
     -- It should be done in the UI, as they will be part of the text, and validated in the API.
-    mentions :: Map MemberName MsgMention,
+    mentions :: MsgMentions,
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
     live :: Maybe Bool,
@@ -652,16 +650,13 @@ data MsgContainer = MsgContainer
     parent :: Maybe MsgRef,
     forward :: Maybe Bool
   }
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
--- Base value used by the smart constructors and for record-update on send sites.
--- Named mcEmpty (not mc) to avoid shadowing the conventional local variable name
--- `mc` used at MsgContainer pattern-match sites across the codebase.
-mcEmpty :: MsgContainer
-mcEmpty =
+mcSimple :: MsgContent -> MsgContainer
+mcSimple content =
   MsgContainer
-    { content = MCText "",
-      mentions = M.empty,
+    { content,
+      mentions = MsgMentions M.empty,
       file = Nothing,
       ttl = Nothing,
       live = Nothing,
@@ -672,17 +667,14 @@ mcEmpty =
       forward = Nothing
     }
 
-mcSimple :: MsgContent -> MsgContainer
-mcSimple c = mcEmpty {content = c}
-
 mcQuote :: QuotedMsg -> MsgContent -> MsgContainer
-mcQuote q c = mcEmpty {content = c, quote = Just q}
+mcQuote q c = (mcSimple c) {quote = Just q}
 
 mcComment :: MsgRef -> MsgContent -> MsgContainer
-mcComment p c = mcEmpty {content = c, parent = Just p}
+mcComment p c = (mcSimple c) {parent = Just p}
 
 mcForward :: MsgContent -> MsgContainer
-mcForward c = mcEmpty {content = c, forward = Just True}
+mcForward c = (mcSimple c) {forward = Just True}
 
 isMCForward :: MsgContainer -> Bool
 isMCForward MsgContainer {forward} = forward == Just True
@@ -762,11 +754,90 @@ msgContentTag = \case
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
 
+newtype MsgMentions = MsgMentions {unMsgMentions :: Map MemberName MsgMention}
+  deriving (Eq, Show)
+
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
 $(JQ.deriveJSON defaultJSON ''MsgMention)
 
+instance FromJSON MsgMentions where
+  parseJSON v = MsgMentions <$> parseJSON v
+  omittedField = Just $ MsgMentions M.empty
+
+instance ToJSON MsgMentions where
+  toJSON (MsgMentions m) = toJSON $ toMaybeMap m
+  toEncoding (MsgMentions m) = toEncoding $ toMaybeMap m
+  omitField (MsgMentions m) = M.null m
+
+toMaybeMap :: Map k v -> Maybe (Map k v)
+toMaybeMap m = if M.null m then Nothing else Just m
+{-# INLINE toMaybeMap #-}
+
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
+
+instance FromJSON MsgContent where
+  parseJSON (J.Object v) =
+    v .: "type" >>= \case
+      MCText_ -> MCText <$> v .: "text"
+      MCLink_ -> do
+        text <- v .: "text"
+        preview <- v .: "preview"
+        pure MCLink {text, preview}
+      MCImage_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        pure MCImage {text, image}
+      MCVideo_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        duration <- v .: "duration"
+        pure MCVideo {text, image, duration}
+      MCVoice_ -> do
+        text <- v .: "text"
+        duration <- v .: "duration"
+        pure MCVoice {text, duration}
+      MCFile_ -> MCFile <$> v .: "text"
+      MCReport_ -> do
+        text <- v .: "text"
+        reason <- v .: "reason"
+        pure MCReport {text, reason}
+      MCChat_ -> do
+        text <- v .: "text"
+        chatLink <- v .: "chatLink"
+        pure MCChat {text, chatLink}
+      MCUnknown_ tag -> do
+        text <- fromMaybe unknownMsgType <$> v .:? "text"
+        pure MCUnknown {tag, text, json = v}
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
+
+unknownMsgType :: Text
+unknownMsgType = "unknown message type"
+
+instance ToJSON MsgContent where
+  toJSON = \case
+    MCUnknown {json} -> J.Object json
+    MCText t -> J.object ["type" .= MCText_, "text" .= t]
+    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
+    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
+    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
+    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
+    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
+  toEncoding = \case
+    MCUnknown {json} -> JE.value $ J.Object json
+    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
+    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
+    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
+    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
+    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
+    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
+
+$(JQ.deriveJSON defaultJSON ''MsgContainer)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, - 16 for block encryption ("rounded" to 15602)
@@ -858,93 +929,13 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
-instance FromJSON MsgContainer where
-  parseJSON = JT.withObject "MsgContainer" $ \v ->
-    MsgContainer
-      <$> v .: "content"
-      <*> (fromMaybe M.empty <$> v .:? "mentions")
-      <*> v .:? "file"
-      <*> v .:? "ttl"
-      <*> v .:? "live"
-      <*> v .:? "scope"
-      <*> v .:? "asGroup"
-      <*> v .:? "quote"
-      <*> v .:? "parent"
-      <*> v .:? "forward"
-
-instance ToJSON MsgContainer where
-  toJSON = J.genericToJSON defaultJSON
-  toEncoding = J.genericToEncoding defaultJSON
-
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing
 
-instance FromJSON MsgContent where
-  parseJSON (J.Object v) =
-    v .: "type" >>= \case
-      MCText_ -> MCText <$> v .: "text"
-      MCLink_ -> do
-        text <- v .: "text"
-        preview <- v .: "preview"
-        pure MCLink {text, preview}
-      MCImage_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        pure MCImage {text, image}
-      MCVideo_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        duration <- v .: "duration"
-        pure MCVideo {text, image, duration}
-      MCVoice_ -> do
-        text <- v .: "text"
-        duration <- v .: "duration"
-        pure MCVoice {text, duration}
-      MCFile_ -> MCFile <$> v .: "text"
-      MCReport_ -> do
-        text <- v .: "text"
-        reason <- v .: "reason"
-        pure MCReport {text, reason}
-      MCChat_ -> do
-        text <- v .: "text"
-        chatLink <- v .: "chatLink"
-        pure MCChat {text, chatLink}
-      MCUnknown_ tag -> do
-        text <- fromMaybe unknownMsgType <$> v .:? "text"
-        pure MCUnknown {tag, text, json = v}
-  parseJSON invalid =
-    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
-
-unknownMsgType :: Text
-unknownMsgType = "unknown message type"
-
-
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
 {-# INLINE nonEmptyMap #-}
-
-instance ToJSON MsgContent where
-  toJSON = \case
-    MCUnknown {json} -> J.Object json
-    MCText t -> J.object ["type" .= MCText_, "text" .= t]
-    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
-    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
-    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
-    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
-    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
-    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
-  toEncoding = \case
-    MCUnknown {json} -> JE.value $ J.Object json
-    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
-    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
-    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
-    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
-    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
-    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
-    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
 
 instance ToField MsgContent where
   toField = toField . encodeJSON
@@ -1348,7 +1339,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
     o = JM.fromList
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
-      XMsgNew container -> case toJSON container of J.Object o -> o; _ -> JM.empty
+      XMsgNew container -> case toJSON container of J.Object obj -> obj; _ -> JM.empty
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
