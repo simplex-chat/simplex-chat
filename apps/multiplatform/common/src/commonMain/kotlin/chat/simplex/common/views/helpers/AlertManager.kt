@@ -325,7 +325,7 @@ class AlertManager {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2,
                     color = MaterialTheme.colors.secondary,
-                    maxLines = 1,
+                    maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                   )
                 }

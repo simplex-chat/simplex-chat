@@ -180,7 +180,7 @@ class OpenChatAlertViewController: UIViewController {
             subtitleLabel.text = subtitle
             subtitleLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
             subtitleLabel.textColor = .secondaryLabel
-            subtitleLabel.numberOfLines = 1
+            subtitleLabel.numberOfLines = 3
             subtitleLabel.textAlignment = .center
             subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
             profileViews.append(subtitleLabel)

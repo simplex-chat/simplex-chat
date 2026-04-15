@@ -1470,6 +1470,7 @@ func planAndConnect(
                                     theme: theme,
                                     subtitle: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert subtitle"),
                                     cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
                                     onCancel: { cleanup?() }
                                 )
                             } else {
