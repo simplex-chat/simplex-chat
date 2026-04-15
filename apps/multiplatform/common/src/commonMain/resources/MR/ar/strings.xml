@@ -2541,4 +2541,5 @@
     <string name="placeholder_search_voice_messages">ابحث عن رسائل صوتية</string>
     <string name="content_filter_videos">فيديوهات</string>
     <string name="content_filter_voice_messages">رسائل صوتية</string>
+    <string name="down_migration_warning_chat_relays">إذا انضممت إلى قنوات أو أنشأتها، فستتوقف عن العمل نهائيًا.</string>
 </resources>
