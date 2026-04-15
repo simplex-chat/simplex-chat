@@ -568,6 +568,8 @@ data ChatCommand
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
+  | SetGroupHardExpiry GroupName (Maybe Int) -- Nothing = off, Just seconds = duration
+  | ShowGroupHardExpiry GroupName
   | SetLocalDeviceName Text
   | ListRemoteHosts
   | StartRemoteHost (Maybe (RemoteHostId, Bool)) (Maybe RCCtrlAddress) (Maybe Word16) -- Start new or known remote host with optional multicast for known host

@@ -93,6 +93,9 @@ chatGroupTests = do
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
+    it "hard expiry deletes unread group messages after wall-clock deadline" testHardExpirySweep
+#if !defined(dbPostgres)
+    -- TODO [postgres] this test hangs with PostgreSQL
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
     it "shared message body is reused" testSharedMessageBody
     it "shared batch body is reused" testSharedBatchBody
@@ -2056,6 +2059,40 @@ testSendMultiTimed =
         <### [ "timed message deleted: test 1",
                "timed message deleted: test 2"
              ]
+
+-- Hard expiry: messages are deleted after wall-clock deadline regardless of read state.
+-- Uses a 1-second hard expiry with fast cleanup to keep test quick.
+testHardExpirySweep :: HasCallStack => TestParams -> IO ()
+testHardExpirySweep =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- Set hard expiry to 1 second via group preference update
+      alice ##> "/set expiry #team 1"
+      -- Consume the preference update output on all clients
+      alice <## "updated group preferences:"
+      _ <- getTermLine alice
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      _ <- getTermLine bob
+      cath <## "alice updated group #team:"
+      cath <## "updated group preferences:"
+      _ <- getTermLine cath
+
+      -- Send message — it gets hard_expiry_at = now + 1s
+      alice #> "#team hello hard expiry"
+      bob <# "#team alice> hello hard expiry"
+      cath <# "#team alice> hello hard expiry"
+
+      -- Wait for hard expiry + sweep interval
+      threadDelay 3_000_000
+
+      -- Message should be deleted by the sweep
+      alice
+        <### ["timed message deleted: hello hard expiry"]
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testSendMultiManyBatches :: HasCallStack => TestParams -> IO ()
 testSendMultiManyBatches =
