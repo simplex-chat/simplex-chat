@@ -263,7 +263,7 @@ chatGroupTests = do
       it "owner should leave channel (signed)" testChannelOwnerLeave
       it "subscriber should leave channel (signed)" testChannelSubscriberLeave
       it "relay should leave channel" testChannelRelayLeave
-      fit "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
+      it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
