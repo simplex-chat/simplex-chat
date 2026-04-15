@@ -1128,19 +1128,7 @@ fun ComposeView(
     }
   }
 
-  val ownerRelayState: OwnerRelayState? = run {
-    val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo ?: return@run null
-    if (!gInfo.useRelays || gInfo.membership.memberRole != GroupMemberRole.Owner ||
-      gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
-    ) return@run null
-    val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
-    if (relays.isEmpty()) return@run null
-    val activeCount = relays.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
-    val failedCount = relays.count { relayMemberConnFailed(chatModel, it) != null }
-    val inactiveCount = relays.count { it.relayStatus == RelayStatus.RsInactive }
-    val noActiveRelays = activeCount == 0 && (failedCount + inactiveCount) == relays.size
-    OwnerRelayState(relays, activeCount, failedCount, inactiveCount, noActiveRelays)
-  }
+  val ownerRelayState = ownerRelayState(chat, chatModel)
 
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled && ownerRelayState?.noActiveRelays != true)
   val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason)
@@ -1851,6 +1839,20 @@ private fun RelayBarDetailRow(
   ) {
     content()
   }
+}
+
+private fun ownerRelayState(chat: Chat, chatModel: ChatModel): OwnerRelayState? {
+  val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo ?: return null
+  if (!gInfo.useRelays || gInfo.membership.memberRole != GroupMemberRole.Owner ||
+    gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+  ) return null
+  val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
+  if (relays.isEmpty()) return null
+  val activeCount = relays.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
+  val failedCount = relays.count { relayMemberConnFailed(chatModel, it) != null }
+  val inactiveCount = relays.count { it.relayStatus == RelayStatus.RsInactive }
+  val noActiveRelays = activeCount == 0 && (failedCount + inactiveCount) == relays.size
+  return OwnerRelayState(relays, activeCount, failedCount, inactiveCount, noActiveRelays)
 }
 
 private data class OwnerRelayState(
