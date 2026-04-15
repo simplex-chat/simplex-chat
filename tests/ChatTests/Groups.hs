@@ -8870,6 +8870,8 @@ testChannelOwnerKeyAfterLinkUpdate ps =
           (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
           memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
 
+          threadDelay 100000
+
           -- Owner updates channel profile - triggers rebuilding link data.
           alice ##> "/gp team my_team My team description"
           alice <## "changed to #my_team (My team description)"
@@ -8890,6 +8892,8 @@ testChannelOwnerKeyAfterLinkUpdate ps =
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
+
+          threadDelay 100000
 
           -- Verify owner member record in late subscriber's DB has a public key.
           ownerKeyPresent <- withCCTransaction dan $ \db ->
