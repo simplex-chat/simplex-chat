@@ -177,14 +177,35 @@ testShareChannelDirect ps =
     test alice bob cath = withRelay ps $ \relay -> do
       (shortLink, fullLink) <- prepareChannel1Relay "news" alice relay
       connectUsers alice bob
+      -- get ownerSig JSON from API
+      alice ##> "/_share chat content #1 @2"
+      alice <## "channel #news (signed)"
+      ownerSig <- getTermLine alice
+      -- send the card
       alice ##> "/share chat #news @bob"
       alice <# "@bob channel #news (signed)"
       bob <# "alice> channel #news (signed)"
+      -- bob verifies owner signature via connect plan
+      bob ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> ownerSig)
+      bob <## "group link: ok to connect via relays"
+      bob <## "  owner signature: verified"
+      _ <- getTermLine bob -- group link data
+      -- bob joins
       memberJoinChannel' "news" 1 0 1 0 [relay] [alice] shortLink fullLink bob
       connectUsers bob cath
+      -- bob (subscriber) gets sig - not verifiable as owner
+      bob ##> "/_share chat content #1 @2"
+      bob <## "channel #news (signed)"
+      bobSig <- getTermLine bob
       bob ##> "/share chat #news @cath"
       bob <# "@cath channel #news (signed)"
       cath <# "bob> channel #news (signed)"
+      -- cath checks signature - should fail (bob is not owner)
+      cath ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> bobSig)
+      cath <## "group link: ok to connect via relays"
+      cath <## "  owner signature: FAILED (unknown owner ID)"
+      _ <- getTermLine cath -- group link data
+      -- cath joins anyway
       memberJoinChannel "news" [relay] [alice] shortLink fullLink cath
       alice #> "#news hello"
       relay <# "#news> hello"

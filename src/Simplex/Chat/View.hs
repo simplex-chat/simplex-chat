@@ -222,7 +222,11 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
-  CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc
+  CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewChatMsgJSON mc
+    where
+      viewChatMsgJSON = \case
+        MCChat {ownerSig} | testView -> maybe [] (\sig -> [viewJSON sig]) ownerSig
+        _ -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
