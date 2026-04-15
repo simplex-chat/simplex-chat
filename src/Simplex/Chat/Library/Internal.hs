@@ -1347,15 +1347,19 @@ groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {public
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
+getShortLinkConnReq' nm user l = do
+  l' <- restoreShortLink' l
+  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+
 getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
 getShortLinkConnReq nm user@User {userChatRelay} l = do
-  l' <- restoreShortLink' l
-  (fd, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  (fd, cData) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
-      | direct || not (null relays) || isTrue userChatRelay -> pure () -- supported
-      | not direct && null relays -> throwChatError CEConnLinkNoRelays
-      | otherwise -> throwChatError CEUnsupportedConnReq
+      | not supported -> throwChatError CEUnsupportedConnReq
+      where
+        supported = direct || not (null relays) || isTrue userChatRelay
     _ -> pure ()
   pure (fd, cData)
 

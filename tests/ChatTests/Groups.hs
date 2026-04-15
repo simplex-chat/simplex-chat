@@ -9379,7 +9379,7 @@ testChannelRelayLeave ps =
               -- new subscriber tries to join channel with no relays - gets proper error
               threadDelay 100000
               frank ##> ("/_connect plan 1 " <> shortLink)
-              frank <## "channel has no active relays, please try to join later"
+              frank <## "group link: channel has no active relays, please try to join later"
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
     checkMemberStatus cc name expected = do

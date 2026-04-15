@@ -2099,6 +2099,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
             "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
           ]
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
+    GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
     where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)

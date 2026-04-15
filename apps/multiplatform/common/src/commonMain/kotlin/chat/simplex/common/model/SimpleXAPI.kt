@@ -6880,6 +6880,7 @@ sealed class GroupLinkPlan {
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
+  @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {

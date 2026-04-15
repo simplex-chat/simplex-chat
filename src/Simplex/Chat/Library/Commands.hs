@@ -3965,20 +3965,23 @@ processChatCommand vr nm = \case
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
-                (fd, cData@(ContactLinkData _ UserContactData {direct, relays})) <- getShortLinkConnReq nm user l'
-                let FixedLinkData {linkConnReq = cReq, linkEntityId} = fd
-                    linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                (fd, cData@(ContactLinkData _ UserContactData {direct, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                -- Cross-validate linkEntityId and publicGroupId from profile:
-                -- for channels both must be present and match, for p2p groups both must be absent
-                let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
-                      fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                case (B64UrlByteString <$> linkEntityId, profilePGId) of
-                  (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
-                  (Nothing, Nothing) -> pure ()
-                  _ -> throwChatError CEInvalidConnReq
-                plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_
-                pure (con cReq, plan)
+                if not direct && null relays
+                  then pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
+                  else do
+                    let FixedLinkData {linkConnReq = cReq, linkEntityId} = fd
+                        linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                    -- Cross-validate linkEntityId and publicGroupId from profile:
+                    -- for channels both must be present and match, for p2p groups both must be absent
+                    let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                          fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                    case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                      (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                      (Nothing, Nothing) -> pure ()
+                      _ -> throwChatError CEInvalidConnReq
+                    plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_
+                    pure (con cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case

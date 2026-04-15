@@ -102,9 +102,9 @@ class OpenChatAlertViewController: UIViewController {
     private let profileImage: UIView
     private let subtitle: String?
     private let cancelTitle: String
-    private let confirmTitle: String
+    private let confirmTitle: String?
     private let onCancel: () -> Void
-    private let onConfirm: () -> Void
+    private let onConfirm: (() -> Void)?
 
     init(
         profileName: String,
@@ -112,9 +112,9 @@ class OpenChatAlertViewController: UIViewController {
         profileImage: UIView,
         subtitle: String? = nil,
         cancelTitle: String = "Cancel",
-        confirmTitle: String = "Open",
-        onCancel: @escaping () -> Void,
-        onConfirm: @escaping () -> Void
+        confirmTitle: String? = "Open",
+        onCancel: @escaping () -> Void = {},
+        onConfirm: (() -> Void)? = nil
     ) {
         self.profileName = profileName
         self.profileFullName = profileFullName
@@ -211,20 +211,54 @@ class OpenChatAlertViewController: UIViewController {
         cancelButton.titleLabel?.font = UIFont(descriptor: bodyDescr.withSymbolicTraits(.traitBold) ?? bodyDescr, size: 0)
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
 
-        let confirmButton = UIButton(type: .system)
-        confirmButton.setTitle(confirmTitle, for: .normal)
-        confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
-        confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
+        let buttonStack: UIStackView
+        var buttonDividerConstraints: [NSLayoutConstraint] = []
 
-        let verticalButtons = cancelButton.intrinsicContentSize.width + 20 >= alertWidth / 2 || confirmButton.intrinsicContentSize.width + 20 >= alertWidth / 2
+        if let confirmTitle {
+            let confirmButton = UIButton(type: .system)
+            confirmButton.setTitle(confirmTitle, for: .normal)
+            confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
+            confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
 
-        // Button stack with equal width buttons
-        let buttonStack = UIStackView(arrangedSubviews: verticalButtons ? [confirmButton, cancelButton] : [cancelButton, confirmButton])
-        buttonStack.axis = verticalButtons ? .vertical : .horizontal
-        buttonStack.distribution = .fillEqually
-        buttonStack.spacing = 0 // no spacing, use divider instead
-        buttonStack.translatesAutoresizingMaskIntoConstraints = false
-        buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight * (verticalButtons ? 2 : 1)).isActive = true
+            let verticalButtons = cancelButton.intrinsicContentSize.width + 20 >= alertWidth / 2 || confirmButton.intrinsicContentSize.width + 20 >= alertWidth / 2
+
+            // Button stack with equal width buttons
+            buttonStack = UIStackView(arrangedSubviews: verticalButtons ? [confirmButton, cancelButton] : [cancelButton, confirmButton])
+            buttonStack.axis = verticalButtons ? .vertical : .horizontal
+            buttonStack.distribution = .fillEqually
+            buttonStack.spacing = 0 // no spacing, use divider instead
+            buttonStack.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight * (verticalButtons ? 2 : 1)).isActive = true
+
+            // Add divider between buttons
+            let buttonDivider = UIView()
+            buttonDivider.backgroundColor = UIColor.separator
+            buttonDivider.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.addSubview(buttonDivider)
+
+            buttonDividerConstraints = if verticalButtons {
+                [
+                    buttonDivider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    buttonDivider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    buttonDivider.centerYAnchor.constraint(equalTo: buttonStack.centerYAnchor),
+                    buttonDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+                ]
+            } else {
+                [
+                    buttonDivider.topAnchor.constraint(equalTo: buttonStack.topAnchor),
+                    buttonDivider.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                    buttonDivider.centerXAnchor.constraint(equalTo: buttonStack.centerXAnchor),
+                    buttonDivider.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+                ]
+            }
+        } else {
+            // Single button
+            buttonStack = UIStackView(arrangedSubviews: [cancelButton])
+            buttonStack.axis = .horizontal
+            buttonStack.distribution = .fillEqually
+            buttonStack.translatesAutoresizingMaskIntoConstraints = false
+            buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight).isActive = true
+        }
 
         // Vertical stack containing hStack and buttonStack
         let vStack = UIStackView(arrangedSubviews: [topRowContainer, buttonStack])
@@ -240,29 +274,6 @@ class OpenChatAlertViewController: UIViewController {
         horizontalDivider.backgroundColor = UIColor.separator
         horizontalDivider.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(horizontalDivider)
-
-        // Add divider between buttons
-        let buttonDivider = UIView()
-        buttonDivider.backgroundColor = UIColor.separator
-        buttonDivider.translatesAutoresizingMaskIntoConstraints = false
-        buttonStack.addSubview(buttonDivider)
-
-        // Constraints
-        let buttonDividerConstraints = if verticalButtons {
-            [
-                buttonDivider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                buttonDivider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                buttonDivider.centerYAnchor.constraint(equalTo: buttonStack.centerYAnchor),
-                buttonDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
-            ]
-        } else {
-            [
-                buttonDivider.topAnchor.constraint(equalTo: buttonStack.topAnchor),
-                buttonDivider.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-                buttonDivider.centerXAnchor.constraint(equalTo: buttonStack.centerXAnchor),
-                buttonDivider.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
-            ]
-        }
 
         NSLayoutConstraint.activate([
             // Container view centering and fixed width
@@ -295,7 +306,7 @@ class OpenChatAlertViewController: UIViewController {
 
     @objc private func confirmTapped() {
         dismiss(animated: true) {
-            self.onConfirm()
+            self.onConfirm?()
         }
     }
 }
@@ -308,9 +319,9 @@ func showOpenChatAlert<Content: View>(
     theme: AppTheme,
     subtitle: String? = nil,
     cancelTitle: String = "Cancel",
-    confirmTitle: String = "Open",
+    confirmTitle: String? = "Open",
     onCancel: @escaping () -> Void = {},
-    onConfirm: @escaping () -> Void
+    onConfirm: (() -> Void)? = nil
 ) {
     let themedView = profileImage.environmentObject(theme)
     let hostingController = UIHostingController(rootView: themedView)

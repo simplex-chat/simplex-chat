@@ -1028,6 +1028,7 @@ data GroupLinkPlan
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
+  | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
   deriving (Show)
 
 type DirectLink = Bool
@@ -1055,6 +1056,7 @@ connectionPlanProceed = \case
     GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
+    GLPNoRelays _ -> False
     _ -> False
   CPError _ -> True
 
