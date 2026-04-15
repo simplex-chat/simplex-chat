@@ -2054,7 +2054,7 @@
     <string name="no_message_servers_configured_for_private_routing">Žádné servery pro soukromé směrování chatů.</string>
     <string name="no_media_servers_configured_for_private_routing">Žádné servery pro příjem souborů.</string>
     <string name="no_message_servers_configured_for_receiving">Žádné servery pro příjem zpráv.</string>
-    <string name="delete_chat_list_warning">Všechny chaty budou ze seznamu odebrány %s, a seznam bude smazán</string>
+    <string name="delete_chat_list_warning">Všechny chaty budou ze seznamu %s odebrány, a seznam bude smazán</string>
     <string name="for_social_media">Pro sociální sítě</string>
     <string name="remote_hosts_section">Vzdálené telefony</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Podmínky budou přijaty pro operátora(y): <b>%s</b>.]]></string>
