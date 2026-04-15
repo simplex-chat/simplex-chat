@@ -2543,6 +2543,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
+    CEConnLinkNoRelays -> ["channel has no active relays, please try to join later"]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $
           ("chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")")

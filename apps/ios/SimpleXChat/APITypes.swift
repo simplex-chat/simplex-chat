@@ -742,6 +742,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatStoreChanged
     case invalidConnReq
     case unsupportedConnReq
+    case connLinkNoRelays
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
     case contactNotReady(contact: Contact)

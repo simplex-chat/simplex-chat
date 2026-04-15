@@ -1353,9 +1353,9 @@ getShortLinkConnReq nm user@User {userChatRelay} l = do
   (fd, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
-      | not supported -> throwChatError CEUnsupportedConnReq
-      where
-        supported = direct || not (null relays) || isTrue userChatRelay
+      | direct || not (null relays) || isTrue userChatRelay -> pure () -- supported
+      | not direct && null relays -> throwChatError CEConnLinkNoRelays
+      | otherwise -> throwChatError CEUnsupportedConnReq
     _ -> pure ()
   pure (fd, cData)
 

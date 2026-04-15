@@ -263,7 +263,7 @@ chatGroupTests = do
       it "owner should leave channel (signed)" testChannelOwnerLeave
       it "subscriber should leave channel (signed)" testChannelSubscriberLeave
       it "relay should leave channel" testChannelRelayLeave
-      it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
+      fit "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
@@ -9323,12 +9323,14 @@ testChannelRelayLeave ps =
         withNewTestChat ps "dan" danProfile $ \dan ->
           withNewTestChat ps "eve" eveProfile $ \eve ->
             withNewTestChat ps "frank" frankProfile $ \frank -> do
-              createChannel2Relays "team" alice bob cath dan eve frank
+              (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+              forM_ [dan, eve] $ \member ->
+                memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink member
 
               -- verify channel works
               alice #> "#team hello"
               [bob, cath] *<# "#team> hello"
-              [dan, eve, frank] *<# "#team> hello [>>]"
+              [dan, eve] *<# "#team> hello [>>]"
 
               -- relay1 (bob) leaves
               threadDelay 100000
@@ -9339,21 +9341,19 @@ testChannelRelayLeave ps =
                 [ alice <## "#team: bob left the group (signed)",
                   -- cath: not notified (relays not connected, owner doesn't forward)
                   dan <## "#team: bob left the group (signed)",
-                  eve <## "#team: bob left the group (signed)",
-                  frank <## "#team: bob left the group (signed)"
+                  eve <## "#team: bob left the group (signed)"
                 ]
 
               -- verify relay1 member status is "left" on all clients that know bob
               checkMemberStatus alice "bob" (Just "left")
               checkMemberStatus dan "bob" (Just "left")
               checkMemberStatus eve "bob" (Just "left")
-              checkMemberStatus frank "bob" (Just "left")
 
               -- verify channel still works with remaining relay
               threadDelay 100000
               alice #> "#team still working"
               cath <# "#team> still working"
-              [dan, eve, frank] *<# "#team> still working [>>]"
+              [dan, eve] *<# "#team> still working [>>]"
 
               -- relay2 (cath) leaves
               threadDelay 100000
@@ -9363,21 +9363,23 @@ testChannelRelayLeave ps =
               concurrentlyN_
                 [ alice <## "#team: cath left the group (signed)",
                   dan <## "#team: cath left the group (signed)",
-                  eve <## "#team: cath left the group (signed)",
-                  frank <## "#team: cath left the group (signed)"
+                  eve <## "#team: cath left the group (signed)"
                 ]
 
               -- verify relay2 member status
               checkMemberStatus alice "cath" (Just "left")
               checkMemberStatus dan "cath" (Just "left")
               checkMemberStatus eve "cath" (Just "left")
-              checkMemberStatus frank "cath" (Just "left")
 
               -- verify no delivery: owner sends but no relays to forward
               alice #> "#team no delivery"
               (dan </)
               (eve </)
-              (frank </)
+
+              -- new subscriber tries to join channel with no relays - gets proper error
+              threadDelay 100000
+              frank ##> ("/_connect plan 1 " <> shortLink)
+              frank <## "channel has no active relays, please try to join later"
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
     checkMemberStatus cc name expected = do

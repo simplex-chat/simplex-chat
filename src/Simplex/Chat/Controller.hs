@@ -1318,6 +1318,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CEUnsupportedConnReq
+  | CEConnLinkNoRelays
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
