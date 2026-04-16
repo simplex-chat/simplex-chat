@@ -299,9 +299,9 @@ testShareChannelChannel ps =
       bob ##> "/share chat #news #bob_ch"
       bob <# "#bob_ch link to join channel #news:"
       _ <- getTermLine bob
-      relay <# "#bob_ch bob_2> link to join channel #news:"
+      relay <# "#bob_ch> link to join channel #news:"
       _ <- getTermLine relay
-      cath <# "#bob_ch bob> link to join channel #news: [>>]"
+      cath <# "#bob_ch> link to join channel #news: [>>]"
       _ <- getTermLine cath
       -- bob tries to replay alice's signed card to bob_ch - binding mismatch, sig stripped at receive
       let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack cSig) :: Maybe LinkOwnerSig)
