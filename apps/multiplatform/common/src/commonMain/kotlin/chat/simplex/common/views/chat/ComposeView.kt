@@ -1130,8 +1130,8 @@ fun ComposeView(
 
   val ownerRelayState = ownerRelayState(chat, chatModel)
 
-  val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled && ownerRelayState?.noActiveRelays != true)
-  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason)
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason(ownerRelayState?.noActiveRelays == true))
+  val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   @Composable
@@ -1309,7 +1309,7 @@ fun ComposeView(
       sendButtonColor = sendButtonColor,
       timedMessageAllowed = timedMessageAllowed,
       customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
-      placeholder = placeholder ?: composeState.value.placeholder,
+      placeholder = if (userCantSendReason.value != null) "" else placeholder ?: composeState.value.placeholder,
       sendMessage = { ttl ->
         sendMessage(ttl)
         resetLinkPreview()

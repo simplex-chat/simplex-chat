@@ -336,7 +336,6 @@ struct ComposeView: View {
     @Binding var keyboardVisible: Bool
     @Binding var keyboardHiddenDate: Date
     @Binding var selectedRange: NSRange
-    var disabledText: LocalizedStringKey? = nil
 
     @State var linkUrl: String? = nil
     @State var hasSimplexLink: Bool = false
@@ -414,8 +413,9 @@ struct ComposeView: View {
                 }
             }
 
-            let composeEnabled = !(ownerState?.noActiveRelays ?? false) && (
-                chat.chatInfo.sendMsgEnabled ||
+            let userCantSendReason = chat.chatInfo.userCantSendReason(allRelaysBroken: ownerState?.noActiveRelays ?? false)
+            let composeEnabled = (
+                userCantSendReason == nil ||
                 (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) ||
                 (chat.chatInfo.contact?.nextAcceptContactRequest ?? false)
             )
@@ -518,7 +518,7 @@ struct ComposeView: View {
             .disabled(!composeEnabled)
             .if(!composeEnabled) { v in
                 v.onTapGesture {
-                    if let reason = chat.chatInfo.userCantSendReason {
+                    if let reason = userCantSendReason {
                         AlertManager.shared.showAlertMsg(
                             title: "You can't send messages!",
                             message: reason.alertMessage
@@ -738,6 +738,10 @@ struct ComposeView: View {
         return (relays, activeCount, failedCount, removedCount, noActiveRelays)
     }
 
+    private var disabledText: LocalizedStringKey? {
+        chat.chatInfo.userCantSendReason(allRelaysBroken: ownerRelayState?.noActiveRelays ?? false)?.composeLabel
+    }
+
     @ViewBuilder private func ownerChannelRelayBar(relays: [GroupRelay], activeCount: Int, failedCount: Int, removedCount: Int) -> some View {
         let total = relays.count
         let allBroken = activeCount == 0 && (failedCount + removedCount) == total
@@ -779,7 +783,7 @@ struct ComposeView: View {
             }
             if relayListExpanded {
                 if allBroken {
-                    Text("Messages can't be delivered. Adding relays will come later.")
+                    Text("Adding relays will be supported later.")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
@@ -1000,7 +1004,7 @@ struct ComposeView: View {
     private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
         ZStack(alignment: .leading) {
             SendMessageView(
-                placeholder: placeholder,
+                placeholder: disabledText != nil ? nil : placeholder,
                 composeState: $composeState,
                 selectedRange: $selectedRange,
                 sendMessage: { ttl in

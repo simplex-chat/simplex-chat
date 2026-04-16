@@ -141,8 +141,7 @@ struct ChatView: View {
                         showCommandsMenu: $showCommandsMenu,
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
-                        selectedRange: $selectedRange,
-                        disabledText: chat.chatInfo.userCantSendReason?.composeLabel
+                        selectedRange: $selectedRange
                     )
                 } else {
                     SelectedItemsBottomToolbar(
