@@ -400,7 +400,7 @@ struct ComposeView: View {
                     let failedCount = relayMembers.filter { !relayMemberRemoved($0.wrapped.memberStatus) && $0.wrapped.activeConn?.connFailedErr != nil }.count
                     let resolvedCount = connectedCount + removedCount + failedCount
                     let total = relayMembers.count > 0 ? relayMembers.count : hostnames.count
-                    if total > 0, removedCount + failedCount > 0 || !showProgress || resolvedCount < total {
+                    if total > 0, removedCount + failedCount > 0 || resolvedCount < total {
                         subscriberChannelRelayBar(
                             hostnames: hostnames,
                             relayMembers: relayMembers,
@@ -759,6 +759,14 @@ struct ComposeView: View {
                     }
                     Image(systemName: "exclamationmark.triangle")
                         .foregroundColor(.red)
+                } else if activeCount + failedCount + removedCount >= total {
+                    if failedCount > 0 && removedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays not active", comment: "channel relay bar"), failedCount + removedCount))
+                    } else if failedCount > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays failed", comment: "channel relay bar"), failedCount))
+                    } else {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%d relays removed", comment: "channel relay bar"), removedCount))
+                    }
                 } else if failedCount > 0 && removedCount > 0 {
                     Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays active, %d errors", comment: "channel relay bar"), activeCount, total, failedCount + removedCount))
                 } else if failedCount > 0 {
@@ -835,7 +843,15 @@ struct ComposeView: View {
                     if showProgress && connectedCount + errorCount < total {
                         RelayProgressIndicator(active: connectedCount, total: total)
                     }
-                    if failedCount > 0 && removedCount > 0 {
+                    if connectedCount + removedCount + failedCount >= total, removedCount + failedCount > 0 {
+                        if failedCount > 0 && removedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d relays not active", comment: "channel subscriber relay bar"), failedCount + removedCount))
+                        } else if failedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d relays failed", comment: "channel subscriber relay bar"), failedCount))
+                        } else if removedCount > 0 {
+                            Text(String.localizedStringWithFormat(NSLocalizedString("%d relays removed", comment: "channel subscriber relay bar"), removedCount))
+                        }
+                    } else if failedCount > 0 && removedCount > 0 {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d errors", comment: "channel subscriber relay bar"), connectedCount, total, errorCount))
                     } else if failedCount > 0 {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d/%d relays connected, %d failed", comment: "channel subscriber relay bar"), connectedCount, total, failedCount))

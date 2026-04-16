@@ -2894,6 +2894,9 @@
   <string name="relay_bar_all_relays_removed">All relays removed</string>
   <string name="relay_bar_all_relays_failed">All relays failed</string>
   <string name="relay_bar_no_active_relays">No active relays</string>
+  <string name="relay_bar_relays_removed">%1$d relays removed</string>
+  <string name="relay_bar_relays_failed">%1$d relays failed</string>
+  <string name="relay_bar_relays_not_active">%1$d relays not active</string>
   <string name="relay_bar_active_with_failures">%1$d/%2$d relays active, %3$d failed</string>
   <string name="relay_bar_active_with_removed">%1$d/%2$d relays active, %3$d removed</string>
   <string name="relay_bar_active_with_errors">%1$d/%2$d relays active, %3$d errors</string>

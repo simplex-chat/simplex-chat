@@ -1488,7 +1488,7 @@ fun ComposeView(
         val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
         val resolvedCount = connectedCount + removedCount + failedCount
         val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
-        if (total > 0 && (removedCount + failedCount > 0 || !showProgress || resolvedCount < total)) {
+        if (total > 0 && (removedCount + failedCount > 0 || resolvedCount < total)) {
           SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, showProgress, relayListExpanded)
         }
       }
@@ -1666,6 +1666,15 @@ private fun OwnerChannelRelayBar(
           tint = Color.Red,
           modifier = Modifier.size(18.dp)
         )
+      } else if (activeCount + failedCount + removedCount >= total) {
+        val statusText = if (failedCount > 0 && removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_not_active), failedCount + removedCount)
+        } else if (failedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_failed), failedCount)
+        } else {
+          String.format(generalGetString(MR.strings.relay_bar_relays_removed), removedCount)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
       } else {
         val statusText = if (failedCount > 0 && removedCount > 0) {
           String.format(generalGetString(MR.strings.relay_bar_active_with_errors), activeCount, total, failedCount + removedCount)
@@ -1743,6 +1752,15 @@ private fun SubscriberChannelRelayBar(
           tint = Color.Red,
           modifier = Modifier.size(18.dp)
         )
+      } else if (connectedCount + removedCount + failedCount >= total && errorCount > 0) {
+        val statusText = if (failedCount > 0 && removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_not_active), failedCount + removedCount)
+        } else if (failedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_failed), failedCount)
+        } else {
+          String.format(generalGetString(MR.strings.relay_bar_relays_removed), removedCount)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
       } else {
         if (showProgress && connectedCount + errorCount < total) {
           RelayProgressIndicator(active = connectedCount, total = total)
