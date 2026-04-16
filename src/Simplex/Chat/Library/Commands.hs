@@ -1073,7 +1073,7 @@ processChatCommand vr nm = \case
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
   APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user -> do
-    GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup}, membership = GroupMember {memberId, memberRole}, groupKeys} <-
+    GroupInfo {groupProfile = gp@GroupProfile {publicGroup}, membership = GroupMember {memberId, memberRole}, groupKeys} <-
       withFastStore $ \db -> getGroupInfo db vr user groupId
     case publicGroup of
       Nothing -> throwCmdError "not a public group"
@@ -1081,16 +1081,17 @@ processChatCommand vr nm = \case
         let signingKeys = case (memberRole, groupKeys) of
               (GROwner, Just gk@GroupKeys {groupRootKey = GRKPrivate _}) -> Just gk
               _ -> Nothing
-        ownerSig_ <-
+        ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
             mkLinkOwnerSig memberPrivKey groupLink memberId <$$> shareChatBinding user toChatRef
-        pure $ CRChatMsgContent user MCChat {text = displayName, chatLink = MCLGroup groupLink gp, ownerSig = ownerSig_}
+        let text = safeDecodeUtf8 $ strEncode groupLink
+        pure $ CRChatMsgContent user MCChat {text, chatLink = MCLGroup groupLink gp, ownerSig}
     where
       mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
-      mkLinkOwnerSig privKey link MemberId {unMemberId} (cbTag, bindingData) =
+      mkLinkOwnerSig privKey connLink MemberId {unMemberId} (cbTag, bindingData) =
         let ownerId = Just $ B64UrlByteString unMemberId
             cb = encodeChatBinding cbTag bindingData
-            ownerSig = C.sign' privKey (cb <> smpEncode link)
+            ownerSig = C.sign' privKey $ cb <> smpEncode connLink
          in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
       shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
       shareChatBinding u = \case

@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ChatTests.ChatRelays where
@@ -7,12 +8,10 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel, prepareChannel', prepareChannel1Relay, setupRelay)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Data.Maybe (fromMaybe)
-import qualified Data.Aeson as J
-import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
@@ -193,18 +192,19 @@ testShareChannelDirect ps =
       connectUsers alice bob
       -- alice gets ownerSig from share content API (for validation later)
       alice ##> "/_share chat content #1 @2"
-      alice <## "channel #news (signed)"
-      apiOwnerSig <- getTermLine alice
+      alice <## "link to join channel #news (signed):"
+      (_, apiOwnerSig) <- getTermLine2 alice
       -- alice sends the card to bob
       alice ##> "/share chat #news @bob"
-      alice <# "@bob channel #news (signed)"
-      _ <- getTermLine alice -- alice's testView ownerSig
-      bob <# "alice> channel #news (signed)"
+      alice <# "@bob link to join channel #news (signed):"
+      _ <- getTermLine2 alice -- alice's testView ownerSig
+      bob <# "alice> link to join channel #news (signed):"
       -- bob captures the received ownerSig from message view (testView)
-      ownerSig <- getTermLine bob
-      ownerSig `shouldBe` apiOwnerSig
+      (sLink, cSig) <- getTermLine2 bob
+      sLink `shouldBe` shortLink
+      cSig `shouldBe` apiOwnerSig
       -- bob verifies owner signature via connect plan
-      bob ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> ownerSig)
+      bob ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> cSig)
       bob <## "group link: ok to connect via relays"
       bob <## "owner signature: verified"
       _ <- getTermLine bob -- group link data
@@ -213,18 +213,21 @@ testShareChannelDirect ps =
       connectUsers bob cath
       -- bob (subscriber) shares unsigned - not owner
       bob ##> "/share chat #news @cath"
-      bob <# "@cath channel #news"
-      cath <# "bob> channel #news"
+      bob <# "@cath link to join channel #news:"
+      _ <- getTermLine bob
+      cath <# "bob> link to join channel #news:"
+      _ <- getTermLine cath
       -- bob tries to replay alice's signed card to cath - binding mismatch, sig stripped at receive
-      let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack ownerSig) :: Maybe LinkOwnerSig)
-          connLink = either error id $ strDecode (B.pack shortLink)
-          mc = MCChat "news" (MCLGroup connLink (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
+      let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack cSig) :: Maybe LinkOwnerSig)
+          cLink = either error id $ strDecode (B.pack sLink)
+          mc = MCChat (T.pack sLink) (MCLGroup cLink (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
           cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
       bob ##> ("/_send @3 json [" <> cm <> "]")
-      bob <# "@cath channel #news (signed)"
-      _ <- getTermLine bob -- bob's testView ownerSig (his sent has the sig data)
+      bob <# "@cath link to join group #news (signed):"
+      _ <- getTermLine2 bob -- bob's testView ownerSig (his sent has the sig data)
       -- cath sees it without signature - binding was for alice->bob, not bob->cath, sig stripped
-      cath <# "bob> channel #news"
+      cath <# "bob> link to join group #news:"
+      _ <- getTermLine cath
       -- cath joins anyway
       memberJoinChannel "news" [relay] [alice] shortLink fullLink cath
       alice #> "#news hello"
@@ -239,13 +242,18 @@ testShareChannelGroup ps =
       (shortLink, fullLink) <- prepareChannel1Relay "news" alice relay
       createGroup2 "team" alice bob
       alice ##> "/share chat #news #team"
-      alice <# "#team channel #news"
-      bob <# "#team alice> channel #news"
-      memberJoinChannel' "news" 2 0 1 0 [relay] [alice] shortLink fullLink bob
+      alice <# "#team link to join channel #news:"
+      _ <- getTermLine alice
+      bob <# "#team alice> link to join channel #news:"
+      sLink <- getTermLine bob
+      sLink `shouldBe` shortLink
+      memberJoinChannel' "news" 2 0 1 0 [relay] [alice] sLink fullLink bob
       createGroup2 "work" bob cath
       bob ##> "/share chat #news #work"
-      bob <# "#work channel #news"
-      cath <# "#work bob> channel #news"
+      bob <# "#work link to join channel #news:"
+      _ <- getTermLine bob
+      cath <# "#work bob> link to join channel #news:"
+      _ <- getTermLine cath
       memberJoinChannel' "news" 2 0 0 0 [relay] [alice] shortLink fullLink cath
       alice #> "#news hello"
       relay <# "#news> hello"
@@ -263,18 +271,20 @@ testShareChannelChannel ps =
       memberJoinChannel "updates" [relay] [alice] sLink2 fLink2 bob
       -- alice (owner) shares "news" to "updates" - signed
       alice ##> "/_share chat content #1 #2"
-      alice <## "channel #news (signed)"
-      apiOwnerSig <- getTermLine alice
+      alice <## "link to join channel #news (signed):"
+      (apiLink, apiOwnerSig) <- getTermLine2 alice
+      apiLink `shouldBe` sLink1
       alice ##> "/share chat #news #updates"
-      alice <# "#updates channel #news (signed)"
-      _ <- getTermLine alice -- alice's testView ownerSig
-      relay <# "#updates alice_1> channel #news (signed)"
-      _ <- getTermLine relay -- relay's testView ownerSig
-      bob <# "#updates alice> channel #news (signed) [>>]"
-      ownerSig <- getTermLine bob
-      ownerSig `shouldBe` apiOwnerSig
+      alice <# "#updates link to join channel #news (signed):"
+      _ <- getTermLine2 alice -- link, ownerSig
+      relay <# "#updates alice_1> link to join channel #news (signed):"
+      _ <- getTermLine2 relay -- link, ownerSig
+      bob <# "#updates alice> link to join channel #news (signed): [>>]"
+      (cLink, cSig) <- getTermLine2 bob
+      cLink `shouldBe` (sLink1 <> " [>>]")
+      cSig `shouldBe` apiOwnerSig
       -- bob verifies alice's signature via connect plan
-      bob ##> ("/_connect plan 1 " <> sLink1 <> " sig=" <> ownerSig)
+      bob ##> ("/_connect plan 1 " <> sLink1 <> " sig=" <> cSig)
       bob <## "group link: ok to connect via relays"
       bob <## "owner signature: verified"
       _ <- getTermLine bob -- group link data
@@ -287,25 +297,33 @@ testShareChannelChannel ps =
       memberJoinChannel "bob_ch" [relay] [bob] sLink3 fLink3 cath
       -- bob (subscriber) shares "news" to "bob_ch" - unsigned (not owner)
       bob ##> "/share chat #news #bob_ch"
-      bob <# "#bob_ch channel #news"
-      relay <# "#bob_ch bob_2> channel #news"
-      cath <# "#bob_ch bob> channel #news [>>]"
+      bob <# "#bob_ch link to join channel #news:"
+      _ <- getTermLine bob
+      relay <# "#bob_ch bob_2> link to join channel #news:"
+      _ <- getTermLine relay
+      cath <# "#bob_ch bob> link to join channel #news: [>>]"
+      _ <- getTermLine cath
       -- bob tries to replay alice's signed card to bob_ch - binding mismatch, sig stripped at receive
-      let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack ownerSig) :: Maybe LinkOwnerSig)
-          connLink = either error id $ strDecode (B.pack sLink1)
-          mc = MCChat "news" (MCLGroup connLink (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
+      let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack cSig) :: Maybe LinkOwnerSig)
+          cLink' = either error id $ strDecode (B.pack sLink1)
+          mc = MCChat (T.pack sLink1) (MCLGroup cLink' (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
           cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
       bob ##> ("/_send #3 json [" <> cm <> "]")
-      bob <# "#bob_ch channel #news (signed)"
-      _ <- getTermLine bob -- bob's testView ownerSig (his sent has the sig data)
-      relay <# "#bob_ch bob_2> channel #news"
-      cath <# "#bob_ch bob> channel #news [>>]"
+      bob <# "#bob_ch link to join group #news (signed):"
+      _ <- getTermLine2 bob -- bob's testView ownerSig (his sent has the sig data)
+      relay <# "#bob_ch bob_2> link to join group #news:"
+      _ <- getTermLine relay
+      cath <# "#bob_ch bob> link to join group #news: [>>]"
+      _ <- getTermLine cath
       -- cath joins "news" (group #2 for cath since "bob_ch" is #1)
       memberJoinChannel' "news" 2 1 0 1 [relay] [alice] sLink1 fLink1 cath
       -- alice sends message, both receive
       alice #> "#news hello"
       relay <# "#news> hello"
       [bob, cath] *<# "#news> hello [>>]"
+
+getTermLine2 :: TestCC -> IO (String, String)
+getTermLine2 c = (,) <$> getTermLine c <*> getTermLine c
 
 withRelay :: HasCallStack => TestParams -> (TestCC -> IO ()) -> IO ()
 withRelay ps = withNewTestChatOpts ps relayTestOpts "relay" relayProfile

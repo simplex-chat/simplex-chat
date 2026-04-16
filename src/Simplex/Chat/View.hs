@@ -22,7 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, sortOn)
+import Data.List (groupBy, intercalate, intersperse, nub, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -2229,17 +2229,24 @@ sentWithTime_ ts tz styledMsg CIMeta {itemTs} =
 ttyMsgContent :: MsgContent -> [StyledString]
 ttyMsgContent = \case
   MCChat {text, chatLink, ownerSig} ->
-    let signed = if isJust ownerSig then " (signed)" else ""
-        (linkName, linkInfo) = case chatLink of
-          MCLGroup {groupProfile = GroupProfile {displayName}} ->
-            (displayName, "channel #" <> plain displayName <> signed)
-          MCLContact {profile = Profile {displayName}} ->
-            (displayName, "contact @" <> plain displayName <> signed)
-          MCLInvitation {profile = Profile {displayName}} ->
-            (displayName, "invitation @" <> plain displayName <> signed)
-        body = if T.null text || text == linkName then [] else msgPlain text
-     in [linkInfo] <> body
+    let (linkInfo, name, links) = viewChatLink chatLink
+        signed = if isJust ownerSig then " (signed)" else ""
+        body = if T.null text || text `elem` links then [] else msgPlain text
+     in [plain $ linkInfo <> viewName name <> signed <> ":"] <> map plain links <> body
   mc -> msgPlain $ msgContentText mc
+  where
+    viewChatLink = \case
+      MCLGroup {connLink, groupProfile = GroupProfile {displayName, publicGroup}} ->
+        let (ref, links) = case publicGroup of
+              Just PublicGroupProfile {groupType, groupLink} -> (textEncode groupType, nub [enc connLink, enc groupLink])
+              Nothing -> ("group", [enc connLink])
+         in ("link to join " <> ref <> " #", displayName, links)
+      MCLContact {connLink, profile = Profile {displayName}} ->
+        ("contact address of @", displayName, [enc connLink])
+      MCLInvitation {invLink, profile = Profile {displayName}} ->
+        ("one-time link of @", displayName, [enc invLink])
+    enc :: StrEncoding a => a -> Text
+    enc = safeDecodeUtf8 . strEncode
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
