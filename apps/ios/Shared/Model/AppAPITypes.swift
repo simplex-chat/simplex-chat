@@ -342,7 +342,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connLink, linkOwnerSig):
-                let sigStr = linkOwnerSig.map { " sig=\(encodeJSON($0))" } ?? ""
+                let sigStr = if let linkOwnerSig { " sig=\(encodeJSON(linkOwnerSig))" } else { "" }
                 return "/_connect plan \(userId) \(connLink)\(sigStr)"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData): return "/_prepare contact \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") \(encodeJSON(contactShortLinkData))"
             case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData): return "/_prepare group \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") direct=\(onOff(directLink)) \(encodeJSON(groupShortLinkData))"

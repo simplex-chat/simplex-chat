@@ -11,6 +11,7 @@ let MAX_NUMBER_OF_MENTIONS = 3
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
+    case chatLinkPreview(chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     case mediaPreviews(mediaPreviews: [(String, UploadContent?)])
     case voicePreview(recordingFileName: String, duration: Int)
     case filePreview(fileName: String, file: URL)
@@ -22,7 +23,6 @@ enum ComposeContextItem: Equatable {
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
     case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
-    case sharingChatCard(groupInfo: GroupInfo)
     case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
@@ -96,14 +96,6 @@ struct ComposeState {
         self.voiceMessageRecordingState = .noRecording
     }
 
-    init(sharingChatCard groupInfo: GroupInfo) {
-        self.message = ""
-        self.parsedMessage = []
-        self.preview = .noPreview
-        self.contextItem = .sharingChatCard(groupInfo: groupInfo)
-        self.voiceMessageRecordingState = .noRecording
-    }
-
     func copy(
         message: String? = nil,
         parsedMessage: [FormattedText]? = nil,
@@ -159,13 +151,6 @@ struct ComposeState {
         }
     }
 
-    var sharingChatCard: Bool {
-        switch contextItem {
-        case .sharingChatCard: return true
-        default: return false
-        }
-    }
-
     var reporting: Bool {
         switch contextItem {
         case .reportedItem: return true
@@ -188,8 +173,9 @@ struct ComposeState {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
+        case .chatLinkPreview: return true
         case .filePreview: return true
-        default: return !whitespaceOnly || forwarding || sharingChatCard || liveMessage != nil || submittingValidReport
+        default: return !whitespaceOnly || forwarding || liveMessage != nil || submittingValidReport
         }
     }
 
@@ -199,6 +185,7 @@ struct ComposeState {
 
     var linkPreviewAllowed: Bool {
         switch preview {
+        case .chatLinkPreview: return false
         case .mediaPreviews: return false
         case .voicePreview: return false
         case .filePreview: return false
@@ -242,7 +229,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || forwarding || sharingChatCard || liveMessage != nil || inProgress || reporting { return true }
+        if editing || forwarding || liveMessage != nil || inProgress || reporting { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -254,6 +241,7 @@ struct ComposeState {
         switch preview {
         case .noPreview: false
         case .linkPreview: false
+        case .chatLinkPreview: false
         case let .mediaPreviews(mediaPreviews): !mediaPreviews.isEmpty
         case .voicePreview: false
         case .filePreview: true
@@ -276,6 +264,70 @@ struct ComposeState {
     var whitespaceOnly: Bool {
         message.allSatisfy { $0.isWhitespace }
     }
+}
+
+func chatLinkStr(_ chatLink: MsgChatLink) -> String {
+    switch chatLink {
+    case let .group(connLink, _): connLink
+    case let .contact(connLink, _, _): connLink
+    case let .invitation(invLink, _): invLink
+    }
+}
+
+func chatLinkImage(_ chatLink: MsgChatLink) -> String? {
+    switch chatLink {
+    case let .group(_, groupProfile): groupProfile.image
+    case let .contact(_, profile, _): profile.image
+    case let .invitation(_, profile): profile.image
+    }
+}
+
+func chatLinkDisplayName(_ chatLink: MsgChatLink) -> String {
+    switch chatLink {
+    case let .group(_, groupProfile): groupProfile.displayName
+    case let .contact(_, profile, _): profile.displayName
+    case let .invitation(_, profile): profile.displayName
+    }
+}
+
+func chatLinkIconName(_ chatLink: MsgChatLink) -> String {
+    switch chatLink {
+    case let .group(_, groupProfile):
+        if groupProfile.publicGroup?.groupType == .channel {
+            "antenna.radiowaves.left.and.right.circle.fill"
+        } else {
+            "person.2.circle.fill"
+        }
+    case let .contact(_, _, business):
+        business ? "briefcase.circle.fill" : "person.crop.circle.fill"
+    case .invitation:
+        "person.crop.circle.fill"
+    }
+}
+
+func chatLinkDescription(_ chatLink: MsgChatLink) -> String {
+    switch chatLink {
+    case let .group(_, groupProfile):
+        if groupProfile.publicGroup?.groupType == .channel {
+            NSLocalizedString("Channel", comment: "chat link type")
+        } else {
+            NSLocalizedString("Group", comment: "chat link type")
+        }
+    case let .contact(_, _, business):
+        business
+            ? NSLocalizedString("Business address", comment: "chat link type")
+            : NSLocalizedString("Contact address", comment: "chat link type")
+    case .invitation:
+        NSLocalizedString("One-time link", comment: "chat link type")
+    }
+}
+
+func chatCardText(_ text: String, _ chatLink: MsgChatLink) -> String {
+    let link = chatLinkStr(chatLink)
+    if text.hasSuffix("\n" + link) {
+        return String(text.dropLast(link.count + 1))
+    }
+    return text
 }
 
 // Spec: spec/client/compose.md#chatItemPreview
@@ -1232,6 +1284,15 @@ struct ComposeView: View {
                 cancelEnabled: !composeState.inProgress
             )
             Divider()
+        case let .chatLinkPreview(chatLink, _):
+            ComposeChatLinkView(
+                chatLink: chatLink,
+                cancelPreview: {
+                    composeState = composeState.copy(preview: .noPreview)
+                },
+                cancelEnabled: !composeState.inProgress
+            )
+            Divider()
         case let .mediaPreviews(mediaPreviews: media):
             ComposeImageView(
                 images: media.map { (img, _) in img },
@@ -1336,15 +1397,6 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
-        case let .sharingChatCard(groupInfo):
-            ContextItemView(
-                chat: chat,
-                contextItems: [],
-                contextIcon: "arrowshape.turn.up.forward",
-                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
-                customText: "Sharing #\(groupInfo.groupProfile.displayName)"
-            )
-            Divider()
         case let .reportedItem(chatItem: reportedItem, _):
             ContextItemView(
                 chat: chat,
@@ -1376,9 +1428,7 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if case let .sharingChatCard(groupInfo) = composeState.contextItem {
-            sent = await shareChatCard(groupInfo, ttl)
-        } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
+        if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
@@ -1401,6 +1451,10 @@ struct ComposeView: View {
                 sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+            case let .chatLinkPreview(chatLink, ownerSig):
+                let linkStr = chatLinkStr(chatLink)
+                let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
+                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case let .mediaPreviews(media):
                 // TODO: CHECK THIS
                 let last = media.count - 1
@@ -1435,7 +1489,7 @@ struct ComposeView: View {
             }
         }
         await MainActor.run {
-            let wasForwarding = composeState.forwarding || composeState.sharingChatCard
+            let wasForwarding = composeState.forwarding
             clearState(live: live)
             if wasForwarding,
                chatModel.draftChatId == chat.chatInfo.id,
@@ -1598,24 +1652,6 @@ struct ComposeView: View {
                 }
             }
             return []
-        }
-
-        func shareChatCard(_ groupInfo: GroupInfo, _ ttl: Int?) async -> ChatItem? {
-            let sendAsGroup = chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false
-            do {
-                var mc = try await apiShareChatMsgContent(
-                    shareChatType: .group, shareChatId: Int64(groupInfo.groupId),
-                    toChatType: chat.chatInfo.chatType, toChatId: chat.chatInfo.apiId,
-                    toScope: chat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
-                )
-                if !composeState.message.isEmpty, case let .chat(text, chatLink, ownerSig) = mc {
-                    mc = .chat(text: composeState.message + "\n" + text, chatLink: chatLink, ownerSig: ownerSig)
-                }
-                return await send(mc, quoted: nil, live: false, ttl: ttl, mentions: [:])
-            } catch {
-                logger.error("shareChatCard failed: \(error.localizedDescription)")
-                return nil
-            }
         }
 
         func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> [ChatItem] {

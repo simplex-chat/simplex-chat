@@ -5,13 +5,12 @@ struct CICardView<Content: View>: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
-    @ViewBuilder var content: () -> Content
-    @State private var frameWidth: CGFloat = 0
+    @ViewBuilder var content: Content
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading) {
-                content()
+                content
             }
             .padding(.bottom, 2)
 

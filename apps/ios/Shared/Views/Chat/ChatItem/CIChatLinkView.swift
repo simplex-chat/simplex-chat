@@ -47,92 +47,37 @@ struct CIChatLinkView: View {
         }
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
         .simultaneousGesture(TapGesture().onEnded {
-            openChatLink()
+            planAndConnect(
+                chatLinkStr(chatLink),
+                linkOwnerSig: ownerSig,
+                theme: theme,
+                dismiss: false
+            )
         })
     }
 
     private func linkHeaderView() -> some View {
         HStack(alignment: .top) {
             ProfileImage(
-                imageStr: linkImage,
-                iconName: linkIconName,
+                imageStr: chatLinkImage(chatLink),
+                iconName: chatLinkIconName(chatLink),
                 size: 44,
                 color: theme.colors.primary
             )
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
-                Text(linkDisplayName).font(.headline).lineLimit(2)
-                if let fullName = linkFullName, fullName != "" && fullName != linkDisplayName {
-                    Text(fullName).font(.subheadline).lineLimit(2)
-                }
+                Text(chatLinkDisplayName(chatLink)).font(.headline).lineLimit(2)
+                Text(chatLinkDescription(chatLink))
+                    .font(.subheadline)
+                    .foregroundColor(theme.colors.secondary)
+                    .lineLimit(1)
             }
             .frame(minHeight: 44)
         }
     }
 
-    private var linkImage: String? {
-        switch chatLink {
-        case let .group(_, groupProfile): groupProfile.image
-        case let .contact(_, profile, _): profile.image
-        case let .invitation(_, profile): profile.image
-        }
-    }
-
-    private var linkDisplayName: String {
-        switch chatLink {
-        case let .group(_, groupProfile): groupProfile.displayName
-        case let .contact(_, profile, _): profile.displayName
-        case let .invitation(_, profile): profile.displayName
-        }
-    }
-
-    private var linkFullName: String? {
-        switch chatLink {
-        case let .group(_, groupProfile): groupProfile.fullName
-        case let .contact(_, profile, _): profile.fullName
-        case let .invitation(_, profile): profile.fullName
-        }
-    }
-
-    private var linkIconName: String {
-        switch chatLink {
-        case let .group(_, groupProfile):
-            if groupProfile.publicGroup?.groupType == .channel {
-                "antenna.radiowaves.left.and.right.circle.fill"
-            } else {
-                "person.2.circle.fill"
-            }
-        case let .contact(_, _, business):
-            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
-        case .invitation:
-            "person.crop.circle.fill"
-        }
-    }
-
     private var strippedText: String? {
-        let text = chatItem.text
-        let link = chatLinkStr
-        if text.hasSuffix("\n" + link) {
-            let stripped = String(text.dropLast(link.count + 1))
-            return stripped.isEmpty ? nil : stripped
-        }
+        let text = chatCardText(chatItem.text, chatLink)
         return text.isEmpty ? nil : text
-    }
-
-    private var chatLinkStr: String {
-        switch chatLink {
-        case let .group(connLink, _): connLink
-        case let .contact(connLink, _, _): connLink
-        case let .invitation(invLink, _): invLink
-        }
-    }
-
-    private func openChatLink() {
-        planAndConnect(
-            chatLinkStr,
-            linkOwnerSig: ownerSig,
-            theme: theme,
-            dismiss: false
-        )
     }
 }

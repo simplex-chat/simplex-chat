@@ -1058,6 +1058,7 @@ private func showOwnGroupLinkConfirmConnectSheet(
 private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
+    ownerVerification: OwnerVerification? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1076,6 +1077,7 @@ private func showPrepareContactAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
+        subtitle: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
         onCancel: { cleanup?() },
@@ -1103,12 +1105,16 @@ private func showPrepareGroupAlert(
     connectionLink: CreatedConnLink,
     groupShortLinkInfo: GroupShortLinkInfo?,
     groupShortLinkData: GroupShortLinkData,
+    ownerVerification: OwnerVerification? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
     let isChannel = !(groupShortLinkInfo?.direct ?? true)
     let subscriberCount = groupShortLinkData.publicGroupData.map { "\($0.publicMemberCount) subscribers" }
+    let subtitle = [subscriberCount, ownerVerificationMessage(ownerVerification)]
+        .compactMap { $0 }
+        .joined(separator: "\n")
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
@@ -1121,7 +1127,7 @@ private func showPrepareGroupAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
-        subtitle: isChannel ? subscriberCount : nil,
+        subtitle: subtitle.isEmpty ? nil : subtitle,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
             ? NSLocalizedString("Open new channel", comment: "new chat action")
@@ -1260,6 +1266,7 @@ func planAndConnect(
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1322,6 +1329,7 @@ func planAndConnect(
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1402,6 +1410,7 @@ func planAndConnect(
                                     connectionLink: connectionLink,
                                     groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup

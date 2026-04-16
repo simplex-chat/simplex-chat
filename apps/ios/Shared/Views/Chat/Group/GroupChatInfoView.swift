@@ -467,11 +467,28 @@ struct GroupChatInfoView: View {
     }
 
     private func selectShareDestination(_ chat: Chat) {
-        composeState = ComposeState(sharingChatCard: groupInfo)
-        if chat.id != ChatModel.shared.chatId {
-            ItemsModel.shared.loadOpenChat(chat.id)
+        let gInfo = groupInfo
+        let sendAsGroup = if let gInfo = chat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
+        Task {
+            do {
+                let mc = try await apiShareChatMsgContent(
+                    shareChatType: .group, shareChatId: Int64(gInfo.groupId),
+                    toChatType: chat.chatInfo.chatType, toChatId: chat.chatInfo.apiId,
+                    toScope: chat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+                )
+                if case let .chat(_, chatLink, ownerSig) = mc {
+                    await MainActor.run {
+                        composeState = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if chat.id != ChatModel.shared.chatId {
+                            ItemsModel.shared.loadOpenChat(chat.id)
+                        }
+                        dismiss()
+                    }
+                }
+            } catch {
+                logger.error("selectShareDestination error: \(error.localizedDescription)")
+            }
         }
-        dismiss()
     }
 
     private func addMembersButton() -> some View {

@@ -17,7 +17,6 @@ struct ContextItemView: View {
     let cancelContextItem: () -> Void
     var contextIconForeground: Color? = nil
     var showSender: Bool = true
-    var customText: String? = nil
 
     var body: some View {
         HStack {
@@ -26,10 +25,7 @@ struct ContextItemView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
                 .foregroundColor(contextIconForeground ?? theme.colors.secondary)
-            if let customText {
-                Text(customText)
-                    .lineLimit(2)
-            } else if let singleItem = contextItems.first, contextItems.count == 1 {
+            if let singleItem = contextItems.first, contextItems.count == 1 {
                 if showSender, let sender = singleItem.memberDisplayName {
                      VStack(alignment: .leading, spacing: 4) {
                          Text(sender).font(.caption).foregroundColor(theme.colors.secondary)

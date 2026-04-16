@@ -14,7 +14,7 @@ struct ChatItemForwardingView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
 
-    var title: String = "Forward"
+    var title: LocalizedStringKey = "Forward"
     var chatItems: [ChatItem] = []
     var fromChatInfo: ChatInfo? = nil
     @Binding var composeState: ComposeState

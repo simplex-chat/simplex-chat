@@ -756,7 +756,7 @@ struct ChatView: View {
             }
             updateAvailableContent()
         }
-        if chatModel.draftChatId == cInfo.id && !composeState.forwarding && !composeState.sharingChatCard,
+        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
            let draft = chatModel.draft {
             composeState = draft
         }
