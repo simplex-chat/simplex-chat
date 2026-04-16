@@ -771,7 +771,7 @@ struct ComposeView: View {
             }
             if relayListExpanded {
                 if allBroken {
-                    Text("Messages can't be delivered to subscribers. Adding new relays will be available in a future update.")
+                    Text("Messages can't be delivered. Adding relays will come later.")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)

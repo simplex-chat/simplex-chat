@@ -2902,7 +2902,7 @@
   <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
   <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_owner_no_delivery">Messages can\'t be delivered to subscribers. Adding new relays will be available in a future update.</string>
+  <string name="relay_bar_owner_no_delivery">Messages can\'t be delivered. Adding relays will come later.</string>
   <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
