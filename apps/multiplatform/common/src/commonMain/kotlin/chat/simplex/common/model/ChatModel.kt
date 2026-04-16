@@ -4492,16 +4492,51 @@ object MsgContentSerializer : KSerializer<MsgContent> {
   }
 }
 
-@Serializable
-enum class MsgContentTag {
-  @SerialName("text") Text,
-  @SerialName("link") Link,
-  @SerialName("image") Image,
-  @SerialName("video") Video,
-  @SerialName("voice") Voice,
-  @SerialName("file") File,
-  @SerialName("report") Report,
-  @SerialName("chat") Chat,
+@Serializable(with = MsgContentTagSerializer::class)
+sealed class MsgContentTag {
+  @Serializable @SerialName("text") object Text: MsgContentTag()
+  @Serializable @SerialName("link") object Link: MsgContentTag()
+  @Serializable @SerialName("image") object Image: MsgContentTag()
+  @Serializable @SerialName("video") object Video: MsgContentTag()
+  @Serializable @SerialName("voice") object Voice: MsgContentTag()
+  @Serializable @SerialName("file") object File: MsgContentTag()
+  @Serializable @SerialName("report") object Report: MsgContentTag()
+  @Serializable @SerialName("chat") object Chat: MsgContentTag()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): MsgContentTag()
+
+  val cmdString: String get() = when (this) {
+    is Text -> "text"
+    is Link -> "link"
+    is Image -> "image"
+    is Video -> "video"
+    is Voice -> "voice"
+    is File -> "file"
+    is Report -> "report"
+    is Chat -> "chat"
+    is Unknown -> type
+  }
+}
+
+object MsgContentTagSerializer : KSerializer<MsgContentTag> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("MsgContentTag", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): MsgContentTag =
+    when (val s = decoder.decodeString()) {
+      "text" -> MsgContentTag.Text
+      "link" -> MsgContentTag.Link
+      "image" -> MsgContentTag.Image
+      "video" -> MsgContentTag.Video
+      "voice" -> MsgContentTag.Voice
+      "file" -> MsgContentTag.File
+      "report" -> MsgContentTag.Report
+      "chat" -> MsgContentTag.Chat
+      "liveText" -> MsgContentTag.Text
+      else -> MsgContentTag.Unknown(s)
+    }
+
+  override fun serialize(encoder: Encoder, value: MsgContentTag) {
+    encoder.encodeString(value.cmdString)
+  }
 }
 
 @Serializable
