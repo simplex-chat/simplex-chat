@@ -222,6 +222,7 @@ testShareChannelDirect ps =
           cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
       bob ##> ("/_send @3 json [" <> cm <> "]")
       bob <# "@cath channel #news (signed)"
+      _ <- getTermLine bob -- bob's testView ownerSig (his sent has the sig data)
       -- cath sees it without signature - binding was for alice->bob, not bob->cath, sig stripped
       cath <# "bob> channel #news"
       -- cath joins anyway
@@ -261,10 +262,22 @@ testShareChannelChannel ps =
       -- bob joins "updates" first (relay doesn't know bob yet, no suffix)
       memberJoinChannel "updates" [relay] [alice] sLink2 fLink2 bob
       -- alice (owner) shares "news" to "updates" - signed
+      alice ##> "/_share chat content #1 #2"
+      alice <## "channel #news (signed)"
+      apiOwnerSig <- getTermLine alice
       alice ##> "/share chat #news #updates"
       alice <# "#updates channel #news (signed)"
+      _ <- getTermLine alice -- alice's testView ownerSig
       relay <# "#updates alice_1> channel #news (signed)"
+      _ <- getTermLine relay -- relay's testView ownerSig
       bob <# "#updates alice> channel #news (signed) [>>]"
+      ownerSig <- getTermLine bob
+      ownerSig `shouldBe` apiOwnerSig
+      -- bob verifies alice's signature via connect plan
+      bob ##> ("/_connect plan 1 " <> sLink1 <> " sig=" <> ownerSig)
+      bob <## "group link: ok to connect via relays"
+      bob <## "  owner signature: verified"
+      _ <- getTermLine bob -- group link data
       -- bob joins "news" (group #2 for bob, relay knows bob from "updates" so sfx=1)
       memberJoinChannel' "news" 2 1 1 1 [relay] [alice] sLink1 fLink1 bob
       -- bob creates channel "bob_ch" for delivery to cath
@@ -272,11 +285,21 @@ testShareChannelChannel ps =
       bob <## "ok"
       (sLink3, fLink3) <- prepareChannel "bob_ch" bob relay
       memberJoinChannel "bob_ch" [relay] [bob] sLink3 fLink3 cath
-      -- bob (subscriber) shares "news" to "bob_ch" - signed (not verifiable as owner)
+      -- bob (subscriber) shares "news" to "bob_ch" - unsigned (not owner)
       bob ##> "/share chat #news #bob_ch"
+      bob <# "#bob_ch channel #news"
+      relay <# "#bob_ch bob_2> channel #news"
+      cath <# "#bob_ch bob> channel #news [>>]"
+      -- bob tries to replay alice's signed card to bob_ch - binding mismatch, sig stripped at receive
+      let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack ownerSig) :: Maybe LinkOwnerSig)
+          connLink = either error id $ strDecode (B.pack sLink1)
+          mc = MCChat "news" (MCLGroup connLink (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
+          cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
+      bob ##> ("/_send #3 json [" <> cm <> "]")
       bob <# "#bob_ch channel #news (signed)"
-      relay <# "#bob_ch bob_2> channel #news (signed)"
-      cath <# "#bob_ch bob> channel #news (signed) [>>]"
+      _ <- getTermLine bob -- bob's testView ownerSig (his sent has the sig data)
+      relay <# "#bob_ch bob_2> channel #news"
+      cath <# "#bob_ch bob> channel #news [>>]"
       -- cath joins "news" (group #2 for cath since "bob_ch" is #1)
       memberJoinChannel' "news" 2 1 0 1 [relay] [alice] sLink1 fLink1 cath
       -- alice sends message, both receive

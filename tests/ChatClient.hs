@@ -438,7 +438,7 @@ getTermLine' expected cc@TestCC {printOutput} =
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do
-      when printOutput $ do
+      do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
