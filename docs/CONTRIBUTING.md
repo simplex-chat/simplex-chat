@@ -21,7 +21,7 @@ Please discuss the problem you want to solve and your detailed implementation pl
 
 ./contributing/CODE.md has details about general requirements common for `simplexmq` and `simplex-chat` repositories.
 
-This files can be used with LLM prompts, e.g. if you use Claude Code you can create CLAUDE.md file in project root importing content from these files:
+These files can be used with LLM prompts, e.g. if you use Claude Code you can create CLAUDE.md file in project root importing content from these files:
 
 ```markdown
 @README.md
@@ -71,7 +71,7 @@ You will have to add `/opt/homebrew/opt/openssl@3.0/bin` to your PATH in order t
 
 1. Make PRs to `master` branch _only_ for both simplex-chat and simplexmq repos.
 
-2. To build core libraries for Android, iOS and windows:
+2. To build core libraries for Android, iOS and Windows:
 - merge `master` branch to `master-android` branch.
 - push to GitHub.
 

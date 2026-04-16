@@ -35,7 +35,7 @@ The steps are:
 
 ### Translating Android app
 
-1. Please start from [Android app](https://hosted.weblate.org/projects/simplex-chat/android/), both when you do the most time-consuming initial translation, and add any strings later. Firstly, iOS strings can be a bit delayed from appearing in Weblate, as it requires a manual step from us before they are visible. Secondary, Android app is set up as a glossary for iOS app, and 2/3 of all strings require just to clicks to transfer them from Android to iOS (it still takes some time, Weblate doesn't automate it, unfortunately).
+1. Please start from [Android app](https://hosted.weblate.org/projects/simplex-chat/android/), both when you do the most time-consuming initial translation, and add any strings later. Firstly, iOS strings can be a bit delayed from appearing in Weblate, as it requires a manual step from us before they are visible. Secondly, Android app is set up as a glossary for iOS app, and 2/3 of all strings require just two clicks to transfer them from Android to iOS (it still takes some time, Weblate doesn't automate it, unfortunately).
 
 2. Some of the strings do not need translations, but they still need to be copied over - there is a button in weblate UI for that:
 
