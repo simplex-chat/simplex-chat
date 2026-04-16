@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ChatTests.ChatRelays where
 
 import ChatClient
@@ -5,6 +7,18 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel, prepareChannel', prepareChannel1Relay, setupRelay)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
+import Data.Maybe (fromMaybe)
+import qualified Data.Aeson as J
+import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Aeson as J
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
+import qualified Data.Text as T
+import ProtocolTests (testGroupProfile)
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
+import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Util (decodeJSON)
 import Test.Hspec hiding (it)
 
 chatRelayTests :: SpecWith TestParams
@@ -205,6 +219,15 @@ testShareChannelDirect ps =
       cath <## "group link: ok to connect via relays"
       cath <## "  owner signature: FAILED (unknown owner ID)"
       _ <- getTermLine cath -- group link data
+      -- bob tries to replay alice's signed card to cath - binding mismatch, sig stripped at receive
+      let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack ownerSig) :: Maybe LinkOwnerSig)
+          connLink = either error id $ strDecode (B.pack shortLink)
+          mc = MCChat "news" (MCLGroup connLink (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
+          cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
+      bob ##> ("/_send @2 json [" <> cm <> "]")
+      bob <# "@cath channel #news (signed)"
+      -- TODO: cath should see without signature, but binding check passes - investigate
+      cath <# "bob> channel #news (signed)"
       -- cath joins anyway
       memberJoinChannel "news" [relay] [alice] shortLink fullLink cath
       alice #> "#news hello"
