@@ -417,17 +417,6 @@ data MsgSigning = MsgSigning
 encodeChatBinding :: ChatBinding -> ByteString -> ByteString
 encodeChatBinding cb bindingData = smpEncode cb <> bindingData
 
-dropOwnerSig :: MsgContent -> MsgContent
-dropOwnerSig = \case
-  MCChat {text, chatLink} -> MCChat {text, chatLink, ownerSig = Nothing}
-  mc -> mc
-
-verifyMsgBinding :: ByteString -> MsgContent -> MsgContent
-verifyMsgBinding expectedBinding = \case
-  mc@MCChat {ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}}
-    | binding == expectedBinding -> mc
-  mc -> dropOwnerSig mc
-
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json

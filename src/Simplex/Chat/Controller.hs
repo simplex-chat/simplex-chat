@@ -470,7 +470,7 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe is used to report link parsing failure as special error
+  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId CreatedLinkContact DirectLink GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
@@ -1010,14 +1010,14 @@ data ConnectionPlan
   deriving (Show)
 
 data InvitationLinkPlan
-  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData, linkSigVerification :: Maybe LinkSigVerification}
+  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, linkSigVerification :: Maybe LinkSigVerification}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1026,16 +1026,16 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, linkSigVerification :: Maybe LinkSigVerification}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
   deriving (Show)
 
-data LinkSigVerification
-  = LSVVerified
-  | LSVFailed {reason :: Text}
+data OwnerVerification
+  = OVVerified
+  | OVFailed {reason :: Text}
   deriving (Show)
 
 type DirectLink = Bool
@@ -1639,7 +1639,7 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "LSV") ''LinkSigVerification)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "OV") ''OwnerVerification)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 

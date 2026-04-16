@@ -117,6 +117,7 @@ This file is generated automatically.
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
 - [LinkContent](#linkcontent)
+- [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
 - [LocalProfile](#localprofile)
 - [MemberCriteria](#membercriteria)
@@ -132,6 +133,7 @@ This file is generated automatically.
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
+- [OwnerVerification](#ownerverification)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
@@ -1698,6 +1700,7 @@ Error:
 Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 OwnLink:
 - type: "ownLink"
@@ -2261,6 +2264,7 @@ Ok:
 - type: "ok"
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 OwnLink:
 - type: "ownLink"
@@ -2526,6 +2530,7 @@ Public:
 Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 OwnLink:
 - type: "ownLink"
@@ -2576,6 +2581,16 @@ Unknown:
 - type: "unknown"
 - tag: string
 - json: JSONObject
+
+
+---
+
+## LinkOwnerSig
+
+**Record type**:
+- ownerId: string?
+- chatBinding: string
+- ownerSig: string
 
 
 ---
@@ -2683,6 +2698,7 @@ Chat:
 - type: "chat"
 - text: string
 - chatLink: [MsgChatLink](#msgchatlink)
+- ownerSig: [LinkOwnerSig](#linkownersig)?
 
 Unknown:
 - type: "unknown"
@@ -2828,6 +2844,20 @@ SubscribeError:
 - chatTs: UTCTime
 - favorite: bool
 - unread: bool
+
+
+---
+
+## OwnerVerification
+
+**Discriminated union type**:
+
+Verified:
+- type: "verified"
+
+Failed:
+- type: "failed"
+- reason: string
 
 
 ---

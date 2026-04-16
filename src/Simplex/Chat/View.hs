@@ -2049,7 +2049,7 @@ viewGroupUserChanged
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk contactSLinkData lsv -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification lsv <> [viewJSON contactSLinkData | testView]
+    ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -2067,7 +2067,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData lsv -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification lsv <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2085,10 +2085,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData lsv ->
+    GLPOk groupSLinkInfo_ groupSLinkData ov ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
-            <> viewSigVerification lsv
+            <> viewSigVerification ov
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
@@ -2125,8 +2125,8 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
     viewSigVerification = \case
-      Just LSVVerified -> ["owner signature: verified"]
-      Just (LSVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
+      Just OVVerified -> ["owner signature: verified"]
+      Just (OVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
       Nothing -> []
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]

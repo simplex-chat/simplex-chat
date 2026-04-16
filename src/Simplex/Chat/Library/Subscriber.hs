@@ -1726,12 +1726,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
-      let MsgContainer {content = content0, file = fInv_} = mc
-      content <- case (content0, contactConn ct) of
-        (MCChat {ownerSig = Just _}, Just conn) -> do
-          adHash <- withAgent (`getConnectionRatchetAdHash` aConnId conn)
-          pure $ verifyMsgBinding (encodeChatBinding CBDirect adHash) content0
-        _ -> pure content0
+      let MsgContainer {content = c, file = fInv_} = mc
+      content <- case c of
+        MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case contactConn ct of
+          Just conn -> do
+            adHash <- withAgent (`getConnectionRatchetAdHash` aConnId conn)
+            pure $ if encodeChatBinding CBDirect adHash == binding then c else mcNoSig
+          Nothing -> pure mcNoSig
+          where
+            mcNoSig = MCChat {text, chatLink, ownerSig = Nothing}
+        _ -> pure c
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
@@ -1984,15 +1988,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
         live' = fromMaybe False live_
-        MsgContainer {content = content0, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_} = mc
-        content = case m_ of
-          Just GroupMember {memberId} -> case groupProfile of
-            GroupProfile {publicGroup = Just PublicGroupProfile {publicGroupId}} ->
-              verifyMsgBinding (encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) content0
-            _ -> dropOwnerSig content0
-          Nothing -> content0
-          where
-            GroupInfo {groupProfile} = gInfo
+        MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_} = mc
+        content = case c of
+          MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case (publicGroup, m_) of
+            (Just PublicGroupProfile {publicGroupId}, Just GroupMember {memberId})
+              | encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId)) == binding -> c
+            _ -> MCChat {text, chatLink, ownerSig = Nothing}
+          _ -> c
+        GroupInfo {groupProfile = GroupProfile {publicGroup}} = gInfo
         sentAsGroup = asGroup_ == Just True
         ts@(_, ft_) = msgContentTexts content
         -- m' is Maybe GroupMember
