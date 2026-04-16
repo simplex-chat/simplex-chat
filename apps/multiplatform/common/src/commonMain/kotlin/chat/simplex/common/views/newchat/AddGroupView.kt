@@ -27,6 +27,8 @@ import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.group.GroupLinkView
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.usersettings.*
+import androidx.compose.ui.layout.ContentScale
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -99,21 +101,32 @@ fun AddGroupLayout(
     ) {
       ModalView(close = close) {
         ColumnWithScrollBar {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
-          Box(
+          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId), bottomPadding = DEFAULT_PADDING_HALF)
+          Row(
             Modifier
               .fillMaxWidth()
-              .padding(bottom = 24.dp),
-            contentAlignment = Alignment.Center
+              .padding(vertical = DEFAULT_PADDING_HALF),
+            horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            Box(contentAlignment = Alignment.TopEnd) {
-              Box(contentAlignment = Alignment.Center) {
-                ProfileImage(108.dp, image = profileImage.value)
-                EditImageButton { scope.launch { bottomSheetModalState.show() } }
+            Box(contentAlignment = Alignment.Center) {
+              Box(contentAlignment = Alignment.TopEnd) {
+                Box(contentAlignment = Alignment.Center) {
+                  ProfileImage(128.dp, image = profileImage.value)
+                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
+                }
+                if (profileImage.value != null) {
+                  DeleteImageButton { profileImage.value = null }
+                }
               }
-              if (profileImage.value != null) {
-                DeleteImageButton { profileImage.value = null }
-              }
+            }
+            if (BuildConfigCommon.SIMPLEX_ASSETS) {
+              Image(
+                painterResource(if (isInDarkTheme()) MR.images.create_group_light else MR.images.create_group),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.height(140.dp)
+              )
             }
           }
           Row(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

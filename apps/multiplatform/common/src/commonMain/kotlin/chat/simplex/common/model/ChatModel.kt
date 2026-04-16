@@ -1157,10 +1157,10 @@ object ChatModel {
           showingInvitation.value = null
           chatsContext.chatItems.clearAndNotify()
           chatModel.chatId.value = withId
+          ModalManager.start.closeModals()
+          ModalManager.end.closeModals()
         }
       }
-      ModalManager.start.closeModals()
-      ModalManager.end.closeModals()
     }
   }
 
