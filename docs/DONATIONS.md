@@ -7,7 +7,7 @@ permalink: /donate/index.html
 
 Huge thank you to everybody who donated to SimpleX Chat!
 
-We are prioritizing users privacy and security - it would be impossible without your support.
+We are prioritizing users' privacy and security - it would be impossible without your support.
 
 Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
 

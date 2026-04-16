@@ -9,7 +9,7 @@ revision: 31.07.2023
 - [Overview](#overview)
 - [Installation options](#installation-options)
    - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
-   - [docker container](#docker-сontainer)
+   - [docker container](#docker-container)
    - [Linode marketplace](#linode-marketplace)
 - [Tor installation](#tor-installation)
 - [Configuration](#configuration)
@@ -72,7 +72,7 @@ Manual installation is the most advanced deployment that provides the most flexi
 
 1. Install binary:
 
-   - Using offical binaries:
+   - Using official binaries:
 
      ```sh
      curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server && chmod +x /usr/local/bin/xftp-server
@@ -129,9 +129,9 @@ Manual installation is the most advanced deployment that provides the most flexi
 
    And execute `sudo systemctl daemon-reload`.
 
-### Docker сontainer
+### Docker container
 
-You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
+You can deploy xftp-server using Docker Compose. This is the second recommended option due to its popularity and relatively easy deployment.
 
 This deployment provides two Docker Compose files: the **automatic** one and **manual**. If you're not sure, choose **automatic**.
 
@@ -197,9 +197,9 @@ xftp-server can also be deployed to serve from [tor](https://www.torproject.org)
 
 1. Install tor:
 
-   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
+   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [official tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
 
-   - Configure offical Tor PPA repository:
+   - Configure official Tor PPA repository:
 
      ```sh
      CODENAME="$(lsb_release -c | awk '{print $2}')"
@@ -235,10 +235,10 @@ xftp-server can also be deployed to serve from [tor](https://www.torproject.org)
      vim /etc/tor/torrc
      ```
 
-     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
+     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: these are comments about each individual option.
 
      ```sh
-     # Enable log (otherwise, tor doesn't seemd to deploy onion address)
+     # Enable log (otherwise, tor doesn't seem to deploy onion address)
      Log notice file /var/log/tor/notices.log
      # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside xftp-server and onion address will be displayed in clients, this is totally fine)
      SOCKSPort 0
@@ -257,7 +257,7 @@ xftp-server can also be deployed to serve from [tor](https://www.torproject.org)
 
 3. Start tor:
 
-   Enable `systemd` service and start tor. Offical `tor` is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.
+   Enable `systemd` service and start tor. Official `tor` is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.
 
    ```sh
    systemctl enable tor && systemctl start tor && systemctl restart tor
@@ -356,7 +356,7 @@ To password-protect your `xftp-server`, change it in the configuration:
       ```
 ---
 
-After that, your installation is complete and you should see in your teminal output something like this:
+After that, your installation is complete and you should see in your terminal output something like this:
 
 ```sh
 Certificate request self-signature ok
@@ -398,7 +398,7 @@ xftp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 
 - **optional** `<password>`
 
-  Your configured password of `xftp-server`. You can check your configured pasword in `/etc/opt/simplex-xftp/file-server.ini`, under `[AUTH]` section in `create_password:` field.
+  Your configured password of `xftp-server`. You can check your configured password in `/etc/opt/simplex-xftp/file-server.ini`, under `[AUTH]` section in `create_password:` field.
 
 - `<public_hostname>`, **optional** `<onion_hostname>`
 
@@ -609,8 +609,8 @@ To update your XFTP server to latest version, choose your installation method an
         sudo systemctl start xftp-server
         ```
 
-   - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
-     1. Execute the followin command:
+   - [Official installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+     1. Execute the following command:
         ```sh
         sudo simplex-servers-update
         ```
