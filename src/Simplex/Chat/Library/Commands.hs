@@ -2326,7 +2326,7 @@ processChatCommand vr nm = \case
     toChatRef <- getChatRef user toChatName
     asGroup <- getSendAsGroup user toChatRef
     processChatCommand vr nm $ APIForwardChatItems toChatRef asGroup (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
-  ShareChatMsg shareGroupName toChatName -> withUser $ \user -> do
+  SharePublicGroup shareGroupName toChatName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user shareGroupName
     toChatRef <- getChatRef user toChatName
     processChatCommand vr nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) toChatRef) >>= \case
@@ -5027,7 +5027,7 @@ chatCommandP =
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
-      "/share chat #" *> (ShareChatMsg <$> displayNameP <* A.space <*> chatNameP),
+      "/share chat #" *> (SharePublicGroup <$> displayNameP <* A.space <*> chatNameP),
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/accept_member_contact @" *> (AcceptMemberContact <$> displayNameP),
