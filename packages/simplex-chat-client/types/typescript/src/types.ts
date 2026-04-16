@@ -1005,7 +1005,6 @@ export type ChatErrorType =
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.UnsupportedConnReq
-  | ChatErrorType.ConnLinkNoRelays
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
   | ChatErrorType.ContactNotActive
@@ -1084,7 +1083,6 @@ export namespace ChatErrorType {
     | "chatStoreChanged"
     | "invalidConnReq"
     | "unsupportedConnReq"
-    | "connLinkNoRelays"
     | "connReqMessageProhibited"
     | "contactNotReady"
     | "contactNotActive"
@@ -1244,10 +1242,6 @@ export namespace ChatErrorType {
 
   export interface UnsupportedConnReq extends Interface {
     type: "unsupportedConnReq"
-  }
-
-  export interface ConnLinkNoRelays extends Interface {
-    type: "connLinkNoRelays"
   }
 
   export interface ConnReqMessageProhibited extends Interface {

@@ -1077,11 +1077,6 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             title: "Unsupported connection link",
             message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
         )
-    case .error(.connLinkNoRelays):
-        mkAlert(
-            title: "Channel temporarily unavailable",
-            message: "The channel doesn't have active relays. Please try to join later."
-        )
     case .errorAgent(.SMP(_, .AUTH)):
         mkAlert(
             title: "Connection error (AUTH)",

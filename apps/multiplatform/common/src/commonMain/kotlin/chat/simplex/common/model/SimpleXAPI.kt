@@ -1525,12 +1525,7 @@ object ChatController {
           generalGetString(MR.strings.link_requires_newer_app_version_please_upgrade)
         )
       }
-      r is API.Error && r.err is ChatError.ChatErrorChat
-          && r.err.errorType is ChatErrorType.ConnLinkNoRelays -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.channel_temporarily_unavailable),
-          generalGetString(MR.strings.channel_no_active_relays_try_later)
-        )
+
       }
       r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
@@ -7184,7 +7179,6 @@ sealed class ChatErrorType {
       is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
       is UnsupportedConnReq -> "unsupportedConnReq"
-      is ConnLinkNoRelays -> "connLinkNoRelays"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
       is ContactNotReady -> "contactNotReady"
@@ -7267,7 +7261,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
-  @Serializable @SerialName("connLinkNoRelays") object ConnLinkNoRelays: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
