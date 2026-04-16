@@ -2883,6 +2883,7 @@
   <string name="relay_conn_status_connecting">connecting</string>
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
+  <string name="relay_conn_status_removed_by_operator">removed by operator</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
@@ -2890,12 +2891,17 @@
   <string name="relay_status_inactive">inactive</string>
 
   <!-- ComposeView.kt channel relay bars -->
+  <string name="relay_bar_all_relays_removed">All relays removed</string>
+  <string name="relay_bar_all_relays_failed">All relays failed</string>
+  <string name="relay_bar_no_active_relays">No active relays</string>
   <string name="relay_bar_active_with_failures">%1$d/%2$d relays active, %3$d failed</string>
-  <string name="relay_bar_active_with_inactive">%1$d/%2$d relays active, %3$d inactive</string>
+  <string name="relay_bar_active_with_removed">%1$d/%2$d relays active, %3$d removed</string>
+  <string name="relay_bar_active_with_errors">%1$d/%2$d relays active, %3$d errors</string>
   <string name="relay_bar_active">%1$d/%2$d relays active</string>
   <string name="relay_bar_connected_with_errors">%1$d/%2$d relays connected, %3$d errors</string>
+  <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
+  <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_count">%1$d relays</string>
   <string name="relay_bar_owner_no_delivery">Messages can\'t be delivered to subscribers. Adding new relays will be available in a future update.</string>
   <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 

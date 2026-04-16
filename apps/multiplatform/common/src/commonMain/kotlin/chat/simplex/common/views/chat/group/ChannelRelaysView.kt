@@ -131,7 +131,9 @@ private fun subscriberRelayStatusText(member: GroupMember): String {
 }
 
 private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRelay>): String {
-  return if (member.activeConn?.connStatus is ConnStatus.Failed) {
+  return if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
+    relayConnStatus(member).first
+  } else if (member.activeConn?.connStatus is ConnStatus.Failed) {
     generalGetString(MR.strings.relay_conn_status_failed)
   } else if (member.activeConn?.connDisabled == true) {
     generalGetString(MR.strings.member_info_member_disabled)
@@ -144,8 +146,10 @@ private fun ownerRelayStatusText(member: GroupMember, groupRelays: List<GroupRel
 }
 
 fun relayConnStatus(member: GroupMember): Pair<String, Color> {
-  if (member.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)) {
-    return generalGetString(MR.strings.relay_status_inactive) to Color.Red
+  when (member.memberStatus) {
+    GroupMemberStatus.MemLeft -> return generalGetString(MR.strings.relay_conn_status_removed_by_operator) to Color.Red
+    GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted -> return member.memberStatus.text to Color.Red
+    else -> {}
   }
   return when (member.activeConn?.connStatus) {
     is ConnStatus.Ready -> generalGetString(MR.strings.relay_conn_status_connected) to Color.Green

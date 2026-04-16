@@ -1525,8 +1525,6 @@ object ChatController {
           generalGetString(MR.strings.link_requires_newer_app_version_please_upgrade)
         )
       }
-
-      }
       r is API.Error && r.err is ChatError.ChatErrorAgent
           && r.err.agentError is AgentErrorType.SMP
           && r.err.agentError.smpErr is SMPErrorType.AUTH -> {
