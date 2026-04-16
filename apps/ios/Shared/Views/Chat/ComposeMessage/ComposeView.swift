@@ -758,7 +758,7 @@ struct ComposeView: View {
                         Text("No active relays")
                     }
                     Image(systemName: "exclamationmark.triangle")
-                        .foregroundColor(.red)
+                        .foregroundColor(.orange)
                 } else if activeCount + failedCount + removedCount >= total {
                     if failedCount > 0 && removedCount > 0 {
                         Text(String.localizedStringWithFormat(NSLocalizedString("%d relays not active", comment: "channel relay bar"), failedCount + removedCount))
@@ -838,7 +838,7 @@ struct ComposeView: View {
                         Text("No active relays")
                     }
                     Image(systemName: "exclamationmark.triangle")
-                        .foregroundColor(.red)
+                        .foregroundColor(.orange)
                 } else {
                     if showProgress && connectedCount + errorCount < total {
                         RelayProgressIndicator(active: connectedCount, total: total)

@@ -1663,7 +1663,7 @@ private fun OwnerChannelRelayBar(
         Icon(
           painterResource(MR.images.ic_warning),
           contentDescription = null,
-          tint = Color.Red,
+          tint = WarningOrange,
           modifier = Modifier.size(18.dp)
         )
       } else if (activeCount + failedCount + removedCount >= total) {
@@ -1749,7 +1749,7 @@ private fun SubscriberChannelRelayBar(
         Icon(
           painterResource(MR.images.ic_warning),
           contentDescription = null,
-          tint = Color.Red,
+          tint = WarningOrange,
           modifier = Modifier.size(18.dp)
         )
       } else if (connectedCount + removedCount + failedCount >= total && errorCount > 0) {
