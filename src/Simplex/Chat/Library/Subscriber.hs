@@ -1728,13 +1728,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       let MsgContainer {content = c, file = fInv_} = mc
       content <- case c of
-        MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case contactConn ct of
-          Just conn -> do
-            adHash <- withAgent (`getConnectionRatchetAdHash` aConnId conn)
-            pure $ if encodeChatBinding CBDirect adHash == binding then c else mcNoSig
-          Nothing -> pure mcNoSig
-          where
-            mcNoSig = MCChat {text, chatLink, ownerSig = Nothing}
+        MCChat {ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> do
+          keepSig <- case contactConn ct of
+            Nothing -> pure False
+            Just conn -> do
+              adHash <- withAgent (`getConnectionRatchetAdHash` aConnId conn)
+              pure $ encodeChatBinding CBDirect adHash == binding
+          pure $ if keepSig then c else c {ownerSig = Nothing} :: MsgContent
         _ -> pure c
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
@@ -1990,9 +1990,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         live' = fromMaybe False live_
         MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_} = mc
         content = case c of
-          MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
+          MCChat {ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
             Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
-            _ -> MCChat {text, chatLink, ownerSig = Nothing}
+            _ -> c {ownerSig = Nothing} :: MsgContent
           _ -> c
         expectedBinding PublicGroupProfile {publicGroupId}
           | sentAsGroup = Just $ encodeChatBinding CBChannel (smpEncode publicGroupId)

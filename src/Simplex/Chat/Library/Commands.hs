@@ -1000,11 +1000,13 @@ processChatCommand vr nm = \case
         CTContactConnection -> throwCmdError "not supported"
         where
           prepareMsgReq :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile))
-          prepareMsgReq (CChatItem md ci) = forwardMsgContent ci $>>= forwardContent ci . dropSig md
-          dropSig :: SMsgDirection d -> MsgContent -> MsgContent
-          dropSig SMDSnd mc | fromChat == toChat = mc
-          dropSig _ (MCChat {text, chatLink}) = MCChat {text, chatLink, ownerSig = Nothing}
-          dropSig _ mc = mc
+          prepareMsgReq (CChatItem md ci) = forwardMsgContent ci $>>= forwardContent ci . dropOwnerSig
+            where
+              dropOwnerSig = \case
+                mc@MCChat {}
+                  | SMDSnd <- md, fromChat == toChat -> mc
+                  | otherwise -> mc {ownerSig = Nothing} :: MsgContent
+                mc -> mc
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
             Nothing -> ciff
