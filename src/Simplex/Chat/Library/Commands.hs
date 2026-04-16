@@ -1072,7 +1072,7 @@ processChatCommand vr nm = \case
             let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
-  APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user -> do
+  APIShareChatMsgContent (ChatRef CTGroup groupId _) toSendRef -> withUser $ \user -> do
     GroupInfo {groupProfile = gp@GroupProfile {publicGroup}, membership = GroupMember {memberId, memberRole}, groupKeys} <-
       withFastStore $ \db -> getGroupInfo db vr user groupId
     case publicGroup of
@@ -1083,7 +1083,7 @@ processChatCommand vr nm = \case
               _ -> Nothing
         ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
-            mkLinkOwnerSig memberPrivKey groupLink memberId <$$> shareChatBinding user toChatRef
+            mkLinkOwnerSig memberPrivKey groupLink memberId <$$> shareChatBinding user toSendRef
         let text = safeDecodeUtf8 $ strEncode groupLink
         pure $ CRChatMsgContent user MCChat {text, chatLink = MCLGroup groupLink gp, ownerSig}
     where
@@ -1093,18 +1093,17 @@ processChatCommand vr nm = \case
             cb = encodeChatBinding cbTag bindingData
             ownerSig = C.sign' privKey $ cb <> smpEncode connLink
          in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
-      shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
+      shareChatBinding :: User -> SendRef -> CM (Maybe (ChatBinding, ByteString))
       shareChatBinding u = \case
-        ChatRef CTDirect contactId _ -> do
+        SRDirect contactId -> do
           ct <- withFastStore $ \db -> getContact db vr u contactId
           forM (contactConn ct) $ \conn ->
             (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
-        ChatRef CTGroup toGroupId _ -> do
+        SRGroup toGroupId _ asGroup -> do
           GroupInfo {groupProfile = GroupProfile {publicGroup = toPubGroup}, membership = GroupMember {memberId = toMemberId}} <-
             withFastStore $ \db -> getGroupInfo db vr u toGroupId
           forM toPubGroup $ \PublicGroupProfile {publicGroupId = pgId} ->
-            pure (CBGroup, smpEncode (pgId, toMemberId))
-        _ -> pure Nothing
+            pure $ if asGroup then (CBChannel, smpEncode pgId) else (CBGroup, smpEncode (pgId, toMemberId))
   APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for public groups"
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
@@ -2330,12 +2329,14 @@ processChatCommand vr nm = \case
   SharePublicGroup shareGroupName toChatName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user shareGroupName
     toChatRef <- getChatRef user toChatName
-    processChatCommand vr nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) toChatRef) >>= \case
-      CRChatMsgContent _ mc -> do
-        sendRef <- case toChatRef of
-          ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
-          ChatRef CTGroup gId scope_ -> pure $ SRGroup gId scope_ False
-          _ -> throwCmdError "unsupported share target"
+    sendRef <- case toChatRef of
+      ChatRef CTDirect ctId _ -> pure $ SRDirect ctId
+      ChatRef CTGroup gId scope_ -> do
+        gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
+        pure $ SRGroup gId scope_ (useRelays' gInfo)
+      _ -> throwCmdError "unsupported share target"
+    processChatCommand vr nm (APIShareChatMsgContent (ChatRef CTGroup groupId Nothing) sendRef) >>= \case
+      CRChatMsgContent _ mc ->
         processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage Nothing mc]
       r -> pure r
   SendMessage sendName msg -> withUser $ \user -> do
@@ -4836,7 +4837,7 @@ chatCommandP =
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <*> (" as_group=" *> onOffP <|> pure False) <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
-      "/_share chat content " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> chatRefP),
+      "/_share chat content " *> (APIShareChatMsgContent <$> chatRefP <* A.space <*> sendRefP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP),

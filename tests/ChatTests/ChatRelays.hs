@@ -270,16 +270,16 @@ testShareChannelChannel ps =
       -- bob joins "updates" first (relay doesn't know bob yet, no suffix)
       memberJoinChannel "updates" [relay] [alice] sLink2 fLink2 bob
       -- alice (owner) shares "news" to "updates" - signed
-      alice ##> "/_share chat content #1 #2"
+      alice ##> "/_share chat content #1 #2(as_group=on)"
       alice <## "link to join channel #news (signed):"
       (apiLink, apiOwnerSig) <- getTermLine2 alice
       apiLink `shouldBe` sLink1
       alice ##> "/share chat #news #updates"
       alice <# "#updates link to join channel #news (signed):"
       _ <- getTermLine2 alice -- link, ownerSig
-      relay <# "#updates alice_1> link to join channel #news (signed):"
+      relay <# "#updates> link to join channel #news (signed):"
       _ <- getTermLine2 relay -- link, ownerSig
-      bob <# "#updates alice> link to join channel #news (signed): [>>]"
+      bob <# "#updates> link to join channel #news (signed): [>>]"
       (cLink, cSig) <- getTermLine2 bob
       cLink `shouldBe` (sLink1 <> " [>>]")
       cSig `shouldBe` apiOwnerSig

@@ -1990,11 +1990,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         live' = fromMaybe False live_
         MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_} = mc
         content = case c of
-          MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case (publicGroup, m_) of
-            (Just PublicGroupProfile {publicGroupId}, Just GroupMember {memberId})
-              | encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId)) == binding -> c
+          MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
+            Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
             _ -> MCChat {text, chatLink, ownerSig = Nothing}
           _ -> c
+        expectedBinding PublicGroupProfile {publicGroupId}
+          | sentAsGroup = Just $ encodeChatBinding CBChannel (smpEncode publicGroupId)
+          | otherwise = (\GroupMember {memberId} -> encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) <$> m_
         GroupInfo {groupProfile = GroupProfile {publicGroup}} = gInfo
         sentAsGroup = asGroup_ == Just True
         ts@(_, ft_) = msgContentTexts content
