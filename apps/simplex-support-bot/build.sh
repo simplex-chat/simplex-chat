@@ -4,28 +4,52 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-echo "Building simplex-support-bot..."
+TYPES_PKG="$REPO_ROOT/packages/simplex-chat-client/types/typescript"
+NODEJS_PKG="$REPO_ROOT/packages/simplex-chat-nodejs"
 
-# Build @simplex-chat/types (local dependency)
+# npm's `file:` deps are copied into node_modules, so when the source
+# package changes (e.g. after `git pull`) consumers keep seeing the old
+# copy — this is what produced the TS2345 "Property 'comments' is missing
+# in type ... FullGroupPreferences" errors. Replacing those copies with
+# symlinks removes the possibility of drift: there is one physical package
+# and every consumer sees the current version.
+link_workspace_dep() {
+  local host="$1" name="$2" target="$3"
+  local dest="$host/node_modules/$name"
+  if [ -L "$dest" ] && [ "$(readlink -f "$dest")" = "$target" ]; then
+    return
+  fi
+  mkdir -p "$(dirname "$dest")"
+  rm -rf "$dest"
+  ln -s "$target" "$dest"
+}
+
+# Only run `npm install` when something it cares about actually changed
+# — missing node_modules, or a package manifest newer than the installed
+# lockfile marker. Avoids the multi-minute reinstall on every build.
+ensure_installed() {
+  local dir="$1"
+  local marker="$dir/node_modules/.package-lock.json"
+  if [ ! -d "$dir/node_modules" ] \
+    || [ ! -f "$marker" ] \
+    || [ "$dir/package.json" -nt "$marker" ] \
+    || { [ -f "$dir/package-lock.json" ] && [ "$dir/package-lock.json" -nt "$marker" ]; }; then
+    (cd "$dir" && npm install)
+  fi
+}
+
 echo "Building @simplex-chat/types..."
-cd "$REPO_ROOT/packages/simplex-chat-client/types/typescript"
-npm run build
+(cd "$TYPES_PKG" && npm run build)
 
-# Build simplex-chat (local dependency — native addon + TypeScript)
 echo "Building simplex-chat..."
-cd "$REPO_ROOT/packages/simplex-chat-nodejs"
-npm run build
+ensure_installed "$NODEJS_PKG"
+link_workspace_dep "$NODEJS_PKG" "@simplex-chat/types" "$TYPES_PKG"
+(cd "$NODEJS_PKG" && npm run build)
 
-# Install and build the bot
 echo "Building simplex-support-bot..."
-cd "$SCRIPT_DIR"
-npm install
-
-# npm install copies file: dependencies, missing the native addon (build/)
-# and some dist files. Replace the copy with a symlink to the local package.
-rm -rf node_modules/simplex-chat
-ln -s "$REPO_ROOT/packages/simplex-chat-nodejs" node_modules/simplex-chat
-
-npm run build
+ensure_installed "$SCRIPT_DIR"
+link_workspace_dep "$SCRIPT_DIR" "@simplex-chat/types" "$TYPES_PKG"
+link_workspace_dep "$SCRIPT_DIR" "simplex-chat" "$NODEJS_PKG"
+(cd "$SCRIPT_DIR" && npm run build)
 
 echo "Build complete. Output in $SCRIPT_DIR/dist/"

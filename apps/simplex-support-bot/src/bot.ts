@@ -26,6 +26,8 @@ export class SupportBot {
   private grokJoinResolvers = new Map<number, () => void>()
   // mainGroupIds where Grok connectedToGroupMember fired
   private grokFullyConnected = new Set<number>()
+  // Suppress per-message Grok responses while activateGrok sends the initial combined response
+  private grokInitialResponsePending = new Set<number>()
 
   // Pending DMs for team group members (contactId → message)
   private pendingTeamDMs = new Map<number, string>()
@@ -40,12 +42,16 @@ export class SupportBot {
 
   constructor(
     private chat: api.ChatApi,
-    private grokApi: GrokApiClient,
+    private grokApi: GrokApiClient | null,
     private config: Config,
     private mainUserId: number,
-    private grokUserId: number,
+    private grokUserId: number | null,
   ) {
     this.cards = new CardManager(chat, config, mainUserId, config.cardFlushMinutes * 60 * 1000)
+  }
+
+  private get grokEnabled(): boolean {
+    return this.grokApi !== null
   }
 
   // Wait for all fire-and-forget operations to settle (for testing)
@@ -75,8 +81,10 @@ export class SupportBot {
   }
 
   private async withGrokProfile<R>(fn: () => Promise<R>): Promise<R> {
+    if (this.grokUserId === null) throw new Error("Grok is disabled (no GROK_API_KEY)")
+    const grokUserId = this.grokUserId
     return profileMutex.runExclusive(async () => {
-      await this.chat.apiSetActiveUser(this.grokUserId)
+      await this.chat.apiSetActiveUser(grokUserId)
       return fn()
     })
   }
@@ -293,7 +301,21 @@ export class SupportBot {
 
   async onGrokNewChatItems(evt: CEvt.NewChatItems): Promise<void> {
     if (evt.user.userId !== this.grokUserId) return
+    // When multiple customer messages arrive in one batch, only respond to the
+    // last per group — earlier messages are included in its history context.
+    const lastPerGroup = new Map<number, T.AChatItem>()
     for (const ci of evt.chatItems) {
+      const {chatInfo, chatItem} = ci
+      if (chatInfo.type !== "group") continue
+      if (chatItem.chatDir.type !== "groupRcv") continue
+      if (!util.ciContentText(chatItem)?.trim()) continue
+      if (util.ciBotCommand(chatItem)) continue
+      const bc = chatInfo.groupInfo.businessChat
+      if (!bc) continue
+      if (chatItem.chatDir.groupMember.memberId !== bc.customerId) continue
+      lastPerGroup.set(chatInfo.groupInfo.groupId, ci)
+    }
+    for (const [, ci] of lastPerGroup) {
       try {
         await this.processGrokChatItem(ci)
       } catch (err) {
@@ -373,7 +395,9 @@ export class SupportBot {
 
     // 8. Customer message → derive state and dispatch
     const state = await this.cards.deriveState(groupId)
-    const cmd = util.ciBotCommand(chatItem)
+    const rawCmd = util.ciBotCommand(chatItem)
+    // When Grok is disabled, ignore /grok so it behaves like an unknown command
+    const cmd = rawCmd?.keyword === "grok" && !this.grokEnabled ? null : rawCmd
     const text = util.ciContentText(chatItem)?.trim() || null
 
     switch (state) {
@@ -394,7 +418,7 @@ export class SupportBot {
         }
         // First regular message → QUEUE
         if (text) {
-          await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+          await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
           await this.cards.createCard(groupId, groupInfo)
         }
         break
@@ -446,10 +470,16 @@ export class SupportBot {
   // --- Grok profile message processing ---
 
   private async processGrokChatItem(ci: T.AChatItem): Promise<void> {
+    if (!this.grokApi) return
+    const grokApi = this.grokApi
     const {chatInfo, chatItem} = ci
     if (chatInfo.type !== "group") return
     const groupInfo = chatInfo.groupInfo
     const grokGroupId = groupInfo.groupId
+
+    // Skip while activateGrok is sending the initial combined response
+    const mainGroupId = this.reverseGrokMap.get(grokGroupId)
+    if (mainGroupId !== undefined && this.grokInitialResponsePending.has(mainGroupId)) return
 
     // Only process received text messages from customer
     if (chatItem.chatDir.type !== "groupRcv") return
@@ -491,7 +521,7 @@ export class SupportBot {
       }
 
       // Call Grok API (outside mutex)
-      const response = await this.grokApi.chat(history, text)
+      const response = await grokApi.chat(history, text)
 
       // Send response via Grok profile
       await this.withGrokProfile(() =>
@@ -512,9 +542,11 @@ export class SupportBot {
   // --- Grok activation ---
 
   private async activateGrok(groupId: number, sendQueueOnFail = false): Promise<void> {
+    if (!this.grokApi) return
+    const grokApi = this.grokApi
     if (this.config.grokContactId === null) {
       await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -535,7 +567,7 @@ export class SupportBot {
       }
       logError(`Failed to invite Grok to group ${groupId}`, err)
       await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -550,8 +582,10 @@ export class SupportBot {
       await this.processGrokInvitation(buffered, groupId)
     }
 
+    this.grokInitialResponsePending.add(groupId)
     const joined = await this.waitForGrokJoin(groupId, 120_000)
     if (!joined) {
+      this.grokInitialResponsePending.delete(groupId)
       this.pendingGrokJoins.delete(member.memberId)
       try {
         await this.withMainProfile(() =>
@@ -560,7 +594,7 @@ export class SupportBot {
       } catch {}
       this.cleanupGrokMaps(groupId)
       await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone))
+      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -575,7 +609,10 @@ export class SupportBot {
         return
       }
 
-      // Read history from Grok's own view — only customer messages
+      // Read history from Grok's own view — only customer messages.
+      // The previous `grokBc && ...` short-circuit let bot and team
+      // messages through when Grok's view had no businessChat; require
+      // grokBc.customerId to be present and match strictly.
       const chat = await this.withGrokProfile(() =>
         this.chat.apiGetChat(T.ChatType.Group, grokLocalGId, 100)
       )
@@ -583,7 +620,7 @@ export class SupportBot {
       const customerMessages: string[] = []
       for (const ci of chat.chatItems) {
         if (ci.chatDir.type !== "groupRcv") continue
-        if (grokBc && ci.chatDir.groupMember.memberId !== grokBc.customerId) continue
+        if (!grokBc || ci.chatDir.groupMember.memberId !== grokBc.customerId) continue
         const t = util.ciContentText(ci)?.trim()
         if (t && !util.ciBotCommand(ci)) customerMessages.push(t)
       }
@@ -596,7 +633,7 @@ export class SupportBot {
       }
 
       const initialMsg = customerMessages.join("\n")
-      const response = await this.grokApi.chat([], initialMsg)
+      const response = await grokApi.chat([], initialMsg)
 
       await this.withGrokProfile(() =>
         this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], response)
@@ -604,6 +641,8 @@ export class SupportBot {
     } catch (err) {
       logError(`Grok initial response failed for group ${groupId}`, err)
       await this.sendToGroup(groupId, grokUnavailableMessage)
+    } finally {
+      this.grokInitialResponsePending.delete(groupId)
     }
   }
 
@@ -611,7 +650,7 @@ export class SupportBot {
 
   private async activateTeam(groupId: number): Promise<void> {
     if (this.config.teamMembers.length === 0) {
-      await this.sendToGroup(groupId, noTeamMembersMessage)
+      await this.sendToGroup(groupId, noTeamMembersMessage(this.grokEnabled))
       return
     }
 
@@ -791,6 +830,7 @@ export class SupportBot {
   private cleanupGrokMaps(groupId: number): void {
     const grokLocalGId = this.grokGroupMap.get(groupId)
     this.grokFullyConnected.delete(groupId)
+    this.grokInitialResponsePending.delete(groupId)
     if (grokLocalGId === undefined) return
     this.grokGroupMap.delete(groupId)
     this.reverseGrokMap.delete(grokLocalGId)

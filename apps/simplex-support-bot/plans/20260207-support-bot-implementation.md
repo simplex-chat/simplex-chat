@@ -67,19 +67,19 @@ apps/simplex-support-bot/
 | `--complete-hours` | No | `3` | number | Hours of customer inactivity after last team/Grok reply before auto-completing a conversation (✅) |
 | `--card-flush-minutes` | No | `15` | number | Minutes between card dashboard update flushes |
 
-**Env vars:** `GROK_API_KEY` (required) — xAI API key.
+**Env vars:** `GROK_API_KEY` (optional) — xAI API key. If unset or empty, the bot starts with Grok support fully disabled: it logs `"No GROK_API_KEY provided, disabling Grok support"`, skips Grok profile/contact setup and event handler registration, omits `/grok` from the bot command list, drops the `/grok` clause from customer-facing messages, and treats any `/grok` the customer still types as an unknown command.
 
 ```typescript
 interface Config {
   dbPrefix: string
   teamGroup: {id: number; name: string}  // id=0 at parse time, resolved at startup
   teamMembers: {id: number; name: string}[]
-  grokContactId: number | null  // resolved at startup from state file
+  grokContactId: number | null  // always restored from state file at startup (even when Grok API is disabled, so the one-way gate can identify and remove Grok members)
   groupLinks: string
   timezone: string
   completeHours: number  // default 3
   cardFlushMinutes: number  // default 15
-  grokApiKey: string
+  grokApiKey: string | null  // null when GROK_API_KEY is not set → Grok disabled
 }
 ```
 
@@ -90,10 +90,11 @@ interface Config {
 
 Only two keys. All other state is derived from chat history, group metadata, or `customData`.
 
-**Grok contact resolution** (auto-establish):
-1. Read `grokContactId` from state file → validate via `apiListContacts`
-2. If not found: main profile creates one-time invite link, Grok profile connects, wait `contactConnected` (60s), persist new contact ID
-3. If unavailable, bot runs but `/grok` returns "temporarily unavailable"
+**Grok contact resolution** (state-file lookup always runs; contact establishment only when enabled):
+1. Read `grokContactId` from state file → validate via `apiListContacts` → set `config.grokContactId` (this always runs, even when `grokApiKey === null`, so the one-way gate can identify and remove Grok members from groups)
+2. If not found and `grokEnabled`: main profile creates one-time invite link, Grok profile connects, wait `contactConnected` (60s), persist new contact ID
+3. If unavailable (with Grok otherwise enabled), bot runs but `/grok` returns "temporarily unavailable"
+4. If `grokApiKey === null`: the Grok profile is not resolved or created, no invite link is issued — but `config.grokContactId` is still set from the state file if the contact exists.
 
 **Team group resolution** (auto-create):
 1. Read `teamGroupId` from state file → validate via group list
@@ -300,6 +301,10 @@ class CardManager {
   private async composeCard(groupId: number, groupInfo: T.GroupInfo): Promise<{text: string, joinCmd: string, complete: boolean}> {
     // Icon, state, agents, preview (with sender-name prefixes), /join — per spec format
     // buildPreview(chatItems, customerName, customerId) — prefixes each sender's first message in a run
+    // Preview messages joined with blue "/" separator: " !3 /! " (SimpleX markdown for blue colored text)
+    // Message text is escaped via escapeStyledMarkdown() before joining — inserts U+200B after "!"
+    // when followed by a color trigger (1-6,r,g,b,y,c,m,-) to prevent false markdown interpretation.
+    // No escape mechanism exists in the SimpleX markdown parser for "!" styled text.
     // complete = (icon === "✅")
   }
 }
@@ -353,6 +358,15 @@ if (!grokUser) {
   grokUser = await chat.apiCreateActiveUser({displayName: "Grok AI", fullName: "", image: grokImage})
   // apiCreateActiveUser sets Grok as active — switch back to main
   await chat.apiSetActiveUser(mainUser.userId)
+} else {
+  // If profile changed (e.g. new image), update and push to contacts
+  const grokProfile = {displayName: "Grok AI", fullName: "", image: grokImage}
+  const current = util.fromLocalProfile(grokUser.profile)
+  if (current.image !== grokProfile.image || current.displayName !== grokProfile.displayName || current.fullName !== grokProfile.fullName) {
+    await chat.apiSetActiveUser(grokUser.userId)
+    await chat.apiUpdateProfile(grokUser.userId, grokProfile)
+    await chat.apiSetActiveUser(mainUser.userId)
+  }
 }
 ```
 
@@ -373,12 +387,12 @@ async function withProfile<T>(userId: number, fn: () => Promise<T>): Promise<T> 
 
 Grok HTTP API calls are made **outside** the mutex to avoid blocking.
 
-**Profile images:** Both profiles have base64-encoded JPEG profile pictures set via the `image` field in `T.Profile`. The images are defined as `data:image/jpg;base64,...` string constants in `index.ts` and passed to `bot.run()` (main profile) and `apiCreateActiveUser()` (Grok profile).
+**Profile images:** Both profiles have base64-encoded JPEG profile pictures (128x128, quality 85, under the 12,500-char data URI limit enforced by iOS/Android clients) set via the `image` field in `T.Profile`. The images are defined as `data:image/jpg;base64,...` string constants in `index.ts`. The main profile image is passed to `bot.run()` which handles update-on-change automatically. The Grok profile image is passed to `apiCreateActiveUser()` on first run; on subsequent runs, the bot compares the current profile against the desired one using `util.fromLocalProfile()` and calls `apiUpdateProfile()` if any field differs — this sends the update to all Grok contacts.
 
 **Startup sequence:**
 0. **Active user recovery:** On restart, the active user may be Grok (if the previous run was killed mid-profile-switch). `bot.run()` uses `apiGetActiveUser()` and would rename Grok → `duplicateName` error. Fix: pre-init the DB with a temporary `ChatApi`, check active user, if not "Ask SimpleX Team" then `startChat()` + find the main user via `apiListUsers()` + `apiSetActiveUser()`, then `close()`. This ensures `bot.run()` always finds the correct active user.
 1. `bot.run()` → init ChatApi, create/resolve main profile (with profile image), business address. Print business address link to stdout.
-2. Resolve Grok profile via `apiListUsers()` (create with profile image if missing)
+2. Resolve Grok profile via `apiListUsers()` (create with profile image if missing; if existing, compare profile and update via `apiUpdateProfile()` if changed — pushes to contacts)
 3. Read `{dbPrefix}_state.json` for `teamGroupId` and `grokContactId`
 4. Enable auto-accept DM contacts: `apiSetAutoAcceptMemberContacts(mainUser.userId, true)`
 5. List contacts, resolve Grok contact (from state or auto-establish)
@@ -430,7 +444,7 @@ chat.on("connectedToGroupMember", (evt) => {
 |-------|---------|--------|
 | `receivedGroupInvitation` | `onGrokGroupInvitation` | Look up `pendingGrokJoins`; if found, auto-accept via `apiJoinGroup`; if not found (race), buffer in `bufferedGrokInvitations` for `activateGrok` to drain |
 | `connectedToGroupMember` | `onGrokMemberConnected` | Grok now fully connected — read last 100 msgs from own view, call Grok API, send initial response |
-| `newChatItems` | `onGrokNewChatItems` | Customer **text** message → read last 100 msgs, call Grok API, send response. Non-text (images, files, voice) → ignored by Grok (card update handled by main profile). |
+| `newChatItems` | `onGrokNewChatItems` | Batch dedup: collect last customer text message per group in the event. Skip groups with `grokInitialResponsePending` set (initial combined response in flight). For the selected message: read last 100 msgs, call Grok API, send response. Non-text (images, files, voice) → ignored by Grok (card update handled by main profile). |
 
 **Message routing in `onNewChatItems` (main profile):**
 
@@ -472,6 +486,27 @@ The gate is stateless — derived from group composition + chat history.
 
 Grok is a **second user profile** in the same ChatApi instance. Self-contained: watches its own events, reads history from its own view, calls Grok HTTP API, sends responses.
 
+### Grok-disabled mode (no `GROK_API_KEY`)
+
+If `GROK_API_KEY` is unset or empty, `parseConfig` returns `grokApiKey: null` (via `process.env.GROK_API_KEY || null`, so `GROK_API_KEY=` is treated the same as unset; no throw) and `index.ts` derives `grokEnabled = config.grokApiKey !== null`. When `grokEnabled === false`:
+
+- Startup logs: `"No GROK_API_KEY provided, disabling Grok support"`.
+- **`config.grokContactId` is still restored from the state file** (the lookup runs unconditionally before the `if (grokEnabled)` block). This ensures `getGroupComposition` can identify Grok members so the one-way gate can remove them when a team member sends a text message — even while Grok API is disabled. Without this, Grok members would become "phantom" members: physically present in groups but invisible to the state machine, preventing the gate from firing and causing dual responses (Grok + team) if Grok is later re-enabled.
+- The Grok profile is not resolved or created (no `apiListUsers`/`apiCreateActiveUser` for "Grok AI"; no invite link issued).
+- `GrokApiClient` is not instantiated.
+- `SupportBot` receives `grokApi = null` and `grokUserId = null`.
+- Bot command list registered at startup contains only `/team` — `/grok` is not advertised.
+- Grok event handlers (`receivedGroupInvitation`, `connectedToGroupMember`, Grok-side `newChatItems`) are not registered. Handlers that are shared with the main profile (e.g. `onMemberConnected`) remain correct because their Grok checks are guarded by `this.config.grokContactId !== null`.
+- Customer-facing messages (`queueMessage`, `noTeamMembersMessage`) accept a `grokEnabled` flag and drop the `/grok` clause when false.
+- If the customer still types `/grok` manually, `processMainChatItem` rewrites `cmd` to `null` when `rawCmd?.keyword === "grok" && !this.grokEnabled`, so the dispatcher treats it as an unrecognized command (same as any other plain text).
+- Defense in depth: `activateGrok` and `processGrokChatItem` short-circuit on entry when `this.grokApi === null`; `withGrokProfile` throws if called with `grokUserId === null`.
+
+Type signatures affected:
+- `Config.grokApiKey: string | null`
+- `SupportBot` constructor: `grokApi: GrokApiClient | null, grokUserId: number | null`
+- `queueMessage(timezone: string, grokEnabled: boolean): string`
+- `noTeamMembersMessage(grokEnabled: boolean): string` (was a plain `const string`)
+
 ### Grok join flow
 
 **Critical:** `activateGrok` awaits `waitForGrokJoin(120s)` which depends on future events dispatched through the same sequential event loop (`runEventsLoop` in api.ts). Awaiting it in an event handler deadlocks — the event loop is blocked waiting for events it can't dispatch. **Solution:** All `activateGrok` calls use `fireAndForget()` — tracked but not awaited. Tests call `bot.flush()` to await completion.
@@ -481,16 +516,20 @@ Grok is a **second user profile** in the same ChatApi instance. Self-contained: 
 1. `apiAddMember(groupId, grokContactId, Member)` → get `member.memberId`. If `groupDuplicateMember` (customer sent `/grok` again before join completed), silent return — the in-flight activation handles the outcome.
 2. Store `pendingGrokJoins.set(memberId, mainGroupId)`
 3. Drain `bufferedGrokInvitations` — if the `receivedGroupInvitation` event arrived during step 1's await (race condition), process it now.
-4. `waitForGrokJoin(120s)` — awaits resolver from Grok profile's `connectedToGroupMember` (step 7 below)
-5. Timeout → notify customer (`grokUnavailableMessage`), send queue message if was WELCOME→GROK, fall back to QUEUE
+4. Set `grokInitialResponsePending.add(groupId)` — suppresses per-message responses from `onGrokNewChatItems` for this group until the initial combined response completes. Without this gate, the message backlog arriving via `newChatItems` would trigger individual per-message responses racing with the initial combined response — producing duplicate replies (e.g., 3 replies for 2 messages).
+5. `waitForGrokJoin(120s)` — awaits resolver from Grok profile's `connectedToGroupMember` (step 8 below)
+6. Timeout → notify customer (`grokUnavailableMessage`), send queue message if was WELCOME→GROK, fall back to QUEUE, clear `grokInitialResponsePending`
 
 **Grok profile side (independent, triggered by its own events):**
-6. `receivedGroupInvitation` → look up `pendingGrokJoins` by `evt.groupInfo.membership.memberId`. If found, auto-accept via `apiJoinGroup(groupId)`, set up `grokGroupMap` and `reverseGrokMap`. If not found (race: event arrived before step 2), buffer in `bufferedGrokInvitations` for step 3. Grok is NOT yet connected — cannot read history or send messages.
-7. `connectedToGroupMember` → Grok now fully connected. Uses `reverseGrokMap` to find `mainGroupId`, resolves `grokJoinResolvers` — this unblocks step 4.
-7. Back in `activateGrok` (after step 3 resolves): read visible history — last 100 messages — build Grok API context (customer messages → `user` role)
-8. If no customer messages found (visible history disabled or API failed), send generic greeting asking customer to repeat their question
-9. Call Grok HTTP API (outside mutex)
-10. Send response via `apiSendTextMessage` (through mutex with Grok profile)
+7. `receivedGroupInvitation` → look up `pendingGrokJoins` by `evt.groupInfo.membership.memberId`. If found, auto-accept via `apiJoinGroup(groupId)`, set up `grokGroupMap` and `reverseGrokMap`. If not found (race: event arrived before step 2), buffer in `bufferedGrokInvitations` for step 3. Grok is NOT yet connected — cannot read history or send messages.
+8. `connectedToGroupMember` → Grok now fully connected. Uses `reverseGrokMap` to find `mainGroupId`, resolves `grokJoinResolvers` — this unblocks step 5.
+
+**Back in `activateGrok` (after step 5 resolves):**
+9. Read visible history — last 100 messages — build Grok API context (customer messages → `user` role)
+10. If no customer messages found (visible history disabled or API failed), send generic greeting asking customer to repeat their question
+11. Call Grok HTTP API (outside mutex)
+12. Send response via `apiSendTextMessage` (through mutex with Grok profile)
+13. Clear `grokInitialResponsePending` (via `finally` block — runs on success, failure, or early return). After this, per-message responses from `onGrokNewChatItems` resume normally for subsequent customer messages.
 
 ```typescript
 const pendingGrokJoins = new Map<string, number>()       // memberId → mainGroupId
@@ -498,16 +537,19 @@ const bufferedGrokInvitations = new Map<string, CEvt.ReceivedGroupInvitation>() 
 const grokGroupMap = new Map<number, number>()            // mainGroupId → grokLocalGroupId
 const reverseGrokMap = new Map<number, number>()          // grokLocalGroupId → mainGroupId
 const grokJoinResolvers = new Map<number, () => void>()   // mainGroupId → resolve fn
+const grokInitialResponsePending = new Set<number>()      // mainGroupIds where activateGrok is sending initial response
 ```
 
 ### Per-message Grok conversation
 
 Grok profile's `onGrokNewChatItems` handler:
-1. Only trigger for `groupRcv` **text** messages from customer (identified via `businessChat.customerId`)
-2. Ignore: non-text messages (images, files, voice — card update handled by main profile), bot messages, own messages (`groupSnd`), team member messages
-3. Read last 100 messages from own view (customer → `user`, own → `assistant`)
-4. Call Grok HTTP API (serialized per group — queue if call in flight)
-5. Send response into group
+1. **Batch deduplication:** When multiple customer messages arrive in a single `newChatItems` event (e.g., rapid messages delivered as a batch), collect the last customer message per group. Only the last message triggers a Grok API call — earlier messages are included in the history context via `apiGetChat`. Without this, each message in the batch would trigger a separate API call, and earlier calls would include later messages in their history (already in the group) — producing incoherent responses that reference messages "from the future" and duplicate replies.
+2. **Initial response gate:** Skip groups where `grokInitialResponsePending` is set (checked via `reverseGrokMap` to translate Grok's local groupId to mainGroupId). This prevents per-message responses from racing with the initial combined response in `activateGrok`.
+3. Only trigger for `groupRcv` **text** messages from customer (identified via `businessChat.customerId`)
+4. Ignore: non-text messages (images, files, voice — card update handled by main profile), bot messages, own messages (`groupSnd`), team member messages
+5. Read last 100 messages from own view (customer → `user`, own → `assistant`)
+6. Call Grok HTTP API (serialized per group — queue if call in flight)
+7. Send response into group
 
 **Per-message error:** Send error message in group ("Sorry, I couldn't process that. Please try again or send /team for a human team member."), stay GROK. Customer can retry.
 
@@ -575,9 +617,11 @@ function welcomeMessage(groupLinks: string): string {
 Please send questions in English, you can use translator.`
 }
 
-function queueMessage(timezone: string): string {
+function queueMessage(timezone: string, grokEnabled: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  return `The team can see your message. A reply may take up to ${hours} hours.
+  const base = `The team can see your message. A reply may take up to ${hours} hours.`
+  if (!grokEnabled) return base
+  return `${base}
 
 If your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.`
 }
@@ -594,7 +638,11 @@ const teamAlreadyInvitedMessage = "A team member has already been invited to thi
 
 const teamLockedMessage = "You are now in team mode. A team member will reply to your message."
 
-const noTeamMembersMessage = "No team members are available yet. Please try again later or click /grok."
+function noTeamMembersMessage(grokEnabled: boolean): string {
+  return grokEnabled
+    ? "No team members are available yet. Please try again later or click /grok."
+    : "No team members are available yet. Please try again later."
+}
 
 const grokInvitingMessage = "Inviting Grok, please wait..."
 
@@ -635,6 +683,7 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | Message counts, timestamps | Derived from chat history |
 | Customer name | Group display name |
 | `pendingGrokJoins` | In-flight during 120s window only |
+| `grokInitialResponsePending` | In-flight during `activateGrok` initial response only |
 | Owner promotion | Idempotent on every `memberConnected` |
 
 **Failure modes:**
@@ -746,10 +795,16 @@ Each code artifact must undergo adversarial self-review/fix loop:
 ```bash
 cd apps/simplex-support-bot
 npm install
+# With Grok support:
 GROK_API_KEY=xai-... npx ts-node src/index.ts \
   --team-group SupportTeam \
   --timezone America/New_York \
   --group-links "https://simplex.chat/contact#..."
+
+# Without Grok (logs "No GROK_API_KEY provided, disabling Grok support"):
+npx ts-node src/index.ts \
+  --team-group SupportTeam \
+  --timezone America/New_York
 ```
 
 **Test scenarios:**

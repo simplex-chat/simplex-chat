@@ -12,7 +12,7 @@ export interface Config {
   timezone: string
   completeHours: number
   cardFlushMinutes: number
-  grokApiKey: string
+  grokApiKey: string | null
 }
 
 export function parseIdName(s: string): IdName {
@@ -36,8 +36,8 @@ function optionalArg(args: string[], flag: string, defaultValue: string): string
 }
 
 export function parseConfig(args: string[]): Config {
-  const grokApiKey = process.env.GROK_API_KEY
-  if (!grokApiKey) throw new Error("Missing environment variable: GROK_API_KEY")
+  // Treat empty string as absent so `GROK_API_KEY=` behaves like unset
+  const grokApiKey = process.env.GROK_API_KEY || null
 
   const dbPrefix = optionalArg(args, "--db-prefix", "./data/simplex")
   const teamGroupName = requiredArg(args, "--team-group")

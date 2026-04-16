@@ -110,21 +110,24 @@ class MockChatApi {
     return this.groups.get(groupId) || makeGroupInfo(groupId)
   }
 
+  memberContacts: {groupId: number; groupMemberId: number; contactId: number}[] = []
+  memberContactInvitations: {contactId: number; text: string}[] = []
+
+  async apiCreateMemberContact(groupId: number, groupMemberId: number): Promise<any> {
+    const contactId = nextItemId++
+    this.memberContacts.push({groupId, groupMemberId, contactId})
+    return {contactId, profile: {displayName: "member"}}
+  }
+  async apiSendMemberContactInvitation(contactId: number, message?: any): Promise<any> {
+    const text = typeof message === "string" ? message : (message?.text ?? "")
+    this.memberContactInvitations.push({contactId, text})
+    this.sent.push({chat: [ChatType.Direct, contactId], text})
+    return {contactId, profile: {displayName: "member"}}
+  }
+
   rawCmds: string[] = []
   async sendChatCmd(cmd: string) {
     this.rawCmds.push(cmd)
-    const createMatch = cmd.match(/^\/_create member contact #(\d+) (\d+)$/)
-    if (createMatch) {
-      const newContactId = nextItemId++
-      return {type: "newMemberContact", contact: {contactId: newContactId, profile: {displayName: "member"}}, groupInfo: {}, member: {}}
-    }
-    const inviteMatch = cmd.match(/^\/_invite member contact @(\d+) text (.+)$/)
-    if (inviteMatch) {
-      const contactId = parseInt(inviteMatch[1], 10)
-      const text = inviteMatch[2]
-      this.sent.push({chat: [ChatType.Direct, contactId], text})
-      return {type: "newMemberContactSentInv", contact: {contactId, profile: {displayName: "member"}}, groupInfo: {}, member: {}}
-    }
     return {type: "cmdOk"}
   }
 
@@ -499,10 +502,6 @@ function expectCardDeleted(cardItemId: number) {
   expect(chat.deleted.some(d => d.itemIds.includes(cardItemId))).toBe(true)
 }
 
-function expectRawCmd(substring: string) {
-  expect(chat.rawCmds.some(c => c.includes(substring))).toBe(true)
-}
-
 // ─── Event factories ───
 
 function connectedEvent(groupId: number, member: any, memberContact?: any) {
@@ -783,6 +782,35 @@ describe("One-Way Gate", () => {
   })
 })
 
+describe("One-Way Gate with Grok Disabled", () => {
+  test("team text removes Grok even when grokApi is null", async () => {
+    setup()
+    // Recreate bot without grokApi but with grokContactId still set (simulates disabled Grok with persisted contact)
+    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null)
+    bot.cards = cards
+    // Reach QUEUE state with Grok + team member already present
+    addBotMessage("The team can see your message")
+    addBotMessage("A team member has been added")
+    chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember(), makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
+    // Team member sends text → one-way gate should fire
+    await bot.onNewChatItems(teamMemberMessage("Hi, how can I help?"))
+    expect(chat.removed.some(r => r.groupId === CUSTOMER_GROUP_ID && r.memberIds.includes(7777))).toBe(true)
+  })
+
+  test("Grok does not respond when disabled even if grokContactId is set", async () => {
+    setup()
+    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null)
+    bot.cards = cards
+    // Set up group with Grok member present
+    chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember()])
+    addBotMessage("The team can see your message")
+    // Customer sends text in GROK state
+    await bot.onNewChatItems(customerMessage("How do I use SimpleX?"))
+    // Grok should not respond (grokApi is null)
+    expect(grokApi.calls.length).toBe(0)
+  })
+})
+
 describe("Team Member Lifecycle", () => {
   beforeEach(() => setup())
 
@@ -1048,8 +1076,8 @@ describe("DM Handshake", () => {
   test("team member with no DM contact → creates member contact and sends invitation", async () => {
     const member = {memberId: "new-team-no-dm", groupMemberId: 8010, memberContactId: null, memberStatus: GroupMemberStatus.Connected, memberProfile: {displayName: "Frank"}}
     await bot.onMemberConnected(connectedEvent(TEAM_GROUP_ID, member, undefined))
-    expectRawCmd("/_create member contact #50 8010")
-    expect(chat.rawCmds.some(c => c.includes("/_invite member contact @") && c.includes("Your contact ID is"))).toBe(true)
+    expect(chat.memberContacts.some(c => c.groupId === TEAM_GROUP_ID && c.groupMemberId === 8010)).toBe(true)
+    expect(chat.memberContactInvitations.some(i => i.text.includes("Your contact ID is") && i.text.includes("Frank"))).toBe(true)
     const dms = chat.sent.filter(s => s.chat[0] === ChatType.Direct)
     expect(dms.some(m => m.text.includes("Your contact ID is") && m.text.includes("Frank"))).toBe(true)
   })
@@ -1057,8 +1085,8 @@ describe("DM Handshake", () => {
   test("joinedGroupMember in team group → creates member contact and sends invitation", async () => {
     const member = {memberId: "link-joiner", groupMemberId: 8020, memberContactId: null, memberStatus: GroupMemberStatus.Connected, memberProfile: {displayName: "Grace"}}
     await bot.onJoinedGroupMember(joinedEvent(TEAM_GROUP_ID, member))
-    expectRawCmd("/_create member contact #50 8020")
-    expect(chat.rawCmds.some(c => c.includes("/_invite member contact @") && c.includes("Grace"))).toBe(true)
+    expect(chat.memberContacts.some(c => c.groupId === TEAM_GROUP_ID && c.groupMemberId === 8020)).toBe(true)
+    expect(chat.memberContactInvitations.some(i => i.text.includes("Grace"))).toBe(true)
   })
 
   test("no duplicate DM when both sendTeamMemberDM succeeds and onMemberContactReceivedInv fires", async () => {
@@ -1512,7 +1540,7 @@ describe("Message Templates", () => {
   })
 
   test("queueMessage mentions hours", () => {
-    const msg = queueMessage("UTC")
+    const msg = queueMessage("UTC", true)
     expect(msg).toContain("hours")
   })
 })
@@ -1578,7 +1606,7 @@ describe("Card Preview Sender Prefixes", () => {
     await cards.createCard(CUSTOMER_GROUP_ID, gi)
     const preview = getCardPreview()
     expect(preview).toContain("Alice: Hello")
-    expect(preview).toContain("/ Need help")
+    expect(preview).toContain("!3 /! Need help")
     // Second message must NOT have prefix (same sender)
     expect(preview).not.toContain("Alice: Need help")
   })
@@ -1649,7 +1677,7 @@ describe("Card Preview Sender Prefixes", () => {
     expect(preview).not.toContain("The team can see your message")
     // Both customer messages are from the same sender — only first prefixed
     expect(preview).toContain("Alice: Hello")
-    expect(preview).toContain("/ Thanks")
+    expect(preview).toContain("!3 /! Thanks")
   })
 
   test("media-only message shows type label", async () => {

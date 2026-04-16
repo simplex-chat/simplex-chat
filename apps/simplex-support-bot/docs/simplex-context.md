@@ -41,19 +41,21 @@ SimpleX Chat is a private and secure messaging platform. It is the first messagi
 
 ### Groups
 - Group chats with roles: owner, admin, moderator, member, observer
-- Groups can have hundreds of members
+- Groups can have thousands of members
 - Group links for easy joining
-- Group moderation tools
+- Group moderation tools: Block, remove members, set them to observer, use member admission to approve members before letting them in.
 - Business chat groups for customer support
 
 ### Privacy Features
 - **Incognito mode**: Use a random profile name per contact — your real profile is never shared
 - **Multiple chat profiles**: Maintain separate identities
 - **Hidden profiles**: Protect profiles with a password
-- **Contact verification**: Verify contacts via security code comparison
+- **Contact verification**: Verify contacts via security code comparison to prevent MITM attacks. Note: SimpleX routers cannot do MITM attack, it can only be done by someone replacing your invite link during transit with another communication method.
 - **SimpleX Lock**: App lock with passcode or biometric
-- **Private routing**: Route messages through multiple servers to hide your IP from destination servers
+- **Private routing**: Route messages through additional hop to hide your IP from destination message servers
 - **No tracking or analytics**: The app does not collect or send any telemetry
+- **No user IDs**: Not even random IDs.
+- **Contact graph privacy**: The servers do not know who your contacts are, as there are no accounts, just unidirectional message queues without any user identification.
 
 ### Device & Data Management
 - **Database export/import**: Migrate to a new device by exporting the database (encrypted or unencrypted)
@@ -69,7 +71,7 @@ SimpleX Chat is a private and secure messaging platform. It is the first messagi
 - Queues have different addresses on sender and receiver sides — servers cannot correlate them
 - Messages are end-to-end encrypted; servers only see encrypted blobs
 - Servers do not store any user profiles or contact lists
-- Messages are deleted from servers once delivered
+- Messages are deleted from servers once delivered, if delivery fails, they are stored for up to 21 days in encrypted form.
 
 ### XFTP (SimpleX File Transfer Protocol)
 - Used for large files (images, videos, documents)
@@ -77,15 +79,14 @@ SimpleX Chat is a private and secure messaging platform. It is the first messagi
 - Temporary file storage — files are deleted after download or expiry
 
 ### Server Architecture
-- **Preset servers**: SimpleX Chat Inc. operates preset relay servers, but they can be changed
+- **Preset servers**: There are two preset server providers: SimpleX Chat Inc. and Flux. Using multiple server providers improves privacy as not all connections go through the same provider. For example, your private routing server may be provided by Flux, while message receiving server may be provided by SimpleX Chat Inc.
 - **Self-hosting**: Users can run their own SMP and XFTP servers
-- **No federation**: Servers don't communicate with each other. Each message queue is independent
 - **Tor support**: SimpleX supports connecting through Tor for additional IP privacy
 
 ## Comparison with Other Messengers
 
 ### vs Signal
-- SimpleX requires no phone number or any identifier to register
+- SimpleX requires no phone number or any identifier to use
 - SimpleX is decentralized — Signal has a central server
 - SimpleX relay servers cannot access metadata (who talks to whom) — Signal's server knows your contacts
 - Both use strong end-to-end encryption
@@ -102,9 +103,8 @@ SimpleX Chat is a private and secure messaging platform. It is the first messagi
 - SimpleX does not use federated identity
 
 ### vs Session
-- SimpleX doesn't use a blockchain or cryptocurrency
-- SimpleX has better group support and more features
-- Both have no phone number requirement
+- SimpleX has no user IDs
+- SimpleX has no seed-based accounts, which are a security risk, as it allows someone to copy the seed from device and then without alerting the account owner, keep seeing all future messages.
 
 ## Common User Questions & Troubleshooting
 
@@ -139,7 +139,6 @@ If none of the suggestions work for you, you can create a separate profile on ea
 - **Can SimpleX servers read my messages?** No. All messages are end-to-end encrypted. Servers only relay encrypted data and cannot decrypt it.
 - **Can SimpleX see who I'm talking to?** No. Each conversation uses separate queues with different addresses. Servers cannot correlate senders and receivers.
 - **How do I verify my contact?** Open the contact's profile, tap "Verify security code", and compare the code with your contact (in person or via another channel).
-- **What is incognito mode?** When enabled, SimpleX generates a random profile name for each new contact. Your real profile name is never shared. Enable it in Settings > Incognito.
 
 - **How to block someone?** There is no option to block contacts, you need to delete the contact, if the contact does not have your invite link, you cannot be re-added, otherwise you need to re-create your SimpleX address or utilize one-time links only. (Existing contacts are not lost by deletion of SimpleX address). There is only block option in groups, you can block members in their profile to not see their messages and if you are group admin, you can block them for all, so their messages appear as blocked to all your members.
 - **How to delete message permanently from both sides?** The conversation must have "Delete for everyone" preference enabled, otherwise message is only marked as deleted and can be revealed. If "Delete for everyone" is enabled, you can only delete your messages if they were sent less than 24 hours ago.

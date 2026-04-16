@@ -6,9 +6,11 @@ export function welcomeMessage(groupLinks: string): string {
 Please send questions in English, you can use translator.`
 }
 
-export function queueMessage(timezone: string): string {
+export function queueMessage(timezone: string, grokEnabled: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  return `The team can see your message. A reply may take up to ${hours} hours.
+  const base = `The team can see your message. A reply may take up to ${hours} hours.`
+  if (!grokEnabled) return base
+  return `${base}
 
 If your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.`
 }
@@ -25,7 +27,11 @@ export const teamAlreadyInvitedMessage = "A team member has already been invited
 
 export const teamLockedMessage = "You are now in team mode. A team member will reply to your message."
 
-export const noTeamMembersMessage = "No team members are available yet. Please try again later or click /grok."
+export function noTeamMembersMessage(grokEnabled: boolean): string {
+  return grokEnabled
+    ? "No team members are available yet. Please try again later or click /grok."
+    : "No team members are available yet. Please try again later."
+}
 
 export const grokInvitingMessage = "Inviting Grok, please wait..."
 

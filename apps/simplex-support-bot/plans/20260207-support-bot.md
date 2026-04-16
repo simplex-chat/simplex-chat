@@ -68,6 +68,8 @@ On the customer's first message the bot does two things:
 
 On weekends, the bot says "48 hours" instead of "24 hours".
 
+When the bot is started without `GROK_API_KEY`, the second paragraph (the `/grok` clause) is omitted — the customer only sees the first line about the team reply window.
+
 Each subsequent message updates the card — icon, wait time, message preview. The team reads the full conversation by joining via the card's `/join` command.
 
 #### Step 3 — `/grok` (Grok mode)
@@ -114,6 +116,8 @@ When a customer leaves the group (or is disconnected), the bot cleans up all in-
 #### Commands
 
 `/grok` and `/team` are registered as **bot commands** in the SimpleX protocol, so they appear as tappable buttons in the customer's message input bar. The bot also accepts them as free-text (e.g., `/grok` typed manually). Unrecognized commands are treated as ordinary messages.
+
+When the bot is started without `GROK_API_KEY`, `/grok` is not registered as a bot command and Grok-related messaging paths are skipped entirely. A `/grok` typed manually by the customer is treated as an ordinary message. The customer-facing queue and "no team members available" messages also omit their `/grok` clause in this mode.
 
 #### Team replies
 
@@ -180,7 +184,9 @@ Each card has five parts:
 
 **Agents** — comma-separated display names of all team members currently in the group. Omitted when no team member has joined.
 
-**Message preview** — the last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat. Newest messages are prioritized — when the total preview exceeds ~1000 characters, the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender — subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok is labeled "Grok"; the customer is labeled with their display name (newlines replaced with spaces for display; the `/join` command uses the raw name so it matches the actual group profile); team members use their display name. The bot's own messages are excluded. Each individual message is truncated to ~200 characters with `[truncated]` appended. Media-only messages show a type label: `[image]`, `[file]`, `[voice]`, `[video]`.
+**Message preview** — the last several messages, most recent last, separated by a blue `/` (rendered via SimpleX markdown `!3 /!`). Newlines in message text are replaced with spaces to prevent card layout bloat. Newest messages are prioritized — when the total preview exceeds ~500 characters, the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender — subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok is labeled "Grok"; the customer is labeled with their display name (newlines replaced with spaces for display; the `/join` command uses the raw name so it matches the actual group profile); team members use their display name. The bot's own messages are excluded. Each individual message is truncated to ~200 characters with `[truncated]` appended. Media-only messages show a type label: `[image]`, `[file]`, `[voice]`, `[video]`.
+
+**Markdown escaping in previews** — SimpleX markdown interprets `!N<space>` (where N is `1`–`6`, `r`, `g`, `b`, `y`, `c`, `m`, or `-`) as styled-text markup, closing at the next `!`. There is no escape mechanism in the parser. To prevent customer/agent message text from triggering false color formatting or interfering with the blue `/` separator, the bot inserts a zero-width space (U+200B) between `!` and any color-trigger character in preview text before joining with the separator. This is invisible to the user but breaks the parser trigger pattern.
 
 **Join command** — `/join id:name` lets any team member tap to join the group instantly. Names containing spaces are single-quoted: `/join id:'First Last'`.
 
@@ -337,7 +343,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 | Var | Required | Purpose |
 |-----|----------|---------|
-| `GROK_API_KEY` | Yes | xAI API key for Grok |
+| `GROK_API_KEY` | No | xAI API key for Grok. If unset or empty, the bot starts with Grok API disabled: it logs `"No GROK_API_KEY provided, disabling Grok support"`, the `/grok` command is not registered, customer-facing messages (`queueMessage`, `noTeamMembersMessage`) drop the `/grok` clause, and any `/grok` the customer types is treated as an unrecognized command. Note: `config.grokContactId` is still restored from the state file even when the API is disabled, so the one-way gate can identify and remove Grok members from groups when team takes over. |
 
 **CLI flags:**
 
@@ -357,10 +363,10 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 | Command | Available | Effect |
 |---------|-----------|--------|
-| `/grok` | Before any team member sends a message | Enter Grok mode |
+| `/grok` | Before any team member sends a message, and only if `GROK_API_KEY` is set | Enter Grok mode |
 | `/team` | QUEUE or GROK state | Add team members, permanently enter Team mode once any replies |
 
-**Unrecognized commands** are treated as normal messages in the current mode.
+**Unrecognized commands** are treated as normal messages in the current mode. When Grok is disabled (no `GROK_API_KEY`), `/grok` is not registered in the bot command list and, if typed manually, falls into this "unrecognized" path.
 
 **Team commands** (registered in team group via `groupPreferences`):
 
@@ -373,7 +379,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 The bot process runs a single `ChatApi` instance with **two user profiles**:
 
 - **Main profile** — the support bot's account ("Ask SimpleX Team"). Owns the business address, hosts all business groups, communicates with customers, communicates with the team group, and controls group membership. On startup the bot checks the main profile for an existing business address via `apiGetUserAddress`; if none exists (first run), it creates one via `apiCreateBusinessAddress`. The address is stored in the SimpleX database as part of the profile — it survives restarts and state file loss without re-creation. The business address link is printed to stdout on every startup.
-- **Grok profile** — the Grok agent's account ("Grok AI"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok AI identity.
+- **Grok profile** — the Grok agent's account ("Grok AI"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok AI identity. On startup, if the Grok profile already exists, the bot compares its current profile (display name, image) against the desired values and calls `apiUpdateProfile()` if anything changed — this pushes the update to all Grok contacts so profile picture changes take effect immediately.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -416,7 +422,7 @@ On first run (no state file), the bot must establish a SimpleX contact between t
 3. The bot waits up to 60 seconds for `contactConnected` to fire
 4. The resulting `grokContactId` is written to the state file
 
-On subsequent runs, the bot looks up `grokContactId` from the state file and verifies it still exists in the main profile's contact list. If not (e.g., database was wiped), the contact is re-established.
+On subsequent runs, the bot always looks up `grokContactId` from the state file and verifies it still exists in the main profile's contact list — even when `GROK_API_KEY` is not set. This ensures the one-way gate can identify and remove Grok members from groups when a team member sends a text message, preventing "phantom" Grok members that would cause dual responses if Grok is later re-enabled. If the contact is not found and Grok is enabled, it is re-established.
 
 #### Per-conversation: how Grok joins a group
 
@@ -434,13 +440,19 @@ When a customer sends `/grok`:
 6. Grok profile calls the Grok HTTP API with this context
 7. Grok profile sends the response into the group via `apiSendTextMessage([Group, groupId], response)` — visible to the customer as a message from "Grok AI"
 
+**Initial response gating:** When Grok joins a group, the message backlog may trigger per-message responses (via `newChatItems`) at the same time `activateGrok` is sending the initial combined response. To prevent duplicate replies, per-message responses are suppressed (via `grokInitialResponsePending`) until the initial combined response completes. The flag is set before `waitForGrokJoin` and cleared after the initial response is sent (or fails). Without this gate, customers would receive both individual per-message replies AND a combined initial reply — e.g. 3 replies for 2 messages.
+
 **Card update:** Main profile sees Grok's response as `groupRcv` and updates the team group card (same mechanism as ongoing Grok messages).
 
 **Visible history** must be enabled on customer groups (the bot enables it alongside file uploads in the business request handler). This allows Grok to read the full conversation history after joining, rather than only seeing messages sent after it joined. If Grok reads history and finds no customer messages (e.g., visible history was disabled or the API call failed), it sends a generic greeting asking the customer to repeat their question.
 
 #### Per-message: ongoing Grok conversation
 
-After the initial response, the Grok profile watches its own `newChatItems` events. It only triggers a Grok API call for `groupRcv` messages from the customer — identified via `businessChat.customerId` on the group's `groupInfo` (accessible to all members). Messages from the bot (main profile), from Grok itself (`groupSnd`), and from team members are ignored. Non-text messages (images, files, voice) do not trigger Grok API calls but still trigger a card update in the team group. Every subsequent customer text message in a group where Grok is a member:
+After the initial response, the Grok profile watches its own `newChatItems` events. It only triggers a Grok API call for `groupRcv` messages from the customer — identified via `businessChat.customerId` on the group's `groupInfo` (accessible to all members). Messages from the bot (main profile), from Grok itself (`groupSnd`), and from team members are ignored. Non-text messages (images, files, voice) do not trigger Grok API calls but still trigger a card update in the team group.
+
+**Batch deduplication:** When multiple customer messages arrive in a single `newChatItems` event (e.g., rapid messages delivered as a batch), only the last customer message per group triggers a Grok API call. Earlier messages are included in the history context via `apiGetChat`, so the single response addresses all messages in the batch. Without this, each message in the batch would trigger a separate API call, and the earlier calls would include later messages in their history — producing incoherent responses that reference messages "from the future."
+
+Every subsequent customer text message in a group where Grok is a member:
 1. Triggers a card update in the team group (via the main profile, which sees the customer message as `groupRcv`)
 2. Grok profile receives the message via its own event, rebuilds history by reading the last 100 messages from its own view of the group (Grok's messages → `assistant` role, customer's messages → `user` role)
 3. Grok profile calls the Grok HTTP API and sends the response into the group using the group ID from its own event

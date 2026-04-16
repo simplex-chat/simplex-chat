@@ -23,6 +23,14 @@ function isActiveMember(m: T.GroupMember): boolean {
     || m.memberStatus === T.GroupMemberStatus.Announced
 }
 
+// Prevent ! from triggering SimpleX markdown styled text (color/small).
+// The parser treats !N<space> as color markup (N: 1-6, r, g, b, y, c, m, -)
+// and closes at the next !. No escape mechanism exists in the parser,
+// so we insert a zero-width space to break the trigger pattern.
+function escapeStyledMarkdown(text: string): string {
+  return text.replace(/!([1-6rgbycm-])/g, "!\u200B$1")
+}
+
 // Truncate a single message to ~maxChars, appending [truncated] if needed
 function truncateMsg(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text
@@ -407,7 +415,7 @@ export class CardManager {
   }
 
   private buildPreview(chatItems: T.ChatItem[], customerName: string, customerId?: string): string {
-    const maxTotal = 1000
+    const maxTotal = 500
     const maxPer = 200
 
     // Collect entries in chronological order (oldest first)
@@ -474,7 +482,7 @@ export class CardManager {
       selected.unshift("[truncated]")
     }
 
-    const preview = selected.join(" / ")
+    const preview = selected.map(escapeStyledMarkdown).join(" !3 /! ")
     return preview ? `"${preview}"` : '""'
   }
 
