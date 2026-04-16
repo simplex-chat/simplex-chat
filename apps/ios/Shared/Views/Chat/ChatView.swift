@@ -512,6 +512,7 @@ struct ChatView: View {
                         }
                     ),
                     scrollToItemId: $scrollToItemId,
+                    composeState: $composeState,
                     onSearch: { focusSearch() },
                     localAlias: groupInfo.localAlias
                 )
@@ -755,7 +756,7 @@ struct ChatView: View {
             }
             updateAvailableContent()
         }
-        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+        if chatModel.draftChatId == cInfo.id && !composeState.forwarding && !composeState.sharingChatCard,
            let draft = chatModel.draft {
             composeState = draft
         }

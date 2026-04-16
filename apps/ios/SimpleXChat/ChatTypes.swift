@@ -4589,7 +4589,7 @@ public enum MsgContent: Equatable, Hashable {
     case voice(text: String, duration: Int)
     case file(String)
     case report(text: String, reason: ReportReason)
-    case chat(text: String, chatLink: MsgChatLink)
+    case chat(text: String, chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -4602,7 +4602,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .report(text, _): return text
-        case let .chat(text, _): return text
+        case let .chat(text, _, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -4665,6 +4665,7 @@ public enum MsgContent: Equatable, Hashable {
         case duration
         case reason
         case chatLink
+        case ownerSig
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
@@ -4676,7 +4677,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
         case let (.file(lf), .file(rf)): return lf == rf
         case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
-        case let (.chat(lt, ll), .chat(rt, rl)): return lt == rt && ll == rl
+        case let (.chat(lt, ll, ls), .chat(rt, rl, rs)): return lt == rt && ll == rl && ls == rs
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -4719,7 +4720,8 @@ extension MsgContent: Decodable {
             case "chat":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
-                self = .chat(text: text, chatLink: chatLink)
+                let ownerSig = try container.decodeIfPresent(LinkOwnerSig.self, forKey: CodingKeys.ownerSig)
+                self = .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -4761,10 +4763,11 @@ extension MsgContent: Encodable {
             try container.encode("report", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(reason, forKey: .reason)
-        case let .chat(text, chatLink):
+        case let .chat(text, chatLink, ownerSig):
             try container.encode("chat", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(chatLink, forKey: .chatLink)
+            try container.encodeIfPresent(ownerSig, forKey: .ownerSig)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -4824,6 +4827,12 @@ public enum MsgChatLink: Codable, Equatable, Hashable {
     case contact(connLink: String, profile: Profile, business: Bool)
     case invitation(invLink: String, profile: Profile)
     case group(connLink: String, groupProfile: GroupProfile)
+}
+
+public struct LinkOwnerSig: Codable, Equatable, Hashable {
+    public var ownerId: String?
+    public var chatBinding: String
+    public var ownerSig: String
 }
 
 public struct FormattedText: Decodable, Hashable {

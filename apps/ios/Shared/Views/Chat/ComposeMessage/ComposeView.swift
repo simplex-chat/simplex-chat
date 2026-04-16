@@ -22,6 +22,7 @@ enum ComposeContextItem: Equatable {
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
     case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
+    case sharingChatCard(groupInfo: GroupInfo)
     case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
@@ -95,6 +96,14 @@ struct ComposeState {
         self.voiceMessageRecordingState = .noRecording
     }
 
+    init(sharingChatCard groupInfo: GroupInfo) {
+        self.message = ""
+        self.parsedMessage = []
+        self.preview = .noPreview
+        self.contextItem = .sharingChatCard(groupInfo: groupInfo)
+        self.voiceMessageRecordingState = .noRecording
+    }
+
     func copy(
         message: String? = nil,
         parsedMessage: [FormattedText]? = nil,
@@ -150,6 +159,13 @@ struct ComposeState {
         }
     }
 
+    var sharingChatCard: Bool {
+        switch contextItem {
+        case .sharingChatCard: return true
+        default: return false
+        }
+    }
+
     var reporting: Bool {
         switch contextItem {
         case .reportedItem: return true
@@ -173,7 +189,7 @@ struct ComposeState {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !whitespaceOnly || forwarding || liveMessage != nil || submittingValidReport
+        default: return !whitespaceOnly || forwarding || sharingChatCard || liveMessage != nil || submittingValidReport
         }
     }
 
@@ -226,7 +242,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || forwarding || liveMessage != nil || inProgress || reporting { return true }
+        if editing || forwarding || sharingChatCard || liveMessage != nil || inProgress || reporting { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -1320,6 +1336,15 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
+        case let .sharingChatCard(groupInfo):
+            ContextItemView(
+                chat: chat,
+                contextItems: [],
+                contextIcon: "arrowshape.turn.up.forward",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                customText: "Sharing #\(groupInfo.groupProfile.displayName)"
+            )
+            Divider()
         case let .reportedItem(chatItem: reportedItem, _):
             ContextItemView(
                 chat: chat,
@@ -1351,7 +1376,9 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
+        if case let .sharingChatCard(groupInfo) = composeState.contextItem {
+            sent = await shareChatCard(groupInfo, ttl)
+        } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
@@ -1408,7 +1435,7 @@ struct ComposeView: View {
             }
         }
         await MainActor.run {
-            let wasForwarding = composeState.forwarding
+            let wasForwarding = composeState.forwarding || composeState.sharingChatCard
             clearState(live: live)
             if wasForwarding,
                chatModel.draftChatId == chat.chatInfo.id,
@@ -1477,8 +1504,8 @@ struct ComposeView: View {
             case .report(_, let reason):
                 return .report(text: msgText, reason: reason)
             // TODO [short links] update chat link
-            case let .chat(_, chatLink):
-                return .chat(text: msgText, chatLink: chatLink)
+            case let .chat(_, chatLink, ownerSig):
+                return .chat(text: msgText, chatLink: chatLink, ownerSig: ownerSig)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
@@ -1571,6 +1598,24 @@ struct ComposeView: View {
                 }
             }
             return []
+        }
+
+        func shareChatCard(_ groupInfo: GroupInfo, _ ttl: Int?) async -> ChatItem? {
+            let sendAsGroup = chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false
+            do {
+                var mc = try await apiShareChatMsgContent(
+                    shareChatType: .group, shareChatId: Int64(groupInfo.groupId),
+                    toChatType: chat.chatInfo.chatType, toChatId: chat.chatInfo.apiId,
+                    toScope: chat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+                )
+                if !composeState.message.isEmpty, case let .chat(text, chatLink, ownerSig) = mc {
+                    mc = .chat(text: composeState.message + "\n" + text, chatLink: chatLink, ownerSig: ownerSig)
+                }
+                return await send(mc, quoted: nil, live: false, ttl: ttl, mentions: [:])
+            } catch {
+                logger.error("shareChatCard failed: \(error.localizedDescription)")
+                return nil
+            }
         }
 
         func forwardItems(_ forwardedItems: [ChatItem], _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> [ChatItem] {

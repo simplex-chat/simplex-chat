@@ -14,13 +14,20 @@ struct ChatItemForwardingView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
 
-    var chatItems: [ChatItem]
-    var fromChatInfo: ChatInfo
+    var title: String = "Forward"
+    var chatItems: [ChatItem] = []
+    var fromChatInfo: ChatInfo? = nil
     @Binding var composeState: ComposeState
+    var filteredChats: [Chat]? = nil
+    var isProhibited: ((Chat) -> Bool)? = nil
+    var onSelectChat: ((Chat) -> Void)? = nil
 
     @State private var searchText: String = ""
     @State private var alert: SomeAlert?
-    private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
+
+    private var chats: [Chat] {
+        filteredChats ?? filterChatsToForwardTo(chats: ChatModel.shared.chats)
+    }
 
     var body: some View {
         NavigationView {
@@ -32,7 +39,7 @@ struct ChatItemForwardingView: View {
                         }
                     }
                     ToolbarItem(placement: .principal) {
-                        Text("Forward")
+                        Text(title)
                             .bold()
                     }
                 }
@@ -43,11 +50,11 @@ struct ChatItemForwardingView: View {
 
     private func forwardListView() -> some View {
         VStack(alignment: .leading) {
-            if !chatsToForwardTo.isEmpty {
+            if !chats.isEmpty {
                 List {
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                    let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
-                    ForEach(chats) { chat in
+                    let filtered = s == "" ? chats : chats.filter { foundChat($0, s) }
+                    ForEach(filtered) { chat in
                         forwardListChatView(chat)
                             .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
@@ -71,7 +78,7 @@ struct ChatItemForwardingView: View {
     }
 
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
-        let prohibited = chatItems.map { ci in
+        let prohibited = isProhibited?(chat) ?? chatItems.map { ci in
             chat.prohibitedByPref(
                 hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
                 isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
@@ -88,7 +95,10 @@ struct ChatItemForwardingView: View {
                     ),
                     id: "forward prohibited by preferences"
                 )
-            } else {
+            } else if let onSelectChat {
+                dismiss()
+                onSelectChat(chat)
+            } else if let fromChatInfo {
                 dismiss()
                 if chat.id == fromChatInfo.id {
                     composeState = ComposeState(

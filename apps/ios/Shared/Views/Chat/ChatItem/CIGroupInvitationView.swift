@@ -28,7 +28,7 @@ struct CIGroupInvitationView: View {
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
-        let v = ZStack(alignment: .bottomTrailing) {
+        let v = CICardView(chat: chat, chatItem: chatItem) {
             ZStack {
                 VStack(alignment: .leading) {
                     groupInfoView(action)
@@ -61,19 +61,12 @@ struct CIGroupInvitationView: View {
                         .overlay(DetermineWidth())
                     }
                 }
-                .padding(.bottom, 2)
 
                 if progressByTimeout {
                     ProgressView().scaleEffect(2)
                 }
             }
-
-            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
-        .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
         .onChange(of: inProgress) { inProgress in
             if inProgress {

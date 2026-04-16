@@ -20,8 +20,10 @@ struct GroupChatInfoView: View {
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
     @Binding var scrollToItemId: ChatItem.ID?
+    @Binding var composeState: ComposeState
     var onSearch: () -> Void
     @State var localAlias: String
+    @State private var showSharePicker = false
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: GroupLink?
@@ -112,6 +114,11 @@ struct GroupChatInfoView: View {
                                     showShareSheet(items: [simplexChatLink(link)])
                                 } label: {
                                     Label("Share link", systemImage: "square.and.arrow.up")
+                                }
+                                Button {
+                                    showSharePicker = true
+                                } label: {
+                                    Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
                                 }
                             }
                             if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
@@ -248,6 +255,23 @@ struct GroupChatInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .sheet(isPresented: $showSharePicker) {
+            if #available(iOS 16.0, *) {
+                ChatItemForwardingView(
+                    title: "Share channel",
+                    composeState: $composeState,
+                    isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+                    onSelectChat: { chat in selectShareDestination(chat) }
+                ).presentationDetents([.fraction(0.8)])
+            } else {
+                ChatItemForwardingView(
+                    title: "Share channel",
+                    composeState: $composeState,
+                    isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+                    onSelectChat: { chat in selectShareDestination(chat) }
+                )
+            }
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteGroupAlert: return deleteGroupAlert()
@@ -361,6 +385,12 @@ struct GroupChatInfoView: View {
                 } else if !groupInfo.useRelays && groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
+                if groupInfo.useRelays && groupInfo.groupProfile.publicGroup?.groupLink != nil {
+                    InfoViewButton(image: "arrowshape.turn.up.forward", title: "share", width: buttonWidth) {
+                        showSharePicker = true
+                    }
+                    .disabled(!groupInfo.ready)
+                }
                 if let nextNtfMode = chat.chatInfo.nextNtfMode {
                     muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
                 }
@@ -434,6 +464,14 @@ struct GroupChatInfoView: View {
             .hidden()
         }
         .disabled(!groupInfo.ready)
+    }
+
+    private func selectShareDestination(_ chat: Chat) {
+        composeState = ComposeState(sharingChatCard: groupInfo)
+        if chat.id != ChatModel.shared.chatId {
+            ItemsModel.shared.loadOpenChat(chat.id)
+        }
+        dismiss()
     }
 
     private func addMembersButton() -> some View {
