@@ -953,7 +953,7 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
 
 viewTestInfo :: Bool -> ChatItem c d -> [StyledString]
 viewTestInfo testView ChatItem {content} = maybe [] (viewMsgTestInfo testView) $ ciMsgContent content
-  
+
 viewMsgTestInfo :: Bool -> MsgContent -> [StyledString]
 viewMsgTestInfo testView = \case
   MCChat {ownerSig = Just sig} | testView -> [viewJSON sig]
