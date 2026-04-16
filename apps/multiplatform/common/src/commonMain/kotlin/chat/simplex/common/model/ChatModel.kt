@@ -1621,7 +1621,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
                 if (groupInfo.membership.memberPending) {
                   return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
                 }
-                if (groupInfo.membership.memberRole == GroupMemberRole.Observer) {
+                if (groupInfo.membership.memberRole < GroupMemberRole.Author) {
                   return if (groupInfo.useRelays) {
                     generalGetString(MR.strings.you_are_subscriber) to null
                   } else {
@@ -1673,7 +1673,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
         is Direct -> contact.sndReady
         is Group ->
           groupInfo.membership.memberActive
-              && (groupChatScope != null || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole != GroupMemberRole.Observer))
+              && (groupChatScope != null || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole >= GroupMemberRole.Author))
         is Local -> true
         is ContactRequest -> false
         is ContactConnection -> false
@@ -2529,6 +2529,7 @@ data class GroupMemberIds(
 enum class GroupMemberRole(val memberRole: String) {
   @SerialName("relay") Relay("relay"), // order matters in comparisons
   @SerialName("observer") Observer("observer"),
+  @SerialName("commenter") Commenter("commenter"),
   @SerialName("author") Author("author"),
   @SerialName("member") Member("member"),
   @SerialName("moderator") Moderator("moderator"),
@@ -2542,6 +2543,7 @@ enum class GroupMemberRole(val memberRole: String) {
   val text: String get() = when (this) {
     Relay -> generalGetString(MR.strings.group_member_role_relay)
     Observer -> generalGetString(MR.strings.group_member_role_observer)
+    Commenter -> generalGetString(MR.strings.group_member_role_commenter)
     Author -> generalGetString(MR.strings.group_member_role_author)
     Member -> generalGetString(MR.strings.group_member_role_member)
     Moderator -> generalGetString(MR.strings.group_member_role_moderator)

@@ -1516,7 +1516,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case let .direct(contact): contact.sndReady
         case let .group(groupInfo, groupScope):
             groupInfo.membership.memberActive
-                && (groupScope != nil || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole != .observer))
+                && (groupScope != nil || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole >= .author))
         case .local: true
         case .contactRequest: false
         case .contactConnection: false
@@ -1579,7 +1579,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                     switch(groupChatScope) {
                     case .none:
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
-                        if groupInfo.membership.memberRole == .observer {
+                        if groupInfo.membership.memberRole < .author {
                             return groupInfo.useRelays ? ("you are subscriber", nil) : ("you are observer", "Please contact group admin.")
                         }
                         return nil
@@ -2874,6 +2874,7 @@ public struct GroupMemberIds: Decodable, Hashable {
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
     case relay
     case observer
+    case commenter
     case author
     case member
     case moderator
@@ -2888,6 +2889,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
         switch self {
         case .relay: return NSLocalizedString("relay", comment: "member role")
         case .observer: return NSLocalizedString("observer", comment: "member role")
+        case .commenter: return NSLocalizedString("commenter", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
         case .moderator: return NSLocalizedString("moderator", comment: "member role")
@@ -2900,11 +2902,12 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
         switch self {
         case .relay: 0
         case .observer: 1
-        case .author: 2
-        case .member: 3
-        case .moderator: 4
-        case .admin: 5
-        case .owner: 6
+        case .commenter: 2
+        case .author: 3
+        case .member: 4
+        case .moderator: 5
+        case .admin: 6
+        case .owner: 7
         }
     }
 
