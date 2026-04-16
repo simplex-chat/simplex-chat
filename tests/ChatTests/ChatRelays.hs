@@ -206,7 +206,7 @@ testShareChannelDirect ps =
       -- bob verifies owner signature via connect plan
       bob ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> ownerSig)
       bob <## "group link: ok to connect via relays"
-      bob <## "  owner signature: verified"
+      bob <## "owner signature: verified"
       _ <- getTermLine bob -- group link data
       -- bob joins
       memberJoinChannel' "news" 1 0 1 0 [relay] [alice] shortLink fullLink bob
@@ -276,7 +276,7 @@ testShareChannelChannel ps =
       -- bob verifies alice's signature via connect plan
       bob ##> ("/_connect plan 1 " <> sLink1 <> " sig=" <> ownerSig)
       bob <## "group link: ok to connect via relays"
-      bob <## "  owner signature: verified"
+      bob <## "owner signature: verified"
       _ <- getTermLine bob -- group link data
       -- bob joins "news" (group #2 for bob, relay knows bob from "updates" so sfx=1)
       memberJoinChannel' "news" 2 1 1 1 [relay] [alice] sLink1 fLink1 bob

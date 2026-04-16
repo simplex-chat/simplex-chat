@@ -222,11 +222,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
-  CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewChatMsgJSON mc
-    where
-      viewChatMsgJSON = \case
-        MCChat {ownerSig} | testView -> maybe [] (\sig -> [viewJSON sig]) ownerSig
-        _ -> []
+  CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewMsgTestInfo testView mc
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
@@ -956,8 +952,11 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
 viewTestInfo :: Bool -> ChatItem c d -> [StyledString]
-viewTestInfo testView ChatItem {content} = case ciMsgContent content of
-  Just MCChat {ownerSig = Just sig} | testView -> [viewJSON sig]
+viewTestInfo testView ChatItem {content} = maybe [] (viewMsgTestInfo testView) $ ciMsgContent content
+  
+viewMsgTestInfo :: Bool -> MsgContent -> [StyledString]
+viewMsgTestInfo testView = \case
+  MCChat {ownerSig = Just sig} | testView -> [viewJSON sig]
   _ -> []
 
 viewReactionMembers :: [MemberReaction] -> [StyledString]
@@ -2050,7 +2049,7 @@ viewGroupUserChanged
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk contactSLinkData linkSigVerification_ -> [invOrBiz contactSLinkData "ok to connect"] <> viewLinkSigVerification linkSigVerification_ <> [viewJSON contactSLinkData | testView]
+    ILPOk contactSLinkData lsv -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification lsv <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -2068,7 +2067,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData linkSigVerification_ -> [addrOrBiz contactSLinkData "ok to connect"] <> viewLinkSigVerification linkSigVerification_ <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData lsv -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification lsv <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2086,10 +2085,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData linkSigVerification_ ->
+    GLPOk groupSLinkInfo_ groupSLinkData lsv ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
        in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
-            <> viewLinkSigVerification linkSigVerification_
+            <> viewSigVerification lsv
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
@@ -2125,9 +2124,9 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
       _ -> False
-    viewLinkSigVerification = \case
-      Just LSVVerified -> ["  owner signature: verified"]
-      Just (LSVFailed r) -> ["  owner signature: FAILED (" <> plain r <> ")"]
+    viewSigVerification = \case
+      Just LSVVerified -> ["owner signature: verified"]
+      Just (LSVFailed r) -> ["owner signature: FAILED (" <> plain r <> ")"]
       Nothing -> []
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
