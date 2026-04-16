@@ -965,7 +965,7 @@ async function reachTeam(groupId?)        // reachTeamPending → add team membe
 
 Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); await p;`
 
-### 20.4 Test Catalog (122 tests, 27 suites)
+### 20.4 Test Catalog (129 tests, 27 suites)
 
 #### 1. Welcome & First Message (4 tests)
 - first message → queue reply + card created with /join command
@@ -980,13 +980,16 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - /grok when grokContactId is null → grokUnavailableMessage
 - /grok as first message + Grok join fails → queue message sent as fallback
 
-#### 3. Grok Conversation (6 tests)
+#### 3. Grok Conversation (10 tests)
 - Grok per-message: reads history, calls API, sends response
 - customer non-text → no Grok API call
 - Grok API error → grokErrorMessage sent
 - Grok ignores bot commands from customer
 - Grok ignores non-customer messages
 - Grok ignores own messages (groupSnd)
+- batch: multiple customer messages in one event → only last triggers Grok API call
+- batch: messages from different groups → each group gets one response
+- batch: non-customer messages filtered, only customer messages trigger response
 
 #### 4. /team Activation (4 tests)
 - /team from QUEUE → ALL team members added, teamAddedMessage sent
@@ -1079,10 +1082,12 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - own messages (groupSnd) → ignored
 - non-business group messages → ignored
 
-#### 19. Grok Join Flow (3 tests)
+#### 19. Grok Join Flow (5 tests)
 - receivedGroupInvitation → apiJoinGroup called (full async flow)
 - unmatched Grok invitation → buffered (not joined until activateGrok drains)
 - buffered invitation drained after pendingGrokJoins set → apiJoinGroup called
+- per-message responses suppressed during activateGrok initial response (grokInitialResponsePending gate)
+- per-message responses resume after activateGrok completes
 
 #### 20. Grok No-History Fallback (1 test)
 - Grok joins but sees no customer messages → grokNoHistoryMessage
@@ -1152,7 +1157,7 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 ### 20.6 Test Coverage Notes
 
 **Covered vs plan catalog:**
-- §20.4 items 1-13, 15, 17-27 fully covered (122 tests across 27 suites)
+- §20.4 items 1-13, 15, 17-27 fully covered (129 tests across 27 suites)
 - §20.4 item 14 (Weekend Detection) — not unit-tested; `isWeekend` depends on `Intl.DateTimeFormat(new Date())`, would need clock mocking
 - §20.4 item 16 (Profile Mutex) — not unit-tested; mutex serialization is verified implicitly through all other tests (MockChatApi tracks activeUserId)
 - §20.4 item 19 (Startup & State Persistence) — not unit-tested; tests `index.ts` startup which requires native ChatApi. Integration test only. This includes `deleteInviteLink` (profileMutex + `apiSetActiveUser` before `apiDeleteGroupLink`), the conditional `apiUpdateGroupProfile` (compare `fullGroupPreferences` before calling), and the best-effort `apiCreateGroupLink` (catch + log on SMP relay failure) — all are in startup code and cannot be covered by MockChatApi-based tests.

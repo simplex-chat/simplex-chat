@@ -700,6 +700,73 @@ describe("Grok Conversation", () => {
     await bot.onGrokNewChatItems(grokEvt)
     expect(grokApi.calls.length).toBe(0)
   })
+
+  test("batch: multiple customer messages in one event → only last triggers Grok API call", async () => {
+    chat.groups.set(GROK_LOCAL_GROUP_ID, makeGroupInfo(GROK_LOCAL_GROUP_ID))
+    addCustomerMessageToHistory("First question", GROK_LOCAL_GROUP_ID)
+    addCustomerMessageToHistory("Second question", GROK_LOCAL_GROUP_ID)
+
+    const ci1 = makeChatItem({dir: "groupRcv", text: "First question", memberId: CUSTOMER_ID})
+    const ci2 = makeChatItem({dir: "groupRcv", text: "Second question", memberId: CUSTOMER_ID})
+    const evt = {
+      type: "newChatItems" as const,
+      user: makeUser(GROK_USER_ID),
+      chatItems: [
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_LOCAL_GROUP_ID)}, chatItem: ci1},
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_LOCAL_GROUP_ID)}, chatItem: ci2},
+      ],
+    }
+
+    await bot.onGrokNewChatItems(evt)
+
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe("Second question")
+  })
+
+  test("batch: messages from different groups → each group gets one response", async () => {
+    const GROK_GROUP_A = 201
+    const GROK_GROUP_B = 202
+    chat.groups.set(GROK_GROUP_A, makeGroupInfo(GROK_GROUP_A))
+    chat.groups.set(GROK_GROUP_B, makeGroupInfo(GROK_GROUP_B))
+    addCustomerMessageToHistory("Question A", GROK_GROUP_A)
+    addCustomerMessageToHistory("Question B", GROK_GROUP_B)
+
+    const ciA = makeChatItem({dir: "groupRcv", text: "Question A", memberId: CUSTOMER_ID})
+    const ciB = makeChatItem({dir: "groupRcv", text: "Question B", memberId: CUSTOMER_ID})
+    const evt = {
+      type: "newChatItems" as const,
+      user: makeUser(GROK_USER_ID),
+      chatItems: [
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_GROUP_A)}, chatItem: ciA},
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_GROUP_B)}, chatItem: ciB},
+      ],
+    }
+
+    await bot.onGrokNewChatItems(evt)
+
+    expect(grokApi.calls.length).toBe(2)
+  })
+
+  test("batch: non-customer messages filtered, only customer messages trigger response", async () => {
+    chat.groups.set(GROK_LOCAL_GROUP_ID, makeGroupInfo(GROK_LOCAL_GROUP_ID))
+    addCustomerMessageToHistory("Customer question", GROK_LOCAL_GROUP_ID)
+
+    const custCi = makeChatItem({dir: "groupRcv", text: "Customer question", memberId: CUSTOMER_ID})
+    const teamCi = makeChatItem({dir: "groupRcv", text: "Team reply", memberId: "not-customer", memberContactId: TEAM_MEMBER_1_ID})
+    const evt = {
+      type: "newChatItems" as const,
+      user: makeUser(GROK_USER_ID),
+      chatItems: [
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_LOCAL_GROUP_ID)}, chatItem: custCi},
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_LOCAL_GROUP_ID)}, chatItem: teamCi},
+      ],
+    }
+
+    await bot.onGrokNewChatItems(evt)
+
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe("Customer question")
+  })
 })
 
 describe("/team Activation", () => {
@@ -1423,6 +1490,67 @@ describe("Grok Join Flow", () => {
 
     expect(chat.joined).toContain(GROK_LOCAL_GROUP_ID)
     expectSentToGroup(CUSTOMER_GROUP_ID, "now chatting with Grok")
+  })
+
+  test("per-message responses suppressed during activateGrok initial response", async () => {
+    await reachQueue()
+    addBotMessage("The team can see your message")
+
+    // Customer's message visible in Grok's view (activateGrok reads it for initial response)
+    addCustomerMessageToHistory("Hello, I need help", GROK_LOCAL_GROUP_ID)
+    chat.groups.set(GROK_LOCAL_GROUP_ID, makeGroupInfo(GROK_LOCAL_GROUP_ID))
+
+    // Start /grok activation (fireAndForget)
+    const botPromise = bot.onNewChatItems(customerMessage("/grok"))
+
+    // Wait for apiAddMember to complete
+    await new Promise(r => setTimeout(r, 10))
+
+    // Simulate Grok invitation → sets grokGroupMap/reverseGrokMap
+    const memberId = `member-${GROK_CONTACT_ID}`
+    await bot.onGrokGroupInvitation({
+      type: "receivedGroupInvitation",
+      user: makeUser(GROK_USER_ID),
+      groupInfo: {...makeGroupInfo(GROK_LOCAL_GROUP_ID), membership: {memberId}},
+      contact: {contactId: 99},
+      fromMemberRole: GroupMemberRole.Admin,
+      memberRole: GroupMemberRole.Member,
+    })
+
+    // grokInitialResponsePending is set, reverseGrokMap is set.
+    // Simulate per-message event (as if message backlog arrived for Grok profile)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("Hello, I need help"))
+
+    // Gating: per-message handler must NOT have called Grok API
+    expect(grokApi.calls.length).toBe(0)
+
+    // Now complete the join → activateGrok sends initial combined response
+    await bot.onGrokMemberConnected({
+      type: "connectedToGroupMember",
+      user: makeUser(GROK_USER_ID),
+      groupInfo: makeGroupInfo(GROK_LOCAL_GROUP_ID),
+      member: {memberId: "bot-in-grok-view", groupMemberId: 9999, memberContactId: undefined},
+    })
+
+    await botPromise
+    await bot.flush()
+
+    // Only 1 Grok API call: the initial combined response from activateGrok
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toContain("Hello, I need help")
+  })
+
+  test("per-message responses resume after activateGrok completes", async () => {
+    await reachGrok()
+    await bot.flush()
+    const callsAfterActivation = grokApi.calls.length
+
+    // Send a new customer message via Grok's view — should be processed normally
+    addCustomerMessageToHistory("Follow-up question", GROK_LOCAL_GROUP_ID)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("Follow-up question"))
+
+    expect(grokApi.calls.length).toBe(callsAfterActivation + 1)
+    expect(grokApi.calls[grokApi.calls.length - 1].message).toBe("Follow-up question")
   })
 })
 
