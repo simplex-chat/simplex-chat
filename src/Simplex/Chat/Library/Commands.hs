@@ -1078,20 +1078,19 @@ processChatCommand vr nm = \case
     case publicGroup of
       Nothing -> throwCmdError "not a public group"
       Just PublicGroupProfile {groupLink} -> do
-        let chatLink = MCLGroup groupLink gp
-            signingKeys = case (memberRole, groupKeys) of
+        let signingKeys = case (memberRole, groupKeys) of
               (GROwner, Just gk@GroupKeys {groupRootKey = GRKPrivate _}) -> Just gk
               _ -> Nothing
         ownerSig_ <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
-            mkLinkOwnerSig memberPrivKey chatLink memberId <$$> shareChatBinding user toChatRef
-        pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
+            mkLinkOwnerSig memberPrivKey groupLink memberId <$$> shareChatBinding user toChatRef
+        pure $ CRChatMsgContent user MCChat {text = displayName, chatLink = MCLGroup groupLink gp, ownerSig = ownerSig_}
     where
-      mkLinkOwnerSig :: C.PrivateKeyEd25519 -> MsgChatLink -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
-      mkLinkOwnerSig privKey chatLink MemberId {unMemberId} (cbTag, bindingData) =
+      mkLinkOwnerSig :: ConnectionModeI m => C.PrivateKeyEd25519 -> ConnShortLink m -> MemberId -> (ChatBinding, ByteString) -> LinkOwnerSig
+      mkLinkOwnerSig privKey link MemberId {unMemberId} (cbTag, bindingData) =
         let ownerId = Just $ B64UrlByteString unMemberId
             cb = encodeChatBinding cbTag bindingData
-            ownerSig = C.sign' privKey (cb <> LB.toStrict (J.encode chatLink))
+            ownerSig = C.sign' privKey (cb <> smpEncode link)
          in LinkOwnerSig {ownerId, chatBinding = B64UrlByteString cb, ownerSig}
       shareChatBinding :: User -> ChatRef -> CM (Maybe (ChatBinding, ByteString))
       shareChatBinding u = \case
@@ -3948,9 +3947,7 @@ processChatCommand vr nm = \case
           Nothing -> do
             (FixedLinkData {linkConnReq = cReq, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq nm user l'
             contactSLinkData_ <- liftIO $ decodeLinkUserData cData
-            let lsv =
-                  contactSLinkData_ >>= \ContactShortLinkData {profile} ->
-                    verifyLinkSig linkOwnerSig_ rootKey owners (MCLInvitation l profile)
+            let lsv = verifyLinkSig linkOwnerSig_ rootKey owners l
             invitationReqAndPlan cReq (Just l') contactSLinkData_ lsv
       where
         knownLinkPlans l' = withFastStore $ \db -> do
@@ -3977,9 +3974,7 @@ processChatCommand vr nm = \case
                   Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
                   _ -> do
                     contactSLinkData_ <- liftIO $ decodeLinkUserData cData
-                    let lsv =
-                          contactSLinkData_ >>= \ContactShortLinkData {profile, business} ->
-                            verifyLinkSig linkOwnerSig_ rootKey owners (MCLContact l' profile business)
+                    let lsv = verifyLinkSig linkOwnerSig_ rootKey owners l'
                     plan <- contactRequestPlan user cReq contactSLinkData_ lsv
                     pure (con cReq, plan)
             where
@@ -4013,9 +4008,7 @@ processChatCommand vr nm = \case
                   (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
                   (Nothing, Nothing) -> pure ()
                   _ -> throwChatError CEInvalidConnReq
-                let lsv = do
-                      GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup = Just PublicGroupProfile {groupLink}}} <- groupSLinkData_
-                      verifyLinkSig linkOwnerSig_ rootKey owners (MCLGroup groupLink gp)
+                let lsv = verifyLinkSig linkOwnerSig_ rootKey owners l'
                 plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ lsv
                 pure (con cReq, plan)
             where
@@ -4118,10 +4111,10 @@ processChatCommand vr nm = \case
     serverShortLink = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
-    verifyLinkSig :: Maybe LinkOwnerSig -> C.PublicKeyEd25519 -> [OwnerAuth] -> MsgChatLink -> Maybe LinkSigVerification
+    verifyLinkSig :: ConnectionModeI m => Maybe LinkOwnerSig -> C.PublicKeyEd25519 -> [OwnerAuth] -> ConnShortLink m -> Maybe LinkSigVerification
     verifyLinkSig Nothing _ _ _ = Nothing
-    verifyLinkSig (Just LinkOwnerSig {ownerId, chatBinding = B64UrlByteString bindingBytes, ownerSig}) rootKey owners chatLink =
-      let signedData = bindingBytes <> LB.toStrict (J.encode chatLink)
+    verifyLinkSig (Just LinkOwnerSig {ownerId, chatBinding = B64UrlByteString bindingBytes, ownerSig}) rootKey owners link =
+      let signedData = bindingBytes <> smpEncode link
        in Just $ case ownerId of
             Nothing
               | C.verify' rootKey ownerSig signedData -> LSVVerified
