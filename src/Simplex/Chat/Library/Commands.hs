@@ -1073,14 +1073,17 @@ processChatCommand vr nm = \case
             let ext = takeExtension fileName
             pure $ prefix <> formattedDate <> ext
   APIShareChatMsgContent (ChatRef CTGroup groupId _) toChatRef -> withUser $ \user -> do
-    GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup}, membership = GroupMember {memberId}, groupKeys} <-
+    GroupInfo {groupProfile = gp@GroupProfile {displayName, publicGroup}, membership = GroupMember {memberId, memberRole}, groupKeys} <-
       withFastStore $ \db -> getGroupInfo db vr user groupId
     case publicGroup of
       Nothing -> throwCmdError "not a public group"
       Just PublicGroupProfile {groupLink} -> do
         let chatLink = MCLGroup groupLink gp
+            signingKeys = case (memberRole, groupKeys) of
+              (GROwner, Just gk@GroupKeys {groupRootKey = GRKPrivate _}) -> Just gk
+              _ -> Nothing
         ownerSig_ <-
-          pure groupKeys $>>= \GroupKeys {memberPrivKey} ->
+          pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
             mkLinkOwnerSig memberPrivKey chatLink memberId <$$> shareChatBinding user toChatRef
         pure $ CRChatMsgContent user MCChat {text = displayName, chatLink, ownerSig = ownerSig_}
     where

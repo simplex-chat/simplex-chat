@@ -207,27 +207,19 @@ testShareChannelDirect ps =
       -- bob joins
       memberJoinChannel' "news" 1 0 1 0 [relay] [alice] shortLink fullLink bob
       connectUsers bob cath
-      -- bob (subscriber) gets sig - not verifiable as owner
-      bob ##> "/_share chat content #1 @2"
-      bob <## "channel #news (signed)"
-      bobSig <- getTermLine bob
+      -- bob (subscriber) shares unsigned - not owner
       bob ##> "/share chat #news @cath"
-      bob <# "@cath channel #news (signed)"
-      cath <# "bob> channel #news (signed)"
-      -- cath checks signature - should fail (bob is not owner)
-      cath ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> bobSig)
-      cath <## "group link: ok to connect via relays"
-      cath <## "  owner signature: FAILED (unknown owner ID)"
-      _ <- getTermLine cath -- group link data
+      bob <# "@cath channel #news"
+      cath <# "bob> channel #news"
       -- bob tries to replay alice's signed card to cath - binding mismatch, sig stripped at receive
       let sig = fromMaybe (error "bad sig") (decodeJSON (T.pack ownerSig) :: Maybe LinkOwnerSig)
           connLink = either error id $ strDecode (B.pack shortLink)
           mc = MCChat "news" (MCLGroup connLink (testGroupProfile {displayName = "news"} :: GroupProfile)) (Just sig)
           cm = "{\"msgContent\":" <> LB.unpack (J.encode mc) <> "}"
-      bob ##> ("/_send @2 json [" <> cm <> "]")
+      bob ##> ("/_send @3 json [" <> cm <> "]")
       bob <# "@cath channel #news (signed)"
-      -- TODO: cath should see without signature, but binding check passes - investigate
-      cath <# "bob> channel #news (signed)"
+      -- cath sees it without signature - binding was for alice->bob, not bob->cath, sig stripped
+      cath <# "bob> channel #news"
       -- cath joins anyway
       memberJoinChannel "news" [relay] [alice] shortLink fullLink cath
       alice #> "#news hello"
