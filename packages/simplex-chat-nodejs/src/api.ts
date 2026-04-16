@@ -56,6 +56,32 @@ interface EventSubscriber<K extends CEvt.Tag> {
   once: boolean
 }
 
+// Mirrors src/Simplex/Chat/View.hs:2632 ("-- mutes delete group error"): the
+// Haskell CLI hides SEConnectionNotFound at default log level because it fires
+// benignly during group-member teardown. The Node SDK has no log-level knob,
+// so we mute the two exact error shapes that originate from that teardown path:
+//   1. ChatError.ErrorStore { storeError: { type: "connectionNotFound", ... } }
+//      Emitted via getChatLockEntity (Connections.hs:54) / getConnectionEntity
+//      (Connections.hs:93) when an async agent event references a connection
+//      whose row was just deleted by deleteMembersConnections'.
+//   2. ChatError.ErrorAgent with empty agentConnId + CONN NOT_FOUND.
+//      Emitted at Subscriber.hs:112 (processAgentMessage _ _ "" (ERR e)) when
+//      the SMP agent sends a bulk ERR after teardown.
+function isMutedChatError(err: T.ChatError): boolean {
+  if (err.type === "errorStore" && err.storeError.type === "connectionNotFound") {
+    return true
+  }
+  if (
+    err.type === "errorAgent" &&
+    err.agentConnId === "" &&
+    err.agentError.type === "CONN" &&
+    err.agentError.connErr.type === "NOT_FOUND"
+  ) {
+    return true
+  }
+  return false
+}
+
 /**
  * Main API class for interacting with the chat core library.
  */
@@ -147,6 +173,7 @@ export class ChatApi {
       } catch(err) {
         const e = err as core.ChatAPIError
         if ("chatError" in e) {
+          if (e.chatError && isMutedChatError(e.chatError)) continue
           console.log("Chat error", e.chatError)
         } else {
           console.log("Invalid event", e)
