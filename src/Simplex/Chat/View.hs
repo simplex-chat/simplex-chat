@@ -148,8 +148,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
-  CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
+  CRNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
+  CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item <> viewTestInfo testView item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
@@ -412,7 +412,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CEvtGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
   CEvtChatInfoUpdated _ _ -> []
-  CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
+  CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz testView
   CEvtChatItemsStatusesUpdated u chatItems
     | length chatItems <= 20 ->
         concatMap
@@ -651,11 +651,12 @@ viewChatItems ::
   [AChatItem] ->
   UTCTime ->
   TimeZone ->
+  Bool ->
   [StyledString]
-viewChatItems ttyUser unmuted u chatItems ts tz
+viewChatItems ttyUser unmuted u chatItems ts tz testView
   | length chatItems <= 20 =
       concatMap
-        (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item)
+        (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item <> viewTestInfo testView item)
         chatItems
   | all (\aci -> aChatItemDir aci == MDRcv) chatItems = ttyUser u [sShow (length chatItems) <> " new messages"]
   | all (\aci -> aChatItemDir aci == MDSnd) chatItems = ttyUser u [sShow (length chatItems) <> " messages sent"]
@@ -953,6 +954,11 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MRUnknown {}} = "?"
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
+
+viewTestInfo :: Bool -> ChatItem c d -> [StyledString]
+viewTestInfo testView ChatItem {content} = case ciMsgContent content of
+  Just MCChat {ownerSig = Just sig} | testView -> [viewJSON sig]
+  _ -> []
 
 viewReactionMembers :: [MemberReaction] -> [StyledString]
 viewReactionMembers memberReactions = [sShow (length memberReactions) <> " member(s) reacted"]

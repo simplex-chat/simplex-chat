@@ -191,14 +191,18 @@ testShareChannelDirect ps =
     test alice bob cath = withRelay ps $ \relay -> do
       (shortLink, fullLink) <- prepareChannel1Relay "news" alice relay
       connectUsers alice bob
-      -- get ownerSig JSON from API
+      -- alice gets ownerSig from share content API (for validation later)
       alice ##> "/_share chat content #1 @2"
       alice <## "channel #news (signed)"
-      ownerSig <- getTermLine alice
-      -- send the card
+      apiOwnerSig <- getTermLine alice
+      -- alice sends the card to bob
       alice ##> "/share chat #news @bob"
       alice <# "@bob channel #news (signed)"
+      _ <- getTermLine alice -- alice's testView ownerSig
       bob <# "alice> channel #news (signed)"
+      -- bob captures the received ownerSig from message view (testView)
+      ownerSig <- getTermLine bob
+      ownerSig `shouldBe` apiOwnerSig
       -- bob verifies owner signature via connect plan
       bob ##> ("/_connect plan 1 " <> shortLink <> " sig=" <> ownerSig)
       bob <## "group link: ok to connect via relays"
