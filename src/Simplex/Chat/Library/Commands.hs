@@ -1100,10 +1100,12 @@ processChatCommand vr nm = \case
           forM (contactConn ct) $ \conn ->
             (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
         SRGroup toGroupId _ asGroup -> do
-          GroupInfo {groupProfile = GroupProfile {publicGroup = toPubGroup}, membership = GroupMember {memberId = toMemberId}} <-
-            withFastStore $ \db -> getGroupInfo db vr u toGroupId
-          forM toPubGroup $ \PublicGroupProfile {publicGroupId = pgId} ->
-            pure $ if asGroup then (CBChannel, smpEncode pgId) else (CBGroup, smpEncode (pgId, toMemberId))
+          GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = GroupMember {memberId}} <- withFastStore $ \db -> getGroupInfo db vr u toGroupId
+          pure $ mkBinding memberId <$> publicGroup
+          where
+            mkBinding memberId PublicGroupProfile {publicGroupId = pgId}
+              | asGroup = (CBChannel, smpEncode pgId)
+              | otherwise = (CBGroup, smpEncode (pgId, memberId))
   APIShareChatMsgContent _ _ -> throwCmdError "sharing is only supported for public groups"
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
