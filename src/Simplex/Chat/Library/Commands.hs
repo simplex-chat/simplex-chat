@@ -1003,9 +1003,9 @@ processChatCommand vr nm = \case
           prepareMsgReq (CChatItem md ci) = forwardMsgContent ci $>>= forwardContent ci . dropOwnerSig
             where
               dropOwnerSig = \case
-                mc@MCChat {}
+                mc@MCChat {text, chatLink}
                   | SMDSnd <- md, fromChat == toChat -> mc
-                  | otherwise -> mc {ownerSig = Nothing} :: MsgContent
+                  | otherwise -> MCChat {text, chatLink, ownerSig = Nothing}
                 mc -> mc
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
