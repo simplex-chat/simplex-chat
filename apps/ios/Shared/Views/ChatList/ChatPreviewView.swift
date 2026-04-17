@@ -296,10 +296,20 @@ struct ChatPreviewView: View {
     }
 
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
-        let itemText = cItem.meta.itemDeleted == nil ? cItem.text(isChannel: chat.chatInfo.isChannel) : markedDeletedText()
-        let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
+        let (itemText, itemFormattedText) = chatItemPreviewText(cItem)
         let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)
+
+        func chatItemPreviewText(_ ci: ChatItem) -> (String, [FormattedText]?) {
+            if ci.meta.itemDeleted != nil {
+                return (markedDeletedText(), nil)
+            }
+            if case let .chat(_, chatLink, ownerSig) = ci.content.msgContent {
+                let text = chatLink.displayName + " · " + chatLink.infoLine(signed: ownerSig != nil)
+                return (text, nil)
+            }
+            return (ci.text(isChannel: chat.chatInfo.isChannel), ci.formattedText)
+        }
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
@@ -425,6 +435,15 @@ struct ChatPreviewView: View {
         case .file:
             smallContentPreviewFile(size: dynamicMediaSize) {
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallViewSize: dynamicMediaSize)
+            }
+        case let .chat(_, chatLink, _):
+            smallContentPreview(size: dynamicMediaSize) {
+                ProfileImage(
+                    imageStr: chatLink.image,
+                    iconName: chatLink.iconName,
+                    size: dynamicMediaSize,
+                    color: Color(uiColor: .tertiaryLabel)
+                )
             }
         default: EmptyView()
         }
