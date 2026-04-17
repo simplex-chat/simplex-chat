@@ -533,8 +533,21 @@
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
+  <string name="share_channel">Share channel…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
+  <string name="share_via_chat">Share via chat</string>
+  <string name="tap_to_open">Tap to open</string>
+  <string name="chat_link_channel">Channel link</string>
+  <string name="chat_link_group">Group link</string>
+  <string name="chat_link_business_address">Business address</string>
+  <string name="chat_link_contact_address">Contact address</string>
+  <string name="chat_link_one_time">One-time link</string>
+  <string name="chat_link_from_owner">(from owner)</string>
+  <string name="chat_link_signed">(signed)</string>
+  <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="owner_verification_passed">Link signature verified.</string>
+  <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>

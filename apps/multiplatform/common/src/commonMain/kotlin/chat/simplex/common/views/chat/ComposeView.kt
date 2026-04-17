@@ -57,6 +57,7 @@ const val MAX_NUMBER_OF_MENTIONS = 3
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
+  @Serializable class ChatLinkPreview(val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): ComposePreview()
   @Serializable class MediaPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: URI): ComposePreview()
@@ -163,6 +164,7 @@ data class ComposeState(
       val hasContent = when (preview) {
         is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
+        is ComposePreview.ChatLinkPreview -> true
         is ComposePreview.FilePreview -> true
         else -> !whitespaceOnly || forwarding || liveMessage != null || submittingValidReport
       }
@@ -174,6 +176,7 @@ data class ComposeState(
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
+        is ComposePreview.ChatLinkPreview -> false
         is ComposePreview.MediaPreview -> false
         is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
@@ -200,6 +203,7 @@ data class ComposeState(
     get() = when (preview) {
       ComposePreview.NoPreview -> false
       is ComposePreview.CLinkPreview -> false
+      is ComposePreview.ChatLinkPreview -> false
       is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
       is ComposePreview.VoicePreview -> false
       is ComposePreview.FilePreview -> true
@@ -760,6 +764,11 @@ fun ComposeView(
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
+        is ComposePreview.ChatLinkPreview -> {
+          val linkStr = preview.chatLink.connLinkStr
+          val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
+          msgs.add(MsgContent.MCChat(text, preview.chatLink, preview.ownerSig))
+        }
         is ComposePreview.MediaPreview -> {
           // TODO batch send: batch media previews
           preview.content.forEachIndexed { index, it ->
@@ -1440,6 +1449,22 @@ fun ComposeView(
         contextItem = ComposeContextItem.ForwardingItems(shared.chatItems, shared.fromChatInfo),
         preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
       )
+      is SharedContent.ChatLink -> {
+        val cInfo = chat.chatInfo
+        val sendAsGroup = cInfo.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false
+        withBGApi {
+          val mc = chatModel.controller.apiShareChatMsgContent(
+            chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
+            cInfo.chatType, cInfo.apiId,
+            cInfo.groupChatScope(), sendAsGroup
+          )
+          if (mc is MsgContent.MCChat) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.ChatLinkPreview(mc.chatLink, mc.ownerSig)
+            )
+          }
+        }
+      }
       null -> {}
     }
     chatModel.sharedContent.value = null
