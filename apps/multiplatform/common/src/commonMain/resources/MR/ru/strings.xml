@@ -2677,7 +2677,6 @@
     <string name="relay_bar_active">%1$d/%2$d ретрансляторов активно</string>
     <string name="relay_bar_connected">%1$d/%2$d ретрансляторов соединено</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d ретрансляторов соединено, %3$d ошибок</string>
-    <string name="relay_bar_count">%1$d ретрансляторов</string>
     <string name="relay_status_accepted">принят</string>
     <string name="relay_status_active">активен</string>
     <string name="block_subscriber_for_all_question">Заблокировать подписчкика для всех?</string>

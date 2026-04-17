@@ -2540,7 +2540,6 @@
     <string name="relay_bar_active_with_failures">%1$d/%2$d مُرحلات نشطة، %3$d فشلت</string>
     <string name="relay_bar_connected">%1$d/%2$d مُرحلات متصلة</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d مُرحلات متصلة، %3$d خطأ</string>
-    <string name="relay_bar_count">%1$d مُرحل</string>
     <string name="channel_subscriber_count_singular">%1$d مشترك</string>
     <string name="channel_subscriber_count_plural">%1$d مشترك</string>
     <string name="relay_status_accepted">وافقت</string>

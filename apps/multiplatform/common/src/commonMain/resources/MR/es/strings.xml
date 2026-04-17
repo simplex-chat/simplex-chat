@@ -2558,7 +2558,6 @@
     <string name="relay_bar_active_with_failures">%1$d%2$d servidores activos, %3$d han fallado</string>
     <string name="relay_bar_connected">%1$d%2$d servidores conectados</string>
     <string name="relay_bar_connected_with_errors">%1$d%2$d servidores conectados, %3$d errores</string>
-    <string name="relay_bar_count">%1$d servidores</string>
     <string name="relay_status_accepted">aceptado</string>
     <string name="relay_status_active">activo</string>
     <string name="test_relay_to_retrieve_name"><![CDATA[<b>Test del servidor</b> para recibir su nombre.]]></string>
