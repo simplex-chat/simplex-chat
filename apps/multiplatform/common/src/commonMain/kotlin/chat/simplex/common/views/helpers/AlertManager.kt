@@ -273,10 +273,10 @@ class AlertManager {
     profileFullName: String,
     profileImage: @Composable () -> Unit,
     subtitle: String? = null,
-    confirmText: String = generalGetString(MR.strings.connect_plan_open_chat),
-    onConfirm: () -> Unit,
+    confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
+    onConfirm: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
-    onDismiss: (() -> Unit)?,
+    onDismiss: (() -> Unit)? = null,
   ) {
     showAlert {
       AlertDialog(
@@ -325,7 +325,7 @@ class AlertManager {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2,
                     color = MaterialTheme.colors.secondary,
-                    maxLines = 1,
+                    maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                   )
                 }
@@ -341,16 +341,18 @@ class AlertManager {
                   delay(200)
                   focusRequester.requestFocus()
                 }
-                TextButton(onClick = {
-                  onConfirm.invoke()
-                  hideAlert()
-                }, Modifier.focusRequester(focusRequester)) {
-                  Text(confirmText)
+                if (confirmText != null && onConfirm != null) {
+                  TextButton(onClick = {
+                    onConfirm.invoke()
+                    hideAlert()
+                  }, Modifier.focusRequester(focusRequester)) {
+                    Text(confirmText)
+                  }
                 }
                 TextButton(onClick = {
                   onDismiss?.invoke()
                   hideAlert()
-                }) {
+                }, if (confirmText == null) Modifier.focusRequester(focusRequester) else Modifier) {
                   Text(dismissText)
                 }
               }

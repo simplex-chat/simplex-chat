@@ -1454,6 +1454,33 @@ func planAndConnect(
                                 showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
                             }
                         }
+                    case let .noRelays(groupSLinkData_):
+                        logger.debug("planAndConnect, .groupLink, .noRelays")
+                        await MainActor.run {
+                            if let groupSLinkData = groupSLinkData_ {
+                                showOpenChatAlert(
+                                    profileName: groupSLinkData.groupProfile.displayName,
+                                    profileFullName: groupSLinkData.groupProfile.fullName,
+                                    profileImage:
+                                        ProfileImage(
+                                            imageStr: groupSLinkData.groupProfile.image,
+                                            iconName: "antenna.radiowaves.left.and.right.circle.fill",
+                                            size: alertProfileImageSize
+                                        ),
+                                    theme: theme,
+                                    subtitle: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert subtitle"),
+                                    cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("Channel temporarily unavailable", comment: "alert title"),
+                                    message: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert message")
+                                )
+                                cleanup?()
+                            }
+                        }
                     }
                 case let .error(chatError):
                     logger.debug("planAndConnect, .error \(chatErrorString(chatError))")

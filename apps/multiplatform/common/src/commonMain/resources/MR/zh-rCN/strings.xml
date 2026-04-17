@@ -2550,7 +2550,6 @@
     <string name="relay_bar_active_with_failures">%1$d 个中继活跃，共 %2$d 个，%3$d 个失灵</string>
     <string name="relay_bar_connected">%1$d 个中继已连接，共 %2$d 个</string>
     <string name="relay_bar_connected_with_errors">%1$d 个中继已连接，共 %2$d 个，%3$d 个出错</string>
-    <string name="relay_bar_count">%1$d 个中继</string>
     <string name="channel_subscriber_count_singular">%1$d 位订阅者</string>
     <string name="channel_subscriber_count_plural">%1$d 位订阅者</string>
     <string name="relay_status_accepted">已接受</string>

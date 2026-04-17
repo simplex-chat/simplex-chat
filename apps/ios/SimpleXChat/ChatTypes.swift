@@ -1563,8 +1563,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
-        get {
+    public func userCantSendReason(allRelaysBroken: Bool = false) -> (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
             switch self {
             case let .direct(contact):
                 if contact.sendMsgToConnect { return nil }
@@ -1578,6 +1577,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if groupInfo.membership.memberActive {
                     switch(groupChatScope) {
                     case .none:
+                        if allRelaysBroken && groupInfo.useRelays { return ("can't broadcast", nil) }
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
                         if groupInfo.membership.memberRole == .observer {
                             return groupInfo.useRelays ? ("you are subscriber", nil) : ("you are observer", "Please contact group admin.")
@@ -1613,10 +1613,9 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             case .invalidJSON:
                 return ("can't send messages", nil)
             }
-        }
     }
 
-    public var sendMsgEnabled: Bool { userCantSendReason == nil }
+    public var sendMsgEnabled: Bool { userCantSendReason() == nil }
 
     public var incognito: Bool {
         get {
@@ -2564,6 +2563,7 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case rsInvited = "invited"
     case rsAccepted = "accepted"
     case rsActive = "active"
+    case rsInactive = "inactive"
 }
 
 public struct RelayProfile: Codable, Equatable, Hashable {
@@ -2636,6 +2636,7 @@ extension RelayStatus {
         case .rsInvited: "invited"
         case .rsAccepted: "accepted"
         case .rsActive: "active"
+        case .rsInactive: "inactive"
         }
     }
 }
