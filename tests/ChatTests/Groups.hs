@@ -265,7 +265,7 @@ chatGroupTests = do
       it "relay should leave channel" testChannelRelayLeave
       it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
-      it "should create channel when one relay deleted its address" testChannelCreateDeletedRelayAddress
+      it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -9540,8 +9540,8 @@ testChannelSubscriberProfileUpdate ps =
             dan `hasContactProfiles` ["alice", "bob", "kate", "dave"]
             eve `hasContactProfiles` ["alice", "bob", "kate", "dave", "eve"]
 
-testChannelCreateDeletedRelayAddress :: HasCallStack => TestParams -> IO ()
-testChannelCreateDeletedRelayAddress ps =
+testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
+testChannelCreateDeletedRelay ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
