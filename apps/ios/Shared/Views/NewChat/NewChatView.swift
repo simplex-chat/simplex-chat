@@ -1077,7 +1077,7 @@ private func showPrepareContactAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
-        subtitle: ownerVerificationMessage(ownerVerification),
+        information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
         onCancel: { cleanup?() },
@@ -1112,9 +1112,6 @@ private func showPrepareGroupAlert(
 ) {
     let isChannel = !(groupShortLinkInfo?.direct ?? true)
     let subscriberCount = groupShortLinkData.publicGroupData.map { "\($0.publicMemberCount) subscribers" }
-    let subtitle = [subscriberCount, ownerVerificationMessage(ownerVerification)]
-        .compactMap { $0 }
-        .joined(separator: "\n")
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
         profileFullName: groupShortLinkData.groupProfile.fullName,
@@ -1127,7 +1124,8 @@ private func showPrepareGroupAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
-        subtitle: subtitle.isEmpty ? nil : subtitle,
+        subtitle: isChannel ? subscriberCount : nil,
+        information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
             ? NSLocalizedString("Open new channel", comment: "new chat action")
