@@ -304,8 +304,9 @@ struct ChatPreviewView: View {
             if ci.meta.itemDeleted != nil {
                 return (markedDeletedText(), nil)
             }
-            if case let .chat(_, chatLink, ownerSig) = ci.content.msgContent {
-                let descr = if let descr = chatLink.shortDescription, descr != "" { "\n" + descr } else { "" }
+            if case let .chat(_, chatLink, _) = ci.content.msgContent {
+                let descr = if let descr = chatLink.shortDescription?.trimmingCharacters(in: .whitespacesAndNewlines),
+                               descr != "" { "\n" + descr } else { "" }
                 let text = chatLink.displayName + descr
                 return (text, nil)
             }
