@@ -17,6 +17,11 @@ export interface AChatItem {
   chatItem: ChatItem
 }
 
+export interface AddRelayResult {
+  relay: UserChatRelay
+  relayError?: ChatError
+}
+
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept

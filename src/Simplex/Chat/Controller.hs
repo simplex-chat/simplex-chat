@@ -651,6 +651,12 @@ data RelayConnectionResult = RelayConnectionResult
   }
   deriving (Show)
 
+data AddRelayResult = AddRelayResult
+  { relay :: UserChatRelay,
+    relayError :: Maybe ChatError
+  }
+  deriving (Show)
+
 data RelayTestStep
   = RTSGetLink
   | RTSDecodeLink
@@ -721,6 +727,7 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRPublicGroupCreationFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
@@ -1712,6 +1719,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
 
 $(JQ.deriveJSON defaultJSON ''RelayConnectionResult)
+
+$(JQ.deriveJSON defaultJSON ''AddRelayResult)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
 
