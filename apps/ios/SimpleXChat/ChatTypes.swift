@@ -4873,6 +4873,19 @@ public enum MsgChatLink: Equatable, Hashable {
         }
     }
 
+    public var smallIconName: String {
+        switch self {
+        case let .group(_, groupProfile):
+            groupProfile.publicGroup?.groupType == .channel
+                ? "antenna.radiowaves.left.and.right"
+                : "person.2"
+        case let .contact(_, _, business):
+            business ? "briefcase" : "person"
+        case .invitation:
+            "person"
+        }
+    }
+
     public var fullName: String {
         switch self {
         case let .group(_, groupProfile): groupProfile.fullName

@@ -71,6 +71,9 @@ struct ContextItemView: View {
     }
 
     private func contextMsgPreview(_ contextItem: ChatItem) -> some View {
+        if case let .chat(_, chatLink, _) = contextItem.content.msgContent {
+            return image(chatLink.smallIconName) + Text(chatLink.displayName)
+        }
         let r = messageText(contextItem.text, contextItem.formattedText, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(background))
         let t = attachment() + Text(AttributedString(r.string))
         return t.if(r.hasSecrets, transform: hiddenSecretsView)
@@ -83,7 +86,6 @@ struct ContextItemView: View {
             case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
             case .voice: return isFileLoaded ? image("play.fill") : Text("")
-            case let .chat(_, chatLink, _): return image(chatLink.iconName) + Text(chatLink.displayName + " ")
             default: return Text("")
             }
         }
