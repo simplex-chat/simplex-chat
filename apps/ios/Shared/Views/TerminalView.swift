@@ -47,8 +47,9 @@ struct TerminalView: View {
                     }
                 }
         } else {
-            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
-            .onAppear(perform: runAuth)
+            ContentUnavailableView("Locked", systemImage: "lock", description: Text("Tap to unlock"))
+                .onTapGesture(perform: runAuth)
+                .onAppear(perform: runAuth)
         }
     }
 
