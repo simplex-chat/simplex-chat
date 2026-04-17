@@ -54,7 +54,6 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
-    @State private var shareChannelGroupInfo: GroupInfo? = nil
     @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
@@ -263,7 +262,8 @@ struct ChatView: View {
                     showTitle: true,
                     creatingGroup: false,
                     isChannel: groupInfo.useRelays,
-                    shareLinkAction: groupInfo.useRelays ? { shareChannelGroupInfo = groupInfo } : nil
+                    shareGroupInfo: groupInfo.useRelays ? groupInfo : nil,
+                    composeState: $composeState
                 )
             }
         }
@@ -281,14 +281,6 @@ struct ChatView: View {
                     .presentationDetents([.fraction(0.8)])
             } else {
                 ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
-            }
-        }
-        .sheet(isPresented: Binding(
-            get: { shareChannelGroupInfo != nil },
-            set: { if !$0 { shareChannelGroupInfo = nil } }
-        )) {
-            if let gInfo = shareChannelGroupInfo {
-                shareChannelPicker(groupInfo: gInfo, composeState: $composeState)
             }
         }
         .appSheet(
