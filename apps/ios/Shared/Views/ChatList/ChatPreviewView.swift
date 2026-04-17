@@ -437,14 +437,23 @@ struct ChatPreviewView: View {
             smallContentPreviewFile(size: dynamicMediaSize) {
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallViewSize: dynamicMediaSize)
             }
-        case let .chat(_, chatLink, _):
-            smallContentPreview(size: dynamicMediaSize) {
-                ProfileImage(
-                    imageStr: chatLink.image,
-                    iconName: chatLink.iconName,
-                    size: dynamicMediaSize,
-                    color: Color(uiColor: .tertiaryLabel)
-                )
+        case let .chat(_, chatLink, ownerSig):
+            let preview = ProfileImage(
+                imageStr: chatLink.image,
+                iconName: chatLink.iconName,
+                size: dynamicMediaSize,
+                color: Color(uiColor: .tertiaryLabel)
+            )
+            .onTapGesture {
+                planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
+            }
+            if chatLink.image != nil {
+                smallContentPreview(size: dynamicMediaSize) { preview }
+            } else {
+                preview
+                    .padding(.vertical, dynamicMediaSize / 6)
+                    .padding(.leading, 3)
+                    .offset(x: 6)
             }
         default: EmptyView()
         }
