@@ -438,7 +438,7 @@ struct ChatPreviewView: View {
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallViewSize: dynamicMediaSize)
             }
         case let .chat(_, chatLink, ownerSig):
-            smallContentPreview(size: dynamicMediaSize, showBorder: chatLink.image != nil) {
+            smallContentPreview(size: dynamicMediaSize, borderColor: chatLink.image != nil ? .secondary : .clear) {
                 ProfileImage(
                     imageStr: chatLink.image,
                     iconName: chatLink.iconName,
@@ -522,14 +522,14 @@ func flagIcon(size: CGFloat, color: Color) -> some View {
         .foregroundColor(color)
 }
 
-func smallContentPreview(size: CGFloat, showBorder: Bool = true, _ view: @escaping () -> some View) -> some View {
+func smallContentPreview(size: CGFloat, borderColor: Color = .secondary, _ view: @escaping () -> some View) -> some View {
     view()
     .frame(width: size, height: size)
     .cornerRadius(8)
-    .if(showBorder) { v in
-        v.overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
-            .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true))
-    }
+    .overlay(
+        RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
+            .strokeBorder(borderColor, lineWidth: 0.3, antialiased: true)
+    )
     .padding(.vertical, size / 6)
     .padding(.leading, 3)
     .offset(x: 6)
