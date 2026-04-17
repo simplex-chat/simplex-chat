@@ -18,16 +18,12 @@ struct ChatItemForwardingView: View {
     var chatItems: [ChatItem] = []
     var fromChatInfo: ChatInfo? = nil
     var composeState: Binding<ComposeState>? = nil
-    var filteredChats: [Chat]? = nil
     var isProhibited: ((Chat) -> Bool)? = nil
     var onSelectChat: ((Chat) -> Void)? = nil
 
     @State private var searchText: String = ""
     @State private var alert: SomeAlert?
-
-    private var chats: [Chat] {
-        filteredChats ?? filterChatsToForwardTo(chats: ChatModel.shared.chats)
-    }
+    private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
 
     var body: some View {
         NavigationView {
@@ -50,11 +46,11 @@ struct ChatItemForwardingView: View {
 
     private func forwardListView() -> some View {
         VStack(alignment: .leading) {
-            if !chats.isEmpty {
+            if !chatsToForwardTo.isEmpty {
                 List {
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                    let filtered = s == "" ? chats : chats.filter { foundChat($0, s) }
-                    ForEach(filtered) { chat in
+                    let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
+                    ForEach(chats) { chat in
                         forwardListChatView(chat)
                             .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }

@@ -321,10 +321,11 @@ struct FramedItemView: View {
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil, stripLink: String? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
+        let ft = text == "" ? [] : ci.formattedText
         let v = MsgContentView(
             chat: chat,
             text: text,
-            formattedText: ci.formattedText,
+            formattedText: ft,
             textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,

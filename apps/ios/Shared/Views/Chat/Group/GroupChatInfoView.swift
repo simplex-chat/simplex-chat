@@ -1072,7 +1072,6 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
 func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) -> some View {
     let v = ChatItemForwardingView(
         title: "Share channel",
-        composeState: composeState,
         isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
         onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) }
     )
@@ -1116,7 +1115,7 @@ func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: B
         } catch {
             logger.error("shareChatLink error: \(error.localizedDescription)")
             await MainActor.run {
-                showAlert("Error sharing channel", message: error.localizedDescription)
+                showAlert(NSLocalizedString("Error sharing channel", comment: "alert title"), message: error.localizedDescription)
             }
         }
     }

@@ -4732,7 +4732,6 @@ extension MsgContent: Decodable {
                 self = .unknown(type: type, text: text ?? "unknown message format")
             }
         } catch {
-            logger.error("MsgContent decode error: \(error)")
             self = .unknown(type: "unknown", text: "invalid message format")
         }
     }
@@ -4899,14 +4898,13 @@ public enum MsgChatLink: Equatable, Hashable {
     }
 
     public var shortDescription: String? {
-        switch self {
-        case let .group(_, groupProfile):
-            if let d = groupProfile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { d } else { nil }
-        case let .contact(_, profile, _):
-            if let d = profile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { d } else { nil }
-        case let .invitation(_, profile):
-            if let d = profile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { d } else { nil }
+        let s: String? = switch self {
+        case let .group(_, groupProfile): groupProfile.shortDescr
+        case let .contact(_, profile, _): profile.shortDescr
+        case let .invitation(_, profile): profile.shortDescr
         }
+        if let d = s?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { return d }
+        return nil
     }
 
     public func infoLine(signed: Bool) -> String {
