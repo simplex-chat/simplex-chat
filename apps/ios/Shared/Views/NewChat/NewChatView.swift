@@ -1404,7 +1404,7 @@ func planAndConnect(
                     switch glp {
                     case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification):
                         if let groupSLinkData = groupSLinkData_ {
-                            logger.debug("planAndConnect, .groupLink, .ok, short link data present")
+                            logger.debug("planAndConnect, .groupLink, .ok, short link data present, ownerVerification: \(String(describing: ownerVerification))")
                             await MainActor.run {
                                 showPrepareGroupAlert(
                                     connectionLink: connectionLink,
