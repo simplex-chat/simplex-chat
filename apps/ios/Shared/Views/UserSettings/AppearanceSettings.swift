@@ -69,7 +69,7 @@ struct AppearanceSettings: View {
                 }
 
                 Section("Chat list") {
-                    Toggle("Reachable chat toolbar", isOn: $oneHandUI)
+                    Toggle("Bottom chat toolbar", isOn: $oneHandUI)
                     Picker("Toolbar opacity", selection: $toolbarMaterial) {
                         ForEach(ToolbarMaterial.allCases, id: \.rawValue) { tm in
                             Text(tm.text).tag(tm.rawValue)
