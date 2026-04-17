@@ -75,9 +75,7 @@ struct ChatItemView: View {
         if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
             MarkedDeletedItemView(chat: chat, im: im, chatItem: chatItem)
         } else if ci.quotedItem == nil && ci.meta.itemForwarded == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
-            if case let .chat(_, chatLink, ownerSig) = ci.content.msgContent {
-                CIChatLinkView(chat: chat, chatItem: ci, chatLink: chatLink, ownerSig: ownerSig, chatIncognito: chat.chatInfo.incognito)
-            } else if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
+            if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
