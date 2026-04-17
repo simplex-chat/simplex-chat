@@ -251,7 +251,6 @@
 		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
 		E559A0A12E3F77EE00B26F74 /* CommandsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */; };
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkView.swift */; };
-		E5AEC0AD2F91A70A00270665 /* CICardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AC2F91A70A00270665 /* CICardView.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		E5DCF9712C590272007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF96F2C590272007928CC /* Localizable.strings */; };
@@ -621,7 +620,6 @@
 		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
 		E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuView.swift; sourceTree = "<group>"; };
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkView.swift; sourceTree = "<group>"; };
-		E5AEC0AC2F91A70A00270665 /* CICardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CICardView.swift; sourceTree = "<group>"; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5DCF9702C590272007928CC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		E5DCF9722C590274007928CC /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = bg.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -1085,7 +1083,6 @@
 				6440C9FF288857A10062C672 /* CIEventView.swift */,
 				5C58BCD5292BEBE600AF9E4F /* CIChatFeatureView.swift */,
 				5C7031152953C97F00150A12 /* CIFeaturePreferenceView.swift */,
-				E5AEC0AC2F91A70A00270665 /* CICardView.swift */,
 				E5AEC0AA2F91A6EA00270665 /* CIChatLinkView.swift */,
 				644EFFE1292D089800525D5B /* FramedCIVoiceView.swift */,
 				644EFFE32937BE9700525D5B /* MarkedDeletedItemView.swift */,
@@ -1652,7 +1649,6 @@
 				5CB634AD29E46CF70066AD6B /* LocalAuthView.swift in Sources */,
 				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
 				18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */,
-				E5AEC0AD2F91A70A00270665 /* CICardView.swift in Sources */,
 				642BA82D2CE50495005E9412 /* NewServerView.swift in Sources */,
 				184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */,
 				643B3B4E2CCFD6400083A2CF /* OperatorView.swift in Sources */,
