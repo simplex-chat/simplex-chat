@@ -170,7 +170,7 @@ struct FramedItemView: View {
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
             case let .chat(text, chatLink, ownerSig):
-                let hasText = !chatCardText(text, chatLink.connLinkStr).isEmpty
+                let hasText = text != chatLink.connLinkStr
                 CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
                     .overlay(DetermineWidth())
                     .simultaneousGesture(TapGesture().onEnded {
@@ -314,20 +314,19 @@ struct FramedItemView: View {
     }
     
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil, stripLink: String? = nil) -> some View {
-        let fullText = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
-        let text = if let stripLink { chatCardText(fullText, stripLink) } else { fullText }
+        let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
-        let ft = text == "" ? [] : stripLink == nil ? ci.formattedText : stripFormattedText(ci.formattedText, stripLink)
         let v = MsgContentView(
             chat: chat,
             text: text,
-            formattedText: ft,
+            formattedText: ci.formattedText,
             textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
-            prefix: txtPrefix
+            prefix: txtPrefix,
+            stripLink: stripLink
         )
         .environment(\.containerBackground, UIColor(chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)

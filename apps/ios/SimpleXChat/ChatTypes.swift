@@ -4594,6 +4594,10 @@ public enum MsgContent: Equatable, Hashable {
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
+    public var chatLinkStr: String? {
+        if case let .chat(_, chatLink, _) = self { chatLink.connLinkStr } else { nil }
+    }
+
     public var text: String {
         switch self {
         case let .text(text): return text
