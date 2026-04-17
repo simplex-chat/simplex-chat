@@ -527,10 +527,8 @@ func smallContentPreview(size: CGFloat, borderColor: Color = .secondary, _ view:
     view()
     .frame(width: size, height: size)
     .cornerRadius(8)
-    .overlay(
-        RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
-            .strokeBorder(borderColor, lineWidth: 0.3, antialiased: true)
-    )
+    .overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
+        .strokeBorder(borderColor, lineWidth: 0.3, antialiased: true))
     .padding(.vertical, size / 6)
     .padding(.leading, 3)
     .offset(x: 6)

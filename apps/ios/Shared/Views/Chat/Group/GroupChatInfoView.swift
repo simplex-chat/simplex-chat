@@ -115,8 +115,6 @@ struct GroupChatInfoView: View {
                                 } label: {
                                     Label("Share link", systemImage: "square.and.arrow.up")
                                 }
-                            }
-                            if !groupInfo.isOwner && groupInfo.groupProfile.publicGroup?.groupLink != nil {
                                 Button {
                                     showSharePicker = true
                                 } label: {
@@ -372,12 +370,6 @@ struct GroupChatInfoView: View {
                     channelLinkActionButton(width: buttonWidth)
                 } else if !groupInfo.useRelays && groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
-                }
-                if groupInfo.groupProfile.publicGroup?.groupLink != nil {
-                    InfoViewButton(image: "arrowshape.turn.up.forward", title: "share", width: buttonWidth) {
-                        showSharePicker = true
-                    }
-                    .disabled(!groupInfo.ready)
                 }
                 if let nextNtfMode = chat.chatInfo.nextNtfMode {
                     muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)

@@ -4833,8 +4833,8 @@ public enum MsgChatLink: Equatable, Hashable {
     case invitation(invLink: String, profile: Profile)
     case group(connLink: String, groupProfile: GroupProfile)
 
-    public var isChannel: Bool {
-        if case let .group(_, gp) = self { gp.publicGroup?.groupType == .channel } else { false }
+    public var isPublicGroup: Bool {
+        if case let .group(_, gp) = self { gp.publicGroup != nil } else { false }
     }
 
     public var connLinkStr: String {
@@ -4864,10 +4864,9 @@ public enum MsgChatLink: Equatable, Hashable {
     public var iconName: String {
         switch self {
         case let .group(_, groupProfile):
-            if groupProfile.publicGroup?.groupType == .channel {
-                "antenna.radiowaves.left.and.right.circle.fill"
-            } else {
-                "person.2.circle.fill"
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: "antenna.radiowaves.left.and.right.circle.fill"
+            case .unknown, .none: "person.2.circle.fill"
             }
         case let .contact(_, _, business):
             business ? "briefcase.circle.fill" : "person.crop.circle.fill"
@@ -4879,9 +4878,10 @@ public enum MsgChatLink: Equatable, Hashable {
     public var smallIconName: String {
         switch self {
         case let .group(_, groupProfile):
-            groupProfile.publicGroup?.groupType == .channel
-                ? "antenna.radiowaves.left.and.right"
-                : "person.2"
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: "antenna.radiowaves.left.and.right"
+            case .unknown, .none: "person.2"
+            }
         case let .contact(_, _, business):
             business ? "briefcase" : "person"
         case .invitation:
@@ -4910,10 +4910,9 @@ public enum MsgChatLink: Equatable, Hashable {
     public func infoLine(signed: Bool) -> String {
         var s: String = switch self {
         case let .group(_, groupProfile):
-            if groupProfile.publicGroup?.groupType == .channel {
-                NSLocalizedString("Channel link", comment: "chat link info line")
-            } else {
-                NSLocalizedString("Group link", comment: "chat link info line")
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: NSLocalizedString("Channel link", comment: "chat link info line")
+            case .unknown, .none: NSLocalizedString("Group link", comment: "chat link info line")
             }
         case let .contact(_, _, business):
             business
@@ -4924,7 +4923,7 @@ public enum MsgChatLink: Equatable, Hashable {
         }
         if signed {
             s += " " + (
-                self.isChannel
+                self.isPublicGroup
                     ? NSLocalizedString("(from owner)", comment: "chat link info line")
                     : NSLocalizedString("(signed)", comment: "chat link info line")
             )
