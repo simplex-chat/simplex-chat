@@ -47,7 +47,7 @@ export class SupportBot {
     private mainUserId: number,
     private grokUserId: number | null,
   ) {
-    this.cards = new CardManager(chat, config, mainUserId, config.cardFlushMinutes * 60 * 1000)
+    this.cards = new CardManager(chat, config, mainUserId, config.cardFlushSeconds * 1000)
   }
 
   private get grokEnabled(): boolean {

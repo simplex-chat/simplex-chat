@@ -59,7 +59,7 @@ export class CardManager {
     private chat: api.ChatApi,
     private config: Config,
     private mainUserId: number,
-    flushIntervalMs = 15 * 60 * 1000,
+    flushIntervalMs = 300 * 1000,
   ) {
     this.flushInterval = setInterval(() => this.flush(), flushIntervalMs)
     this.flushInterval.unref()

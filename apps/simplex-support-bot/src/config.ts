@@ -10,7 +10,7 @@ export interface Config {
   grokContactId: number | null  // resolved at startup
   timezone: string
   completeHours: number
-  cardFlushMinutes: number
+  cardFlushSeconds: number
   contextFile: string | null
   grokApiKey: string | null
 }
@@ -50,7 +50,7 @@ export function parseConfig(args: string[]): Config {
 
   const timezone = optionalArg(args, "--timezone", "UTC")
   const completeHours = parseInt(optionalArg(args, "--complete-hours", "3"), 10)
-  const cardFlushMinutes = parseInt(optionalArg(args, "--card-flush-minutes", "15"), 10)
+  const cardFlushSeconds = parseInt(optionalArg(args, "--card-flush-seconds", "300"), 10)
   const contextFileRaw = optionalArg(args, "--context-file", "")
   const contextFile = contextFileRaw || null
 
@@ -65,7 +65,7 @@ export function parseConfig(args: string[]): Config {
     grokContactId: null,
     timezone,
     completeHours,
-    cardFlushMinutes,
+    cardFlushSeconds,
     contextFile,
     grokApiKey,
   }

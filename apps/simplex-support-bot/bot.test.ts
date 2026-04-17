@@ -212,7 +212,7 @@ function makeConfig(overrides: Partial<any> = {}) {
     groupLinks: "",
     timezone: "UTC",
     completeHours: 3,
-    cardFlushMinutes: 15,
+    cardFlushSeconds: 300,
     grokApiKey: "test-key",
     grokContactId: GROK_CONTACT_ID as number | null,
     ...overrides,
