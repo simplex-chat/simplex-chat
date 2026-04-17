@@ -19,7 +19,7 @@ struct ComposeChatLinkView: View {
                 Text(chatLink.displayName)
                     .font(.headline)
                     .lineLimit(1)
-                Text(chatLink.description)
+                Text(chatLink.infoLine(signed: false))
                     .font(.caption)
                     .foregroundColor(theme.colors.secondary)
                     .lineLimit(1)

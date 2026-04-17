@@ -4869,21 +4869,44 @@ public enum MsgChatLink: Equatable, Hashable {
         }
     }
 
-    public var description: String {
+    public var fullName: String {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.fullName
+        case let .contact(_, profile, _): profile.fullName
+        case let .invitation(_, profile): profile.fullName
+        }
+    }
+
+    public var shortDescription: String? {
         switch self {
         case let .group(_, groupProfile):
+            if let d = groupProfile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { d } else { nil }
+        case let .contact(_, profile, _):
+            if let d = profile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { d } else { nil }
+        case let .invitation(_, profile):
+            if let d = profile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { d } else { nil }
+        }
+    }
+
+    public func infoLine(signed: Bool) -> String {
+        var s: String = switch self {
+        case let .group(_, groupProfile):
             if groupProfile.publicGroup?.groupType == .channel {
-                NSLocalizedString("Channel", comment: "chat link type")
+                signed
+                    ? NSLocalizedString("Channel link from owner", comment: "chat link info line")
+                    : NSLocalizedString("Channel link", comment: "chat link info line")
             } else {
-                NSLocalizedString("Group", comment: "chat link type")
+                NSLocalizedString("Group link", comment: "chat link info line")
             }
         case let .contact(_, _, business):
             business
-                ? NSLocalizedString("Business address", comment: "chat link type")
-                : NSLocalizedString("Contact address", comment: "chat link type")
+                ? NSLocalizedString("Business address", comment: "chat link info line")
+                : NSLocalizedString("SimpleX address", comment: "chat link info line")
         case .invitation:
-            NSLocalizedString("One-time link", comment: "chat link type")
+            NSLocalizedString("One-time link", comment: "chat link info line")
         }
+        if signed { s += " " + NSLocalizedString("(signed)", comment: "chat link info line") }
+        return s
     }
 }
 

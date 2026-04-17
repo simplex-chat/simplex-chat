@@ -170,12 +170,13 @@ struct FramedItemView: View {
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
             case let .chat(text, chatLink, ownerSig):
-                CIChatLinkHeader(chatLink: chatLink, ownerSig: ownerSig)
+                let hasText = !chatCardText(text, chatLink.connLinkStr).isEmpty
+                CIChatLinkHeader(chatItem: chatItem, chatLink: chatLink, ownerSig: ownerSig, hasText: hasText)
                     .overlay(DetermineWidth())
                     .simultaneousGesture(TapGesture().onEnded {
                         planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
                     })
-                if !chatCardText(text, chatLink.connLinkStr).isEmpty {
+                if hasText {
                     ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr)
                 }
             case let .unknown(_, text: text):
