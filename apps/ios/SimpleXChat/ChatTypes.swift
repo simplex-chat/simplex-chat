@@ -4827,6 +4827,62 @@ public enum MsgChatLink: Codable, Equatable, Hashable {
     case contact(connLink: String, profile: Profile, business: Bool)
     case invitation(invLink: String, profile: Profile)
     case group(connLink: String, groupProfile: GroupProfile)
+
+    public var connLinkStr: String {
+        switch self {
+        case let .group(connLink, _): connLink
+        case let .contact(connLink, _, _): connLink
+        case let .invitation(invLink, _): invLink
+        }
+    }
+
+    public var image: String? {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.image
+        case let .contact(_, profile, _): profile.image
+        case let .invitation(_, profile): profile.image
+        }
+    }
+
+    public var displayName: String {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.displayName
+        case let .contact(_, profile, _): profile.displayName
+        case let .invitation(_, profile): profile.displayName
+        }
+    }
+
+    public var iconName: String {
+        switch self {
+        case let .group(_, groupProfile):
+            if groupProfile.publicGroup?.groupType == .channel {
+                "antenna.radiowaves.left.and.right.circle.fill"
+            } else {
+                "person.2.circle.fill"
+            }
+        case let .contact(_, _, business):
+            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
+        case .invitation:
+            "person.crop.circle.fill"
+        }
+    }
+
+    public var description: String {
+        switch self {
+        case let .group(_, groupProfile):
+            if groupProfile.publicGroup?.groupType == .channel {
+                NSLocalizedString("Channel", comment: "chat link type")
+            } else {
+                NSLocalizedString("Group", comment: "chat link type")
+            }
+        case let .contact(_, _, business):
+            business
+                ? NSLocalizedString("Business address", comment: "chat link type")
+                : NSLocalizedString("Contact address", comment: "chat link type")
+        case .invitation:
+            NSLocalizedString("One-time link", comment: "chat link type")
+        }
+    }
 }
 
 public struct LinkOwnerSig: Codable, Equatable, Hashable {

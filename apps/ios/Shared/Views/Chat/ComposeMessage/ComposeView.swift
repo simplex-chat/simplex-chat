@@ -266,66 +266,9 @@ struct ComposeState {
     }
 }
 
-func chatLinkStr(_ chatLink: MsgChatLink) -> String {
-    switch chatLink {
-    case let .group(connLink, _): connLink
-    case let .contact(connLink, _, _): connLink
-    case let .invitation(invLink, _): invLink
-    }
-}
-
-func chatLinkImage(_ chatLink: MsgChatLink) -> String? {
-    switch chatLink {
-    case let .group(_, groupProfile): groupProfile.image
-    case let .contact(_, profile, _): profile.image
-    case let .invitation(_, profile): profile.image
-    }
-}
-
-func chatLinkDisplayName(_ chatLink: MsgChatLink) -> String {
-    switch chatLink {
-    case let .group(_, groupProfile): groupProfile.displayName
-    case let .contact(_, profile, _): profile.displayName
-    case let .invitation(_, profile): profile.displayName
-    }
-}
-
-func chatLinkIconName(_ chatLink: MsgChatLink) -> String {
-    switch chatLink {
-    case let .group(_, groupProfile):
-        if groupProfile.publicGroup?.groupType == .channel {
-            "antenna.radiowaves.left.and.right.circle.fill"
-        } else {
-            "person.2.circle.fill"
-        }
-    case let .contact(_, _, business):
-        business ? "briefcase.circle.fill" : "person.crop.circle.fill"
-    case .invitation:
-        "person.crop.circle.fill"
-    }
-}
-
-func chatLinkDescription(_ chatLink: MsgChatLink) -> String {
-    switch chatLink {
-    case let .group(_, groupProfile):
-        if groupProfile.publicGroup?.groupType == .channel {
-            NSLocalizedString("Channel", comment: "chat link type")
-        } else {
-            NSLocalizedString("Group", comment: "chat link type")
-        }
-    case let .contact(_, _, business):
-        business
-            ? NSLocalizedString("Business address", comment: "chat link type")
-            : NSLocalizedString("Contact address", comment: "chat link type")
-    case .invitation:
-        NSLocalizedString("One-time link", comment: "chat link type")
-    }
-}
-
 func chatCardText(_ text: String, _ chatLink: MsgChatLink) -> String {
-    let link = chatLinkStr(chatLink)
-    if text.hasSuffix("\n" + link) {
-        return String(text.dropLast(link.count + 1))
+    if text.hasSuffix("\n" + chatLink.connLinkStr) {
+        return String(text.dropLast(chatLink.connLinkStr.count + 1))
     }
     return text
 }
@@ -1452,7 +1395,7 @@ struct ComposeView: View {
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case let .chatLinkPreview(chatLink, ownerSig):
-                let linkStr = chatLinkStr(chatLink)
+                let linkStr = chatLink.connLinkStr
                 let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
                 sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case let .mediaPreviews(media):

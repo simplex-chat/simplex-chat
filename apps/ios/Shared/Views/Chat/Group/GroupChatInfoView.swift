@@ -258,21 +258,7 @@ struct GroupChatInfoView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .sheet(isPresented: $showSharePicker) {
-            if #available(iOS 16.0, *) {
-                ChatItemForwardingView(
-                    title: "Share channel",
-                    composeState: $composeState,
-                    isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-                    onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: $composeState) }
-                ).presentationDetents([.fraction(0.8)])
-            } else {
-                ChatItemForwardingView(
-                    title: "Share channel",
-                    composeState: $composeState,
-                    isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-                    onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: $composeState) }
-                )
-            }
+            shareChannelPicker(groupInfo: groupInfo, composeState: $composeState)
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
@@ -1079,6 +1065,21 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
         title: Text("Receipts are disabled"),
         message: Text("This group has over \(SMALL_GROUPS_RCPS_MEM_LIMIT) members, delivery receipts are not sent.")
     )
+}
+
+@ViewBuilder
+func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState>) -> some View {
+    let v = ChatItemForwardingView(
+        title: "Share channel",
+        composeState: composeState,
+        isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) }
+    )
+    if #available(iOS 16.0, *) {
+        v.presentationDetents([.fraction(0.8)])
+    } else {
+        v
+    }
 }
 
 func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: Binding<ComposeState>) {

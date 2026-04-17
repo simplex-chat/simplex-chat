@@ -48,7 +48,7 @@ struct CIChatLinkView: View {
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
         .simultaneousGesture(TapGesture().onEnded {
             planAndConnect(
-                chatLinkStr(chatLink),
+                chatLink.connLinkStr,
                 linkOwnerSig: ownerSig,
                 theme: theme,
                 dismiss: false
@@ -59,15 +59,15 @@ struct CIChatLinkView: View {
     private func linkHeaderView() -> some View {
         HStack(alignment: .top) {
             ProfileImage(
-                imageStr: chatLinkImage(chatLink),
-                iconName: chatLinkIconName(chatLink),
+                imageStr: chatLink.image,
+                iconName: chatLink.iconName,
                 size: 44,
                 color: theme.colors.primary
             )
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
-                Text(chatLinkDisplayName(chatLink)).font(.headline).lineLimit(2)
-                Text(chatLinkDescription(chatLink))
+                Text(chatLink.displayName).font(.headline).lineLimit(2)
+                Text(chatLink.description)
                     .font(.subheadline)
                     .foregroundColor(theme.colors.secondary)
                     .lineLimit(1)

@@ -10,16 +10,16 @@ struct ComposeChatLinkView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             ProfileImage(
-                imageStr: chatLinkImage(chatLink),
-                iconName: chatLinkIconName(chatLink),
+                imageStr: chatLink.image,
+                iconName: chatLink.iconName,
                 size: 44
             )
             .padding(.leading, 12)
             VStack(alignment: .leading, spacing: 2) {
-                Text(chatLinkDisplayName(chatLink))
+                Text(chatLink.displayName)
                     .font(.headline)
                     .lineLimit(1)
-                Text(chatLinkDescription(chatLink))
+                Text(chatLink.description)
                     .font(.caption)
                     .foregroundColor(theme.colors.secondary)
                     .lineLimit(1)

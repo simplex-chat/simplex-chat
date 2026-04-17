@@ -288,17 +288,7 @@ struct ChatView: View {
             set: { if !$0 { shareChannelGroupInfo = nil } }
         )) {
             if let gInfo = shareChannelGroupInfo {
-                let v = ChatItemForwardingView(
-                    title: "Share channel",
-                    composeState: $composeState,
-                    isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-                    onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: gInfo, composeState: $composeState) }
-                )
-                if #available(iOS 16.0, *) {
-                    v.presentationDetents([.fraction(0.8)])
-                } else {
-                    v
-                }
+                shareChannelPicker(groupInfo: gInfo, composeState: $composeState)
             }
         }
         .appSheet(
