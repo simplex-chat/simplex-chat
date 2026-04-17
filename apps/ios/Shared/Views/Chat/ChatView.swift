@@ -2108,7 +2108,7 @@ struct ChatView: View {
         func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let live = composeState.liveMessage != nil
-            let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil
+            let canReply = ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && selectedChatItems == nil && chat.chatInfo.sendMsgEnabled
             return ZStack(alignment: .trailing) {
                 Image(systemName: "arrowshape.turn.up.left")
                     .font(.system(size: 18))
@@ -2276,7 +2276,7 @@ struct ChatView: View {
                    availableReactions.count > 0 {
                     reactionsGroup
                 }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote && chat.chatInfo.sendMsgEnabled {
                     replyButton
                 }
                 let fileSource = getLoadedFileSource(ci.file)
