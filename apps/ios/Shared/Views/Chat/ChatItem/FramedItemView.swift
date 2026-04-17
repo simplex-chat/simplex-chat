@@ -254,6 +254,11 @@ struct FramedItemView: View {
                 ciQuotedMsgView(qi)
                     .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
                 ciQuoteIconView("mic.fill")
+            case let .chat(text, chatLink, _):
+                let prefix = NSAttributedString(string: chatLink.displayName + (text != chatLink.connLinkStr ? " - " : ""))
+                ciQuotedMsgView(qi, stripLink: chatLink.connLinkStr, prefix: prefix)
+                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                ciQuoteIconView(chatLink.smallIconName)
             default:
                 ciQuotedMsgView(qi)
             }
@@ -270,7 +275,7 @@ struct FramedItemView: View {
         }
     }
     
-    private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
+    private func ciQuotedMsgView(_ qi: CIQuote, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
         Group {
             if let sender = qi.getSender(membership()) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -278,10 +283,10 @@ struct FramedItemView: View {
                         .font(.caption)
                         .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
                         .lineLimit(1)
-                    ciQuotedMsgTextView(qi, lines: 2)
+                    ciQuotedMsgTextView(qi, lines: 2, stripLink: stripLink, prefix: prefix)
                 }
             } else {
-                ciQuotedMsgTextView(qi, lines: 3)
+                ciQuotedMsgTextView(qi, lines: 3, stripLink: stripLink, prefix: prefix)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -290,8 +295,8 @@ struct FramedItemView: View {
     }
 
     @inline(__always)
-    private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
-        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline)
+    private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int, stripLink: String? = nil, prefix: NSAttributedString? = nil) -> some View {
+        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline, prefix: prefix, stripLink: stripLink)
             .lineLimit(lines)
             .padding(.bottom, 6)
     }
