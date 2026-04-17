@@ -54,6 +54,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var shareChannelGroupInfo: GroupInfo? = nil
     @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
@@ -261,7 +262,8 @@ struct ChatView: View {
                     groupLinkMemberRole: $groupLinkMemberRole,
                     showTitle: true,
                     creatingGroup: false,
-                    isChannel: groupInfo.useRelays
+                    isChannel: groupInfo.useRelays,
+                    shareLinkAction: groupInfo.useRelays ? { shareChannelGroupInfo = groupInfo } : nil
                 )
             }
         }
@@ -279,6 +281,24 @@ struct ChatView: View {
                     .presentationDetents([.fraction(0.8)])
             } else {
                 ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { shareChannelGroupInfo != nil },
+            set: { if !$0 { shareChannelGroupInfo = nil } }
+        )) {
+            if let gInfo = shareChannelGroupInfo {
+                let v = ChatItemForwardingView(
+                    title: "Share channel",
+                    composeState: $composeState,
+                    isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+                    onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: gInfo, composeState: $composeState) }
+                )
+                if #available(iOS 16.0, *) {
+                    v.presentationDetents([.fraction(0.8)])
+                } else {
+                    v
+                }
             }
         }
         .appSheet(

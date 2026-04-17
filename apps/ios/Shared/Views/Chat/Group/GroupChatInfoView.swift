@@ -263,14 +263,14 @@ struct GroupChatInfoView: View {
                     title: "Share channel",
                     composeState: $composeState,
                     isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-                    onSelectChat: { chat in selectShareDestination(chat) }
+                    onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: $composeState) }
                 ).presentationDetents([.fraction(0.8)])
             } else {
                 ChatItemForwardingView(
                     title: "Share channel",
                     composeState: $composeState,
                     isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
-                    onSelectChat: { chat in selectShareDestination(chat) }
+                    onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: $composeState) }
                 )
             }
         }
@@ -466,32 +466,6 @@ struct GroupChatInfoView: View {
             .hidden()
         }
         .disabled(!groupInfo.ready)
-    }
-
-    private func selectShareDestination(_ chat: Chat) {
-        let gInfo = groupInfo
-        let sendAsGroup = if let gInfo = chat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
-        Task {
-            do {
-                let mc = try await apiShareChatMsgContent(
-                    shareChatType: .group, shareChatId: Int64(gInfo.groupId),
-                    toChatType: chat.chatInfo.chatType, toChatId: chat.chatInfo.apiId,
-                    toScope: chat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
-                )
-                if case let .chat(_, chatLink, ownerSig) = mc {
-                    await MainActor.run {
-                        dismissAllSheets {
-                            composeState = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
-                            if chat.id != ChatModel.shared.chatId {
-                                ItemsModel.shared.loadOpenChat(chat.id)
-                            }
-                        }
-                    }
-                }
-            } catch {
-                logger.error("selectShareDestination error: \(error.localizedDescription)")
-            }
-        }
     }
 
     private func addMembersButton() -> some View {
@@ -1105,6 +1079,31 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
         title: Text("Receipts are disabled"),
         message: Text("This group has over \(SMALL_GROUPS_RCPS_MEM_LIMIT) members, delivery receipts are not sent.")
     )
+}
+
+func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: Binding<ComposeState>) {
+    let sendAsGroup = if let gInfo = destChat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
+    Task {
+        do {
+            let mc = try await apiShareChatMsgContent(
+                shareChatType: .group, shareChatId: Int64(sourceGroupInfo.groupId),
+                toChatType: destChat.chatInfo.chatType, toChatId: destChat.chatInfo.apiId,
+                toScope: destChat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+            )
+            if case let .chat(_, chatLink, ownerSig) = mc {
+                await MainActor.run {
+                    dismissAllSheets {
+                        composeState.wrappedValue = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if destChat.id != ChatModel.shared.chatId {
+                            ItemsModel.shared.loadOpenChat(destChat.id)
+                        }
+                    }
+                }
+            }
+        } catch {
+            logger.error("shareChatLink error: \(error.localizedDescription)")
+        }
+    }
 }
 
 struct GroupChatInfoView_Previews: PreviewProvider {
