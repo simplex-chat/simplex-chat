@@ -1101,9 +1101,17 @@ func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: B
                         }
                     }
                 }
+            } else {
+                logger.error("shareChatLink: unexpected MsgContent: \(String(describing: mc))")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error sharing channel", comment: "alert title"), message: String(describing: mc))
+                }
             }
         } catch {
             logger.error("shareChatLink error: \(error.localizedDescription)")
+            await MainActor.run {
+                showAlert("Error sharing channel", message: error.localizedDescription)
+            }
         }
     }
 }
