@@ -1,10 +1,8 @@
 import {isWeekend} from "./util.js"
 
-export function welcomeMessage(groupLinks: string): string {
-  return `Hello! Feel free to ask any question about SimpleX Chat.
-*Only SimpleX Chat team has access to your messages.* This is a SimpleX Chat team bot - it is not any LLM or AI.${groupLinks ? `\n*Join public groups*: ${groupLinks}` : ""}
+export const welcomeMessage = `Hello! Feel free to ask any question about SimpleX Chat.
+*Only SimpleX Chat team has access to your messages.* This is a SimpleX Chat team bot - it is not any LLM or AI.
 Please send questions in English, you can use translator.`
-}
 
 export function queueMessage(timezone: string, grokEnabled: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"

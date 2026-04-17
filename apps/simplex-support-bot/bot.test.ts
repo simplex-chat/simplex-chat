@@ -1648,15 +1648,9 @@ describe("End-to-End Flows", () => {
 })
 
 describe("Message Templates", () => {
-  test("welcomeMessage includes group links when provided", () => {
-    const msg = welcomeMessage("https://simplex.chat/group")
-    expect(msg).toContain("https://simplex.chat/group")
-    expect(msg).toContain("Join public groups")
-  })
-
-  test("welcomeMessage omits group links line when empty", () => {
-    const msg = welcomeMessage("")
-    expect(msg).not.toContain("Join public groups")
+  test("welcomeMessage is a non-empty string", () => {
+    expect(typeof welcomeMessage).toBe("string")
+    expect(welcomeMessage.length).toBeGreaterThan(0)
   })
 
   test("grokActivatedMessage mentions Grok can see earlier messages", () => {

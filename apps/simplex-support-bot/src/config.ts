@@ -8,10 +8,10 @@ export interface Config {
   teamGroup: IdName          // name from CLI, id resolved at startup from state file
   teamMembers: IdName[]      // optional, empty if not provided
   grokContactId: number | null  // resolved at startup
-  groupLinks: string
   timezone: string
   completeHours: number
   cardFlushMinutes: number
+  contextFile: string | null
   grokApiKey: string | null
 }
 
@@ -48,20 +48,25 @@ export function parseConfig(args: string[]): Config {
     ? teamMembersRaw.split(",").map(parseIdName)
     : []
 
-  const groupLinks = optionalArg(args, "--group-links", "")
   const timezone = optionalArg(args, "--timezone", "UTC")
   const completeHours = parseInt(optionalArg(args, "--complete-hours", "3"), 10)
   const cardFlushMinutes = parseInt(optionalArg(args, "--card-flush-minutes", "15"), 10)
+  const contextFileRaw = optionalArg(args, "--context-file", "")
+  const contextFile = contextFileRaw || null
+
+  if (grokApiKey && !contextFile) {
+    throw new Error("GROK_API_KEY is set but --context-file is not provided. Grok requires a context file.")
+  }
 
   return {
     dbPrefix,
     teamGroup,
     teamMembers,
     grokContactId: null,
-    groupLinks,
     timezone,
     completeHours,
     cardFlushMinutes,
+    contextFile,
     grokApiKey,
   }
 }

@@ -1,5 +1,4 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
-import {join} from "path"
 import {api, bot, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
 import {parseConfig} from "./config.js"
@@ -74,7 +73,7 @@ async function main(): Promise<void> {
       addressSettings: {
         businessAddress: true,
         autoAccept: true,
-        welcomeMessage: welcomeMessage(config.groupLinks),
+        welcomeMessage,
       },
       commands: [
         ...(grokEnabled ? [{type: "command" as const, keyword: "grok", label: "Ask Grok AI"}] : []),
@@ -280,17 +279,19 @@ async function main(): Promise<void> {
     }
   }
 
-  // Load Grok context docs and build API client only if enabled
+  // Load Grok context and build API client only if enabled
   let grokApi: GrokApiClient | null = null
   if (grokEnabled) {
-    let docsContext = ""
-    try {
-      docsContext = readFileSync(join(process.cwd(), "docs", "simplex-context.md"), "utf-8")
-      log(`Loaded Grok context docs: ${docsContext.length} chars`)
-    } catch {
-      log("Warning: docs/simplex-context.md not found")
+    let contextFile = ""
+    if (config.contextFile) {
+      try {
+        contextFile = readFileSync(config.contextFile, "utf-8")
+        log(`Loaded Grok context: ${contextFile.length} chars from ${config.contextFile}`)
+      } catch {
+        log(`Warning: context file not found: ${config.contextFile}`)
+      }
     }
-    grokApi = new GrokApiClient(config.grokApiKey!, docsContext)
+    grokApi = new GrokApiClient(config.grokApiKey!, contextFile)
   }
 
   // Create SupportBot
