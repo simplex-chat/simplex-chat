@@ -7131,6 +7131,10 @@ Query: UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE groups SET relay_request_err_reason = ?, updated_at = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)

@@ -265,6 +265,7 @@ chatGroupTests = do
       it "relay should leave channel" testChannelRelayLeave
       it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
+      it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -9538,6 +9539,33 @@ testChannelSubscriberProfileUpdate ps =
             cath `hasContactProfiles` ["alice", "bob", "kate", "dave"]
             dan `hasContactProfiles` ["alice", "bob", "kate", "dave"]
             eve `hasContactProfiles` ["alice", "bob", "kate", "dave", "eve"]
+
+testChannelCreateDeletedRelay :: HasCallStack => TestParams -> IO ()
+testChannelCreateDeletedRelay ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        bob ##> "/ad"
+        (bobSLink, _) <- getContactLinks bob True
+        cath ##> "/ad"
+        (cathSLink, _) <- getContactLinks cath True
+
+        alice ##> ("/relays name=bob " <> bobSLink <> " name=cath " <> cathSLink)
+        alice <## "ok"
+
+        -- cath deletes her address - simulates relay becoming unavailable
+        cath ##> "/da"
+        cath <## "Your chat address is deleted - accepted contacts will remain connected."
+        cath <## "To create a new chat address use /ad"
+
+        -- channel creation fails because one relay's address was deleted
+        alice ##> "/public group relays=1,2 #team"
+        alice <## "channel not created, results:"
+        alice <## "  relay 1: ok"
+        alice <##. "  relay 2: ChatErrorAgent"
+        -- deleteInProgressGroup deletes relay connection alice joined on bob;
+        -- bob's agent reports AUTH error when the queue is gone — drain it.
+        void $ getTermLine bob
 
 testChannelMessageUpdate :: HasCallStack => TestParams -> IO ()
 testChannelMessageUpdate ps =

@@ -5,6 +5,7 @@ This file is generated automatically.
 - [ACIReaction](#acireaction)
 - [AChat](#achat)
 - [AChatItem](#achatitem)
+- [AddRelayResult](#addrelayresult)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
@@ -218,6 +219,15 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
+
+
+---
+
+## AddRelayResult
+
+**Record type**:
+- relay: [UserChatRelay](#userchatrelay)
+- relayError: [ChatError](#chaterror)?
 
 
 ---
