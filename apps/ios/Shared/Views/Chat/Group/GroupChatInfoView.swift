@@ -115,6 +115,8 @@ struct GroupChatInfoView: View {
                                 } label: {
                                     Label("Share link", systemImage: "square.and.arrow.up")
                                 }
+                            }
+                            if groupInfo.groupProfile.publicGroup?.groupLink != nil {
                                 Button {
                                     showSharePicker = true
                                 } label: {
@@ -385,7 +387,7 @@ struct GroupChatInfoView: View {
                 } else if !groupInfo.useRelays && groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
-                if groupInfo.useRelays && groupInfo.groupProfile.publicGroup?.groupLink != nil {
+                if groupInfo.groupProfile.publicGroup?.groupLink != nil {
                     InfoViewButton(image: "arrowshape.turn.up.forward", title: "share", width: buttonWidth) {
                         showSharePicker = true
                     }
