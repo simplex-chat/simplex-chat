@@ -1109,6 +1109,7 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
             scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
             onSearch: {},
             localAlias: ""
         )
