@@ -2648,4 +2648,21 @@
     <string name="rcv_channel_event_updated_channel_profile">frissített csatornaprofil</string>
     <string name="alert_text_msg_reception_error">Az alkalmazás %1$d sikertelen letöltési kísérlet után eltávolította ezt az üzenetet.</string>
     <string name="rcv_msg_error_dropped">eltávolítva (%1$d kísérlet)</string>
+    <string name="channel_temporarily_unavailable">A csatorna ideiglenesen nem érhető el</string>
+    <string name="channel_no_active_relays_try_later">A csatornának nincsenek aktív átjátszói. Próbáljon meg később csatlakozni.</string>
+    <string name="cant_broadcast_message">nem lehet közvetíteni</string>
+    <string name="relay_conn_status_removed_by_operator">az üzemeltető eltávolította</string>
+    <string name="relay_status_inactive">inaktív</string>
+    <string name="relay_bar_all_relays_removed">Az összes átjátszó el lett távolítva</string>
+    <string name="relay_bar_all_relays_failed">Nem sikerült kapcsolódni egyetlen átjátszóhoz sem</string>
+    <string name="relay_bar_no_active_relays">Nincsenek aktív átjátszók</string>
+    <string name="relay_bar_relays_removed">%1$d átjátszó eltávolítva</string>
+    <string name="relay_bar_relays_failed">%1$d átjátszóhoz nem sikerült kapcsolódni</string>
+    <string name="relay_bar_relays_not_active">%1$d átjátszó inaktív</string>
+    <string name="relay_bar_active_with_removed">%1$d/%2$d átjátszó aktív, %3$d eltávolítva</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d átjátszó aktív, %3$d hiba</string>
+    <string name="relay_bar_connected_with_failures">%1$d/%2$d átjátszó kapcsolódott, %3$d átjátszóhoz nem sikerült kapcsolódni</string>
+    <string name="relay_bar_connected_with_removed">%1$d/%2$d átjátszó kapcsolódott, %3$d eltávolítva</string>
+    <string name="relay_bar_owner_no_delivery">Az átjátszók hozzáadása később lesz támogatott.</string>
+    <string name="relay_bar_subscriber_waiting">Várakozás a csatorna tulajdonosára az átjátszók hozzáadásához.</string>
 </resources>
