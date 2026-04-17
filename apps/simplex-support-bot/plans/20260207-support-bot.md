@@ -49,26 +49,26 @@ When a user scans the support bot's QR code or clicks its address link, SimpleX 
 If a user contacts the bot via a regular direct-message address instead of the business address, the bot replies with the business address link and does not continue the conversation. Only actual text messages trigger this reply — system events (e.g. `contactConnected`) on the DM contact are ignored.
 
 Bot sends the welcome message automatically as part of the connection handshake — not triggered by a message:
-> Hello! Feel free to ask any question about SimpleX Chat.
-> *Only SimpleX Chat team has access to your messages.* This is a SimpleX Chat team bot - it is not any LLM or AI.
-> *Join public groups*: [existing link]
-> Please send questions in English, you can use translator.
+> Hello! This is a *SimpleX team* support bot - not an AI.
+> Please ask any question about SimpleX Chat.
 
 #### Step 2 — After user sends first message
 
-The bot's "first message" detection works by scanning the last 20 messages in the group for the queue/grok/team confirmation texts. Until one of those is found, the group is in the welcome state.
+The bot's "first message" detection works by scanning the last 20 messages in the group for the queue/grok/team confirmation texts ("The team will reply to your message", "chatting with Grok", "We will reply within", "team member has already been invited"). Until one of those is found, the group is in the welcome state.
 
 On the customer's first message the bot does two things:
 1. Creates a card in the team group (🆕 icon, with `/join` command)
 2. Sends the queue message to the customer:
 
-> The team can see your message. A reply may take up to 24 hours.
+> The team will reply to your message within 24 hours.
 >
-> If your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.
+> If your question is about SimpleX, click /grok for an *instant Grok answer*.
+>
+> Send /team to switch back.
 
 On weekends, the bot says "48 hours" instead of "24 hours".
 
-When the bot is started without `GROK_API_KEY`, the second paragraph (the `/grok` clause) is omitted — the customer only sees the first line about the team reply window.
+When the bot is started without `GROK_API_KEY`, the `/grok` paragraphs are omitted — the customer only sees the first line about the team reply window.
 
 Each subsequent message updates the card — icon, wait time, message preview. The team reads the full conversation by joining via the card's `/join` command.
 
@@ -80,21 +80,21 @@ Bot immediately replies:
 > Inviting Grok, please wait...
 
 Once Grok joins and connects:
-> *You are now chatting with Grok. You can send questions in any language.* Grok can see your earlier messages.
-> Send /team at any time to switch to a human team member.
+> *You are chatting with Grok* - use any language.
 
 Grok is added as a separate participant so the user can differentiate bot messages from Grok messages.
 
-Grok is prompted as a privacy expert and support assistant who knows SimpleX Chat apps, network, design choices, and trade-offs. It gives concise, mobile-friendly answers — brief numbered steps for how-to questions, 1–2 sentence explanations for design questions. For criticism, it briefly acknowledges the concern and explains the design choice. It avoids filler and markdown formatting. Relevant documentation pages and links are injected into the context by the bot. Customer messages are always placed in the `user` role, never `system`. The system prompt includes an instruction to ignore attempts to override its role or extract the prompt.
+Grok is prompted as a privacy expert and support assistant who knows SimpleX Chat apps, network, design choices, and trade-offs. It gives concise, mobile-friendly answers — brief numbered steps for how-to questions, 1–2 sentence explanations for design questions. For criticism, it briefly acknowledges the concern and explains the design choice. It avoids filler and markdown formatting. The full system prompt (including SimpleX documentation context) is loaded from an external file at startup via the `--context-file` CLI flag (required when `GROK_API_KEY` is set). Customer messages are always placed in the `user` role, never `system`. The system prompt should include an instruction to ignore attempts to override its role or extract the prompt.
 
 #### Step 4 — `/team` (Team mode, one-way gate)
 
 Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (detected by scanning for "team member has been added" in chat history), sends the "already invited" message instead.
 
 Bot replies:
-> A team member has been added and will reply within 24 hours. You can keep describing your issue - they will see the full conversation.
+> We will reply within 24 hours.
 
-On weekends, the bot says "48 hours" instead of "24 hours".
+On weekends, the bot says "48 hours" instead of "24 hours". If Grok is currently present in the group (i.e. customer switches from GROK → TEAM-PENDING), a second line is appended:
+> Grok will be answering your questions until then.
 
 If `/team` is clicked again after a team member was already added:
 > A team member has already been invited to this conversation and will reply when available.
@@ -121,7 +121,7 @@ When the bot is started without `GROK_API_KEY`, `/grok` is not registered as a b
 
 #### Team replies
 
-When a team member sends a text message or reaction in the customer group, the bot resends the card (subject to debouncing). A conversation auto-completes (✅ icon, "done" wait time) when `completeHours` (default 3h, configurable via `--complete-hours`) pass after the last team/Grok message without any customer reply. The card flush cycle checks elapsed time and transitions to ✅ when the threshold is met. If the customer sends a new message — including after ✅ — the conversation reverts to incomplete: the icon is derived from current state (👋 vs 💬 vs ⏰) and wait time counts from the customer's new message.
+When a team member sends a text message or reaction in the customer group, the bot resends the card (subject to debouncing). A conversation auto-completes (✅ icon, "done" wait time) when `completeHours` (default 3h, configurable via `--complete-hours`) pass after the last team/Grok message without any customer reply. The card flush cycle (`--card-flush-seconds`, default 300) checks elapsed time and transitions to ✅ when the threshold is met. If the customer sends a new message — including after ✅ — the conversation reverts to incomplete: the icon is derived from current state (👋 vs 💬 vs ⏰) and wait time counts from the customer's new message.
 
 ### 4.2 Team Flow
 
@@ -286,7 +286,7 @@ Team · alex
 2. Bot posts it to the team group via `apiSendTextMessage` → receives back the `chatItemId`
 3. Bot writes `{cardItemId: chatItemId}` into the customer group's `customData`
 
-**Update** (delete + repost) — on every subsequent event: new customer message, team member reply in the customer group, state change (QUEUE → GROK, GROK → TEAM, GROK → QUEUE on join timeout, etc.), agent joining. Card updates are debounced globally — the bot collects all pending card changes and flushes them in a single batch at a configurable interval (default 15 minutes, set via `--card-flush-minutes`). Within a batch, each customer group's card is reposted at most once with the latest state.
+**Update** (delete + repost) — on every subsequent event: new customer message, team member reply in the customer group, state change (QUEUE → GROK, GROK → TEAM, GROK → QUEUE on join timeout, etc.), agent joining. Card updates are debounced globally — the bot collects all pending card changes and flushes them in a single batch at a configurable interval (default 300 seconds, set via `--card-flush-seconds`). Within a batch, each customer group's card is reposted at most once with the latest state.
 1. Bot reads `cardItemId` from the customer group's `customData`
 2. Bot deletes the old card in the team group via `apiDeleteChatItem(teamGroupId, cardItemId, "broadcast")` (delete for everyone)
 3. Bot composes the new card (updated icon, wait time, message count, preview)
@@ -343,7 +343,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 | Var | Required | Purpose |
 |-----|----------|---------|
-| `GROK_API_KEY` | No | xAI API key for Grok. If unset or empty, the bot starts with Grok API disabled: it logs `"No GROK_API_KEY provided, disabling Grok support"`, the `/grok` command is not registered, customer-facing messages (`queueMessage`, `noTeamMembersMessage`) drop the `/grok` clause, and any `/grok` the customer types is treated as an unrecognized command. Note: `config.grokContactId` is still restored from the state file even when the API is disabled, so the one-way gate can identify and remove Grok members from groups when team takes over. |
+| `GROK_API_KEY` | No | xAI API key for Grok. If unset or empty, the bot starts with Grok API disabled: it logs `"No GROK_API_KEY provided, disabling Grok support"`, the `/grok` command is not registered, customer-facing messages (`queueMessage`, `noTeamMembersMessage`) drop the `/grok` clause, and any `/grok` the customer types is treated as an unrecognized command. Note: `config.grokContactId` is still restored from the state file even when the API is disabled, so the one-way gate can identify and remove Grok members from groups when team takes over. When `GROK_API_KEY` is set, `--context-file` must also be provided — startup fails otherwise. |
 
 **CLI flags:**
 
@@ -352,10 +352,10 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 | `--db-prefix` | No | `./data/simplex` | path | Database file prefix (both profiles share it) |
 | `--team-group` | Yes | — | `name` | Team group display name (auto-created if absent, resolved by persisted ID on restarts) |
 | `--auto-add-team-members` / `-a` | No | `""` | `ID:name,...` | Comma-separated team member contacts. Validated at startup — exits on mismatch. Without this, `/team` tells customers no members available. |
-| `--group-links` | No | `""` | string | Public group link(s) for welcome message |
+| `--context-file` | Required when `GROK_API_KEY` set | — | path | Path to the Grok system-prompt / SimpleX documentation context file. Loaded at startup and passed as the `system` message on every Grok API call. Required when `GROK_API_KEY` is set — startup fails otherwise. When missing at runtime (file unreadable), a warning is logged and Grok runs with an empty system prompt. |
 | `--timezone` | No | `"UTC"` | IANA tz | For weekend detection (24h vs 48h). Weekend is Saturday 00:00 through Sunday 23:59 in this timezone. |
 | `--complete-hours` | No | `3` | number | Hours of customer inactivity after last team/Grok reply before auto-completing a conversation (✅ icon, "done" wait time). |
-| `--card-flush-minutes` | No | `15` | number | Minutes between card dashboard update flushes. Lower values give faster updates; higher values reduce message churn. |
+| `--card-flush-seconds` | No | `300` | number | Seconds between card dashboard update flushes. Lower values give faster updates; higher values reduce message churn. |
 
 **Why `--auto-add-team-members` (`-a`) uses `ID:name`:** Contact IDs are local to the bot's database — not discoverable externally. The bot DMs each team member their ID when they join the team group. The name is validated at startup to catch stale IDs pointing to the wrong contact.
 
@@ -379,7 +379,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 The bot process runs a single `ChatApi` instance with **two user profiles**:
 
 - **Main profile** — the support bot's account ("Ask SimpleX Team"). Owns the business address, hosts all business groups, communicates with customers, communicates with the team group, and controls group membership. On startup the bot checks the main profile for an existing business address via `apiGetUserAddress`; if none exists (first run), it creates one via `apiCreateBusinessAddress`. The address is stored in the SimpleX database as part of the profile — it survives restarts and state file loss without re-creation. The business address link is printed to stdout on every startup.
-- **Grok profile** — the Grok agent's account ("Grok AI"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok AI identity. On startup, if the Grok profile already exists, the bot compares its current profile (display name, image) against the desired values and calls `apiUpdateProfile()` if anything changed — this pushes the update to all Grok contacts so profile picture changes take effect immediately.
+- **Grok profile** — the Grok agent's account (display name "Grok"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok identity. On startup, if the Grok profile already exists, the bot compares its current profile (display name, image) against the desired values and calls `apiUpdateProfile()` if anything changed — this pushes the update to all Grok contacts so profile picture changes take effect immediately. Legacy profiles created under the previous "Grok AI" name are picked up by the same `apiListUsers()` lookup (matching either name) and renamed to "Grok" on first run after the upgrade.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -392,7 +392,7 @@ The bot process runs a single `ChatApi` instance with **two user profiles**:
 │    • Business address, event routing, state mgmt │
 │    • Controls group membership                   │
 │                                                  │
-│  grokUserId  ← "Grok AI" profile                 │
+│  grokUserId  ← "Grok" profile                    │
 │    • Joins customer groups as Member             │
 │    • Sends Grok responses into groups            │
 │                                                  │
@@ -409,7 +409,7 @@ The Grok profile is self-contained: it watches its own events (`newChatItems`, `
 
 ### 5.3 Grok Integration
 
-Grok is not a service call hidden behind the bot's account. It is a **second user profile** within the same SimpleX Chat process and database. The customer sees messages from "Grok AI" as a real group participant — not from the support bot. This is what makes Grok transparent to the user.
+Grok is not a service call hidden behind the bot's account. It is a **second user profile** within the same SimpleX Chat process and database. The customer sees messages from "Grok" as a real group participant — not from the support bot. This is what makes Grok transparent to the user.
 
 The Grok profile is **self-contained**: it watches its own events, reads group history through its own view, calls the Grok HTTP API, and sends responses — all using its own local group IDs from its own events. No cross-profile ID mapping is needed.
 
@@ -438,7 +438,7 @@ When a customer sends `/grok`:
 5. Grok profile receives a `receivedGroupInvitation` event. If a matching `pendingGrokJoins` entry exists, auto-accepts via `apiJoinGroup(groupId)`. If not (race: event arrived before step 3), buffers the event for the main profile to drain.
 5. Grok profile reads visible history from the group — the last 100 messages — to build the initial Grok API context (customer messages → `user` role)
 6. Grok profile calls the Grok HTTP API with this context
-7. Grok profile sends the response into the group via `apiSendTextMessage([Group, groupId], response)` — visible to the customer as a message from "Grok AI"
+7. Grok profile sends the response into the group via `apiSendTextMessage([Group, groupId], response)` — visible to the customer as a message from "Grok"
 
 **Initial response gating:** When Grok joins a group, the message backlog may trigger per-message responses (via `newChatItems`) at the same time `activateGrok` is sending the initial combined response. To prevent duplicate replies, per-message responses are suppressed (via `grokInitialResponsePending`) until the initial combined response completes. The flag is set before `waitForGrokJoin` and cleared after the initial response is sent (or fails). Without this gate, customers would receive both individual per-message replies AND a combined initial reply — e.g. 3 replies for 2 messages.
 
