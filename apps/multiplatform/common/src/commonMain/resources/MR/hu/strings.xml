@@ -2611,7 +2611,6 @@
     <string name="relay_bar_active">%1$d/%2$d átjátszó aktív</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d átjátszó kapcsolódva, %3$d hiba</string>
     <string name="relay_bar_connected">%1$d/%2$d átjátszó kapcsolódva</string>
-    <string name="relay_bar_count">%1$d átjátszó</string>
     <string name="member_info_section_title_relay">ÁTJÁTSZÓ</string>
     <string name="info_row_relay_link">Átjátszóhivatkozás</string>
     <string name="info_row_relay_address">Átjátszócím</string>

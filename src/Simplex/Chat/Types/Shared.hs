@@ -83,6 +83,7 @@ data RelayStatus
   | RSInvited
   | RSAccepted
   | RSActive
+  | RSInactive
   deriving (Eq, Show)
 
 relayStatusText :: RelayStatus -> Text
@@ -91,6 +92,7 @@ relayStatusText = \case
   RSInvited -> "invited"
   RSAccepted -> "accepted"
   RSActive -> "active"
+  RSInactive -> "inactive"
 
 instance TextEncoding RelayStatus where
   textEncode = \case
@@ -98,11 +100,13 @@ instance TextEncoding RelayStatus where
     RSInvited -> "invited"
     RSAccepted -> "accepted"
     RSActive -> "active"
+    RSInactive -> "inactive"
   textDecode = \case
     "new" -> Just RSNew
     "invited" -> Just RSInvited
     "accepted" -> Just RSAccepted
     "active" -> Just RSActive
+    "inactive" -> Just RSInactive
     _ -> Nothing
 
 instance FromField RelayStatus where fromField = fromTextField_ textDecode

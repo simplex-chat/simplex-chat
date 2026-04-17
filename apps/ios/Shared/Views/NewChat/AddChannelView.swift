@@ -428,9 +428,10 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     return "relay \(relay.groupRelayId)"
 }
 
-func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false) -> some View {
-    let color: Color = connFailed ? .red : (status == .rsActive ? .green : .yellow)
-    let text: LocalizedStringKey = connFailed ? "failed" : status.text
+func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, memberStatus: GroupMemberStatus? = nil) -> some View {
+    let removed = memberStatus.map { [.memLeft, .memRemoved, .memGroupDeleted].contains($0) } ?? false
+    let color: Color = connFailed || removed ? .red : (status == .rsActive ? .green : .yellow)
+    let text: LocalizedStringKey = connFailed ? "failed" : memberStatus == .memLeft ? "removed by operator" : status.text
     return HStack(spacing: 4) {
         Circle()
             .fill(color)

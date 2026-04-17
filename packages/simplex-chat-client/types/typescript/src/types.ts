@@ -2566,9 +2566,16 @@ export type GroupLinkPlan =
   | GroupLinkPlan.ConnectingConfirmReconnect
   | GroupLinkPlan.ConnectingProhibit
   | GroupLinkPlan.Known
+  | GroupLinkPlan.NoRelays
 
 export namespace GroupLinkPlan {
-  export type Tag = "ok" | "ownLink" | "connectingConfirmReconnect" | "connectingProhibit" | "known"
+  export type Tag = 
+    | "ok"
+    | "ownLink"
+    | "connectingConfirmReconnect"
+    | "connectingProhibit"
+    | "known"
+    | "noRelays"
 
   interface Interface {
     type: Tag
@@ -2598,6 +2605,11 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+  }
+
+  export interface NoRelays extends Interface {
+    type: "noRelays"
+    groupSLinkData_?: GroupShortLinkData
   }
 }
 
@@ -3679,6 +3691,7 @@ export enum RelayStatus {
   Invited = "invited",
   Accepted = "accepted",
   Active = "active",
+  Inactive = "inactive",
 }
 
 export enum ReportReason {

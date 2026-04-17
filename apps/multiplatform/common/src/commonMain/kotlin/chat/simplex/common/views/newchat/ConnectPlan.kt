@@ -281,6 +281,33 @@ private suspend fun planAndConnectTask(
             cleanup()
           }
         }
+        is GroupLinkPlan.NoRelays -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .NoRelays")
+          val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
+          if (groupSLinkData != null) {
+            AlertManager.privacySensitive.showOpenChatAlert(
+              profileName = groupSLinkData.groupProfile.displayName,
+              profileFullName = groupSLinkData.groupProfile.fullName,
+              profileImage = {
+                ProfileImage(
+                  size = alertProfileImageSize,
+                  image = groupSLinkData.groupProfile.image,
+                  icon = MR.images.ic_bigtop_updates_padded
+                )
+              },
+              subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
+              confirmText = null,
+              dismissText = generalGetString(MR.strings.ok),
+              onDismiss = { cleanup() }
+            )
+          } else {
+            AlertManager.privacySensitive.showAlertMsg(
+              generalGetString(MR.strings.channel_temporarily_unavailable),
+              generalGetString(MR.strings.channel_no_active_relays_try_later)
+            )
+            cleanup()
+          }
+        }
       }
       is ConnectionPlan.Error -> {
         Log.d(TAG, "planAndConnect, error ${connectionPlan.chatError}")

@@ -2636,7 +2636,6 @@
     <string name="relay_bar_active_with_failures">%1$d/%2$d Relais aktiv, %3$d Fehlgeschlagen</string>
     <string name="relay_bar_connected">%1$d/%2$d Relais verbunden</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d Relais verbunden, %3$d Fehler</string>
-    <string name="relay_bar_count">%1$d Relais</string>
     <string name="channel_subscriber_count_singular">%1$d Abonnent</string>
     <string name="channel_subscriber_count_plural">%1$d Abonnenten</string>
     <string name="relay_status_accepted">Angenommen</string>

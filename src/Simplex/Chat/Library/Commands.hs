@@ -37,6 +37,7 @@ import Data.Constraint (Dict (..))
 import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
+import Data.Functor.Identity (Identity (..), runIdentity)
 import Data.Int (Int64)
 import Data.List (dropWhileEnd, find, foldl', isSuffixOf, partition, sortOn, zipWith4)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -56,9 +57,11 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.Batch (encodeBatchElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -2878,18 +2881,35 @@ processChatCommand vr nm = \case
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
     withGroupLock "leaveGroup" groupId $ do
       cancelFilesInProgress user filesInfo
-      (members, recipients) <- getRecipients user gInfo
-      msg <- sendGroupMessage' user gInfo recipients XGrpLeave
+      msg <-
+        if useRelays' gInfo && isRelay membership
+          then leaveChannelRelay gInfo
+          else leaveGroupSendMsg user gInfo
       (gInfo', scopeInfo) <- mkLocalGroupChatScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo' scopeInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo'
       -- member records are not deleted to keep history
-      deleteMembersConnections' user members True
       withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
     where
+      -- Relay leaving channel: create delivery job for cursor-based sending and async connection cleanup.
+      leaveChannelRelay gInfo = do
+        msg@SndMessage {msgBody, signedMsg_} <-
+          liftEither . runIdentity =<< lift (createSndMessages $ Identity (GroupId groupId, groupMsgSigning gInfo XGrpLeave, XGrpLeave))
+        let body = encodeBatchElement signedMsg_ msgBody
+        withFastStore' $ \db -> do
+          deleteGroupDeliveryTasks db gInfo
+          deleteGroupDeliveryJobs db gInfo
+          createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) Nothing body
+        lift . void $ getDeliveryJobWorker True (groupId, DWSGroup)
+        pure msg
+      leaveGroupSendMsg user gInfo = do
+        (members, recipients) <- getRecipients user gInfo
+        msg <- sendGroupMessage' user gInfo recipients XGrpLeave
+        deleteMembersConnections' user members True
+        pure msg
       getRecipients user gInfo
         | useRelays' gInfo = do
             relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
@@ -4003,21 +4023,24 @@ processChatCommand vr nm = \case
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
-                (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq nm user l'
-                let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
-                    linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-                -- Cross-validate linkEntityId and publicGroupId from profile:
-                -- for channels both must be present and match, for p2p groups both must be absent
-                let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
-                      fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
-                case (B64UrlByteString <$> linkEntityId, profilePGId) of
-                  (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
-                  (Nothing, Nothing) -> pure ()
-                  _ -> throwChatError CEInvalidConnReq
-                let ov = verifyLinkOwner rootKey owners l' sig_
-                plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
-                pure (con cReq, plan)
+                if not direct && null relays
+                  then pure (con (linkConnReq fd), CPGroupLink (GLPNoRelays groupSLinkData_))
+                  else do
+                    let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
+                        linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
+                    -- Cross-validate linkEntityId and publicGroupId from profile:
+                    -- for channels both must be present and match, for p2p groups both must be absent
+                    let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
+                          fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
+                    case (B64UrlByteString <$> linkEntityId, profilePGId) of
+                      (Just entityId, Just publicGroupId) | entityId == publicGroupId -> pure ()
+                      (Nothing, Nothing) -> pure ()
+                      _ -> throwChatError CEInvalidConnReq
+                    let ov = verifyLinkOwner rootKey owners l' sig_
+                    plan <- groupJoinRequestPlan user cReq (Just linkInfo) groupSLinkData_ ov
+                    pure (con cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
