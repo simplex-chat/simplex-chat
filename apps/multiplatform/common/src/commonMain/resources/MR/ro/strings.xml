@@ -525,8 +525,7 @@
     <string name="theme_black">Negru</string>
     <string name="block_for_all_question">Blocați membrul pentru toți?</string>
     <string name="both_you_and_your_contacts_can_delete">Atât tu, cât și contactul tău puteți șterge definitiv mesajele trimise. (24 de ore)</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Folosește mai multă baterie</b>!
-\nServiciul în fundal rulează mereu – notificările sunt afișate imediat ce mesajele sunt disponibile.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Folosește mai multă baterie</b>! \nServiciul în fundal rulează mereu – notificările sunt afișate imediat ce mesajele sunt disponibile.]]></string>
     <string name="cannot_share_message_alert_title">Nu se poate trimite mesajul</string>
     <string name="clear_contacts_selection_button">Șterge</string>
     <string name="v5_8_safe_files_descr">Confirmați fișiere de la servere necunoscute.</string>
