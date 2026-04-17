@@ -1280,6 +1280,7 @@ Determine SimpleX link type and if the bot is already connected via this link.
 **Parameters**:
 - userId: int64
 - connectionLink: string?
+- linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:
 

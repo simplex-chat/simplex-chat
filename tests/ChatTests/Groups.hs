@@ -8441,16 +8441,25 @@ createChannel1Relay gName owner relay cath dan eve = do
   forM_ [cath, dan, eve] $ \member ->
     memberJoinChannel gName [relay] [owner] shortLink fullLink member
 
-prepareChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
-prepareChannel1Relay gName owner relay = do
+setupRelay :: TestCC -> TestCC -> IO String
+setupRelay owner relay = do
   rName <- userName relay
-
   relay ##> "/ad"
   (relaySLink, _cLink) <- getContactLinks relay True
-
   owner ##> ("/relays name=" <> rName <> " " <> relaySLink)
   owner <## "ok"
+  pure relaySLink
 
+prepareChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel1Relay gName owner relay = do
+  _ <- setupRelay owner relay
+  prepareChannel gName owner relay
+
+prepareChannel :: String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel = prepareChannel' 1
+
+prepareChannel' :: Int -> String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel' relayId gName owner relay = do
   owner ##> ("/public group relays=1 #" <> gName)
   owner <## ("group #" <> gName <> " is created")
   owner <## "wait for selected relay(s) to join, then you can invite members via group link"
@@ -8458,7 +8467,7 @@ prepareChannel1Relay gName owner relay = do
   concurrentlyN_
     [ do
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
-        owner <## "  - relay id 1: active"
+        owner <## ("  - relay id " <> show relayId <> ": active")
         owner <## "group link:"
         _ <- getTermLine owner
         pure (),
@@ -8517,10 +8526,17 @@ prepareChannel2Relays gName owner relay1 relay2 = do
   getGroupLinks owner gName GRMember False
 
 memberJoinChannel :: String -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
-memberJoinChannel gName relays owners shortLink fullLink member = do
+memberJoinChannel gName = memberJoinChannel' gName 1 0 0 0
+
+-- | sfx params: relaySfx - how relay/owner see the member, memberRelaySfx - how member sees relay
+memberJoinChannel' :: String -> Int -> Int -> Int -> Int -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
+memberJoinChannel' gName gId relaySfx ownerSfx memberRelaySfx relays owners shortLink fullLink member = do
   mName <- userName member
   mFullName <- showName member
-  relayNames <- mapM userName relays
+  let sfxMName s = if s == 0 then mName else mName <> "_" <> show s
+      sfxName s = if s == 0 then mFullName else sfxMName s <> drop (length mName) mFullName
+      sfxRelayName rn = if memberRelaySfx == 0 then rn else rn <> "_" <> show memberRelaySfx
+  relayNames <- mapM (\r -> sfxRelayName <$> userName r) relays
 
   member ##> ("/_connect plan 1 " <> shortLink)
   member <## "group link: ok to connect via relays"
@@ -8529,7 +8545,7 @@ memberJoinChannel gName relays owners shortLink fullLink member = do
   member ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
   member <## ("#" <> gName <> ": group is prepared")
 
-  member ##> "/_connect group #1"
+  member ##> ("/_connect group #" <> show gId)
   member <## ("#" <> gName <> ": connection started")
   concurrentlyN_ $
     [ member
@@ -8541,11 +8557,11 @@ memberJoinChannel gName relays owners shortLink fullLink member = do
           ]
     ]
       <> [ do
-             relay <## (mFullName <> ": accepting request to join group #" <> gName <> "...")
-             relay <## ("#" <> gName <> ": " <> mName <> " joined the group")
+             relay <## (sfxName relaySfx <> ": accepting request to join group #" <> gName <> "...")
+             relay <## ("#" <> gName <> ": " <> sfxMName relaySfx <> " joined the group")
          | relay <- relays
          ]
-      <> [ owner <### [EndsWith ("added " <> mFullName <> " to the group")]
+      <> [ owner <### [EndsWith ("added " <> sfxName ownerSfx <> " to the group")]
          | owner <- owners
          ]
 

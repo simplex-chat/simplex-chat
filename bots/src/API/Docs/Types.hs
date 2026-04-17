@@ -299,6 +299,7 @@ chatTypesDocsData =
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
+    (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @LocalProfile, STRecord, "", [], "", ""),
     (sti @MemberCriteria, STEnum1, "MC", [], "", ""),
@@ -314,6 +315,7 @@ chatTypesDocsData =
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
+    (sti @OwnerVerification, STUnion, "OV", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
     (sti @Preferences, STRecord, "", [], "", ""),
@@ -506,6 +508,7 @@ deriving instance Generic JSONCIDirection
 deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic LinkContent
+deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
 deriving instance Generic LocalProfile
 deriving instance Generic MemberCriteria
@@ -521,6 +524,7 @@ deriving instance Generic MsgSigStatus
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
+deriving instance Generic OwnerVerification
 deriving instance Generic PendingContactConnection
 deriving instance Generic PrefEnabled
 deriving instance Generic Preferences

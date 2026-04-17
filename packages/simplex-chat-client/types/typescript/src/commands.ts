@@ -471,6 +471,7 @@ export namespace APIAddContact {
 export interface APIConnectPlan {
   userId: number // int64
   connectionLink?: string
+  linkOwnerSig?: T.LinkOwnerSig
 }
 
 export namespace APIConnectPlan {

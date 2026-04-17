@@ -4774,7 +4774,7 @@ extension MsgContent: Encodable {
     }
 }
 
-public enum MsgContentTag: String, Decodable {
+public enum MsgContentTag: Codable, Hashable {
     case text
     case link
     case image
@@ -4782,6 +4782,43 @@ public enum MsgContentTag: String, Decodable {
     case voice
     case file
     case report
+    case chat
+    case unknown(type: String)
+
+    public var rawValue: String {
+        switch self {
+        case .text: return "text"
+        case .link: return "link"
+        case .image: return "image"
+        case .video: return "video"
+        case .voice: return "voice"
+        case .file: return "file"
+        case .report: return "report"
+        case .chat: return "chat"
+        case let .unknown(type): return type
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let s = try decoder.singleValueContainer().decode(String.self)
+        switch s {
+        case "text": self = .text
+        case "link": self = .link
+        case "image": self = .image
+        case "video": self = .video
+        case "voice": self = .voice
+        case "file": self = .file
+        case "report": self = .report
+        case "chat": self = .chat
+        case "liveText": self = .text
+        default: self = .unknown(type: s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
 public enum MsgChatLink: Codable, Equatable, Hashable {
