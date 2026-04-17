@@ -267,10 +267,12 @@ struct ComposeState {
 }
 
 func chatCardText(_ text: String, _ chatLink: MsgChatLink) -> String {
-    if text.hasSuffix("\n" + chatLink.connLinkStr) {
-        return String(text.dropLast(chatLink.connLinkStr.count + 1))
-    }
-    return text
+    let link = chatLink.connLinkStr
+    return text == link
+        ? ""
+        : text.hasSuffix("\n" + link)
+        ? String(text.dropLast(link.count + 1))
+        : text
 }
 
 // Spec: spec/client/compose.md#chatItemPreview

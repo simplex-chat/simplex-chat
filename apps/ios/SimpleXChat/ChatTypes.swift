@@ -4721,6 +4721,7 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
                 let ownerSig = try container.decodeIfPresent(LinkOwnerSig.self, forKey: CodingKeys.ownerSig)
+                logger.debug("MsgContent.chat decoded: ownerSig \(ownerSig != nil ? "present" : "nil")")
                 self = .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
