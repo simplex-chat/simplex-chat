@@ -76,7 +76,7 @@ async function main(): Promise<void> {
         welcomeMessage,
       },
       commands: [
-        ...(grokEnabled ? [{type: "command" as const, keyword: "grok", label: "Ask Grok AI"}] : []),
+        ...(grokEnabled ? [{type: "command" as const, keyword: "grok", label: "Ask Grok"}] : []),
         {type: "command", keyword: "team", label: "Switch to team"},
       ],
       useBotProfile: true,
@@ -101,14 +101,14 @@ async function main(): Promise<void> {
   if (grokEnabled) {
     log("Resolving Grok profile...")
     const users = await chat.apiListUsers()
-    grokUser = users.find(u => u.user.profile.displayName === "Grok AI")?.user ?? null
+    grokUser = users.find(u => u.user.profile.displayName === "Grok" || u.user.profile.displayName === "Grok AI")?.user ?? null
     if (!grokUser) {
       log("Creating Grok profile...")
-      grokUser = await chat.apiCreateActiveUser({displayName: "Grok AI", fullName: "", image: grokImage})
+      grokUser = await chat.apiCreateActiveUser({displayName: "Grok", fullName: "", image: grokImage})
       // apiCreateActiveUser sets Grok as active — switch back to main
       await chat.apiSetActiveUser(mainUser.userId)
     } else {
-      const grokProfile: T.Profile = {displayName: "Grok AI", fullName: "", image: grokImage}
+      const grokProfile: T.Profile = {displayName: "Grok", fullName: "", image: grokImage}
       const currentProfile = util.fromLocalProfile(grokUser.profile)
       if (currentProfile.image !== grokProfile.image || currentProfile.displayName !== grokProfile.displayName || currentProfile.fullName !== grokProfile.fullName) {
         log("Grok profile changed, updating...")

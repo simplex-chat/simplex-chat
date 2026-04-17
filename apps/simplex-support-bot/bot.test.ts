@@ -188,7 +188,7 @@ function makeGrokMember(groupMemberId = 7777) {
     groupMemberId,
     memberContactId: GROK_CONTACT_ID,
     memberStatus: GroupMemberStatus.Connected,
-    memberProfile: {displayName: "Grok AI"},
+    memberProfile: {displayName: "Grok"},
   }
 }
 
@@ -244,7 +244,7 @@ function makeGroupInfo(groupId: number, opts: Partial<any> = {}): any {
 }
 
 function makeUser(userId: number) {
-  return {userId, profile: {displayName: userId === MAIN_USER_ID ? "Ask SimpleX Team" : "Grok AI"}}
+  return {userId, profile: {displayName: userId === MAIN_USER_ID ? "Ask SimpleX Team" : "Grok"}}
 }
 
 function makeChatItem(opts: {
@@ -358,7 +358,7 @@ function teamMemberMessage(text: string, contactId = TEAM_MEMBER_1_ID, groupId =
 }
 
 function grokResponseMessage(text: string, groupId = CUSTOMER_GROUP_ID): any {
-  const ci = makeChatItem({dir: "groupRcv", text, memberId: "grok-member", memberContactId: GROK_CONTACT_ID, memberDisplayName: "Grok AI"})
+  const ci = makeChatItem({dir: "groupRcv", text, memberId: "grok-member", memberContactId: GROK_CONTACT_ID, memberDisplayName: "Grok"})
   return {
     type: "newChatItems" as const,
     user: makeUser(MAIN_USER_ID),
@@ -675,6 +675,21 @@ describe("Grok Conversation", () => {
   test("Grok ignores bot commands from customer", async () => {
     await bot.onGrokNewChatItems(grokViewCustomerMessage("/team"))
     expect(grokApi.calls.length).toBe(0)
+  })
+
+  test("Grok per-message: history includes prior Grok sent response as assistant", async () => {
+    addCustomerMessageToHistory("How do I create a group?", GROK_LOCAL_GROUP_ID)
+    addBotMessage("To create a group, tap + then New Group.", GROK_LOCAL_GROUP_ID)
+    addCustomerMessageToHistory("How do I invite members?", GROK_LOCAL_GROUP_ID)
+    grokApi.willRespond("Open the group and tap Invite.")
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("How do I invite members?"))
+
+    expect(grokApi.calls.length).toBe(1)
+    expect(grokApi.calls[0].message).toBe("How do I invite members?")
+    expect(grokApi.calls[0].history).toEqual([
+      {role: "user", content: "How do I create a group?"},
+      {role: "assistant", content: "To create a group, tap + then New Group."},
+    ])
   })
 
   test("Grok ignores non-customer messages", async () => {
