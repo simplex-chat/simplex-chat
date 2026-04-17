@@ -116,7 +116,7 @@ struct GroupChatInfoView: View {
                                     Label("Share link", systemImage: "square.and.arrow.up")
                                 }
                             }
-                            if groupInfo.groupProfile.publicGroup?.groupLink != nil {
+                            if !groupInfo.isOwner && groupInfo.groupProfile.publicGroup?.groupLink != nil {
                                 Button {
                                     showSharePicker = true
                                 } label: {
@@ -480,11 +480,12 @@ struct GroupChatInfoView: View {
                 )
                 if case let .chat(_, chatLink, ownerSig) = mc {
                     await MainActor.run {
-                        composeState = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
-                        if chat.id != ChatModel.shared.chatId {
-                            ItemsModel.shared.loadOpenChat(chat.id)
+                        dismissAllSheets {
+                            composeState = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                            if chat.id != ChatModel.shared.chatId {
+                                ItemsModel.shared.loadOpenChat(chat.id)
+                            }
                         }
-                        dismiss()
                     }
                 }
             } catch {
@@ -695,7 +696,8 @@ struct GroupChatInfoView: View {
             groupLinkMemberRole: $groupLinkMemberRole,
             showTitle: false,
             creatingGroup: false,
-            isChannel: groupInfo.useRelays
+            isChannel: groupInfo.useRelays,
+            shareLinkAction: groupInfo.useRelays ? { showSharePicker = true } : nil
         )
         .navigationBarTitle(groupInfo.useRelays ? "Channel link" : "Group link")
         .modifier(ThemedBackground(grouped: true))

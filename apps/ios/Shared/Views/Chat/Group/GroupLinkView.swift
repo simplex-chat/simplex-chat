@@ -19,6 +19,7 @@ struct GroupLinkView: View {
     var creatingGroup: Bool = false
     var isChannel: Bool = false
     var linkCreatedCb: (() -> Void)? = nil
+    var shareLinkAction: (() -> Void)? = nil
     @State private var showShortLink = true
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
@@ -103,6 +104,11 @@ struct GroupLinkView: View {
                         }
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
+                    }
+                    if let shareLinkAction {
+                        Button(action: shareLinkAction) {
+                            Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
+                        }
                     }
 
                     if !creatingGroup && !isChannel {
