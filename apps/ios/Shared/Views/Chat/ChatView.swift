@@ -261,7 +261,7 @@ struct ChatView: View {
                     showTitle: true,
                     creatingGroup: false,
                     isChannel: groupInfo.useRelays,
-                    shareGroupInfo: groupInfo.useRelays ? groupInfo : nil,
+                    groupInfo: groupInfo,
                     composeState: $composeState
                 )
             }

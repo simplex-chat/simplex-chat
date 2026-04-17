@@ -374,7 +374,7 @@ struct AddChannelView: View {
             showTitle: false,
             creatingGroup: true,
             isChannel: true,
-            shareGroupInfo: gInfo
+            groupInfo: gInfo
         ) {
             m.creatingChannelId = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -657,7 +657,7 @@ struct GroupChatInfoView: View {
             showTitle: false,
             creatingGroup: false,
             isChannel: groupInfo.useRelays,
-            shareGroupInfo: groupInfo.useRelays ? groupInfo : nil,
+            groupInfo: groupInfo,
             composeState: $composeState
         )
         .navigationBarTitle(groupInfo.useRelays ? "Channel link" : "Group link")
