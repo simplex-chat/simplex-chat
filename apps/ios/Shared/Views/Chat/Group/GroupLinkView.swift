@@ -18,7 +18,10 @@ struct GroupLinkView: View {
     var showTitle: Bool = false
     var creatingGroup: Bool = false
     var isChannel: Bool = false
+    var groupInfo: GroupInfo? = nil
+    var composeState: Binding<ComposeState>? = nil
     var linkCreatedCb: (() -> Void)? = nil
+    @State private var showSharePicker = false
     @State private var showShortLink = true
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
@@ -104,6 +107,11 @@ struct GroupLinkView: View {
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
+                    if groupInfo?.groupProfile.publicGroup != nil {
+                        Button { showSharePicker = true } label: {
+                            Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
+                        }
+                    }
 
                     if !creatingGroup && !isChannel {
                         Button(role: .destructive) { alert = .deleteLink } label: {
@@ -160,6 +168,11 @@ struct GroupLinkView: View {
             }
         }
         .modifier(ThemedBackground(grouped: true))
+        .sheet(isPresented: $showSharePicker) {
+            if let gInfo = groupInfo {
+                shareChannelPicker(groupInfo: gInfo, composeState: composeState)
+            }
+        }
     }
 
     private func createGroupLink() {

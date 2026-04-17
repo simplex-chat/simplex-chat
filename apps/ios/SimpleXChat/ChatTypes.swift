@@ -4590,9 +4590,13 @@ public enum MsgContent: Equatable, Hashable {
     case voice(text: String, duration: Int)
     case file(String)
     case report(text: String, reason: ReportReason)
-    case chat(text: String, chatLink: MsgChatLink)
+    case chat(text: String, chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
+
+    public var chatLinkStr: String? {
+        if case let .chat(_, chatLink, _) = self { chatLink.connLinkStr } else { nil }
+    }
 
     public var text: String {
         switch self {
@@ -4603,7 +4607,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .report(text, _): return text
-        case let .chat(text, _): return text
+        case let .chat(text, _, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -4666,6 +4670,7 @@ public enum MsgContent: Equatable, Hashable {
         case duration
         case reason
         case chatLink
+        case ownerSig
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
@@ -4677,7 +4682,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
         case let (.file(lf), .file(rf)): return lf == rf
         case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
-        case let (.chat(lt, ll), .chat(rt, rl)): return lt == rt && ll == rl
+        case let (.chat(lt, ll, ls), .chat(rt, rl, rs)): return lt == rt && ll == rl && ls == rs
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -4720,7 +4725,8 @@ extension MsgContent: Decodable {
             case "chat":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
-                self = .chat(text: text, chatLink: chatLink)
+                let ownerSig = try container.decodeIfPresent(LinkOwnerSig.self, forKey: CodingKeys.ownerSig)
+                self = .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -4762,10 +4768,11 @@ extension MsgContent: Encodable {
             try container.encode("report", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(reason, forKey: .reason)
-        case let .chat(text, chatLink):
+        case let .chat(text, chatLink, ownerSig):
             try container.encode("chat", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(chatLink, forKey: .chatLink)
+            try container.encodeIfPresent(ownerSig, forKey: .ownerSig)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -4821,10 +4828,163 @@ public enum MsgContentTag: Codable, Hashable {
     }
 }
 
-public enum MsgChatLink: Codable, Equatable, Hashable {
+public enum MsgChatLink: Equatable, Hashable {
     case contact(connLink: String, profile: Profile, business: Bool)
     case invitation(invLink: String, profile: Profile)
     case group(connLink: String, groupProfile: GroupProfile)
+
+    public var isPublicGroup: Bool {
+        if case let .group(_, gp) = self { gp.publicGroup != nil } else { false }
+    }
+
+    public var connLinkStr: String {
+        switch self {
+        case let .group(connLink, _): connLink
+        case let .contact(connLink, _, _): connLink
+        case let .invitation(invLink, _): invLink
+        }
+    }
+
+    public var image: String? {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.image
+        case let .contact(_, profile, _): profile.image
+        case let .invitation(_, profile): profile.image
+        }
+    }
+
+    public var displayName: String {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.displayName
+        case let .contact(_, profile, _): profile.displayName
+        case let .invitation(_, profile): profile.displayName
+        }
+    }
+
+    public var iconName: String {
+        switch self {
+        case let .group(_, groupProfile):
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: "antenna.radiowaves.left.and.right.circle.fill"
+            case .unknown, .none: "person.2.circle.fill"
+            }
+        case let .contact(_, _, business):
+            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
+        case .invitation:
+            "person.crop.circle.fill"
+        }
+    }
+
+    public var smallIconName: String {
+        switch self {
+        case let .group(_, groupProfile):
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: "antenna.radiowaves.left.and.right"
+            case .unknown, .none: "person.2"
+            }
+        case let .contact(_, _, business):
+            business ? "briefcase" : "person"
+        case .invitation:
+            "person"
+        }
+    }
+
+    public var fullName: String {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.fullName
+        case let .contact(_, profile, _): profile.fullName
+        case let .invitation(_, profile): profile.fullName
+        }
+    }
+
+    public var shortDescription: String? {
+        let s: String? = switch self {
+        case let .group(_, groupProfile): groupProfile.shortDescr
+        case let .contact(_, profile, _): profile.shortDescr
+        case let .invitation(_, profile): profile.shortDescr
+        }
+        if let d = s?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { return d }
+        return nil
+    }
+
+    public func infoLine(signed: Bool) -> String {
+        var s: String = switch self {
+        case let .group(_, groupProfile):
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: NSLocalizedString("Channel link", comment: "chat link info line")
+            case .unknown, .none: NSLocalizedString("Group link", comment: "chat link info line")
+            }
+        case let .contact(_, _, business):
+            business
+                ? NSLocalizedString("Business address", comment: "chat link info line")
+                : NSLocalizedString("Contact address", comment: "chat link info line")
+        case .invitation:
+            NSLocalizedString("One-time link", comment: "chat link info line")
+        }
+        if signed {
+            s += " " + (
+                self.isPublicGroup
+                    ? NSLocalizedString("(from owner)", comment: "chat link info line")
+                    : NSLocalizedString("(signed)", comment: "chat link info line")
+            )
+        }
+        return s
+    }
+}
+
+extension MsgChatLink: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case type, connLink, invLink, profile, business, groupProfile
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "contact":
+            let connLink = try container.decode(String.self, forKey: .connLink)
+            let profile = try container.decode(Profile.self, forKey: .profile)
+            let business = try container.decode(Bool.self, forKey: .business)
+            self = .contact(connLink: connLink, profile: profile, business: business)
+        case "invitation":
+            let invLink = try container.decode(String.self, forKey: .invLink)
+            let profile = try container.decode(Profile.self, forKey: .profile)
+            self = .invitation(invLink: invLink, profile: profile)
+        case "group":
+            let connLink = try container.decode(String.self, forKey: .connLink)
+            let groupProfile = try container.decode(GroupProfile.self, forKey: .groupProfile)
+            self = .group(connLink: connLink, groupProfile: groupProfile)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown MsgChatLink type: \(type)")
+        }
+    }
+}
+
+extension MsgChatLink: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .contact(connLink, profile, business):
+            try container.encode("contact", forKey: .type)
+            try container.encode(connLink, forKey: .connLink)
+            try container.encode(profile, forKey: .profile)
+            try container.encode(business, forKey: .business)
+        case let .invitation(invLink, profile):
+            try container.encode("invitation", forKey: .type)
+            try container.encode(invLink, forKey: .invLink)
+            try container.encode(profile, forKey: .profile)
+        case let .group(connLink, groupProfile):
+            try container.encode("group", forKey: .type)
+            try container.encode(connLink, forKey: .connLink)
+            try container.encode(groupProfile, forKey: .groupProfile)
+        }
+    }
+}
+
+public struct LinkOwnerSig: Codable, Equatable, Hashable {
+    public var ownerId: String?
+    public var chatBinding: String
+    public var ownerSig: String
 }
 
 public struct FormattedText: Decodable, Hashable {

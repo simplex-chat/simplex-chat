@@ -62,6 +62,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetReactionMembers(userId: Int64, groupId: Int64, itemId: Int64, reaction: MsgReaction)
     case apiPlanForwardChatItems(fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64])
     case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
+    case apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -128,7 +129,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAddContact(userId: Int64, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
-    case apiConnectPlan(userId: Int64, connLink: String)
+    case apiConnectPlan(userId: Int64, connLink: String, linkOwnerSig: LinkOwnerSig?)
     case apiPrepareContact(userId: Int64, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData)
     case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData)
     case apiChangePreparedContactUser(contactId: Int64, newUserId: Int64)
@@ -261,6 +262,9 @@ enum ChatCommand: ChatCmdProtocol {
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 let asGroup = sendAsGroup ? " as_group=on" : ""
                 return "/_forward \(ref(toChatType, toChatId, scope: toScope))\(asGroup) \(ref(fromChatType, fromChatId, scope: fromScope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
+            case let .apiShareChatMsgContent(shareChatType, shareChatId, toChatType, toChatId, toScope, sendAsGroup):
+                let asGroup = sendAsGroup ? "(as_group=on)" : ""
+                return "/_share chat content \(ref(shareChatType, shareChatId, scope: nil)) \(ref(toChatType, toChatId, scope: toScope))\(asGroup)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -337,7 +341,9 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
-            case let .apiConnectPlan(userId, connLink): return "/_connect plan \(userId) \(connLink)"
+            case let .apiConnectPlan(userId, connLink, linkOwnerSig):
+                let sigStr = if let linkOwnerSig { " sig=\(encodeJSON(linkOwnerSig))" } else { "" }
+                return "/_connect plan \(userId) \(connLink)\(sigStr)"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData): return "/_prepare contact \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") \(encodeJSON(contactShortLinkData))"
             case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData): return "/_prepare group \(userId) \(connLink.connFullLink) \(connLink.connShortLink ?? "") direct=\(onOff(directLink)) \(encodeJSON(groupShortLinkData))"
             case let .apiChangePreparedContactUser(contactId, newUserId): return "/_set contact user @\(contactId) \(newUserId)"
@@ -451,6 +457,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGetReactionMembers: return "apiGetReactionMembers"
             case .apiPlanForwardChatItems: return "apiPlanForwardChatItems"
             case .apiForwardChatItems: return "apiForwardChatItems"
+            case .apiShareChatMsgContent: return "apiShareChatMsgContent"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -821,6 +828,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef, contactRequest: UserContactRequest, contact_: Contact?)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
+    case chatMsgContent(user: UserRef, msgContent: MsgContent)
     case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
@@ -864,6 +872,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .acceptingContactRequest: "acceptingContactRequest"
         case .contactRequestRejected: "contactRequestRejected"
         case .newChatItems: "newChatItems"
+        case .chatMsgContent: "chatMsgContent"
         case .groupChatItemsDeleted: "groupChatItemsDeleted"
         case .forwardPlan: "forwardPlan"
         case .chatItemUpdated: "chatItemUpdated"
@@ -898,6 +907,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
+        case let .chatMsgContent(u, mc): return withUser(u, String(describing: mc))
         case let .groupChatItemsDeleted(u, gInfo, chatItemIDs, byUser, member_):
             return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
         case let .forwardPlan(u, chatItemIds, forwardConfirmation): return withUser(u, "items: \(chatItemIds) forwardConfirmation: \(String(describing: forwardConfirmation))")
@@ -1341,6 +1351,11 @@ enum ChatPagination {
     }
 }
 
+enum OwnerVerification: Decodable, Hashable {
+    case verified
+    case failed(reason: String)
+}
+
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan)
@@ -1349,14 +1364,14 @@ enum ConnectionPlan: Decodable, Hashable {
 }
 
 enum InvitationLinkPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink
     case connecting(contact_: Contact?)
     case known(contact: Contact)
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1371,7 +1386,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)

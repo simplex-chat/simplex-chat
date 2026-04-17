@@ -373,7 +373,8 @@ struct AddChannelView: View {
             groupLinkMemberRole: Binding.constant(.observer), // TODO [relays] starting role should be communicated in protocol from owner to relays
             showTitle: false,
             creatingGroup: true,
-            isChannel: true
+            isChannel: true,
+            groupInfo: gInfo
         ) {
             m.creatingChannelId = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

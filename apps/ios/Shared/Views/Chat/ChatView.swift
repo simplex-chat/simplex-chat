@@ -260,7 +260,9 @@ struct ChatView: View {
                     groupLinkMemberRole: $groupLinkMemberRole,
                     showTitle: true,
                     creatingGroup: false,
-                    isChannel: groupInfo.useRelays
+                    isChannel: groupInfo.useRelays,
+                    groupInfo: groupInfo,
+                    composeState: $composeState
                 )
             }
         }
@@ -511,6 +513,7 @@ struct ChatView: View {
                         }
                     ),
                     scrollToItemId: $scrollToItemId,
+                    composeState: $composeState,
                     onSearch: { focusSearch() },
                     localAlias: groupInfo.localAlias
                 )

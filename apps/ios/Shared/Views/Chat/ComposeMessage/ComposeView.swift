@@ -11,6 +11,7 @@ let MAX_NUMBER_OF_MENTIONS = 3
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
+    case chatLinkPreview(chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     case mediaPreviews(mediaPreviews: [(String, UploadContent?)])
     case voicePreview(recordingFileName: String, duration: Int)
     case filePreview(fileName: String, file: URL)
@@ -172,6 +173,7 @@ struct ComposeState {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
+        case .chatLinkPreview: return true
         case .filePreview: return true
         default: return !whitespaceOnly || forwarding || liveMessage != nil || submittingValidReport
         }
@@ -183,6 +185,7 @@ struct ComposeState {
 
     var linkPreviewAllowed: Bool {
         switch preview {
+        case .chatLinkPreview: return false
         case .mediaPreviews: return false
         case .voicePreview: return false
         case .filePreview: return false
@@ -238,6 +241,7 @@ struct ComposeState {
         switch preview {
         case .noPreview: false
         case .linkPreview: false
+        case .chatLinkPreview: false
         case let .mediaPreviews(mediaPreviews): !mediaPreviews.isEmpty
         case .voicePreview: false
         case .filePreview: true
@@ -1300,6 +1304,15 @@ struct ComposeView: View {
                 cancelEnabled: !composeState.inProgress
             )
             Divider()
+        case let .chatLinkPreview(chatLink, _):
+            ComposeChatLinkView(
+                chatLink: chatLink,
+                cancelPreview: {
+                    composeState = composeState.copy(preview: .noPreview)
+                },
+                cancelEnabled: !composeState.inProgress
+            )
+            Divider()
         case let .mediaPreviews(mediaPreviews: media):
             ComposeImageView(
                 images: media.map { (img, _) in img },
@@ -1458,6 +1471,10 @@ struct ComposeView: View {
                 sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+            case let .chatLinkPreview(chatLink, ownerSig):
+                let linkStr = chatLink.connLinkStr
+                let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
+                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case let .mediaPreviews(media):
                 // TODO: CHECK THIS
                 let last = media.count - 1
@@ -1561,8 +1578,8 @@ struct ComposeView: View {
             case .report(_, let reason):
                 return .report(text: msgText, reason: reason)
             // TODO [short links] update chat link
-            case let .chat(_, chatLink):
-                return .chat(text: msgText, chatLink: chatLink)
+            case let .chat(_, chatLink, ownerSig):
+                return .chat(text: msgText, chatLink: chatLink, ownerSig: ownerSig)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }

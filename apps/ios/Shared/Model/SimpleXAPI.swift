@@ -503,6 +503,12 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, 
     throw r.unexpected
 }
 
+func apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool) async throws -> MsgContent {
+    let r: ChatResponse1 = try await chatSendCmd(.apiShareChatMsgContent(shareChatType: shareChatType, shareChatId: shareChatId, toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup))
+    if case let .chatMsgContent(_, mc) = r { return mc }
+    throw r.unexpected
+}
+
 func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool = false, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
@@ -1020,12 +1026,12 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, inProgress: BoxedValue<Bool>) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
+func apiConnectPlan(connLink: String, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink), inProgress: inProgress)
+    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink, linkOwnerSig: linkOwnerSig), inProgress: inProgress)
     if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return ((connLink, connPlan), nil) }
     let alert: Alert? = if let r { apiConnectResponseAlert(r) } else { nil }
     return (nil, alert)

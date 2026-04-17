@@ -101,6 +101,7 @@ class OpenChatAlertViewController: UIViewController {
     private let profileFullName: String
     private let profileImage: UIView
     private let subtitle: String?
+    private let information: String?
     private let cancelTitle: String
     private let confirmTitle: String?
     private let onCancel: () -> Void
@@ -111,6 +112,7 @@ class OpenChatAlertViewController: UIViewController {
         profileFullName: String,
         profileImage: UIView,
         subtitle: String? = nil,
+        information: String? = nil,
         cancelTitle: String = "Cancel",
         confirmTitle: String? = "Open",
         onCancel: @escaping () -> Void = {},
@@ -120,6 +122,7 @@ class OpenChatAlertViewController: UIViewController {
         self.profileFullName = profileFullName
         self.profileImage = profileImage
         self.subtitle = subtitle
+        self.information = information
         self.cancelTitle = cancelTitle
         self.confirmTitle = confirmTitle
         self.onCancel = onCancel
@@ -184,6 +187,18 @@ class OpenChatAlertViewController: UIViewController {
             subtitleLabel.textAlignment = .center
             subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
             profileViews.append(subtitleLabel)
+        }
+
+        // Information label (e.g. owner verification)
+        if let information {
+            let infoLabel = UILabel()
+            infoLabel.text = information
+            infoLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
+            infoLabel.textColor = .label
+            infoLabel.numberOfLines = 3
+            infoLabel.textAlignment = .center
+            infoLabel.translatesAutoresizingMaskIntoConstraints = false
+            profileViews.append(infoLabel)
         }
 
         // Horizontal stack for image + name
@@ -318,6 +333,7 @@ func showOpenChatAlert<Content: View>(
     profileImage: Content,
     theme: AppTheme,
     subtitle: String? = nil,
+    information: String? = nil,
     cancelTitle: String = "Cancel",
     confirmTitle: String? = "Open",
     onCancel: @escaping () -> Void = {},
@@ -334,6 +350,7 @@ func showOpenChatAlert<Content: View>(
             profileFullName: profileFullName,
             profileImage: hostedView,
             subtitle: subtitle,
+            information: information,
             cancelTitle: cancelTitle,
             confirmTitle: confirmTitle,
             onCancel: onCancel,
