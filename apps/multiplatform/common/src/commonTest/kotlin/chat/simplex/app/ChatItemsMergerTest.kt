@@ -18,8 +18,7 @@ class ChatItemsMergerTest {
     val chatState1 = ActiveChatState(splits = splits1)
     val removed1 = listOf(oldItems[1])
     val newItems1 = oldItems - removed1
-    val recalc1 = recalculateChatStatePositions(chatState1)
-    recalc1.removed(removed1.map { Triple(it.id, oldItems.indexOf(removed1[0]), it.isRcvNew) }, newItems1)
+    chatState1.itemsRemoved(removed1.map { Triple(it.id, oldItems.indexOf(removed1[0]), it.isRcvNew) }, newItems1)
     assertEquals(1, splits1.value.size)
     assertEquals(124L, splits1.value.first())
 
@@ -27,8 +26,7 @@ class ChatItemsMergerTest {
     val chatState2 = ActiveChatState(splits = splits2)
     val removed2 = listOf(oldItems[1], oldItems[2])
     val newItems2 = oldItems - removed2
-    val recalc2 = recalculateChatStatePositions(chatState2)
-    recalc2.removed(removed2.mapIndexed { index, it -> Triple(it.id, oldItems.indexOf(removed2[index]), it.isRcvNew) }, newItems2)
+    chatState2.itemsRemoved(removed2.mapIndexed { index, it -> Triple(it.id, oldItems.indexOf(removed2[index]), it.isRcvNew) }, newItems2)
     assertEquals(1, splits2.value.size)
     assertEquals(125L, splits2.value.first())
 
@@ -36,14 +34,12 @@ class ChatItemsMergerTest {
     val chatState3 = ActiveChatState(splits = splits3)
     val removed3 = listOf(oldItems[1], oldItems[2], oldItems[3])
     val newItems3 = oldItems - removed3
-    val recalc3 = recalculateChatStatePositions(chatState3)
-    recalc3.removed(removed3.mapIndexed { index, it -> Triple(it.id, oldItems.indexOf(removed3[index]), it.isRcvNew) }, newItems3)
+    chatState3.itemsRemoved(removed3.mapIndexed { index, it -> Triple(it.id, oldItems.indexOf(removed3[index]), it.isRcvNew) }, newItems3)
     assertEquals(0, splits3.value.size)
 
     val splits4 = MutableStateFlow(listOf(123L))
     val chatState4 = ActiveChatState(splits = splits4)
-    val recalc4 = recalculateChatStatePositions(chatState4)
-    recalc4.cleared()
+    chatState4.clear()
     assertEquals(0, splits4.value.size)
   }
 
