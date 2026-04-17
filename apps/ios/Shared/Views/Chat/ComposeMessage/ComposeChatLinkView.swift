@@ -19,10 +19,12 @@ struct ComposeChatLinkView: View {
                 Text(chatLink.displayName)
                     .font(.headline)
                     .lineLimit(1)
-                Text(chatLink.infoLine(signed: false))
-                    .font(.caption)
-                    .foregroundColor(theme.colors.secondary)
-                    .lineLimit(1)
+                if let descr = chatLink.shortDescription {
+                    Text(descr)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .lineLimit(1)
+                }
             }
             .padding(.vertical, 5)
             Spacer()

@@ -83,6 +83,7 @@ struct ContextItemView: View {
             case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
             case .voice: return isFileLoaded ? image("play.fill") : Text("")
+            case let .chat(_, chatLink, _): return image(chatLink.iconName) + Text(chatLink.displayName + " ")
             default: return Text("")
             }
         }
