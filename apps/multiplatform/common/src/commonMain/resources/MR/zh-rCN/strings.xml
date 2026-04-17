@@ -2668,4 +2668,21 @@
     <string name="save_channel_profile">保存频道资料</string>
     <string name="alert_text_msg_reception_error">应用在尝试接受这条消息 %1$d 次后删除了这条消。</string>
     <string name="rcv_channel_event_updated_channel_profile">更新了频道资料</string>
+    <string name="relay_bar_active_with_errors">%2$d 个中继中的 %1$d 个活跃， %3$d 个错误</string>
+    <string name="relay_bar_active_with_removed">%2$d 个中继中的 %1$d 个活跃， %3$d 个被删除</string>
+    <string name="relay_bar_connected_with_failures">%2$d 个中继中的 %1$d 个已连接， %3$d 个失灵</string>
+    <string name="relay_bar_connected_with_removed">%2$d 个中继中的 %1$d 个已连接， %3$d 个被删除</string>
+    <string name="relay_bar_relays_failed">%1$d 个中继失灵</string>
+    <string name="relay_bar_relays_not_active">%1$d 个中继不活跃</string>
+    <string name="relay_bar_relays_removed">删除了 %1$d 个中继</string>
+    <string name="relay_bar_owner_no_delivery">目前不支持添加中继。</string>
+    <string name="relay_bar_all_relays_failed">所有中继均失灵</string>
+    <string name="relay_bar_all_relays_removed">删除了所有中继</string>
+    <string name="cant_broadcast_message">无法广播</string>
+    <string name="channel_no_active_relays_try_later">频道有不活跃的中继。请稍后尝试加入。</string>
+    <string name="channel_temporarily_unavailable">频道暂时不可用</string>
+    <string name="relay_status_inactive">不活跃</string>
+    <string name="relay_bar_no_active_relays">无活跃中继</string>
+    <string name="relay_conn_status_removed_by_operator">被运营方删除</string>
+    <string name="relay_bar_subscriber_waiting">正等到频道所有者添加中继。</string>
 </resources>
