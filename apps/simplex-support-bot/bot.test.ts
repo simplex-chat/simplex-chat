@@ -422,7 +422,7 @@ async function reachQueue(groupId = CUSTOMER_GROUP_ID) {
 async function reachGrok(groupId = CUSTOMER_GROUP_ID) {
   await reachQueue(groupId)
   // Add the queue message to history so state derivation sees it
-  addBotMessage("The team can see your message", groupId)
+  addBotMessage("The team will reply to your message", groupId)
 
   // Send /grok command. This triggers activateGrok which needs the join flow.
   // We need to simulate Grok join success.
@@ -460,13 +460,13 @@ async function simulateGrokJoinSuccess(mainGroupId = CUSTOMER_GROUP_ID) {
 
 async function reachTeamPending(groupId = CUSTOMER_GROUP_ID) {
   await reachQueue(groupId)
-  addBotMessage("The team can see your message", groupId)
+  addBotMessage("The team will reply to your message", groupId)
   await bot.onNewChatItems(customerMessage("/team", groupId))
 }
 
 async function reachTeam(groupId = CUSTOMER_GROUP_ID) {
   await reachTeamPending(groupId)
-  addBotMessage("A team member has been added", groupId)
+  addBotMessage("We will reply within 24 hours.", groupId)
   chat.members.set(groupId, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
   // Team member sends a text message (triggers one-way gate)
   addTeamMemberMessageToHistory("Hi, how can I help?", TEAM_MEMBER_1_ID, groupId)
@@ -574,7 +574,7 @@ describe("Welcome & First Message", () => {
 
   test("first message → queue reply sent, card created in team group", async () => {
     await bot.onNewChatItems(customerMessage("Hello"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
     expect(teamMsgs.length).toBeGreaterThan(0)
     expect(teamMsgs[teamMsgs.length - 1]).toContain("/join")
@@ -582,22 +582,22 @@ describe("Welcome & First Message", () => {
 
   test("non-text first message → no queue reply, no card", async () => {
     await bot.onNewChatItems(customerNonTextMessage())
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(0)
   })
 
   test("second message → no duplicate queue reply", async () => {
     await bot.onNewChatItems(customerMessage("Hello"))
-    addBotMessage("The team can see your message")
-    const countBefore = chat.sentTo(CUSTOMER_GROUP_ID).filter(m => m.includes("The team can see your message")).length
+    addBotMessage("The team will reply to your message")
+    const countBefore = chat.sentTo(CUSTOMER_GROUP_ID).filter(m => m.includes("The team will reply to your message")).length
     await bot.onNewChatItems(customerMessage("Second message"))
-    const countAfter = chat.sentTo(CUSTOMER_GROUP_ID).filter(m => m.includes("The team can see your message")).length
+    const countAfter = chat.sentTo(CUSTOMER_GROUP_ID).filter(m => m.includes("The team will reply to your message")).length
     expect(countAfter).toBe(countBefore)
   })
 
   test("unrecognized /command → treated as normal message", async () => {
     await bot.onNewChatItems(customerMessage("/unknown"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
   })
 })
 
@@ -606,13 +606,13 @@ describe("/grok Activation", () => {
 
   test("/grok from QUEUE → Grok invited, grokActivatedMessage sent", async () => {
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     const joinPromise = simulateGrokJoinSuccess()
     await bot.onNewChatItems(customerMessage("/grok"))
     await joinPromise
     await bot.flush()
     expectMemberAdded(CUSTOMER_GROUP_ID, GROK_CONTACT_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "now chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
   })
 
   test("/grok as first message → WELCOME→GROK directly, no queue message", async () => {
@@ -620,8 +620,8 @@ describe("/grok Activation", () => {
     await bot.onNewChatItems(customerMessage("/grok"))
     await joinPromise
     await bot.flush()
-    expectSentToGroup(CUSTOMER_GROUP_ID, "now chatting with Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
 
@@ -634,7 +634,7 @@ describe("/grok Activation", () => {
   test("/grok when grokContactId is null → grokUnavailableMessage", async () => {
     setup({grokContactId: null})
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     await bot.onNewChatItems(customerMessage("/grok"))
     expectSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
@@ -644,7 +644,7 @@ describe("/grok Activation", () => {
     await bot.onNewChatItems(customerMessage("/grok"))
     await bot.flush()
     expectSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
-    expectSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
   })
 })
 
@@ -789,22 +789,22 @@ describe("/team Activation", () => {
 
   test("/team from QUEUE → ALL team members added, teamAddedMessage sent", async () => {
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     await bot.onNewChatItems(customerMessage("/team"))
     expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
     expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_2_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team member has been added")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
   })
 
   test("/team as first message → WELCOME→TEAM, no queue message", async () => {
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team member has been added")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
   })
 
   test("/team when already activated → teamAlreadyInvitedMessage", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     await bot.onNewChatItems(customerMessage("/team"))
     expectSentToGroup(CUSTOMER_GROUP_ID, "already been invited")
@@ -813,7 +813,7 @@ describe("/team Activation", () => {
   test("/team with no team members → noTeamMembersMessage", async () => {
     setup({teamMembers: []})
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     await bot.onNewChatItems(customerMessage("/team"))
     expectSentToGroup(CUSTOMER_GROUP_ID, "No team members are available")
   })
@@ -824,7 +824,7 @@ describe("One-Way Gate", () => {
 
   test("team member sends first TEXT → Grok removed if present", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember(), makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     await bot.onNewChatItems(teamMemberMessage("Hi, how can I help?"))
     expect(chat.removed.some(r => r.groupId === CUSTOMER_GROUP_ID && r.memberIds.includes(7777))).toBe(true)
@@ -832,7 +832,7 @@ describe("One-Way Gate", () => {
 
   test("team member non-text (no ciContentText) → Grok NOT removed", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember()])
     await bot.onNewChatItems(teamMemberMessage("", TEAM_MEMBER_1_ID))
     expect(chat.removed.length).toBe(0)
@@ -854,7 +854,7 @@ describe("One-Way Gate", () => {
 
   test("/grok in TEAM-PENDING → invite Grok if not present", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     const joinPromise = simulateGrokJoinSuccess()
     await bot.onNewChatItems(customerMessage("/grok"))
@@ -871,8 +871,8 @@ describe("One-Way Gate with Grok Disabled", () => {
     bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null)
     bot.cards = cards
     // Reach QUEUE state with Grok + team member already present
-    addBotMessage("The team can see your message")
-    addBotMessage("A team member has been added")
+    addBotMessage("The team will reply to your message")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember(), makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     // Team member sends text → one-way gate should fire
     await bot.onNewChatItems(teamMemberMessage("Hi, how can I help?"))
@@ -885,7 +885,7 @@ describe("One-Way Gate with Grok Disabled", () => {
     bot.cards = cards
     // Set up group with Grok member present
     chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember()])
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     // Customer sends text in GROK state
     await bot.onNewChatItems(customerMessage("How do I use SimpleX?"))
     // Grok should not respond (grokApi is null)
@@ -913,7 +913,7 @@ describe("Team Member Lifecycle", () => {
 
   test("all team members leave before sending → reverts to QUEUE", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     // Remove team members from the group
     chat.members.set(CUSTOMER_GROUP_ID, [])
     // Customer sends another message — state should derive as QUEUE (no team members)
@@ -923,18 +923,18 @@ describe("Team Member Lifecycle", () => {
 
   test("/team after all team members left (TEAM-PENDING, no msg sent) → re-adds members", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [])
     chat.added.length = 0
 
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team member has been added")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
     expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
   })
 
   test("/team after all team members left (TEAM, msg was sent) → re-adds members", async () => {
     await reachTeamPending()
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     addTeamMemberMessageToHistory("Hi, how can I help?", TEAM_MEMBER_1_ID)
     await bot.onNewChatItems(teamMemberMessage("Hi, how can I help?"))
@@ -944,7 +944,7 @@ describe("Team Member Lifecycle", () => {
     chat.added.length = 0
 
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team member has been added")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
     expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
   })
 })
@@ -1057,7 +1057,7 @@ describe("Card Format & State Derivation", () => {
   beforeEach(() => setup())
 
   test("QUEUE state derived when no Grok or team members", async () => {
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
     expect(state).toBe("QUEUE")
   })
@@ -1118,7 +1118,7 @@ describe("/join Command (Team Group)", () => {
 
   test("customer sending /join in customer group → treated as normal message", async () => {
     await bot.onNewChatItems(customerMessage("/join 50:Test"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
   })
 })
 
@@ -1313,7 +1313,7 @@ describe("Error Handling", () => {
 
   test("apiAddMember fails (Grok invite) → grokUnavailableMessage", async () => {
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     chat.apiAddMemberWillFail()
     await bot.onNewChatItems(customerMessage("/grok"))
     await bot.flush()
@@ -1322,7 +1322,7 @@ describe("Error Handling", () => {
 
   test("groupDuplicateMember on Grok invite → only inviting message, no result", async () => {
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     chat.apiAddMemberWillFail({chatError: {errorType: {type: "groupDuplicateMember"}}})
     const sentBefore = chat.sent.length
     await bot.onNewChatItems(customerMessage("/grok"))
@@ -1330,13 +1330,13 @@ describe("Error Handling", () => {
     // Only the "Inviting Grok" message is sent — no activated/unavailable result
     expect(chat.sent.length).toBe(sentBefore + 1)
     expectSentToGroup(CUSTOMER_GROUP_ID, "Inviting Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "now chatting with Grok")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
   test("groupDuplicateMember on /team → apiListMembers fallback", async () => {
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
 
     // First team member add succeeds, second fails with groupDuplicateMember
     let callCount = 0
@@ -1353,7 +1353,7 @@ describe("Error Handling", () => {
     }
 
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team member has been added")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
   })
 })
 
@@ -1417,7 +1417,7 @@ describe("Grok Join Flow", () => {
     // First need to set up a pending grok join
     // Simulate the main profile side: add Grok to a group
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
 
     // This kicks off activateGrok which adds member and waits
     const joinComplete = new Promise<void>(async (resolve) => {
@@ -1497,19 +1497,19 @@ describe("Grok Join Flow", () => {
     })
 
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     const botPromise = bot.onNewChatItems(customerMessage("/grok"))
     await joinComplete
     await botPromise
     await bot.flush()
 
     expect(chat.joined).toContain(GROK_LOCAL_GROUP_ID)
-    expectSentToGroup(CUSTOMER_GROUP_ID, "now chatting with Grok")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
   })
 
   test("per-message responses suppressed during activateGrok initial response", async () => {
     await reachQueue()
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
 
     // Customer's message visible in Grok's view (activateGrok reads it for initial response)
     addCustomerMessageToHistory("Hello, I need help", GROK_LOCAL_GROUP_ID)
@@ -1607,13 +1607,13 @@ describe("End-to-End Flows", () => {
 
   test("WELCOME → QUEUE → /team → TEAM-PENDING → team msg → TEAM", async () => {
     await bot.onNewChatItems(customerMessage("Help me"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
-    addBotMessage("The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
+    addBotMessage("The team will reply to your message")
 
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "team member has been added")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
     expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
-    addBotMessage("A team member has been added")
+    addBotMessage("We will reply within 24 hours.")
 
     chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
     const pendingState = await cards.deriveState(CUSTOMER_GROUP_ID)
@@ -1632,8 +1632,8 @@ describe("End-to-End Flows", () => {
     await joinPromise
     await bot.flush()
 
-    expectSentToGroup(CUSTOMER_GROUP_ID, "now chatting with Grok")
-    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team can see your message")
+    expectSentToGroup(CUSTOMER_GROUP_ID, "You are chatting with Grok")
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBeGreaterThan(0)
   })
 
@@ -1657,8 +1657,8 @@ describe("End-to-End Flows", () => {
       chatItems: [{chatInfo: {type: "group", groupInfo: makeGroupInfo(GROUP_B, {customerId: "cust-b"})}, chatItem: ciB}],
     })
 
-    expectSentToGroup(GROUP_A, "The team can see your message")
-    expectSentToGroup(GROUP_B, "The team can see your message")
+    expectSentToGroup(GROUP_A, "The team will reply to your message")
+    expectSentToGroup(GROUP_B, "The team will reply to your message")
   })
 })
 
@@ -1668,8 +1668,8 @@ describe("Message Templates", () => {
     expect(welcomeMessage.length).toBeGreaterThan(0)
   })
 
-  test("grokActivatedMessage mentions Grok can see earlier messages", () => {
-    expect(grokActivatedMessage).toContain("Grok can see your earlier messages")
+  test("grokActivatedMessage mentions chatting with Grok", () => {
+    expect(grokActivatedMessage).toContain("chatting with Grok")
   })
 
   test("teamLockedMessage mentions team mode", () => {
@@ -1685,20 +1685,20 @@ describe("Message Templates", () => {
 describe("isFirstCustomerMessage detection", () => {
   beforeEach(() => setup())
 
-  test("detects 'The team can see your message' as queue message", async () => {
-    addBotMessage("The team can see your message. A reply may take up to 24 hours.")
+  test("detects 'The team will reply to your message' as queue message", async () => {
+    addBotMessage("The team will reply to your message within 24 hours.")
     const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
     expect(isFirst).toBe(false)
   })
 
-  test("detects 'now chatting with Grok' as grok activation", async () => {
-    addBotMessage("You are now chatting with Grok.")
+  test("detects 'You are chatting with Grok' as grok activation", async () => {
+    addBotMessage("*You are chatting with Grok* - use any language.")
     const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
     expect(isFirst).toBe(false)
   })
 
-  test("detects 'team member has been added' as team activation", async () => {
-    addBotMessage("A team member has been added and will reply within 24 hours.")
+  test("detects 'We will reply within' as team activation", async () => {
+    addBotMessage("We will reply within 24 hours.")
     const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
     expect(isFirst).toBe(false)
   })
@@ -1807,11 +1807,11 @@ describe("Card Preview Sender Prefixes", () => {
     const gi = makeGroupInfo(CUSTOMER_GROUP_ID, {displayName: "Alice"})
     chat.groups.set(CUSTOMER_GROUP_ID, gi)
     addCustomerMessageToHistory("Hello")
-    addBotMessage("The team can see your message")
+    addBotMessage("The team will reply to your message")
     addCustomerMessageToHistory("Thanks")
     await cards.createCard(CUSTOMER_GROUP_ID, gi)
     const preview = getCardPreview()
-    expect(preview).not.toContain("The team can see your message")
+    expect(preview).not.toContain("The team will reply to your message")
     // Both customer messages are from the same sender — only first prefixed
     expect(preview).toContain("Alice: Hello")
     expect(preview).toContain("!3 /! Thanks")

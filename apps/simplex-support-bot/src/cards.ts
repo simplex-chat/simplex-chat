@@ -169,9 +169,9 @@ export class CardManager {
     return !chat.chatItems.some((ci: T.ChatItem) => {
       if (ci.chatDir.type !== "groupSnd") return false
       const text = util.ciContentText(ci)
-      return text?.includes("The team can see your message")
-        || text?.includes("now chatting with Grok")
-        || text?.includes("team member has been added")
+      return text?.includes("The team will reply to your message")
+        || text?.includes("chatting with Grok")
+        || text?.includes("We will reply within")
         || text?.includes("team member has already been invited")
     })
   }

@@ -14,7 +14,7 @@ If your question is about SimpleX, click /grok for an *instant Grok answer*.
 Send /team to switch back.`
 }
 
-export const grokActivatedMessage = `*You chatting with Grok* - use any language.`
+export const grokActivatedMessage = `*You are chatting with Grok* - use any language.`
 
 export function teamAddedMessage(timezone: string, grokPresent: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"

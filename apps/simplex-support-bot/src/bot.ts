@@ -666,11 +666,11 @@ export class SupportBot {
     }
 
     if (!hasTeamBefore) {
-      // Check by scanning history for "team member has been added" AND verify team still present
+      // Check by scanning history for the teamAddedMessage AND verify team still present
       const chat = await this.cards.getChat(groupId, 50)
       const alreadyAdded = chat.chatItems.some((ci: T.ChatItem) =>
         ci.chatDir.type === "groupSnd"
-        && util.ciContentText(ci)?.includes("team member has been added")
+        && util.ciContentText(ci)?.includes("We will reply within")
       )
       if (alreadyAdded) {
         const {teamMembers} = await this.cards.getGroupComposition(groupId)
