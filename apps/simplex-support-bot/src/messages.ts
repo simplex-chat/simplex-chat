@@ -1,20 +1,20 @@
 import {isWeekend} from "./util.js"
 
-export const welcomeMessage = `Hello! Feel free to ask any question about SimpleX Chat.
-*Only SimpleX Chat team has access to your messages.* This is a SimpleX Chat team bot - it is not any LLM or AI.
-Please send questions in English, you can use translator.`
+export const welcomeMessage = `Hello! This is a *SimpleX team* support bot - not an AI.
+Please ask any question about SimpleX Chat.`
 
 export function queueMessage(timezone: string, grokEnabled: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  const base = `The team can see your message. A reply may take up to ${hours} hours.`
+  const base = `The team will reply to your message within ${hours} hours.`
   if (!grokEnabled) return base
   return `${base}
 
-If your question is about SimpleX Chat, click /grok for an instant AI answer (non-sensitive questions only). Click /team to switch back any time.`
+If your question is about SimpleX, click /grok for an *instant Grok answer*.
+
+Send /team to switch back.`
 }
 
-export const grokActivatedMessage = `*You are now chatting with Grok. You can send questions in any language.* Grok can see your earlier messages.
-Send /team at any time to switch to a human team member.`
+export const grokActivatedMessage = `*You chatting with Grok* - use any language.`
 
 export function teamAddedMessage(timezone: string): string {
   const hours = isWeekend(timezone) ? "48" : "24"
