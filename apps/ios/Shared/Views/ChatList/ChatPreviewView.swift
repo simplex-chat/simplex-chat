@@ -305,7 +305,8 @@ struct ChatPreviewView: View {
                 return (markedDeletedText(), nil)
             }
             if case let .chat(_, chatLink, ownerSig) = ci.content.msgContent {
-                let text = chatLink.displayName + " · " + chatLink.infoLine(signed: ownerSig != nil)
+                let descr = if let descr = chatLink.shortDescription, descr != "" { "\n" + descr } else { "" }
+                let text = chatLink.displayName + descr
                 return (text, nil)
             }
             return (ci.text(isChannel: chat.chatInfo.isChannel), ci.formattedText)
