@@ -175,7 +175,7 @@ struct FramedItemView: View {
                     .simultaneousGesture(TapGesture().onEnded {
                         planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
                     })
-                ciMsgContentView(chatItem)
+                ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr)
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
                     ciMsgContentView(chatItem)
@@ -310,10 +310,11 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil) -> some View {
-        let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil, stripLink: String? = nil) -> some View {
+        let fullText = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
+        let text = if let stripLink { chatCardText(fullText, stripLink) } else { fullText }
         let rtl = isRightToLeft(text)
-        let ft = text == "" ? [] : ci.formattedText
+        let ft = text == "" ? [] : stripLink == nil ? ci.formattedText : stripFormattedText(ci.formattedText, stripLink)
         let v = MsgContentView(
             chat: chat,
             text: text,

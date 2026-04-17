@@ -266,13 +266,30 @@ struct ComposeState {
     }
 }
 
-func chatCardText(_ text: String, _ chatLink: MsgChatLink) -> String {
-    let link = chatLink.connLinkStr
-    return text == link
+func chatCardText(_ text: String, _ link: String) -> String {
+    text == link
         ? ""
         : text.hasSuffix("\n" + link)
         ? String(text.dropLast(link.count + 1))
         : text
+}
+
+func stripFormattedText(_ ft: [FormattedText]?, _ stripLink: String?) -> [FormattedText]? {
+    guard let ft, let link = stripLink, !ft.isEmpty else { return ft }
+    var result = ft
+    // Strip last segment if it matches the link
+    if let last = result.last, last.text == link {
+        result.removeLast()
+        // Strip trailing \n from the previous segment
+        if var prev = result.last, prev.format == nil, prev.text.hasSuffix("\n") {
+            result.removeLast()
+            prev.text = String(prev.text.dropLast())
+            if !prev.text.isEmpty {
+                result.append(prev)
+            }
+        }
+    }
+    return result.isEmpty ? nil : result
 }
 
 // Spec: spec/client/compose.md#chatItemPreview
