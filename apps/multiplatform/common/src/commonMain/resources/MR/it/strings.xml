@@ -2684,4 +2684,21 @@
     <string name="save_channel_profile">Salva il profilo del canale</string>
     <string name="alert_text_msg_reception_error">L\'app ha rimosso questo messaggio dopo %1$d tentativi di riceverlo.</string>
     <string name="rcv_channel_event_updated_channel_profile">profilo del canale aggiornato</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d relay attivi, %3$d errori</string>
+    <string name="relay_bar_active_with_removed">%1$d/%2$d relay attivi, %3$d rimossi</string>
+    <string name="relay_bar_connected_with_failures">%1$d/%2$d relay connessi, %3$d falliti</string>
+    <string name="relay_bar_connected_with_removed">%1$d/%2$d relay connessi, %3$d rimossi</string>
+    <string name="relay_bar_relays_failed">%1$d relay falliti</string>
+    <string name="relay_bar_relays_not_active">%1$d relay non attivi</string>
+    <string name="relay_bar_relays_removed">%1$d relay rimossi</string>
+    <string name="relay_bar_owner_no_delivery">L\'aggiunta di relay verrà supportata prossimamente.</string>
+    <string name="relay_bar_all_relays_failed">Tutti i relay falliti</string>
+    <string name="relay_bar_all_relays_removed">Tutti i relay rimossi</string>
+    <string name="cant_broadcast_message">impossibile trasmettere</string>
+    <string name="channel_no_active_relays_try_later">Il canale non ha relay attivi. Prova a iscriverti più tardi.</string>
+    <string name="channel_temporarily_unavailable">Canale non disponibile temporaneamente</string>
+    <string name="relay_status_inactive">inattivo</string>
+    <string name="relay_bar_no_active_relays">Nessun relay attivo</string>
+    <string name="relay_conn_status_removed_by_operator">rimosso da un operatore</string>
+    <string name="relay_bar_subscriber_waiting">In attesa che il proprietario del canale aggiunga dei relay.</string>
 </resources>
