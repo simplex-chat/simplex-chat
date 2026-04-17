@@ -1647,7 +1647,7 @@ private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType?
 private func ownerVerificationMessage(_ ov: OwnerVerification?) -> String? {
     switch ov {
     case .verified: NSLocalizedString("Link signature verified.", comment: "owner verification")
-    case let .failed(reason): String.localizedStringWithFormat(NSLocalizedString("Signature verification failed: %@.", comment: "owner verification"), reason)
+    case let .failed(reason): String.localizedStringWithFormat(NSLocalizedString("⚠️ Signature verification failed: %@.", comment: "owner verification"), reason)
     case .none: nil
     }
 }
