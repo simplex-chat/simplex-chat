@@ -83,7 +83,9 @@ struct ContextItemView: View {
             case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
             case .voice: return isFileLoaded ? image("play.fill") : Text("")
-            case let .chat(_, chatLink, _): return image(chatLink.smallIconName)
+            case let .chat(_, chatLink, _):
+                let hasText = contextItem.text != chatLink.connLinkStr
+                return image(chatLink.smallIconName) + Text(chatLink.displayName) + Text(verbatim: hasText ? " - " : "")
             default: return Text("")
             }
         }
