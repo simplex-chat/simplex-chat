@@ -18,9 +18,9 @@ struct GroupLinkView: View {
     var showTitle: Bool = false
     var creatingGroup: Bool = false
     var isChannel: Bool = false
-    var linkCreatedCb: (() -> Void)? = nil
     var shareGroupInfo: GroupInfo? = nil
     var composeState: Binding<ComposeState>? = nil
+    var linkCreatedCb: (() -> Void)? = nil
     @State private var showSharePicker = false
     @State private var showShortLink = true
     @State private var creatingLink = false

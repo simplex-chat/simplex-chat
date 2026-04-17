@@ -169,13 +169,15 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
-            case let .chat(_, chatLink, ownerSig):
+            case let .chat(text, chatLink, ownerSig):
                 CIChatLinkHeader(chatLink: chatLink, ownerSig: ownerSig)
                     .overlay(DetermineWidth())
                     .simultaneousGesture(TapGesture().onEnded {
                         planAndConnect(chatLink.connLinkStr, linkOwnerSig: ownerSig, theme: theme, dismiss: false)
                     })
-                ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr)
+                if !chatCardText(text, chatLink.connLinkStr).isEmpty {
+                    ciMsgContentView(chatItem, stripLink: chatLink.connLinkStr)
+                }
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
                     ciMsgContentView(chatItem)
