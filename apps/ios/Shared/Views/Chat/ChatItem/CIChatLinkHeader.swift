@@ -48,7 +48,7 @@ struct CIChatLinkHeader: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.bottom, 2)
+        .padding(.vertical, 6)
     }
 
     private func linkProfileView() -> some View {
