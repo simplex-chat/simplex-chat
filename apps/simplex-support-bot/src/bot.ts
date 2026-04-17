@@ -691,7 +691,8 @@ export class SupportBot {
       }
     }
 
-    await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone))
+    const {grokMember} = await this.cards.getGroupComposition(groupId)
+    await this.sendToGroup(groupId, teamAddedMessage(this.config.timezone, !!grokMember))
   }
 
   // --- Team group commands ---

@@ -16,9 +16,12 @@ Send /team to switch back.`
 
 export const grokActivatedMessage = `*You chatting with Grok* - use any language.`
 
-export function teamAddedMessage(timezone: string): string {
+export function teamAddedMessage(timezone: string, grokPresent: boolean): string {
   const hours = isWeekend(timezone) ? "48" : "24"
-  return `A team member has been added and will reply within ${hours} hours. You can keep describing your issue - they will see the full conversation.`
+  const base = `We will reply within ${hours} hours.`
+  if (!grokPresent) return base
+  return `${base}
+Grok will be answering your questions until then.`
 }
 
 export const teamAlreadyInvitedMessage = "A team member has already been invited to this conversation and will reply when available."
