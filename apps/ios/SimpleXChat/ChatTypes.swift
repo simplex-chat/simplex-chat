@@ -4830,6 +4830,10 @@ public enum MsgChatLink: Equatable, Hashable {
     case invitation(invLink: String, profile: Profile)
     case group(connLink: String, groupProfile: GroupProfile)
 
+    public var isChannel: Bool {
+        if case let .group(_, gp) = self { gp.publicGroup?.groupType == .channel } else { false }
+    }
+
     public var connLinkStr: String {
         switch self {
         case let .group(connLink, _): connLink
@@ -4892,9 +4896,7 @@ public enum MsgChatLink: Equatable, Hashable {
         var s: String = switch self {
         case let .group(_, groupProfile):
             if groupProfile.publicGroup?.groupType == .channel {
-                signed
-                    ? NSLocalizedString("Channel link from owner", comment: "chat link info line")
-                    : NSLocalizedString("Channel link", comment: "chat link info line")
+                NSLocalizedString("Channel link", comment: "chat link info line")
             } else {
                 NSLocalizedString("Group link", comment: "chat link info line")
             }
@@ -4905,7 +4907,13 @@ public enum MsgChatLink: Equatable, Hashable {
         case .invitation:
             NSLocalizedString("One-time link", comment: "chat link info line")
         }
-        if signed { s += " " + NSLocalizedString("(signed)", comment: "chat link info line") }
+        if signed {
+            s += " " + (
+                self.isChannel
+                    ? NSLocalizedString("(signed by owner)", comment: "chat link info line")
+                    : NSLocalizedString("(signed)", comment: "chat link info line")
+            )
+        }
         return s
     }
 }
