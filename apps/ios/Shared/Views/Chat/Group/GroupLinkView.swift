@@ -169,7 +169,7 @@ struct GroupLinkView: View {
         }
         .modifier(ThemedBackground(grouped: true))
         .sheet(isPresented: $showSharePicker) {
-            if let gInfo = shareGroupInfo, let composeState {
+            if let gInfo = shareGroupInfo {
                 shareChannelPicker(groupInfo: gInfo, composeState: composeState)
             }
         }

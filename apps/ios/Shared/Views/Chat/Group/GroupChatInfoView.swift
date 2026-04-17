@@ -1069,7 +1069,7 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
 }
 
 @ViewBuilder
-func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState>) -> some View {
+func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) -> some View {
     let v = ChatItemForwardingView(
         title: "Share channel",
         composeState: composeState,
@@ -1083,7 +1083,7 @@ func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState
     }
 }
 
-func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: Binding<ComposeState>) {
+func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) {
     let sendAsGroup = if let gInfo = destChat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
     Task {
         do {
@@ -1095,7 +1095,13 @@ func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: B
             if case let .chat(_, chatLink, ownerSig) = mc {
                 await MainActor.run {
                     dismissAllSheets {
-                        composeState.wrappedValue = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        let cs = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if let composeState {
+                            composeState.wrappedValue = cs
+                        } else {
+                            ChatModel.shared.draft = cs
+                            ChatModel.shared.draftChatId = destChat.id
+                        }
                         if destChat.id != ChatModel.shared.chatId {
                             ItemsModel.shared.loadOpenChat(destChat.id)
                         }

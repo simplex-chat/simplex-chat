@@ -17,7 +17,7 @@ struct ChatItemForwardingView: View {
     var title: LocalizedStringKey = "Forward"
     var chatItems: [ChatItem] = []
     var fromChatInfo: ChatInfo? = nil
-    @Binding var composeState: ComposeState
+    var composeState: Binding<ComposeState>? = nil
     var filteredChats: [Chat]? = nil
     var isProhibited: ((Chat) -> Bool)? = nil
     var onSelectChat: ((Chat) -> Void)? = nil
@@ -98,16 +98,16 @@ struct ChatItemForwardingView: View {
             } else if let onSelectChat {
                 dismiss()
                 onSelectChat(chat)
-            } else if let fromChatInfo {
+            } else if let fromChatInfo, let composeState {
                 dismiss()
                 if chat.id == fromChatInfo.id {
-                    composeState = ComposeState(
-                        message: composeState.message,
-                        preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
+                    composeState.wrappedValue = ComposeState(
+                        message: composeState.wrappedValue.message,
+                        preview: composeState.wrappedValue.linkPreview != nil ? composeState.wrappedValue.preview : .noPreview,
                         contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo)
                     )
                 } else {
-                    composeState = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
+                    composeState.wrappedValue = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
                     ItemsModel.shared.loadOpenChat(chat.id)
                 }
             }
