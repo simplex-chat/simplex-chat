@@ -1111,6 +1111,27 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
     }
 }
 
+func connErrorText(_ e: ChatError) -> String {
+    switch e {
+    case .error(.invalidConnReq):
+        NSLocalizedString("Invalid connection link", comment: "conn error description")
+    case .error(.unsupportedConnReq):
+        NSLocalizedString("Unsupported connection link", comment: "conn error description")
+    case .errorAgent(.SMP(_, .AUTH)):
+        NSLocalizedString("Connection error (AUTH)", comment: "conn error description")
+    case let .errorAgent(.SMP(_, .BLOCKED(info))):
+        NSLocalizedString("Connection blocked: \(info.reason.text)", comment: "conn error description")
+    case .errorAgent(.SMP(_, .QUOTA)):
+        NSLocalizedString("The connection reached the limit of undelivered messages", comment: "conn error description")
+    default:
+        if getNetworkErrorAlert(e) != nil {
+            NSLocalizedString("Network error", comment: "conn error description")
+        } else {
+            "\(NSLocalizedString("Error", comment: "conn error description")): \(responseError(e))"
+        }
+    }
+}
+
 func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
     mkAlert(
         title: "Contact already exists",
@@ -1841,12 +1862,19 @@ func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInf
     throw r.unexpected
 }
 
-func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay])? {
+enum PublicGroupCreationResult {
+    case created(GroupInfo, GroupLink, [GroupRelay])
+    case creationFailed([AddRelayResult])
+}
+
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> PublicGroupCreationResult? {
     let userId = try currentUserId("apiNewPublicGroup")
     let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
     switch r {
     case let .result(.publicGroupCreated(_, groupInfo, groupLink, groupRelays)):
-        return (groupInfo, groupLink, groupRelays)
+        return .created(groupInfo, groupLink, groupRelays)
+    case let .result(.publicGroupCreationFailed(_, addRelayResults)):
+        return .creationFailed(addRelayResults)
     default: if let r { throw r.unexpected } else { return nil }
     }
 }
