@@ -18,34 +18,28 @@ struct CIChatLinkHeader: View {
                 .padding(.top, 8)
                 .padding(.bottom, 6)
                 .overlay(DetermineWidth())
-            if let descr = chatLink.shortDescription {
-                Text(descr)
-                    .font(.caption)
-                    .foregroundColor(theme.colors.secondary)
-                    .lineLimit(2)
-                    .overlay(DetermineWidth())
-            }
-            if hasText {
-                Text(chatLink.infoLine(signed: ownerSig != nil))
-                    .font(.callout)
-                    .foregroundColor(theme.colors.secondary)
-                    .overlay(DetermineWidth())
-            } else {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(chatLink.infoLine(signed: ownerSig != nil))
-                        .font(.callout)
+            VStack(alignment: .leading, spacing: 2) {
+                if let descr = chatLink.shortDescription {
+                    Text(descr)
+                        .font(.footnote)
                         .foregroundColor(theme.colors.secondary)
-                        .overlay(DetermineWidth())
-                    (
-                        Text("Tap to open")
-                            .foregroundColor(theme.colors.primary)
-                            .font(.callout)
-                        + Text(verbatim: "   ")
-                        + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
-                    )
-                    .overlay(DetermineWidth())
+                        .lineLimit(2)
+                        .padding(.bottom, 2)
+                }
+                Text(chatLink.infoLine(signed: ownerSig != nil))
+                    .font(.footnote)
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.bottom, 2)
+                let t = Text("Tap to open").foregroundColor(theme.colors.primary).font(.callout)
+                if hasText {
+                    t
+                } else {
+                    t
+                    + Text(verbatim: "   ")
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 }
             }
+            .overlay(DetermineWidth())
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -57,7 +51,7 @@ struct CIChatLinkHeader: View {
                 imageStr: chatLink.image,
                 iconName: chatLink.iconName,
                 size: 44,
-                color: theme.colors.primary
+                color: Color(uiColor: .tertiaryLabel)
             )
             .padding(.trailing, 4)
             VStack(alignment: .leading) {

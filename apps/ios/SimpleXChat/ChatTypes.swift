@@ -4903,14 +4903,14 @@ public enum MsgChatLink: Equatable, Hashable {
         case let .contact(_, _, business):
             business
                 ? NSLocalizedString("Business address", comment: "chat link info line")
-                : NSLocalizedString("SimpleX address", comment: "chat link info line")
+                : NSLocalizedString("Contact address", comment: "chat link info line")
         case .invitation:
             NSLocalizedString("One-time link", comment: "chat link info line")
         }
         if signed {
             s += " " + (
                 self.isChannel
-                    ? NSLocalizedString("(signed by owner)", comment: "chat link info line")
+                    ? NSLocalizedString("(from owner)", comment: "chat link info line")
                     : NSLocalizedString("(signed)", comment: "chat link info line")
             )
         }
