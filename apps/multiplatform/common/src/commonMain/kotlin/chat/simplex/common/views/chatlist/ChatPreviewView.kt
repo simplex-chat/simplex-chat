@@ -31,6 +31,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -339,7 +340,9 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCChat -> SmallContentPreview(borderColor = if (mc.chatLink.image != null) MaterialTheme.colors.secondary else Color.Transparent) {
-        ProfileImage(size = 33.dp, image = mc.chatLink.image, icon = mc.chatLink.iconRes)
+        Box(Modifier.fillMaxSize().clickable { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } }, contentAlignment = Alignment.Center) {
+          ProfileImage(size = 36.sp.toDp(), image = mc.chatLink.image, icon = mc.chatLink.iconRes, color = if (isInDarkTheme()) FileDark else FileLight)
+        }
       }
       else -> {}
     }
