@@ -696,15 +696,22 @@ object ChatModel {
     }
 
     suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
+      val fullDelete = groupInfo.fullGroupPreferences.fullDelete.on
+
+      fun isMemberItem(item: ChatItem): Boolean =
+        (item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId) ||
+        (item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId)
+
       fun removedUpdatedItem(item: ChatItem): ChatItem? {
+        if (!isMemberItem(item)) return null
         val newContent = when {
-          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> CIContent.SndModerated
-          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> CIContent.RcvModerated
+          item.chatDir is CIDirection.GroupSnd -> CIContent.SndModerated
+          item.chatDir is CIDirection.GroupRcv -> CIContent.RcvModerated
           else -> return null
         }
         val updatedItem = item.copy(
           meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
-          content = if (groupInfo.fullGroupPreferences.fullDelete.on) newContent else item.content
+          content = if (fullDelete) newContent else item.content
         )
         if (item.isActiveReport) {
           decreaseGroupReportsCounter(rhId, groupInfo.id)
@@ -714,19 +721,40 @@ object ChatModel {
 
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
-        for (i in 0 until chatItems.value.size) {
-          val updatedItem = removedUpdatedItem(chatItems.value[i])
-          if (updatedItem != null) {
-            updateChatItem(cInfo, updatedItem, atIndex = i)
+        if (fullDelete) {
+          chatItems.removeAllAndNotify { item ->
+            val remove = isMemberItem(item)
+            if (remove) {
+              AudioPlayer.stop(item)
+              if (item.isActiveReport) {
+                decreaseGroupReportsCounter(rhId, groupInfo.id)
+              }
+            }
+            remove
+          }
+        } else {
+          for (i in 0 until chatItems.value.size) {
+            val updatedItem = removedUpdatedItem(chatItems.value[i])
+            if (updatedItem != null) {
+              updateChatItem(cInfo, updatedItem, atIndex = i)
+            }
           }
         }
       } else {
         val i = getChatIndex(rhId, groupInfo.id)
-        val chat = chats[i]
-        if (chat.chatItems.isNotEmpty()) {
-          val updatedItem = removedUpdatedItem(chat.chatItems[0])
-          if (updatedItem != null) {
-            chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+        if (i >= 0) {
+          val chat = chats[i]
+          if (chat.chatItems.isNotEmpty()) {
+            if (fullDelete) {
+              if (isMemberItem(chat.chatItems[0])) {
+                chats.value[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
+              }
+            } else {
+              val updatedItem = removedUpdatedItem(chat.chatItems[0])
+              if (updatedItem != null) {
+                chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+              }
+            }
           }
         }
       }
