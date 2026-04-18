@@ -125,6 +125,7 @@ fun GroupLinkView(
     groupLinkMemberRole,
     creatingLink,
     isChannel = isChannel,
+    shareGroupInfo = shareGroupInfo,
     createLink = ::createLink,
     showAddShortLinkAlert = ::showAddShortLinkAlert,
     updateLink = {
@@ -172,6 +173,7 @@ fun GroupLinkLayout(
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   isChannel: Boolean = false,
+  shareGroupInfo: GroupInfo? = null,
   createLink: () -> Unit,
   showAddShortLinkAlert: ((() -> Unit)?) -> Unit,
   updateLink: () -> Unit,

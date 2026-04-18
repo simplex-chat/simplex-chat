@@ -77,11 +77,12 @@ fun ContextItemView(
   fun attachment(contextItem: ChatItem): ImageResource? {
     val fileIsLoaded = getLoadedFilePath(contextItem.file) != null
 
-    return when (contextItem.content.msgContent) {
+    val mc = contextItem.content.msgContent
+    return when (mc) {
       is MsgContent.MCFile -> if (fileIsLoaded) MR.images.ic_draft_filled else null
       is MsgContent.MCImage -> MR.images.ic_image
       is MsgContent.MCVoice ->  if (fileIsLoaded) MR.images.ic_play_arrow_filled else null
-      is MsgContent.MCChat -> contextItem.content.msgContent.chatLink.smallIconRes
+      is MsgContent.MCChat -> mc.chatLink.smallIconRes
       else -> null
     }
   }
