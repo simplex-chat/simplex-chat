@@ -563,9 +563,10 @@ export class SupportBot {
     if (!this.grokApi) return
     const grokApi = this.grokApi
     const revertStateOnFail = async () => {
-      if (opts.setStateOnFail) {
-        await this.cards.mergeCustomData(groupId, {state: opts.setStateOnFail})
-      }
+      if (!opts.setStateOnFail) return
+      const current = await this.cards.getRawCustomData(groupId)
+      if (current?.state !== "GROK") return
+      await this.cards.mergeCustomData(groupId, {state: opts.setStateOnFail})
     }
     if (this.config.grokContactId === null) {
       await revertStateOnFail()

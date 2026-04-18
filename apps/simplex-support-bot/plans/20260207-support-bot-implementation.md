@@ -127,6 +127,8 @@ Per-conversation state is stored in the group's `customData` and written at the 
 
 **State is authoritative and monotonic.** Once written, `customData.state` persists across member leave/join events. The only path that clears it is the existing `onLeftMember` handler when the customer themselves leaves — at that point the entire customData is cleared.
 
+**Failure-path revert is CAS-guarded.** `activateGrok` runs fire-and-forget, so its `setStateOnFail` revert (`QUEUE`) can race with a concurrent transition (e.g. `/team` writing `TEAM-PENDING` while `waitForGrokJoin` is pending). To preserve monotonicity, `revertStateOnFail` is a compare-and-set: it only writes `setStateOnFail` if `customData.state === "GROK"` (the optimistic value both call sites write before invoking `activateGrok`). If another handler has since stamped a different state, the revert is skipped — the in-flight transition wins and stays.
+
 TEAM-PENDING takes priority over GROK when both Grok and team are present (after `/team` but before team member's first message). `/grok` remains available in TEAM-PENDING — if Grok is not yet in the group, it gets invited; if already present, the command is ignored.
 
 **State derivation helpers:**
@@ -519,7 +521,7 @@ Type signatures affected:
 3. Drain `bufferedGrokInvitations` — if the `receivedGroupInvitation` event arrived during step 1's await (race condition), process it now.
 4. Set `grokInitialResponsePending.add(groupId)` — suppresses per-message responses from `onGrokNewChatItems` for this group until the initial combined response completes. Without this gate, the message backlog arriving via `newChatItems` would trigger individual per-message responses racing with the initial combined response — producing duplicate replies (e.g., 3 replies for 2 messages).
 5. `waitForGrokJoin(120s)` — awaits resolver from Grok profile's `connectedToGroupMember` (step 8 below)
-6. Timeout → notify customer (`grokUnavailableMessage`), send queue message if was WELCOME→GROK, fall back to QUEUE, clear `grokInitialResponsePending`
+6. Timeout → notify customer (`grokUnavailableMessage`), send queue message if was WELCOME→GROK, fall back to QUEUE (CAS-guarded: only if `customData.state` is still `GROK` — a concurrent `/team` that switched to `TEAM-PENDING` is respected), clear `grokInitialResponsePending`
 
 **Grok profile side (independent, triggered by its own events):**
 7. `receivedGroupInvitation` → look up `pendingGrokJoins` by `evt.groupInfo.membership.memberId`. If found, auto-accept via `apiJoinGroup(groupId)`, set up `grokGroupMap` and `reverseGrokMap`. If not found (race: event arrived before step 2), buffer in `bufferedGrokInvitations` for step 3. Grok is NOT yet connected — cannot read history or send messages.

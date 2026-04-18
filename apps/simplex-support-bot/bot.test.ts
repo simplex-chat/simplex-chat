@@ -1717,6 +1717,39 @@ describe("State persistence in customData", () => {
     expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("QUEUE")
   })
 
+  test("concurrent /team during Grok activation timeout does not demote state", async () => {
+    await reachQueue()
+    addBotMessage("The team will reply to your message")
+
+    // Pause activateGrok at waitForGrokJoin so /team can run in the meantime.
+    // Patching apiAddMember won't work: it's wrapped in withMainProfile's mutex,
+    // which /team's activateTeam also needs. waitForGrokJoin awaits outside the
+    // mutex — that's the real race window in production.
+    let releaseJoin!: (joined: boolean) => void
+    ;(bot as any).waitForGrokJoin = () =>
+      new Promise<boolean>((resolve) => { releaseJoin = resolve })
+
+    // /grok: writes state=GROK optimistically, fire-and-forgets activateGrok.
+    await bot.onNewChatItems(customerMessage("/grok"))
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("GROK")
+
+    // Let activateGrok progress past apiAddMember into waitForGrokJoin.
+    await Promise.resolve()
+    await Promise.resolve()
+
+    // /team while activateGrok is waiting for join — writes TEAM-PENDING + adds members.
+    await bot.onNewChatItems(customerMessage("/team"))
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("TEAM-PENDING")
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+
+    // Simulate Grok join timeout — activateGrok's revertStateOnFail runs.
+    releaseJoin(false)
+    await bot.flush()
+
+    // Fix asserts: revert guard sees state != "GROK" and leaves TEAM-PENDING alone.
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("TEAM-PENDING")
+  })
+
   test("first team text writes state=TEAM via gate", async () => {
     await reachTeamPending()
     addBotMessage("We will reply within 24 hours.")
