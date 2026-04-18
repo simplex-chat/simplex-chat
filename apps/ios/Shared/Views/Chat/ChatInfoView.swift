@@ -376,12 +376,12 @@ struct ChatInfoView: View {
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if contact.verified {
                 (
-                    Text(Image(systemName: "checkmark.shield"))
-                        .foregroundColor(theme.colors.secondary)
-                        .font(.title2)
-                    + textSpace
-                    + Text(displayName)
+                    Text(displayName)
                         .font(.largeTitle)
+                    + textSpace
+                    + Text(Image(systemName: "checkmark.seal.fill"))
+                        .font(.title2)
+                        .foregroundColor(.blue)
                 )
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
