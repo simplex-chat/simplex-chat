@@ -1,0 +1,22 @@
+{
+  "name": "simplex-chat-support-bot",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@simplex-chat/types": "file:../../packages/simplex-chat-client/types/typescript",
+    "async-mutex": "^0.5.0",
+    "simplex-chat": "file:../../packages/simplex-chat-nodejs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  },
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0"
+}
