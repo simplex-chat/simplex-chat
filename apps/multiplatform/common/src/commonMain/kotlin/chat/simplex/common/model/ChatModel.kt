@@ -2113,7 +2113,7 @@ data class GroupInfo (
 
   val chatIconName: ImageResource
     get() = if (useRelays) {
-      MR.images.ic_bigtop_updates_padded
+      MR.images.ic_bigtop_updates_circle_filled
     } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
       BusinessChatType.Business -> MR.images.ic_work_filled_padded
@@ -4598,7 +4598,7 @@ sealed class MsgChatLink {
   val iconRes: ImageResource
     get() = when (this) {
       is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> MR.images.ic_bigtop_updates_padded
+        GroupType.Channel -> MR.images.ic_bigtop_updates_circle_filled
         else -> MR.images.ic_supervised_user_circle_filled
       }
       is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
