@@ -22,8 +22,8 @@ struct ChatHelp: View {
             Text("Thank you for installing SimpleX Chat!")
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("To ask any questions and to receive updates:")
-                Button("connect to SimpleX Chat developers.") {
+                Text("Got questions or want to receive updates?")
+                Button("Get in touch with the SimpleX developer team.") {
                     dismissSettingsSheet()
                     DispatchQueue.main.async {
                         UIApplication.shared.open(simplexTeamURL)
@@ -33,19 +33,19 @@ struct ChatHelp: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("To make a new connection")
+                Text("Establish new connections")
                     .font(.title2)
                     .fontWeight(.bold)
 
                 HStack(spacing: 8) {
-                    Text("Tap button ")
+                    Text("Tap ")
                     NewChatMenuButton(showNewChatSheet: $showNewChatSheet)
-                    Text("above, then choose:")
+                    Text("in the chat toolbar, then choose:")
                 }
 
-                Text("**Create 1-time link**: to create and share a new invitation link.")
-                Text("**Scan / Paste link**: to connect via a link you received.")
-                Text("**Create group**: to create a new group.")
+                Text("**Create 1-time link**: Create and share an one-time invitation link.")
+                Text("**Scan / Paste link**: Connect with other users or groups via a link you have received.")
+                Text("**Create group**: Create a group.")
             }
             .padding(.top, 24)
 
