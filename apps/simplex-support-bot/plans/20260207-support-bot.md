@@ -54,7 +54,7 @@ Bot sends the welcome message automatically as part of the connection handshake 
 
 #### Step 2 — After user sends first message
 
-The bot's "first message" detection works by scanning the last 20 messages in the group for the queue/grok/team confirmation texts ("The team will reply to your message", "chatting with Grok", "We will reply within", "team member has already been invited"). Until one of those is found, the group is in the welcome state.
+The bot's "first message" detection works by inspecting the group's `customData`. Until the bot has produced its first response (and written `cardItemId` to `customData`), the group is in the welcome state.
 
 On the customer's first message the bot does two things:
 1. Creates a card in the team group (🆕 icon, with `/join` command)
@@ -88,7 +88,7 @@ Grok is prompted as a privacy expert and support assistant who knows SimpleX Cha
 
 #### Step 4 — `/team` (Team mode, one-way gate)
 
-Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (detected by scanning for "team member has been added" in chat history), sends the "already invited" message instead.
+Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (detected via the `customData.teamInvited` flag), sends the "already invited" message instead.
 
 Bot replies:
 > We will reply within 24 hours.
@@ -490,14 +490,15 @@ User profile IDs (`mainUserId`, `grokUserId`) are **not** persisted — they are
 
 #### What is NOT persisted and why
 
+Per-group state flags (`cardItemId`, `joinItemId`, `complete`, `teamInvited`) live in SimpleX's database as the group's `customData` — persisted there rather than in the bot's state file.
+
 | State | Where it lives instead |
 |-------|----------------------|
-| `cardItemId` (per group) | Stored in the group's customData — the team group message ID for this customer's card |
+| `cardItemId, joinItemId, complete, teamInvited` (per group) | Stored in the group's customData — card message IDs, auto-completed flag, and whether `/team` has been invoked |
 | Last customer message time | Derived from most recent customer message in chat history |
 | Message count | Derived from message count in chat history (all messages except the bot's own) |
 | Customer name | Always available from the group's display name |
 | Who sent last message | Derived from recent chat history |
-| `welcomeCompleted` | Rebuilt on demand: `isFirstCustomerMessage` scans recent history |
 | `pendingGrokJoins` | In-flight during the 120-second join window only |
 | Owner role promotion | Not tracked — on every `memberConnected` in a customer group, the bot promotes the member to Owner unless it's the customer or Grok. Idempotent, survives restarts. |
 | `pendingTeamDMs` | Messages queued to greet team members — simply not sent if lost |
