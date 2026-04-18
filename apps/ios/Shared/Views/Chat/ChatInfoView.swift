@@ -375,14 +375,14 @@ struct ChatInfoView: View {
             let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if contact.verified {
-                (
+                HStack(spacing: 8) {
                     Text(displayName)
-                        .font(.largeTitle)
-                    + textSpace
-                    + Text(Image(systemName: "checkmark.seal.fill"))
                         .font(.title2)
-                        .foregroundColor(.blue)
-                )
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title2)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .blue)
+                }
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
