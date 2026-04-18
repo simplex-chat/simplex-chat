@@ -88,7 +88,7 @@ interface Config {
 {"teamGroupId": 123, "grokContactId": 4}
 ```
 
-Only two keys. All other state is derived from chat history, group metadata, or `customData`.
+Only two keys. All other state is persisted in the group's `customData` (per-conversation state, card IDs) or derived from group metadata (`apiListMembers`). Display data like message counts is read from chat history on demand.
 
 **Grok contact resolution** (state-file lookup always runs; contact establishment only when enabled):
 1. Read `grokContactId` from state file → validate via `apiListContacts` → set `config.grokContactId` (this always runs, even when `grokApiKey === null`, so the one-way gate can identify and remove Grok members from groups)
@@ -111,28 +111,28 @@ Only two keys. All other state is derived from chat history, group metadata, or 
 
 ## 5. State Derivation (Stateless)
 
-State is derived from group composition (`apiListMembers`), the group's `customData` (persisted in SimpleX's database), and chat history (only for the TEAM vs TEAM-PENDING discrimination). No in-memory conversations map — survives restarts.
+Per-conversation state is stored in the group's `customData` and written at the moment the bot handles each transition (customer's first message, `/grok`, `/team`, team member's first message). On subsequent events `deriveState` returns the stored state as-is — composition changes (team members leaving, Grok leaving) do **not** demote the stored state. The customer's mode (e.g. "waiting for a team response") is meaningful even when no team member is currently present; keeping the state preserves that. Composition is read only by specific handlers (e.g. the `/team` duplicate-invite guard). No chat-history scans for state decisions. No in-memory conversations map — survives restarts.
 
-**First message detection:** the group's `customData` has no `cardItemId` until the bot has produced its first response in the group. `isFirstCustomerMessage(groupId)` returns `true` iff `customData.cardItemId` is absent. No message-text introspection.
+**WELCOME detection:** customData has no `state` field until the bot handles the first transition. `deriveState` returns `WELCOME` precisely when `customData.state` is absent.
 
-**Derived states:**
+**State-write matrix:**
 
-| Condition | State |
-|-----------|-------|
-| No `cardItemId` in `customData` | WELCOME |
-| `cardItemId` present, no Grok member, no team member | QUEUE |
-| Grok member present, no team member present | GROK |
-| Team member present, no team member has sent a message | TEAM-PENDING |
-| Team member present, team member has sent a message | TEAM |
+| Bot-observed event | `customData.state` written |
+|---|---|
+| *(initial — no customData yet)* | *(absent ⇒ WELCOME)* |
+| Customer's first non-command message | `QUEUE` |
+| `/grok` handled — Grok invited | `GROK` |
+| `/team` handled — team members added (written at handler time; does not wait for team acceptance) | `TEAM-PENDING` |
+| First team-member text message observed | `TEAM` |
+
+**State is authoritative and monotonic.** Once written, `customData.state` persists across member leave/join events. The only path that clears it is the existing `onLeftMember` handler when the customer themselves leaves — at that point the entire customData is cleared.
 
 TEAM-PENDING takes priority over GROK when both Grok and team are present (after `/team` but before team member's first message). `/grok` remains available in TEAM-PENDING — if Grok is not yet in the group, it gets invited; if already present, the command is ignored.
 
 **State derivation helpers:**
-- `getGroupComposition(groupId)` → `{grokMember, teamMembers}` from `apiListMembers`
-- `isFirstCustomerMessage(groupId)` → returns `true` iff `customData.cardItemId` is absent
-- `hasTeamMemberSentMessage(groupId)` → TEAM-PENDING vs TEAM from chat history
-- `getLastCustomerMessageTime(groupId)` → for card wait time calculation
-- `getLastTeamOrGrokMessageTime(groupId)` → for auto-complete threshold check
+- `getGroupComposition(groupId)` → `{grokMember, teamMembers}` from `apiListMembers` — used for card rendering and the `/team` duplicate-invite guard.
+- `deriveState(groupId)` → reads `customData.state`. Returns `WELCOME` iff `customData.state` is absent. No composition lookup.
+- `getLastCustomerMessageTime(groupId)` / `getLastTeamOrGrokMessageTime(groupId)` → chat-history timestamp reads used by the card renderer for wait-time and auto-complete only (display, not state).
 
 **Transitions:**
 ```
@@ -144,7 +144,7 @@ QUEUE ──(/team)──────────> TEAM-PENDING (add team member
 GROK ──(/team)───────────> TEAM-PENDING (add all team members, Grok stays, update card)
 GROK ──(user msg)────────> GROK (Grok responds, update card)
 TEAM-PENDING ──(/grok)───> invite Grok if not present, else ignore (state stays TEAM-PENDING)
-TEAM-PENDING ──(/team)───> reply "already invited" (guarded by customData.teamInvited)
+TEAM-PENDING ──(/team)───> reply "already invited" (if team members still present; else re-add silently)
 TEAM-PENDING ──(team msg)> TEAM (remove Grok, disable /grok permanently, update card)
 TEAM ──(/grok)───────────> reply "team mode", stay TEAM
 ```
@@ -192,7 +192,7 @@ Card is two messages. **Message 1 (card text):**
 
 ### Card lifecycle
 
-**Tracking:** `{cardItemId, joinItemId, complete?, teamInvited?}` stored in customer group's `customData` via `apiSetGroupCustomData`. `cardItemId`/`joinItemId` are message IDs; `complete` flags the auto-completed state; `teamInvited` flags that `/team` has been invoked at least once (gates the duplicate-invite path). Read back from `groupInfo.customData`. Single source of truth — survives restarts. All writes go through `CardManager.mergeCustomData` to preserve fields across independent write paths.
+**Tracking:** `{state, cardItemId, joinItemId, complete?}` stored in customer group's `customData` via `apiSetGroupCustomData`. `state` is the canonical conversation state (`QUEUE | GROK | TEAM-PENDING | TEAM`); `cardItemId`/`joinItemId` are message IDs; `complete` flags the auto-completed state. Absence of `state` means WELCOME. Written at event time by the dispatch handlers — `/grok` handler writes `GROK` on invite; `/team` handler writes `TEAM-PENDING` immediately (does not wait for team acceptance); first observed team-member text message writes `TEAM`; first customer text message writes `QUEUE`. Read back from `groupInfo.customData` — single source of truth, survives restarts. All writes go through `CardManager.mergeCustomData` to preserve fields across independent write paths.
 
 **Create** — on first customer message (→ QUEUE) or `/grok` as first message (→ GROK):
 1. Compose card text + `/join` command
@@ -462,26 +462,26 @@ chat.on("connectedToGroupMember", (evt) => {
 //    - WELCOME: create card, send queue msg (or handle /grok first msg → WELCOME→GROK, skip queue)
 //    - QUEUE: /grok → invite Grok; /team → add ALL configured team members; else schedule card update
 //    - GROK: /team → add ALL configured team members (Grok stays); else schedule card update
-//    - TEAM-PENDING: /grok → invite Grok if not present, else ignore; /team → reply "already invited" (check `customData.teamInvited`); else no action
+//    - TEAM-PENDING: /grok → invite Grok if not present, else ignore; /team → if team members still present, reply "already invited"; if all team members have left, re-add silently (state stays TEAM-PENDING); else no action
 //    - TEAM: /grok → reply "team mode"; else no action
 ```
 
 ## 9. One-Way Gate
 
-The gate is stateless — derived from group composition + chat history. The initial `/team` guard against duplicate invites now uses the `customData.teamInvited` flag rather than history scanning.
+The gate is event-driven and persists its transitions. The initial `/team` guard reads `customData.state` AND group composition: if state is already `TEAM-PENDING`/`TEAM` **and** team members are still present, the bot replies `teamAlreadyInvitedMessage` without re-adding. If state is `TEAM-PENDING`/`TEAM` but all team members have left, the bot re-adds them (state stays `TEAM-PENDING`). The first-team-message detection writes `state: 'TEAM'` into customData at the moment the bot observes the message, then removes Grok and disables `/grok`.
 
 1. User sends `/team` → ALL configured `--auto-add-team-members` (`-a`) added to group (promoted to Owner on connect) → Grok stays if present → TEAM-PENDING
-2. Repeat `/team` → detected via `customData.teamInvited === true` → reply with `teamAlreadyInvitedMessage`
+2. Repeat `/team` → detected via `customData.state ∈ {TEAM-PENDING, TEAM}` **and team members still present** → reply with `teamAlreadyInvitedMessage`. If team members have since left, re-add them silently (state stays `TEAM-PENDING`).
 3. `/grok` still works in TEAM-PENDING (if Grok not present, invite it; if present, ignore — Grok responds to customer messages)
 4. Any team member sends first text message in customer group → **gate triggers**:
    - Remove Grok from group (`apiRemoveMembers`)
    - `/grok` permanently disabled → replies: "You are now in team mode. A team member will reply to your message."
-   - State = TEAM (derived via `hasTeamMemberSentMessage`)
-5. Detection: in `onNewChatItems`, when sender is a team member, check `hasTeamMemberSentMessage` — if this is the first, trigger gate.
+   - State = `TEAM` (written as `customData.state = 'TEAM'` at observation time)
+5. Detection: in `onNewChatItems`, when sender is a team member and `customData.state !== 'TEAM'`, trigger the gate and write `state: 'TEAM'` via `mergeCustomData`.
 
 **Edge cases:**
-- All team members leave before sending → reverts to QUEUE (stateless)
-- Team member leaves after sending → state stays TEAM (derived from chat history); customer can send `/team` again to re-add team members
+- All team members leave before sending → state stays `TEAM-PENDING` (customer is still waiting for a response); sending `/team` re-adds them without the "already invited" reply.
+- Team member leaves after sending → state stays `TEAM` (`customData.state` persists). Customer can send `/team` again to re-add team members.
 
 ## 10. Grok Integration
 
@@ -694,7 +694,7 @@ If a user contacts the bot via a regular direct-message address (not business ad
 
 | State | Where it lives |
 |-------|---------------|
-| `cardItemId`, `joinItemId`, `complete`, `teamInvited` | Customer group's `customData` |
+| `state`, `cardItemId`, `joinItemId`, `complete` | Customer group's `customData` |
 | User profile IDs | Resolved via `apiListUsers()` by display name |
 | Message counts, timestamps | Derived from chat history |
 | Customer name | Group display name |
@@ -719,8 +719,8 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | `apiRemoveMembers` fails | Ignore (member may have left) |
 | `apiDeleteChatItems` fails (card) | Ignore, post new card, overwrite `customData` |
 | Customer leaves | Cleanup in-memory state, card remains |
-| Team member leaves (no message sent) | Revert to QUEUE (stateless) |
-| Team member leaves (message sent) | Logged; customer can `/team` to re-add |
+| Team member leaves (no message sent) | State stays `TEAM-PENDING` (`customData.state` persists). Customer's next `/team` re-adds silently. |
+| Team member leaves (message sent) | State stays `TEAM` (`customData.state` persists). Customer's next `/team` re-adds silently. |
 | No `--auto-add-team-members` (`-a`) configured | `/team` → "no team members available yet" |
 | `grokContactId` unavailable | `/grok` → "temporarily unavailable" |
 | `groupDuplicateMember` | Catch, `apiListMembers` to find existing member |
@@ -1123,9 +1123,12 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - teamLockedMessage content
 - queueMessage mentions hours
 
-#### 24. isFirstCustomerMessage detection (2 tests)
-- returns true when `customData` is empty
-- returns false once `cardItemId` is set
+#### 24. State persistence in customData (5 tests)
+- `deriveState` returns `WELCOME` when `customData.state` is absent
+- first customer non-command message → handler writes `customData.state = "QUEUE"`
+- `/grok` handler → writes `customData.state = "GROK"`
+- `/team` handler → writes `customData.state = "TEAM-PENDING"` immediately (before team member accepts)
+- first team-member text message → gate writes `customData.state = "TEAM"`; state persists when team member subsequently leaves (not demoted to `QUEUE`)
 
 #### 25. Card Preview Sender Prefixes (14 tests)
 - single customer message → name prefix

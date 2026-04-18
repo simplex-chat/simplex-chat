@@ -88,7 +88,7 @@ Grok is prompted as a privacy expert and support assistant who knows SimpleX Cha
 
 #### Step 4 — `/team` (Team mode, one-way gate)
 
-Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (detected via the `customData.teamInvited` flag), sends the "already invited" message instead.
+Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (`customData.state` is already `TEAM-PENDING` or `TEAM` **and** team members are still present), sends the "already invited" message instead. If the team was previously activated but all team members have since left, the bot re-adds them silently; state remains `TEAM-PENDING`.
 
 Bot replies:
 > We will reply within 24 hours.
@@ -324,7 +324,7 @@ When a team member taps `/join`, the bot first verifies that the target `groupId
 
 | Situation | What happens |
 |-----------|-------------|
-| All team members leave before any sends a message | State reverts to QUEUE (stateless derivation — no team member present) |
+| All team members leave before any sends a message | State stays `TEAM-PENDING` (customer is still waiting for a response). Next `/team` re-adds them silently. |
 | Customer leaves | All in-memory state cleaned up; card remains (TBD) |
 | No `--auto-add-team-members` (`-a`) configured | `/team` tells customer "no team members available yet" |
 | Team member already in customer group | `apiListMembers` lookup finds existing member — no error |
@@ -477,7 +477,7 @@ The bot writes a single JSON file (`{dbPrefix}_state.json`) that survives restar
 
 #### Why a state file at all?
 
-SimpleX Chat's own database stores the full message history and group membership, but it does not store the bot's derived knowledge — things like which team group was created on first run, or which contact is the established bot↔Grok link. All other derived state (message counts, timestamps, last sender) is re-derived from chat history or group metadata on demand.
+SimpleX Chat's own database stores the full message history and group membership, but it does not store the bot's derived knowledge — things like which team group was created on first run, or which contact is the established bot↔Grok link. Per-conversation state (QUEUE/GROK/TEAM-PENDING/TEAM) is written into the customer group's `customData` at the moment the bot handles each transition — it observes its own `/grok` invite, `/team` add, team message, first customer message. Only display data (message counts, timestamps, sender names) is re-derived from chat history on demand.
 
 #### What is persisted and why
 
@@ -490,11 +490,11 @@ User profile IDs (`mainUserId`, `grokUserId`) are **not** persisted — they are
 
 #### What is NOT persisted and why
 
-Per-group state flags (`cardItemId`, `joinItemId`, `complete`, `teamInvited`) live in SimpleX's database as the group's `customData` — persisted there rather than in the bot's state file.
+Per-group state (`state`, `cardItemId`, `joinItemId`, `complete`) lives in SimpleX's database as the group's `customData` — persisted there rather than in the bot's state file.
 
 | State | Where it lives instead |
 |-------|----------------------|
-| `cardItemId, joinItemId, complete, teamInvited` (per group) | Stored in the group's customData — card message IDs, auto-completed flag, and whether `/team` has been invoked |
+| `state, cardItemId, joinItemId, complete` (per group) | Stored in the group's customData — conversation state, card message IDs, auto-completed flag. `state` is written at event time (first customer message, `/grok`, `/team`, team's first message); the bot never re-derives it by scanning chat history. |
 | Last customer message time | Derived from most recent customer message in chat history |
 | Message count | Derived from message count in chat history (all messages except the bot's own) |
 | Customer name | Always available from the group's display name |
