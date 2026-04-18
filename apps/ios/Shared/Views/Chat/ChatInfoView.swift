@@ -377,9 +377,9 @@ struct ChatInfoView: View {
             if contact.verified {
                 HStack(spacing: 8) {
                     Text(displayName)
-                        .font(.title2)
+                        .font(.largeTitle)
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.title2)
+                        .font(.largeTitle)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .blue)
                 }
