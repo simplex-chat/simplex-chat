@@ -39,7 +39,7 @@ fun ContextItemView(
   val receivedColor = MaterialTheme.appColors.receivedMessage
 
   @Composable
-  fun MessageText(contextItem: ChatItem, attachment: ImageResource?, lines: Int) {
+  fun MessageText(contextItem: ChatItem, attachment: ImageResource?, lines: Int, prefix: AnnotatedString? = null, stripLink: String? = null) {
     val inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = if (attachment != null) {
       remember(contextItem.id) {
         val inlineContentBuilder: AnnotatedString.Builder.() -> Unit = {
@@ -68,7 +68,9 @@ fun ContextItemView(
       userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
-      }
+      },
+      prefix = prefix,
+      stripLink = stripLink,
     )
   }
 
@@ -79,13 +81,21 @@ fun ContextItemView(
       is MsgContent.MCFile -> if (fileIsLoaded) MR.images.ic_draft_filled else null
       is MsgContent.MCImage -> MR.images.ic_image
       is MsgContent.MCVoice ->  if (fileIsLoaded) MR.images.ic_play_arrow_filled else null
+      is MsgContent.MCChat -> contextItem.content.msgContent.chatLink.smallIconRes
       else -> null
     }
   }
 
   @Composable
   fun ContextMsgPreview(contextItem: ChatItem, lines: Int) {
-    MessageText(contextItem, remember(contextItem.id) { attachment(contextItem) }, lines)
+    val mc = contextItem.content.msgContent
+    if (mc is MsgContent.MCChat) {
+      val hasText = contextItem.text != mc.chatLink.connLinkStr
+      val prefix = buildAnnotatedString { append(mc.chatLink.displayName + if (hasText) " - " else "") }
+      MessageText(contextItem, remember(contextItem.id) { mc.chatLink.smallIconRes }, lines, prefix = prefix, stripLink = mc.chatLink.connLinkStr)
+    } else {
+      MessageText(contextItem, remember(contextItem.id) { attachment(contextItem) }, lines)
+    }
   }
 
   val sent = contextItems[0].chatDir.sent

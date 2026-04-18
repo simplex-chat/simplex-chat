@@ -55,7 +55,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean) {
+  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int, showTimestamp: Boolean, stripLink: String? = null, prefix: AnnotatedString? = null) {
     MarkdownText(
       qi.text,
       qi.formattedText,
@@ -66,11 +66,13 @@ fun FramedItemView(
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
       showTimestamp = showTimestamp,
+      prefix = prefix,
+      stripLink = stripLink,
     )
   }
 
   @Composable
-  fun ciQuotedMsgView(qi: CIQuote) {
+  fun ciQuotedMsgView(qi: CIQuote, stripLink: String? = null, prefix: AnnotatedString? = null) {
     Box(
       Modifier
         // this width limitation prevents crash on calculating constraints that may happen if you post veeeery long message and then quote it.
@@ -89,10 +91,10 @@ fun FramedItemView(
             style = TextStyle(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
             maxLines = 1
           )
-          ciQuotedMsgTextView(qi, lines = 2,  showTimestamp = showTimestamp)
+          ciQuotedMsgTextView(qi, lines = 2, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
         }
       } else {
-        ciQuotedMsgTextView(qi, lines = 3,  showTimestamp = showTimestamp)
+        ciQuotedMsgTextView(qi, lines = 3, showTimestamp = showTimestamp, stripLink = stripLink, prefix = prefix)
       }
     }
   }
@@ -174,6 +176,20 @@ fun FramedItemView(
             Modifier
               .padding(top = 6.dp, end = 4.dp)
               .size(22.dp),
+            tint = if (isInDarkTheme()) FileDark else FileLight
+          )
+        }
+        is MsgContent.MCChat -> {
+          val prefix = buildAnnotatedString {
+            append(qi.content.chatLink.displayName + if (qi.content.text != qi.content.chatLink.connLinkStr) " - " else "")
+          }
+          Box(Modifier.fillMaxWidth().weight(1f)) {
+            ciQuotedMsgView(qi, stripLink = qi.content.chatLink.connLinkStr, prefix = prefix)
+          }
+          Icon(
+            painterResource(qi.content.chatLink.smallIconRes),
+            null,
+            Modifier.padding(top = 6.dp, end = 4.dp).size(22.dp),
             tint = if (isInDarkTheme()) FileDark else FileLight
           )
         }
@@ -329,6 +345,18 @@ fun FramedItemView(
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
+              is MsgContent.MCChat -> {
+                val hasText = mc.text != mc.chatLink.connLinkStr
+                CIChatLinkHeader(
+                  chatLink = mc.chatLink,
+                  ownerSig = mc.ownerSig,
+                  hasText = hasText,
+                  onClick = { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } }
+                )
+                if (hasText) {
+                  CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr)
+                }
+              }
               is MsgContent.MCReport -> {
                 val prefix = buildAnnotatedString {
                   withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
@@ -366,7 +394,8 @@ fun CIMarkdownText(
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean,
   showTimestamp: Boolean,
-  prefix: AnnotatedString? = null
+  prefix: AnnotatedString? = null,
+  stripLink: String? = null
 ) {
   val chatInfo = chat.chatInfo
   val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
@@ -382,6 +411,7 @@ fun CIMarkdownText(
         else -> null
       },
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix,
+      stripLink = stripLink,
       selectionRange = selection.highlightRange,
       onTextLayoutResult = selection.onTextLayoutResult
     )

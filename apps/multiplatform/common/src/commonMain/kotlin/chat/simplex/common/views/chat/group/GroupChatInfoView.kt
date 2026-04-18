@@ -167,7 +167,7 @@ fun ModalData.GroupChatInfoView(
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -554,6 +554,11 @@ fun ModalData.GroupChatInfoLayout(
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
+            ShareViaChatButton {
+              chatModel.sharedContent.value = SharedContent.ChatLink(groupInfo)
+              chatModel.chatId.value = null
+              ModalManager.closeAllModalsEverywhere()
+            }
           }
           if (groupInfo.isOwner || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
             anyTopSectionRowShow = true
@@ -1135,6 +1140,15 @@ private fun ChannelLinkQRCodeSection(groupLink: String) {
     Icon(painterResource(MR.images.ic_share), null, tint = MaterialTheme.colors.primary)
     Spacer(Modifier.width(8.dp))
     Text(stringResource(MR.strings.share_link), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ShareViaChatButton(onClick: () -> Unit) {
+  SectionItemView(onClick) {
+    Icon(painterResource(MR.images.ic_forward), null, tint = MaterialTheme.colors.primary)
+    Spacer(Modifier.width(8.dp))
+    Text(stringResource(MR.strings.share_via_chat), color = MaterialTheme.colors.primary)
   }
 }
 

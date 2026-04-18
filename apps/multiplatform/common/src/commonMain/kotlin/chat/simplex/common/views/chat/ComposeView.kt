@@ -1069,6 +1069,11 @@ fun ComposeView(
         ::cancelLinkPreview,
         cancelEnabled = !composeState.value.inProgress
       )
+      is ComposePreview.ChatLinkPreview -> ComposeChatLinkView(
+        chatLink = preview.chatLink,
+        cancelEnabled = !composeState.value.inProgress,
+        cancelPreview = { composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview) }
+      )
       is ComposePreview.MediaPreview -> ComposeImageView(
         preview,
         ::cancelImages,

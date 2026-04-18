@@ -33,6 +33,7 @@ fun GroupLinkView(
   onGroupLinkUpdated: ((GroupLink?) -> Unit)?,
   creatingGroup: Boolean = false,
   isChannel: Boolean = false,
+  shareGroupInfo: GroupInfo? = null,
   close: (() -> Unit)? = null
 ) {
   var groupLinkVar by rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf(groupLink) }
@@ -249,6 +250,17 @@ fun GroupLinkLayout(
               }
             }
           )
+          if (shareGroupInfo?.groupProfile?.publicGroup != null) {
+            SimpleButton(
+              stringResource(MR.strings.share_via_chat),
+              icon = painterResource(MR.images.ic_forward),
+              click = {
+                chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
+                chatModel.chatId.value = null
+                ModalManager.closeAllModalsEverywhere()
+              }
+            )
+          }
           if (creatingGroup && close != null) {
             ContinueButton(close)
           } else if (!isChannel) {
