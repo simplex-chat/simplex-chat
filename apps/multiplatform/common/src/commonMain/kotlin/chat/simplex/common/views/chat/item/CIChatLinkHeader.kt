@@ -1,17 +1,15 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.ProfileImage
-import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 
@@ -20,54 +18,60 @@ fun CIChatLinkHeader(
   chatLink: MsgChatLink,
   ownerSig: LinkOwnerSig?,
   hasText: Boolean,
-  onClick: () -> Unit
 ) {
   Column(
     Modifier
-      .clickable(onClick = onClick)
-      .padding(horizontal = 12.dp, vertical = 6.dp)
+      .defaultMinSize(minWidth = 220.dp)
+      .padding(vertical = 3.dp)
+      .padding(start = 8.dp, end = 12.dp)
+      .padding(bottom = 4.dp)
   ) {
     Row(
-      Modifier.padding(horizontal = 2.dp).padding(top = 8.dp, bottom = 6.dp)
+      Modifier
+        .defaultMinSize(minWidth = 220.dp)
+        .padding(vertical = 4.dp, horizontal = 2.dp)
     ) {
       ProfileImage(
-        size = 44.dp,
+        size = 60.dp,
         image = chatLink.image,
         icon = chatLink.iconRes,
-        color = MaterialTheme.colors.secondary
+        color = if (isInDarkTheme()) FileDark else FileLight
       )
-      Spacer(Modifier.width(4.dp))
-      Column(Modifier.heightIn(min = 44.dp)) {
+      Spacer(Modifier.padding(horizontal = 3.dp))
+      Column(
+        Modifier.defaultMinSize(minHeight = 60.dp),
+        verticalArrangement = Arrangement.Center
+      ) {
         Text(
           chatLink.displayName,
-          style = MaterialTheme.typography.h6.copy(fontSize = 16.sp),
-          fontWeight = FontWeight.Bold,
+          style = MaterialTheme.typography.caption,
+          fontWeight = FontWeight.Medium,
           maxLines = 2,
+          overflow = TextOverflow.Ellipsis
         )
         val fn = chatLink.fullName
         if (fn.isNotEmpty() && fn != chatLink.displayName) {
-          Text(fn, style = MaterialTheme.typography.body2, maxLines = 2)
+          Text(fn, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
       }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
+      Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
       chatLink.shortDescription?.let { descr ->
         Text(
           descr,
-          style = MaterialTheme.typography.caption,
           color = MaterialTheme.colors.secondary,
           maxLines = 2,
+          overflow = TextOverflow.Ellipsis,
         )
       }
       Text(
         chatLink.infoLine(signed = ownerSig != null),
-        style = MaterialTheme.typography.caption,
         color = MaterialTheme.colors.secondary,
       )
       Text(
         stringResource(MR.strings.tap_to_open),
         color = MaterialTheme.colors.primary,
-        style = MaterialTheme.typography.body2,
       )
     }
   }

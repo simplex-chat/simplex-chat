@@ -1144,7 +1144,7 @@ private fun ChannelLinkQRCodeSection(groupLink: String) {
 }
 
 @Composable
-private fun ShareViaChatButton(onClick: () -> Unit) {
+fun ShareViaChatButton(onClick: () -> Unit) {
   SectionItemView(onClick) {
     Icon(painterResource(MR.images.ic_forward), null, tint = MaterialTheme.colors.primary)
     Spacer(Modifier.width(8.dp))

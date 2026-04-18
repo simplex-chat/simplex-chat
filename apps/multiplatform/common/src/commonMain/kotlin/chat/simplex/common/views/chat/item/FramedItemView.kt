@@ -348,12 +348,16 @@ fun FramedItemView(
               }
               is MsgContent.MCChat -> {
                 val hasText = mc.text != mc.chatLink.connLinkStr
-                CIChatLinkHeader(
-                  chatLink = mc.chatLink,
-                  ownerSig = mc.ownerSig,
-                  hasText = hasText,
-                  onClick = { withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) } }
-                )
+                Box(
+                  Modifier.combinedClickable(
+                    onClick = {
+                      withBGApi { planAndConnect(chat.remoteHostId, mc.chatLink.connLinkStr, linkOwnerSig = mc.ownerSig, close = null) }
+                    },
+                    onLongClick = { showMenu.value = true }
+                  )
+                ) {
+                  CIChatLinkHeader(chatLink = mc.chatLink, ownerSig = mc.ownerSig, hasText = hasText)
+                }
                 if (hasText) {
                   CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp, stripLink = mc.chatLink.connLinkStr)
                 }

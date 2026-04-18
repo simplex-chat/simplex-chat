@@ -252,17 +252,6 @@ fun GroupLinkLayout(
               }
             }
           )
-          if (shareGroupInfo?.groupProfile?.publicGroup != null) {
-            SimpleButton(
-              stringResource(MR.strings.share_via_chat),
-              icon = painterResource(MR.images.ic_forward),
-              click = {
-                chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
-                chatModel.chatId.value = null
-                ModalManager.closeAllModalsEverywhere()
-              }
-            )
-          }
           if (creatingGroup && close != null) {
             ContinueButton(close)
           } else if (!isChannel) {
@@ -277,6 +266,13 @@ fun GroupLinkLayout(
         if (!isChannel && groupLink.shouldBeUpgraded) {
           AddShortLinkButton(text = stringResource(MR.strings.upgrade_group_link)) {
             showAddShortLinkAlert(null)
+          }
+        }
+        if (shareGroupInfo != null) {
+          ShareViaChatButton {
+            chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
+            chatModel.chatId.value = null
+            ModalManager.closeAllModalsEverywhere()
           }
         }
       }
