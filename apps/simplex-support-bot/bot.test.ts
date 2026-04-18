@@ -636,6 +636,7 @@ describe("/grok Activation", () => {
     await reachQueue()
     addBotMessage("The team will reply to your message")
     await bot.onNewChatItems(customerMessage("/grok"))
+    await bot.flush()
     expectSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
@@ -911,14 +912,15 @@ describe("Team Member Lifecycle", () => {
     expect(chat.roleChanges.length).toBe(0)
   })
 
-  test("all team members leave before sending → reverts to QUEUE", async () => {
+  test("all team members leave before sending → state stays TEAM-PENDING", async () => {
     await reachTeamPending()
     addBotMessage("We will reply within 24 hours.")
     // Remove team members from the group
     chat.members.set(CUSTOMER_GROUP_ID, [])
-    // Customer sends another message — state should derive as QUEUE (no team members)
+    // State is authoritative and monotonic — composition changes never demote it.
+    // Customer is still waiting for the team's response.
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
-    expect(state).toBe("QUEUE")
+    expect(state).toBe("TEAM-PENDING")
   })
 
   test("/team after all team members left (TEAM-PENDING, no msg sent) → re-adds members", async () => {
@@ -1056,32 +1058,31 @@ describe("Card Debouncing", () => {
 describe("Card Format & State Derivation", () => {
   beforeEach(() => setup())
 
-  test("QUEUE state derived when no Grok or team members", async () => {
-    addBotMessage("The team will reply to your message")
+  test("QUEUE state read from customData.state", async () => {
+    chat.customData.set(CUSTOMER_GROUP_ID, {cardItemId: 1234, state: "QUEUE"})
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
     expect(state).toBe("QUEUE")
   })
 
-  test("WELCOME state derived for first customer message (no bot messages yet)", async () => {
+  test("WELCOME state when customData.state is absent", async () => {
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
     expect(state).toBe("WELCOME")
   })
 
-  test("GROK state derived when Grok member present", async () => {
-    chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember()])
+  test("GROK state read from customData.state", async () => {
+    chat.customData.set(CUSTOMER_GROUP_ID, {cardItemId: 1234, state: "GROK"})
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
     expect(state).toBe("GROK")
   })
 
-  test("TEAM-PENDING derived when team member present but no team message", async () => {
-    chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
+  test("TEAM-PENDING state read from customData.state", async () => {
+    chat.customData.set(CUSTOMER_GROUP_ID, {cardItemId: 1234, state: "TEAM-PENDING"})
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
     expect(state).toBe("TEAM-PENDING")
   })
 
-  test("TEAM derived when team member present AND has sent a message", async () => {
-    chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
-    addTeamMemberMessageToHistory("Hi!", TEAM_MEMBER_1_ID)
+  test("TEAM state read from customData.state", async () => {
+    chat.customData.set(CUSTOMER_GROUP_ID, {cardItemId: 1234, state: "TEAM"})
     const state = await cards.deriveState(CUSTOMER_GROUP_ID)
     expect(state).toBe("TEAM")
   })
@@ -1682,42 +1683,46 @@ describe("Message Templates", () => {
   })
 })
 
-describe("isFirstCustomerMessage detection", () => {
+describe("State persistence in customData", () => {
   beforeEach(() => setup())
 
-  test("detects 'The team will reply to your message' as queue message", async () => {
-    addBotMessage("The team will reply to your message within 24 hours.")
-    const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
-    expect(isFirst).toBe(false)
+  test("first customer text writes state=QUEUE to customData", async () => {
+    await bot.onNewChatItems(customerMessage("Hello"))
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("QUEUE")
   })
 
-  test("detects 'You are chatting with Grok' as grok activation", async () => {
-    addBotMessage("*You are chatting with Grok* - use any language.")
-    const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
-    expect(isFirst).toBe(false)
+  test("/team writes state=TEAM-PENDING immediately (before team accepts)", async () => {
+    await reachQueue()
+    addBotMessage("The team will reply to your message")
+    await bot.onNewChatItems(customerMessage("/team"))
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("TEAM-PENDING")
   })
 
-  test("detects 'We will reply within' as team activation", async () => {
+  test("/grok writes state=GROK when activation succeeds", async () => {
+    await reachQueue()
+    addBotMessage("The team will reply to your message")
+    const joinPromise = simulateGrokJoinSuccess()
+    await bot.onNewChatItems(customerMessage("/grok"))
+    await joinPromise
+    await bot.flush()
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("GROK")
+  })
+
+  test("/grok from QUEUE reverts state to QUEUE if activation fails", async () => {
+    await reachQueue()
+    addBotMessage("The team will reply to your message")
+    chat.apiAddMemberWillFail()
+    await bot.onNewChatItems(customerMessage("/grok"))
+    await bot.flush()
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("QUEUE")
+  })
+
+  test("first team text writes state=TEAM via gate", async () => {
+    await reachTeamPending()
     addBotMessage("We will reply within 24 hours.")
-    const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
-    expect(isFirst).toBe(false)
-  })
-
-  test("detects 'team member has already been invited'", async () => {
-    addBotMessage("A team member has already been invited to this conversation.")
-    const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
-    expect(isFirst).toBe(false)
-  })
-
-  test("returns true when no bot messages present", async () => {
-    const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
-    expect(isFirst).toBe(true)
-  })
-
-  test("returns true when only unrelated bot messages present", async () => {
-    addBotMessage("Some other message")
-    const isFirst = await cards.isFirstCustomerMessage(CUSTOMER_GROUP_ID)
-    expect(isFirst).toBe(true)
+    chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
+    await bot.onNewChatItems(teamMemberMessage("I'll help"))
+    expect(chat.customData.get(CUSTOMER_GROUP_ID)?.state).toBe("TEAM")
   })
 })
 

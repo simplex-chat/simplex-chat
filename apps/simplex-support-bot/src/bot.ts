@@ -2,7 +2,7 @@ import {api, util} from "simplex-chat"
 import {T, CEvt} from "@simplex-chat/types"
 import {Config} from "./config.js"
 import {GrokMessage, GrokApiClient} from "./grok.js"
-import {CardManager} from "./cards.js"
+import {CardManager, ConversationState} from "./cards.js"
 import {
   queueMessage, grokInvitingMessage, grokActivatedMessage, teamAddedMessage,
   teamAlreadyInvitedMessage, teamLockedMessage, noTeamMembersMessage,
@@ -374,18 +374,22 @@ export class SupportBot {
       const isTeam = this.config.teamMembers.some(tm => tm.id === sender.memberContactId)
 
       if (isTeam && util.ciContentText(chatItem)?.trim()) {
-        // Check one-way gate: first team text → remove Grok
-        const {grokMember} = await this.cards.getGroupComposition(groupId)
-        if (grokMember) {
-          log(`One-way gate: team message in group ${groupId}, removing Grok`)
-          try {
-            await this.withMainProfile(() =>
-              this.chat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
-            )
-          } catch {
-            // may have already left
+        // One-way gate: first team text → transition to TEAM + remove Grok
+        const data = await this.cards.getRawCustomData(groupId)
+        if (data?.state !== "TEAM") {
+          await this.cards.mergeCustomData(groupId, {state: "TEAM"})
+          const {grokMember} = await this.cards.getGroupComposition(groupId)
+          if (grokMember) {
+            log(`One-way gate: team message in group ${groupId}, removing Grok`)
+            try {
+              await this.withMainProfile(() =>
+                this.chat.apiRemoveMembers(groupId, [grokMember.groupMemberId])
+              )
+            } catch {
+              // may have already left
+            }
+            this.cleanupGrokMaps(groupId)
           }
-          this.cleanupGrokMaps(groupId)
         }
       }
       // Schedule card update for any non-customer message (team or Grok)
@@ -403,21 +407,25 @@ export class SupportBot {
     switch (state) {
       case "WELCOME":
         if (cmd?.keyword === "grok") {
-          // WELCOME → GROK (skip queue msg)
+          // WELCOME → GROK (skip queue msg). Write state optimistically so the
+          // card renders with GROK icon/label; activateGrok will revert via
+          // setStateOnFail if activation fails.
           // Fire-and-forget: activateGrok awaits future events (waitForGrokJoin)
           // which would deadlock the sequential event loop if awaited here.
-          // sendQueueOnFail=true: if Grok activation fails, send queue message as fallback
+          await this.cards.mergeCustomData(groupId, {state: "GROK"})
           await this.cards.createCard(groupId, groupInfo)
-          this.fireAndForget(this.activateGrok(groupId, true))
+          this.fireAndForget(this.activateGrok(groupId, {sendQueueOnFail: true, setStateOnFail: "QUEUE"}))
           return
         }
         if (cmd?.keyword === "team") {
+          // activateTeam writes state=TEAM-PENDING before the add loop
           await this.activateTeam(groupId)
           await this.cards.createCard(groupId, groupInfo)
           return
         }
         // First regular message → QUEUE
         if (text) {
+          await this.cards.mergeCustomData(groupId, {state: "QUEUE"})
           await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
           await this.cards.createCard(groupId, groupInfo)
         }
@@ -425,7 +433,9 @@ export class SupportBot {
 
       case "QUEUE":
         if (cmd?.keyword === "grok") {
-          this.fireAndForget(this.activateGrok(groupId))
+          // Write state optimistically; activateGrok reverts to QUEUE on failure
+          await this.cards.mergeCustomData(groupId, {state: "GROK"})
+          this.fireAndForget(this.activateGrok(groupId, {setStateOnFail: "QUEUE"}))
         } else if (cmd?.keyword === "team") {
           await this.activateTeam(groupId)
         }
@@ -446,14 +456,16 @@ export class SupportBot {
 
       case "TEAM-PENDING":
         if (cmd?.keyword === "grok") {
-          // Invite Grok if not present
+          // Invite Grok if not present; state stays TEAM-PENDING
           const {grokMember} = await this.cards.getGroupComposition(groupId)
           if (!grokMember) {
             this.fireAndForget(this.activateGrok(groupId))
           }
           // else: already present, ignore
         } else if (cmd?.keyword === "team") {
-          await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
+          // activateTeam handles "already invited" reply (team still present)
+          // or silent re-add (team has all left)
+          await this.activateTeam(groupId)
         }
         this.cards.scheduleUpdate(groupId)
         break
@@ -461,6 +473,9 @@ export class SupportBot {
       case "TEAM":
         if (cmd?.keyword === "grok") {
           await this.sendToGroup(groupId, teamLockedMessage)
+        } else if (cmd?.keyword === "team") {
+          // Team still present → "already invited"; team all left → silent re-add
+          await this.activateTeam(groupId)
         }
         this.cards.scheduleUpdate(groupId)
         break
@@ -541,12 +556,21 @@ export class SupportBot {
 
   // --- Grok activation ---
 
-  private async activateGrok(groupId: number, sendQueueOnFail = false): Promise<void> {
+  private async activateGrok(
+    groupId: number,
+    opts: {sendQueueOnFail?: boolean; setStateOnFail?: ConversationState} = {},
+  ): Promise<void> {
     if (!this.grokApi) return
     const grokApi = this.grokApi
+    const revertStateOnFail = async () => {
+      if (opts.setStateOnFail) {
+        await this.cards.mergeCustomData(groupId, {state: opts.setStateOnFail})
+      }
+    }
     if (this.config.grokContactId === null) {
+      await revertStateOnFail()
       await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -566,8 +590,9 @@ export class SupportBot {
         return
       }
       logError(`Failed to invite Grok to group ${groupId}`, err)
+      await revertStateOnFail()
       await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -593,8 +618,9 @@ export class SupportBot {
         )
       } catch {}
       this.cleanupGrokMaps(groupId)
+      await revertStateOnFail()
       await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
       this.cards.scheduleUpdate(groupId)
       return
     }
@@ -654,35 +680,30 @@ export class SupportBot {
       return
     }
 
-    // Check if team was already activated before (message sent or "added" text in history)
-    const hasTeamBefore = await this.cards.hasTeamMemberSentMessage(groupId)
-    if (hasTeamBefore) {
+    const data = await this.cards.getRawCustomData(groupId)
+    const alreadyActivated = data?.state === "TEAM-PENDING" || data?.state === "TEAM"
+    if (alreadyActivated) {
       const {teamMembers} = await this.cards.getGroupComposition(groupId)
       if (teamMembers.length > 0) {
         await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
         return
       }
-      // Team members sent messages but all have left — re-add below
-    }
-
-    if (!hasTeamBefore) {
-      // Check by scanning history for the teamAddedMessage AND verify team still present
-      const chat = await this.cards.getChat(groupId, 50)
-      const alreadyAdded = chat.chatItems.some((ci: T.ChatItem) =>
-        ci.chatDir.type === "groupSnd"
-        && util.ciContentText(ci)?.includes("We will reply within")
-      )
-      if (alreadyAdded) {
-        const {teamMembers} = await this.cards.getGroupComposition(groupId)
-        if (teamMembers.length > 0) {
-          await this.sendToGroup(groupId, teamAlreadyInvitedMessage)
-          return
+      // Team previously activated but all team members have since left —
+      // re-add silently (no teamAddedMessage). State stays TEAM-PENDING/TEAM.
+      for (const tm of this.config.teamMembers) {
+        try {
+          await this.addOrFindTeamMember(groupId, tm.id)
+        } catch (err) {
+          logError(`Failed to add team member ${tm.id} to group ${groupId}`, err)
         }
-        // Team was previously added but all members left — re-add below
       }
+      return
     }
 
-    // Add ALL configured team members — promoted to Owner on connectedToGroupMember
+    // First activation — write state BEFORE add loop so concurrent customer
+    // events observing mid-flight see TEAM-PENDING rather than stale state.
+    await this.cards.mergeCustomData(groupId, {state: "TEAM-PENDING"})
+
     for (const tm of this.config.teamMembers) {
       try {
         await this.addOrFindTeamMember(groupId, tm.id)

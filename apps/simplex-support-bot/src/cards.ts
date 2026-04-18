@@ -6,13 +6,18 @@ import {profileMutex, log, logError} from "./util.js"
 // State derivation types
 export type ConversationState = "WELCOME" | "QUEUE" | "GROK" | "TEAM-PENDING" | "TEAM"
 
+function isConversationState(x: unknown): x is ConversationState {
+  return x === "WELCOME" || x === "QUEUE" || x === "GROK" || x === "TEAM-PENDING" || x === "TEAM"
+}
+
 export interface GroupComposition {
   grokMember: T.GroupMember | undefined
   teamMembers: T.GroupMember[]
 }
 
 interface CardData {
-  cardItemId: number
+  state?: ConversationState
+  cardItemId?: number
   joinItemId?: number
   complete?: boolean
 }
@@ -88,11 +93,9 @@ export class CardManager {
         {msgContent: {type: "text", text: joinCmd}, mentions: {}},
       ])
     )
-    const data: CardData = {cardItemId: items[0].chatItem.meta.itemId}
-    if (items.length > 1) data.joinItemId = items[1].chatItem.meta.itemId
-    await this.withMainProfile(() =>
-      this.chat.apiSetGroupCustomData(groupId, data)
-    )
+    const patch: Partial<CardData> = {cardItemId: items[0].chatItem.meta.itemId}
+    patch.joinItemId = items.length > 1 ? items[1].chatItem.meta.itemId : undefined
+    await this.mergeCustomData(groupId, patch)
   }
 
   async flush(): Promise<void> {
@@ -154,36 +157,8 @@ export class CardManager {
   }
 
   async deriveState(groupId: number): Promise<ConversationState> {
-    const {grokMember, teamMembers} = await this.getGroupComposition(groupId)
-    if (teamMembers.length > 0) {
-      const hasTeamMsg = await this.hasTeamMemberSentMessage(groupId)
-      return hasTeamMsg ? "TEAM" : "TEAM-PENDING"
-    }
-    if (grokMember) return "GROK"
-    const isFirst = await this.isFirstCustomerMessage(groupId)
-    return isFirst ? "WELCOME" : "QUEUE"
-  }
-
-  async isFirstCustomerMessage(groupId: number): Promise<boolean> {
-    const chat = await this.getChat(groupId, 20)
-    return !chat.chatItems.some((ci: T.ChatItem) => {
-      if (ci.chatDir.type !== "groupSnd") return false
-      const text = util.ciContentText(ci)
-      return text?.includes("The team will reply to your message")
-        || text?.includes("chatting with Grok")
-        || text?.includes("We will reply within")
-        || text?.includes("team member has already been invited")
-    })
-  }
-
-  async hasTeamMemberSentMessage(groupId: number): Promise<boolean> {
-    const chat = await this.getChat(groupId, 50)
-    return chat.chatItems.some((ci: T.ChatItem) => {
-      if (ci.chatDir.type !== "groupRcv") return false
-      const memberContactId = ci.chatDir.groupMember.memberContactId
-      return this.config.teamMembers.some(tm => tm.id === memberContactId)
-        && util.ciContentText(ci)?.trim()
-    })
+    const data = await this.getRawCustomData(groupId)
+    return data?.state ?? "WELCOME"
   }
 
   async getLastCustomerMessageTime(groupId: number, customerId: string): Promise<number | undefined> {
@@ -216,21 +191,26 @@ export class CardManager {
 
   // --- Custom data ---
 
-  async getCustomData(groupId: number): Promise<CardData | null> {
+  async getRawCustomData(groupId: number): Promise<Partial<CardData> | null> {
     const groups = await this.withMainProfile(() => this.chat.apiListGroups(this.mainUserId))
     const group = groups.find(g => g.groupId === groupId)
     if (!group?.customData) return null
     const data = group.customData as Record<string, unknown>
-    if (typeof data.cardItemId === "number") {
-      const result: CardData = {cardItemId: data.cardItemId}
-      if (typeof data.joinItemId === "number") result.joinItemId = data.joinItemId
-      return result
-    }
-    return null
+    const result: Partial<CardData> = {}
+    if (isConversationState(data.state)) result.state = data.state
+    if (typeof data.cardItemId === "number") result.cardItemId = data.cardItemId
+    if (typeof data.joinItemId === "number") result.joinItemId = data.joinItemId
+    if (data.complete === true) result.complete = true
+    return result
   }
 
-  async setCustomData(groupId: number, data: CardData): Promise<void> {
-    await this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId, data))
+  async mergeCustomData(groupId: number, patch: Partial<CardData>): Promise<void> {
+    const current = (await this.getRawCustomData(groupId)) ?? {}
+    const merged: Partial<CardData> = {...current, ...patch}
+    for (const key of Object.keys(merged) as (keyof CardData)[]) {
+      if (merged[key] === undefined) delete merged[key]
+    }
+    await this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId, merged))
   }
 
   async clearCustomData(groupId: number): Promise<void> {
@@ -277,12 +257,10 @@ export class CardManager {
         {msgContent: {type: "text", text: joinCmd}, mentions: {}},
       ])
     )
-    const data: CardData = {cardItemId: items[0].chatItem.meta.itemId}
-    if (items.length > 1) data.joinItemId = items[1].chatItem.meta.itemId
-    if (complete) data.complete = true
-    await this.withMainProfile(() =>
-      this.chat.apiSetGroupCustomData(groupId, data)
-    )
+    const patch: Partial<CardData> = {cardItemId: items[0].chatItem.meta.itemId}
+    patch.joinItemId = items.length > 1 ? items[1].chatItem.meta.itemId : undefined
+    patch.complete = complete ? true : undefined
+    await this.mergeCustomData(groupId, patch)
   }
 
   private async composeCard(groupId: number, groupInfo: T.GroupInfo): Promise<{text: string, joinCmd: string, complete: boolean}> {
@@ -291,17 +269,10 @@ export class CardManager {
     const bc = groupInfo.businessChat
     const customerId = bc?.customerId
 
-    // State derivation
-    const {grokMember, teamMembers} = await this.getGroupComposition(groupId)
-    let state: ConversationState
-    if (teamMembers.length > 0) {
-      const hasTeamMsg = await this.hasTeamMemberSentMessage(groupId)
-      state = hasTeamMsg ? "TEAM" : "TEAM-PENDING"
-    } else if (grokMember) {
-      state = "GROK"
-    } else {
-      state = "QUEUE"
-    }
+    // State is written into customData at event time by the bot's dispatch handlers.
+    const state = await this.deriveState(groupId)
+    // Composition is needed for the agent-names list only.
+    const {teamMembers} = await this.getGroupComposition(groupId)
 
     // Icon
     const icon = await this.computeIcon(groupId, state, customerId ?? undefined)
