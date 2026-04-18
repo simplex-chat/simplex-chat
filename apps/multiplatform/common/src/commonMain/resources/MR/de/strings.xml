@@ -2755,4 +2755,21 @@
     <string name="save_channel_profile">Kanalprofil speichern</string>
     <string name="alert_text_msg_reception_error">Die App hat diese Nachricht nach %1$d Empfangsversuchen entfernt.</string>
     <string name="rcv_channel_event_updated_channel_profile">Kanalprofil aktualisiert</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d Relais aktiv, %3$d Fehler</string>
+    <string name="relay_bar_active_with_removed">%1$d/%2$d Relais aktiv, %3$d entfernt</string>
+    <string name="relay_bar_connected_with_failures">%1$d/%2$d Relais verbunden, %3$d fehlgeschlagen</string>
+    <string name="relay_bar_connected_with_removed">%1$d/%2$d Relais verbunden, %3$d entfernt</string>
+    <string name="relay_bar_relays_failed">%1$d Relais fehlgeschlagen</string>
+    <string name="relay_bar_relays_not_active">%1$d Relais nicht aktiv</string>
+    <string name="relay_bar_relays_removed">%1$d Relais entfernt</string>
+    <string name="relay_bar_owner_no_delivery">Das Hinzufügen von Relais wird zu einem späteren Zeitpunkt unterstützt.</string>
+    <string name="relay_bar_all_relays_failed">Alle Relais fehlgeschlagen</string>
+    <string name="relay_bar_all_relays_removed">Alle Relais entfernt</string>
+    <string name="cant_broadcast_message">Broadcast nicht möglich</string>
+    <string name="channel_no_active_relays_try_later">Der Kanal hat keine aktiven Relais. Bitte später erneut versuchen.</string>
+    <string name="channel_temporarily_unavailable">Der Kanal ist vorübergehend nicht erreichbar</string>
+    <string name="relay_status_inactive">Inaktiv</string>
+    <string name="relay_bar_no_active_relays">Keine aktiven Relais</string>
+    <string name="relay_conn_status_removed_by_operator">Vom Betreiber entfernt</string>
+    <string name="relay_bar_subscriber_waiting">Warte auf das Hinzufügen von Relais durch den Eigentümer des Kanals.</string>
 </resources>
