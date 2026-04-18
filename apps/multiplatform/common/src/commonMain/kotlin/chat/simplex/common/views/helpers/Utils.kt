@@ -229,9 +229,15 @@ fun saveAnimImage(uri: URI): CryptoFile? {
     if (ext.length < 3 || ext.length > 4) ext = "gif"
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
     val destFile = File(getAppFilePath(destFileName))
+    val rawBytes = uri.inputStream()?.use { it.readBytes() } ?: return null
+    val cleanBytes = when (ext) {
+      "gif" -> stripGifMetadata(rawBytes)
+      "webp" -> stripWebPMetadata(rawBytes)
+      else -> rawBytes
+    }
     if (encrypted) {
       try {
-        val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
+        val args = writeCryptoFile(destFile.absolutePath, cleanBytes)
         CryptoFile(destFileName, args)
       } catch (e: Exception) {
         Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
@@ -239,11 +245,11 @@ fun saveAnimImage(uri: URI): CryptoFile? {
         null
       }
     } else {
-      Files.copy(uri.inputStream(), destFile.toPath())
+      destFile.writeBytes(cleanBytes)
       CryptoFile.plain(destFileName)
     }
   } catch (e: Exception) {
-    Log.e(TAG, "Util.kt saveAnimImage error: ${e.message}")
+    Log.e(TAG, "Util.kt saveAnimImage error: ${e.stackTraceToString()}")
     null
   }
 }
@@ -259,7 +265,7 @@ fun saveFileFromUri(
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
-    return if (inputStream != null && fileToSave != null) {
+    return if (inputStream != null && fileToSave != null) inputStream.use {
       val destFileName = if (hiddenFileNamePrefix == null) {
         uniqueCombine(fileToSave, File(getAppFilePath("")))
       } else {
@@ -271,9 +277,36 @@ fun saveFileFromUri(
         generateNewFileName(hiddenFileNamePrefix, ext, File(getAppFilePath("")))
       }
       val destFile = File(getAppFilePath(destFileName))
-      if (encrypted) {
+      if (isVideoFile(fileToSave)) {
+        // Video: copy to temp, strip metadata, then encrypt or move to dest
+        createTmpFileAndDelete { tmpInput ->
+          Files.copy(it, tmpInput.toPath())
+          createTmpFileAndDelete { tmpStripped ->
+            try {
+              stripVideoMetadataByExtension(fileToSave, tmpInput.absolutePath, tmpStripped.absolutePath)
+            } catch (e: Exception) {
+              Log.e(TAG, "Failed to strip video metadata: ${e.stackTraceToString()}")
+              if (withAlertOnException) AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error))
+              return@createTmpFileAndDelete null
+            }
+            if (encrypted) {
+              try {
+                val args = encryptCryptoFile(tmpStripped.absolutePath, destFile.absolutePath)
+                CryptoFile(destFileName, args)
+              } catch (e: Exception) {
+                Log.e(TAG, "Unable to encrypt stripped file: " + e.stackTraceToString())
+                AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.error), text = e.stackTraceToString())
+                null
+              }
+            } else {
+              Files.copy(tmpStripped.toPath(), destFile.toPath())
+              CryptoFile.plain(destFileName)
+            }
+          }
+        }
+      } else if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
-          Files.copy(inputStream, tmpFile.toPath())
+          Files.copy(it, tmpFile.toPath())
           try {
             val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
             CryptoFile(destFileName, args)
@@ -284,7 +317,7 @@ fun saveFileFromUri(
           }
         }
       } else {
-        Files.copy(inputStream, destFile.toPath())
+        Files.copy(it, destFile.toPath())
         CryptoFile.plain(destFileName)
       }
     } else {
