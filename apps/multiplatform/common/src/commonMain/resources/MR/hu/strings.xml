@@ -91,7 +91,7 @@
     <string name="invite_prohibited">Nem lehet meghívni a partnert!</string>
     <string name="integrity_msg_bad_id">hibás az üzenet azonosítója</string>
     <string name="v4_2_auto_accept_contact_requests">Partneri kapcsolatkérések automatikus elfogadása</string>
-    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Megjegyzés:</b> NEM fogja tudni helyreállítani, vagy módosítani a jelmondatot abban az esetben, ha elveszíti.]]></string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Megjegyzés:</b> NEM fogja tudni helyreállítani vagy módosítani a jelmondatot abban az esetben, ha elveszíti.]]></string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos szín</string>
     <string name="smp_servers_add_to_another_device">Hozzáadás egy másik eszközhöz</string>
@@ -674,7 +674,7 @@
     <string name="desktop_devices">Számítógépek</string>
     <string name="how_to_use_markdown">A markdown használata</string>
     <string name="create_chat_profile">Csevegési profil létrehozása</string>
-    <string name="immune_to_spam_and_abuse">Védett a kéretlen tartalommal szemben</string>
+    <string name="immune_to_spam_and_abuse">Védett a kéretlen tartalmakkal szemben</string>
     <string name="disconnect_remote_hosts">Hordozható eszközök leválasztása</string>
     <string name="v4_5_multiple_chat_profiles_descr">Különböző nevek, profilképek és átvitelelkülönítés.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Elutasítás esetén a kérés küldője NEM kap értesítést.</string>
@@ -1510,7 +1510,7 @@
     <string name="or_scan_qr_code">Vagy QR-kód beolvasása</string>
     <string name="invalid_qr_code">Érvénytelen QR-kód</string>
     <string name="keep_invitation_link">Megtartás</string>
-    <string name="search_or_paste_simplex_link">Keresés vagy SimpleX-hivatkozás beillesztése</string>
+    <string name="search_or_paste_simplex_link">Keressen vagy adjon meg egy SimpleX-hivatkozást</string>
     <string name="show_internal_errors">Belső hibák megjelenítése</string>
     <string name="agent_critical_error_title">Kritikus hiba</string>
     <string name="agent_internal_error_title">Belső hiba</string>
