@@ -19,6 +19,7 @@ struct CIChatLinkHeader: View {
                 .padding(.bottom, 6)
                 .overlay(DetermineWidth())
             VStack(alignment: .leading, spacing: 2) {
+                Divider().padding(.bottom, 2)
                 if let descr = chatLink.shortDescription {
                     Text(descr)
                         .font(.footnote)

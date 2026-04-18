@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.ProfileImage
@@ -55,12 +56,14 @@ fun CIChatLinkHeader(
         }
       }
     }
-    Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
-      Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
+    Column(Modifier.padding(top = 6.dp, bottom = 4.dp, start = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Divider(Modifier.fillMaxWidth().padding(bottom = 6.dp))
       chatLink.shortDescription?.let { descr ->
         Text(
           descr,
           color = MaterialTheme.colors.secondary,
+          fontSize = 13.sp,
+          lineHeight = 18.sp,
           maxLines = 2,
           overflow = TextOverflow.Ellipsis,
         )
@@ -68,6 +71,8 @@ fun CIChatLinkHeader(
       Text(
         chatLink.infoLine(signed = ownerSig != null),
         color = MaterialTheme.colors.secondary,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
       )
       Text(
         stringResource(MR.strings.tap_to_open),

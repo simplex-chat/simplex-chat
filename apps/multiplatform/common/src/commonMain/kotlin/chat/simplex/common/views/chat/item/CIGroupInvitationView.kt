@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
@@ -112,10 +113,10 @@ fun CIGroupInvitationView(
         ) {
           groupInfoView()
           val secondaryColor = MaterialTheme.colors.secondary
-          Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
-            Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
+          Column(Modifier.padding(top = 6.dp, bottom = 4.dp, start = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Divider(Modifier.fillMaxWidth().padding(bottom = 6.dp))
             if (action) {
-              Text(groupInvitationStr())
+              Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
               Text(
                 buildAnnotatedString {
                   append(generalGetString(if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join))
@@ -131,7 +132,9 @@ fun CIGroupInvitationView(
                 buildAnnotatedString {
                   append(groupInvitationStr())
                   withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, timedMessagesTTL, encrypted = null, showStatus = false, showEdited = false, secondaryColor = secondaryColor, showTimestamp = showTimestamp)) }
-                }
+                },
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
               )
             }
           }
