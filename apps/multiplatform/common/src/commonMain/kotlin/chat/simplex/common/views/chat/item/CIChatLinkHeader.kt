@@ -36,7 +36,7 @@ fun CIChatLinkHeader(
         size = 60.dp,
         image = chatLink.image,
         icon = chatLink.iconRes,
-        color = MaterialTheme.colors.secondaryVariant
+        color = if (isInDarkTheme()) FileDark else FileLight
       )
       Spacer(Modifier.padding(horizontal = 3.dp))
       Column(
