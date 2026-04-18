@@ -2308,9 +2308,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Másolás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Copy error" xml:space="preserve">
+      <trans-unit id="Copy error" xml:space="preserve" approved="no">
         <source>Copy error</source>
-        <target>Másolási hiba</target>
+        <target state="translated">Hiba másolása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
