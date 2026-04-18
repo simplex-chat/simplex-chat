@@ -136,7 +136,7 @@
 }
 
 :root {
-    --bg-grad: linear-gradient(10deg,
+    --bg-grad: linear-gradient(in oklch 10deg,
             #e8f3ff 0%,
             #c0e2ff 40%,
             #e9ffff 80%,
@@ -163,7 +163,7 @@
 }
 
 :root.dark {
-    --bg-grad: linear-gradient(9.2deg,
+    --bg-grad: linear-gradient(in oklch 9.2deg,
             #000000 0%,
             #131d49 52%,
             #3f5598 65%,
@@ -173,7 +173,7 @@
 
 @media screen and (max-width: 959px) {
     :root {
-        --bg-grad: linear-gradient(30deg,
+        --bg-grad: linear-gradient(in oklch 30deg,
                 #e8f3ff 0%,
                 #c0e2ff 40%,
                 #e9ffff 80%,
@@ -191,7 +191,7 @@
     }
 
     :root.dark {
-        --bg-grad: linear-gradient(30deg,
+        --bg-grad: linear-gradient(in oklch 30deg,
                 #000000 0%,
                 #131d49 52%,
                 #3f5598 65%,
