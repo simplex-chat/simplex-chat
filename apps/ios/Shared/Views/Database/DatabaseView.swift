@@ -105,7 +105,7 @@ struct DatabaseView: View {
                 Text("Messages")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                Text("This setting applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                Text("This setting only applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
                     .foregroundColor(theme.colors.secondary)
             }
 
@@ -128,7 +128,7 @@ struct DatabaseView: View {
                     }
                 }
             } header: {
-                Text("Run chat")
+                Text("Status")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
                 if case .documents = dbContainer {
@@ -208,7 +208,7 @@ struct DatabaseView: View {
                         Text("No received or sent files")
                             .foregroundColor(theme.colors.secondary)
                     } else {
-                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
+                        Text("\(fileCount) \(fileCount > 1 ? "files" : "file") with a total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
                             .foregroundColor(theme.colors.secondary)
                     }
                 }
