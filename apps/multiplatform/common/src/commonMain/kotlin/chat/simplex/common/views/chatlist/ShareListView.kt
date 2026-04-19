@@ -196,7 +196,7 @@ private fun ShareList(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chats by remember(search) {
     derivedStateOf {
-      val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready }.sortedByDescending { it.chatInfo is ChatInfo.Local }
+      val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready && it.chatInfo.sendMsgEnabled }.sortedByDescending { it.chatInfo is ChatInfo.Local }
       filteredChats(mutableStateOf(false), mutableStateOf(null), search, sorted)
     }
   }
