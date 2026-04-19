@@ -9,6 +9,8 @@ import com.charleskorn.kaml.*
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -38,9 +40,11 @@ expect fun desktopOpenDatabaseDir()
 
 expect fun desktopOpenDir(dir: File)
 
-fun createURIFromPath(absolutePath: String): URI = File(absolutePath).toURI()
+fun createURIFromPath(absolutePath: String): URI = URI.create(URLEncoder.encode(absolutePath, "UTF-8"))
 
-fun URI.toFile(): File = File(path)
+fun URI.toFile(): File =
+  if (scheme == "file") File(this)
+  else File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
