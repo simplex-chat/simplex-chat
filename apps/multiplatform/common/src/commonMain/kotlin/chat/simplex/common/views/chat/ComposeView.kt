@@ -113,7 +113,12 @@ data class ComposeState(
   val mentions: MentionedMembers = emptyMap()
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
-    ComposeMessage(editingItem.content.text),
+    ComposeMessage(
+      when (val mc = editingItem.content.msgContent) {
+        is MsgContent.MCChat -> stripTextLink(mc.text, mc.chatLink.connLinkStr)
+        else -> editingItem.content.text
+      }
+    ),
     editingItem.formattedText ?: FormattedText.plain(editingItem.content.text),
     liveMessage,
     chatItemPreview(editingItem),
@@ -677,8 +682,11 @@ fun ComposeView(
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
-        // TODO [short links] update chat link
-        is MsgContent.MCChat -> MsgContent.MCChat(msgText, chatLink = msgContent.chatLink)
+        is MsgContent.MCChat -> {
+          val linkStr = msgContent.chatLink.connLinkStr
+          val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
+          MsgContent.MCChat(text, chatLink = msgContent.chatLink, ownerSig = msgContent.ownerSig)
+        }
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }

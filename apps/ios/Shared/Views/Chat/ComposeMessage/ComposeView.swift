@@ -74,7 +74,11 @@ struct ComposeState {
     }
 
     init(editingItem: ChatItem) {
-        let text = editingItem.content.text
+        let text = if case let .chat(t, chatLink, _) = editingItem.content.msgContent {
+            stripTextLink(t, chatLink.connLinkStr)
+        } else {
+            editingItem.content.text
+        }
         self.message = text
         self.parsedMessage = editingItem.formattedText ?? FormattedText.plain(text)
         self.preview = chatItemPreview(chatItem: editingItem)
@@ -1577,9 +1581,9 @@ struct ComposeView: View {
                 return .file(msgText)
             case .report(_, let reason):
                 return .report(text: msgText, reason: reason)
-            // TODO [short links] update chat link
             case let .chat(_, chatLink, ownerSig):
-                return .chat(text: msgText, chatLink: chatLink, ownerSig: ownerSig)
+                let text = msgText.isEmpty ? chatLink.connLinkStr : msgText + "\n" + chatLink.connLinkStr
+                return .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
