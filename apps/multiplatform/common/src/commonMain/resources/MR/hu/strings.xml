@@ -543,7 +543,7 @@
     <string name="smp_servers_enter_manually">Kiszolgáló megadása kézzel</string>
     <string name="file_will_be_received_when_contact_is_online">A fájl akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="error_creating_link_for_group">Hiba történt a csoporthivatkozás létrehozásakor</string>
-    <string name="from_gallery_button">A galériából</string>
+    <string name="from_gallery_button">Galéria</string>
     <string name="receipts_groups_enable_keep_overrides">Engedélyezés (csoport egyéni beállításainak megtartása)</string>
     <string name="error_deleting_contact">Hiba történt a partner törlésekor</string>
     <string name="group_members_can_delete">A tagok véglegesen törölhetik az elküldött üzeneteiket. (24 óra)</string>
@@ -2677,5 +2677,5 @@
     <string name="share_via_chat">Megosztás egy csevegésen keresztül</string>
     <string name="owner_verification_failed">⚠️ Nem sikerült ellenőrizni az aláírást: %s.</string>
     <string name="chat_link_signed">(aláírva)</string>
-    <string name="tap_to_open">Koppintson a megnyitás gombra</string>
+    <string name="tap_to_open">Koppintson ide a megnyitáshoz</string>
 </resources>
