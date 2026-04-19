@@ -51,6 +51,9 @@ fun ShareListView(chatModel: ChatModel, stopped: Boolean) {
           }
         }
       }
+      is SharedContent.ChatLink -> {
+        hasSimplexLink = true
+      }
       null -> {}
     }
     if (chatModel.chats.value.isNotEmpty()) {
@@ -98,7 +101,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward -> {
+      (users.size > 1 || chatModel.remoteHosts.isNotEmpty()) && remember { chatModel.sharedContent }.value !is SharedContent.Forward && remember { chatModel.sharedContent }.value !is SharedContent.ChatLink -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -129,6 +132,8 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
         chatModel.sharedContent.value = null
         if (sharedContent is SharedContent.Forward) {
           chatModel.chatId.value = sharedContent.fromChatInfo.id
+        } else if (sharedContent is SharedContent.ChatLink) {
+          chatModel.chatId.value = sharedContent.groupInfo.id
         }
       })
     }
@@ -144,6 +149,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
             is SharedContent.Media -> stringResource(MR.strings.share_image)
             is SharedContent.File -> stringResource(MR.strings.share_file)
             is SharedContent.Forward -> if (v.chatItems.size > 1) stringResource(MR.strings.forward_multiple) else stringResource(MR.strings.forward_message)
+            is SharedContent.ChatLink -> stringResource(MR.strings.share_channel)
             null -> stringResource(MR.strings.share_message)
           },
           color = MaterialTheme.colors.onBackground,

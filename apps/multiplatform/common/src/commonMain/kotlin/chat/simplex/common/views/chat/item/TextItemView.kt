@@ -109,9 +109,12 @@ fun MarkdownText (
   showViaProxy: Boolean = false,
   showTimestamp: Boolean = true,
   prefix: AnnotatedString? = null,
+  stripLink: String? = null,
   selectionRange: IntRange? = null,
   onTextLayoutResult: ((TextLayoutResult) -> Unit)? = null
 ) {
+  val text = if (stripLink != null) stripTextLink(text.toString(), stripLink) else text
+  val formattedText = if (stripLink != null) stripFormattedTextLink(formattedText, stripLink) else formattedText
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
   }
@@ -532,3 +535,20 @@ private fun isRtl(s: CharSequence): Boolean {
 }
 
 fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
+
+fun stripTextLink(text: String, link: String): String =
+  if (text == link) ""
+  else if (text.endsWith("\n$link")) text.dropLast(link.length + 1)
+  else text
+
+fun stripFormattedTextLink(ft: List<FormattedText>?, link: String): List<FormattedText>? {
+  if (ft == null || ft.isEmpty() || ft.last().text != link) return ft
+  val result = ft.toMutableList()
+  result.removeLast()
+  val i = result.lastIndex
+  if (i >= 0 && result[i].format == null && result[i].text.endsWith("\n")) {
+    result[i] = FormattedText(result[i].text.dropLast(1), null)
+    if (result[i].text.isEmpty()) result.removeLast()
+  }
+  return result.ifEmpty { null }
+}

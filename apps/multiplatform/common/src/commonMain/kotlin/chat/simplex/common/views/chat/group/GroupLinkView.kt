@@ -33,6 +33,7 @@ fun GroupLinkView(
   onGroupLinkUpdated: ((GroupLink?) -> Unit)?,
   creatingGroup: Boolean = false,
   isChannel: Boolean = false,
+  shareGroupInfo: GroupInfo? = null,
   close: (() -> Unit)? = null
 ) {
   var groupLinkVar by rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf(groupLink) }
@@ -124,6 +125,7 @@ fun GroupLinkView(
     groupLinkMemberRole,
     creatingLink,
     isChannel = isChannel,
+    shareGroupInfo = shareGroupInfo,
     createLink = ::createLink,
     showAddShortLinkAlert = ::showAddShortLinkAlert,
     updateLink = {
@@ -171,6 +173,7 @@ fun GroupLinkLayout(
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   isChannel: Boolean = false,
+  shareGroupInfo: GroupInfo? = null,
   createLink: () -> Unit,
   showAddShortLinkAlert: ((() -> Unit)?) -> Unit,
   updateLink: () -> Unit,
@@ -230,56 +233,61 @@ fun GroupLinkLayout(
             } else null) {
           SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
         }
-        Row(
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
-        ) {
-          val clipboard = LocalClipboardManager.current
-          SimpleButton(
-            stringResource(MR.strings.share_link),
-            icon = painterResource(MR.images.ic_share),
-            click = {
-              if (!isChannel && groupLink.shouldBeUpgraded) {
-                showAddShortLinkAlert {
-                  clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
-                }
-              } else {
+        if (!isChannel && groupLink.shouldBeUpgraded) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_add),
+            stringResource(MR.strings.upgrade_group_link),
+            click = { showAddShortLinkAlert(null) },
+            iconColor = MaterialTheme.colors.primary,
+            textColor = MaterialTheme.colors.primary,
+          )
+        }
+        val clipboard = LocalClipboardManager.current
+        SettingsActionItem(
+          painterResource(MR.images.ic_share),
+          stringResource(MR.strings.share_link),
+          click = {
+            if (!isChannel && groupLink.shouldBeUpgraded) {
+              showAddShortLinkAlert {
                 clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
               }
+            } else {
+              clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
             }
+          },
+          iconColor = MaterialTheme.colors.primary,
+          textColor = MaterialTheme.colors.primary,
+        )
+        if (shareGroupInfo != null) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_forward),
+            stringResource(MR.strings.share_via_chat),
+            click = {
+              chatModel.sharedContent.value = SharedContent.ChatLink(shareGroupInfo)
+              chatModel.chatId.value = null
+              ModalManager.closeAllModalsEverywhere()
+            },
+            iconColor = MaterialTheme.colors.primary,
+            textColor = MaterialTheme.colors.primary,
           )
-          if (creatingGroup && close != null) {
-            ContinueButton(close)
-          } else if (!isChannel) {
-            SimpleButton(
-              stringResource(MR.strings.delete_link),
-              icon = painterResource(MR.images.ic_delete),
-              color = Color.Red,
-              click = deleteLink
-            )
-          }
         }
-        if (!isChannel && groupLink.shouldBeUpgraded) {
-          AddShortLinkButton(text = stringResource(MR.strings.upgrade_group_link)) {
-            showAddShortLinkAlert(null)
-          }
+        if (!creatingGroup && !isChannel) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_delete),
+            stringResource(MR.strings.delete_link),
+            click = deleteLink,
+            iconColor = Color.Red,
+            textColor = Color.Red,
+          )
+        }
+        if (creatingGroup && close != null) {
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          ContinueButton(close)
         }
       }
     }
     SectionBottomSpacer()
   }
-}
-
-@Composable
-private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_add),
-    text,
-    onClick,
-    iconColor = MaterialTheme.colors.primary,
-    textColor = MaterialTheme.colors.primary,
-  )
 }
 
 @Composable
