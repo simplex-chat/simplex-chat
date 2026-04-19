@@ -23,24 +23,20 @@ fun CIChatLinkHeader(
   Column(
     Modifier
       .defaultMinSize(minWidth = 220.dp)
-      .padding(vertical = 3.dp)
-      .padding(start = 8.dp, end = 12.dp)
-      .padding(bottom = 4.dp)
+      .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)
   ) {
     Row(
-      Modifier
-        .defaultMinSize(minWidth = 220.dp)
-        .padding(vertical = 4.dp, horizontal = 2.dp)
+      Modifier.defaultMinSize(minWidth = 220.dp)
     ) {
       ProfileImage(
-        size = 60.dp,
+        size = 54.dp,
         image = chatLink.image,
         icon = chatLink.iconRes,
         color = if (isInDarkTheme()) FileDark else FileLight
       )
-      Spacer(Modifier.padding(horizontal = 3.dp))
+      Spacer(Modifier.width(8.dp))
       Column(
-        Modifier.defaultMinSize(minHeight = 60.dp),
+        Modifier.defaultMinSize(minHeight = 54.dp),
         verticalArrangement = Arrangement.Center
       ) {
         Text(
@@ -56,8 +52,8 @@ fun CIChatLinkHeader(
         }
       }
     }
-    Column(Modifier.padding(top = 6.dp, bottom = 4.dp, start = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-      Divider(Modifier.fillMaxWidth().padding(bottom = 6.dp))
+    Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
+    Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
       chatLink.shortDescription?.let { descr ->
         Text(
           descr,

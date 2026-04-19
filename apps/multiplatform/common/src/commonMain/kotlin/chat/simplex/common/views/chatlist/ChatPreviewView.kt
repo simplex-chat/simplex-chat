@@ -521,7 +521,7 @@ fun ChatPreviewView(
 
 @Composable
 private fun SmallContentPreview(borderColor: Color = MaterialTheme.colors.onSurface.copy(alpha = 0.12f), content: @Composable BoxScope.() -> Unit) {
-  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(1.dp, borderColor, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(0.5.dp, borderColor, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
     content()
   }
 }

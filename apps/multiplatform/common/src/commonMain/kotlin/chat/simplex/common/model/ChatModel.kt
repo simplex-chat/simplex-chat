@@ -4310,9 +4310,6 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
-  val chatLinkStr: String?
-    get() = (this as? MCChat)?.chatLink?.connLinkStr
-
   val isVoice: Boolean get() =
     when (this) {
       is MCVoice -> true

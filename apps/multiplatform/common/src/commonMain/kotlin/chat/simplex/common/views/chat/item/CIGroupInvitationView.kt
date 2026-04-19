@@ -53,15 +53,12 @@ fun CIGroupInvitationView(
       else if (isInDarkTheme()) FileDark else FileLight
 
     Row(
-      Modifier
-        .defaultMinSize(minWidth = 220.dp)
-        .padding(vertical = 4.dp)
-        .padding(end = 2.dp)
+      Modifier.defaultMinSize(minWidth = 220.dp)
     ) {
-      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
-      Spacer(Modifier.padding(horizontal = 3.dp))
+      ProfileImage(size = 54.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+      Spacer(Modifier.width(8.dp))
       Column(
-        Modifier.defaultMinSize(minHeight = 60.dp),
+        Modifier.defaultMinSize(minHeight = 54.dp),
         verticalArrangement = Arrangement.Center
       ) {
         Text(p.displayName, style = MaterialTheme.typography.caption, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -99,8 +96,7 @@ fun CIGroupInvitationView(
     Box(
       Modifier
         .width(IntrinsicSize.Min)
-        .padding(vertical = 3.dp)
-        .padding(start = 8.dp, end = 12.dp),
+        .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
       contentAlignment = Alignment.BottomEnd
     ) {
       Box(
@@ -113,8 +109,8 @@ fun CIGroupInvitationView(
         ) {
           groupInfoView()
           val secondaryColor = MaterialTheme.colors.secondary
-          Column(Modifier.padding(top = 6.dp, bottom = 4.dp, start = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Divider(Modifier.fillMaxWidth().padding(bottom = 6.dp))
+          Divider(Modifier.fillMaxWidth().padding(top = 8.dp))
+          Column(Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             if (action) {
               Text(groupInvitationStr(), fontSize = 13.sp, lineHeight = 18.sp)
               Text(

@@ -127,7 +127,7 @@ fun CIFileView(
   fun fileIndicator() {
     Box(
       Modifier
-        .size(42.sp.toDp() * sizeMultiplier)
+        .size(38.sp.toDp() * sizeMultiplier)
         .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
       contentAlignment = Alignment.Center
     ) {
