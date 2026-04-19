@@ -382,9 +382,9 @@ channel relay bar progress with errors</note>
         <target>**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken meg lesz osztva a SimpleX Chat kiszolgálóval, de az nem, hogy hány partnere vagy üzenete van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve">
+      <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app.</source>
-        <target>**Legprivátabb:** ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
+        <target state="translated">**A legprivátabb**: Az alkalmazás nem használja a SimpleX Chat push-kiszolgálóját. Az alkalmazás a háttérben ellenőrzi az üzeneteket, amikor a rendszer ezt lehetővé teszi, attól függően, hogy Ön milyen gyakran használja az alkalmazást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
@@ -392,9 +392,9 @@ channel relay bar progress with errors</note>
         <target>**Megjegyzés:** ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a partnereitől érkező üzenetek visszafejtését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target>**Megjegyzés:** NEM fogja tudni helyreállítani, vagy módosítani a jelmondatot abban az esetben, ha elveszíti.</target>
+        <target state="translated">**Megjegyzés:** NEM fogja tudni helyreállítani vagy módosítani a jelmondatot abban az esetben, ha elveszíti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve">
@@ -4602,9 +4602,9 @@ Hiba: %2$@</target>
         <target>Azonnal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam" xml:space="preserve">
+      <trans-unit id="Immune to spam" xml:space="preserve" approved="no">
         <source>Immune to spam</source>
-        <target>Védett a kéretlen tartalommal szemben</target>
+        <target state="translated">Védett a kéretlen tartalmakkal szemben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Import" xml:space="preserve">
@@ -7470,9 +7470,9 @@ chat item action</note>
         <target>Hivatkozások keresése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
         <source>Search or paste SimpleX link</source>
-        <target>Keresés vagy SimpleX-hivatkozás beillesztése</target>
+        <target state="translated">Keressen vagy adjon meg egy SimpleX-hivatkozást</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search videos" xml:space="preserve">
