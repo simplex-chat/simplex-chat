@@ -1978,9 +1978,9 @@ processChatCommand vr nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
-  APIConnectPlan userId forceResolve_ (Just cLink) linkOwnerSig_ -> withUserId userId $ \user ->
-    uncurry (CRConnectionPlan user) <$> connectPlan forceResolve_ user cLink linkOwnerSig_
-  APIConnectPlan _ _ Nothing _ -> throwChatError CEInvalidConnReq
+  APIConnectPlan userId (Just cLink) resolveKnown_ linkOwnerSig_ -> withUserId userId $ \user ->
+    uncurry (CRConnectionPlan user) <$> connectPlan user cLink resolveKnown_ linkOwnerSig_
+  APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
@@ -2100,7 +2100,7 @@ processChatCommand vr nm = \case
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
-  APIConnectPreparedGroup groupId ownerContact_ incognito msgContent_ -> withUser $ \user -> do
+  APIConnectPreparedGroup {groupId, incognito, ownerContact, msgContent_} -> withUser $ \user -> do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
@@ -2127,10 +2127,11 @@ processChatCommand vr nm = \case
           gInfo' <- updatePreparedRelayedGroup db vr user gInfo mainCReq cReqHash incognitoProfile rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
           forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
-            let ctId_ = case ownerContact_ of
-                  Just (ctId, oId) | B64UrlByteString ownerId == oId -> Just ctId
+            let ctId_ = case ownerContact of
+                  Just GroupOwnerContact {contactId, memberId}
+                    | memberId == MemberId ownerId -> Just contactId
                   _ -> Nothing
-            void $ createLinkOwnerMember db vr user gInfo' (MemberId ownerId) ownerKey ctId_
+            void $ createLinkOwnerMember db vr user gInfo' ctId_ (MemberId ownerId) ownerKey
           pure gInfo'
         rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
@@ -2224,7 +2225,7 @@ processChatCommand vr nm = \case
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
     -- TODO [relays] member: /c api to support groups with relays
     -- TODO   - possibly by going through APIPrepareGroup -> APIConnectPreparedGroup
-    (ccLink, plan) <- connectPlan False user cLink Nothing `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing)); _ -> throwError e
+    (ccLink, plan) <- connectPlan user cLink False Nothing `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
@@ -3966,8 +3967,8 @@ processChatCommand vr nm = \case
             pure (gId, chatSettings)
         _ -> throwCmdError "not supported"
       processChatCommand vr nm $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
-    connectPlan :: Bool -> User -> AConnectionLink -> Maybe LinkOwnerSig -> CM (ACreatedConnLink, ConnectionPlan)
-    connectPlan _ user (ACL SCMInvitation cLink) sig_ = case cLink of
+    connectPlan :: User -> AConnectionLink -> Bool -> Maybe LinkOwnerSig -> CM (ACreatedConnLink, ConnectionPlan)
+    connectPlan user (ACL SCMInvitation cLink) _ sig_ = case cLink of
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing Nothing
       CLShort l -> do
         let l' = serverShortLink l
@@ -3988,7 +3989,7 @@ processChatCommand vr nm = \case
         invitationReqAndPlan cReq sLnk_ cld ov = do
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
-    connectPlan forceResolve_ user (ACL SCMContact cLink) sig_ = case cLink of
+    connectPlan user (ACL SCMContact cLink) resolveKnown_ sig_ = case cLink of
       CLFull cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
@@ -4023,7 +4024,7 @@ processChatCommand vr nm = \case
           con cReq = ACCL SCMContact $ CCLink cReq (Just l')
           gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g Nothing Nothing))
           groupShortLinkPlan =
-            (if forceResolve_ then pure Nothing else knownLinkPlans) >>= \case
+            (if resolveKnown_ then pure Nothing else knownLinkPlans) >>= \case
               Just r -> pure r
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
@@ -5039,13 +5040,13 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect plan " *> (APIConnectPlan <$> A.decimal <*> ((" resolve=" *> onOffP) <|> pure False) <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> optional (" sig=" *> jsonP)),
+      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing) <*> ((" resolve=" *> onOffP) <|> pure False) <*> optional (" sig=" *> jsonP)),
       "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
       "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
-      "/_connect group #" *> (APIConnectPreparedGroup <$> A.decimal <*> optional (" contact=" *> ((,) <$> A.decimal <* " owner=" <*> strP)) <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
+      "/_connect group #" *> (APIConnectPreparedGroup <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> ownerContactP) <*> optional (A.space *> msgContentP)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP_),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
@@ -5175,6 +5176,7 @@ chatCommandP =
       ((Just <$> connLinkP) <|> A.takeTill (== ' ') $> Nothing)
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
+    ownerContactP = "contact=" *> (GroupOwnerContact <$> A.decimal <* " owner=" <*> strP)
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '*' $> CTLocal <|> A.char ':' $> CTContactConnection
