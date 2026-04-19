@@ -375,7 +375,7 @@ struct ChatInfoView: View {
             let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if contact.verified {
-                HStack(spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(displayName)
                         .font(.largeTitle)
                     Image(systemName: "checkmark.seal.fill")
