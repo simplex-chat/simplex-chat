@@ -235,15 +235,22 @@ struct ContentView: View {
 
     // Spec: spec/client/navigation.md#lockButton
     private func lockButton(padding: CGFloat = 0) -> some View {
-        if #available(iOS 17, *) {
-                ContentUnavailableView("Locked", systemImage: "lock", description: Text("Tap to unlock"))
-                    .onTapGesture(perform: authenticateContentViewAccess)
-                    .padding(.top, padding)
-        } else {
-            Button(action: authenticateContentViewAccess, label: {
-                Label("Unlock", systemImage: "lock")
-            })
-                .padding(.top, padding)
+        // Group is required because lockButton does not conform to a view
+        Group {
+            if #available(iOS 17, *) {
+                (
+                    ContentUnavailableView("Locked", systemImage: "lock", description: Text("Tap to unlock"))
+                        .onTapGesture(perform: authenticateContentViewAccess)
+                        .padding(.top, padding)
+                )
+            } else {
+                (
+                    Button(action: authenticateContentViewAccess, label: {
+                        Label("Unlock", systemImage: "lock")
+                    })
+                        .padding(.top, padding)
+                )
+            }
         }
     }
 
