@@ -370,6 +370,8 @@ struct ComposeView: View {
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
+    @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS, store: groupDefaults) private var useLinkPreviews = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, store: groupDefaults) private var linkPreviewsShowAlert = true
     @State private var updatingCompose = false
     @State private var relayListExpanded = false
     @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
@@ -561,7 +563,7 @@ struct ComposeView: View {
             } else {
                 composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
             }
-            if composeState.linkPreviewAllowed && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS) {
+            if composeState.linkPreviewAllowed && useLinkPreviews {
                 if !msg.isEmpty {
                     showLinkPreview(parsedMsg)
                 } else {
@@ -1878,19 +1880,53 @@ struct ComposeView: View {
     // Spec: spec/client/compose.md#loadLinkPreview
     private func loadLinkPreview(_ urlStr: String) {
         if pendingLinkUrl == urlStr, let url = URL(string: urlStr) {
-            composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
-            getLinkPreview(url: url) { linkPreview in
-                if let linkPreview, pendingLinkUrl == urlStr {
-                    privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
-                    composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
-                } else {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        composeState = composeState.copy(preview: .noPreview)
+            if linkPreviewsShowAlert {
+                showLinkPreviewsConfirmAlert { enable in
+                    if let enable {
+                        linkPreviewsShowAlert = false
+                        useLinkPreviews = enable
+                        UserDefaults.standard.set(enable, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+                        if enable {
+                            fetchLinkPreview(url, urlStr: urlStr)
+                        } else {
+                            pendingLinkUrl = nil
+                            composeState = composeState.copy(preview: .noPreview)
+                        }
+                    } else {
+                        cancelLinkPreview()
                     }
                 }
-                pendingLinkUrl = nil
+                return
             }
+            fetchLinkPreview(url, urlStr: urlStr)
         }
+    }
+
+    private func fetchLinkPreview(_ url: URL, urlStr: String) {
+        composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
+        getLinkPreview(url: url) { linkPreview in
+            if let linkPreview, pendingLinkUrl == urlStr {
+                composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    composeState = composeState.copy(preview: .noPreview)
+                }
+            }
+            pendingLinkUrl = nil
+        }
+    }
+
+    private func showLinkPreviewsConfirmAlert(onChoice: @escaping (Bool?) -> Void) {
+        showAlert(
+            NSLocalizedString("Enable link previews?", comment: "alert title"),
+            message: NSLocalizedString("Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.", comment: "alert message"),
+            actions: {
+                [
+                    UIAlertAction(title: NSLocalizedString("Disable", comment: "alert button"), style: .destructive) { _ in onChoice(false) },
+                    UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .default) { _ in onChoice(true) }
+                ]
+            }
+        )
     }
 
     private func resetLinkPreview() {
