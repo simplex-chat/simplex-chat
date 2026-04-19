@@ -544,7 +544,7 @@ fun stripTextLink(text: String, link: String): String =
 fun stripFormattedTextLink(ft: List<FormattedText>?, link: String): List<FormattedText>? {
   if (ft == null || ft.isEmpty() || ft.last().text != link) return ft
   val result = ft.toMutableList()
-  result.removeLast()
+  result.removeAt(result.lastIndex)
   val i = result.lastIndex
   if (i >= 0 && result[i].format == null && result[i].text.endsWith("\n")) {
     result[i] = FormattedText(result[i].text.dropLast(1), null)

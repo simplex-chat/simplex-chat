@@ -108,7 +108,7 @@ fun AddGroupLayout(
           ) {
             Box(contentAlignment = Alignment.TopEnd) {
               Box(contentAlignment = Alignment.Center) {
-                ProfileImage(108.dp, image = profileImage.value)
+                ProfileImage(108.dp, image = profileImage.value, icon = MR.images.ic_supervised_user_circle_filled)
                 EditImageButton { scope.launch { bottomSheetModalState.show() } }
               }
               if (profileImage.value != null) {

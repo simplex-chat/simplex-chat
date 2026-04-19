@@ -47,7 +47,7 @@ struct AddChannelView: View {
             Group {
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128)
+                        ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
                         if profile.image != nil {
                             Button {
                                 profile.image = nil
@@ -256,7 +256,7 @@ struct AddChannelView: View {
         let total = groupRelays.count
         return List {
             Group {
-                ProfileImage(imageStr: gInfo.groupProfile.image, size: 128)
+                ProfileImage(imageStr: gInfo.groupProfile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 Text(gInfo.groupProfile.displayName)

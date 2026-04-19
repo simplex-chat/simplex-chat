@@ -249,7 +249,7 @@ private fun ProfileStepView(
         ) {
           Box(contentAlignment = Alignment.TopEnd) {
             Box(contentAlignment = Alignment.Center) {
-              ProfileImage(108.dp, image = profileImage.value)
+              ProfileImage(108.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
               EditImageButton { scope.launch { bottomSheetModalState.show() } }
             }
             if (profileImage.value != null) {
@@ -376,7 +376,7 @@ private fun ProgressStepView(
         Modifier.fillMaxWidth().padding(bottom = 8.dp),
         contentAlignment = Alignment.Center
       ) {
-        ProfileImage(108.dp, image = gInfo.groupProfile.image)
+        ProfileImage(108.dp, image = gInfo.groupProfile.image, icon = MR.images.ic_bigtop_updates_circle_filled)
       }
       Text(
         gInfo.groupProfile.displayName,
