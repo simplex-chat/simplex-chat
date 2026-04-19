@@ -1596,8 +1596,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     }
   }
 
-  val userCantSendReason: Pair<String, String?>?
-    get() {
+  fun userCantSendReason(allRelaysBroken: Boolean = false): Pair<String, String?>? {
       when (this) {
         is Direct -> {
           if (contact.sendMsgToConnect) return null
@@ -1618,6 +1617,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
           if (groupInfo.membership.memberActive) {
             when (groupChatScope) {
               null -> {
+                if (allRelaysBroken && groupInfo.useRelays) {
+                  return generalGetString(MR.strings.cant_broadcast_message) to null
+                }
                 if (groupInfo.membership.memberPending) {
                   return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
                 }
@@ -1666,7 +1668,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
       }
     }
 
-  val sendMsgEnabled get() = userCantSendReason == null
+  val sendMsgEnabled get() = userCantSendReason() == null
 
   val sndReady: Boolean get() =
       when(this) {
@@ -2111,7 +2113,7 @@ data class GroupInfo (
 
   val chatIconName: ImageResource
     get() = if (useRelays) {
-      MR.images.ic_bigtop_updates_padded
+      MR.images.ic_bigtop_updates_circle_filled
     } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
       BusinessChatType.Business -> MR.images.ic_work_filled_padded
@@ -2270,13 +2272,15 @@ enum class RelayStatus {
   @SerialName("new") RsNew,
   @SerialName("invited") RsInvited,
   @SerialName("accepted") RsAccepted,
-  @SerialName("active") RsActive;
+  @SerialName("active") RsActive,
+  @SerialName("inactive") RsInactive;
 
   val text: String get() = when (this) {
     RsNew -> generalGetString(MR.strings.relay_status_new)
     RsInvited -> generalGetString(MR.strings.relay_status_invited)
     RsAccepted -> generalGetString(MR.strings.relay_status_accepted)
     RsActive -> generalGetString(MR.strings.relay_status_active)
+    RsInactive -> generalGetString(MR.strings.relay_status_inactive)
   }
 }
 
@@ -4303,7 +4307,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
-  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -4424,7 +4428,8 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           }
           "chat" -> {
             val chatLink = decoder.json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
-            MsgContent.MCChat(text, chatLink)
+            val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
+            MsgContent.MCChat(text, chatLink, ownerSig)
           }
           else -> MsgContent.MCUnknown(t, text, json)
         }
@@ -4485,6 +4490,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "chat")
           put("text", value.text)
           put("chatLink", json.encodeToJsonElement(value.chatLink))
+          value.ownerSig?.let { put("ownerSig", json.encodeToJsonElement(it)) }
         }
       is MsgContent.MCUnknown -> value.json
     }
@@ -4492,16 +4498,51 @@ object MsgContentSerializer : KSerializer<MsgContent> {
   }
 }
 
-@Serializable
-enum class MsgContentTag {
-  @SerialName("text") Text,
-  @SerialName("link") Link,
-  @SerialName("image") Image,
-  @SerialName("video") Video,
-  @SerialName("voice") Voice,
-  @SerialName("file") File,
-  @SerialName("report") Report,
-  @SerialName("chat") Chat,
+@Serializable(with = MsgContentTagSerializer::class)
+sealed class MsgContentTag {
+  @Serializable @SerialName("text") object Text: MsgContentTag()
+  @Serializable @SerialName("link") object Link: MsgContentTag()
+  @Serializable @SerialName("image") object Image: MsgContentTag()
+  @Serializable @SerialName("video") object Video: MsgContentTag()
+  @Serializable @SerialName("voice") object Voice: MsgContentTag()
+  @Serializable @SerialName("file") object File: MsgContentTag()
+  @Serializable @SerialName("report") object Report: MsgContentTag()
+  @Serializable @SerialName("chat") object Chat: MsgContentTag()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): MsgContentTag()
+
+  val cmdString: String get() = when (this) {
+    is Text -> "text"
+    is Link -> "link"
+    is Image -> "image"
+    is Video -> "video"
+    is Voice -> "voice"
+    is File -> "file"
+    is Report -> "report"
+    is Chat -> "chat"
+    is Unknown -> type
+  }
+}
+
+object MsgContentTagSerializer : KSerializer<MsgContentTag> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("MsgContentTag", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): MsgContentTag =
+    when (val s = decoder.decodeString()) {
+      "text" -> MsgContentTag.Text
+      "link" -> MsgContentTag.Link
+      "image" -> MsgContentTag.Image
+      "video" -> MsgContentTag.Video
+      "voice" -> MsgContentTag.Voice
+      "file" -> MsgContentTag.File
+      "report" -> MsgContentTag.Report
+      "chat" -> MsgContentTag.Chat
+      "liveText" -> MsgContentTag.Text
+      else -> MsgContentTag.Unknown(s)
+    }
+
+  override fun serialize(encoder: Encoder, value: MsgContentTag) {
+    encoder.encodeString(value.cmdString)
+  }
 }
 
 @Serializable
@@ -4509,7 +4550,90 @@ sealed class MsgChatLink {
   @Serializable @SerialName("contact") data class Contact(val connLink: String, val profile: Profile, val business: Boolean) : MsgChatLink()
   @Serializable @SerialName("invitation") data class Invitation(val invLink: String, val profile: Profile) : MsgChatLink()
   @Serializable @SerialName("group") data class Group(val connLink: String, val groupProfile: GroupProfile) : MsgChatLink()
+
+  val isPublicGroup: Boolean
+    get() = (this as? Group)?.groupProfile?.publicGroup != null
+
+  val connLinkStr: String
+    get() = when (this) {
+      is Group -> connLink
+      is Contact -> connLink
+      is Invitation -> invLink
+    }
+
+  val image: String?
+    get() = when (this) {
+      is Group -> groupProfile.image
+      is Contact -> profile.image
+      is Invitation -> profile.image
+    }
+
+  val displayName: String
+    get() = when (this) {
+      is Group -> groupProfile.displayName
+      is Contact -> profile.displayName
+      is Invitation -> profile.displayName
+    }
+
+  val fullName: String
+    get() = when (this) {
+      is Group -> groupProfile.fullName
+      is Contact -> profile.fullName
+      is Invitation -> profile.fullName
+    }
+
+  val shortDescription: String?
+    get() {
+      val s = when (this) {
+        is Group -> groupProfile.shortDescr
+        is Contact -> profile.shortDescr
+        is Invitation -> profile.shortDescr
+      }
+      return s?.trim()?.ifEmpty { null }
+    }
+
+  val iconRes: ImageResource
+    get() = when (this) {
+      is Group -> when (groupProfile.publicGroup?.groupType) {
+        GroupType.Channel -> MR.images.ic_bigtop_updates_circle_filled
+        else -> MR.images.ic_supervised_user_circle_filled
+      }
+      is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+      is Invitation -> MR.images.ic_account_circle_filled
+    }
+
+  val smallIconRes: ImageResource
+    get() = when (this) {
+      is Group -> when (groupProfile.publicGroup?.groupType) {
+        GroupType.Channel -> MR.images.ic_bigtop_updates
+        else -> MR.images.ic_group
+      }
+      is Contact -> if (business) MR.images.ic_work else MR.images.ic_person
+      is Invitation -> MR.images.ic_person
+    }
+
+  fun infoLine(signed: Boolean): String {
+    var s = when (this) {
+      is Group -> when (groupProfile.publicGroup?.groupType) {
+        GroupType.Channel -> generalGetString(MR.strings.chat_link_channel)
+        else -> generalGetString(MR.strings.chat_link_group)
+      }
+      is Contact -> if (business) generalGetString(MR.strings.chat_link_business_address) else generalGetString(MR.strings.chat_link_contact_address)
+      is Invitation -> generalGetString(MR.strings.chat_link_one_time)
+    }
+    if (signed) {
+      s += " " + if (isPublicGroup) generalGetString(MR.strings.chat_link_from_owner) else generalGetString(MR.strings.chat_link_signed)
+    }
+    return s
+  }
 }
+
+@Serializable
+data class LinkOwnerSig(
+  val ownerId: String? = null,
+  val chatBinding: String,
+  val ownerSig: String
+)
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {

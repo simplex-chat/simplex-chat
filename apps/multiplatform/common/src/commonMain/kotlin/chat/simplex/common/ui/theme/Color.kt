@@ -29,8 +29,8 @@ val GroupDark = Color(80, 80, 80, 60)
 val IncomingCallLight = Color(239, 237, 236, 255)
 val WarningOrange = Color(255, 127, 0, 255)
 val WarningYellow = Color(255, 192, 0, 255)
-val FileLight = Color(183, 190, 199, 255)
-val FileDark = Color(101, 101, 106, 255)
+val FileLight = Color(191, 194, 199, 255)
+val FileDark = Color(94, 94, 98, 255)
 
 val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black
 val NoteFolderIconColor: Color @Composable get() = MaterialTheme.appColors.primaryVariant2

@@ -60,6 +60,7 @@ const val MAX_NUMBER_OF_MENTIONS = 3
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
+  @Serializable class ChatLinkPreview(val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): ComposePreview()
   @Serializable class MediaPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: URI): ComposePreview()
@@ -115,7 +116,12 @@ data class ComposeState(
   val mentions: MentionedMembers = emptyMap()
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
-    ComposeMessage(editingItem.content.text),
+    ComposeMessage(
+      when (val mc = editingItem.content.msgContent) {
+        is MsgContent.MCChat -> stripTextLink(mc.text, mc.chatLink.connLinkStr)
+        else -> editingItem.content.text
+      }
+    ),
     editingItem.formattedText ?: FormattedText.plain(editingItem.content.text),
     liveMessage,
     chatItemPreview(editingItem),
@@ -166,6 +172,7 @@ data class ComposeState(
       val hasContent = when (preview) {
         is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
+        is ComposePreview.ChatLinkPreview -> true
         is ComposePreview.FilePreview -> true
         else -> !whitespaceOnly || forwarding || liveMessage != null || submittingValidReport
       }
@@ -177,6 +184,7 @@ data class ComposeState(
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
+        is ComposePreview.ChatLinkPreview -> false
         is ComposePreview.MediaPreview -> false
         is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
@@ -203,6 +211,7 @@ data class ComposeState(
     get() = when (preview) {
       ComposePreview.NoPreview -> false
       is ComposePreview.CLinkPreview -> false
+      is ComposePreview.ChatLinkPreview -> false
       is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
       is ComposePreview.VoicePreview -> false
       is ComposePreview.FilePreview -> true
@@ -497,6 +506,7 @@ fun ComposeView(
         is SharedContent.File -> listOf(shared.uri.toString())
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
+        is SharedContent.ChatLink -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -701,8 +711,11 @@ fun ComposeView(
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
-        // TODO [short links] update chat link
-        is MsgContent.MCChat -> MsgContent.MCChat(msgText, chatLink = msgContent.chatLink)
+        is MsgContent.MCChat -> {
+          val linkStr = msgContent.chatLink.connLinkStr
+          val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
+          MsgContent.MCChat(text, chatLink = msgContent.chatLink, ownerSig = msgContent.ownerSig)
+        }
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }
@@ -789,6 +802,11 @@ fun ComposeView(
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
+        is ComposePreview.ChatLinkPreview -> {
+          val linkStr = preview.chatLink.connLinkStr
+          val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
+          msgs.add(MsgContent.MCChat(text, preview.chatLink, preview.ownerSig))
+        }
         is ComposePreview.MediaPreview -> {
           // TODO batch send: batch media previews
           preview.content.forEachIndexed { index, it ->
@@ -1089,6 +1107,11 @@ fun ComposeView(
         ::cancelLinkPreview,
         cancelEnabled = !composeState.value.inProgress
       )
+      is ComposePreview.ChatLinkPreview -> ComposeChatLinkView(
+        chatLink = preview.chatLink,
+        cancelEnabled = !composeState.value.inProgress,
+        cancelPreview = { composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview) }
+      )
       is ComposePreview.MediaPreview -> ComposeImageView(
         preview,
         ::cancelImages,
@@ -1157,8 +1180,10 @@ fun ComposeView(
     }
   }
 
-  val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
-  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason)
+  val ownerRelayState = ownerRelayState(chat, chatModel)
+
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason(ownerRelayState?.noActiveRelays == true))
+  val sendMsgEnabled = rememberUpdatedState(userCantSendReason.value == null)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   @Composable
@@ -1336,7 +1361,7 @@ fun ComposeView(
       sendButtonColor = sendButtonColor,
       timedMessageAllowed = timedMessageAllowed,
       customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
-      placeholder = placeholder ?: composeState.value.placeholder,
+      placeholder = if (userCantSendReason.value != null) "" else placeholder ?: composeState.value.placeholder,
       sendMessage = { ttl ->
         sendMessage(ttl)
         resetLinkPreview()
@@ -1467,6 +1492,22 @@ fun ComposeView(
         contextItem = ComposeContextItem.ForwardingItems(shared.chatItems, shared.fromChatInfo),
         preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
       )
+      is SharedContent.ChatLink -> {
+        val cInfo = chat.chatInfo
+        val sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false
+        withBGApi {
+          val mc = chatModel.controller.apiShareChatMsgContent(
+            chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
+            cInfo.chatType, cInfo.apiId,
+            cInfo.groupChatScope(), sendAsGroup
+          )
+          if (mc is MsgContent.MCChat) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.ChatLinkPreview(mc.chatLink, mc.ownerSig)
+            )
+          }
+        }
+      }
       null -> {}
     }
     chatModel.sharedContent.value = null
@@ -1499,11 +1540,10 @@ fun ComposeView(
       && gInfo.membership.memberStatus !in listOf(GroupMemberStatus.MemRejected, GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
     ) {
       if (gInfo.membership.memberRole == GroupMemberRole.Owner) {
-        val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
-        val failedCount = relays.count { relayMemberConnFailed(chatModel, it) != null }
-        val activeCount = relays.count { it.relayStatus == RelayStatus.RsActive && relayMemberConnFailed(chatModel, it) == null }
-        if (relays.isNotEmpty() && activeCount < relays.size) {
-          OwnerChannelRelayBar(chatModel, relays, activeCount, failedCount, relayListExpanded)
+        ownerRelayState?.let { s ->
+          if (s.activeCount < s.relays.size) {
+            OwnerChannelRelayBar(chatModel, s.relays, s.activeCount, s.failedCount, s.removedCount, relayListExpanded)
+          }
         }
       } else {
         val hostnames = (chatModel.channelRelayHostnames[gInfo.groupId] ?: emptyList()).sorted()
@@ -1511,14 +1551,13 @@ fun ComposeView(
           .filter { it.memberRole == GroupMemberRole.Relay }
           .sortedBy { hostFromRelayLink(it.relayLink ?: "") }
         val showProgress = !gInfo.nextConnectPrepared || composeState.value.inProgress
-        val connectedCount = relayMembers.count { it.activeConn?.connStatus == ConnStatus.Ready }
-        val deletedCount = relayMembers.count { it.activeConn?.connStatus == ConnStatus.Deleted }
-        val failedCount = relayMembers.count { it.activeConn?.connFailedErr != null }
-        val errorCount = deletedCount + failedCount
-        val resolvedCount = connectedCount + deletedCount
+        val removedCount = relayMembers.count { relayMemberRemoved(it.memberStatus) }
+        val connectedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connStatus == ConnStatus.Ready && it.activeConn?.connFailedErr == null }
+        val failedCount = relayMembers.count { !relayMemberRemoved(it.memberStatus) && it.activeConn?.connFailedErr != null }
+        val resolvedCount = connectedCount + removedCount + failedCount
         val total = if (relayMembers.isNotEmpty()) relayMembers.size else hostnames.size
-        if (total > 0 && (!showProgress || resolvedCount < total)) {
-          SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, errorCount, total, showProgress, relayListExpanded)
+        if (total > 0 && (removedCount + failedCount > 0 || resolvedCount < total)) {
+          SubscriberChannelRelayBar(hostnames, relayMembers, connectedCount, removedCount, failedCount, total, showProgress, relayListExpanded)
         }
       }
     }
@@ -1698,25 +1737,66 @@ private fun OwnerChannelRelayBar(
   relays: List<GroupRelay>,
   activeCount: Int,
   failedCount: Int,
+  removedCount: Int,
   relayListExpanded: MutableState<Boolean>
 ) {
   val total = relays.size
-  val sorted = relays.sortedBy { relayDisplayName(it) }
+  val allBroken = activeCount == 0 && (failedCount + removedCount) == total
+  val members = chatModel.groupMembers.value.associateBy { it.groupMemberId }
+  val sorted = relays.map { relay -> relay to members[relay.groupMemberId] }.sortedBy { relayDisplayName(it.first) }
   Column(Modifier.background(MaterialTheme.colors.surface)) {
     RelayBarHeader(relayListExpanded) {
-      if (activeCount + failedCount < total) {
+      if (!allBroken && activeCount + failedCount + removedCount < total) {
         RelayProgressIndicator(active = activeCount, total = total)
       }
-      val statusText = if (failedCount > 0) {
-        String.format(generalGetString(MR.strings.relay_bar_active_with_failures), activeCount, total, failedCount)
+      if (allBroken) {
+        val statusText = if (removedCount == total) {
+          generalGetString(MR.strings.relay_bar_all_relays_removed)
+        } else if (failedCount == total) {
+          generalGetString(MR.strings.relay_bar_all_relays_failed)
+        } else {
+          generalGetString(MR.strings.relay_bar_no_active_relays)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
+        Icon(
+          painterResource(MR.images.ic_warning),
+          contentDescription = null,
+          tint = WarningOrange,
+          modifier = Modifier.size(18.dp)
+        )
+      } else if (activeCount + failedCount + removedCount >= total) {
+        val statusText = if (failedCount > 0 && removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_not_active), failedCount + removedCount)
+        } else if (failedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_failed), failedCount)
+        } else {
+          String.format(generalGetString(MR.strings.relay_bar_relays_removed), removedCount)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
       } else {
-        String.format(generalGetString(MR.strings.relay_bar_active), activeCount, total)
+        val statusText = if (failedCount > 0 && removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_active_with_errors), activeCount, total, failedCount + removedCount)
+        } else if (failedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_active_with_failures), activeCount, total, failedCount)
+        } else if (removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_active_with_removed), activeCount, total, removedCount)
+        } else {
+          String.format(generalGetString(MR.strings.relay_bar_active), activeCount, total)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
       }
-      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
     }
     if (relayListExpanded.value) {
-      sorted.forEach { relay ->
-        val failedErr = relayMemberConnFailed(chatModel, relay)
+      if (allBroken) {
+        Text(
+          generalGetString(MR.strings.relay_bar_owner_no_delivery),
+          modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = DEFAULT_PADDING, bottom = 4.dp),
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp
+        )
+      }
+      sorted.forEach { (relay, m) ->
+        val failedErr = m?.activeConn?.connFailedErr
         RelayBarDetailRow(
           onClick = if (failedErr != null) {
             {
@@ -1733,7 +1813,7 @@ private fun OwnerChannelRelayBar(
             fontSize = 12.sp
           )
           Spacer(Modifier.weight(1f))
-          RelayStatusIndicator(relay.relayStatus, connFailed = failedErr != null)
+          RelayStatusIndicator(relay.relayStatus, connFailed = failedErr != null, memberStatus = m?.memberStatus)
         }
       }
     }
@@ -1745,28 +1825,65 @@ private fun SubscriberChannelRelayBar(
   hostnames: List<String>,
   relayMembers: List<GroupMember>,
   connectedCount: Int,
-  errorCount: Int,
+  removedCount: Int,
+  failedCount: Int,
   total: Int,
   showProgress: Boolean,
   relayListExpanded: MutableState<Boolean>
 ) {
+  val errorCount = removedCount + failedCount
+  val allBroken = connectedCount == 0 && errorCount == total
   Column(Modifier.background(MaterialTheme.colors.surface)) {
     RelayBarHeader(relayListExpanded) {
-      if (showProgress && connectedCount + errorCount < total) {
-        RelayProgressIndicator(active = connectedCount, total = total)
-      }
-      val statusText = if (showProgress) {
-        if (errorCount > 0) {
+      if (allBroken) {
+        val statusText = if (removedCount == total) {
+          generalGetString(MR.strings.relay_bar_all_relays_removed)
+        } else if (failedCount == total) {
+          generalGetString(MR.strings.relay_bar_all_relays_failed)
+        } else {
+          generalGetString(MR.strings.relay_bar_no_active_relays)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
+        Icon(
+          painterResource(MR.images.ic_warning),
+          contentDescription = null,
+          tint = WarningOrange,
+          modifier = Modifier.size(18.dp)
+        )
+      } else if (connectedCount + removedCount + failedCount >= total && errorCount > 0) {
+        val statusText = if (failedCount > 0 && removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_not_active), failedCount + removedCount)
+        } else if (failedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_relays_failed), failedCount)
+        } else {
+          String.format(generalGetString(MR.strings.relay_bar_relays_removed), removedCount)
+        }
+        Text(statusText, color = MaterialTheme.colors.secondary)
+      } else {
+        if (showProgress && connectedCount + errorCount < total) {
+          RelayProgressIndicator(active = connectedCount, total = total)
+        }
+        val statusText = if (failedCount > 0 && removedCount > 0) {
           String.format(generalGetString(MR.strings.relay_bar_connected_with_errors), connectedCount, total, errorCount)
+        } else if (failedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_connected_with_failures), connectedCount, total, failedCount)
+        } else if (removedCount > 0) {
+          String.format(generalGetString(MR.strings.relay_bar_connected_with_removed), connectedCount, total, removedCount)
         } else {
           String.format(generalGetString(MR.strings.relay_bar_connected), connectedCount, total)
         }
-      } else {
-        String.format(generalGetString(MR.strings.relay_bar_count), total)
+        Text(statusText, color = MaterialTheme.colors.secondary)
       }
-      Text(statusText, modifier = Modifier.weight(1f), color = MaterialTheme.colors.secondary)
     }
     if (relayListExpanded.value) {
+      if (allBroken) {
+        Text(
+          generalGetString(MR.strings.relay_bar_subscriber_waiting),
+          modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = DEFAULT_PADDING, bottom = 4.dp),
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp
+        )
+      }
       if (relayMembers.isEmpty()) {
         hostnames.forEach { relay ->
           RelayBarDetailRow {
@@ -1834,6 +1951,7 @@ private fun RelayBarHeader(
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
+    Spacer(Modifier.weight(1f))
     Icon(
       painterResource(if (expanded.value) MR.images.ic_chevron_down else MR.images.ic_chevron_up),
       contentDescription = null,
@@ -1859,9 +1977,31 @@ private fun RelayBarDetailRow(
   }
 }
 
-private fun relayMemberConnFailed(chatModel: ChatModel, relay: GroupRelay): String? {
-  return chatModel.groupMembers.value
-    .firstOrNull { it.groupMemberId == relay.groupMemberId }
-    ?.activeConn?.connFailedErr
+private fun ownerRelayState(chat: Chat, chatModel: ChatModel): OwnerRelayState? {
+  val gInfo = (chat.chatInfo as? ChatInfo.Group)?.groupInfo ?: return null
+  if (!gInfo.useRelays || gInfo.membership.memberRole != GroupMemberRole.Owner ||
+    gInfo.membership.memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+  ) return null
+  val relays = if (ChannelRelaysModel.groupId.value == gInfo.groupId) ChannelRelaysModel.groupRelays.toList() else emptyList()
+  if (relays.isEmpty()) return null
+  val relayMembers = relays.map { relay ->
+    relay to chatModel.groupMembers.value.firstOrNull { it.groupMemberId == relay.groupMemberId }
+  }
+  val removedCount = relayMembers.count { (_, m) -> relayMemberRemoved(m?.memberStatus) }
+  val activeCount = relayMembers.count { (relay, m) -> !relayMemberRemoved(m?.memberStatus) && relay.relayStatus == RelayStatus.RsActive && m?.activeConn?.connFailedErr == null }
+  val failedCount = relayMembers.count { (_, m) -> !relayMemberRemoved(m?.memberStatus) && m?.activeConn?.connFailedErr != null }
+  val noActiveRelays = activeCount == 0 && (failedCount + removedCount) == relays.size
+  return OwnerRelayState(relays, activeCount, failedCount, removedCount, noActiveRelays)
 }
+
+private data class OwnerRelayState(
+  val relays: List<GroupRelay>,
+  val activeCount: Int,
+  val failedCount: Int,
+  val removedCount: Int,
+  val noActiveRelays: Boolean
+)
+
+private fun relayMemberRemoved(status: GroupMemberStatus?): Boolean =
+  status in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
 

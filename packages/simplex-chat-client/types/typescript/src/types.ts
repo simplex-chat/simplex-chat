@@ -1986,6 +1986,7 @@ export namespace ContactAddressPlan {
   export interface Ok extends Interface {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
+    ownerVerification?: OwnerVerification
   }
 
   export interface OwnLink extends Interface {
@@ -2565,9 +2566,16 @@ export type GroupLinkPlan =
   | GroupLinkPlan.ConnectingConfirmReconnect
   | GroupLinkPlan.ConnectingProhibit
   | GroupLinkPlan.Known
+  | GroupLinkPlan.NoRelays
 
 export namespace GroupLinkPlan {
-  export type Tag = "ok" | "ownLink" | "connectingConfirmReconnect" | "connectingProhibit" | "known"
+  export type Tag = 
+    | "ok"
+    | "ownLink"
+    | "connectingConfirmReconnect"
+    | "connectingProhibit"
+    | "known"
+    | "noRelays"
 
   interface Interface {
     type: Tag
@@ -2577,6 +2585,7 @@ export namespace GroupLinkPlan {
     type: "ok"
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
+    ownerVerification?: OwnerVerification
   }
 
   export interface OwnLink extends Interface {
@@ -2596,6 +2605,11 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+  }
+
+  export interface NoRelays extends Interface {
+    type: "noRelays"
+    groupSLinkData_?: GroupShortLinkData
   }
 }
 
@@ -2787,6 +2801,7 @@ export namespace InvitationLinkPlan {
   export interface Ok extends Interface {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
+    ownerVerification?: OwnerVerification
   }
 
   export interface OwnLink extends Interface {
@@ -2854,6 +2869,12 @@ export namespace LinkContent {
     tag: string
     json: object
   }
+}
+
+export interface LinkOwnerSig {
+  ownerId?: string
+  chatBinding: string
+  ownerSig: string
 }
 
 export interface LinkPreview {
@@ -2973,6 +2994,7 @@ export namespace MsgContent {
     type: "chat"
     text: string
     chatLink: MsgChatLink
+    ownerSig?: LinkOwnerSig
   }
 
   export interface Unknown extends Interface {
@@ -3129,6 +3151,25 @@ export interface NoteFolder {
   chatTs: string // ISO-8601 timestamp
   favorite: boolean
   unread: boolean
+}
+
+export type OwnerVerification = OwnerVerification.Verified | OwnerVerification.Failed
+
+export namespace OwnerVerification {
+  export type Tag = "verified" | "failed"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Verified extends Interface {
+    type: "verified"
+  }
+
+  export interface Failed extends Interface {
+    type: "failed"
+    reason: string
+  }
 }
 
 export interface PendingContactConnection {
@@ -3650,6 +3691,7 @@ export enum RelayStatus {
   Invited = "invited",
   Accepted = "accepted",
   Active = "active",
+  Inactive = "inactive",
 }
 
 export enum ReportReason {

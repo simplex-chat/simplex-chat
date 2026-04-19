@@ -253,6 +253,7 @@ chatGroupTests = do
       it "should update channel profile (signed)" testChannelUpdateProfileSigned
       it "should preserve working link after profile update" testChannelLinkAfterProfileUpdate
       it "should preserve working link after welcome message update" testChannelLinkAfterWelcomeUpdate
+      it "should preserve owner key in link data after profile update" testChannelOwnerKeyAfterLinkUpdate
       it "should update channel preferences (signed)" testChannelUpdatePrefsSigned
       it "should change member role (signed)" testChannelChangeRoleSigned
       it "should block member for all (signed)" testChannelBlockMemberSigned
@@ -261,6 +262,7 @@ chatGroupTests = do
       it "should delete channel and clean up relay connections" testChannelDeleteGroupCleanup
       it "owner should leave channel (signed)" testChannelOwnerLeave
       it "subscriber should leave channel (signed)" testChannelSubscriberLeave
+      it "relay should leave channel" testChannelRelayLeave
       it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
     describe "channel message operations" $ do
@@ -8439,16 +8441,25 @@ createChannel1Relay gName owner relay cath dan eve = do
   forM_ [cath, dan, eve] $ \member ->
     memberJoinChannel gName [relay] [owner] shortLink fullLink member
 
-prepareChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
-prepareChannel1Relay gName owner relay = do
+setupRelay :: TestCC -> TestCC -> IO String
+setupRelay owner relay = do
   rName <- userName relay
-
   relay ##> "/ad"
   (relaySLink, _cLink) <- getContactLinks relay True
-
   owner ##> ("/relays name=" <> rName <> " " <> relaySLink)
   owner <## "ok"
+  pure relaySLink
 
+prepareChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel1Relay gName owner relay = do
+  _ <- setupRelay owner relay
+  prepareChannel gName owner relay
+
+prepareChannel :: String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel = prepareChannel' 1
+
+prepareChannel' :: Int -> String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel' relayId gName owner relay = do
   owner ##> ("/public group relays=1 #" <> gName)
   owner <## ("group #" <> gName <> " is created")
   owner <## "wait for selected relay(s) to join, then you can invite members via group link"
@@ -8456,7 +8467,7 @@ prepareChannel1Relay gName owner relay = do
   concurrentlyN_
     [ do
         owner <## ("#" <> gName <> ": group link relays updated, current relays:")
-        owner <## "  - relay id 1: active"
+        owner <## ("  - relay id " <> show relayId <> ": active")
         owner <## "group link:"
         _ <- getTermLine owner
         pure (),
@@ -8515,10 +8526,17 @@ prepareChannel2Relays gName owner relay1 relay2 = do
   getGroupLinks owner gName GRMember False
 
 memberJoinChannel :: String -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
-memberJoinChannel gName relays owners shortLink fullLink member = do
+memberJoinChannel gName = memberJoinChannel' gName 1 0 0 0
+
+-- | sfx params: relaySfx - how relay/owner see the member, memberRelaySfx - how member sees relay
+memberJoinChannel' :: String -> Int -> Int -> Int -> Int -> [TestCC] -> [TestCC] -> String -> String -> TestCC -> IO ()
+memberJoinChannel' gName gId relaySfx ownerSfx memberRelaySfx relays owners shortLink fullLink member = do
   mName <- userName member
   mFullName <- showName member
-  relayNames <- mapM userName relays
+  let sfxMName s = if s == 0 then mName else mName <> "_" <> show s
+      sfxName s = if s == 0 then mFullName else sfxMName s <> drop (length mName) mFullName
+      sfxRelayName rn = if memberRelaySfx == 0 then rn else rn <> "_" <> show memberRelaySfx
+  relayNames <- mapM (\r -> sfxRelayName <$> userName r) relays
 
   member ##> ("/_connect plan 1 " <> shortLink)
   member <## "group link: ok to connect via relays"
@@ -8527,7 +8545,7 @@ memberJoinChannel gName relays owners shortLink fullLink member = do
   member ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
   member <## ("#" <> gName <> ": group is prepared")
 
-  member ##> "/_connect group #1"
+  member ##> ("/_connect group #" <> show gId)
   member <## ("#" <> gName <> ": connection started")
   concurrentlyN_ $
     [ member
@@ -8539,11 +8557,11 @@ memberJoinChannel gName relays owners shortLink fullLink member = do
           ]
     ]
       <> [ do
-             relay <## (mFullName <> ": accepting request to join group #" <> gName <> "...")
-             relay <## ("#" <> gName <> ": " <> mName <> " joined the group")
+             relay <## (sfxName relaySfx <> ": accepting request to join group #" <> gName <> "...")
+             relay <## ("#" <> gName <> ": " <> sfxMName relaySfx <> " joined the group")
          | relay <- relays
          ]
-      <> [ owner <### [EndsWith ("added " <> mFullName <> " to the group")]
+      <> [ owner <### [EndsWith ("added " <> sfxName ownerSfx <> " to the group")]
          | owner <- owners
          ]
 
@@ -8843,6 +8861,60 @@ testChannelLinkAfterWelcomeUpdate ps =
           alice #> "#team hi"
           bob <# "#team> hi"
           [cath, dan] *<# "#team> hi [>>]"
+
+testChannelOwnerKeyAfterLinkUpdate :: HasCallStack => TestParams -> IO ()
+testChannelOwnerKeyAfterLinkUpdate ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
+          memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
+
+          threadDelay 100000
+
+          -- Owner updates channel profile - triggers rebuilding link data.
+          alice ##> "/gp team my_team My team description"
+          alice <## "changed to #my_team (My team description)"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #team: (signed)"
+                bob <## "changed to #my_team (My team description)",
+              do
+                cath <## "alice updated group #team: (signed)"
+                cath <## "changed to #my_team (My team description)"
+            ]
+
+          threadDelay 100000
+
+          -- Late subscriber joins via the same channel link after profile update.
+          alice ##> "/show link #my_team"
+          (shortLink', fullLink') <- getGroupLinks alice "my_team" GRMember False
+          shortLink' `shouldBe` shortLink
+          fullLink' `shouldBe` fullLink
+          memberJoinChannel "my_team" [bob] [alice] shortLink' fullLink' dan
+
+          threadDelay 100000
+
+          -- Verify owner member record in late subscriber's DB has a public key.
+          ownerKeyPresent <- withCCTransaction dan $ \db ->
+            DB.query_ db "SELECT COUNT(1) FROM group_members WHERE member_role = 'owner' AND member_pub_key IS NOT NULL" :: IO [[Int]]
+          ownerKeyPresent `shouldBe` [[1]]
+
+          -- Verify signed event is received by late subscriber.
+          alice ##> "/gp my_team team"
+          alice <## "changed to #team"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #my_team: (signed)"
+                bob <## "changed to #team",
+              do
+                cath <## "alice updated group #my_team: (signed)"
+                cath <## "changed to #team",
+              do
+                dan <## "alice updated group #my_team: (signed)"
+                dan <## "changed to #team"
+            ]
 
 testChannelUpdatePrefsSigned :: HasCallStack => TestParams -> IO ()
 testChannelUpdatePrefsSigned ps =
@@ -9252,6 +9324,78 @@ testChannelSubscriberLeave ps =
             -- eve doesn't know dan - no member record (XGrpLeave skips unknown member creation)
             checkMemberStatus eve "dan" Nothing
             checkMemberStatus cath "dan" Nothing
+  where
+    checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
+    checkMemberStatus cc name expected = do
+      statuses <- withCCTransaction cc $ \db ->
+        DB.query db "SELECT member_status FROM group_members WHERE local_display_name = ?" (Only name) :: IO [Only T.Text]
+      map (\(Only s) -> s) statuses `shouldBe` maybeToList expected
+
+testChannelRelayLeave :: HasCallStack => TestParams -> IO ()
+testChannelRelayLeave ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve ->
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+              forM_ [dan, eve] $ \member ->
+                memberJoinChannel "team" [bob, cath] [alice] shortLink fullLink member
+
+              -- verify channel works
+              alice #> "#team hello"
+              [bob, cath] *<# "#team> hello"
+              [dan, eve] *<# "#team> hello [>>]"
+
+              -- relay1 (bob) leaves
+              threadDelay 100000
+              bob ##> "/leave #team"
+              bob <## "#team: you left the group"
+              bob <## "use /d #team to delete the group"
+              concurrentlyN_
+                [ alice <## "#team: bob left the group (signed)",
+                  -- cath: not notified (relays not connected, owner doesn't forward)
+                  dan <## "#team: bob left the group (signed)",
+                  eve <## "#team: bob left the group (signed)"
+                ]
+
+              -- verify relay1 member status is "left" on all clients that know bob
+              checkMemberStatus alice "bob" (Just "left")
+              checkMemberStatus dan "bob" (Just "left")
+              checkMemberStatus eve "bob" (Just "left")
+
+              -- verify channel still works with remaining relay
+              threadDelay 100000
+              alice #> "#team still working"
+              cath <# "#team> still working"
+              [dan, eve] *<# "#team> still working [>>]"
+
+              -- relay2 (cath) leaves
+              threadDelay 100000
+              cath ##> "/leave #team"
+              cath <## "#team: you left the group"
+              cath <## "use /d #team to delete the group"
+              concurrentlyN_
+                [ alice <## "#team: cath left the group (signed)",
+                  dan <## "#team: cath left the group (signed)",
+                  eve <## "#team: cath left the group (signed)"
+                ]
+
+              -- verify relay2 member status
+              checkMemberStatus alice "cath" (Just "left")
+              checkMemberStatus dan "cath" (Just "left")
+              checkMemberStatus eve "cath" (Just "left")
+
+              -- verify no delivery: owner sends but no relays to forward
+              alice #> "#team no delivery"
+              (dan </)
+              (eve </)
+
+              -- new subscriber tries to join channel with no relays - gets proper error
+              threadDelay 100000
+              frank ##> ("/_connect plan 1 " <> shortLink)
+              frank <## "group link: channel has no active relays, please try to join later"
   where
     checkMemberStatus :: HasCallStack => TestCC -> T.Text -> Maybe T.Text -> IO ()
     checkMemberStatus cc name expected = do
