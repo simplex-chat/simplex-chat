@@ -2685,4 +2685,17 @@
     <string name="relay_bar_no_active_relays">无活跃中继</string>
     <string name="relay_conn_status_removed_by_operator">被运营方删除</string>
     <string name="relay_bar_subscriber_waiting">正等到频道所有者添加中继。</string>
+    <string name="chat_link_business_address">营业地址</string>
+    <string name="chat_link_channel">频道链接</string>
+    <string name="chat_link_contact_address">联系地址</string>
+    <string name="error_sharing_channel">分享频道出错</string>
+    <string name="chat_link_from_owner">（来自所有者）</string>
+    <string name="chat_link_group">群链接</string>
+    <string name="owner_verification_passed">链接签名无效</string>
+    <string name="chat_link_one_time">一次性链接</string>
+    <string name="share_channel">分享频道…</string>
+    <string name="share_via_chat">经聊天分享</string>
+    <string name="owner_verification_failed">⚠️ 签名验证失败：%s。</string>
+    <string name="chat_link_signed">(s已签名)</string>
+    <string name="tap_to_open">轻触打开</string>
 </resources>
