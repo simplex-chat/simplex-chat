@@ -347,7 +347,7 @@ struct ChatInfoView: View {
         }
         .actionSheet(item: $actionSheet) { $0.actionSheet }
         .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
+            if #available(iOS 16, *) {
                 $0.content
                     .presentationDetents([.fraction($0.fraction)])
             } else {
