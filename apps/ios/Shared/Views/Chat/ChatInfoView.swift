@@ -347,7 +347,7 @@ struct ChatInfoView: View {
         }
         .actionSheet(item: $actionSheet) { $0.actionSheet }
         .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
+            if #available(iOS 16, *) {
                 $0.content
                     .presentationDetents([.fraction($0.fraction)])
             } else {
@@ -375,14 +375,14 @@ struct ChatInfoView: View {
             let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if contact.verified {
-                (
-                    Text(Image(systemName: "checkmark.shield"))
-                        .foregroundColor(theme.colors.secondary)
-                        .font(.title2)
-                    + textSpace
-                    + Text(displayName)
+                HStack(alignment: .center, spacing: 8) {
+                    Text(displayName)
                         .font(.largeTitle)
-                )
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.largeTitle)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .blue)
+                }
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
