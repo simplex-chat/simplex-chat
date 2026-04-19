@@ -236,7 +236,14 @@ struct ContentView: View {
 
     // Spec: spec/client/navigation.md#lockButton
     private func lockButton() -> some View {
-        Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
+        if #available(iOS 17, *) {
+                ContentUnavailableView("Locked", systemImage: "lock", description: Text("Tap to unlock"))
+                    .onTapGesture(perform: authenticateContentViewAccess)
+        } else {
+            Button(action: authenticateContentViewAccess, label: {
+                Label("Unlock", systemImage: "lock")
+            })
+        }
     }
 
     private func initializationView() -> some View {
