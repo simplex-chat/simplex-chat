@@ -2701,4 +2701,17 @@
     <string name="relay_bar_no_active_relays">Nessun relay attivo</string>
     <string name="relay_conn_status_removed_by_operator">rimosso da un operatore</string>
     <string name="relay_bar_subscriber_waiting">In attesa che il proprietario del canale aggiunga dei relay.</string>
+    <string name="chat_link_business_address">Indirizzo di lavoro</string>
+    <string name="chat_link_channel">Link del canale</string>
+    <string name="chat_link_contact_address">Indirizzo di contatto</string>
+    <string name="error_sharing_channel">Errore nella condivisione del canale</string>
+    <string name="chat_link_from_owner">(dal proprietario)</string>
+    <string name="chat_link_group">Link del gruppo</string>
+    <string name="owner_verification_passed">Firma del link verificata.</string>
+    <string name="share_channel">Condividi canale…</string>
+    <string name="share_via_chat">Condividi via chat</string>
+    <string name="owner_verification_failed">⚠️ Verifica della firma fallita: %s.</string>
+    <string name="chat_link_signed">(firmato)</string>
+    <string name="tap_to_open">Tocca per aprire</string>
+    <string name="chat_link_one_time">Link una tantum</string>
 </resources>
