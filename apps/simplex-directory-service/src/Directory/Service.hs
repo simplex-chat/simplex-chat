@@ -54,7 +54,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MsgContent (..), memberSupportVoiceVersion)
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink, MsgContent (..), memberSupportVoiceVersion)
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -298,6 +298,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
     DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
     DEGroupDeleted g -> deGroupDeleted g
+    DEChatLinkReceived {contact = ct, chatLink, ownerSig} -> deChatLinkReceived ct chatLink ownerSig
+    DEOwnerMemberAnnounced {groupInfo = g, unknownMember, announcedMember} -> deOwnerMemberAnnounced g unknownMember announcedMember
     DEUnsupportedMessage _ct _ciId -> pure ()
     DEItemEditIgnored _ct -> pure ()
     DEItemDeleteIgnored _ct -> pure ()
@@ -802,6 +804,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr -> do
         notifyOwner gr $ "The group " <> userGroupReference gr g <> " is deleted.\n\nThe group is no longer listed in the directory."
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
+
+    deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
+    deChatLinkReceived _ct _chatLink _ownerSig = pure () -- TODO implement per plan
+
+    deOwnerMemberAnnounced :: GroupInfo -> GroupMember -> GroupMember -> IO ()
+    deOwnerMemberAnnounced _g _unknownMember _announcedMember = pure () -- TODO implement per plan
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case

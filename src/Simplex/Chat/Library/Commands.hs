@@ -4024,7 +4024,10 @@ processChatCommand vr nm = \case
           con cReq = ACCL SCMContact $ CCLink cReq (Just l')
           gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g Nothing Nothing))
           groupShortLinkPlan =
-            (if resolveKnown_ then pure Nothing else knownLinkPlans) >>= \case
+            knownLinkPlans >>= \case
+              Just r@(_, CPGroupLink (GLPKnown g _ _))
+                | resolveKnown_ -> resolveKnownGroup g
+                | otherwise -> pure r
               Just r -> pure r
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
@@ -4034,8 +4037,6 @@ processChatCommand vr nm = \case
                   else do
                     let FixedLinkData {linkConnReq = cReq, linkEntityId, rootKey} = fd
                         linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
-                    -- Cross-validate linkEntityId and publicGroupId from profile:
-                    -- for channels both must be present and match, for p2p groups both must be absent
                     let profilePGId = groupSLinkData_ >>= \GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} ->
                           fmap (\PublicGroupProfile {publicGroupId} -> publicGroupId) publicGroup
                     case (B64UrlByteString <$> linkEntityId, profilePGId) of
@@ -4050,6 +4051,15 @@ processChatCommand vr nm = \case
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
+              resolveKnownGroup g@GroupInfo {groupProfile = p} = do
+                (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
+                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                let ov = verifyLinkOwner rk owners l' sig_
+                g' <- case groupSLinkData_ of
+                  Just GroupShortLinkData {groupProfile = linkProfile}
+                    | p /= linkProfile -> withStore $ \db -> updateGroupProfile db user g linkProfile
+                  _ -> pure g
+                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' ov groupSLinkData_))
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
