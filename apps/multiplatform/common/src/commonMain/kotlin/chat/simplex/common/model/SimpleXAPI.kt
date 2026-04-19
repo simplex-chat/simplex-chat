@@ -1043,7 +1043,7 @@ object ChatController {
 
   suspend fun apiGetChatContentTypes(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?): List<MsgContentTag>? {
     val r = sendCmd(rh, CC.ApiGetChatContentTypes(type, id, scope))
-    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes
+    if (r is API.Result && r.res is CR.ChatContentTypes) return r.res.contentTypes.filter { it !is MsgContentTag.Unknown }
     Log.e(TAG, "apiGetChatContentTypes bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_details), "${r.responseType}: ${r.details}")
     return null
@@ -1133,6 +1133,13 @@ object ChatController {
   suspend fun apiForwardChatItems(rh: Long?, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean = false, fromChatType: ChatType, fromChatId: Long, fromScope: GroupChatScope?, itemIds: List<Long>, ttl: Int?): List<ChatItem>? {
     val cmd = CC.ApiForwardChatItems(toChatType, toChatId, toScope, sendAsGroup, fromChatType, fromChatId, fromScope, itemIds, ttl)
     return processSendMessageCmd(rh, cmd)?.map { it.chatItem }
+  }
+
+  suspend fun apiShareChatMsgContent(rh: Long?, shareChatType: ChatType, shareChatId: Long, toChatType: ChatType, toChatId: Long, toScope: GroupChatScope?, sendAsGroup: Boolean): MsgContent? {
+    val r = sendCmd(rh, CC.ApiShareChatMsgContent(shareChatType, shareChatId, toChatType, toChatId, toScope, sendAsGroup))
+    if (r is API.Result && r.res is CR.ChatMsgContent) return r.res.msgContent
+    apiErrorAlert("apiShareChatMsgContent", generalGetString(MR.strings.error_sharing_channel), r)
+    return null
   }
 
   suspend fun apiPlanForwardChatItems(rh: Long?, fromChatType: ChatType, fromChatId: Long, fromScope: GroupChatScope?, chatItemIds: List<Long>): CR.ForwardPlan? {
@@ -1485,9 +1492,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
-    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink), inProgress = inProgress)
+    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, linkOwnerSig), inProgress = inProgress)
     if (r is API.Result && r.res is CR.CRConnectionPlan) return r.res.connLink to r.res.connectionPlan
     if (inProgress.value && r != null) apiConnectResponseAlert(r)
     return null
@@ -3624,6 +3631,7 @@ sealed class CC {
   class ApiGetReactionMembers(val userId: Long, val groupId: Long, val itemId: Long, val reaction: MsgReaction): CC()
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean, val fromChatType: ChatType, val fromChatId: Long, val fromScope: GroupChatScope?, val itemIds: List<Long>, val ttl: Int?): CC()
+  class ApiShareChatMsgContent(val shareChatType: ChatType, val shareChatId: Long, val toChatType: ChatType, val toChatId: Long, val toScope: GroupChatScope?, val sendAsGroup: Boolean): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
   class ApiNewPublicGroup(val userId: Long, val incognito: Boolean, val relayIds: List<Long>, val groupProfile: GroupProfile): CC()
   class ApiGetGroupRelays(val groupId: Long): CC()
@@ -3683,7 +3691,7 @@ sealed class CC {
   class APIAddContact(val userId: Long, val incognito: Boolean): CC()
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
-  class APIConnectPlan(val userId: Long, val connLink: String): CC()
+  class APIConnectPlan(val userId: Long, val connLink: String, val linkOwnerSig: LinkOwnerSig? = null): CC()
   class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData): CC()
   class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData): CC()
   class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
@@ -3790,7 +3798,7 @@ sealed class CC {
       val tag = if (contentTag == null) {
         ""
       } else {
-        " content=${contentTag.name.lowercase()}"
+        " content=${contentTag.cmdString}"
       }
       "/_get chat ${chatRef(type, id, scope)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
@@ -3821,6 +3829,9 @@ sealed class CC {
     is ApiForwardChatItems -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_forward ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) " as_group=on" else ""} ${chatRef(fromChatType, fromChatId, fromScope)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
+    }
+    is ApiShareChatMsgContent -> {
+      "/_share chat content ${chatRef(shareChatType, shareChatId, null)} ${chatRef(toChatType, toChatId, toScope)}${if (sendAsGroup) "(as_group=on)" else ""}"
     }
     is ApiPlanForwardChatItems -> {
       "/_forward plan ${chatRef(fromChatType, fromChatId, fromScope)} ${chatItemIds.joinToString(",")}"
@@ -3884,7 +3895,10 @@ sealed class CC {
     is APIAddContact -> "/_connect $userId incognito=${onOff(incognito)}"
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is ApiChangeConnectionUser -> "/_set conn user :$connId $userId"
-    is APIConnectPlan -> "/_connect plan $userId $connLink"
+    is APIConnectPlan -> {
+      val sigStr = if (linkOwnerSig != null) " sig=${json.encodeToString(linkOwnerSig)}" else ""
+      "/_connect plan $userId $connLink$sigStr"
+    }
     is APIPrepareContact -> "/_prepare contact $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} ${json.encodeToString(contactShortLinkData)}"
     is APIPrepareGroup -> "/_prepare group $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} direct=${onOff(directLink)} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
@@ -4003,6 +4017,7 @@ sealed class CC {
     is ApiChatItemReaction -> "apiChatItemReaction"
     is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"
+    is ApiShareChatMsgContent -> "apiShareChatMsgContent"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
     is ApiNewPublicGroup -> "apiNewPublicGroup"
@@ -6318,6 +6333,7 @@ sealed class CR {
   @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
+  @Serializable @SerialName("chatMsgContent") class ChatMsgContent(val user: UserRef, val msgContent: MsgContent): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
@@ -6506,6 +6522,7 @@ sealed class CR {
     is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
     is NewChatItems -> "newChatItems"
+    is ChatMsgContent -> "chatMsgContent"
     is ChatItemsStatusesUpdated -> "chatItemsStatusesUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
@@ -6686,6 +6703,7 @@ sealed class CR {
     is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
+    is ChatMsgContent -> withUser(user, msgContent.toString())
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
@@ -6841,6 +6859,12 @@ fun simplexChatLink(uri: String): String =
   else uri
 
 @Serializable
+sealed class OwnerVerification {
+  @Serializable @SerialName("verified") object Verified : OwnerVerification()
+  @Serializable @SerialName("failed") class Failed(val reason: String) : OwnerVerification()
+}
+
+@Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
@@ -6850,7 +6874,7 @@ sealed class ConnectionPlan {
 
 @Serializable
 sealed class InvitationLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null): InvitationLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): InvitationLinkPlan()
   @Serializable @SerialName("ownLink") object OwnLink: InvitationLinkPlan()
   @Serializable @SerialName("connecting") class Connecting(val contact_: Contact? = null): InvitationLinkPlan()
   @Serializable @SerialName("known") class Known(val contact: Contact): InvitationLinkPlan()
@@ -6858,7 +6882,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null): ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -6868,11 +6892,12 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
+  @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {

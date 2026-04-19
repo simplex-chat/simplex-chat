@@ -65,7 +65,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           withBGApi {
             openGroupChat(null, gInfo.groupId)
             ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, close = close)
+              GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, shareGroupInfo = gInfo, close = close)
             }
           }
         }
@@ -249,7 +249,7 @@ private fun ProfileStepView(
         ) {
           Box(contentAlignment = Alignment.TopEnd) {
             Box(contentAlignment = Alignment.Center) {
-              ProfileImage(108.dp, image = profileImage.value)
+              ProfileImage(108.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
               EditImageButton { scope.launch { bottomSheetModalState.show() } }
             }
             if (profileImage.value != null) {
@@ -376,7 +376,7 @@ private fun ProgressStepView(
         Modifier.fillMaxWidth().padding(bottom = 8.dp),
         contentAlignment = Alignment.Center
       ) {
-        ProfileImage(108.dp, image = gInfo.groupProfile.image)
+        ProfileImage(108.dp, image = gInfo.groupProfile.image, icon = MR.images.ic_bigtop_updates_circle_filled)
       }
       Text(
         gInfo.groupProfile.displayName,
@@ -547,9 +547,10 @@ fun relayDisplayName(relay: GroupRelay): String {
 
 
 @Composable
-fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false) {
-  val color = if (connFailed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
-  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else status.text
+fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, memberStatus: GroupMemberStatus? = null) {
+  val removed = memberStatus in listOf(GroupMemberStatus.MemLeft, GroupMemberStatus.MemRemoved, GroupMemberStatus.MemGroupDeleted)
+  val color = if (connFailed || removed) Color.Red else if (status == RelayStatus.RsActive) Color.Green else WarningYellow
+  val text = if (connFailed) generalGetString(MR.strings.relay_status_failed) else if (memberStatus == GroupMemberStatus.MemLeft) generalGetString(MR.strings.relay_conn_status_removed_by_operator) else status.text
   Row(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)

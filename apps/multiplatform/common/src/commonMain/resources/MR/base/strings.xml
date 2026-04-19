@@ -191,6 +191,8 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="unsupported_connection_link">Unsupported connection link</string>
   <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
+  <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
+  <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="connection_error_blocked">Connection blocked</string>
@@ -531,8 +533,21 @@
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
+  <string name="share_channel">Share channel…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
+  <string name="share_via_chat">Share via chat</string>
+  <string name="tap_to_open">Tap to open</string>
+  <string name="chat_link_channel">Channel link</string>
+  <string name="chat_link_group">Group link</string>
+  <string name="chat_link_business_address">Business address</string>
+  <string name="chat_link_contact_address">Contact address</string>
+  <string name="chat_link_one_time">One-time link</string>
+  <string name="chat_link_from_owner">(from owner)</string>
+  <string name="chat_link_signed">(signed)</string>
+  <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="owner_verification_passed">Link signature verified.</string>
+  <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -591,6 +606,7 @@
   <string name="cant_send_message_mem_removed">removed from group</string>
   <string name="cant_send_message_you_left">you left</string>
   <string name="cant_send_message_generic">can\'t send messages</string>
+  <string name="cant_broadcast_message">can\'t broadcast</string>
   <string name="you_are_observer">you are observer</string>
   <string name="reviewed_by_admins">reviewed by admins</string>
   <string name="cant_send_message_member_has_old_version">member has old version</string>
@@ -2881,17 +2897,30 @@
   <string name="relay_conn_status_connecting">connecting</string>
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
+  <string name="relay_conn_status_removed_by_operator">removed by operator</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
   <string name="relay_status_active">active</string>
+  <string name="relay_status_inactive">inactive</string>
 
   <!-- ComposeView.kt channel relay bars -->
+  <string name="relay_bar_all_relays_removed">All relays removed</string>
+  <string name="relay_bar_all_relays_failed">All relays failed</string>
+  <string name="relay_bar_no_active_relays">No active relays</string>
+  <string name="relay_bar_relays_removed">%1$d relays removed</string>
+  <string name="relay_bar_relays_failed">%1$d relays failed</string>
+  <string name="relay_bar_relays_not_active">%1$d relays not active</string>
   <string name="relay_bar_active_with_failures">%1$d/%2$d relays active, %3$d failed</string>
+  <string name="relay_bar_active_with_removed">%1$d/%2$d relays active, %3$d removed</string>
+  <string name="relay_bar_active_with_errors">%1$d/%2$d relays active, %3$d errors</string>
   <string name="relay_bar_active">%1$d/%2$d relays active</string>
   <string name="relay_bar_connected_with_errors">%1$d/%2$d relays connected, %3$d errors</string>
+  <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
+  <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_count">%1$d relays</string>
+  <string name="relay_bar_owner_no_delivery">Adding relays will be supported later.</string>
+  <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
   <string name="member_info_section_title_relay">RELAY</string>

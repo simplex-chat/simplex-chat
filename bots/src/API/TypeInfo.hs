@@ -214,6 +214,7 @@ toTypeInfo tr =
         "ProtocolServer",
         "SbKey",
         "SharedMsgId",
+        "Signature",
         "TransportHost",
         "UIColor",
         "UserPwd",

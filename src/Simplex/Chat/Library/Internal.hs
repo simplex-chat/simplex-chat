@@ -202,24 +202,22 @@ toggleNtf m ntfOn =
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> ShowGroupAsSender -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
-prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
-  (Nothing, Nothing) ->
-    let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender)
-     in pure (XMsgNew mc', Nothing)
-  (Nothing, Just _) ->
-    let mc' = MCForward $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender)
-     in pure (XMsgNew mc', Nothing)
-  (Just quotedItemId, Nothing) -> do
-    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
-      getGroupCIWithReactions db user g quotedItemId
-    (origQmc, qd, sent, member_) <- quoteData qci membership
-    let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
-        qmc = quoteContent mc origQmc file
-        (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
-        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
-        mc' = MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope (justTrue showGroupAsSender))
-    pure (XMsgNew mc', Just quotedItem)
-  (Just _, Just _) -> throwError SEInvalidQuote
+prepareGroupMsg db user g@GroupInfo {membership} msgScope showGroupAsSender mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = do
+  (mc', quotedItem_) <- case (quotedItemId_, itemForwarded) of
+    (Nothing, Nothing) -> pure (mcSimple mc, Nothing)
+    (Nothing, Just _) -> pure (mcForward mc, Nothing)
+    (Just quotedItemId, Nothing) -> do
+      CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
+        getGroupCIWithReactions db user g quotedItemId
+      (origQmc, qd, sent, member_) <- quoteData qci membership
+      let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = memberId' <$> member_}
+          qmc = quoteContent mc origQmc file
+          (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
+          quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
+      pure (mcQuote QuotedMsg {msgRef, content = qmc'} mc, Just quotedItem)
+    (Just _, Just _) -> throwError SEInvalidQuote
+  let mc'' = mc' {mentions = MsgMentions mentions, file = fInv_, ttl = ttl' <$> timed_, live = justTrue live, scope = msgScope, asGroup = justTrue showGroupAsSender}
+  pure (XMsgNew mc'', quotedItem_)
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, Maybe GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
@@ -343,7 +341,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) && not hostApprovalVoice = Just GFVoice
   | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
   | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
-  | isNothing scopeInfo && prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
+  | isNothing scopeInfo && prohibitedSimplexLinks gInfo m mc ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
     hostApprovalVoice
@@ -360,10 +358,14 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
       | sent = userRole >= GRModerator
       | otherwise = userRole < GRModerator
 
-prohibitedSimplexLinks :: GroupInfo -> GroupMember -> Maybe MarkdownList -> Bool
-prohibitedSimplexLinks gInfo m ft =
+prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Bool
+prohibitedSimplexLinks gInfo m mc ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
-    && maybe False (any ftIsSimplexLink) ft
+    && (isChatLink mc || maybe False (any ftIsSimplexLink) ft)
+  where
+    isChatLink = \case
+      MCChat {} -> True
+      _ -> False
 
 ftIsSimplexLink :: FormattedText -> Bool
 ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
@@ -1062,7 +1064,7 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
     let msg =
           if maxVersion (memberChatVRange m) >= groupKnockingVersion
             then XGrpLinkAcpt GAPendingReview memberRole memberId
-            else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
+            else XMsgNew $ mcSimple (MCText pendingReviewMessage)
     void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   let rcpModMs = filter shouldIntroduceToMod modMs
@@ -1200,7 +1202,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
       | useRelays' gInfo = Nothing
       | m `supportsVersion` groupHistoryIncludeWelcomeVersion = do
           let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
-          fmap (\descr -> XMsgNew $ MCSimple $ extMsgContent (MCText descr) Nothing) description
+          fmap (\descr -> XMsgNew $ mcSimple (MCText descr)) description
       | otherwise = Nothing
     itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
     itemForwardEvents cci = case cci of
@@ -1347,15 +1349,19 @@ groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {public
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
-getShortLinkConnReq nm user@User {userChatRelay} l = do
+getShortLinkConnReq' :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
+getShortLinkConnReq' nm user l = do
   l' <- restoreShortLink' l
-  (fd, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
+getShortLinkConnReq nm user l = do
+  (fd, cData) <- getShortLinkConnReq' nm user l
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
       | not supported -> throwChatError CEUnsupportedConnReq
       where
-        supported = direct || not (null relays) || isTrue userChatRelay
+        supported = direct || not (null relays)
     _ -> pure ()
   pure (fd, cData)
 

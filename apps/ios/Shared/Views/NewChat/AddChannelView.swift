@@ -47,7 +47,7 @@ struct AddChannelView: View {
             Group {
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128)
+                        ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
                         if profile.image != nil {
                             Button {
                                 profile.image = nil
@@ -256,7 +256,7 @@ struct AddChannelView: View {
         let total = groupRelays.count
         return List {
             Group {
-                ProfileImage(imageStr: gInfo.groupProfile.image, size: 128)
+                ProfileImage(imageStr: gInfo.groupProfile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 Text(gInfo.groupProfile.displayName)
@@ -373,7 +373,8 @@ struct AddChannelView: View {
             groupLinkMemberRole: Binding.constant(.observer), // TODO [relays] starting role should be communicated in protocol from owner to relays
             showTitle: false,
             creatingGroup: true,
-            isChannel: true
+            isChannel: true,
+            groupInfo: gInfo
         ) {
             m.creatingChannelId = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -428,9 +429,10 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     return "relay \(relay.groupRelayId)"
 }
 
-func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false) -> some View {
-    let color: Color = connFailed ? .red : (status == .rsActive ? .green : .yellow)
-    let text: LocalizedStringKey = connFailed ? "failed" : status.text
+func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, memberStatus: GroupMemberStatus? = nil) -> some View {
+    let removed = memberStatus.map { [.memLeft, .memRemoved, .memGroupDeleted].contains($0) } ?? false
+    let color: Color = connFailed || removed ? .red : (status == .rsActive ? .green : .yellow)
+    let text: LocalizedStringKey = connFailed ? "failed" : memberStatus == .memLeft ? "removed by operator" : status.text
     return HStack(spacing: 4) {
         Circle()
             .fill(color)

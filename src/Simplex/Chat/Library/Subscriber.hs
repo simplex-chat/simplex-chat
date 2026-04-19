@@ -700,7 +700,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
             void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
           _ -> do
-            (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
+            (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
 
@@ -987,7 +987,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 checkSendAsGroup asGroup $
                   memberCanSend (Just m'') scope $ newGroupContentMessage gInfo' (Just m'') mc msg brokerTs False
                 where
-                  ExtMsgContent {scope, asGroup} = mcExtMsgContent mc
+                  MsgContainer {scope, asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
@@ -1217,7 +1217,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
             void $ sendGroupMessage' user gInfo [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
           _ -> do
-            msg <- sendGroupMessage' user gInfo [m] $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
+            msg <- sendGroupMessage' user gInfo [m] $ XMsgNew $ mcSimple mc
             ci <- saveSndChatItem user (CDGroupSnd gInfo Nothing) msg (CISndMsgContent mc)
             withStore' $ \db -> createGroupSndStatus db (chatItemId' ci) (groupMemberId' m) GSSNew
             toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing) ci]
@@ -1526,7 +1526,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     muteEventInChannel :: GroupInfo -> GroupMember -> Bool
     muteEventInChannel gInfo@GroupInfo {membership} m =
-      useRelays' gInfo && memberRole' membership < GRModerator && not (isRelay membership) && memberRole' m < GRModerator
+      useRelays' gInfo
+        && not (isRelay membership) -- relay users see all events
+        && not (isRelay m) -- relay events (e.g. leave) are visible to all
+        && memberRole' membership < GRModerator
+        && memberRole' m < GRModerator
 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
     memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
@@ -1726,7 +1730,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
-      let ExtMsgContent content _ fInv_ _ _ _ _ = mcExtMsgContent mc
+      let MsgContainer {content = c, file = fInv_} = mc
+      content <- case c of
+        MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> do
+          keepSig <- case contactConn ct of
+            Nothing -> pure False
+            Just conn -> do
+              adHash <- withAgent (`getConnectionRatchetAdHash` aConnId conn)
+              pure $ encodeChatBinding CBDirect adHash == binding
+          pure $ if keepSig then c else MCChat {text, chatLink, ownerSig = Nothing}
+        _ -> pure c
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
@@ -1737,7 +1750,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then do
           void $ newChatItem (ciContentNoParse $ CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
         else do
-          let ExtMsgContent _ _ _ itemTTL live_ _ _ = mcExtMsgContent mc
+          let MsgContainer {ttl = itemTTL, live = live_} = mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
@@ -1979,7 +1992,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed_ gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
         live' = fromMaybe False live_
-        ExtMsgContent content mentions fInv_ itemTTL live_ msgScope_ asGroup_ = mcExtMsgContent mc
+        MsgContainer {content = c, mentions = MsgMentions mentions, file = fInv_, ttl = itemTTL, live = live_, scope = msgScope_, asGroup = asGroup_} = mc
+        content = case c of
+          MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> case publicGroup of
+            Just pgp | maybe False (binding ==) (expectedBinding pgp) -> c
+            _ -> MCChat {text, chatLink, ownerSig = Nothing}
+          _ -> c
+        expectedBinding PublicGroupProfile {publicGroupId}
+          | sentAsGroup = Just $ encodeChatBinding CBChannel (smpEncode publicGroupId)
+          | otherwise = (\GroupMember {memberId} -> encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))) <$> m_
+        GroupInfo {groupProfile = GroupProfile {publicGroup}} = gInfo
         sentAsGroup = asGroup_ == Just True
         ts@(_, ft_) = msgContentTexts content
         -- m' is Maybe GroupMember
@@ -2021,7 +2043,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let fileMember_ = if sentAsGroup then Nothing else m'
            in processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_
         newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed live = do
-          let mentions' = if maybe False memberBlocked m' then [] else mentions
+          let mentions' = if maybe False memberBlocked m' then M.empty else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed live mentions'
           ci' <- maybe (pure ci) (\m -> blockedMemberCI gInfo' m ci) m'
           let memberId_ = memberId' <$> m'
@@ -2030,7 +2052,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     groupMessageUpdate :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
     groupMessageUpdate gInfo@GroupInfo {groupId} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_ asGroup_
-      | Just m <- m_, prohibitedSimplexLinks gInfo m ft_ =
+      | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
       | otherwise = do
           updateRcvChatItem `catchCINotFound` \_ -> do
@@ -3120,6 +3142,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
+      when (isRelay m) $
+        withStore' $ \db -> do
+          relay_ <- runExceptT $ getGroupRelayByGMId db (groupMemberId' m)
+          forM_ relay_ $ \relay -> void $ updateRelayStatus db relay RSInactive
       gInfo'' <- updatePublicGroupData user gInfo'
       unless (muteEventInChannel gInfo'' m) $ do
         (gInfo''', m', scopeInfo) <- mkGroupChatScope gInfo'' m
@@ -3290,7 +3316,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgNew mc ->
               void $ memberCanSend author_ scope $ newGroupContentMessage gInfo author_ mc rcvMsg msgTs True
               where
-                ExtMsgContent {scope} = mcExtMsgContent mc
+                MsgContainer {scope} = mc
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
@@ -3698,7 +3724,7 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq NRMBackground user reqGroupLink
+              (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do

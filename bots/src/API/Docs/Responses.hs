@@ -132,6 +132,7 @@ undocumentedResponses =
     "CRChatItemInfo",
     "CRChatItems",
     "CRChatItemTTL",
+    "CRChatMsgContent",
     "CRChatRelayTestResult",
     "CRChats",
     "CRConnectionsDiff",
