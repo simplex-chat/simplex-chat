@@ -25,12 +25,13 @@ fun ComposeChatLinkView(
     Modifier
       .fillMaxWidth()
       .padding(top = 8.dp)
-      .background(sentColor),
+      .background(sentColor)
+      .padding(start = 12.dp, top = 12.dp, bottom = 12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    ProfileImage(size = 60.dp, image = chatLink.image, icon = chatLink.iconRes)
+    ProfileImage(size = 44.dp, image = chatLink.image, icon = chatLink.iconRes)
     Column(
-      Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp)
+      Modifier.fillMaxWidth().weight(1f).padding(horizontal = 10.dp)
     ) {
       Text(chatLink.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
       chatLink.shortDescription?.let { descr ->
