@@ -2665,4 +2665,17 @@
     <string name="relay_bar_connected_with_removed">%1$d/%2$d átjátszó kapcsolódott, %3$d eltávolítva</string>
     <string name="relay_bar_owner_no_delivery">Az átjátszók hozzáadása később lesz támogatott.</string>
     <string name="relay_bar_subscriber_waiting">Várakozás a csatorna tulajdonosára az átjátszók hozzáadásához.</string>
+    <string name="chat_link_business_address">Üzleti cím</string>
+    <string name="chat_link_channel">Csatornahivatkozás</string>
+    <string name="chat_link_contact_address">Kapcsolattartási cím</string>
+    <string name="error_sharing_channel">Hiba a csatorna megosztásakor</string>
+    <string name="chat_link_from_owner">(a tulajdonostól)</string>
+    <string name="chat_link_group">Csoporthivatkozás</string>
+    <string name="owner_verification_passed">Hivatkozás aláírása ellenőrizve.</string>
+    <string name="chat_link_one_time">Egyszer használható meghívó</string>
+    <string name="share_channel">Csatorna megosztása…</string>
+    <string name="share_via_chat">Megosztás egy csevegésen keresztül</string>
+    <string name="owner_verification_failed">⚠️ Nem sikerült ellenőrizni az aláírást: %s.</string>
+    <string name="chat_link_signed">(aláírva)</string>
+    <string name="tap_to_open">Koppintson a megnyitás gombra</string>
 </resources>
