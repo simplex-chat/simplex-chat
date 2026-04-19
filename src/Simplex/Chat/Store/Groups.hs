@@ -2958,8 +2958,8 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   where
     VersionRange minV maxV = vr
 
-createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
-createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId ownerKey = do
+createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> C.PublicKeyEd25519 -> Maybe ContactId -> ExceptT StoreError IO GroupMember
+createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId ownerKey contactId_ = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName $ nameFromMemberId memberId
   (localDisplayName, profileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2975,7 +2975,7 @@ createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (groupId, indexInGroup, memberId, GROwner, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
-          :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, ownerKey, currentTs, currentTs)
+          :. (userId, localDisplayName, contactId_, profileId, ownerKey, currentTs, currentTs)
           :. (minV, maxV)
       )
   groupMemberId <- liftIO $ insertedRowId db

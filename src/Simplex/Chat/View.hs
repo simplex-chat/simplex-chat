@@ -2094,7 +2094,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m} -> case preparedGroup of
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ -> case preparedGroup of
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g

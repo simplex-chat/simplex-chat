@@ -769,15 +769,18 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contact
 
 data GroupType
   = GTChannel
+  | GTGroup
   | GTUnknown Text
   deriving (Eq, Show)
 
 instance TextEncoding GroupType where
   textEncode = \case
     GTChannel -> "channel"
+    GTGroup -> "group"
     GTUnknown tag -> tag
   textDecode s = Just $ case s of
     "channel" -> GTChannel
+    "group" -> GTGroup
     tag -> GTUnknown tag
 
 instance FromField GroupType where fromField = fromTextField_ textDecode
