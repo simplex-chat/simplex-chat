@@ -1971,7 +1971,7 @@ testRegisterChannelViaCard ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob .<## "added 'SimpleX Directory" -- may have _1 suffix due to name collision
+            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
           ]
         -- after owner member is announced, bot transitions to GRSPendingApproval
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."

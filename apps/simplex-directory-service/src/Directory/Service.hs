@@ -235,7 +235,7 @@ directoryService st opts cfg = do
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc ->
     raceAny_ $
-      [ forever $ void getLine,
+      [ forever $ threadDelay maxBound,
         forever $ do
           (_, resp) <- atomically . readTBQueue $ outputQ cc
           directoryServiceEvent st opts env user cc resp
