@@ -94,6 +94,7 @@ crDirectoryEvent_ = \case
   CEvtDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
   CEvtGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
   CEvtUnknownMemberAnnounced {groupInfo, unknownMember, announcedMember} -> Just $ DEOwnerMemberAnnounced {groupInfo, unknownMember, announcedMember}
+  CEvtJoinedGroupMemberConnecting {groupInfo, member} -> Just $ DEOwnerMemberAnnounced {groupInfo, unknownMember = member, announcedMember = member}
   CEvtChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
   CEvtChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
   CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->

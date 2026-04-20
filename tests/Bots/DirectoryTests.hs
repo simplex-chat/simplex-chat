@@ -7,7 +7,9 @@
 module Bots.DirectoryTests where
 
 import ChatClient
+import ChatTests.ChatRelays (withRelay)
 import ChatTests.DBUtils
+import ChatTests.Groups (prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
@@ -85,6 +87,8 @@ directoryServiceTests = do
   describe "help commands" $ do
     it "should not list audio command" testHelpNoAudio
     it "should reject audio command in DM" testAudioCommandInDM
+  describe "public group registration" $ do
+    it "should register channel via shared link card" testRegisterChannelViaCard
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
@@ -1939,6 +1943,22 @@ testAudioCommandInDM ps =
       bob #> "@'SimpleX Directory' /audio"
       bob <# "'SimpleX Directory'> > /audio"
       bob <## "      Unknown command"
+
+testRegisterChannelViaCard :: HasCallStack => TestParams -> IO ()
+testRegisterChannelViaCard ps =
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        -- bob connects to directory service first
+        bob `connectVia` dsLink
+        -- bob creates a channel with a relay
+        (_shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        -- bob shares the channel card with directory bot
+        bob ##> "/share chat #news @'SimpleX Directory'"
+        bob <# "@'SimpleX Directory' link to join channel #news (signed):"
+        _ <- getTermLine bob -- ownerSig line
+        -- directory bot should validate and reply
+        bob <# "'SimpleX Directory'> Joining the channel news…"
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do

@@ -54,9 +54,9 @@ import Simplex.Chat.Core
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink, MsgContent (..), memberSupportVoiceVersion)
+import Simplex.Chat.Protocol (GroupShortLinkData (..), LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
 import Simplex.Chat.Store.Direct (getContact)
-import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, setGroupCustomData) -- TODO remove setGroupCustomData
+import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getGroupMemberByMemberId, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -65,7 +65,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
@@ -806,10 +806,70 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
 
     deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
-    deChatLinkReceived _ct _chatLink _ownerSig = pure () -- TODO implement per plan
+    deChatLinkReceived ct chatLink ownerSig_ = case chatLink of
+      MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just _}} -> case ownerSig_ of
+        Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)} -> do
+          let link = ACL SCMContact $ CLShort connLink
+              mId = MemberId oIdBytes
+          sendChatCmd cc (APIConnectPlan userId (Just link) True (Just ownerSig)) >>= \case
+            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) -> case plan of
+              CPGroupLink (GLPOk {groupSLinkData_ = Just groupSLinkData, ownerVerification = Just OVVerified}) -> do
+                let GroupShortLinkData {groupProfile = GroupProfile {displayName}} = groupSLinkData
+                sendMessage cc ct $ "Joining the channel " <> displayName <> "…"
+                let ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
+                sendChatCmd cc (APIPrepareGroup userId ccLink False groupSLinkData) >>= \case
+                  Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) ->
+                    sendChatCmd cc (APIConnectPreparedGroup (groupId' gInfo) False (Just ownerContact) Nothing) >>= \case
+                      Right CRStartedConnectionToGroup {groupInfo = gInfo'} ->
+                        withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user gInfo' mId) >>= \case
+                          Right ownerMember ->
+                            addGroupReg notifyAdminUsers st cc ct gInfo' GRSProposed $ \_ -> do
+                              void $ setGroupRegOwner cc (groupId' gInfo') ownerMember
+                              logInfo $ "registered public group " <> viewGroupName gInfo'
+                          Left e -> do
+                            logError $ "could not find owner member: " <> T.pack e
+                            sendMessage cc ct "Error: could not find owner member after joining. Please report it to directory admins."
+                      _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
+                  _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
+              CPGroupLink (GLPOk {ownerVerification = Just (OVFailed reason)}) ->
+                sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
+              CPGroupLink (GLPOk {ownerVerification = Nothing}) ->
+                sendMessage cc ct "Error: could not verify channel ownership. Please report it to directory admins."
+              CPGroupLink (GLPOk {groupSLinkData_ = Nothing}) ->
+                sendMessage cc ct "Error: no channel information available via the link."
+              CPGroupLink (GLPKnown {groupInfo = g, ownerVerification = Just OVVerified, groupSLinkData_}) ->
+                deReregistration ct g ownerSig groupSLinkData_
+              CPGroupLink (GLPKnown {ownerVerification = Just (OVFailed reason)}) ->
+                sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
+              CPGroupLink (GLPKnown {ownerVerification = Nothing}) ->
+                sendMessage cc ct "Error: could not verify ownership."
+              CPGroupLink (GLPConnectingProhibit _) ->
+                sendMessage cc ct "Already connecting to this channel."
+              CPGroupLink GLPConnectingConfirmReconnect ->
+                sendMessage cc ct "Already connecting to this channel."
+              CPGroupLink (GLPNoRelays _) ->
+                sendMessage cc ct "Channel has no active relays. Please try again later."
+              _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
+            _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
+        Just _ -> sendMessage cc ct "To add a channel to directory you must be the owner."
+        Nothing -> sendMessage cc ct "To add a channel to directory you must be the owner."
+      _ -> sendMessage cc ct "Only channels can be added to directory via link."
+
+    deReregistration :: Contact -> GroupInfo -> LinkOwnerSig -> Maybe GroupShortLinkData -> IO ()
+    deReregistration _ct _g _ownerSig _groupSLinkData_ = pure () -- TODO implement re-registration per plan
 
     deOwnerMemberAnnounced :: GroupInfo -> GroupMember -> GroupMember -> IO ()
-    deOwnerMemberAnnounced _g _unknownMember _announcedMember = pure () -- TODO implement per plan
+    deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} _unknownMember announcedMember = do
+      withGroupReg g "owner member announced" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} ->
+        when (groupRegStatus == GRSProposed && dbOwnerMemberId == Just (groupMemberId' announcedMember)) $
+          let GroupMember {memberRole = role} = announcedMember
+          in if role >= GROwner
+            then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
+              notifyOwner gr' $ "Joined the channel " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
+              sendToApprove g gr' 1
+            else do
+              setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
+              sendMessage' cc (dbContactId gr) "The signing key does not belong to a current owner. Registration cancelled."
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case
