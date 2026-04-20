@@ -46,45 +46,70 @@ public enum PresetWallpaper: CaseIterable {
 
     public var background: [DefaultTheme: Color] {
         switch self {
-        case .cats: wallpaperBackgrounds(light: "#ffF8F6EA")
-        case .flowers: wallpaperBackgrounds(light: "#ffE2FFE4")
-        case .hearts: wallpaperBackgrounds(light: "#ffFDECEC")
-        case .kids: wallpaperBackgrounds(light: "#ffdbfdfb")
+        case .cats: [
+            DefaultTheme.LIGHT: oklch(0.9714242, 0.01596467, 98.99223),
+            DefaultTheme.DARK: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
+        ]
+        case .flowers: [
+            DefaultTheme.LIGHT: oklch(0.9718878, 0.04671557, 147.1246),
+            DefaultTheme.DARK: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
+        ]
+        case .hearts: [
+            DefaultTheme.LIGHT: oklch(0.9565624, 0.01848713, 17.48077),
+            DefaultTheme.DARK: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
+        ]
+        case .kids: [
+            DefaultTheme.LIGHT: oklch(0.9693045, 0.03516977, 192.2433),
+            DefaultTheme.DARK: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
+        ]
         case .school: [
             DefaultTheme.LIGHT: oklch(0.9626785, 0.02004578, 238.6614),
             DefaultTheme.DARK: oklch(0.2024453, 0.03849037, 273.4875),
             DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
             DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
         ]
-        case .travel: wallpaperBackgrounds(light: "#fff9eeff")
+        case .travel: [
+            DefaultTheme.LIGHT: oklch(0.9626377, 0.0253131, 313.9639),
+            DefaultTheme.DARK: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
+            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
+        ]
         }
     }
 
     public var tint: [DefaultTheme: Color] {
         switch self {
         case .cats: [
-            DefaultTheme.LIGHT: "#ffefdca6".colorFromReadableHex(),
-            DefaultTheme.DARK: "#ff4b3b0e".colorFromReadableHex(),
-            DefaultTheme.SIMPLEX: "#ff51400f".colorFromReadableHex(),
-            DefaultTheme.BLACK: "#ff4b3b0e".colorFromReadableHex()
+            DefaultTheme.LIGHT: oklch(0.897064, 0.07281305, 90.95935),
+            DefaultTheme.DARK: oklch(0.3603656, 0.0643012, 88.54155),
+            DefaultTheme.SIMPLEX: oklch(0.3797781, 0.06842897, 88.88896),
+            DefaultTheme.BLACK: oklch(0.3603656, 0.0643012, 88.54155)
         ]
         case .flowers: [
-            DefaultTheme.LIGHT: "#ff9CEA59".colorFromReadableHex(),
-            DefaultTheme.DARK: "#ff31560D".colorFromReadableHex(),
-            DefaultTheme.SIMPLEX: "#ff36600f".colorFromReadableHex(),
-            DefaultTheme.BLACK: "#ff31560D".colorFromReadableHex()
+            DefaultTheme.LIGHT: oklch(0.8574244, 0.1932141, 133.0531),
+            DefaultTheme.DARK: oklch(0.3183068, 0.07771506, 136.6477),
+            DefaultTheme.SIMPLEX: oklch(0.3384358, 0.08523031, 136.3517),
+            DefaultTheme.BLACK: oklch(0.3183068, 0.07771506, 136.6477)
         ]
         case .hearts: [
-            DefaultTheme.LIGHT: "#fffde0e0".colorFromReadableHex(),
-            DefaultTheme.DARK: "#ff3c0f0f".colorFromReadableHex(),
-            DefaultTheme.SIMPLEX: "#ff411010".colorFromReadableHex(),
-            DefaultTheme.BLACK: "#ff3C0F0F".colorFromReadableHex()
+            DefaultTheme.LIGHT: oklch(0.7986557, 0.1086374, 14.80189),
+            DefaultTheme.DARK: oklch(0.25332, 0.06915632, 12.58639),
+            DefaultTheme.SIMPLEX: oklch(0.267816, 0.07407809, 16.28852),
+            DefaultTheme.BLACK: oklch(0.25332, 0.06915632, 12.58639)
         ]
         case .kids: [
-            DefaultTheme.LIGHT: "#ffadeffc".colorFromReadableHex(),
-            DefaultTheme.DARK: "#ff16404B".colorFromReadableHex(),
-            DefaultTheme.SIMPLEX: "#ff184753".colorFromReadableHex(),
-            DefaultTheme.BLACK: "#ff16404B".colorFromReadableHex()
+            DefaultTheme.LIGHT: oklch(0.8721581, 0.1030755, 189.3001),
+            DefaultTheme.DARK: oklch(0.3107921, 0.04607738, 186.1605),
+            DefaultTheme.SIMPLEX: oklch(0.3306122, 0.05137846, 185.1468),
+            DefaultTheme.BLACK: oklch(0.3107921, 0.04607738, 186.1605)
         ]
         case .school: [
             DefaultTheme.LIGHT: oklch(0.9252349, 0.04096641, 238.0518),
@@ -93,10 +118,10 @@ public enum PresetWallpaper: CaseIterable {
             DefaultTheme.BLACK: oklch(0.2700986, 0.04630937, 241.5568)
         ]
         case .travel: [
-            DefaultTheme.LIGHT: "#ffeedbfe".colorFromReadableHex(),
-            DefaultTheme.DARK: "#ff311E48".colorFromReadableHex(),
-            DefaultTheme.SIMPLEX: "#ff35204e".colorFromReadableHex(),
-            DefaultTheme.BLACK: "#ff311E48".colorFromReadableHex()
+            DefaultTheme.LIGHT: oklch(0.9174161, 0.05105522, 309.6281),
+            DefaultTheme.DARK: oklch(0.2817417, 0.07665313, 302.6645),
+            DefaultTheme.SIMPLEX: oklch(0.2948376, 0.08277514, 302.7197),
+            DefaultTheme.BLACK: oklch(0.2817417, 0.07665313, 302.6645)
         ]
         }
     }
@@ -104,107 +129,107 @@ public enum PresetWallpaper: CaseIterable {
     public var colors: [DefaultTheme: ResolvedColors] {
         switch self {
         case .cats: [
-            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#fffffaed",
-                sentQuote: "#fffaf0d6",
-                receivedMessage: "#ffF8F7F4",
-                receivedQuote: "#ffefede9"
-            )),
-            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff2f2919",
-                sentQuote: "#ff473a1d",
-                receivedMessage: "#ff272624",
-                receivedQuote: "#ff373633"
-            )),
-            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff41371b",
-                sentQuote: "#ff654f1c",
-                receivedMessage: "#ff272624",
-                receivedQuote: "#ff373633"
-            )),
-            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff41371b",
-                sentQuote: "#ff654f1c",
-                receivedMessage: "#ff1f1e1b",
-                receivedQuote: "#ff2f2d27"
+            DefaultTheme.LIGHT: ResolvedColors(
+                sentMessage: oklch(0.9854474, 0.01790464, 89.3544),
+                sentQuote: oklch(0.9562038, 0.0357691, 89.44265),
+                receivedMessage: oklch(0.9760699, 0.004115805, 91.44609),
+                receivedQuote: oklch(0.9465333, 0.005762915, 84.56661)
+            ),
+            DefaultTheme.DARK: ResolvedColors(
+                sentMessage: oklch(0.2827141, 0.02844628, 89.80136),
+                sentQuote: oklch(0.3550253, 0.04770112, 85.80835),
+                receivedMessage: oklch(0.2689313, 0.003935312, 84.58291),
+                receivedQuote: oklch(0.332832, 0.005361989, 91.54412)
+            ),
+            DefaultTheme.SIMPLEX: ResolvedColors(
+                sentMessage: oklch(0.3402031, 0.04537511, 90.2498),
+                sentQuote: oklch(0.4398707, 0.0737883, 85.23908),
+                receivedMessage: oklch(0.2689313, 0.003935312, 84.58291),
+                receivedQuote: oklch(0.332832, 0.005361989, 91.54412)
+            ),
+            DefaultTheme.BLACK: ResolvedColors(
+                sentMessage: oklch(0.3402031, 0.04537511, 90.2498),
+                sentQuote: oklch(0.4398707, 0.0737883, 85.23908),
+                receivedMessage: oklch(0.2349937, 0.005828091, 91.60813),
+                receivedQuote: oklch(0.2971596, 0.01092985, 91.6846)
             )
         ]
         case .flowers: [
-            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#fff1ffe5",
-                sentQuote: "#ffdcf9c4",
-                receivedMessage: "#ffF4F8F2",
-                receivedQuote: "#ffe7ece7"
-            )),
-            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff163521",
-                sentQuote: "#ff1B5330",
-                receivedMessage: "#ff242523",
-                receivedQuote: "#ff353733"
-            )),
-            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff184739",
-                sentQuote: "#ff1F6F4B",
-                receivedMessage: "#ff242523",
-                receivedQuote: "#ff353733"
-            )),
-            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff184739",
-                sentQuote: "#ff1F6F4B",
-                receivedMessage: "#ff1c1f1a",
-                receivedQuote: "#ff282b25"
+            DefaultTheme.LIGHT: ResolvedColors(
+                sentMessage: oklch(0.9795341, 0.03522444, 133.5366),
+                sentQuote: oklch(0.9336828, 0.07752936, 133.1505),
+                receivedMessage: oklch(0.9694833, 0.007316795, 132.4149),
+                receivedQuote: oklch(0.9357576, 0.01475573, 132.4773)
+            ),
+            DefaultTheme.DARK: ResolvedColors(
+                sentMessage: oklch(0.2829779, 0.05664382, 137.7101),
+                sentQuote: oklch(0.3779453, 0.09538202, 137.6479),
+                receivedMessage: oklch(0.269555, 0.006171017, 134.9414),
+                receivedQuote: oklch(0.3480199, 0.007943601, 137.802)
+            ),
+            DefaultTheme.SIMPLEX: ResolvedColors(
+                sentMessage: oklch(0.3464215, 0.08494502, 141.0868),
+                sentQuote: oklch(0.4739489, 0.1235496, 140.5453),
+                receivedMessage: oklch(0.269555, 0.006171017, 134.9414),
+                receivedQuote: oklch(0.3480199, 0.007943601, 137.802)
+            ),
+            DefaultTheme.BLACK: ResolvedColors(
+                sentMessage: oklch(0.3464215, 0.08494502, 141.0868),
+                sentQuote: oklch(0.4739489, 0.1235496, 140.5453),
+                receivedMessage: oklch(0.231738, 0.006406116, 134.9656),
+                receivedQuote: oklch(0.304409, 0.009754443, 132.6025)
             )
         ]
         case .hearts: [
-            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#fffff4f4",
-                sentQuote: "#ffffdfdf",
-                receivedMessage: "#fff8f6f6",
-                receivedQuote: "#ffefebeb"
-            )),
-            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff301515",
-                sentQuote: "#ff4C1818",
-                receivedMessage: "#ff242121",
-                receivedQuote: "#ff3b3535"
-            )),
-            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff491A28",
-                sentQuote: "#ff761F29",
-                receivedMessage: "#ff242121",
-                receivedQuote: "#ff3b3535"
-            )),
-            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff491A28",
-                sentQuote: "#ff761F29",
-                receivedMessage: "#ff1f1b1b",
-                receivedQuote: "#ff2e2626"
+            DefaultTheme.LIGHT: ResolvedColors(
+                sentMessage: oklch(0.9543917, 0.02302169, 10.95497),
+                sentQuote: oklch(0.9097407, 0.04732327, 11.58726),
+                receivedMessage: oklch(0.9716819, 0.002138744, 17.19447),
+                receivedQuote: oklch(0.9446311, 0.002154032, 17.19577)
+            ),
+            DefaultTheme.DARK: ResolvedColors(
+                sentMessage: oklch(0.2586266, 0.03317007, 16.50844),
+                sentQuote: oklch(0.336993, 0.05366197, 11.41689),
+                receivedMessage: oklch(0.2681172, 0.004799012, 355.0992),
+                receivedQuote: oklch(0.3440906, 0.004499214, 354.9628)
+            ),
+            DefaultTheme.SIMPLEX: ResolvedColors(
+                sentMessage: oklch(0.3319502, 0.07553982, 5.77679),
+                sentQuote: oklch(0.3914789, 0.1003936, 7.041932),
+                receivedMessage: oklch(0.2681172, 0.004799012, 355.0992),
+                receivedQuote: oklch(0.3440906, 0.004499214, 354.9628)
+            ),
+            DefaultTheme.BLACK: ResolvedColors(
+                sentMessage: oklch(0.3319502, 0.07553982, 5.77679),
+                sentQuote: oklch(0.3914789, 0.1003936, 7.041932),
+                receivedMessage: oklch(0.2387909, 0.004945965, 355.1783),
+                receivedQuote: oklch(0.3006853, 0.004658511, 355.0313)
             )
         ]
         case .kids: [
-            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ffeafeff",
-                sentQuote: "#ffcbf4f7",
-                receivedMessage: "#fff3fafa",
-                receivedQuote: "#ffe4efef"
-            )),
-            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff16302F",
-                sentQuote: "#ff1a4a49",
-                receivedMessage: "#ff252626",
-                receivedQuote: "#ff373A39"
-            )),
-            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff1a4745",
-                sentQuote: "#ff1d6b69",
-                receivedMessage: "#ff252626",
-                receivedQuote: "#ff373a39"
-            )),
-            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff1a4745",
-                sentQuote: "#ff1d6b69",
-                receivedMessage: "#ff1e1f1f",
-                receivedQuote: "#ff262b29"
+            DefaultTheme.LIGHT: ResolvedColors(
+                sentMessage: oklch(0.9816451, 0.02600448, 193.8135),
+                sentQuote: oklch(0.9476761, 0.05463824, 193.449),
+                receivedMessage: oklch(0.9743321, 0.006487189, 185.2751),
+                receivedQuote: oklch(0.9380073, 0.0109707, 182.8632)
+            ),
+            DefaultTheme.DARK: ResolvedColors(
+                sentMessage: oklch(0.2964424, 0.03780104, 189.8327),
+                sentQuote: oklch(0.3897975, 0.05223659, 187.8233),
+                receivedMessage: oklch(0.2696843, 0.004349819, 196.8988),
+                receivedQuote: oklch(0.346296, 0.008286395, 184.8154)
+            ),
+            DefaultTheme.SIMPLEX: ResolvedColors(
+                sentMessage: oklch(0.3665172, 0.05344185, 180.3469),
+                sentQuote: oklch(0.486998, 0.07291723, 181.2082),
+                receivedMessage: oklch(0.2696843, 0.004349819, 196.8988),
+                receivedQuote: oklch(0.346296, 0.008286395, 184.8154)
+            ),
+            DefaultTheme.BLACK: ResolvedColors(
+                sentMessage: oklch(0.3665172, 0.05344185, 180.3469),
+                sentQuote: oklch(0.486998, 0.07291723, 181.2082),
+                receivedMessage: oklch(0.2318771, 0.004503036, 196.8468),
+                receivedQuote: oklch(0.2999201, 0.007224831, 182.5153)
             )
         ]
         case .school: [
@@ -234,29 +259,29 @@ public enum PresetWallpaper: CaseIterable {
             )
         ]
         case .travel: [
-            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#fffcf6ff",
-                sentQuote: "#fff2e0fc",
-                receivedMessage: "#ffF6F4F7",
-                receivedQuote: "#ffede9ee"
-            )),
-            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff33263B",
-                sentQuote: "#ff53385E",
-                receivedMessage: "#ff272528",
-                receivedQuote: "#ff3B373E"
-            )),
-            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff3C255D",
-                sentQuote: "#ff623485",
-                receivedMessage: "#ff26273B",
-                receivedQuote: "#ff3A394F"
-            )),
-            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
-                sentMessage: "#ff3C255D",
-                sentQuote: "#ff623485",
-                receivedMessage: "#ff231f23",
-                receivedQuote: "#ff2c2931"
+            DefaultTheme.LIGHT: ResolvedColors(
+                sentMessage: oklch(0.9803204, 0.01342671, 314.7601),
+                sentQuote: oklch(0.9294779, 0.04197705, 313.6968),
+                receivedMessage: oklch(0.9695303, 0.004487354, 314.8044),
+                receivedQuote: oklch(0.9385522, 0.007899312, 319.4466)
+            ),
+            DefaultTheme.DARK: ResolvedColors(
+                sentMessage: oklch(0.2929984, 0.04120036, 312.1162),
+                sentQuote: oklch(0.3876602, 0.07087001, 315.7654),
+                receivedMessage: oklch(0.2678179, 0.006190444, 314.7144),
+                receivedQuote: oklch(0.3435397, 0.01317027, 310.9424)
+            ),
+            DefaultTheme.SIMPLEX: ResolvedColors(
+                sentMessage: oklch(0.3234681, 0.09690244, 299.9634),
+                sentQuote: oklch(0.4226042, 0.1341495, 307.8573),
+                receivedMessage: oklch(0.2812692, 0.03669397, 281.5485),
+                receivedQuote: oklch(0.355058, 0.03791292, 286.3773)
+            ),
+            DefaultTheme.BLACK: ResolvedColors(
+                sentMessage: oklch(0.3234681, 0.09690244, 299.9634),
+                sentQuote: oklch(0.4226042, 0.1341495, 307.8573),
+                receivedMessage: oklch(0.2454222, 0.009540156, 325.8636),
+                receivedQuote: oklch(0.2874049, 0.0149843, 302.5009)
             )
         ]
         }
