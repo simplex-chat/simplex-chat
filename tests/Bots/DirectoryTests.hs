@@ -88,6 +88,7 @@ directoryServiceTests = do
     it "should not list audio command" testHelpNoAudio
     it "should reject audio command in DM" testAudioCommandInDM
   describe "public group registration" $ do
+    it "should connect to directory service" testConnectToDirectory
     it "should register channel via shared link card" testRegisterChannelViaCard
 
 directoryProfile :: Profile
@@ -1943,6 +1944,12 @@ testAudioCommandInDM ps =
       bob #> "@'SimpleX Directory' /audio"
       bob <# "'SimpleX Directory'> > /audio"
       bob <## "      Unknown command"
+
+testConnectToDirectory :: HasCallStack => TestParams -> IO ()
+testConnectToDirectory ps =
+  withDirectoryService ps $ \_ dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
 
 testRegisterChannelViaCard :: HasCallStack => TestParams -> IO ()
 testRegisterChannelViaCard ps =
