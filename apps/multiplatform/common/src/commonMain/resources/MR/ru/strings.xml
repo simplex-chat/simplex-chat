@@ -2572,7 +2572,7 @@
     <string name="connect_use_incognito_profile">Использовать профиль инкогнито</string>
     <string name="v6_4_1_new_interface_languages">4 новых языков интерфейса</string>
     <string name="chat_banner_accept_contact_request">Принять запрос на соединение</string>
-    <string name="chat_banner_business_connection">Бизнес контакт</string>
+    <string name="chat_banner_business_connection">Бизнес-контакт</string>
     <string name="v6_4_1_new_interface_languages_descr">Каталонский, Индонезийский, Румынский и Вьетнамский - благодаря нашим пользователям!</string>
     <string name="v6_4_1_short_address_create">Создайте Ваш адрес</string>
     <string name="group_descr_too_large">Описание слишком длинное</string>
@@ -2592,7 +2592,7 @@
     <string name="v6_4_1_short_address_update">Обновите Ваш адрес</string>
     <string name="upgrade_group_link">Обновить ссылку группы</string>
     <string name="v6_4_1_welcome_contacts">Приветствуйте Ваши контакты 👋</string>
-    <string name="chat_banner_your_business_contact">Ваш бизнес контакт</string>
+    <string name="chat_banner_your_business_contact">Ваш бизнес-контакт</string>
     <string name="chat_banner_your_contact">Ваш контакт</string>
     <string name="chat_banner_your_group">Ваша группа</string>
     <string name="allow_files_and_media_only_if">Разрешить файлы и медиа, только если их разрешает Ваш контакт.</string>
@@ -2692,4 +2692,11 @@
     <string name="check_relay_address">Проверьте адрес ретранслятора и попробуйте ещё раз.</string>
     <string name="check_relay_name">Проверьте имя ретранслятора и попробуйте ещё раз.</string>
     <string name="relay_conn_status_deleted">удалён</string>
+    <string name="channel_preferences">Настройки канала</string>
+    <string name="chat_link_channel">Ссылка канала</string>
+    <string name="channel_profile_is_stored_on_subscribers_devices">Профиль канала хранится на устройствах подписчиков и ретрансляторах чатов.</string>
+    <string name="channel_temporarily_unavailable">Канал временно недоступен</string>
+    <string name="link_previews_alert_disable">Отключить</string>
+    <string name="link_previews_alert_enable">Включить</string>
+    <string name="error_prefix">Ошибка</string>
 </resources>
