@@ -80,7 +80,7 @@ class ThemeManager {
         if theme == nil && perUserTheme == nil && perChatTheme == nil && themeOverridesForType == nil {
             return ActiveTheme(name: themeName, base: baseTheme.base, colors: baseTheme.colors, appColors: baseTheme.appColors, wallpaper: baseTheme.wallpaper)
         }
-        let presetWallpaperTheme: ThemeColors? = if let themeOverridesForType, case let WallpaperType.preset(filename, _) = themeOverridesForType {
+        let presetWallpaperTheme: ResolvedColors? = if let themeOverridesForType, case let WallpaperType.preset(filename, _) = themeOverridesForType {
             PresetWallpaper.from(filename)?.colors[baseTheme.base]
         } else if let wallpaper = perChatTheme?.wallpaper {
             if let preset = wallpaper.preset { PresetWallpaper.from(preset)?.colors[baseTheme.base] } else { nil }

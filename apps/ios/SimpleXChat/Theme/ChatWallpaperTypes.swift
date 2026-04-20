@@ -101,28 +101,28 @@ public enum PresetWallpaper: CaseIterable {
         }
     }
 
-    public var colors: [DefaultTheme: ThemeColors] {
+    public var colors: [DefaultTheme: ResolvedColors] {
         switch self {
         case .cats: [
-            DefaultTheme.LIGHT: ThemeColors.from(
+            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#fffffaed",
                 sentQuote: "#fffaf0d6",
                 receivedMessage: "#ffF8F7F4",
                 receivedQuote: "#ffefede9"
-            ),
-            DefaultTheme.DARK: ThemeColors.from(
+            )),
+            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff2f2919",
                 sentQuote: "#ff473a1d",
                 receivedMessage: "#ff272624",
                 receivedQuote: "#ff373633"
-            ),
-            DefaultTheme.SIMPLEX: ThemeColors.from(
+            )),
+            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff41371b",
                 sentQuote: "#ff654f1c",
                 receivedMessage: "#ff272624",
                 receivedQuote: "#ff373633"
-            ),
-            DefaultTheme.BLACK: ThemeColors.from(
+            )),
+            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff41371b",
                 sentQuote: "#ff654f1c",
                 receivedMessage: "#ff1f1e1b",
@@ -130,25 +130,25 @@ public enum PresetWallpaper: CaseIterable {
             )
         ]
         case .flowers: [
-            DefaultTheme.LIGHT: ThemeColors.from(
+            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#fff1ffe5",
                 sentQuote: "#ffdcf9c4",
                 receivedMessage: "#ffF4F8F2",
                 receivedQuote: "#ffe7ece7"
-            ),
-            DefaultTheme.DARK: ThemeColors.from(
+            )),
+            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff163521",
                 sentQuote: "#ff1B5330",
                 receivedMessage: "#ff242523",
                 receivedQuote: "#ff353733"
-            ),
-            DefaultTheme.SIMPLEX: ThemeColors.from(
+            )),
+            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff184739",
                 sentQuote: "#ff1F6F4B",
                 receivedMessage: "#ff242523",
                 receivedQuote: "#ff353733"
-            ),
-            DefaultTheme.BLACK: ThemeColors.from(
+            )),
+            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff184739",
                 sentQuote: "#ff1F6F4B",
                 receivedMessage: "#ff1c1f1a",
@@ -156,25 +156,25 @@ public enum PresetWallpaper: CaseIterable {
             )
         ]
         case .hearts: [
-            DefaultTheme.LIGHT: ThemeColors.from(
+            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#fffff4f4",
                 sentQuote: "#ffffdfdf",
                 receivedMessage: "#fff8f6f6",
                 receivedQuote: "#ffefebeb"
-            ),
-            DefaultTheme.DARK: ThemeColors.from(
+            )),
+            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff301515",
                 sentQuote: "#ff4C1818",
                 receivedMessage: "#ff242121",
                 receivedQuote: "#ff3b3535"
-            ),
-            DefaultTheme.SIMPLEX: ThemeColors.from(
+            )),
+            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff491A28",
                 sentQuote: "#ff761F29",
                 receivedMessage: "#ff242121",
                 receivedQuote: "#ff3b3535"
-            ),
-            DefaultTheme.BLACK: ThemeColors.from(
+            )),
+            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff491A28",
                 sentQuote: "#ff761F29",
                 receivedMessage: "#ff1f1b1b",
@@ -182,25 +182,25 @@ public enum PresetWallpaper: CaseIterable {
             )
         ]
         case .kids: [
-            DefaultTheme.LIGHT: ThemeColors.from(
+            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ffeafeff",
                 sentQuote: "#ffcbf4f7",
                 receivedMessage: "#fff3fafa",
                 receivedQuote: "#ffe4efef"
-            ),
-            DefaultTheme.DARK: ThemeColors.from(
+            )),
+            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff16302F",
                 sentQuote: "#ff1a4a49",
                 receivedMessage: "#ff252626",
                 receivedQuote: "#ff373A39"
-            ),
-            DefaultTheme.SIMPLEX: ThemeColors.from(
+            )),
+            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff1a4745",
                 sentQuote: "#ff1d6b69",
                 receivedMessage: "#ff252626",
                 receivedQuote: "#ff373a39"
-            ),
-            DefaultTheme.BLACK: ThemeColors.from(
+            )),
+            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff1a4745",
                 sentQuote: "#ff1d6b69",
                 receivedMessage: "#ff1e1f1f",
@@ -208,51 +208,51 @@ public enum PresetWallpaper: CaseIterable {
             )
         ]
         case .school: [
-            DefaultTheme.LIGHT: ThemeColors.from(
-                sentMessage: "oklch(0.9756479, 0.01416295, 231.2013)",
-                sentQuote: "oklch(0.9331527, 0.03006113, 232.4212)",
-                receivedMessage: "oklch(0.9697657, 0.005748723, 264.5325)",
-                receivedQuote: "oklch(0.9296755, 0.00918803, 258.3366)"
+            DefaultTheme.LIGHT: ResolvedColors(
+                sentMessage: oklch(0.9756479, 0.01416295, 231.2013),
+                sentQuote: oklch(0.9331527, 0.03006113, 232.4212),
+                receivedMessage: oklch(0.9697657, 0.005748723, 264.5325),
+                receivedQuote: oklch(0.9296755, 0.00918803, 258.3366)
             ),
-            DefaultTheme.DARK: ThemeColors.from(
-                sentMessage: "oklch(0.267226, 0.03061943, 237.8609)",
-                sentQuote: "oklch(0.3464064, 0.04943852, 232.4005)",
-                receivedMessage: "oklch(0.2764251, 0.007910622, 264.4375)",
-                receivedQuote: "oklch(0.3548081, 0.008034593, 255.5451)"
+            DefaultTheme.DARK: ResolvedColors(
+                sentMessage: oklch(0.267226, 0.03061943, 237.8609),
+                sentQuote: oklch(0.3464064, 0.04943852, 232.4005),
+                receivedMessage: oklch(0.2764251, 0.007910622, 264.4375),
+                receivedQuote: oklch(0.3548081, 0.008034593, 255.5451)
             ),
-            DefaultTheme.SIMPLEX: ThemeColors.from(
-                sentMessage: "oklch(0.3481476, 0.07023845, 249.9259)",
-                sentQuote: "oklch(0.4520089, 0.08394516, 241.1934)",
-                receivedMessage: "oklch(0.2764251, 0.007910622, 264.4375)",
-                receivedQuote: "oklch(0.3548081, 0.008034593, 255.5451)"
+            DefaultTheme.SIMPLEX: ResolvedColors(
+                sentMessage: oklch(0.3481476, 0.07023845, 249.9259),
+                sentQuote: oklch(0.4520089, 0.08394516, 241.1934),
+                receivedMessage: oklch(0.2764251, 0.007910622, 264.4375),
+                receivedQuote: oklch(0.3548081, 0.008034593, 255.5451)
             ),
-            DefaultTheme.BLACK: ThemeColors.from(
-                sentMessage: "oklch(0.3481476, 0.07023845, 249.9259)",
-                sentQuote: "oklch(0.4520089, 0.08394516, 241.1934)",
-                receivedMessage: "oklch(0.2356588, 0.007789041, 274.6063)",
-                receivedQuote: "oklch(0.2886546, 0.007823012, 264.445)"
+            DefaultTheme.BLACK: ResolvedColors(
+                sentMessage: oklch(0.3481476, 0.07023845, 249.9259),
+                sentQuote: oklch(0.4520089, 0.08394516, 241.1934),
+                receivedMessage: oklch(0.2356588, 0.007789041, 274.6063),
+                receivedQuote: oklch(0.2886546, 0.007823012, 264.445)
             )
         ]
         case .travel: [
-            DefaultTheme.LIGHT: ThemeColors.from(
+            DefaultTheme.LIGHT: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#fffcf6ff",
                 sentQuote: "#fff2e0fc",
                 receivedMessage: "#ffF6F4F7",
                 receivedQuote: "#ffede9ee"
-            ),
-            DefaultTheme.DARK: ThemeColors.from(
+            )),
+            DefaultTheme.DARK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff33263B",
                 sentQuote: "#ff53385E",
                 receivedMessage: "#ff272528",
                 receivedQuote: "#ff3B373E"
-            ),
-            DefaultTheme.SIMPLEX: ThemeColors.from(
+            )),
+            DefaultTheme.SIMPLEX: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff3C255D",
                 sentQuote: "#ff623485",
                 receivedMessage: "#ff26273B",
                 receivedQuote: "#ff3A394F"
-            ),
-            DefaultTheme.BLACK: ThemeColors.from(
+            )),
+            DefaultTheme.BLACK: ResolvedColors.fromThemeColors(ThemeColors.from(
                 sentMessage: "#ff3C255D",
                 sentQuote: "#ff623485",
                 receivedMessage: "#ff231f23",
