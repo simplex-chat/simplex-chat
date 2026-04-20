@@ -2722,4 +2722,6 @@
     <string name="relay_results">Risultati relay:</string>
     <string name="link_previews_alert_desc">L\'invio di un\'anteprima del link può rivelare il tuo indirizzo IP al sito. Puoi modificarlo nelle impostazioni di Privacy più tardi.</string>
     <string name="connection_reached_limit_of_undelivered_messages">La connessione ha raggiunto il limite di messaggi non consegnati</string>
+    <string name="channel_preferences">Preferenze del canale</string>
+    <string name="only_channel_owners_can_change_prefs">Solo i proprietari del canale possono modificarne le preferenze.</string>
 </resources>
