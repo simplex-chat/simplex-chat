@@ -2706,4 +2706,6 @@
     <string name="error_prefix">错误</string>
     <string name="network_error">网络错误</string>
     <string name="relay_results">中继结果：</string>
+    <string name="channel_preferences">频道首选项</string>
+    <string name="only_channel_owners_can_change_prefs">仅频道所有者可改变频道首选项。</string>
 </resources>
