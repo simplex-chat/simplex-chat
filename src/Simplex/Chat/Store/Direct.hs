@@ -429,6 +429,14 @@ updatePreparedContactUser
             WHERE contact_profile_id = ?
           |]
           (newUserId, currentTs, profileId)
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items
+            SET user_id = ?, updated_at = ?
+            WHERE contact_id = ?
+          |]
+          (newUserId, currentTs, contactId)
         safeDeleteLDN db user oldLDN
       getContact db vr newUser contactId
 
