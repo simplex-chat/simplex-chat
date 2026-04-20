@@ -1956,7 +1956,8 @@ testRegisterChannelViaCard ps =
         -- bob shares the channel card with directory bot
         bob ##> "/share chat #news @'SimpleX Directory'"
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
-        _ <- getTermLine bob -- ownerSig line
+        _ <- getTermLine bob -- short link
+        _ <- getTermLine bob -- ownerSig JSON
         -- directory bot should validate and reply
         bob <# "'SimpleX Directory'> Joining the channel news…"
 
