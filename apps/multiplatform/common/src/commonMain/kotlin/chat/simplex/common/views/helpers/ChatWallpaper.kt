@@ -28,7 +28,7 @@ enum class PresetWallpaper(
   val scale: Float,
   val background: Map<DefaultTheme, Color>,
   val tint: Map<DefaultTheme, Color>,
-  val colors: Map<DefaultTheme, ThemeColors>,
+  val colors: Map<DefaultTheme, ResolvedColors>,
 ) {
   CATS(MR.images.wallpaper_cats, "cats", 0.63f,
     wallpaperBackgrounds(light = "#ffF8F6EA"),
@@ -39,30 +39,30 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to "#ff4b3b0e".colorFromReadableHex()
     ),
     mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
+      DefaultTheme.LIGHT to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#fffffaed",
         sentQuote = "#fffaf0d6",
         receivedMessage = "#ffF8F7F4",
         receivedQuote = "#ffefede9",
-      ),
-      DefaultTheme.DARK to ThemeColors(
+      )),
+      DefaultTheme.DARK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff2f2919",
         sentQuote = "#ff473a1d",
         receivedMessage = "#ff272624",
         receivedQuote = "#ff373633",
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
+      )),
+      DefaultTheme.SIMPLEX to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff41371b",
         sentQuote = "#ff654f1c",
         receivedMessage = "#ff272624",
         receivedQuote = "#ff373633",
-      ),
-      DefaultTheme.BLACK to ThemeColors(
+      )),
+      DefaultTheme.BLACK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff41371b",
         sentQuote = "#ff654f1c",
         receivedMessage = "#ff1f1e1b",
         receivedQuote = "#ff2f2d27",
-      ),
+      )),
     )
   ),
   FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
@@ -74,30 +74,30 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()
     ),
     mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
+      DefaultTheme.LIGHT to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#fff1ffe5",
         sentQuote = "#ffdcf9c4",
         receivedMessage = "#ffF4F8F2",
         receivedQuote = "#ffe7ece7",
-      ),
-      DefaultTheme.DARK to ThemeColors(
+      )),
+      DefaultTheme.DARK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff163521",
         sentQuote = "#ff1B5330",
         receivedMessage = "#ff242523",
         receivedQuote = "#ff353733",
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
+      )),
+      DefaultTheme.SIMPLEX to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff184739",
         sentQuote = "#ff1F6F4B",
         receivedMessage = "#ff242523",
         receivedQuote = "#ff353733",
-      ),
-      DefaultTheme.BLACK to ThemeColors(
+      )),
+      DefaultTheme.BLACK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff184739",
         sentQuote = "#ff1F6F4B",
         receivedMessage = "#ff1c1f1a",
         receivedQuote = "#ff282b25",
-      ),
+      )),
     )
   ),
   HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
@@ -109,30 +109,30 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()
     ),
     mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
+      DefaultTheme.LIGHT to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#fffff4f4",
         sentQuote = "#ffffdfdf",
         receivedMessage = "#fff8f6f6",
         receivedQuote = "#ffefebeb",
-      ),
-      DefaultTheme.DARK to ThemeColors(
+      )),
+      DefaultTheme.DARK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff301515",
         sentQuote = "#ff4C1818",
         receivedMessage = "#ff242121",
         receivedQuote = "#ff3b3535",
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
+      )),
+      DefaultTheme.SIMPLEX to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff491A28",
         sentQuote = "#ff761F29",
         receivedMessage = "#ff242121",
         receivedQuote = "#ff3b3535",
-      ),
-      DefaultTheme.BLACK to ThemeColors(
+      )),
+      DefaultTheme.BLACK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff491A28",
         sentQuote = "#ff761F29",
         receivedMessage = "#ff1f1b1b",
         receivedQuote = "#ff2e2626",
-      ),
+      )),
     )
   ),
   KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
@@ -144,64 +144,69 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()
     ),
     mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
+      DefaultTheme.LIGHT to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ffeafeff",
         sentQuote = "#ffcbf4f7",
         receivedMessage = "#fff3fafa",
         receivedQuote = "#ffe4efef",
-      ),
-      DefaultTheme.DARK to ThemeColors(
+      )),
+      DefaultTheme.DARK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff16302F",
         sentQuote = "#ff1a4a49",
         receivedMessage = "#ff252626",
         receivedQuote = "#ff373A39",
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
+      )),
+      DefaultTheme.SIMPLEX to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff1a4745",
         sentQuote = "#ff1d6b69",
         receivedMessage = "#ff252626",
         receivedQuote = "#ff373a39",
-      ),
-      DefaultTheme.BLACK to ThemeColors(
+      )),
+      DefaultTheme.BLACK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff1a4745",
         sentQuote = "#ff1d6b69",
         receivedMessage = "#ff1e1f1f",
         receivedQuote = "#ff262b29",
-      ),
+      )),
     )
   ),
   SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
-    wallpaperBackgrounds(light = "#ffE7F5FF"),
+    mapOf(
+      DefaultTheme.LIGHT to oklch(0.9626785f, 0.02004578f, 238.6614f),
+      DefaultTheme.DARK to oklch(0.2024453f, 0.03849037f, 273.4875f),
+      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
+      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
+    ),
     tint = mapOf(
-      DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(),
-      DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff112f43".colorFromReadableHex(),
-      DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()
+      DefaultTheme.LIGHT to oklch(0.9252349f, 0.04096641f, 238.0518f),
+      DefaultTheme.DARK to oklch(0.2700986f, 0.04630937f, 241.5568f),
+      DefaultTheme.SIMPLEX to oklch(0.2929108f, 0.05102392f, 240.8139f),
+      DefaultTheme.BLACK to oklch(0.2700986f, 0.04630937f, 241.5568f)
     ),
     mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
-        sentMessage = "#ffeef9ff",
-        sentQuote = "#ffD6EDFA",
-        receivedMessage = "#ffF3F5F9",
-        receivedQuote = "#ffe4e8ee",
+      DefaultTheme.LIGHT to ResolvedColors(
+        sentMessage = oklch(0.9756479f, 0.01416295f, 231.2013f),
+        sentQuote = oklch(0.9331527f, 0.03006113f, 232.4212f),
+        receivedMessage = oklch(0.9697657f, 0.005748723f, 264.5325f),
+        receivedQuote = oklch(0.9296755f, 0.00918803f, 258.3366f),
       ),
-      DefaultTheme.DARK to ThemeColors(
-        sentMessage = "#ff172833",
-        sentQuote = "#ff1C3E4F",
-        receivedMessage = "#ff26282c",
-        receivedQuote = "#ff393c40",
+      DefaultTheme.DARK to ResolvedColors(
+        sentMessage = oklch(0.267226f, 0.03061943f, 237.8609f),
+        sentQuote = oklch(0.3464064f, 0.04943852f, 232.4005f),
+        receivedMessage = oklch(0.2764251f, 0.007910622f, 264.4375f),
+        receivedQuote = oklch(0.3548081f, 0.008034593f, 255.5451f),
       ),
-      DefaultTheme.SIMPLEX to ThemeColors(
-        sentMessage = "#ff1A3C5D",
-        sentQuote = "#ff235b80",
-        receivedMessage = "#ff26282c",
-        receivedQuote = "#ff393c40",
+      DefaultTheme.SIMPLEX to ResolvedColors(
+        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f),
+        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f),
+        receivedMessage = oklch(0.2764251f, 0.007910622f, 264.4375f),
+        receivedQuote = oklch(0.3548081f, 0.008034593f, 255.5451f),
       ),
-      DefaultTheme.BLACK to ThemeColors(
-        sentMessage = "#ff1A3C5D",
-        sentQuote = "#ff235b80",
-        receivedMessage = "#ff1d1e22",
-        receivedQuote = "#ff292b2f",
+      DefaultTheme.BLACK to ResolvedColors(
+        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f),
+        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f),
+        receivedMessage = oklch(0.2356588f, 0.007789041f, 274.6063f),
+        receivedQuote = oklch(0.2886546f, 0.007823012f, 264.445f),
       ),
     )
   ),
@@ -214,30 +219,30 @@ enum class PresetWallpaper(
       DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()
     ),
     mapOf(
-      DefaultTheme.LIGHT to ThemeColors(
+      DefaultTheme.LIGHT to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#fffcf6ff",
         sentQuote = "#fff2e0fc",
         receivedMessage = "#ffF6F4F7",
         receivedQuote = "#ffede9ee",
-      ),
-      DefaultTheme.DARK to ThemeColors(
+      )),
+      DefaultTheme.DARK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff33263B",
         sentQuote = "#ff53385E",
         receivedMessage = "#ff272528",
         receivedQuote = "#ff3B373E",
-      ),
-      DefaultTheme.SIMPLEX to ThemeColors(
+      )),
+      DefaultTheme.SIMPLEX to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff3C255D",
         sentQuote = "#ff623485",
         receivedMessage = "#ff26273B",
         receivedQuote = "#ff3A394F",
-      ),
-      DefaultTheme.BLACK to ThemeColors(
+      )),
+      DefaultTheme.BLACK to ResolvedColors.fromThemeColors(ThemeColors(
         sentMessage = "#ff3C255D",
         sentQuote = "#ff623485",
         receivedMessage = "#ff231f23",
         receivedQuote = "#ff2c2931",
-      ),
+      )),
     )
   );
 
