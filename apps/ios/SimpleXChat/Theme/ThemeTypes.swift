@@ -632,19 +632,19 @@ public let DarkColorPalette = Colors(
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
     background: Color.black,
-    surface: Color(0xFF222222),
+    surface: oklch(0.2519647, 0, 0),
     error: Color.red,
-    onBackground: Color.white,
-    onSurface: Color.white,
+    onBackground: oklch(0.9908696, 0.00447983, 34.30938),
+    onSurface: oklch(0.9908696, 0.00447983, 34.30938),
     isLight: false
 )
 public let DarkColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: Color(0xFF18262E),
-    sentMessage: Color(0xFF18262E),
-    sentQuote: Color(0xFF1D3847),
-    receivedMessage: Color(0xff262627),
-    receivedQuote: Color(0xff373739)
+    primaryVariant2: oklch(0.2596116, 0.02435695, 234.0127),
+    sentMessage: oklch(0.2596116, 0.02435695, 234.0127),
+    sentQuote: oklch(0.3262685, 0.04242656, 234.4608),
+    receivedMessage: oklch(0.2690091, 0.001828474, 286.2761),
+    receivedQuote: oklch(0.3375424, 0.003458181, 286.2129)
 )
 
 public let LightColorPalette = Colors (
@@ -661,20 +661,20 @@ public let LightColorPalette = Colors (
 )
 public let LightColorPaletteApp = AppColors(
     title: .black,
-    primaryVariant2: Color(0xFFE9F7FF),
-    sentMessage: Color(0xFFE9F7FF),
-    sentQuote: Color(0xFFD6F0FF),
-    receivedMessage: Color(0xfff5f5f6),
-    receivedQuote: Color(0xffececee)
+    primaryVariant2: oklch(0.9680794, 0.0183117, 232.503),
+    sentMessage: oklch(0.9680794, 0.0183117, 232.503),
+    sentQuote: oklch(0.9407676, 0.03409827, 233.0377),
+    receivedMessage: oklch(0.9704316, 0.001324867, 286.3749),
+    receivedQuote: oklch(0.943656, 0.002669381, 286.3484)
 )
 
 public let SimplexColorPalette = Colors(
-    primary: Color(0xFF70F0F9),
-    primaryVariant: Color(0xFF1298A5),
+    primary: oklch(0.8862563, 0.113699, 201.5703),
+    primaryVariant: oklch(0.6217762, 0.1034518, 205.799),
     secondary: HighOrLowlight,
-    secondaryVariant: Color(0xFF2C464D),
-    background: Color(0xFF111528),
-    surface: Color(0xFF121C37),
+    secondaryVariant: oklch(0.3761328, 0.03384425, 216.5493),
+    background: oklch(0.2024453, 0.03849037, 273.4875),
+    surface: oklch(0.2331016, 0.05415408, 266.8904),
     error: Color.red,
     onBackground: Color.white,
     onSurface: Color.white,
@@ -682,32 +682,32 @@ public let SimplexColorPalette = Colors(
 )
 public let SimplexColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: Color(0xFF172941),
-    sentMessage: Color(0xFF172941),
-    sentQuote: Color(0xFF1C3A57),
-    receivedMessage: Color(0xff25283a),
-    receivedQuote: Color(0xff36394a)
+    primaryVariant2: oklch(0.2782386, 0.05068946, 256.0234),
+    sentMessage: oklch(0.2782386, 0.05068946, 256.0234),
+    sentQuote: oklch(0.3401385, 0.06268949, 249.4274),
+    receivedMessage: oklch(0.2823021, 0.03341238, 276.7299),
+    receivedQuote: oklch(0.3488846, 0.02991734, 276.9226)
 )
 
 public let BlackColorPalette = Colors(
-    primary: Color(0xff0077e0),
-    primaryVariant: Color(0xff0077e0),
+    primary: oklch(0.5737125, 0.1826329, 254.0001),
+    primaryVariant: oklch(0.5737125, 0.1826329, 254.0001),
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
-    background: Color(0xff070707),
-    surface: Color(0xff161617),
+    background: oklch(0.1285578, 0, 0),
+    surface: oklch(0.200616, 0.001969079, 286.2208),
     error: Color.red,
-    onBackground: Color.white,
-    onSurface: Color.white,
+    onBackground: oklch(0.9908696, 0.00447983, 34.30938),
+    onSurface: oklch(0.9908696, 0.00447983, 34.30938),
     isLight: false
 )
 public let BlackColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: Color(0xff243747),
-    sentMessage: Color(0xFF18262E),
-    sentQuote: Color(0xFF1D3847),
-    receivedMessage: Color(0xff1b1b1b),
-    receivedQuote: Color(0xff29292b)
+    primaryVariant2: oklch(0.327876, 0.03765742, 244.7111),
+    sentMessage: oklch(0.2596116, 0.02435695, 234.0127),
+    sentQuote: oklch(0.3262685, 0.04242656, 234.4608),
+    receivedMessage: oklch(0.2221287, 0, 0),
+    receivedQuote: oklch(0.2817215, 0.003620283, 286.165)
 )
 
 extension Colors {

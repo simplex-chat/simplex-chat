@@ -537,8 +537,8 @@ data class ThemeModeOverride (
           preset = wallpaperType.filename,
           scale = p?.scale ?: wallpaper?.scale,
           scaleType = null,
-          background = p?.background?.get(base)?.toReadableHex(),
-          tint = p?.tint?.get(base)?.toReadableHex(),
+          background = null,
+          tint = null,
           image = null,
           imageFile = null,
         )
@@ -578,8 +578,14 @@ data class ThemeModeOverride (
         preset = wallpaper.preset,
         scale = if (wallpaper.scale != w.scale) wallpaper.scale else null,
         scaleType = if (wallpaper.scaleType != w.scaleType) wallpaper.scaleType else null,
-        background = if (wallpaper.background != w.background) wallpaper.background else null,
-        tint = if (wallpaper.tint != w.tint) wallpaper.tint else null,
+        background = if (WallpaperType.from(wallpaper) is WallpaperType.Preset) {
+          val p = PresetWallpaper.from((WallpaperType.from(wallpaper) as WallpaperType.Preset).filename)
+          if (wallpaper.background?.colorFromReadableHex()?.toArgb() != p?.background?.get(base)?.toArgb()) wallpaper.background else null
+        } else if (wallpaper.background != w.background) wallpaper.background else null,
+        tint = if (WallpaperType.from(wallpaper) is WallpaperType.Preset) {
+          val p = PresetWallpaper.from((WallpaperType.from(wallpaper) as WallpaperType.Preset).filename)
+          if (wallpaper.tint?.colorFromReadableHex()?.toArgb() != p?.tint?.get(base)?.toArgb()) wallpaper.tint else null
+        } else if (wallpaper.tint != w.tint) wallpaper.tint else null,
         image = wallpaper.image,
         imageFile = wallpaper.imageFile,
       )
@@ -637,20 +643,20 @@ val DarkColorPalette = darkColors(
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
 //  background = Color.Black,
-  surface = Color(0xFF222222),
+  surface = oklch(0.2519647f, 0f, 0f),
 //  background = Color(0xFF121212),
   error = Color.Red,
-  onBackground = Color(0xFFFFFBFA),
-  onSurface = Color(0xFFFFFBFA),
+  onBackground = oklch(0.9908696f, 0.00447983f, 34.30938f),
+  onSurface = oklch(0.9908696f, 0.00447983f, 34.30938f),
 //  onError: Color = Color.Black,
 )
 val DarkColorPaletteApp = AppColors(
   title = SimplexBlue,
-  primaryVariant2 = Color(0xFF18262E),
-  sentMessage = Color(0xFF18262E),
-  sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0xff262627),
-  receivedQuote = Color(0xff373739),
+  primaryVariant2 = oklch(0.2596116f, 0.02435695f, 234.0127f),
+  sentMessage = oklch(0.2596116f, 0.02435695f, 234.0127f),
+  sentQuote = oklch(0.3262685f, 0.04242656f, 234.4608f),
+  receivedMessage = oklch(0.2690091f, 0.001828474f, 286.2761f),
+  receivedQuote = oklch(0.3375424f, 0.003458181f, 286.2129f),
 )
 
 val LightColorPalette = lightColors(
@@ -668,57 +674,57 @@ val LightColorPalette = lightColors(
 )
 val LightColorPaletteApp = AppColors(
   title = SimplexBlue,
-  primaryVariant2 = Color(0xFFE9F7FF),
-  sentMessage = Color(0xFFE9F7FF),
-  sentQuote = Color(0xFFD6F0FF),
-  receivedMessage = Color(0xfff5f5f6),
-  receivedQuote = Color(0xffececee),
+  primaryVariant2 = oklch(0.9680794f, 0.0183117f, 232.503f),
+  sentMessage = oklch(0.9680794f, 0.0183117f, 232.503f),
+  sentQuote = oklch(0.9407676f, 0.03409827f, 233.0377f),
+  receivedMessage = oklch(0.9704316f, 0.001324867f, 286.3749f),
+  receivedQuote = oklch(0.943656f, 0.002669381f, 286.3484f),
 )
 
 val SimplexColorPalette = darkColors(
-  primary = Color(0xFF70F0F9),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xFF1298A5),
+  primary = oklch(0.8862563f, 0.113699f, 201.5703f),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = oklch(0.6217762f, 0.1034518f, 205.799f),
   secondary = HighOrLowlight,
-  secondaryVariant = Color(0xFF2C464D),
-  background = Color(0xFF111528),
+  secondaryVariant = oklch(0.3761328f, 0.03384425f, 216.5493f),
+  background = oklch(0.2024453f, 0.03849037f, 273.4875f),
   //  surface = Color.Black,
   //  background = Color(0xFF121212),
-  surface = Color(0xFF121C37),
+  surface = oklch(0.2331016f, 0.05415408f, 266.8904f),
   error = Color.Red,
 //  onBackground = Color(0xFFFFFBFA),
 //  onSurface = Color(0xFFFFFBFA),
   //  onError: Color = Color.Black,
 )
 val SimplexColorPaletteApp = AppColors(
-  title = Color(0xFF267BE5),
-  primaryVariant2 = Color(0xFF172941),
-  sentMessage = Color(0xFF172941),
-  sentQuote = Color(0xFF1C3A57),
-  receivedMessage = Color(0xff25283a),
-  receivedQuote = Color(0xff36394a),
+  title = oklch(0.5909158f, 0.1793687f, 256.4473f),
+  primaryVariant2 = oklch(0.2782386f, 0.05068946f, 256.0234f),
+  sentMessage = oklch(0.2782386f, 0.05068946f, 256.0234f),
+  sentQuote = oklch(0.3401385f, 0.06268949f, 249.4274f),
+  receivedMessage = oklch(0.2823021f, 0.03341238f, 276.7299f),
+  receivedQuote = oklch(0.3488846f, 0.02991734f, 276.9226f),
 )
 
 val BlackColorPalette = darkColors(
-  primary = Color(0xff0077e0),  // If this value changes also need to update #0088ff in string resource files
-  primaryVariant = Color(0xff0077e0),
+  primary = oklch(0.5737125f, 0.1826329f, 254.0001f),  // If this value changes also need to update #0088ff in string resource files
+  primaryVariant = oklch(0.5737125f, 0.1826329f, 254.0001f),
   secondary = HighOrLowlight,
   secondaryVariant = DarkGray,
-  background = Color(0xff070707),
-  surface = Color(0xff161617),
+  background = oklch(0.1285578f, 0f, 0f),
+  surface = oklch(0.200616f, 0.001969079f, 286.2208f),
   //  background = Color(0xFF121212),
   //  surface = Color(0xFF121212),
   error = Color.Red,
-  onBackground = Color(0xFFFFFBFA),
-  onSurface = Color(0xFFFFFBFA),
+  onBackground = oklch(0.9908696f, 0.00447983f, 34.30938f),
+  onSurface = oklch(0.9908696f, 0.00447983f, 34.30938f),
   //  onError: Color = Color.Black,
 )
 val BlackColorPaletteApp = AppColors(
-  title = Color(0xff0077e0),
-  primaryVariant2 = Color(0xff243747),
-  sentMessage = Color(0xFF18262E),
-  sentQuote = Color(0xFF1D3847),
-  receivedMessage = Color(0xff1b1b1b),
-  receivedQuote = Color(0xff29292b),
+  title = oklch(0.5737125f, 0.1826329f, 254.0001f),
+  primaryVariant2 = oklch(0.327876f, 0.03765742f, 244.7111f),
+  sentMessage = oklch(0.2596116f, 0.02435695f, 234.0127f),
+  sentQuote = oklch(0.3262685f, 0.04242656f, 234.4608f),
+  receivedMessage = oklch(0.2221287f, 0f, 0f),
+  receivedQuote = oklch(0.2817215f, 0.003620283f, 286.165f),
 )
 
 var systemInDarkThemeCurrently: Boolean = isInNightMode()
