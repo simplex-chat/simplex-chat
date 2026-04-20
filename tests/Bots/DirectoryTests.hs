@@ -1964,8 +1964,29 @@ testRegisterChannelViaCard ps =
           [ do
               relay <## "'SimpleX Directory': accepting request to join group #news..."
               relay <## "#news: 'SimpleX Directory' joined the group",
-            bob <## "#news: 'SimpleX Directory' joined the group"
+            bob .<## "added 'SimpleX Directory" -- may have _1 suffix due to name collision
           ]
+        -- after owner member is announced, bot transitions to GRSPendingApproval
+        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
+        -- superuser receives approval request
+        superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
+        superUser <## "news"
+        superUser .<## "subscribers"
+        superUser <## ""
+        superUser <## "To approve send:"
+        superUser <# "'SimpleX Directory'> /approve 1:news 1"
+        -- superuser approves
+        let approve = "/approve 1:news 1"
+        superUser #> ("@'SimpleX Directory' " <> approve)
+        superUser <# ("'SimpleX Directory'> > " <> approve)
+        superUser <## "      Group approved!"
+        bob <# ("'SimpleX Directory'> The group ID 1 (news) is approved and listed in directory - please moderate it!")
+        bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+        bob <## ""
+        bob <## "Supported commands:"
+        bob <## "/'filter 1' - to configure anti-spam filter."
+        bob <## "/'role 1' - to set default member role."
+        bob <## "/'link 1' - to view/upgrade group link."
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do
