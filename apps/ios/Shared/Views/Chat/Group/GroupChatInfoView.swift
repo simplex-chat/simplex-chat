@@ -157,19 +157,17 @@ struct GroupChatInfoView: View {
                         if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
                             addOrEditWelcomeMessage()
                         }
-                        if !groupInfo.useRelays {
-                            GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                        }
+                        GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                     } footer: {
-                        if !groupInfo.useRelays {
-                            let label: LocalizedStringKey = (
-                                groupInfo.businessChat == nil
-                                ? "Only group owners can change group preferences."
-                                : "Only chat owners can change preferences."
-                            )
-                            Text(label)
-                                .foregroundColor(theme.colors.secondary)
-                        }
+                        let label: LocalizedStringKey = (
+                            groupInfo.useRelays
+                            ? "Only channel owners can change channel preferences."
+                            : groupInfo.businessChat == nil
+                            ? "Only group owners can change group preferences."
+                            : "Only chat owners can change preferences."
+                        )
+                        Text(label)
+                            .foregroundColor(theme.colors.secondary)
                     }
 
                     Section {
@@ -988,7 +986,9 @@ struct GroupPreferencesButton: View {
     var creatingGroup: Bool = false
 
     private var label: LocalizedStringKey {
-        groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
+        groupInfo.useRelays ? "Channel preferences"
+        : groupInfo.businessChat == nil ? "Group preferences"
+        : "Chat preferences"
     }
 
     var body: some View {
@@ -1005,7 +1005,9 @@ struct GroupPreferencesButton: View {
             .navigationBarTitleDisplayMode(.large)
             .onDisappear {
                 let saveText = NSLocalizedString(
-                    creatingGroup ? "Save" : "Save and notify group members",
+                    creatingGroup ? "Save"
+                    : groupInfo.useRelays ? "Save and notify subscribers"
+                    : "Save and notify group members",
                     comment: "alert button"
                 )
 

@@ -1875,6 +1875,7 @@
   <string name="error_creating_member_contact">Error creating member contact</string>
   <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="only_channel_owners_can_change_prefs">Only channel owners can change channel preferences.</string>
   <string name="only_chat_owners_can_change_prefs">Only chat owners can change preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
@@ -2217,6 +2218,7 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="channel_preferences">Channel preferences</string>
   <string name="set_group_preferences">Set group preferences</string>
   <string name="set_member_admission">Set member admission</string>
   <string name="your_preferences">Your preferences</string>

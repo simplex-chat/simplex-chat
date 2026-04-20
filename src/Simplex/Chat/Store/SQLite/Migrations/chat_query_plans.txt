@@ -447,6 +447,14 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+              UPDATE chat_items
+              SET user_id = ?, updated_at = ?
+              WHERE group_id = ?
+            
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_id (group_id=?)
+
+Query: 
               UPDATE contact_profiles
               SET display_name = ?,
                   full_name = ?,
@@ -1062,6 +1070,14 @@ SEARCH s USING INDEX sqlite_autoindex_sent_probes_1 (user_id=? AND probe=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
+
+Query: 
+            UPDATE chat_items
+            SET user_id = ?, updated_at = ?
+            WHERE contact_id = ?
+          
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contact_id (contact_id=?)
 
 Query: 
             UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ?
