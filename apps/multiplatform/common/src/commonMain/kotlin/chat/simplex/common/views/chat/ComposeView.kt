@@ -1237,6 +1237,8 @@ fun ComposeView(
       composeState.value = cs.copy(inProgress = false, progressByTimeout = false)
     } else if (!cs.empty) {
       if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+        recState.value = RecordingState.NotStarted
+        RecorderInterface.stopRecording?.invoke()
         composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
       }
       if (saveLastDraft) {
