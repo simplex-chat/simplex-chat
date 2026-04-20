@@ -7585,9 +7585,9 @@ chat item action</note>
         <target>Fehler beim Senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send link previews" xml:space="preserve">
+      <trans-unit id="Send link previews" xml:space="preserve" approved="no">
         <source>Send link previews</source>
-        <target>Link-Vorschau senden</target>
+        <target state="translated">Linkvorschau senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send live message" xml:space="preserve">
@@ -8501,9 +8501,9 @@ Die Relais-Adresse wurde zur Einrichtung dieses Relais für diesen Kanal verwend
         <target>Zum Verbinden tippen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to activate profile." xml:space="preserve">
+      <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
         <source>Tap to activate profile.</source>
-        <target>Zum Aktivieren des Profils tippen.</target>
+        <target state="translated">Tippen, um das Profil zu aktivieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
@@ -8516,9 +8516,9 @@ Die Relais-Adresse wurde zur Einrichtung dieses Relais für diesen Kanal verwend
         <target>Zum Inkognito beitreten tippen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to paste link" xml:space="preserve">
+      <trans-unit id="Tap to paste link" xml:space="preserve" approved="no">
         <source>Tap to paste link</source>
-        <target>Zum Link einfügen tippen</target>
+        <target state="translated">Tippen, um den Link einzufügen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to scan" xml:space="preserve">
