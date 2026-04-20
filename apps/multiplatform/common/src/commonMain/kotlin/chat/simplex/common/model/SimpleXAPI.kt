@@ -1557,6 +1557,23 @@ object ChatController {
     }
   }
 
+  fun connErrorText(e: ChatError): String = when {
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.InvalidConnReq ->
+      generalGetString(MR.strings.invalid_connection_link)
+    e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.UnsupportedConnReq ->
+      generalGetString(MR.strings.unsupported_connection_link)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH ->
+      generalGetString(MR.strings.connection_error_auth)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.BLOCKED ->
+      "${generalGetString(MR.strings.connection_error_blocked)}: ${e.agentError.smpErr.blockInfo.reason.text}"
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.QUOTA ->
+      generalGetString(MR.strings.connection_reached_limit_of_undelivered_messages)
+    e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.BROKER ->
+      generalGetString(MR.strings.network_error)
+    else ->
+      "${generalGetString(MR.strings.error_prefix)}: ${e.string}"
+  }
+
   suspend fun apiPrepareContact(rh: Long?, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData): Chat? {
     val userId = try { currentUserId("apiPrepareContact") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIPrepareContact(userId, connLink, contactShortLinkData))
@@ -2111,10 +2128,16 @@ object ChatController {
     return null
   }
 
-  suspend fun apiNewPublicGroup(rh: Long?, incognito: Boolean, relayIds: List<Long>, groupProfile: GroupProfile): Triple<GroupInfo, GroupLink, List<GroupRelay>>? {
+  sealed class PublicGroupCreationResult {
+    data class Created(val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): PublicGroupCreationResult()
+    data class CreationFailed(val addRelayResults: List<AddRelayResult>): PublicGroupCreationResult()
+  }
+
+  suspend fun apiNewPublicGroup(rh: Long?, incognito: Boolean, relayIds: List<Long>, groupProfile: GroupProfile): PublicGroupCreationResult? {
     val userId = kotlin.runCatching { currentUserId("apiNewPublicGroup") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.ApiNewPublicGroup(userId, incognito, relayIds, groupProfile))
-    if (r is API.Result && r.res is CR.PublicGroupCreated) return Triple(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.PublicGroupCreated) return PublicGroupCreationResult.Created(r.res.groupInfo, r.res.groupLink, r.res.groupRelays)
+    if (r is API.Result && r.res is CR.PublicGroupCreationFailed) return PublicGroupCreationResult.CreationFailed(r.res.addRelayResults)
     if (r != null) throw Exception("${r.responseType}: ${r.details}")
     return null
   }
@@ -4555,6 +4578,12 @@ data class RelayConnectionResult(
 )
 
 @Serializable
+data class AddRelayResult(
+  val relay: UserChatRelay,
+  val relayError: ChatError? = null
+)
+
+@Serializable
 data class GroupShortLinkInfo(
   val direct: Boolean,
   val groupRelays: List<String>,
@@ -6329,6 +6358,7 @@ sealed class CR {
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("publicGroupCreated") class PublicGroupCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink, val groupRelays: List<GroupRelay>): CR()
+  @Serializable @SerialName("publicGroupCreationFailed") class PublicGroupCreationFailed(val user: UserRef, val addRelayResults: List<AddRelayResult>): CR()
   @Serializable @SerialName("groupRelays") class GroupRelays(val user: UserRef, val groupInfo: GroupInfo, val groupRelays: List<GroupRelay>): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
@@ -6516,6 +6546,7 @@ sealed class CR {
     is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
     is PublicGroupCreated -> "publicGroupCreated"
+    is PublicGroupCreationFailed -> "publicGroupCreationFailed"
     is GroupRelays -> "groupRelays"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
@@ -6696,6 +6727,7 @@ sealed class CR {
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is PublicGroupCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink\ngroupRelays: $groupRelays")
+    is PublicGroupCreationFailed -> withUser(user, "addRelayResults: $addRelayResults")
     is GroupRelays -> withUser(user, "groupInfo: $groupInfo\ngroupRelays: $groupRelays")
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
