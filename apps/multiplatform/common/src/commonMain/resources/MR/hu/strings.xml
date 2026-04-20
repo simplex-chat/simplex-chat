@@ -2686,4 +2686,6 @@
     <string name="link_previews_alert_desc">A hivatkozáselőnézet küldése felfedheti az Ön IP-címét a weboldal számára. Ezt később módosíthatja az adatvédelmi beállításokban.</string>
     <string name="connection_reached_limit_of_undelivered_messages">A kapcsolat elérte a kézbesítetlen üzenetek korlátját</string>
     <string name="relay_results">Átjátszóeredmények:</string>
+    <string name="channel_preferences">Csatornabeállítások</string>
+    <string name="only_channel_owners_can_change_prefs">Csak a csatorna tulajdonosai módosíthatják a csatornabeállításokat.</string>
 </resources>
