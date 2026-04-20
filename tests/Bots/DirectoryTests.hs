@@ -1958,8 +1958,14 @@ testRegisterChannelViaCard ps =
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
-        -- directory bot should validate and reply
+        -- directory bot validates and joins via relay
         bob <# "'SimpleX Directory'> Joining the channel news…"
+        concurrentlyN_
+          [ do
+              relay <## "'SimpleX Directory': accepting request to join group #news..."
+              relay <## "#news: 'SimpleX Directory' joined the group",
+            bob <## "#news: 'SimpleX Directory' joined the group"
+          ]
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do
