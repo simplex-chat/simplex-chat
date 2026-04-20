@@ -100,75 +100,106 @@ private fun GroupPreferencesLayout(
   savePrefs: () -> Unit,
   openMemberAdmission: () -> Unit,
 ) {
+  val onTTLUpdated = { ttl: Int? ->
+    applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
+  }
+  @Composable fun TimedMessagesPreference() {
+    val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
+    FeatureSection(GroupFeature.TimedMessages, timedMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      if (enable == GroupFeatureEnabled.ON) {
+        applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
+      } else {
+        applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
+      }
+    }
+  }
+  @Composable fun DirectMessagesPreference() {
+    val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
+    val directMessagesRole = remember(preferences) { mutableStateOf(preferences.directMessages.role) }
+    FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, directMessagesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(directMessages = RoleGroupPreference(enable = enable, role)))
+    }
+  }
+  @Composable fun FullDeletePreference() {
+    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
+    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = enable)))
+    }
+  }
+  @Composable fun ReactionsPreference() {
+    val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
+    FeatureSection(GroupFeature.Reactions, allowReactions, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(reactions = GroupPreference(enable = enable)))
+    }
+  }
+  @Composable fun VoicePreference() {
+    val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
+    val voiceRole = remember(preferences) { mutableStateOf(preferences.voice.role) }
+    FeatureSection(GroupFeature.Voice, allowVoice, voiceRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(voice = RoleGroupPreference(enable = enable, role)))
+    }
+  }
+  @Composable fun FilesPreference() {
+    val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
+    val filesRole = remember(preferences) { mutableStateOf(preferences.files.role) }
+    FeatureSection(GroupFeature.Files, allowFiles, filesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(files = RoleGroupPreference(enable = enable, role)))
+    }
+  }
+  @Composable fun SimplexLinksPreference() {
+    val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
+    val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
+    FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
+    }
+  }
+  @Composable fun ReportsPreference() {
+    val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
+    FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
+    }
+  }
+  @Composable fun HistoryPreference() {
+    val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
+    FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
+    }
+  }
   ColumnWithScrollBar {
     val titleId = if (groupInfo.useRelays) MR.strings.channel_preferences
       else if (groupInfo.businessChat == null) MR.strings.group_preferences
       else MR.strings.chat_preferences
     AppBarTitle(stringResource(titleId))
-    if (!groupInfo.useRelays && groupInfo.businessChat == null) {
-      MemberAdmissionButton(openMemberAdmission)
-      SectionDividerSpaced(maxBottomPadding = false)
-    }
-    val onTTLUpdated = { ttl: Int? ->
-      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
-    }
     if (!groupInfo.useRelays) {
-      val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
-      FeatureSection(GroupFeature.TimedMessages, timedMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
-        if (enable == GroupFeatureEnabled.ON) {
-          applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
-        } else {
-          applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
-        }
+      if (groupInfo.businessChat == null) {
+        MemberAdmissionButton(openMemberAdmission)
+        SectionDividerSpaced(maxBottomPadding = false)
       }
+      TimedMessagesPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
-      val directMessagesRole = remember(preferences) { mutableStateOf(preferences.directMessages.role) }
-      FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, directMessagesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
-        applyPrefs(preferences.copy(directMessages = RoleGroupPreference(enable = enable, role)))
-      }
+      DirectMessagesPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-    }
-    val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
-    FeatureSection(GroupFeature.FullDelete, allowFullDeletion, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
-      applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = enable)))
-    }
-    if (!groupInfo.useRelays) {
+      FullDeletePreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
-      FeatureSection(GroupFeature.Reactions, allowReactions, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
-        applyPrefs(preferences.copy(reactions = GroupPreference(enable = enable)))
-      }
+      ReactionsPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
-      val voiceRole = remember(preferences) { mutableStateOf(preferences.voice.role) }
-      FeatureSection(GroupFeature.Voice, allowVoice, voiceRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
-        applyPrefs(preferences.copy(voice = RoleGroupPreference(enable = enable, role)))
-      }
+      VoicePreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
-      val filesRole = remember(preferences) { mutableStateOf(preferences.files.role) }
-      FeatureSection(GroupFeature.Files, allowFiles, filesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
-        applyPrefs(preferences.copy(files = RoleGroupPreference(enable = enable, role)))
-      }
-
+      FilesPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
-      val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
-      FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
-        applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
-      }
-
+      SimplexLinksPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
-      FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
-        applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
-      }
+      ReportsPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
-      FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
-        applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
-      }
+      HistoryPreference()
+    } else {
+      TimedMessagesPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      FullDeletePreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      ReactionsPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      HistoryPreference()
     }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)

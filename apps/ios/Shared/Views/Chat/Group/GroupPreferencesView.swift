@@ -40,15 +40,18 @@ struct GroupPreferencesView: View {
                         )
                     }
                     featureSection(.timedMessages, $preferences.timedMessages.enable)
-                }
-                featureSection(.fullDelete, $preferences.fullDelete.enable)
-                if !groupInfo.useRelays {
+                    featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
                     featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
                     featureSection(.files, $preferences.files.enable, $preferences.files.role)
                     featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
                     featureSection(.reports, $preferences.reports.enable)
+                    featureSection(.history, $preferences.history.enable)
+                } else {
+                    featureSection(.timedMessages, $preferences.timedMessages.enable)
+                    featureSection(.fullDelete, $preferences.fullDelete.enable)
+                    featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.history, $preferences.history.enable)
                 }
 
