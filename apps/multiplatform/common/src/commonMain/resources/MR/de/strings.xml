@@ -176,7 +176,7 @@
     <string name="group_preview_you_are_invited">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_preview_join_as">Beitreten als %s</string>
     <string name="group_connection_pending">verbinde …</string>
-    <string name="tap_to_start_new_chat">Zum Starten eines neuen Chats tippen</string>
+    <string name="tap_to_start_new_chat">Tippen, um einen neuen Chats zu starten</string>
     <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
     <string name="you_have_no_chats">Sie haben keine Chats</string>
     <!-- ShareListView.kt -->
@@ -547,7 +547,7 @@
     <string name="your_privacy">Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
-    <string name="send_link_previews">Link-Vorschau senden</string>
+    <string name="send_link_previews">Linkvorschau senden</string>
     <string name="full_backup">App-Datensicherung</string>
     <!-- Settings sections -->
     <string name="settings_section_title_you">MEINE DATEN</string>
@@ -1040,7 +1040,7 @@
     <string name="enter_password_to_show">Für die Anzeige das Passwort im Suchfeld eingeben</string>
     <string name="make_profile_private">Privates Profil erzeugen!</string>
     <string name="user_mute">Stummschalten</string>
-    <string name="tap_to_activate_profile">Zum Aktivieren des Profils tippen.</string>
+    <string name="tap_to_activate_profile">Tippen, um das Profil zu aktivieren.</string>
     <string name="user_unmute">Stummschaltung aufheben</string>
     <string name="muted_when_inactive">Bei Inaktivität stummgeschaltet!</string>
     <string name="v4_6_hidden_chat_profiles_descr">Schützen Sie Ihre Chat-Profile mit einem Passwort!</string>
@@ -1607,7 +1607,7 @@
     <string name="add_contact_tab">Kontakt hinzufügen</string>
     <string name="tap_to_scan">Zum Scannen tippen</string>
     <string name="keep_invitation_link">Behalten</string>
-    <string name="tap_to_paste_link">Zum Link einfügen tippen</string>
+    <string name="tap_to_paste_link">Tippen, um den Link einzufügen</string>
     <string name="search_or_paste_simplex_link">Suchen oder SimpleX-Link einfügen</string>
     <string name="chat_is_stopped_you_should_transfer_database">Der Chat wurde gestoppt. Wenn diese Datenbank bereits auf einem anderen Gerät von Ihnen verwendet wurde, sollten Sie diese dorthin zurück übertragen, bevor Sie den Chat starten.</string>
     <string name="start_chat_question">Chat starten?</string>
@@ -2772,4 +2772,25 @@
     <string name="relay_bar_no_active_relays">Keine aktiven Relais</string>
     <string name="relay_conn_status_removed_by_operator">Vom Betreiber entfernt</string>
     <string name="relay_bar_subscriber_waiting">Warte auf das Hinzufügen von Relais durch den Eigentümer des Kanals.</string>
+    <string name="chat_link_business_address">Geschäftliche Adresse</string>
+    <string name="chat_link_channel">Kanallink</string>
+    <string name="chat_link_contact_address">Kontaktadresse</string>
+    <string name="link_previews_alert_disable">Deaktivieren</string>
+    <string name="link_previews_alert_enable">Aktivieren</string>
+    <string name="link_previews_alert_title">Linkvorschau aktivieren?</string>
+    <string name="error_prefix">Fehler</string>
+    <string name="error_sharing_channel">Fehler beim Teilen des Kanals</string>
+    <string name="chat_link_from_owner">(vom Eigentümer)</string>
+    <string name="chat_link_group">Gruppen-Link</string>
+    <string name="owner_verification_passed">Linksignatur erfolgreich verifiziert.</string>
+    <string name="network_error">Netzwerk-Fehler</string>
+    <string name="chat_link_one_time">Einmal-Link</string>
+    <string name="relay_results">Relay‑Status:</string>
+    <string name="link_previews_alert_desc">Das Senden einer Link-Vorschau kann Ihre IP‑Adresse an die Website übermitteln. Sie können dies später in den Datenschutzeinstellungen ändern.</string>
+    <string name="share_channel">Kanal teilen…</string>
+    <string name="share_via_chat">Per Chat teilen</string>
+    <string name="owner_verification_failed">⚠️ Signaturüberprüfung fehlgeschlagen: %s.</string>
+    <string name="chat_link_signed">(signiert)</string>
+    <string name="tap_to_open">Zum Öffnen tippen</string>
+    <string name="connection_reached_limit_of_undelivered_messages">Die Verbindung hat das Limit für nicht zugestellte Nachrichten erreicht</string>
 </resources>
