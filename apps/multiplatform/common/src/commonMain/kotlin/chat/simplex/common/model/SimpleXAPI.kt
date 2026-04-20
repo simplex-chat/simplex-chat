@@ -266,6 +266,7 @@ class AppPreferences {
     showReportsInSupportChatAlert to true,
     showDeleteConversationNotice to true,
     showDeleteContactNotice to true,
+    privacyLinkPreviewsShowAlert to true,
   )
 
   private fun mkIntPreference(prefName: String, default: Int) =

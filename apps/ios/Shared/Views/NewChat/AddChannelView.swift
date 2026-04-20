@@ -222,6 +222,7 @@ struct AddChannelView: View {
         var operatorGroups: [[UserChatRelay]] = []
         var customRelays: [UserChatRelay] = []
         for op in servers {
+            guard op.operator?.enabled ?? true else { continue }
             let relays = op.chatRelays.filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
             guard !relays.isEmpty else { continue }
             if op.operator != nil {
@@ -256,6 +257,7 @@ struct AddChannelView: View {
     private func checkHasRelays() async -> Bool {
         guard let servers = try? await getUserServers() else { return false }
         return servers.contains { op in
+            (op.operator?.enabled ?? true) &&
             op.chatRelays.contains { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
         }
     }

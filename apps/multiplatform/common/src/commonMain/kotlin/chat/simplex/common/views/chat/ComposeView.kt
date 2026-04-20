@@ -1,6 +1,7 @@
 @file:UseSerializers(UriSerializer::class, ComposeMessageSerializer::class)
 package chat.simplex.common.views.chat
 
+import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -399,20 +402,46 @@ fun ComposeView(
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
+  suspend fun fetchAndUpdateLinkPreview(url: String) {
+    composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
+    val lp = getLinkPreview(url)
+    if (lp != null && pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+      pendingLinkUrl.value = null
+    } else if (pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+      pendingLinkUrl.value = null
+    }
+  }
+
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
-        val lp = getLinkPreview(url)
-        if (lp != null && pendingLinkUrl.value == url) {
-          chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) // to avoid showing alert to current users, show alert in v6.5
-          composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-          pendingLinkUrl.value = null
-        } else if (pendingLinkUrl.value == url) {
-          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-          pendingLinkUrl.value = null
+        if (pendingLinkUrl.value != url) return@withLongRunningApi
+        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
+            && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
+          showLinkPreviewsConfirmAlert { enable ->
+            if (enable != null) {
+              chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
+              chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
+              if (enable) {
+                withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
+              } else if (pendingLinkUrl.value == url) {
+                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+                pendingLinkUrl.value = null
+              }
+            } else {
+              cancelledLinks.add(url)
+              if (pendingLinkUrl.value == url) {
+                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+                pendingLinkUrl.value = null
+              }
+            }
+          }
+          return@withLongRunningApi
         }
+        fetchAndUpdateLinkPreview(url)
       }
     }
   }
@@ -1670,6 +1699,36 @@ fun ComposeView(
       }
     }
   }
+}
+
+private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.link_previews_alert_title),
+    text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+    onDismissRequest = { onChoice(null) },
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(false)
+        }) {
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(true)
+        }) {
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+//        SectionItemView({
+//          AlertManager.shared.hideAlert()
+//          onChoice(null)
+//        }) {
+//          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+//        }
+      }
+    }
+  )
 }
 
 @Composable

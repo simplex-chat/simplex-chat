@@ -180,6 +180,7 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
   val operatorGroups = mutableListOf<List<UserChatRelay>>()
   var customRelays = mutableListOf<UserChatRelay>()
   for (op in servers) {
+    if (op.operator?.enabled == false) continue
     val relays = op.chatRelays.filter { it.enabled && !it.deleted && it.chatRelayId != null }
     if (relays.isEmpty()) continue
     if (op.operator != null) {
@@ -212,6 +213,7 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
 private suspend fun checkHasRelays(): Boolean {
   val servers = try { getUserServers(rh = null) } catch (_: Exception) { null } ?: return false
   return servers.any { op ->
+    (op.operator?.enabled ?: true) &&
     op.chatRelays.any { it.enabled && !it.deleted && it.chatRelayId != null }
   }
 }
