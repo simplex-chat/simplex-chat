@@ -1928,7 +1928,7 @@
     <string name="remote_ctrl_connection_stopped_desc">Bitte überprüfen Sie, ob sich das Mobiltelefon und die Desktop-App im gleichen lokalen Netzwerk befinden, und die Desktop-Firewall die Verbindung erlaubt.
 \nBitte teilen Sie weitere mögliche Probleme den Entwicklern mit.</string>
     <string name="cannot_share_message_alert_title">Nachricht wurde nicht gesendet</string>
-    <string name="cannot_share_message_alert_text">Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.</string>
+    <string name="cannot_share_message_alert_text">Diese Nachricht ist wegen der gewählten Chat-Präferenzen nicht erlaubt.</string>
     <string name="please_try_later">Bitte versuchen Sie es später erneut.</string>
     <string name="private_routing_error">Fehler beim privaten Routing</string>
     <string name="member_inactive_desc">Die Nachricht kann später zugestellt werden, wenn das Mitglied aktiv wird.</string>
@@ -2307,7 +2307,7 @@
     <string name="v6_2_business_chats_descr">Schutz der Privatsphäre Ihrer Kunden.</string>
     <string name="display_name_requested_to_connect">Zur Verbindung aufgefordert</string>
     <string name="maximum_message_size_reached_non_text">Bitte verkleinern Sie die Nachrichten-Größe oder entfernen Sie Medien und versenden Sie diese erneut.</string>
-    <string name="only_chat_owners_can_change_prefs">Nur Chat-Eigentümer können die Präferenzen ändern.</string>
+    <string name="only_chat_owners_can_change_prefs">Präferenzen können nur von Chat-Eigentümern geändert werden.</string>
     <string name="maximum_message_size_reached_text">Bitte verkleinern Sie die Nachrichten-Größe und versenden Sie diese erneut.</string>
     <string name="member_role_will_be_changed_with_notification_chat">Die Rolle wird auf %s geändert. Im Chat wird Jeder darüber informiert.</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</string>
@@ -2793,4 +2793,6 @@
     <string name="chat_link_signed">(signiert)</string>
     <string name="tap_to_open">Zum Öffnen tippen</string>
     <string name="connection_reached_limit_of_undelivered_messages">Die Verbindung hat das Limit für nicht zugestellte Nachrichten erreicht</string>
+    <string name="channel_preferences">Kanal-Präferenzen</string>
+    <string name="only_channel_owners_can_change_prefs">Kanal-Präferenzen können nur von Kanal-Eigentümern geändert werden.</string>
 </resources>
