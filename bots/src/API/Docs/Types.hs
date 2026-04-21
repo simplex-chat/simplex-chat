@@ -202,6 +202,7 @@ chatTypesDocsData =
     (sti @(ContactUserPref SimplePreference), STUnion, "CUP", [], "", ""),
     (sti @(ContactUserPreference SimplePreference), STRecord, "", [], "", ""),
     (sti @(CreatedConnLink 'CMContact), STRecord, "", [], Param "connFullLink" <> Optional "" (" " <> Param "$0") "connShortLink", ""),
+    (sti @AddRelayResult, STRecord, "", [], "", ""),
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
@@ -405,6 +406,7 @@ deriving instance Generic (CIReaction c d)
 deriving instance Generic (ContactUserPref p)
 deriving instance Generic (ContactUserPreference p)
 deriving instance Generic (CreatedConnLink m)
+deriving instance Generic AddRelayResult
 deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType

@@ -41,7 +41,8 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -589,11 +590,12 @@ xftpTestPort = "7002"
 xftpServerFiles :: FilePath
 xftpServerFiles = "tests/tmp/xftp-server-files"
 
-xftpServerConfig :: XFTPServerConfig
+xftpServerConfig :: XFTPServerConfig STMFileStore
 xftpServerConfig =
   XFTPServerConfig
     { xftpPort = xftpTestPort,
       fileIdSize = 16,
+      serverStoreCfg = XSCMemory $ Just "tests/tmp/xftp-server-store.log",
       storeLogFile = Just "tests/tmp/xftp-server-store.log",
       filesPath = xftpServerFiles,
       fileSizeQuota = Nothing,
@@ -628,7 +630,7 @@ xftpServerConfig =
 withXFTPServer :: IO () -> IO ()
 withXFTPServer = withXFTPServer' xftpServerConfig
 
-withXFTPServer' :: XFTPServerConfig -> IO () -> IO ()
+withXFTPServer' :: XFTPServerConfig STMFileStore -> IO () -> IO ()
 withXFTPServer' cfg =
   serverBracket
     ( \started -> do

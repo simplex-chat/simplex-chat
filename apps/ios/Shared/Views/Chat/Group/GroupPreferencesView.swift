@@ -27,26 +27,33 @@ struct GroupPreferencesView: View {
     @State private var showSaveDialogue = false
 
     var body: some View {
-        let saveText: LocalizedStringKey = creatingGroup ? "Save" : "Save and notify group members"
+        let saveText: LocalizedStringKey = creatingGroup ? "Save" : groupInfo.useRelays ? "Save and notify subscribers" : "Save and notify group members"
         VStack {
             List {
-                Section {
-                    MemberAdmissionButton(
-                        groupInfo: $groupInfo,
-                        admission: groupInfo.groupProfile.memberAdmission_,
-                        currentAdmission: groupInfo.groupProfile.memberAdmission_,
-                        creatingGroup: creatingGroup
-                    )
+                if !groupInfo.useRelays {
+                    Section {
+                        MemberAdmissionButton(
+                            groupInfo: $groupInfo,
+                            admission: groupInfo.groupProfile.memberAdmission_,
+                            currentAdmission: groupInfo.groupProfile.memberAdmission_,
+                            creatingGroup: creatingGroup
+                        )
+                    }
+                    featureSection(.timedMessages, $preferences.timedMessages.enable)
+                    featureSection(.fullDelete, $preferences.fullDelete.enable)
+                    featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
+                    featureSection(.reactions, $preferences.reactions.enable)
+                    featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
+                    featureSection(.files, $preferences.files.enable, $preferences.files.role)
+                    featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
+                    featureSection(.reports, $preferences.reports.enable)
+                    featureSection(.history, $preferences.history.enable)
+                } else {
+                    featureSection(.timedMessages, $preferences.timedMessages.enable)
+                    featureSection(.fullDelete, $preferences.fullDelete.enable)
+                    featureSection(.reactions, $preferences.reactions.enable)
+                    featureSection(.history, $preferences.history.enable)
                 }
-                featureSection(.timedMessages, $preferences.timedMessages.enable)
-                featureSection(.fullDelete, $preferences.fullDelete.enable)
-                featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
-                featureSection(.reactions, $preferences.reactions.enable)
-                featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
-                featureSection(.files, $preferences.files.enable, $preferences.files.role)
-                featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
-                featureSection(.reports, $preferences.reports.enable)
-                featureSection(.history, $preferences.history.enable)
 
                 if groupInfo.isOwner {
                     Section {

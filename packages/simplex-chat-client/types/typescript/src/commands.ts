@@ -351,7 +351,7 @@ export interface APINewPublicGroup {
 }
 
 export namespace APINewPublicGroup {
-  export type Response = CR.PublicGroupCreated | CR.ChatCmdError
+  export type Response = CR.PublicGroupCreated | CR.PublicGroupCreationFailed | CR.ChatCmdError
 
   export function cmdString(self: APINewPublicGroup): string {
     return '/_public group ' + self.userId + (self.incognito ? ' incognito=on' : '') + ' ' + self.relayIds.join(',') + ' ' + JSON.stringify(self.groupProfile)

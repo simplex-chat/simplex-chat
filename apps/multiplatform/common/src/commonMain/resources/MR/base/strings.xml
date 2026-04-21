@@ -465,6 +465,15 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="talk_to_someone">Talk to someone</string>
+  <string name="let_someone_connect_to_you">Let someone connect to you</string>
+  <string name="connect_via_link_or_qr_code">Connect via link or QR code</string>
+  <string name="connect_with_someone">Connect with someone</string>
+  <string name="invite_someone_privately">Invite someone privately</string>
+  <string name="a_link_for_one_person">A link for one person to connect</string>
+  <string name="create_your_public_address">Create your public address</string>
+  <string name="your_public_address">Your public address</string>
+  <string name="for_anyone_to_reach_you">For anyone to reach you</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="no_chats_in_list">No chats in list %s.</string>
@@ -497,6 +506,7 @@
   <string name="chat_list_favorites">Favorites</string>
   <string name="chat_list_contacts">Contacts</string>
   <string name="chat_list_groups">Groups</string>
+  <string name="chat_list_channels">Channels</string>
   <string name="chat_list_businesses">Businesses</string>
   <string name="chat_list_notes">Notes</string>
   <string name="chat_list_group_reports">Reports</string>
@@ -903,7 +913,7 @@
   <string name="new_chat">New chat</string>
   <string name="new_message">New message</string>
   <string name="add_contact_tab">Add contact</string>
-  <string name="scan_paste_link">Scan / Paste link</string>
+  <string name="scan_paste_link">Paste link / Scan</string>
   <string name="paste_link">Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
@@ -1131,12 +1141,12 @@
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
   <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
-  <string name="add_address_to_your_profile">Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</string>
+  <string name="add_address_to_your_profile">Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</string>
   <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
   <string name="create_simplex_address">Create SimpleX address</string>
-  <string name="share_with_contacts">Share with contacts</string>
-  <string name="share_address_with_contacts_question">Share address with contacts?</string>
-  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your contacts.</string>
+  <string name="share_with_contacts">Share with SimpleX contacts</string>
+  <string name="share_address_with_contacts_question">Share address with SimpleX contacts?</string>
+  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your SimpleX contacts.</string>
   <string name="stop_sharing_address">Stop sharing address?</string>
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>
@@ -1153,6 +1163,11 @@
   <string name="or_to_share_privately">Or to share privately</string>
   <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
   <string name="create_1_time_link">Create 1-time link</string>
+  <string name="new_1_time_link">New 1-time link</string>
+  <string name="onboarding_send_1_time_link">Send the link via any messenger - it\'s secure. Ask to paste into SimpleX.</string>
+  <string name="onboarding_or_show_qr_code">Or show QR in person or via video call.</string>
+  <string name="onboarding_post_address">Use this address in your social media profile, website, or email signature.</string>
+  <string name="onboarding_or_use_qr_code">Or use this QR - print or show online.</string>
   <string name="address_settings">Address settings</string>
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
@@ -1875,6 +1890,7 @@
   <string name="error_creating_member_contact">Error creating member contact</string>
   <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="only_channel_owners_can_change_prefs">Only channel owners can change channel preferences.</string>
   <string name="only_chat_owners_can_change_prefs">Only chat owners can change preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
@@ -2217,6 +2233,7 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="channel_preferences">Channel preferences</string>
   <string name="set_group_preferences">Set group preferences</string>
   <string name="set_member_admission">Set member admission</string>
   <string name="your_preferences">Your preferences</string>
@@ -2562,6 +2579,17 @@
   <string name="v6_4_1_short_address_share">Share your address</string>
   <string name="v6_4_1_new_interface_languages">4 new interface languages</string>
   <string name="v6_4_1_new_interface_languages_descr">Catalan, Indonesian, Romanian and Vietnamese - thanks to our users!</string>
+  <string name="v6_5_public_channels">Public channels - speak freely 🚀</string>
+  <string name="v6_5_reliability">Reliability: many relays per channel.</string>
+  <string name="v6_5_ownership">Ownership: you can run your own relays.</string>
+  <string name="v6_5_security">Security: owners hold channel keys.</string>
+  <string name="v6_5_privacy">Privacy: for owners and subscribers.</string>
+  <string name="v6_5_invite_friends">Easier to invite your friends 👋</string>
+  <string name="v6_5_invite_friends_descr">We made connecting simpler for new users.</string>
+  <string name="v6_5_safe_web_links">Safe web links</string>
+  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
+  <string name="v6_5_non_profit_governance">Non-profit governance</string>
+  <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
@@ -2943,6 +2971,10 @@
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
+  <string name="relay_results">Relay results:</string>
+  <string name="connection_reached_limit_of_undelivered_messages">The connection reached the limit of undelivered messages</string>
+  <string name="network_error">Network error</string>
+  <string name="error_prefix">Error</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
   <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
@@ -2966,4 +2998,11 @@
 
   <!-- ChatListNavLinkView.kt channel-related -->
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
+
+  <!-- ComposeView.kt link previews opt-in alert -->
+  <string name="link_previews_alert_title">Enable link previews?</string>
+  <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
+  <string name="link_previews_alert_enable">Enable</string>
+  <string name="link_previews_alert_disable">Disable</string>
+  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
 </resources>

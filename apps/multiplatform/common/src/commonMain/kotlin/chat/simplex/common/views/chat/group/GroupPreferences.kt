@@ -10,6 +10,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -56,10 +57,12 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       afterSave()
     }
   }
+  val saveTextId = if (gInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
+    else MR.strings.save_and_notify_group_members
   ModalView(
     close = {
       if (preferences == currentPreferences) close()
-      else showUnsavedChangesAlert({ savePrefs(close) }, close)
+      else showUnsavedChangesAlert({ savePrefs(close) }, close, saveTextId)
     },
   ) {
     GroupPreferencesLayout(
@@ -97,17 +100,11 @@ private fun GroupPreferencesLayout(
   savePrefs: () -> Unit,
   openMemberAdmission: () -> Unit,
 ) {
-  ColumnWithScrollBar {
-    val titleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
-    AppBarTitle(stringResource(titleId))
-    if (groupInfo.businessChat == null) {
-      MemberAdmissionButton(openMemberAdmission)
-      SectionDividerSpaced(maxBottomPadding = false)
-    }
+  val onTTLUpdated = { ttl: Int? ->
+    applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
+  }
+  @Composable fun TimedMessagesPreference() {
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
-    val onTTLUpdated = { ttl: Int? ->
-      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
-    }
     FeatureSection(GroupFeature.TimedMessages, timedMessages, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       if (enable == GroupFeatureEnabled.ON) {
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = preferences.timedMessages.ttl ?: 86400)))
@@ -115,58 +112,104 @@ private fun GroupPreferencesLayout(
         applyPrefs(preferences.copy(timedMessages = TimedMessagesGroupPreference(enable = enable, ttl = currentPreferences.timedMessages.ttl)))
       }
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun DirectMessagesPreference() {
     val allowDirectMessages = remember(preferences) { mutableStateOf(preferences.directMessages.enable) }
     val directMessagesRole = remember(preferences) { mutableStateOf(preferences.directMessages.role) }
     FeatureSection(GroupFeature.DirectMessages, allowDirectMessages, directMessagesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
       applyPrefs(preferences.copy(directMessages = RoleGroupPreference(enable = enable, role)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun FullDeletePreference() {
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.enable) }
     FeatureSection(GroupFeature.FullDelete, allowFullDeletion, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(fullDelete = GroupPreference(enable = enable)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun ReactionsPreference() {
     val allowReactions = remember(preferences) { mutableStateOf(preferences.reactions.enable) }
     FeatureSection(GroupFeature.Reactions, allowReactions, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(reactions = GroupPreference(enable = enable)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun VoicePreference() {
     val allowVoice = remember(preferences) { mutableStateOf(preferences.voice.enable) }
     val voiceRole = remember(preferences) { mutableStateOf(preferences.voice.role) }
     FeatureSection(GroupFeature.Voice, allowVoice, voiceRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
       applyPrefs(preferences.copy(voice = RoleGroupPreference(enable = enable, role)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun FilesPreference() {
     val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
     val filesRole = remember(preferences) { mutableStateOf(preferences.files.role) }
     FeatureSection(GroupFeature.Files, allowFiles, filesRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
       applyPrefs(preferences.copy(files = RoleGroupPreference(enable = enable, role)))
     }
-
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun SimplexLinksPreference() {
     val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
     val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
     FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
       applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
     }
-
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun ReportsPreference() {
     val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
     FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
     }
-    SectionDividerSpaced(true, maxBottomPadding = false)
+  }
+  @Composable fun HistoryPreference() {
     val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
     FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
+  }
+  ColumnWithScrollBar {
+    val titleId = if (groupInfo.useRelays) MR.strings.channel_preferences
+      else if (groupInfo.businessChat == null) MR.strings.group_preferences
+      else MR.strings.chat_preferences
+    AppBarTitle(stringResource(titleId))
+    if (!groupInfo.useRelays) {
+      if (groupInfo.businessChat == null) {
+        MemberAdmissionButton(openMemberAdmission)
+        SectionDividerSpaced(maxBottomPadding = false)
+      }
+      TimedMessagesPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      DirectMessagesPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      FullDeletePreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      ReactionsPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      VoicePreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      FilesPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      SimplexLinksPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      ReportsPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      HistoryPreference()
+    } else {
+      TimedMessagesPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      FullDeletePreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      ReactionsPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      HistoryPreference()
+    }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      val saveTextId = if (groupInfo.useRelays) MR.strings.save_and_notify_channel_subscribers
+        else MR.strings.save_and_notify_group_members
       ResetSaveButtons(
         reset = reset,
         save = savePrefs,
-        disabled = preferences == currentPreferences
+        disabled = preferences == currentPreferences,
+        saveTextId = saveTextId
       )
     }
     SectionBottomSpacer()
@@ -253,21 +296,21 @@ private fun FeatureSection(
 }
 
 @Composable
-private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean) {
+private fun ResetSaveButtons(reset: () -> Unit, save: () -> Unit, disabled: Boolean, saveTextId: StringResource) {
   SectionView {
     SectionItemView(reset, disabled = disabled) {
       Text(stringResource(MR.strings.reset_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
     SectionItemView(save, disabled = disabled) {
-      Text(stringResource(MR.strings.save_and_notify_group_members), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Text(stringResource(saveTextId), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
     }
   }
 }
 
-private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit, confirmTextId: StringResource) {
   AlertManager.shared.showAlertDialogStacked(
     title = generalGetString(MR.strings.save_preferences_question),
-    confirmText = generalGetString(MR.strings.save_and_notify_group_members),
+    confirmText = generalGetString(confirmTextId),
     dismissText = generalGetString(MR.strings.exit_without_saving),
     onConfirm = save,
     onDismiss = revert,

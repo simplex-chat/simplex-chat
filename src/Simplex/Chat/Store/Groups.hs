@@ -687,6 +687,14 @@ updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMem
               WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)
             |]
             (newUserId, currentTs, groupId)
+          DB.execute
+            db
+            [sql|
+              UPDATE chat_items
+              SET user_id = ?, updated_at = ?
+              WHERE group_id = ?
+            |]
+            (newUserId, currentTs, groupId)
           safeDeleteLDN db user oldGroupLDN
     updateMembership GroupMember {groupMemberId = membershipId} currentTs =
       DB.execute

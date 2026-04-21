@@ -180,6 +180,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
+  CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
@@ -1237,6 +1238,14 @@ viewGroupCreated g testView =
           | otherwise = "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
   where
     relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
+
+viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
+viewPublicGroupCreationFailed results =
+  ["channel not created, results:"]
+    <> map showRelayResult results
+  where
+    showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
+      "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =

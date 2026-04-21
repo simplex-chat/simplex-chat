@@ -38,8 +38,9 @@ enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     case favorites = 1
     case contacts = 2
     case groups = 3
-    case business = 4
-    case notes = 5
+    case channels = 4
+    case business = 5
+    case notes = 6
 
     var id: Int { rawValue }
     
@@ -293,36 +294,40 @@ struct ChatListView: View {
     
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
-        ToolbarItem(placement: .principal) { SubsStatusIndicator() }
+        ToolbarItem(placement: .principal) { if !shouldShowOnboarding { SubsStatusIndicator() } }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
-    
+
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItem(placement: .bottomBar) {
             HStack {
                 leadingToolbarItem.padding(.bottom, padding)
                 Spacer()
-                SubsStatusIndicator().padding(.bottom, padding)
-                Spacer()
+                if !shouldShowOnboarding {
+                    SubsStatusIndicator().padding(.bottom, padding)
+                    Spacer()
+                }
                 trailingToolbarItem.padding(.bottom, padding)
             }
             .contentShape(Rectangle())
             .onTapGesture { scrollToSearchBar = true }
         }
     }
-    
+
     @ToolbarContentBuilder func bottomToolbarGroup() -> some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItemGroup(placement: viewOnScreen ? .bottomBar : .principal) {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
-            SubsStatusIndicator().padding(.bottom, padding)
-            Spacer()
+            if !shouldShowOnboarding {
+                SubsStatusIndicator().padding(.bottom, padding)
+                Spacer()
+            }
             trailingToolbarItem.padding(.bottom, padding)
         }
     }
-    
+
     @ViewBuilder var leadingToolbarItem: some View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
@@ -348,7 +353,34 @@ struct ChatListView: View {
         }
     }
     
-    private var chatList: some View {
+    private var shouldShowOnboarding: Bool {
+        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations
+    }
+
+    private var hasConversations: Bool {
+        chatModel.chats.contains { chat in
+            switch chat.chatInfo {
+            case .local: return false
+            case let .direct(contact): return !contact.chatDeleted && !contact.isContactCard
+            case .group: return true
+            case .contactRequest: return false
+            case .contactConnection: return false
+            case .invalidJSON: return false
+            }
+        }
+    }
+
+    @ViewBuilder private var chatList: some View {
+        if shouldShowOnboarding {
+            ConnectOnboardingView()
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .modifier(ThemedBackground())
+        } else {
+            chatListContent
+        }
+    }
+
+    private var chatListContent: some View {
         let cs = filteredChats()
         return ZStack {
             ScrollViewReader { scrollProxy in
@@ -395,8 +427,8 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    if !addressCreationCardShown {
-                        AddressCreationCard()
+                    if !addressCreationCardShown && hasConversations {
+                        ConnectBannerCard()
                             .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
@@ -881,6 +913,7 @@ struct TagsView: View {
         case .favorites: (active ? "star.fill" : "star", "Favorites")
         case .contacts: (active ? "person.fill" : "person", "Contacts")
         case .groups: (active ? "person.2.fill" : "person.2", "Groups")
+        case .channels: (active ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle", "Channels")
         case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
         case .notes: (active ? "folder.fill" : "folder", "Notes")
         }
@@ -924,7 +957,12 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.businessChat == nil
+        case let .group(groupInfo, _): groupInfo.businessChat == nil && !groupInfo.isChannel
+        default: false
+        }
+    case .channels:
+        switch chatInfo {
+        case let .group(groupInfo, _): groupInfo.isChannel
         default: false
         }
     case .business:
