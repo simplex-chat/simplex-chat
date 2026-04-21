@@ -1974,23 +1974,13 @@ testRegisterChannelViaCard ps =
             bob <## "#news: relay added 'SimpleX Directory_1' to the group"
           ]
         -- owner sends a message to trigger member introduction
-        bob #> "#news hello"
-        putStrLn "=== waiting for bob notification and superuser approval request ==="
-        concurrentlyN_
-          [ do
-              bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-              putStrLn "=== bob got notification ===",
-            relay <# "#news> hello",
-            do
-              superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
-              superUser <## "news"
-              superUser .<## "members"
-              superUser <## ""
-              superUser <## "To approve send:"
-              superUser <# "'SimpleX Directory'> /approve 1:news 1"
-              putStrLn "=== superUser got approval request ==="
-          ]
-        putStrLn "=== both received, approving ==="
+        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
+        superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
+        superUser <## "news"
+        superUser <## "2 members"
+        superUser <## ""
+        superUser <## "To approve send:"
+        superUser <# "'SimpleX Directory'> /approve 1:news 1"
         -- superuser approves
         let approve = "/approve 1:news 1"
         superUser #> ("@'SimpleX Directory' " <> approve)
