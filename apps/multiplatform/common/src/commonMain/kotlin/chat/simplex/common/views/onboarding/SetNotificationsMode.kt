@@ -8,7 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.AnnotatedString
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,28 +33,46 @@ fun SetNotificationsMode(m: ChatModel) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
-        Box(Modifier.align(Alignment.CenterHorizontally)) {
-          AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title), bottomPadding = DEFAULT_PADDING)
-        }
         val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
-        Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        
+        Column(
+          Modifier
+            .fillMaxWidth()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+            .padding(top = DEFAULT_PADDING),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          Text(
+            text = stringResource(MR.strings.onboarding_notifications_mode_title),
+            style = MaterialTheme.typography.h1,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.onBackground,
+            textAlign = TextAlign.Center
+          )
+          
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          
           OnboardingInformationButton(
             stringResource(MR.strings.onboarding_notifications_mode_subtitle),
             onClick = { ModalManager.fullscreen.showModalCloseable { NotificationBatteryUsageInfo() } }
           )
         }
+        
         Spacer(Modifier.weight(1f))
-        Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)) {
-          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short)) {
-            currentMode.value = NotificationsMode.SERVICE
-          }
-          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short)) {
-            currentMode.value = NotificationsMode.PERIODIC
-          }
-          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short)) {
-            currentMode.value = NotificationsMode.OFF
-          }
+        
+        // Notification options with connecting line
+        Column(
+          Modifier
+            .fillMaxWidth()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+          horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+          NotificationOptionsWithConnector(
+            currentMode = currentMode,
+            onModeSelected = { currentMode.value = it }
+          )
         }
+        
         Spacer(Modifier.weight(1f))
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
@@ -77,31 +97,99 @@ fun SetNotificationsMode(m: ChatModel) {
 expect fun SetNotificationsModeAdditions()
 
 @Composable
-fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, description: AnnotatedString, onSelected: (T) -> Unit) {
-  TextButton(
-    onClick = { onSelected(newValue) },
-    border = BorderStroke(1.dp, color = if (currentValue.value == newValue) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)),
-    shape = RoundedCornerShape(35.dp),
+private fun NotificationOptionsWithConnector(
+  currentMode: State<NotificationsMode>,
+  onModeSelected: (NotificationsMode) -> Unit
+) {
+  val options = listOf(
+    NotificationsMode.SERVICE to (stringResource(MR.strings.onboarding_notifications_mode_service) to annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short)),
+    NotificationsMode.PERIODIC to (stringResource(MR.strings.onboarding_notifications_mode_periodic) to annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short)),
+    NotificationsMode.OFF to (stringResource(MR.strings.onboarding_notifications_mode_off) to annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short))
+  )
+  
+  val iconResByMode = mapOf(
+    NotificationsMode.SERVICE to MR.images.ic_bolt_filled,
+    NotificationsMode.PERIODIC to MR.images.ic_schedule,
+    NotificationsMode.OFF to MR.images.ic_refresh
+  )
+  
+  Column(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Column(Modifier.padding(horizontal = 10.dp).padding(top = 4.dp, bottom = 8.dp).fillMaxWidth()) {
-      Text(
-        title,
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Medium,
-        color = if (currentValue.value == newValue) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-        modifier = Modifier.padding(bottom = 8.dp).align(Alignment.CenterHorizontally),
-        textAlign = TextAlign.Center
+    options.forEachIndexed { index, (mode, titleDesc) ->
+      val (title, description) = titleDesc
+      
+      SelectableCard(
+        currentValue = currentMode,
+        newValue = mode,
+        title = title,
+        description = description,
+        onSelected = { onModeSelected(mode) },
+        icon = painterResource(iconResByMode[mode]!!)
       )
-      Text(description,
-        Modifier.align(Alignment.CenterHorizontally),
-        fontSize = 15.sp,
-        color = MaterialTheme.colors.onBackground,
-        lineHeight = 24.sp,
-        textAlign = TextAlign.Center
-      )
+      
+      if (index < options.size - 1) {
+        Spacer(Modifier.height(16.dp))
+      }
     }
   }
-  Spacer(Modifier.height(14.dp))
+}
+
+@Composable
+fun <T> SelectableCard(
+  currentValue: State<T>,
+  newValue: T,
+  title: String,
+  description: AnnotatedString,
+  onSelected: (T) -> Unit,
+  icon: Painter? = null
+) {
+  val isSelected = currentValue.value == newValue
+  val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary.copy(alpha = 0.5f)
+  val titleColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+  val iconTint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+  
+  TextButton(
+    onClick = { onSelected(newValue) },
+    border = BorderStroke(2.dp, color = borderColor),
+    shape = RoundedCornerShape(18.dp),
+    modifier = Modifier.fillMaxWidth()
+  ) {
+    Row(
+      Modifier
+        .padding(horizontal = 12.dp)
+        .padding(vertical = 8.dp)
+        .fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      if (icon != null) {
+        Icon(
+          painter = icon,
+          contentDescription = null,
+          tint = iconTint,
+          modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+      }
+      Column {
+        Text(
+          title,
+          style = MaterialTheme.typography.h4,
+          fontWeight = FontWeight.Bold,
+          color = titleColor,
+          textAlign = TextAlign.Start
+        )
+        Text(
+          description,
+          fontSize = 15.sp,
+          color = MaterialTheme.colors.onBackground,
+          lineHeight = 20.sp,
+          textAlign = TextAlign.Start
+        )
+      }
+    }
+  }
 }
 
 @Composable
