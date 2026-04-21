@@ -705,11 +705,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       useMemberFilter image $ passCaptcha a
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
-    sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image'}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
+    sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
       ct_ <- getContact' cc user dbContactId
-      let membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_\n"
+      let gt = maybe "group" groupTypeStr' pg_
+          membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_\n"
           text =
-            either (\_ -> "The group ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow groupId <> ": ") ct_
+            either (\_ -> "The " <> gt <> " ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the " <> gt <> " ID " <> tshow groupId <> ": ") ct_
               <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
       withAdminUsers $ \cId -> do
@@ -805,41 +806,54 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
 
     deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
-    deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just _}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) = do
-      let link = ACL SCMContact $ CLShort connLink
-          mId = MemberId oIdBytes
-      sendChatCmd cc (APIConnectPlan userId (Just link) True (Just ownerSig)) >>= \case
-        Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) ->
-          handleGroupLinkPlan ct ccLink mId ownerSig plan
-        _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
-    deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just _}}) _ =
-      sendMessage cc ct "To add a channel to directory you must be the owner."
+    deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just pg}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) =
+      case groupType (pg :: PublicGroupProfile) of
+        GTUnknown tag -> sendMessage cc ct $ "Unsupported group type: " <> T.pack (show tag)
+        gt -> do
+          let link = ACL SCMContact $ CLShort connLink
+              mId = MemberId oIdBytes
+              gt' = groupTypeStr gt
+          sendChatCmd cc (APIConnectPlan userId (Just link) True (Just ownerSig)) >>= \case
+            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) ->
+              handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
+            _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
+    deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just pg}}) _ =
+      sendMessage cc ct $ "To add a " <> groupTypeStr' pg <> " to directory you must be the owner."
     deChatLinkReceived ct _ _ =
       sendMessage cc ct "Only channels can be added to directory via link."
 
-    handleGroupLinkPlan :: Contact -> CreatedLinkContact -> MemberId -> LinkOwnerSig -> ConnectionPlan -> IO ()
-    handleGroupLinkPlan ct ccLink mId ownerSig = \case
+    groupTypeStr :: GroupType -> Text
+    groupTypeStr = \case
+      GTChannel -> "channel"
+      GTGroup -> "group"
+      GTUnknown _ -> "group"
+
+    groupTypeStr' :: PublicGroupProfile -> Text
+    groupTypeStr' = groupTypeStr . groupType
+
+    handleGroupLinkPlan :: Contact -> CreatedLinkContact -> MemberId -> LinkOwnerSig -> Text -> ConnectionPlan -> IO ()
+    handleGroupLinkPlan ct ccLink mId ownerSig gt = \case
       CPGroupLink glp -> case glp of
         GLPOk {groupSLinkData_, ownerVerification} -> case (groupSLinkData_, ownerVerification) of
-          (Just groupSLinkData, Just OVVerified) -> joinAndRegisterPublicGroup ct ccLink mId groupSLinkData
-          (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
-          (Nothing, _) -> sendMessage cc ct "Error: no channel information available via the link."
-          _ -> sendMessage cc ct "Error: could not verify channel ownership. Please report it to directory admins."
+          (Just groupSLinkData, Just OVVerified) -> joinAndRegisterPublicGroup ct ccLink mId gt groupSLinkData
+          (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
+          (Nothing, _) -> sendMessage cc ct $ "Error: no " <> gt <> " information available via the link."
+          _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
         GLPKnown {groupInfo = g, ownerVerification, groupSLinkData_} -> case ownerVerification of
           Just OVVerified -> deReregistration ct g ownerSig groupSLinkData_
-          Just (OVFailed reason) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
-          Nothing -> sendMessage cc ct "Error: could not verify ownership."
-        GLPConnectingProhibit _ -> sendMessage cc ct "Already connecting to this channel."
-        GLPConnectingConfirmReconnect -> sendMessage cc ct "Already connecting to this channel."
-        GLPNoRelays _ -> sendMessage cc ct "Channel has no active relays. Please try again later."
+          Just (OVFailed reason) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
+          Nothing -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership."
+        GLPConnectingProhibit _ -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
+        GLPConnectingConfirmReconnect -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
+        GLPNoRelays _ -> sendMessage cc ct $ T.toTitle gt <> " has no active relays. Please try again later."
         GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
       _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
 
-    joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> GroupShortLinkData -> IO ()
-    joinAndRegisterPublicGroup ct ccLink mId groupSLinkData = do
+    joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> Text -> GroupShortLinkData -> IO ()
+    joinAndRegisterPublicGroup ct ccLink mId gt groupSLinkData = do
       let GroupShortLinkData {groupProfile = GroupProfile {displayName}} = groupSLinkData
           ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
-      sendMessage cc ct $ "Joining the channel " <> displayName <> "…"
+      sendMessage cc ct $ "Joining the " <> gt <> " " <> displayName <> "…"
       sendChatCmd cc (APIPrepareGroup userId ccLink False groupSLinkData) >>= \case
         Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) -> do
           let gId = groupId' gInfo
@@ -852,20 +866,21 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 Left e -> do
                   logError $ "could not find owner member: " <> T.pack e
                   sendMessage cc ct "Error: could not find owner member after joining. Please report it to directory admins."
-            _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
-        _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
+            _ -> sendMessage cc ct $ "Error joining " <> gt <> " " <> displayName <> ", please re-send the link!"
+        _ -> sendMessage cc ct $ "Error joining " <> gt <> " " <> displayName <> ", please re-send the link!"
 
     deReregistration :: Contact -> GroupInfo -> LinkOwnerSig -> Maybe GroupShortLinkData -> IO ()
     deReregistration _ct _g _ownerSig _groupSLinkData_ = pure () -- TODO implement re-registration per plan
 
     deOwnerMemberAnnounced :: GroupInfo -> GroupMember -> GroupMember -> IO ()
-    deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} fromMember announcedMember =
+    deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName, publicGroup}} fromMember announcedMember =
       withGroupReg g "owner member announced" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} ->
         when (groupRegStatus == GRSProposed && (dbOwnerMemberId == Just (groupMemberId' fromMember) || dbOwnerMemberId == Just (groupMemberId' announcedMember))) $
           let GroupMember {memberRole = role} = announcedMember
+              gt = maybe "group" groupTypeStr' publicGroup
           in if role >= GROwner
             then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
-              notifyOwner gr' $ "Joined the channel " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
+              notifyOwner gr' $ "Joined the " <> gt <> " " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
               sendToApprove g gr' 1
             else do
               setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
@@ -1082,13 +1097,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             withGroupAndReg sendReply groupId n $ \g gr@GroupReg {userGroupRegId = ugrId, promoted} ->
               case groupRegStatus gr of
                 GRSPendingApproval gaId
-                  | gaId == groupApprovalId ->
+                  | gaId == groupApprovalId -> do
+                      let GroupInfo {groupProfile = GroupProfile {publicGroup = pg_}} = g
+                          isPublicGroup_ = isJust pg_
+                          gt = maybe "group" groupTypeStr' pg_
                       getDuplicateGroup g >>= \case
                         Left e -> sendReply $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
-                        Right DGReserved -> sendReply $ "The group " <> groupRef <> " is already listed in the directory."
+                        Right DGReserved -> sendReply $ "The " <> gt <> " " <> groupRef <> " is already listed in the directory."
                         _ -> do
-                          let GroupInfo {groupProfile = GroupProfile {publicGroup = pg_}} = g
-                              isPublicGroup_ = isJust pg_
                           rolesOk <- if isPublicGroup_ then pure (Right GRSOk) else getGroupRolesStatus g gr
                           case rolesOk of
                             Right GRSOk -> do
@@ -1096,7 +1112,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                                     | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
                                     | otherwise = False
                               setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
-                                let approved = "The group " <> userGroupReference' gr n <> " is approved"
+                                let approved = "The " <> gt <> " " <> userGroupReference' gr n <> " is approved"
                                 notifyOwner gr $
                                   (approved <> " and listed in directory - please moderate it!\n")
                                     <> "_Please note_: if you change the group profile it will be hidden from directory until it is re-approved.\n\n"
@@ -1111,7 +1127,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                                         owner <- groupOwnerInfo groupRef $ dbContactId gr
                                         pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
                                       Left err -> pure err
-                                sendReply $ "Group approved" <> (if grPromoted' then " (promoted)" else "") <> "!" <> maybe "" ("\n" <>) invited
+                                sendReply $ T.toTitle gt <> " approved" <> (if grPromoted' then " (promoted)" else "") <> "!" <> maybe "" ("\n" <>) invited
                                 notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> maybe "" ("\n" <>) invited
                             Right GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                             Right GRSContactNotOwner -> replyNotApproved "user is not an owner."

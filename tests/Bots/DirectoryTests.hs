@@ -1975,7 +1975,7 @@ testRegisterChannelViaCard ps =
           ]
         -- owner sends a message to trigger member introduction
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
-        superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
+        superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
         superUser <## "2 members"
         superUser <## ""
@@ -1985,8 +1985,8 @@ testRegisterChannelViaCard ps =
         let approve = "/approve 1:news 1"
         superUser #> ("@'SimpleX Directory' " <> approve)
         superUser <# ("'SimpleX Directory'> > " <> approve)
-        superUser <## "      Group approved!"
-        bob <# ("'SimpleX Directory'> The group ID 1 (news) is approved and listed in directory - please moderate it!")
+        superUser <## "      Channel approved!"
+        bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
         bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
         bob <## ""
         bob <## "Supported commands:"
