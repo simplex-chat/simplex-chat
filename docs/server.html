@@ -989,7 +989,7 @@ window.addEventListener('click',(e)=>{
 <li>Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (<code>smp1.example.com</code>)</li>
 <li>A basic Linux knowledge.</li>
 </ul>
-<p><em>Please note</em>: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of <code>simplex.chat</code> domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generaing the links with <code>simplex:</code> scheme that cannot be opened in the browsers.</p>
+<p><em>Please note</em>: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of <code>simplex.chat</code> domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generating the links with <code>simplex:</code> scheme that cannot be opened in the browsers.</p>
 <ol>
 <li>
 <p>Install server with <a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Installation script</a>.</p>
@@ -1010,7 +1010,7 @@ ufw allow 5223/tcp
                         --control-port \
                         --socks-proxy \
                         --source-code \
-                        --fqdn=smp1.example.com
+                        --fqdn=smp1.example.com'
 </code></pre>
 </li>
 <li>
@@ -1035,7 +1035,7 @@ chmod 700 /var/lib/tor/simplex-smp/
 <p>Paste the following:</p>
 <pre><code class="language-sh"># Enable log (otherwise, tor doesn't seem to deploy onion address)
 Log notice file /var/log/tor/notices.log
-# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
+# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonymity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
 SOCKSPort 0
 HiddenServiceNonAnonymousMode 1
 HiddenServiceSingleHopMode 1
@@ -1099,12 +1099,12 @@ folder_out='/etc/opt/simplex'
 key_name='web.key'
 cert_name='web.crt'
 
-# Copy certifiacte from Caddy directory to smp-server directory
+# Copy certificate from Caddy directory to smp-server directory
 cp &quot;${folder_in}/${domain}.crt&quot; &quot;${folder_out}/${cert_name}&quot;
 # Assign correct permissions
 chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${cert_name}&quot;
 
-# Copy certifiacte key from Caddy directory to smp-server directory
+# Copy certificate key from Caddy directory to smp-server directory
 cp &quot;${folder_in}/${domain}.key&quot; &quot;${folder_out}/${key_name}&quot;
 # Assign correct permissions
 chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${key_name}&quot;
@@ -1399,7 +1399,7 @@ WEB_MANUAL=1
 <p>Good signature from &quot;SimpleX Chat <a href="mailto:chat@simplex.chat">chat@simplex.chat</a>&quot;</p>
 </blockquote>
 <ol start="5">
-<li>Compute the hashes of the binaries you plan to use with <code>shu256sum &lt;file&gt;</code> or with <code>openssl sha256 &lt;file&gt;</code> and compare them with the hashes in the file <code>_sha256sums</code> - they must be the same.</li>
+<li>Compute the hashes of the binaries you plan to use with <code>sha256sum &lt;file&gt;</code> or with <code>openssl sha256 &lt;file&gt;</code> and compare them with the hashes in the file <code>_sha256sums</code> - they must be the same.</li>
 </ol>
 <p>That is it - you now verified authenticity of our GitHub server binaries.</p>
 <h2 id="configuration" tabindex="-1">Configuration</h2>
@@ -1477,7 +1477,7 @@ Available options:
 <li>protect <code>smp-server</code> with a password <code>test</code>.</li>
 </ul>
 <hr>
-<p>After that, your installation is complete and you should see in your teminal output something like this:</p>
+<p>After that, your installation is complete and you should see in your terminal output something like this:</p>
 <pre><code class="language-sh">Certificate request self-signature ok
 subject=CN = 127.0.0.1
 Server initialized, you can modify configuration in /etc/opt/simplex/smp-server.ini.
@@ -1578,7 +1578,7 @@ websockets: off
 [PROXY]
 # Network configuration for SMP proxy client.
 # `host_mode` can be 'public' (default) or 'onion'.
-# It defines prefferred hostname for destination servers with multiple hostnames.
+# It defines preferred hostname for destination servers with multiple hostnames.
 # host_mode: public
 # required_host_mode: off
 
@@ -1593,7 +1593,7 @@ websockets: off
 # or 'always' to be used for all destination hosts (can be used if it is an .onion server).
 # socks_mode: onion
 
-# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# Limit number of threads a client can spawn to process proxy commands in parallel.
 # client_concurrency: 32
 
 [INACTIVE_CLIENTS]
@@ -1659,7 +1659,7 @@ key: /etc/opt/simplex/web.key
 </code></pre>
 </li>
 <li>
-<p>Delete the CA key from the server. <strong>Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to <a href="#online-certificate-rotation">rotate the online certificate</a></strong>:</p>
+<p>Delete the CA key from the server. <strong>Please make sure you've saved your CA key somewhere safe. Otherwise, you would lose the ability to <a href="#online-certificate-rotation">rotate the online certificate</a></strong>:</p>
 <pre><code class="language-sh">rm /etc/opt/simplex/ca.key
 </code></pre>
 </li>
@@ -1736,10 +1736,10 @@ $HOME/simplex/smp/config/ca.key
 <ol>
 <li>
 <p>Install tor:</p>
-<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">official tor documentation</a> or your distribution guide.</p>
 <ul>
 <li>
-<p>Configure offical Tor PPA repository:</p>
+<p>Configure official Tor PPA repository:</p>
 <pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
 echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
 deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
@@ -1770,10 +1770,10 @@ deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torp
 <p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
 <pre><code class="language-sh">vim /etc/tor/torrc
 </code></pre>
-<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
+<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: these are comments about each individual option.</p>
 <pre><code class="language-sh"># Enable log (otherwise, tor doesn't seem to deploy onion address)
 Log notice file /var/log/tor/notices.log
-# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
+# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonymity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
 SOCKSPort 0
 HiddenServiceNonAnonymousMode 1
 HiddenServiceSingleHopMode 1
@@ -1792,7 +1792,7 @@ HiddenServicePort 443 localhost:443
 </li>
 <li>
 <p>Start tor:</p>
-<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.</p>
+<p>Enable <code>systemd</code> service and start tor. Official <code>tor</code> is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.</p>
 <pre><code class="language-sh">systemctl enable --now tor &amp;&amp; systemctl restart tor
 </code></pre>
 </li>
@@ -1810,7 +1810,7 @@ HiddenServicePort 443 localhost:443
 <p>Install tor as described in the <a href="#installation-for-onion-address">previous section</a>.</p>
 </li>
 <li>
-<p>Execute the following command to creatae a new Tor daemon instance:</p>
+<p>Execute the following command to create a new Tor daemon instance:</p>
 <pre><code class="language-sh">tor-instance-create tor2
 </code></pre>
 </li>
@@ -1904,7 +1904,7 @@ hosting_country: &lt;HOSTING_PROVIDER_LOCATION&gt;
 </code></pre>
 </li>
 <li>
-<p>Install the webserver. For easy deployment we'll describe the installtion process of <a href="https://caddyserver.com">Caddy</a> webserver on Ubuntu server:</p>
+<p>Install the webserver. For easy deployment we'll describe the installation process of <a href="https://caddyserver.com">Caddy</a> webserver on Ubuntu server:</p>
 <ol>
 <li>
 <p>Install the packages:</p>
@@ -1927,7 +1927,7 @@ hosting_country: &lt;HOSTING_PROVIDER_LOCATION&gt;
 </code></pre>
 </li>
 </ol>
-<p><a href="https://caddyserver.com/docs/install">Full Caddy instllation instructions</a></p>
+<p><a href="https://caddyserver.com/docs/install">Full Caddy installation instructions</a></p>
 </li>
 <li>
 <p>Replace Caddy configuration with the following:</p>
@@ -1967,12 +1967,12 @@ folder_out='/etc/opt/simplex'
 key_name='web.key'
 cert_name='web.crt'
 
-# Copy certifiacte from Caddy directory to smp-server directory
+# Copy certificate from Caddy directory to smp-server directory
 cp &quot;${folder_in}/${domain}.crt&quot; &quot;${folder_out}/${cert_name}&quot;
 # Assign correct permissions
 chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${cert_name}&quot;
 
-# Copy certifiacte key from Caddy directory to smp-server directory
+# Copy certificate key from Caddy directory to smp-server directory
 cp &quot;${folder_in}/${domain}.key&quot; &quot;${folder_out}/${key_name}&quot;
 # Assign correct permissions
 chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${key_name}&quot;
@@ -2021,7 +2021,7 @@ chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${key_name}&quot;
 </li>
 <li>
 <p><strong>optional</strong> <code>&lt;password&gt;</code></p>
-<p>Your configured password of <code>smp-server</code>. You can check your configured pasword in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[AUTH]</code> section in <code>create_password:</code> field.</p>
+<p>Your configured password of <code>smp-server</code>. You can check your configured password in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[AUTH]</code> section in <code>create_password:</code> field.</p>
 </li>
 <li>
 <p><code>&lt;public_hostname&gt;</code>, <strong>optional</strong> <code>&lt;onion_hostname&gt;</code></p>
@@ -2145,7 +2145,7 @@ control_port: 5224
 </tr>
 <tr>
 <td><code>socket-threads</code></td>
-<td>Thread infomation per socket. Useful for debugging.</td>
+<td>Thread information per socket. Useful for debugging.</td>
 <td>yes</td>
 </tr>
 <tr>
@@ -2155,7 +2155,7 @@ control_port: 5224
 </tr>
 <tr>
 <td><code>server-info</code></td>
-<td>Aggregated server infomation.</td>
+<td>Aggregated server information.</td>
 <td>-</td>
 </tr>
 <tr>
@@ -2333,7 +2333,7 @@ control_port: 5224
 <tr>
 <td>23</td>
 <td><code>pRelays_pErrorsCompat</code></td>
-<td>- compatability errors</td>
+<td>- compatibility errors</td>
 </tr>
 <tr>
 <td>24</td>
@@ -2363,7 +2363,7 @@ control_port: 5224
 <tr>
 <td>28</td>
 <td><code>pRelaysOwn_pErrorsCompat</code></td>
-<td>- compatability errors</td>
+<td>- compatibility errors</td>
 </tr>
 <tr>
 <td>29</td>
@@ -2393,7 +2393,7 @@ control_port: 5224
 <tr>
 <td>33</td>
 <td><code>pMsgFwds_pErrorsCompat</code></td>
-<td>- compatability errors</td>
+<td>- compatibility errors</td>
 </tr>
 <tr>
 <td>34</td>
@@ -2423,7 +2423,7 @@ control_port: 5224
 <tr>
 <td>38</td>
 <td><code>pMsgFwdsOwn_pErrorsCompat</code></td>
-<td>- compatability errors</td>
+<td>- compatibility errors</td>
 </tr>
 <tr>
 <td>39</td>
@@ -2441,7 +2441,7 @@ control_port: 5224
 <td></td>
 </tr>
 <tr>
-<td>Message queue subscribtion errors:</td>
+<td>Message queue subscription errors:</td>
 <td></td>
 <td></td>
 </tr>
@@ -2453,7 +2453,7 @@ control_port: 5224
 <tr>
 <td>42</td>
 <td><code>qSubAuth</code></td>
-<td>Authentication erorrs</td>
+<td>Authentication errors</td>
 </tr>
 <tr>
 <td>43</td>
@@ -2678,10 +2678,10 @@ allow_local_mode = true
 </ol>
 </li>
 <li>
-<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></p>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Official installation script</a></p>
 <ol>
 <li>
-<p>Execute the followin command:</p>
+<p>Execute the following command:</p>
 <pre><code class="language-sh">sudo simplex-servers-update
 </code></pre>
 <p>To install specific version, run:</p>
@@ -2782,7 +2782,7 @@ sudo -E simplex-servers-update
 </li>
 </ol>
 <h2 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h2>
-<p>To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.</p>
+<p>To configure the app to use your messaging server copy its full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.</p>
 <p>It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.</p>
 <p><em>Please note</em>: you need SMP server version 4.0 to have password support. If you already have a deployed server, you can add password by adding it to server INI file.</p>
 <p><img src="./server_config_1.png" width="288">    <img src="./server_config_2.png" width="288">    <img src="./server_config_3.png" width="288"></p>

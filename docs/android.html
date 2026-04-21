@@ -961,7 +961,7 @@ tar -xvzf chat.gz
 <h2 id="decrypting-databases" tabindex="-1">Decrypting databases</h2>
 <p>In order to view database data you need to decrypt it first. Install <code>sqlcipher</code> using your favorite package manager and run the following commands in the directory with databases:</p>
 <pre><code class="language-bash">sqlcipher files_chat.db
-pragma key=&quot;youDecryptionPassphrase&quot;;
+pragma key=&quot;yourDecryptionPassphrase&quot;;
 # Ensure it works fine
 select * from users;
 </code></pre>

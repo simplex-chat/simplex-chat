@@ -794,7 +794,7 @@ window.addEventListener('click',(e)=>{
 <li><a href="#installation-options">Installation options</a>
 <ul>
 <li><a href="#systemd-service">systemd service</a> with <a href="#installation-script">installation script</a> or <a href="#manual-deployment">manually</a></li>
-<li><a href="#docker-%D1%81ontainer">docker container</a></li>
+<li><a href="#docker-container">docker container</a></li>
 <li><a href="#linode-marketplace">Linode marketplace</a></li>
 </ul>
 </li>
@@ -856,7 +856,7 @@ fi
 <p>Install binary:</p>
 <ul>
 <li>
-<p>Using offical binaries:</p>
+<p>Using official binaries:</p>
 <pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/xftp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/xftp-server &amp;&amp; chmod +x /usr/local/bin/xftp-server
 </code></pre>
 </li>
@@ -908,8 +908,8 @@ WantedBy=multi-user.target
 <p>And execute <code>sudo systemctl daemon-reload</code>.</p>
 </li>
 </ol>
-<h3 id="docker-sontainer" tabindex="-1">Docker сontainer</h3>
-<p>You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.</p>
+<h3 id="docker-container" tabindex="-1">Docker container</h3>
+<p>You can deploy xftp-server using Docker Compose. This is the second recommended option due to its popularity and relatively easy deployment.</p>
 <p>This deployment provides two Docker Compose files: the <strong>automatic</strong> one and <strong>manual</strong>. If you're not sure, choose <strong>automatic</strong>.</p>
 <p>This will download images from <a href="https://hub.docker.com/r/simplexchat">Docker Hub</a>.</p>
 <ol>
@@ -962,10 +962,10 @@ QUOTA=120gb
 <ol>
 <li>
 <p>Install tor:</p>
-<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">official tor documentation</a> or your distribution guide.</p>
 <ul>
 <li>
-<p>Configure offical Tor PPA repository:</p>
+<p>Configure official Tor PPA repository:</p>
 <pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
 echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
 deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
@@ -996,8 +996,8 @@ deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torp
 <p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
 <pre><code class="language-sh">vim /etc/tor/torrc
 </code></pre>
-<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
-<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seemd to deploy onion address)
+<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: these are comments about each individual option.</p>
+<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seem to deploy onion address)
 Log notice file /var/log/tor/notices.log
 # Enable single hop routing (2 options below are dependencies of third). Will reduce latency in exchange of anonimity (since tor runs alongside xftp-server and onion address will be displayed in clients, this is totally fine)
 SOCKSPort 0
@@ -1017,7 +1017,7 @@ HiddenServicePort 443 localhost:443
 </li>
 <li>
 <p>Start tor:</p>
-<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flunky on the first start and may not create onion host address, so we're restarting it just in case.</p>
+<p>Enable <code>systemd</code> service and start tor. Official <code>tor</code> is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.</p>
 <pre><code class="language-sh">systemctl enable tor &amp;&amp; systemctl start tor &amp;&amp; systemctl restart tor
 </code></pre>
 </li>
@@ -1099,7 +1099,7 @@ create_password: your_very_secure_password
 </li>
 </ol>
 <hr>
-<p>After that, your installation is complete and you should see in your teminal output something like this:</p>
+<p>After that, your installation is complete and you should see in your terminal output something like this:</p>
 <pre><code class="language-sh">Certificate request self-signature ok
 subject=CN = 192.168.1.5
 Server initialized, you can modify configuration in /etc/opt/simplex-xftp/file-server.ini.
@@ -1130,7 +1130,7 @@ Server address: xftp://ioyYeRyy4SqJkNvb_7nM04MuLasOM4c-acVyVnqw248=@&lt;hostname
 </li>
 <li>
 <p><strong>optional</strong> <code>&lt;password&gt;</code></p>
-<p>Your configured password of <code>xftp-server</code>. You can check your configured pasword in <code>/etc/opt/simplex-xftp/file-server.ini</code>, under <code>[AUTH]</code> section in <code>create_password:</code> field.</p>
+<p>Your configured password of <code>xftp-server</code>. You can check your configured password in <code>/etc/opt/simplex-xftp/file-server.ini</code>, under <code>[AUTH]</code> section in <code>create_password:</code> field.</p>
 </li>
 <li>
 <p><code>&lt;public_hostname&gt;</code>, <strong>optional</strong> <code>&lt;onion_hostname&gt;</code></p>
@@ -1341,9 +1341,9 @@ allow_local_mode = true
 </ol>
 </li>
 <li>
-<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></p>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Official installation script</a></p>
 <ol>
-<li>Execute the followin command:<pre><code class="language-sh">sudo simplex-servers-update
+<li>Execute the following command:<pre><code class="language-sh">sudo simplex-servers-update
 </code></pre>
 </li>
 <li>Done!</li>

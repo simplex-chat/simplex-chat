@@ -819,7 +819,7 @@ gpg --keyserver hkps://keyserver.ubuntu.com --search build@simplex.chat
 <pre><code class="language-sh">echo -e &quot;trust\n5\ny\nquit&quot; | gpg --command-fd 0 --edit-key build@simplex.chat
 </code></pre>
 <h2 id="verify-release-signature" tabindex="-1">Verify release signature</h2>
-<p><strong>Linux dekstop apps and CLI</strong>:</p>
+<p><strong>Linux desktop apps and CLI</strong>:</p>
 <p>Download the file with executable hashes and the signature. For example, to verify the <code>v6.5.0-beta.3</code> release:</p>
 <pre><code class="language-sh">curl -LO 'https://github.com/simplex-chat/simplex-chat/releases/download/v6.5.0-beta.3/_sha256sums.asc'
 curl -LO 'https://github.com/simplex-chat/simplex-chat/releases/download/v6.5.0-beta.3/_sha256sums'
@@ -896,14 +896,14 @@ gpg --verify _simplex-aarch64.apk.asc simplex-aarch64.apk
 </code></pre>
 <p>The script executes these steps (please review the script to confirm):</p>
 <ol>
-<li>builds all Linux CLI and Dekstop binaries for the release in docker container.</li>
+<li>builds all Linux CLI and Desktop binaries for the release in docker container.</li>
 <li>downloads binaries from the same GitHub release and compares them with the built binaries.</li>
 <li>if they all match, generates _sha256sums file with their checksums.</li>
 </ol>
 <p>This will take a while.</p>
 </li>
 <li>
-<p>After compilation, you should see the folder named as the tag and reprository name (e.g., <code>v6.4.8-simplex-chat</code>) with two subfolders:</p>
+<p>After compilation, you should see the folder named as the tag and repository name (e.g., <code>v6.4.8-simplex-chat</code>) with two subfolders:</p>
 <pre><code class="language-sh">ls v6.4.8-simplex-chat
 </code></pre>
 <pre><code class="language-sh">from-source  prebuilt  _sha256sums
@@ -912,7 +912,7 @@ gpg --verify _simplex-aarch64.apk.asc simplex-aarch64.apk
 </li>
 </ol>
 <h3 id="android-apps" tabindex="-1">Android apps</h3>
-<p>In addition to basic requirments, Android build will:</p>
+<p>In addition to basic requirements, Android build will:</p>
 <ul>
 <li>Take ~150gb of disc space</li>
 <li>Take ~20h to build all the architectures (depends on core count)</li>

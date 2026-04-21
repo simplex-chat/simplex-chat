@@ -938,7 +938,7 @@ window.addEventListener('click',(e)=>{
 <p>Install <code>coturn</code> package from the main repository.</p>
 </li>
 </ol>
-<pre><code class="language-sh">apt update &amp;&amp; apt install coturn`
+<pre><code class="language-sh">apt update &amp;&amp; apt install coturn
 </code></pre>
 <ol start="2">
 <li>Uncomment <code>TURNSERVER_ENABLED=1</code> from <code>/etc/default/coturn</code>:</li>
@@ -963,7 +963,7 @@ user=$YOUR_LOGIN:$YOUR_PASSWORD
 server-name=$YOUR_DOMAIN
 # The default realm to be used for the users when no explicit origin/realm relationship was found
 realm=$YOUR_DOMAIN
-# Path to your certificates. Make sure they're readable by cotun process user/group
+# Path to your certificates. Make sure they're readable by coturn process user/group
 cert=/var/lib/turn/cert.pem
 pkey=/var/lib/turn/key.pem
 # Use 2066 bits predefined DH TLS key
@@ -1015,7 +1015,7 @@ sudo firewall-cmd --reload
 <p>Open <code>Settings / Network &amp; Servers / WebRTC ICE servers</code> and switch toggle <code>Configure ICE servers</code>.</p>
 </li>
 <li>
-<p>Enter all server addresses in the field, one per line, for example if you servers are on the port 5349:</p>
+<p>Enter all server addresses in the field, one per line, for example if your servers are on the port 5349:</p>
 </li>
 </ol>
 <pre><code>stun:stun.example.com:5349
@@ -1029,7 +1029,7 @@ turn:username:password@turn.example.com:5349
 <p>Run this command in your terminal:</p>
 <pre><code class="language-sh">ping &lt;your_ip_or_domain&gt;
 </code></pre>
-<p>If packets being transmitted, server is up!</p>
+<p>If packets are being transmitted, the server is up!</p>
 </li>
 <li>
 <p><strong>Determine if ports are open</strong>:</p>
