@@ -26,11 +26,13 @@ enum class PresetWallpaper(
   val res: ImageResource,
   val filename: String,
   val scale: Float,
+  val hue: Float,
+  val cScale: Float,
   val background: Map<DefaultTheme, Color>,
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ResolvedColors>,
 ) {
-  CATS(MR.images.wallpaper_cats, "cats", 0.63f,
+  CATS(MR.images.wallpaper_cats, "cats", 0.63f, 88.34f, 0.8172f,
     wallpaperBackgrounds(light = oklch(0.9714242f, 0.01596467f, 98.99223f)), // #ffF8F6EA
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.897064f, 0.07281305f, 90.95935f), // #ffefdca6
@@ -65,7 +67,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
+  FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f, 143.42f, 1.3553f,
     wallpaperBackgrounds(light = oklch(0.9718878f, 0.04671557f, 147.1246f)), // #ffE2FFE4
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.8574244f, 0.1932141f, 133.0531f), // #ff9CEA59
@@ -100,7 +102,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
+  HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f, 17.95f, 1.0504f,
     wallpaperBackgrounds(light = oklch(0.9565624f, 0.01848713f, 17.48077f)), // #ffFDECEC
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9304586f, 0.03207239f, 17.7425f), // #fffde0e0
@@ -135,7 +137,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
+  KIDS(MR.images.wallpaper_kids, "kids", 0.53f, 200.75f, 0.7723f,
     wallpaperBackgrounds(light = oklch(0.9693045f, 0.03516977f, 192.2433f)), // #ffdbfdfb
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9123625f, 0.06815507f, 211.1344f), // #ffadeffc
@@ -170,7 +172,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
+  SCHOOL(MR.images.wallpaper_school, "school", 0.53f, 243.37f, 0.7950f,
     wallpaperBackgrounds(light = oklch(0.9626785f, 0.02004578f, 238.6614f)), // #ffE7F5FF
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9252349f, 0.04096641f, 238.0518f), // #ffCEEBFF
@@ -205,7 +207,7 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
+  TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f, 304.95f, 1.2099f,
     wallpaperBackgrounds(light = oklch(0.9626377f, 0.0253131f, 313.9639f)), // #fff9eeff
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9174161f, 0.05105522f, 309.6281f), // #ffeedbfe
@@ -241,6 +243,10 @@ enum class PresetWallpaper(
     )
   );
 
+  val generatedBackground: Map<DefaultTheme, Color> get() = generateBackground(this)
+  val generatedTint: Map<DefaultTheme, Color> get() = generateTint(this)
+  val generatedColors: Map<DefaultTheme, ResolvedColors> get() = generateColors(this)
+
   fun toType(base: DefaultTheme, scale: Float? = null): WallpaperType =
     WallpaperType.Preset(
       filename,
@@ -260,6 +266,54 @@ fun wallpaperBackgrounds(light: Color): Map<DefaultTheme, Color> =
     DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f), // #ff111528
     DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f) // #ff070707
   )
+
+// ===== Theme color formula =====
+// L = mode.lBase + mode.lSpread * elem.lOffset
+// C = mode.cFactor * elem.cFactor * theme.cScale
+// H = theme.hue
+
+private data class ModeParams(val lBase: Float, val lSpread: Float, val cFactor: Float)
+private data class ElemParams(val lOffset: Float, val cFactor: Float)
+
+private val MODE_PARAMS = mapOf(
+  DefaultTheme.LIGHT   to ModeParams(lBase = 0.9481f, lSpread = 0.2482f, cFactor = 0.7528f),
+  DefaultTheme.DARK    to ModeParams(lBase = 0.3124f, lSpread = -0.6795f, cFactor = 0.8827f),
+  DefaultTheme.SIMPLEX to ModeParams(lBase = 0.3467f, lSpread = -1.3361f, cFactor = 1.1992f),
+  DefaultTheme.BLACK   to ModeParams(lBase = 0.3249f, lSpread = -1.6120f, cFactor = 1.1654f),
+)
+
+private enum class ThemeElem(val params: ElemParams) {
+  TINT(ElemParams(lOffset = 0.0007f, cFactor = 0.07096f)),
+  SENT_MESSAGE(ElemParams(lOffset = 0.0040f, cFactor = 0.04810f)),
+  SENT_QUOTE(ElemParams(lOffset = -0.0725f, cFactor = 0.07623f)),
+  RECEIVED_MESSAGE(ElemParams(lOffset = 0.0584f, cFactor = 0.00691f)),
+  RECEIVED_QUOTE(ElemParams(lOffset = 0.0094f, cFactor = 0.00969f)),
+}
+
+private const val BG_LIGHT_L = 0.9657f
+private const val BG_LIGHT_C_BASE = 0.02721f
+
+private fun gen(mode: DefaultTheme, elem: ThemeElem, p: PresetWallpaper): Color {
+  val m = MODE_PARAMS[mode]!!
+  val e = elem.params
+  return oklch(m.lBase + m.lSpread * e.lOffset, m.cFactor * e.cFactor * p.cScale, p.hue)
+}
+
+private fun generateBackground(p: PresetWallpaper): Map<DefaultTheme, Color> =
+  wallpaperBackgrounds(light = oklch(BG_LIGHT_L, BG_LIGHT_C_BASE * p.cScale, p.hue))
+
+private fun generateTint(p: PresetWallpaper): Map<DefaultTheme, Color> =
+  DefaultTheme.entries.associateWith { gen(it, ThemeElem.TINT, p) }
+
+private fun generateColors(p: PresetWallpaper): Map<DefaultTheme, ResolvedColors> =
+  DefaultTheme.entries.associateWith { mode ->
+    ResolvedColors(
+      sentMessage = gen(mode, ThemeElem.SENT_MESSAGE, p),
+      sentQuote = gen(mode, ThemeElem.SENT_QUOTE, p),
+      receivedMessage = gen(mode, ThemeElem.RECEIVED_MESSAGE, p),
+      receivedQuote = gen(mode, ThemeElem.RECEIVED_QUOTE, p),
+    )
+  }
 
 @Serializable
 enum class WallpaperScaleType(val contentScale: ContentScale, val text: StringResource) {
