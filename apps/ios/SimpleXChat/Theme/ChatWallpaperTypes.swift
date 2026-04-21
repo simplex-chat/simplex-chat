@@ -46,42 +46,12 @@ public enum PresetWallpaper: CaseIterable {
 
     public var background: [DefaultTheme: Color] {
         switch self {
-        case .cats: [
-            DefaultTheme.LIGHT: oklch(0.9714242, 0.01596467, 98.99223),
-            DefaultTheme.DARK: oklch(0.1822037, 0, 0),
-            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
-            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
-        ]
-        case .flowers: [
-            DefaultTheme.LIGHT: oklch(0.9718878, 0.04671557, 147.1246),
-            DefaultTheme.DARK: oklch(0.1822037, 0, 0),
-            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
-            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
-        ]
-        case .hearts: [
-            DefaultTheme.LIGHT: oklch(0.9565624, 0.01848713, 17.48077),
-            DefaultTheme.DARK: oklch(0.1822037, 0, 0),
-            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
-            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
-        ]
-        case .kids: [
-            DefaultTheme.LIGHT: oklch(0.9693045, 0.03516977, 192.2433),
-            DefaultTheme.DARK: oklch(0.1822037, 0, 0),
-            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
-            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
-        ]
-        case .school: [
-            DefaultTheme.LIGHT: oklch(0.9626785, 0.02004578, 238.6614),
-            DefaultTheme.DARK: oklch(0.1822037, 0, 0),
-            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
-            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
-        ]
-        case .travel: [
-            DefaultTheme.LIGHT: oklch(0.9626377, 0.0253131, 313.9639),
-            DefaultTheme.DARK: oklch(0.1822037, 0, 0),
-            DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
-            DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
-        ]
+        case .cats: wallpaperBackgrounds(light: oklch(0.9714242, 0.01596467, 98.99223))
+        case .flowers: wallpaperBackgrounds(light: oklch(0.9718878, 0.04671557, 147.1246))
+        case .hearts: wallpaperBackgrounds(light: oklch(0.9565624, 0.01848713, 17.48077))
+        case .kids: wallpaperBackgrounds(light: oklch(0.9693045, 0.03516977, 192.2433))
+        case .school: wallpaperBackgrounds(light: oklch(0.9626785, 0.02004578, 238.6614))
+        case .travel: wallpaperBackgrounds(light: oklch(0.9626377, 0.0253131, 313.9639))
         }
     }
 
@@ -300,12 +270,12 @@ public enum PresetWallpaper: CaseIterable {
     }
 }
 
-func wallpaperBackgrounds(light: String) -> [DefaultTheme : Color] {
+func wallpaperBackgrounds(light: Color) -> [DefaultTheme : Color] {
     [
-        DefaultTheme.LIGHT: light.colorFromReadableHex(),
-        DefaultTheme.DARK: "#ff121212".colorFromReadableHex(),
-        DefaultTheme.SIMPLEX: "#ff111528".colorFromReadableHex(),
-        DefaultTheme.BLACK: "#ff070707".colorFromReadableHex()
+        DefaultTheme.LIGHT: light,
+        DefaultTheme.DARK: oklch(0.1822037, 0, 0),
+        DefaultTheme.SIMPLEX: oklch(0.2024453, 0.03849037, 273.4875),
+        DefaultTheme.BLACK: oklch(0.1285578, 0, 0)
     ]
 }
 

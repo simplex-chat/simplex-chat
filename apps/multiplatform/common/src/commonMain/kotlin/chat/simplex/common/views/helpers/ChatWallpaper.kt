@@ -31,12 +31,7 @@ enum class PresetWallpaper(
   val colors: Map<DefaultTheme, ResolvedColors>,
 ) {
   CATS(MR.images.wallpaper_cats, "cats", 0.63f,
-    mapOf(
-      DefaultTheme.LIGHT to oklch(0.9714242f, 0.01596467f, 98.99223f),
-      DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
-      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
-      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
-    ),
+    wallpaperBackgrounds(light = oklch(0.9714242f, 0.01596467f, 98.99223f)),
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.897064f, 0.07281305f, 90.95935f),
       DefaultTheme.DARK to oklch(0.3603656f, 0.0643012f, 88.54155f),
@@ -71,12 +66,7 @@ enum class PresetWallpaper(
     )
   ),
   FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
-    mapOf(
-      DefaultTheme.LIGHT to oklch(0.9718878f, 0.04671557f, 147.1246f),
-      DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
-      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
-      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
-    ),
+    wallpaperBackgrounds(light = oklch(0.9718878f, 0.04671557f, 147.1246f)),
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.8574244f, 0.1932141f, 133.0531f),
       DefaultTheme.DARK to oklch(0.409874f, 0.1074549f, 133.4271f),
@@ -111,12 +101,7 @@ enum class PresetWallpaper(
     )
   ),
   HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
-    mapOf(
-      DefaultTheme.LIGHT to oklch(0.9565624f, 0.01848713f, 17.48077f),
-      DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
-      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
-      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
-    ),
+    wallpaperBackgrounds(light = oklch(0.9565624f, 0.01848713f, 17.48077f)),
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9304586f, 0.03207239f, 17.7425f),
       DefaultTheme.DARK to oklch(0.2458526f, 0.07098409f, 23.94782f),
@@ -151,12 +136,7 @@ enum class PresetWallpaper(
     )
   ),
   KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
-    mapOf(
-      DefaultTheme.LIGHT to oklch(0.9693045f, 0.03516977f, 192.2433f),
-      DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
-      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
-      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
-    ),
+    wallpaperBackgrounds(light = oklch(0.9693045f, 0.03516977f, 192.2433f)),
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9123625f, 0.06815507f, 211.1344f),
       DefaultTheme.DARK to oklch(0.3473769f, 0.04958945f, 218.0525f),
@@ -191,12 +171,7 @@ enum class PresetWallpaper(
     )
   ),
   SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
-    mapOf(
-      DefaultTheme.LIGHT to oklch(0.9626785f, 0.02004578f, 238.6614f),
-      DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
-      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
-      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
-    ),
+    wallpaperBackgrounds(light = oklch(0.9626785f, 0.02004578f, 238.6614f)),
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9252349f, 0.04096641f, 238.0518f),
       DefaultTheme.DARK to oklch(0.2700986f, 0.04630937f, 241.5568f),
@@ -231,12 +206,7 @@ enum class PresetWallpaper(
     )
   ),
   TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
-    mapOf(
-      DefaultTheme.LIGHT to oklch(0.9626377f, 0.0253131f, 313.9639f),
-      DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
-      DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
-      DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
-    ),
+    wallpaperBackgrounds(light = oklch(0.9626377f, 0.0253131f, 313.9639f)),
     tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9174161f, 0.05105522f, 309.6281f),
       DefaultTheme.DARK to oklch(0.2817417f, 0.07665313f, 302.6645f),
@@ -283,12 +253,12 @@ enum class PresetWallpaper(
   }
 }
 
-fun wallpaperBackgrounds(light: String): Map<DefaultTheme, Color> =
+fun wallpaperBackgrounds(light: Color): Map<DefaultTheme, Color> =
   mapOf(
-    DefaultTheme.LIGHT to light.colorFromReadableHex(),
-    DefaultTheme.DARK to "#ff121212".colorFromReadableHex(),
-    DefaultTheme.SIMPLEX to "#ff111528".colorFromReadableHex(),
-    DefaultTheme.BLACK to "#ff070707".colorFromReadableHex()
+    DefaultTheme.LIGHT to light,
+    DefaultTheme.DARK to oklch(0.1822037f, 0f, 0f),
+    DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f),
+    DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f)
   )
 
 @Serializable
