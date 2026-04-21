@@ -1105,11 +1105,11 @@
     <string name="simplex_address">Indirizzo SimpleX</string>
     <string name="theme_colors_section_title">COLORI DELL\'INTERFACCIA</string>
     <string name="your_contacts_will_remain_connected">I tuoi contatti resteranno connessi.</string>
-    <string name="add_address_to_your_profile">Aggiungi l\'indirizzo al tuo profilo, in modo che i tuoi contatti possano condividerlo con altre persone. L\'aggiornamento del profilo verrà inviato ai tuoi contatti.</string>
+    <string name="add_address_to_your_profile">Aggiungi l\'indirizzo al tuo profilo, in modo che i tuoi contatti di SimpleX possano condividerlo con altre persone. L\'aggiornamento del profilo verrà inviato ai tuoi contatti di SimpleX.</string>
     <string name="create_address_and_let_people_connect">Crea un indirizzo per consentire alle persone di connettersi con te.</string>
     <string name="create_simplex_address">Crea indirizzo SimpleX</string>
-    <string name="share_with_contacts">Condividi con i contatti</string>
-    <string name="share_address_with_contacts_question">Condividere l\'indirizzo con i contatti?</string>
+    <string name="share_with_contacts">Condividi con i contatti di SimpleX</string>
+    <string name="share_address_with_contacts_question">Condividere l\'indirizzo con i contatti di SimpleX?</string>
     <string name="stop_sharing">Smetti di condividere</string>
     <string name="enter_welcome_message_optional">Inserisci il messaggio di benvenuto… (facoltativo)</string>
     <string name="email_invite_body">Ciao!
@@ -1144,7 +1144,7 @@
     <string name="dark_theme">Tema scuro</string>
     <string name="if_you_cant_meet_in_person">Se non potete incontrarvi di persona, mostra il codice QR in una videochiamata o condividi il link.</string>
     <string name="email_invite_subject">Parliamo in SimpleX Chat</string>
-    <string name="profile_update_will_be_sent_to_contacts">L\'aggiornamento del profilo verrà inviato ai tuoi contatti.</string>
+    <string name="profile_update_will_be_sent_to_contacts">L\'aggiornamento del profilo verrà inviato ai tuoi contatti di SimpleX.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Maggiori informazioni nella <font color="#0088ff">Guida per l\'utente</font>.]]></string>
     <string name="color_surface">Menu e avvisi</string>
     <string name="stop_sharing_address">Smettere di condividere l\'indirizzo\?</string>
@@ -1943,7 +1943,7 @@
     <string name="servers_info_reconnect_all_servers_button">Riconnetti tutti i server</string>
     <string name="network_error_broker_host_desc">L\'indirizzo del server non è compatibile con le impostazioni di rete: %1$s.</string>
     <string name="servers_info_files_tab">File</string>
-    <string name="scan_paste_link">Scansiona / Incolla link</string>
+    <string name="scan_paste_link">Incolla link / Scansiona</string>
     <string name="appearance_font_size">Dimensione carattere</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Totale inviato</string>
     <string name="message_forwarded_title">Messaggio inoltrato</string>
@@ -2724,4 +2724,19 @@
     <string name="connection_reached_limit_of_undelivered_messages">La connessione ha raggiunto il limite di messaggi non consegnati</string>
     <string name="channel_preferences">Preferenze del canale</string>
     <string name="only_channel_owners_can_change_prefs">Solo i proprietari del canale possono modificarne le preferenze.</string>
+    <string name="a_link_for_one_person">Un link per una persona da connettere</string>
+    <string name="chat_list_channels">Canali</string>
+    <string name="connect_via_link_or_qr_code">Connetti via link o codice QR</string>
+    <string name="connect_with_someone">Connettiti con qualcuno</string>
+    <string name="create_your_public_address">Crea il tuo indirizzo pubblico</string>
+    <string name="for_anyone_to_reach_you">Per chiunque debba raggiungerti</string>
+    <string name="invite_someone_privately">Invita qualcuno in modo privato</string>
+    <string name="let_someone_connect_to_you">Lascia che qualcuno si connetta a te</string>
+    <string name="new_1_time_link">Nuovo link una tantum</string>
+    <string name="onboarding_or_show_qr_code">O mostra il QR di persona o via videochiamata.</string>
+    <string name="onboarding_or_use_qr_code">O usa questo QR: stampalo o mostralo online.</string>
+    <string name="onboarding_send_1_time_link">Invia il link tramite qualsiasi messenger, è sicuro. Chiedi di incollarlo in SimpleX.</string>
+    <string name="talk_to_someone">Parla con qualcuno</string>
+    <string name="onboarding_post_address">Usa questo indirizzo nel tuo profilo di social media, sito web o firma email.</string>
+    <string name="your_public_address">Il tuo indirizzo pubblico</string>
 </resources>
