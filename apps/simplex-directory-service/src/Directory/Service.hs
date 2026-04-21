@@ -379,7 +379,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       sendMessage cc ct $
         ("Welcome to " <> serviceName <> "!\n\n")
           <> "🔍 Send search string to find groups - try _security_.\n\
-             \/help - how to submit your group.\n\
+             \/help - how to submit your group or channel.\n\
              \/new - recent groups.\n\n\
              \[Directory rules](https://simplex.chat/docs/directory.html)."
 
@@ -981,17 +981,21 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deUserCommand ct ciId = \case
       DCHelp DHSRegistration ->
         sendMessage cc ct $
-          "You must be the group owner to add it to the directory:\n\n\
-          \1️⃣ *Invite* "
+          "You must be the group or channel owner to add it to the directory.\n\n\
+          \*To register a channel*, use _Share via chat_ to send its link to "
+            <> serviceName
+            <> " bot.\n\n\
+               \*To register a group*:\n\
+               \1️⃣ *Invite* "
             <> serviceName
             <> " bot to your group as *admin* - it will create a link for new members to join.\n\
-               \2️⃣ *Add* this link to the group's welcome message.\n\
-               \3️⃣ We *review* your group. Once *approved*, anybody can find it.\n\n\
-               \_We usually approve within a day, except holidays_. [More details](https://simplex.chat/docs/directory.html#adding-groups-to-the-directory)."
+               \2️⃣ *Add* this link to the group's welcome message.\n\n\
+               \Once your group or channel *approved*, it can be found here or at [simplex.chat/directory](https://simplex.chat/directory).\n\n\
+               \_We usually review within a day, except holidays_. [More details](https://simplex.chat/docs/directory.html#adding-groups-to-the-directory)."
       DCHelp DHSCommands ->
         sendMessage cc ct $
           "/'help commands' - receive this help message.\n\
-          \/help - how to register your group to be added to directory.\n\
+          \/help - how to register your group or channel to be added to directory.\n\
           \/list - list the groups you registered.\n\
           \`/role <ID>` - view and set default member role for your group.\n\
           \`/filter <ID>` - view and set spam filter settings for group.\n\
@@ -1103,40 +1107,42 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PCAll -> "_enabled_"
             Just PCNoImage -> "_enabled for profiles without image_"
       DCShowUpgradeGroupLink gId gName_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g@GroupInfo {groupId, localDisplayName = gName} _ ->
-          ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
-          let groupRef = groupReference' gId gName
-          withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
-            \GroupLink {connLinkContact = gLink@(CCLink _ sLnk_), acceptMemberRole, shortLinkDataSet, shortLinkLargeDataSet = BoolDef slLargeDataSet} -> do
-              let shouldBeUpgraded = isNothing sLnk_ || not shortLinkDataSet || not slLargeDataSet
-              sendReply $
-                T.unlines $
-                  [ "The link to join the group " <> groupRef <> ":",
-                    groupLinkText gLink,
-                    "New member role: " <> textEncode acceptMemberRole
-                  ]
-                    <> ["The link is being upgraded..." | shouldBeUpgraded]
-              when shouldBeUpgraded $ do
-                let send = sendComposedMessage cc ct Nothing . MCText . T.unlines
-                withGroupLinkResult groupRef (sendChatCmd cc $ APIAddGroupShortLink groupId) $
-                  \GroupLink {connLinkContact = CCLink _ sLnk_'} -> case (sLnk_, sLnk_') of
-                    (Just _, Just _) ->
-                      send ["The group link is upgraded for: " <> groupRef, "No changes to group needed."]
-                    (Nothing, Just sLnk) ->
-                      sendComposedMessages
-                        cc
-                        (SRDirect $ contactId' ct)
-                        [ MCText $
-                            T.unlines
-                              [ "Please replace the old link in welcome message of your group " <> groupRef,
-                                "If this is the only change, the group will remain listed in directory without re-approval.",
-                                "",
-                                "The new link:"
-                              ],
-                          MCText $ strEncodeTxt sLnk
-                        ]
-                    (_, Nothing) ->
-                      send ["The short link is not created for " <> groupRef, "Please report it to the developers."]
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, localDisplayName = gName} _ -> case pg_ of
+          Just pg@PublicGroupProfile {groupLink = sLnk} ->
+            sendReply $ "The link to join the " <> groupTypeStr' pg <> " " <> groupReference' gId gName <> ":\n" <> strEncodeTxt sLnk
+          Nothing -> do
+            let groupRef = groupReference' gId gName
+            withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
+              \GroupLink {connLinkContact = gLink@(CCLink _ sLnk_), acceptMemberRole, shortLinkDataSet, shortLinkLargeDataSet = BoolDef slLargeDataSet} -> do
+                let shouldBeUpgraded = isNothing sLnk_ || not shortLinkDataSet || not slLargeDataSet
+                sendReply $
+                  T.unlines $
+                    [ "The link to join the group " <> groupRef <> ":",
+                      groupLinkText gLink,
+                      "New member role: " <> textEncode acceptMemberRole
+                    ]
+                      <> ["The link is being upgraded..." | shouldBeUpgraded]
+                when shouldBeUpgraded $ do
+                  let send = sendComposedMessage cc ct Nothing . MCText . T.unlines
+                  withGroupLinkResult groupRef (sendChatCmd cc $ APIAddGroupShortLink groupId) $
+                    \GroupLink {connLinkContact = CCLink _ sLnk_'} -> case (sLnk_, sLnk_') of
+                      (Just _, Just _) ->
+                        send ["The group link is upgraded for: " <> groupRef, "No changes to group needed."]
+                      (Nothing, Just sLnk) ->
+                        sendComposedMessages
+                          cc
+                          (SRDirect $ contactId' ct)
+                          [ MCText $
+                              T.unlines
+                                [ "Please replace the old link in welcome message of your group " <> groupRef,
+                                  "If this is the only change, the group will remain listed in directory without re-approval.",
+                                  "",
+                                  "The new link:"
+                                ],
+                            MCText $ strEncodeTxt sLnk
+                          ]
+                      (_, Nothing) ->
+                        send ["The short link is not created for " <> groupRef, "Please report it to the developers."]
         where
           withGroupLinkResult groupRef a cb =
             a >>= \case

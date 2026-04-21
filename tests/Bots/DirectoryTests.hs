@@ -1780,7 +1780,7 @@ u `connectVia` dsLink = do
   u .<# "> Welcome to SimpleX Directory!"
   u <## ""
   u <## "🔍 Send search string to find groups - try security."
-  u <## "/help - how to submit your group."
+  u <## "/help - how to submit your group or channel."
   u <## "/new - recent groups."
   u <## ""
   u <## "[Directory rules](https://simplex.chat/docs/directory.html)."
@@ -1931,7 +1931,7 @@ testHelpNoAudio ps =
       -- commands help should not mention /audio
       bob #> "@'SimpleX Directory' /help commands"
       bob <# "'SimpleX Directory'> /'help commands' - receive this help message."
-      bob <## "/help - how to register your group to be added to directory."
+      bob <## "/help - how to register your group or channel to be added to directory."
       bob <## "/list - list the groups you registered."
       bob <## "`/role <ID>` - view and set default member role for your group."
       bob <## "`/filter <ID>` - view and set spam filter settings for group."
