@@ -1988,6 +1988,20 @@ testRegisterChannelViaCard ps =
         superUser <## "      Channel approved!"
         bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
         bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+        -- owner updates channel profile, triggering re-approval
+        bob ##> "/gp news news News and Updates"
+        bob <## "description changed to: News and Updates"
+        bob <# "'SimpleX Directory'> The channel ID 1 (news) is updated."
+        bob <## "It is hidden from the directory until approved."
+        relay <## "bob updated group #news: (signed)"
+        relay <## "description changed to: News and Updates"
+        superUser <# "'SimpleX Directory'> The channel ID 1 (news) is updated."
+        superUser <# ("'SimpleX Directory'> bob submitted the channel ID 1:")
+        superUser <## "news (News and Updates)"
+        superUser <## "3 members"
+        superUser <## ""
+        superUser <## "To approve send:"
+        superUser <# "'SimpleX Directory'> /approve 1:news 1"
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do

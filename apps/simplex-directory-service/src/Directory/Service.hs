@@ -465,37 +465,77 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               byMember = case memberContactId m of
                 Just ctId | ctId `isOwner` gr -> "" -- group registration owner, not any group owner.
                 _ -> " by " <> mName -- owner notification from directory will include the name.
-          case groupRegStatus of
-            GRSPendingConfirmation -> pure ()
-            GRSProposed -> pure ()
-            GRSPendingUpdate ->
-              groupProfileUpdate >>= \case
-                GPNoServiceLink ->
-                  notifyOwner gr $ "The profile updated for " <> userGroupRef <> byMember <> ", but the group link is not added to the welcome message."
-                GPServiceLinkAdded _ -> groupLinkAdded gr byMember
-                GPServiceLinkRemoved ->
-                  notifyOwner gr $
-                    "The group link of " <> userGroupRef <> " is removed from the welcome message" <> byMember <> ", please add it."
-                GPHasServiceLink {} -> groupLinkAdded gr byMember
-                GPServiceLinkError -> do
-                  notifyOwner gr $
-                    ("Error: " <> serviceName <> " has no group link for " <> userGroupRef)
-                      <> " after profile was updated"
-                      <> byMember
-                      <> ". Please report the error to the developers."
-                  logError $ "Error: no group link for " <> userGroupRef
-            GRSPendingApproval n -> processProfileChange gr byMember False $ n + 1
-            GRSActive -> processProfileChange gr byMember True 1
-            GRSSuspended -> processProfileChange gr byMember False 1
-            GRSSuspendedBadRoles -> processProfileChange gr byMember False 1
-            GRSRemoved -> pure ()
+          let isPublicGroup_ = isJust $ publicGroup p'
+              gt = maybe "group" groupTypeStr' $ publicGroup p'
+          if isPublicGroup_
+            then case groupRegStatus of
+              GRSPendingApproval n -> publicGroupProfileChange gr byMember gt $ n + 1
+              GRSActive -> publicGroupProfileChange gr byMember gt 1
+              _ -> pure ()
+            else case groupRegStatus of
+              GRSPendingConfirmation -> pure ()
+              GRSProposed -> pure ()
+              GRSPendingUpdate ->
+                groupProfileUpdate >>= \case
+                  GPNoServiceLink ->
+                    notifyOwner gr $ "The profile updated for " <> userGroupRef <> byMember <> ", but the group link is not added to the welcome message."
+                  GPServiceLinkAdded _ -> groupLinkAdded gr byMember
+                  GPServiceLinkRemoved ->
+                    notifyOwner gr $
+                      "The group link of " <> userGroupRef <> " is removed from the welcome message" <> byMember <> ", please add it."
+                  GPHasServiceLink {} -> groupLinkAdded gr byMember
+                  GPServiceLinkError -> do
+                    notifyOwner gr $
+                      ("Error: " <> serviceName <> " has no group link for " <> userGroupRef)
+                        <> " after profile was updated"
+                        <> byMember
+                        <> ". Please report the error to the developers."
+                    logError $ "Error: no group link for " <> userGroupRef
+              GRSPendingApproval n -> processProfileChange gr byMember False $ n + 1
+              GRSActive -> processProfileChange gr byMember True 1
+              GRSSuspended -> processProfileChange gr byMember False 1
+              GRSSuspendedBadRoles -> processProfileChange gr byMember False 1
+              GRSRemoved -> pure ()
       where
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
+        publicGroupProfileChange gr byMember gt n' = do
+          let userGroupRef = userGroupReference gr toGroup
+              groupRef = groupReference toGroup
+          case publicGroup p' of
+            Just PublicGroupProfile {groupLink = sLnk} -> do
+              let link = ACL SCMContact $ CLShort sLnk
+              sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
+                Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) -> do
+                  -- Check owner is still valid
+                  case dbOwnerMemberId gr of
+                    Just ownerGMId ->
+                      withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
+                        Right ownerMember
+                          | let GroupMember {memberRole = role} = ownerMember, role >= GROwner ->
+                              setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ \gr' -> do
+                                notifyOwner gr' $
+                                  ("The " <> gt <> " " <> userGroupRef <> " is updated" <> byMember)
+                                    <> ".\nIt is hidden from the directory until approved."
+                                notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
+                                sendToApprove g' gr' n'
+                          | otherwise -> do
+                              setGroupStatus notifyAdminUsers st env cc groupId GRSSuspendedBadRoles $ \_ -> pure ()
+                              notifyOwner gr $ "The registration owner is no longer an owner. Registration suspended."
+                        Left _ -> logError $ "could not find owner member for " <> groupRef
+                    Nothing -> logError $ "no owner member set for " <> groupRef
+                _ -> do
+                  setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ \gr' -> do
+                    notifyOwner gr' $
+                      ("The " <> gt <> " " <> userGroupRef <> " is updated" <> byMember)
+                        <> ".\nIt is hidden from the directory until approved."
+                    notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
+                    sendToApprove toGroup gr' n'
+            Nothing -> pure () -- should not happen for public groups
         sameProfile
-          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma}
-          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma'} =
-            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma'
+          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma, publicGroup = pg}
+          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma', publicGroup = pg'} =
+            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma' && pg == pg'
         groupLinkAdded gr byMember =
           getDuplicateGroup toGroup >>= \case
             Left e -> notifyOwner gr $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
