@@ -532,10 +532,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                     notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                     sendToApprove toGroup gr' n'
             Nothing -> pure () -- should not happen for public groups
-        sameProfile
-          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma, publicGroup = pg}
-          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma', publicGroup = pg'} =
-            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma' && pg == pg'
         groupLinkAdded gr byMember =
           getDuplicateGroup toGroup >>= \case
             Left e -> notifyOwner gr $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
@@ -865,6 +861,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deChatLinkReceived ct _ _ =
       sendMessage cc ct "Only channels can be added to directory via link."
 
+    sameProfile :: GroupProfile -> GroupProfile -> Bool
+    sameProfile
+      GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma, publicGroup = pg}
+      GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma', publicGroup = pg'} =
+        n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma' && pg == pg'
+
     groupTypeStr :: GroupType -> Text
     groupTypeStr = \case
       GTChannel -> "channel"
@@ -917,7 +919,49 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         _ -> sendMessage cc ct $ "Error joining " <> gt <> " " <> displayName <> ", please re-send the link!"
 
     deReregistration :: Contact -> GroupInfo -> LinkOwnerSig -> Maybe GroupShortLinkData -> IO ()
-    deReregistration _ct _g _ownerSig _groupSLinkData_ = pure () -- TODO implement re-registration per plan
+    deReregistration ct g@GroupInfo {groupId, groupProfile = p@GroupProfile {publicGroup = pg_}} LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)} groupSLinkData_ = do
+      let mId = MemberId oIdBytes
+          gt = maybe "group" groupTypeStr' pg_
+      withDB "getGroupMemberByMemberId" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user g mId) >>= \case
+        Right ownerMember@GroupMember {memberRole = role, memberStatus} ->
+          if
+            | role >= GROwner && memberStatus /= GSMemUnknown ->
+                getGroupReg cc groupId >>= \case
+                  Right gr
+                    | contactId' ct `isOwner` gr -> sameOwnerReregistration gr gt
+                    | otherwise -> sendMessage cc ct $ "This " <> gt <> " is registered by another owner."
+                  Left _ ->
+                    addGroupReg notifyAdminUsers st cc ct g (GRSPendingApproval 1) $ \gr -> do
+                      void $ setGroupRegOwner cc groupId ownerMember
+                      sendToApprove g gr 1
+            | role < GROwner -> sendMessage cc ct $ "You must be the " <> gt <> " owner to register it."
+            | otherwise -> sendMessage cc ct $ "Waiting for the owner member to be connected to the " <> gt <> "."
+        Left _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
+      where
+        profileChanged = case groupSLinkData_ of
+          Just GroupShortLinkData {groupProfile = p'} -> not $ sameProfile p p'
+          Nothing -> False
+        sameOwnerReregistration gr gt = case groupRegStatus gr of
+          GRSProposed -> sendMessage cc ct $ "Registration is in progress, waiting for the owner member to be connected to the " <> gt <> "."
+          GRSPendingConfirmation -> pendingApprovalTransition gr gt 1
+          GRSPendingUpdate -> pendingApprovalTransition gr gt 1
+          GRSPendingApproval n
+            | profileChanged -> pendingApprovalTransition gr gt $ n + 1
+            | otherwise -> sendMessage cc ct $ T.toTitle gt <> " is already pending approval."
+          GRSActive
+            | profileChanged -> pendingApprovalTransition gr gt 1
+            | otherwise -> sendMessage cc ct $ T.toTitle gt <> " is already listed in the directory."
+          GRSSuspended -> sendMessage cc ct $ T.toTitle gt <> " is suspended by admin. Please contact support."
+          GRSSuspendedBadRoles -> pendingApprovalTransition gr gt 1
+          GRSRemoved -> pendingApprovalTransition gr gt 1
+        pendingApprovalTransition gr gt n = do
+          let userGroupRef = userGroupReference gr g
+          setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n) $ \gr' -> do
+            notifyOwner gr' $
+              "The " <> gt <> " " <> userGroupRef <> " is submitted for approval.\nIt is hidden from the directory until approved."
+            sendToApprove g gr' n
+    deReregistration ct _ _ _ =
+      sendMessage cc ct "Error: could not verify ownership. Please report it to directory admins."
 
     deOwnerMemberAnnounced :: GroupInfo -> GroupMember -> GroupMember -> IO ()
     deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName, publicGroup}} fromMember announcedMember =
