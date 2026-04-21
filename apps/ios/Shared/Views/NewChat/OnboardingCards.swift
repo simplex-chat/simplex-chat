@@ -149,18 +149,21 @@ struct ConnectOnboardingView: View {
                 NewChatView(selection: .connect, showQRCodeScanner: true, onboarding: true)
                     .modifier(ThemedBackground(grouped: true))
             }
+            .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
         .sheet(isPresented: $showInviteSomeone) {
             NavigationView {
                 NewChatView(selection: .invite, onboarding: true)
                     .modifier(ThemedBackground(grouped: true))
             }
+            .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
         .sheet(isPresented: $showCreateAddress) {
             NavigationView {
                 UserAddressView(autoCreate: true, onboarding: true)
                     .modifier(ThemedBackground(grouped: true))
             }
+            .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
     }
 
