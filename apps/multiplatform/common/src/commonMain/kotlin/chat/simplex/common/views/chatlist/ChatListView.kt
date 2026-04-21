@@ -46,7 +46,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-enum class PresetTagKind { GROUP_REPORTS, FAVORITES, CONTACTS, GROUPS, BUSINESS, NOTES }
+enum class PresetTagKind { GROUP_REPORTS, FAVORITES, CONTACTS, GROUPS, CHANNELS, BUSINESS, NOTES }
 
 sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
@@ -1236,7 +1236,11 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
       else -> false
     }
     PresetTagKind.GROUPS -> when (chatInfo) {
-      is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null && !chatInfo.groupInfo.useRelays
+      else -> false
+    }
+    PresetTagKind.CHANNELS -> when (chatInfo) {
+      is ChatInfo.Group -> chatInfo.groupInfo.useRelays
       else -> false
     }
     PresetTagKind.BUSINESS -> when (chatInfo) {
@@ -1255,6 +1259,7 @@ private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResou
     PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
     PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
     PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
+    PresetTagKind.CHANNELS -> (if (active) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_bigtop_updates) to MR.strings.chat_list_channels
     PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
     PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed) to MR.strings.chat_list_notes
   }
