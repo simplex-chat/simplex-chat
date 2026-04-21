@@ -2094,6 +2094,7 @@ data class GroupInfo (
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
+  val isChannel: Boolean get() = groupProfile.isChannel
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val shortDescr get() = groupProfile.shortDescr
@@ -2213,6 +2214,8 @@ data class GroupProfile (
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null
 ): NamedChat {
+  val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
+
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
@@ -4594,30 +4597,21 @@ sealed class MsgChatLink {
 
   val iconRes: ImageResource
     get() = when (this) {
-      is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> MR.images.ic_bigtop_updates_circle_filled
-        else -> MR.images.ic_supervised_user_circle_filled
-      }
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
       is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
       is Invitation -> MR.images.ic_account_circle_filled
     }
 
   val smallIconRes: ImageResource
     get() = when (this) {
-      is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> MR.images.ic_bigtop_updates
-        else -> MR.images.ic_group
-      }
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group
       is Contact -> if (business) MR.images.ic_work else MR.images.ic_person
       is Invitation -> MR.images.ic_person
     }
 
   fun infoLine(signed: Boolean): String {
     var s = when (this) {
-      is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> generalGetString(MR.strings.chat_link_channel)
-        else -> generalGetString(MR.strings.chat_link_group)
-      }
+      is Group -> if (groupProfile.isChannel) generalGetString(MR.strings.chat_link_channel) else generalGetString(MR.strings.chat_link_group)
       is Contact -> if (business) generalGetString(MR.strings.chat_link_business_address) else generalGetString(MR.strings.chat_link_contact_address)
       is Invitation -> generalGetString(MR.strings.chat_link_one_time)
     }

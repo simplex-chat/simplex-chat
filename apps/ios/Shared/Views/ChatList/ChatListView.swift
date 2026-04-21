@@ -38,8 +38,9 @@ enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     case favorites = 1
     case contacts = 2
     case groups = 3
-    case business = 4
-    case notes = 5
+    case channels = 4
+    case business = 5
+    case notes = 6
 
     var id: Int { rawValue }
     
@@ -881,6 +882,7 @@ struct TagsView: View {
         case .favorites: (active ? "star.fill" : "star", "Favorites")
         case .contacts: (active ? "person.fill" : "person", "Contacts")
         case .groups: (active ? "person.2.fill" : "person.2", "Groups")
+        case .channels: (active ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle", "Channels")
         case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
         case .notes: (active ? "folder.fill" : "folder", "Notes")
         }
@@ -924,7 +926,12 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.businessChat == nil
+        case let .group(groupInfo, _): groupInfo.businessChat == nil && !groupInfo.isChannel
+        default: false
+        }
+    case .channels:
+        switch chatInfo {
+        case let .group(groupInfo, _): groupInfo.isChannel
         default: false
         }
     case .business:

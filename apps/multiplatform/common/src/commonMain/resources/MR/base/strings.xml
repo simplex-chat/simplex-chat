@@ -497,6 +497,7 @@
   <string name="chat_list_favorites">Favorites</string>
   <string name="chat_list_contacts">Contacts</string>
   <string name="chat_list_groups">Groups</string>
+  <string name="chat_list_channels">Channels</string>
   <string name="chat_list_businesses">Businesses</string>
   <string name="chat_list_notes">Notes</string>
   <string name="chat_list_group_reports">Reports</string>
