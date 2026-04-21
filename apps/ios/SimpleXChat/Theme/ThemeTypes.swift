@@ -670,19 +670,19 @@ public let DarkColorPalette = Colors(
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
     background: Color.black,
-    surface: oklch(0.2519647, 0, 0),
+    surface: oklch(0.2519647, 0, 0), // #ff222222
     error: Color.red,
-    onBackground: oklch(0.9908696, 0.00447983, 34.30938),
-    onSurface: oklch(0.9908696, 0.00447983, 34.30938),
+    onBackground: oklch(0.9908696, 0.00447983, 34.30938), // #fffffbfa
+    onSurface: oklch(0.9908696, 0.00447983, 34.30938), // #fffffbfa
     isLight: false
 )
 public let DarkColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: oklch(0.2596116, 0.02435695, 234.0127),
-    sentMessage: oklch(0.2596116, 0.02435695, 234.0127),
-    sentQuote: oklch(0.3262685, 0.04242656, 234.4608),
-    receivedMessage: oklch(0.2690091, 0.001828474, 286.2761),
-    receivedQuote: oklch(0.3375424, 0.003458181, 286.2129)
+    primaryVariant2: oklch(0.2596116, 0.02435695, 234.0127), // #ff18262e
+    sentMessage: oklch(0.2596116, 0.02435695, 234.0127), // #ff18262e
+    sentQuote: oklch(0.3262685, 0.04242656, 234.4608), // #ff1d3847
+    receivedMessage: oklch(0.2690091, 0.001828474, 286.2761), // #ff262627
+    receivedQuote: oklch(0.3375424, 0.003458181, 286.2129) // #ff373739
 )
 
 public let LightColorPalette = Colors (
@@ -699,20 +699,20 @@ public let LightColorPalette = Colors (
 )
 public let LightColorPaletteApp = AppColors(
     title: .black,
-    primaryVariant2: oklch(0.9680794, 0.0183117, 232.503),
-    sentMessage: oklch(0.9680794, 0.0183117, 232.503),
-    sentQuote: oklch(0.9407676, 0.03409827, 233.0377),
-    receivedMessage: oklch(0.9704316, 0.001324867, 286.3749),
-    receivedQuote: oklch(0.943656, 0.002669381, 286.3484)
+    primaryVariant2: oklch(0.9680794, 0.0183117, 232.503), // #ffe9f7ff
+    sentMessage: oklch(0.9680794, 0.0183117, 232.503), // #ffe9f7ff
+    sentQuote: oklch(0.9407676, 0.03409827, 233.0377), // #ffd6f0ff
+    receivedMessage: oklch(0.9704316, 0.001324867, 286.3749), // #fff5f5f6
+    receivedQuote: oklch(0.943656, 0.002669381, 286.3484) // #ffececee
 )
 
 public let SimplexColorPalette = Colors(
-    primary: oklch(0.8862563, 0.113699, 201.5703),
-    primaryVariant: oklch(0.6217762, 0.1034518, 205.799),
+    primary: oklch(0.8862563, 0.113699, 201.5703), // #ff70f0f9
+    primaryVariant: oklch(0.6217762, 0.1034518, 205.799), // #ff1298a5
     secondary: HighOrLowlight,
-    secondaryVariant: oklch(0.3761328, 0.03384425, 216.5493),
-    background: oklch(0.2024453, 0.03849037, 273.4875),
-    surface: oklch(0.2331016, 0.05415408, 266.8904),
+    secondaryVariant: oklch(0.3761328, 0.03384425, 216.5493), // #ff2c464d
+    background: oklch(0.2024453, 0.03849037, 273.4875), // #ff111528
+    surface: oklch(0.2331016, 0.05415408, 266.8904), // #ff121c37
     error: Color.red,
     onBackground: Color.white,
     onSurface: Color.white,
@@ -720,20 +720,20 @@ public let SimplexColorPalette = Colors(
 )
 public let SimplexColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: oklch(0.2782386, 0.05068946, 256.0234),
-    sentMessage: oklch(0.2782386, 0.05068946, 256.0234),
-    sentQuote: oklch(0.3401385, 0.06268949, 249.4274),
-    receivedMessage: oklch(0.2823021, 0.03341238, 276.7299),
-    receivedQuote: oklch(0.3488846, 0.02991734, 276.9226)
+    primaryVariant2: oklch(0.2782386, 0.05068946, 256.0234), // #ff172941
+    sentMessage: oklch(0.2782386, 0.05068946, 256.0234), // #ff172941
+    sentQuote: oklch(0.3401385, 0.06268949, 249.4274), // #ff1C3A57
+    receivedMessage: oklch(0.2823021, 0.03341238, 276.7299), // #ff25283a
+    receivedQuote: oklch(0.3488846, 0.02991734, 276.9226) // #ff36394a
 )
 
 public let BlackColorPalette = Colors(
-    primary: oklch(0.5737125, 0.1826329, 254.0001),
-    primaryVariant: oklch(0.5737125, 0.1826329, 254.0001),
+    primary: oklch(0.5737125, 0.1826329, 254.0001), // #ff0077e0
+    primaryVariant: oklch(0.5737125, 0.1826329, 254.0001), // #ff0077e0
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
-    background: oklch(0.1285578, 0, 0),
-    surface: oklch(0.200616, 0.001969079, 286.2208),
+    background: oklch(0.1285578, 0, 0), // #ff070707
+    surface: oklch(0.200616, 0.001969079, 286.2208), // #ff161617
     error: Color.red,
     onBackground: oklch(0.9908696, 0.00447983, 34.30938),
     onSurface: oklch(0.9908696, 0.00447983, 34.30938),
@@ -741,10 +741,10 @@ public let BlackColorPalette = Colors(
 )
 public let BlackColorPaletteApp = AppColors(
     title: .white,
-    primaryVariant2: oklch(0.327876, 0.03765742, 244.7111),
-    sentMessage: oklch(0.2596116, 0.02435695, 234.0127),
-    sentQuote: oklch(0.3262685, 0.04242656, 234.4608),
-    receivedMessage: oklch(0.2221287, 0, 0),
+    primaryVariant2: oklch(0.327876, 0.03765742, 244.7111), // #ff243747
+    sentMessage: oklch(0.2596116, 0.02435695, 234.0127), // #ff18262e
+    sentQuote: oklch(0.3262685, 0.04242656, 234.4608), // #ff1d3847
+    receivedMessage: oklch(0.2221287, 0, 0), // #ff1b1b1b
     receivedQuote: oklch(0.2817215, 0.003620283, 286.165)
 )
 
