@@ -149,13 +149,13 @@ The team group is **not a conversation stream**. It is a live dashboard of all a
 
 #### Card format
 
-Each card has five parts:
+Each card is **one** message with five parts (the join command is the final line of the card text, not a separate message):
 
 ```
 [ICON] *[Customer Name]* · [wait] · [N msgs]
 [STATE][· agent1, agent2, ...]
 "[last message(s), truncated]"
-/join [id]:[name]
+/'join [id]'
 ```
 
 **Icon / urgency signal**
@@ -184,11 +184,11 @@ Each card has five parts:
 
 **Agents** — comma-separated display names of all team members currently in the group. Omitted when no team member has joined.
 
-**Message preview** — the last several messages, most recent last, separated by a blue `/` (rendered via SimpleX markdown `!3 /!`). Newlines in message text are replaced with spaces to prevent card layout bloat. Newest messages are prioritized — when the total preview exceeds ~500 characters, the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender — subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok is labeled "Grok"; the customer is labeled with their display name (newlines replaced with spaces for display; the `/join` command uses the raw name so it matches the actual group profile); team members use their display name. The bot's own messages are excluded. Each individual message is truncated to ~200 characters with `[truncated]` appended. Media-only messages show a type label: `[image]`, `[file]`, `[voice]`, `[video]`.
+**Message preview** — the last several messages, most recent last, separated by a blue `/` (rendered via SimpleX markdown `!3 /!`). Newlines in message text are replaced with spaces to prevent card layout bloat. Newest messages are prioritized — when the total preview exceeds ~500 characters, the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender — subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok is labeled "Grok"; the customer is labeled with their display name (newlines replaced with spaces for display); team members use their display name. The bot's own messages are excluded. Each individual message is truncated to ~200 characters with `[truncated]` appended. Media-only messages show a type label: `[image]`, `[file]`, `[voice]`, `[video]`.
 
 **Markdown escaping in previews** — SimpleX markdown interprets `!N<space>` (where N is `1`–`6`, `r`, `g`, `b`, `y`, `c`, `m`, or `-`) as styled-text markup, closing at the next `!`. There is no escape mechanism in the parser. To prevent customer/agent message text from triggering false color formatting or interfering with the blue `/` separator, the bot inserts a zero-width space (U+200B) between `!` and any color-trigger character in preview text before joining with the separator. This is invisible to the user but breaks the parser trigger pattern.
 
-**Join command** — `/join id:name` lets any team member tap to join the group instantly. Names containing spaces are single-quoted: `/join id:'First Last'`.
+**Join command** — the final line of the card is `/'join <id>'`. The single quotes around `join <id>` make the whole token clickable in SimpleX clients; when tapped, the client sends `/join <id>` back to the team group. The bot's `/join` parser accepts two forms: `/join <id>` (numeric group id only; this is what the card emits and taps produce) and `/join <id>:<name>` (legacy form, retained so operators who typed the old syntax still work). The name, when present, is ignored by the handler — the groupId alone identifies the target group.
 
 The icon in line 1 is the sole urgency indicator — no reactions are used.
 
@@ -202,7 +202,7 @@ The icon in line 1 is the sole urgency indicator — no reactions are used.
 🆕 *Alice Johnson* · just now · 1 msg
 Queue
 "Alice Johnson: I can't connect to my contacts after updating to 6.3."
-/join 42:Alice
+/'join 42'
 ```
 
 ---
@@ -213,7 +213,7 @@ Queue
 🟡 *Emma Webb* · 20m · 2 msgs
 Queue
 "Emma Webb: Hi" / "Is anyone there? I have an urgent question about my keys"
-/join 88:Emma
+/'join 88'
 ```
 
 Second message has no prefix because it's the same sender as the first.
@@ -226,7 +226,7 @@ Second message has no prefix because it's the same sender as the first.
 🔴 *Maria Santos* · 3h 20m · 6 msgs
 Queue
 "Maria Santos: I reset my phone and now all conversations are gone" / "I tried reinstalling but nothing changed" / "Please help, I've lost access to all my conversations after resetting my phone…"
-/join 38:Maria
+/'join 38'
 ```
 
 ---
@@ -237,7 +237,7 @@ Queue
 🤖 *David Kim* · 1h 5m · 8 msgs
 Grok
 "David Kim: Which encryption algorithm does SimpleX use for messages?" / "Grok: SimpleX uses double ratchet with NaCl crypto_box for end-to-end encryption…[truncated]" / "David Kim: And what about metadata protection?"
-/join 29:David
+/'join 29'
 ```
 
 Each sender change triggers a new name prefix. David and Grok alternate, so every message gets a prefix.
@@ -250,7 +250,7 @@ Each sender change triggers a new name prefix. David and Grok alternate, so ever
 👋 *Sarah Miller* · 2h 10m · 5 msgs
 Team – pending · evan
 "Sarah Miller: Notifications completely stopped working after I updated my phone OS. I'm on Android 14…"
-/join 55:Sarah
+/'join 55'
 ```
 
 ---
@@ -261,7 +261,7 @@ Team – pending · evan
 💬 *François Dupont* · 30m · 14 msgs
 Team · evan, alex
 "François Dupont: OK merci, I will try this and let you know."
-/join 61:'François Dupont'
+/'join 61'
 ```
 
 ---
@@ -272,7 +272,7 @@ Team · evan, alex
 ⏰ *Wang Fang* · 4h · 19 msgs
 Team · alex
 "Wang Fang: The app crashes when I open large groups" / "I tried what you suggested but it still doesn't work. Any other ideas?"
-/join 73:Wang
+/'join 73'
 ```
 
 ---
@@ -282,7 +282,7 @@ Team · alex
 **Tracking: group customData.** The bot stores the current card's team group message ID (`cardItemId`) in the customer group's `customData` via `apiSetGroupCustomData(groupId, {cardItemId})`. This is the single source of truth for which team group message is the card for a given customer. It survives restarts because `customData` is in the database.
 
 **Create** — when the customer sends their first message (triggering the Step 2 queue message) or `/grok` as their first message (WELCOME → GROK, skipping Step 2):
-1. Bot composes the card (🆕 for first message, 🤖 for `/grok` as first message; customer name, message preview, `/join` command)
+1. Bot composes the card as a single message (🆕 for first message, 🤖 for `/grok` as first message; customer name, message preview, `/'join <id>'` as the final line)
 2. Bot posts it to the team group via `apiSendTextMessage` → receives back the `chatItemId`
 3. Bot writes `{cardItemId: chatItemId}` into the customer group's `customData`
 
@@ -302,7 +302,7 @@ Because the old card is deleted and the new one is posted at the bottom, the mos
 2. Card is **not deleted** — it remains in the team group until a retention policy is added (resolved state TBD)
 3. Bot clears the `cardItemId` from `customData`
 
-**Completion tracking:** When a card is composed with the ✅ icon (auto-completed), the bot writes `complete: true` into the group's `customData` alongside `cardItemId` and `joinItemId`. When a customer sends a new message and the card is recomposed as non-✅, the `complete` flag is omitted from the new `customData` (self-healing). This allows the bot to skip completed conversations on restart without re-reading chat history for every group.
+**Completion tracking:** When a card is composed with the ✅ icon (auto-completed), the bot writes `complete: true` into the group's `customData` alongside `cardItemId`. When a customer sends a new message and the card is recomposed as non-✅, the `complete` flag is omitted from the new `customData` (self-healing). This allows the bot to skip completed conversations on restart without re-reading chat history for every group.
 
 **Restart recovery** — on startup, the bot refreshes existing cards to update wait times, icons, and auto-complete status. It lists all groups, finds those with `customData.cardItemId` set and `customData.complete` not set, sorts by `cardItemId` ascending (higher IDs = more recently updated cards), and re-posts them oldest-first. This ensures the most recently active cards appear at the bottom of the team group (newest position). Completed cards are skipped — they remain as-is until a new customer message triggers the normal event-driven update. Old/pre-bot groups without `customData` are also skipped. The bot attempts to delete the old card message before reposting; deletion failures (e.g., card older than 24h) are silently ignored. Subsequent events resume the normal delete-repost cycle via `customData`.
 
@@ -312,7 +312,7 @@ Team members use these commands in the team group:
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>:<name>` | Join the specified customer group (promoted to Owner once connected) |
+| `/join <groupId>` (or legacy `/join <groupId>:<name>`) | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`. |
 
 `/join` is **team-only** — it is registered as a bot command only in the team group. If a customer sends `/join` in a customer group, the bot treats it as an ordinary message (per the existing rule: unrecognized commands are treated as normal messages).
 
@@ -372,7 +372,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>:<name>` | Join the specified customer group (promoted to Owner once connected) |
+| `/join <groupId>` (or legacy `/join <groupId>:<name>`) | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`. |
 
 ### 5.2 Bot Architecture
 
@@ -490,11 +490,11 @@ User profile IDs (`mainUserId`, `grokUserId`) are **not** persisted — they are
 
 #### What is NOT persisted and why
 
-Per-group state (`state`, `cardItemId`, `joinItemId`, `complete`) lives in SimpleX's database as the group's `customData` — persisted there rather than in the bot's state file.
+Per-group state (`state`, `cardItemId`, `complete`) lives in SimpleX's database as the group's `customData` — persisted there rather than in the bot's state file.
 
 | State | Where it lives instead |
 |-------|----------------------|
-| `state, cardItemId, joinItemId, complete` (per group) | Stored in the group's customData — conversation state, card message IDs, auto-completed flag. `state` is written at event time (first customer message, `/grok`, `/team`, team's first message); the bot never re-derives it by scanning chat history. |
+| `state, cardItemId, complete` (per group) | Stored in the group's customData — conversation state, card message ID, auto-completed flag. `state` is written at event time (first customer message, `/grok`, `/team`, team's first message); the bot never re-derives it by scanning chat history. |
 | Last customer message time | Derived from most recent customer message in chat history |
 | Message count | Derived from message count in chat history (all messages except the bot's own) |
 | Customer name | Always available from the group's display name |

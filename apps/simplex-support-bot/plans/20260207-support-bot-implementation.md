@@ -49,7 +49,7 @@ apps/simplex-support-bot/
 │   ├── grok.ts           # GrokApiClient: xAI API wrapper, system prompt, history
 │   ├── messages.ts       # All user-facing message templates
 │   └── util.ts           # isWeekend, profileMutex, logging helpers
-├── bot.test.ts           # Vitest suite (129 tests, 28 describes)
+├── bot.test.ts           # Vitest suite (130 tests, 28 describes)
 ├── test/
 │   └── __mocks__/
 │       ├── simplex-chat.js        # MockChatApi + utility re-exports
@@ -242,16 +242,13 @@ The team group is a live dashboard. The bot maintains exactly one message ("card
 
 ### Card format
 
-Card is two messages. **Message 1 (card text):**
+Card is a single message. The join command is the final line of the card text — there is no separate join message.
+
 ```
 [ICON] *[Customer Name]* · [wait] · [N msgs]
 [STATE][· agent1, agent2, ...]
 "[last message(s), truncated]"
-```
-
-**Message 2 (join command — separate single-line message):**
-```
-/join [id]:[name]
+/'join [id]'
 ```
 
 **Icons:**
@@ -273,24 +270,24 @@ Card is two messages. **Message 1 (card text):**
 
 **Message count:** All messages in chat history except the bot's own (`groupSnd` from main profile).
 
-**Message preview:** Last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat from spam. The customer's display name is also sanitized (newlines → spaces) for the card header, but the `/join` command uses the raw name so it matches the actual group profile. Newest messages are prioritized — when the total exceeds ~500 chars (`maxTotal = 500` in `composeCard`), the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. When truncation occurs, the first visible message is guaranteed to have a sender prefix even if it was a continuation in the original sequence. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender - subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok contact is detected by `grokContactId` and labeled "Grok"; the customer is identified by matching `memberId` to the group's `customerId` and labeled with their display name; all other members use their `memberProfile.displayName`. Bot's own messages (`groupSnd`) are excluded. Each message truncated to ~200 chars. Media-only messages show type labels: `[image]`, `[file]`, `[voice]`, `[video]`.
+**Message preview:** Last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat from spam. The customer's display name is sanitized (newlines → spaces) for the card header; the `/join` command no longer embeds the customer name (numeric id only). Newest messages are prioritized — when the total exceeds ~500 chars (`maxTotal = 500` in `composeCard`), the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. When truncation occurs, the first visible message is guaranteed to have a sender prefix even if it was a continuation in the original sequence. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender - subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok contact is detected by `grokContactId` and labeled "Grok"; the customer is identified by matching `memberId` to the group's `customerId` and labeled with their display name; all other members use their `memberProfile.displayName`. Bot's own messages (`groupSnd`) are excluded. Each message truncated to ~200 chars. Media-only messages show type labels: `[image]`, `[file]`, `[voice]`, `[video]`.
 
-**Join command:** `/join groupId:name` — `groupId` is the customer group's ID, `name` is the customer's display name. Names with spaces single-quoted: `/join 42:'First Last'`.
+**Join command:** the final line of the card renders as `/'join <groupId>'` where `<groupId>` is the customer group's numeric ID. The outer single quotes around `join <groupId>` are rendered by SimpleX clients as a clickable quoted command; tapping it sends `/join <groupId>` back to the team group. The bot's `/join` handler accepts both forms: `/join <groupId>` (numeric only — what the card produces and what a tap sends) and the legacy `/join <groupId>:<name>` (still parsed for backward compatibility with operators who type the old syntax; the `:<name>` suffix is extracted but ignored — the groupId alone identifies the target group).
 
 ### Card lifecycle
 
-**Tracking:** `{state, cardItemId, joinItemId, complete?}` stored in customer group's `customData` via `apiSetGroupCustomData`. `state` is the canonical conversation state (`QUEUE | GROK | TEAM-PENDING | TEAM`); `cardItemId`/`joinItemId` are message IDs; `complete` flags the auto-completed state. Absence of `state` means WELCOME. Written at event time by the dispatch handlers — `/grok` handler writes `GROK` on invite; `/team` handler writes `TEAM-PENDING` immediately (does not wait for team acceptance); first observed team-member text message writes `TEAM`; first customer text message writes `QUEUE`. Read back from `groupInfo.customData` — single source of truth, survives restarts. All writes go through `CardManager.mergeCustomData` to preserve fields across independent write paths.
+**Tracking:** `{state, cardItemId, complete?}` stored in customer group's `customData` via `apiSetGroupCustomData`. `state` is the canonical conversation state (`QUEUE | GROK | TEAM-PENDING | TEAM`); `cardItemId` is the team-group chat item ID for the (single) card message; `complete` flags the auto-completed state. Absence of `state` means WELCOME. Written at event time by the dispatch handlers — `/grok` handler writes `GROK` on invite; `/team` handler writes `TEAM-PENDING` immediately (does not wait for team acceptance); first observed team-member text message writes `TEAM`; first customer text message writes `QUEUE`. Read back from `groupInfo.customData` — single source of truth, survives restarts. All writes go through `CardManager.mergeCustomData` to preserve fields across independent write paths.
 
 **Create** — on first customer message (→ QUEUE) or `/grok` as first message (→ GROK):
-1. Compose card text + `/join` command
-2. Post both as separate messages via `apiSendMessages` (batch) → get two `chatItemId`s. The `/join` command MUST be a separate single-line message because SimpleX's Markdown parser (`parseMaybeMarkdownList`) only renders the full line (including arguments) as a clickable command for single-line messages; in multi-line messages the inline parser stops at whitespace.
-3. Write `{cardItemId, joinItemId}` to customer group's `customData`
+1. Compose card text (including the `/'join <groupId>'` final line)
+2. Post it via `apiSendMessages(chatRef, [{msgContent: {type: "text", text}, mentions: {}}])` → get one `chatItemId`. The card is a single message; the `/'join <id>'` line is clickable because SimpleX clients render the slash-prefixed single-quoted token as a clickable command even inside a multi-line message.
+3. Write `{cardItemId}` to customer group's `customData`
 
 **Update** (delete + repost) — on every subsequent event (new customer msg, team/Grok reply, state change, agent join):
-1. Read `{cardItemId, joinItemId}` from `customData`
-2. Delete old card + join command via `apiDeleteChatItems([Group, teamGroupId], [cardItemId, joinItemId], "broadcast")`. Per `simplex-chat/src/api.ts:436-445` the call either returns `T.ChatItemDeletion[]` (possibly empty if the items no longer exist) or throws `ChatCommandError`. Both outcomes are acceptable: the surrounding `try { ... } catch { /* log and continue */ }` allows execution to proceed whether the items were still present, already gone, or the server returned a transient error.
-3. Post new card text + `/join` command as two messages via `apiSendMessages` → get new IDs. **On failure** the partial-failure policy below applies: log, re-queue this groupId into `pendingUpdates`, return without writing `customData`.
-4. Write `{cardItemId, joinItemId, complete?}` to `customData` via `mergeCustomData`. **On failure** the tracking-write policy below applies.
+1. Read `{cardItemId}` from `customData`
+2. Delete old card via `apiDeleteChatItems([Group, teamGroupId], [cardItemId], "broadcast")`. Per `simplex-chat/src/api.ts:436-445` the call either returns `T.ChatItemDeletion[]` (possibly empty if the item no longer exists) or throws `ChatCommandError`. Both outcomes are acceptable: the surrounding `try { ... } catch { /* log and continue */ }` allows execution to proceed whether the item was still present, already gone, or the server returned a transient error.
+3. Post new card as a single message via `apiSendMessages` → get new `cardItemId`. **On failure** the partial-failure policy below applies: log, re-queue this groupId into `pendingUpdates`, return without writing `customData`.
+4. Write `{cardItemId, complete?}` to `customData` via `mergeCustomData`. **On failure** the tracking-write policy below applies.
 
 **Debouncing:** Card updates debounced globally — pending changes flushed every `cardFlushSeconds` seconds (default 300, configurable via `--card-flush-seconds`). Within a batch, each group's card reposted at most once with latest state.
 
@@ -366,7 +363,7 @@ Retry behavior for each failure point under this design:
 | `createCard` send fails | `cardItemId` absent | create-path | fresh card posted, `customData` written |
 | `updateCard` delete fails | old `cardItemId` still set | update-path | delete retried (idempotent — see below) + send + write |
 | `updateCard` send fails (delete succeeded) | old (now-deleted) `cardItemId` still set | update-path | delete retried against stale ID — tolerated (see below) — then send + write |
-| `updateCard` write fails (send succeeded, duplicate may exist) | old `cardItemId` still set, new card orphaned in team group | update-path | delete retried against stale old ID — tolerated — new card posted, tracking written; **leaked** new-card from the failed attempt persists until operator removes it |
+| `updateCard` write fails (send succeeded, duplicate may exist) | old `cardItemId` still set, new card orphaned in team group | update-path | delete retried against stale old ID — tolerated — new card posted, tracking written; **leaked** new card from the failed attempt persists until operator removes it |
 
 **Delete idempotency on retry** — `apiDeleteChatItems` against already-deleted IDs returns either an empty `ChatItemDeletion[]` or throws `ChatCommandError`. The step-2 `try { ... } catch { logError(...) }` swallows both; execution proceeds to step 3. Do NOT escalate a step-2 error to the partial-failure policy — that would create a retry loop for a permanent condition (items past the 24h deletion window will throw on every retry forever).
 
@@ -390,16 +387,13 @@ class CardManager {
   }
 
   async createCard(groupId: number, groupInfo: T.GroupInfo): Promise<void> {
-    const {text, joinCmd} = await this.composeCard(groupId, groupInfo)
-    // Send card text and /join as separate messages via apiSendMessages (batch).
-    // /join must be standalone single-line so the client renders it as clickable.
+    const {text} = await this.composeCard(groupId, groupInfo)
+    // Single-message card — the `/'join <id>'` line is the final line of `text`.
     const items = await this.chat.apiSendMessages(chatRef, [
       {msgContent: {type: "text", text}, mentions: {}},
-      {msgContent: {type: "text", text: joinCmd}, mentions: {}},
     ])
     await this.chat.apiSetGroupCustomData(groupId, {
       cardItemId: items[0].chatItem.meta.itemId,
-      joinItemId: items[1].chatItem.meta.itemId,
     })
   }
 
@@ -426,28 +420,27 @@ class CardManager {
 
   private async updateCard(groupId: number): Promise<void> {
     // Read customData via apiListGroups
-    const customData = ...  // {cardItemId, joinItemId?} from groupInfo.customData
+    const customData = ...  // {cardItemId} from groupInfo.customData
     if (!customData?.cardItemId) return
-    // Delete old card + join command messages
+    // Delete old card message
     try {
       await this.chat.apiDeleteChatItems(Group, teamGroupId,
-        [customData.cardItemId, customData.joinItemId].filter(Boolean), "broadcast")
+        [customData.cardItemId], "broadcast")
     } catch {}  // card may already be deleted
-    const {text, joinCmd, complete} = await this.composeCard(groupId, groupInfo)
+    const {text, complete} = await this.composeCard(groupId, groupInfo)
     const items = await this.chat.apiSendMessages(chatRef, [
       {msgContent: {type: "text", text}, mentions: {}},
-      {msgContent: {type: "text", text: joinCmd}, mentions: {}},
     ])
     const data = {
       cardItemId: items[0].chatItem.meta.itemId,
-      joinItemId: items[1].chatItem.meta.itemId,
       ...(complete ? {complete: true} : {}),
     }
     await this.chat.apiSetGroupCustomData(groupId, data)
   }
 
-  private async composeCard(groupId: number, groupInfo: T.GroupInfo): Promise<{text: string, joinCmd: string, complete: boolean}> {
-    // Icon, state, agents, preview (with sender-name prefixes), /join — per spec format
+  private async composeCard(groupId: number, groupInfo: T.GroupInfo): Promise<{text: string, complete: boolean}> {
+    // Icon, state, agents, preview (with sender-name prefixes), /'join <id>' — per spec format
+    // The final line of `text` is `/'join <groupId>'` — clickable in SimpleX clients.
     // buildPreview(chatItems, customerName, customerId) — prefixes each sender's first message in a run
     // Preview messages joined with blue "/" separator: " !3 /! " (SimpleX markdown for blue colored text)
     // Message text is escaped via escapeStyledMarkdown() before joining — inserts U+200B after "!"
@@ -542,10 +535,10 @@ Concrete call sites that can overlap on one `groupId`:
 - `processMainChatItem` writing `state` transitions (WELCOME→QUEUE, WELCOME→GROK, QUEUE→GROK, one-way gate →TEAM)
 - `activateGrok`'s `revertStateOnFail` (fire-and-forget) racing with subsequent customer messages
 - `activateTeam` writing `TEAM-PENDING` racing with `/grok` or another `/team` on the same group
-- `CardManager.flush → updateCard` writing `{cardItemId, joinItemId, complete}` racing with dispatch writing `state`
-- `createCard` writing `{cardItemId, joinItemId}` immediately after dispatch writes `state`
+- `CardManager.flush → updateCard` writing `{cardItemId, complete}` racing with dispatch writing `state`
+- `createCard` writing `{cardItemId}` immediately after dispatch writes `state`
 
-The CAS-on-state inside `revertStateOnFail` guards only the `state` key — other keys (`cardItemId`, `joinItemId`, `complete`) can still be lost when spread from a stale snapshot.
+The CAS-on-state inside `revertStateOnFail` guards only the `state` key — other keys (`cardItemId`, `complete`) can still be lost when spread from a stale snapshot.
 
 Implementation:
 
@@ -840,10 +833,10 @@ Ordering guarantees preserved:
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>:<name>` | Join specified customer group |
+| `/join <groupId>` (legacy `/join <groupId>:<name>` also accepted) | Join specified customer group |
 
 **`/join` handling:**
-1. Parse `groupId` from command
+1. Parse `groupId` from command. Regex: `/^\/join\s+(\d+)(?::.*)?\s*$/` — captures the numeric groupId; the optional `:<name>` tail (legacy) is matched but discarded. Cards emit `/'join <groupId>'`; when a team member taps that rendered token, the SimpleX client sends `/join <groupId>` (quotes stripped by the client as formatting) and this regex matches the numeric-only form. Operators who type the legacy `/join 42:Alice` still match and the `:Alice` suffix is ignored.
 2. Validate target is a business group (has `businessChat` property) — error in team group if not
 3. Add requesting team member to customer group via `apiAddMember`
 4. Member promoted to Owner on `connectedToGroupMember` (see §8)
@@ -935,7 +928,7 @@ If a user contacts the bot via a regular direct-message address (not business ad
 
 | State | Where it lives |
 |-------|---------------|
-| `state`, `cardItemId`, `joinItemId`, `complete` | Customer group's `customData` |
+| `state`, `cardItemId`, `complete` | Customer group's `customData` |
 | User profile IDs | Resolved via `apiListUsers()` by display name |
 | Message counts, timestamps | Derived from chat history |
 | Customer name | Group display name |
@@ -982,8 +975,8 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | 10 | Establish Grok contact | main+grok | `apiCreateLink()` + `apiConnectActiveUser()` | First run |
 | 11 | Update group profile | main | `apiUpdateGroupProfile()` | Business request; startup (conditional — only if preferences differ) |
 | 12 | Send msg to customer | main | `apiSendTextMessage([Group, gId], text)` | Various |
-| 13 | Post card to team group | main | `apiSendMessages(chatRef, [{card text}, {/join cmd}])` | Card create/update — two messages per card |
-| 14 | Delete card + join cmd | main | `apiDeleteChatItems([Group, teamGId], [cardItemId, joinItemId], "broadcast")` | Card update |
+| 13 | Post card to team group | main | `apiSendMessages(chatRef, [{card text with /'join <id>' final line}])` | Card create/update — one message per card |
+| 14 | Delete card | main | `apiDeleteChatItems([Group, teamGId], [cardItemId], "broadcast")` | Card update |
 | 15 | Set customData | main | `apiSetGroupCustomData(gId, data)` | Card lifecycle |
 | 16 | Invite Grok | main | `apiAddMember(gId, grokContactId, Member)` | `/grok` |
 | 17 | Grok joins | grok | `apiJoinGroup(gId)` | `receivedGroupInvitation` |
@@ -1222,7 +1215,7 @@ async function reachTeam(groupId?)        // reachTeamPending → add team membe
 
 Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); await p;`
 
-### 20.4 Test Catalog (129 tests, 28 suites)
+### 20.4 Test Catalog (130 tests, 28 suites)
 
 #### 1. Welcome & First Message (4 tests)
 - first message → queue reply + card created with /join command
@@ -1275,7 +1268,7 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 
 #### 7. Card Dashboard (6 tests)
 - first message creates card with customer name + /join
-- /join single-quotes names with spaces
+- card final line is `/'join <groupId>'` (single-quoted, numeric id only, no `:name` suffix)
 - card update deletes old, posts new
 - apiDeleteChatItems failure → ignored, new card posted
 - customData stores cardItemId through flush cycle
@@ -1295,8 +1288,9 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - TEAM derived (team present + message sent)
 - message count excludes bot's own
 
-#### 10. /join Command (4 tests)
-- /join groupId:name → team member added
+#### 10. /join Command (5 tests)
+- /join <groupId> (numeric only) → team member added
+- /join <groupId>:<name> (legacy form) → team member added, `:<name>` suffix ignored
 - /join non-business group → error
 - /join non-existent groupId → error
 - customer /join in customer group → treated as normal message
@@ -1387,7 +1381,7 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - truncation at maxTotal and maxPer limits (newest messages kept, oldest truncated)
 - customer identified by memberId (not contactId)
 - newlines in message text → replaced with spaces
-- newlines in customer display name → sanitized in card header, raw name preserved in /join command
+- newlines in customer display name → sanitized in card header (card header is the only place the display name appears; `/join` is numeric id only)
 
 #### 26. Restart Card Recovery (10 tests)
 - refreshAllCards refreshes groups with active cards
@@ -1421,7 +1415,7 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 ### 20.6 Test Coverage Notes
 
 **Covered vs plan catalog:**
-- §20.4 suites 1-13, 15, 17-27 plus 5b fully covered (129 tests across 28 suites)
+- §20.4 suites 1-13, 15, 17-27 plus 5b fully covered (130 tests across 28 suites)
 - Weekend detection (`util.isWeekend`) — not unit-tested; depends on `Intl.DateTimeFormat(new Date())`, would need clock mocking. Not present in the §20.4 catalog.
 - Profile Mutex serialization — not a standalone suite in §20.4; verified implicitly through all other tests (MockChatApi tracks activeUserId).
 - Startup & state persistence (`index.ts` path) — not unit-tested; requires native ChatApi. Integration-test only. Includes `deleteInviteLink` (profileMutex + `apiSetActiveUser` before `apiDeleteGroupLink`), the conditional `apiUpdateGroupProfile` (compare `fullGroupPreferences` before calling), and the best-effort `apiCreateGroupLink` (catch + log on SMP relay failure). Not in §20.4 catalog.
