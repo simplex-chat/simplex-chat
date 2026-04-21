@@ -696,23 +696,45 @@ object ChatModel {
     }
 
     suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
-      fun removedUpdatedItem(item: ChatItem): ChatItem? {
-        val newContent = when {
-          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> CIContent.SndModerated
-          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> CIContent.RcvModerated
-          else -> return null
-        }
-        val updatedItem = item.copy(
-          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
-          content = if (groupInfo.fullGroupPreferences.fullDelete.on) newContent else item.content
-        )
-        if (item.isActiveReport) {
-          decreaseGroupReportsCounter(rhId, groupInfo.id)
-        }
-        return updatedItem
-      }
+      fun isMemberItem(item: ChatItem): Boolean =
+        (item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId) ||
+        (item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId)
 
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
+      // When fullDelete is on, items are fully deleted from DB by backend —
+      // remove them from UI immediately so no "moderated" bubbles are shown.
+      if (groupInfo.fullGroupPreferences.fullDelete.on) {
+        // Update chat list preview
+        val i = getChatIndex(rhId, groupInfo.id)
+        if (i >= 0) {
+          val chat = chats[i]
+          if (chat.chatItems.isNotEmpty() && isMemberItem(chat.chatItems[0])) {
+            chats.value[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
+          }
+        }
+        // Remove from open chat view
+        if (chatId.value == groupInfo.id) {
+          chatItems.removeAllAndNotify { item ->
+            val remove = isMemberItem(item)
+            if (remove) {
+              AudioPlayer.stop(item) // stop voice message if playing
+              if (item.isRcvNew) decreaseCounterInPrimaryContext(rhId, cInfo.id)
+              if (item.isActiveReport) decreaseGroupReportsCounter(rhId, groupInfo.id)
+            }
+            remove
+          }
+        }
+        return
+      }
+      // When fullDelete is off, mark items as moderated (original behavior)
+      fun removedUpdatedItem(item: ChatItem): ChatItem? {
+        if (!isMemberItem(item)) return null
+        val updatedItem = item.copy(
+          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
+        )
+        if (item.isActiveReport) decreaseGroupReportsCounter(rhId, groupInfo.id)
+        return updatedItem
+      }
       if (chatId.value == groupInfo.id) {
         for (i in 0 until chatItems.value.size) {
           val updatedItem = removedUpdatedItem(chatItems.value[i])

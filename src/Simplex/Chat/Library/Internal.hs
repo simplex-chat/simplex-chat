@@ -510,23 +510,21 @@ updateACIGroupInfo gInfo' = \case
     AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
-deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
-deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs
+fullDeleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
+fullDeleteGroupMemberCIs user gInfo member = do
+  filesInfo <- withStore' $ \db -> getGroupMemberFileInfo db user gInfo member
   deleteCIFiles user filesInfo
+  withStore' $ \db -> do
+    fullDeleteMemberCIs db user gInfo member
+    deleteGroupMember db user member
 
-deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
-deleteGroupMembersCIs user gInfo members byGroupMember = do
-  deletedTs <- liftIO getCurrentTime
-  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> deleteGroupMemberCIs_ db user gInfo m byGroupMember SMDRcv deletedTs
+fullDeleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
+fullDeleteGroupMembersCIs user gInfo members = do
+  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> getGroupMemberFileInfo db user gInfo m
   deleteCIFiles user filesInfo
-
-deleteGroupMemberCIs_ :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO [CIFileInfo]
-deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs = do
-  fs <- getGroupMemberFileInfo db user gInfo member
-  updateMemberCIsModerated db user gInfo member byGroupMember msgDir deletedTs
-  pure fs
+  withStore' $ \db -> forM_ members $ \m -> do
+    fullDeleteMemberCIs db user gInfo m
+    deleteGroupMember db user m
 
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
 deleteLocalCIs user nf items byUser timed = do
