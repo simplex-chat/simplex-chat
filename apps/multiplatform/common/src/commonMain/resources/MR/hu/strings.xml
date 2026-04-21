@@ -29,7 +29,7 @@
     <string name="accept_connection_request__question">Elfogadja a kapcsolódási kérést?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
-    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a SimpleX partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a SimpleX partnerei számára.</string>
+    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a SimpleX-partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a SimpleX-partnerei számára.</string>
     <string name="color_primary_variant">További kiemelőszín</string>
     <string name="callstatus_error">híváshiba</string>
     <string name="v5_4_block_group_members">Csoporttagok letiltása</string>
@@ -979,7 +979,7 @@
     <string name="current_version_timestamp">%s (jelenlegi)</string>
     <string name="smp_servers_your_server">Saját SMP-kiszolgáló</string>
     <string name="random_port">Véletlen</string>
-    <string name="share_with_contacts">Megosztás a SimpleX partnerekkel</string>
+    <string name="share_with_contacts">Megosztás a SimpleX-partnerekkel</string>
     <string name="sender_you_pronoun">Ön</string>
     <string name="you_have_no_chats">Nincsenek csevegései</string>
     <string name="send_disappearing_message_send">Küldés</string>
@@ -995,7 +995,7 @@
     <string name="share_text_sent_at">Elküldve: %s</string>
     <string name="connect_use_current_profile">Jelenlegi profil használata</string>
     <string name="this_device">Ez az eszköz</string>
-    <string name="share_address_with_contacts_question">Megosztja a címet a SimpleX partnereivel?</string>
+    <string name="share_address_with_contacts_question">Megosztja a címet a SimpleX-partnereivel?</string>
     <string name="profile_password">Profiljelszó</string>
     <string name="theme">Téma</string>
     <string name="remove_passphrase_from_settings">Eltávolítja a jelmondatot a beállításokból?</string>
@@ -1038,7 +1038,7 @@
     <string name="smp_servers_save">Kiszolgálók mentése</string>
     <string name="group_welcome_title">Üdvözlőüzenet</string>
     <string name="network_option_seconds_label">mp</string>
-    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a SimpleX partnerei számára.</string>
+    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a SimpleX-partnerei számára.</string>
     <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognitómód</string>
     <string name="save_welcome_message_question">Menti az üdvözlőüzenetet?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Új csevegési profil létrehozásához indítsa újra az alkalmazást.</string>
