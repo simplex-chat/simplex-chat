@@ -18,7 +18,7 @@ module Directory.Service
   )
 where
 
-import Control.Concurrent (forkIO)
+import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
 import Control.Logger.Simple
@@ -235,9 +235,15 @@ directoryService st opts cfg = do
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc ->
     raceAny_ $
-      [ forever $ threadDelay maxBound,
-        forever $ do
+      [ forever $ do
           (_, resp) <- atomically . readTBQueue $ outputQ cc
+          putStrLn $ "EVENT: " <> take 500 (show resp)
+          case resp of
+            Right (CEvtGroupMemberUpdated {fromMember, toMember}) ->
+              putStrLn $ "  GMUpdate fromGMId=" <> show (groupMemberId' fromMember) <> " fromMemberId=" <> show (memberId' fromMember) <> " toGMId=" <> show (groupMemberId' toMember) <> " toMemberId=" <> show (memberId' toMember)
+            Right (CEvtUserJoinedGroup {groupInfo, hostMember}) ->
+              putStrLn $ "  UserJoined groupId=" <> show (groupId' groupInfo) <> " hostGMId=" <> show (groupMemberId' hostMember) <> " hostMemberId=" <> show (memberId' hostMember)
+            _ -> pure ()
           directoryServiceEvent st opts env user cc resp
       ]
         <> updateListingsThread_ opts env
@@ -313,8 +319,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
   where
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_
     withAdminUsers action = void . forkIO $ do
-      forM_ superUsers $ \KnownContact {contactId} -> action contactId
-      forM_ adminUsers $ \KnownContact {contactId} -> action contactId
+      forM_ superUsers $ \KnownContact {contactId} -> do
+        putStrLn $ "withAdminUsers: sending to superUser contactId=" <> show contactId
+        action contactId
+      forM_ adminUsers $ \KnownContact {contactId} -> do
+        putStrLn $ "withAdminUsers: sending to adminUser contactId=" <> show contactId
+        action contactId
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
     notifyAdminUsers s = withAdminUsers $ \contactId -> sendMessage' cc contactId s
     notifyOwner = sendMessage' cc . dbContactId
@@ -707,6 +717,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image'}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
+      putStrLn $ "sendToApprove: dbContactId=" <> show dbContactId
+      forM_ superUsers $ \KnownContact {contactId = suId, localDisplayName = suName} ->
+        putStrLn $ "  superUser: contactId=" <> show suId <> " name=" <> T.unpack suName
+      forM_ adminUsers $ \KnownContact {contactId = aId, localDisplayName = aName} ->
+        putStrLn $ "  adminUser: contactId=" <> show aId <> " name=" <> T.unpack aName
       ct_ <- getContact' cc user dbContactId
       let membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_\n"
           text =
@@ -818,16 +833,18 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 sendMessage cc ct $ "Joining the channel " <> displayName <> "…"
                 let ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
                 sendChatCmd cc (APIPrepareGroup userId ccLink False groupSLinkData) >>= \case
-                  Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) ->
-                    sendChatCmd cc (APIConnectPreparedGroup (groupId' gInfo) False (Just ownerContact) Nothing) >>= \case
+                  Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) -> do
+                    let gId = groupId' gInfo
+                    -- Create registration before connecting so announcement handler can find it
+                    addGroupReg notifyAdminUsers st cc ct gInfo GRSProposed $ \_ -> pure ()
+                    sendChatCmd cc (APIConnectPreparedGroup gId False (Just ownerContact) Nothing) >>= \case
                       Right CRStartedConnectionToGroup {groupInfo = gInfo'} ->
                         withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user gInfo' mId) >>= \case
-                          Right ownerMember ->
-                            addGroupReg notifyAdminUsers st cc ct gInfo' GRSProposed $ \_ -> do
-                              void $ setGroupRegOwner cc (groupId' gInfo') ownerMember
-                              logInfo $ "registered public group " <> viewGroupName gInfo'
+                          Right ownerMember -> do
+                            putStrLn $ "found owner member GMId=" <> show (groupMemberId' ownerMember)
+                            void $ setGroupRegOwner cc gId ownerMember
                           Left e -> do
-                            logError $ "could not find owner member: " <> T.pack e
+                            putStrLn $ "could not find owner member: " <> show e
                             sendMessage cc ct "Error: could not find owner member after joining. Please report it to directory admins."
                       _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
                   _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
@@ -859,14 +876,20 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deReregistration _ct _g _ownerSig _groupSLinkData_ = pure () -- TODO implement re-registration per plan
 
     deOwnerMemberAnnounced :: GroupInfo -> GroupMember -> GroupMember -> IO ()
-    deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} _unknownMember announcedMember = do
-      withGroupReg g "owner member announced" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} ->
-        when (groupRegStatus == GRSProposed && dbOwnerMemberId == Just (groupMemberId' announcedMember)) $
+    deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} fromMember announcedMember = do
+      putStrLn $ "DEOwnerMemberAnnounced groupId=" <> show groupId <> " fromGMId=" <> show (groupMemberId' fromMember) <> " fromMemberId=" <> show (memberId' fromMember) <> " toGMId=" <> show (groupMemberId' announcedMember) <> " toMemberId=" <> show (memberId' announcedMember)
+      withGroupReg g "owner member announced" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId, dbGroupId} -> do
+        putStrLn $ "  reg dbGroupId=" <> show dbGroupId <> " groupRegStatus=" <> show groupRegStatus <> " dbOwnerMemberId=" <> show dbOwnerMemberId
+        when (groupRegStatus == GRSProposed && (dbOwnerMemberId == Just (groupMemberId' fromMember) || dbOwnerMemberId == Just (groupMemberId' announcedMember))) $ do
           let GroupMember {memberRole = role} = announcedMember
-          in if role >= GROwner
+          putStrLn $ "  matched! role=" <> show role
+          if role >= GROwner
             then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
+              putStrLn $ "  sending notifyOwner to dbContactId=" <> show (dbContactId gr')
               notifyOwner gr' $ "Joined the channel " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
+              putStrLn "  notifyOwner done, calling sendToApprove"
               sendToApprove g gr' 1
+              putStrLn "  sendToApprove done"
             else do
               setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
               sendMessage' cc (dbContactId gr) "The signing key does not belong to a current owner. Registration cancelled."
@@ -1086,36 +1109,40 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                       getDuplicateGroup g >>= \case
                         Left e -> sendReply $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
                         Right DGReserved -> sendReply $ "The group " <> groupRef <> " is already listed in the directory."
-                        _ -> getGroupRolesStatus g gr >>= \case
-                          Right GRSOk -> do
-                            let grPromoted'
-                                  | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
-                                  | otherwise = False
-                            setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
-                              let approved = "The group " <> userGroupReference' gr n <> " is approved"
-                              notifyOwner gr $
-                                (approved <> " and listed in directory - please moderate it!\n")
-                                  <> "_Please note_: if you change the group profile it will be hidden from directory until it is re-approved.\n\n"
-                                  <> "Supported commands:\n"
-                                  <> ("/'filter " <> tshow ugrId <> "' - to configure anti-spam filter.\n")
-                                  <> ("/'role " <> tshow ugrId <> "' - to set default member role.\n")
-                                  <> ("/'link " <> tshow ugrId <> "' - to view/upgrade group link.")
-                              invited <-
-                                forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
-                                  inviteToOwnersGroup og gr $ \case
-                                    Right () -> do
-                                      owner <- groupOwnerInfo groupRef $ dbContactId gr
-                                      pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
-                                    Left err -> pure err
-                              sendReply $ "Group approved" <> (if grPromoted' then " (promoted)" else "") <> "!" <> maybe "" ("\n" <>) invited
-                              notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> maybe "" ("\n" <>) invited
-                          Right GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
-                          Right GRSContactNotOwner -> replyNotApproved "user is not an owner."
-                          Right GRSBadRoles -> replyNotApproved $ "user is not an owner, " <> serviceNotAdmin
-                          Left e -> sendReply $ "Error: getGroupRolesStatus. Please notify the developers.\n" <> T.pack e
-                          where
-                            replyNotApproved reason = sendReply $ "Group is not approved: " <> reason
-                            serviceNotAdmin = serviceName <> " is not an admin."
+                        _ -> do
+                          let GroupInfo {groupProfile = GroupProfile {publicGroup = pg_}} = g
+                              isPublicGroup_ = isJust pg_
+                          rolesOk <- if isPublicGroup_ then pure (Right GRSOk) else getGroupRolesStatus g gr
+                          case rolesOk of
+                            Right GRSOk -> do
+                              let grPromoted'
+                                    | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
+                                    | otherwise = False
+                              setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
+                                let approved = "The group " <> userGroupReference' gr n <> " is approved"
+                                notifyOwner gr $
+                                  (approved <> " and listed in directory - please moderate it!\n")
+                                    <> "_Please note_: if you change the group profile it will be hidden from directory until it is re-approved.\n\n"
+                                    <> "Supported commands:\n"
+                                    <> ("/'filter " <> tshow ugrId <> "' - to configure anti-spam filter.\n")
+                                    <> ("/'role " <> tshow ugrId <> "' - to set default member role.\n")
+                                    <> ("/'link " <> tshow ugrId <> "' - to view/upgrade group link.")
+                                invited <-
+                                  forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
+                                    inviteToOwnersGroup og gr $ \case
+                                      Right () -> do
+                                        owner <- groupOwnerInfo groupRef $ dbContactId gr
+                                        pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
+                                      Left err -> pure err
+                                sendReply $ "Group approved" <> (if grPromoted' then " (promoted)" else "") <> "!" <> maybe "" ("\n" <>) invited
+                                notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> maybe "" ("\n" <>) invited
+                            Right GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
+                            Right GRSContactNotOwner -> replyNotApproved "user is not an owner."
+                            Right GRSBadRoles -> replyNotApproved $ "user is not an owner, " <> serviceNotAdmin
+                            Left e -> sendReply $ "Error: getGroupRolesStatus. Please notify the developers.\n" <> T.pack e
+                            where
+                              replyNotApproved reason = sendReply $ "Group is not approved: " <> reason
+                              serviceNotAdmin = serviceName <> " is not an admin."
                   | otherwise -> sendReply "Incorrect approval code"
                 _ -> sendReply $ "Error: the group " <> groupRef <> " is not pending approval."
             where
