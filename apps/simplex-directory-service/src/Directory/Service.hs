@@ -51,7 +51,7 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
-import Simplex.Chat.Markdown (Format (..), FormattedText (..), parseMaybeMarkdownList, viewName)
+import Simplex.Chat.Markdown (Format (..), FormattedText (..), SimplexLinkType (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (GroupShortLinkData (..), LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
@@ -688,7 +688,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               -- /audio is matched as text, not as DirectoryCmd, because it is only valid
               -- in group context at captcha stage, while DirectoryCmd is for DM commands.
               isAudioCmd = T.strip msgText == "/audio"
-              cmd = fromRight (ADC SDRUser DCUnknownCommand) $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.strip msgText
+              cmd = fromRight (ADC SDRUser DCUnknownCommand) $ A.parseOnly (directoryCmdP Nothing <* A.endOfInput) $ T.strip msgText
           atomically (TM.lookup gmId $ pendingCaptchas env) >>= \case
             Nothing
               | isAudioCmd && canSendVoiceCaptcha g m -> sendMemberCaptcha g m (Just ciId) noCaptcha 0 CMAudio
@@ -705,7 +705,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                         sendComposedMessages_ cc sendRef [(Just ciId, MCText audioAlreadyEnabled)]
                     else sendComposedMessages_ cc sendRef [(Just ciId, MCText voiceCaptchaUnavailable)]
               | otherwise -> case cmd of
-                  ADC SDRUser (DCSearchGroup _) -> do
+                  ADC SDRUser (DCSearchGroup {}) -> do
                     ts <- getCurrentTime
                     if
                       | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired (attempts - 1) captchaMode
@@ -954,10 +954,19 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           \`/link <ID>` - view and upgrade group link.\n\
           \`/delete <ID>:<NAME>` - remove the group you submitted from directory, with _ID_ and _name_ as shown by /list command.\n\n\
           \To search for groups, send the search text."
-      DCSearchGroup s ->
-        sendFoundListedGroups (STSearch s) Nothing "No groups found" $ \gs n ->  -- $ sendSearchResults s
+      DCSearchGroup s ft ->
+        sendFoundListedGroups (STSearch s) Nothing notFound $ \gs n ->
           let more = if n > length gs then ", sending top " <> tshow (length gs) else ""
            in "Found " <> tshow n <> " group(s)" <> more <> "."
+        where
+          notFound
+            | hasSimplexGroupLink ft = "No groups found.\nTo register a group or a channel, please use \"Share via chat\" feature."
+            | otherwise = "No groups found"
+          hasSimplexGroupLink = \case
+            Just fts -> any isGroupLink fts
+            Nothing -> False
+          isGroupLink (FormattedText (Just SimplexLink {linkType}) _) = linkType == XLGroup || linkType == XLChannel
+          isGroupLink _ = False
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
           Just SearchRequest {searchType, searchTime, lastGroup} -> do

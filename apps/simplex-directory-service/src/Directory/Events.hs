@@ -33,7 +33,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
 import Simplex.Chat.Controller
-import Simplex.Chat.Markdown (displayNameTextP)
+import Simplex.Chat.Markdown (MarkdownList, displayNameTextP)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink, MsgContent (..))
@@ -98,10 +98,10 @@ crDirectoryEvent_ = \case
   CEvtGroupMemberUpdated {groupInfo, fromMember, toMember} -> Just $ DEOwnerMemberAnnounced {groupInfo, unknownMember = fromMember, announcedMember = toMember}
   CEvtChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
   CEvtChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
-  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->
+  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, formattedText = ft, meta = CIMeta {itemLive}}) : _} ->
     Just $ case (mc, itemLive) of
       (MCChat {chatLink, ownerSig}, Nothing) -> DEChatLinkReceived {contact = ct, chatItemId = ciId, chatLink, ownerSig}
-      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
+      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP ft <* A.endOfInput) $ T.dropWhileEnd isSpace t
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci
@@ -155,7 +155,7 @@ data DirectoryHelpSection = DHSRegistration | DHSCommands
 
 data DirectoryCmd (r :: DirectoryRole) where
   DCHelp :: DirectoryHelpSection -> DirectoryCmd 'DRUser
-  DCSearchGroup :: Text -> DirectoryCmd 'DRUser
+  DCSearchGroup :: Text -> Maybe MarkdownList -> DirectoryCmd 'DRUser
   DCSearchNext :: DirectoryCmd 'DRUser
   DCAllGroups :: DirectoryCmd 'DRUser
   DCRecentGroups :: DirectoryCmd 'DRUser
@@ -187,11 +187,11 @@ data ADirectoryCmd = forall r. ADC (SDirectoryRole r) (DirectoryCmd r)
 
 deriving instance Show ADirectoryCmd
 
-directoryCmdP :: Parser ADirectoryCmd
-directoryCmdP =
+directoryCmdP :: Maybe MarkdownList -> Parser ADirectoryCmd
+directoryCmdP ft =
   (A.char '/' *> cmdStrP)
     <|> (A.char '.' $> ADC SDRUser DCSearchNext)
-    <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
+    <|> (ADC SDRUser . (`DCSearchGroup` ft) <$> A.takeText)
   where
     cmdStrP =
       (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
@@ -310,7 +310,7 @@ directoryCmdP =
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
   DCHelp _ -> "help"
-  DCSearchGroup _ -> "search"
+  DCSearchGroup {} -> "search"
   DCSearchNext -> "next"
   DCAllGroups -> "all"
   DCRecentGroups -> "new"

@@ -9,7 +9,7 @@ module Bots.DirectoryTests where
 import ChatClient
 import ChatTests.ChatRelays (withRelay)
 import ChatTests.DBUtils
-import ChatTests.Groups (prepareChannel1Relay)
+import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
@@ -90,6 +90,9 @@ directoryServiceTests = do
   describe "public group registration" $ do
     it "should connect to directory service" testConnectToDirectory
     it "should register channel via shared link card" testRegisterChannelViaCard
+    it "should suggest share via chat when link sent as text" testLinkAsTextSearch
+    it "should reject card shared by non-owner" testNonOwnerSharesCard
+    it "should delete channel registration and leave" testDeleteChannelRegistration
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
@@ -2022,6 +2025,73 @@ testRegisterChannelViaCard ps =
         bob <## "The channel is no longer listed in the directory."
         superUser <# "'SimpleX Directory'> The channel ID 1 (news) is de-listed (channel owner left)."
         relay <## "#news: 'SimpleX Directory' left the group (signed)"
+
+testLinkAsTextSearch :: HasCallStack => TestParams -> IO ()
+testLinkAsTextSearch ps =
+  withDirectoryServiceCfg ps testCfg $ \_superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        bob `connectVia` dsLink
+        (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        bob #> ("@'SimpleX Directory' " <> shortLink)
+        bob <# ("'SimpleX Directory'> > " <> shortLink)
+        bob <## "      No groups found."
+        bob <## "To register a group or a channel, please use \"Share via chat\" feature."
+
+testNonOwnerSharesCard :: HasCallStack => TestParams -> IO ()
+testNonOwnerSharesCard ps =
+  withDirectoryServiceCfg ps testCfg $ \_superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay ->
+        withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+          bob `connectVia` dsLink
+          cath `connectVia` dsLink
+          (shortLink, fullLink) <- prepareChannel1Relay "news" bob relay
+          memberJoinChannel "news" [relay] [bob] shortLink fullLink cath
+          cath ##> "/share chat #news @'SimpleX Directory'"
+          cath <# "@'SimpleX Directory' link to join channel #news:"
+          _ <- getTermLine cath -- short link
+          cath <# "'SimpleX Directory'> To add a channel to directory you must be the owner."
+
+testDeleteChannelRegistration :: HasCallStack => TestParams -> IO ()
+testDeleteChannelRegistration ps =
+  withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        bob `connectVia` dsLink
+        (_shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        bob ##> "/share chat #news @'SimpleX Directory'"
+        bob <# "@'SimpleX Directory' link to join channel #news (signed):"
+        _ <- getTermLine bob -- short link
+        _ <- getTermLine bob -- ownerSig JSON
+        bob <# "'SimpleX Directory'> Joining the channel news…"
+        concurrentlyN_
+          [ do
+              relay <## "'SimpleX Directory': accepting request to join group #news..."
+              relay <## "#news: 'SimpleX Directory' joined the group",
+            bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+          ]
+        bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
+        superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
+        superUser <## "news"
+        superUser <## "2 members"
+        superUser <## ""
+        superUser <## "To approve send:"
+        superUser <# "'SimpleX Directory'> /approve 1:news 1"
+        let approve = "/approve 1:news 1"
+        superUser #> ("@'SimpleX Directory' " <> approve)
+        superUser <# ("'SimpleX Directory'> > " <> approve)
+        superUser <## "      Channel approved!"
+        bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
+        bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+        -- owner deletes registration
+        bob #> "@'SimpleX Directory' /delete 1:news"
+        bob <# "'SimpleX Directory'> > /delete 1:news"
+        bob <## "      Your channel news is deleted from the directory"
+        concurrentlyN_
+          [ bob <## "#news: 'SimpleX Directory_1' left the group (signed)",
+            relay <## "#news: 'SimpleX Directory' left the group (signed)"
+          ]
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do
