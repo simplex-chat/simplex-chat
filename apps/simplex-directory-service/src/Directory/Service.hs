@@ -805,55 +805,55 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
 
     deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
-    deChatLinkReceived ct chatLink ownerSig_ = case chatLink of
-      MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just _}} -> case ownerSig_ of
-        Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)} -> do
-          let link = ACL SCMContact $ CLShort connLink
-              mId = MemberId oIdBytes
-          sendChatCmd cc (APIConnectPlan userId (Just link) True (Just ownerSig)) >>= \case
-            Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) -> case plan of
-              CPGroupLink (GLPOk {groupSLinkData_ = Just groupSLinkData, ownerVerification = Just OVVerified}) -> do
-                let GroupShortLinkData {groupProfile = GroupProfile {displayName}} = groupSLinkData
-                sendMessage cc ct $ "Joining the channel " <> displayName <> "…"
-                let ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
-                sendChatCmd cc (APIPrepareGroup userId ccLink False groupSLinkData) >>= \case
-                  Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) -> do
-                    let gId = groupId' gInfo
-                    -- Create registration before connecting so announcement handler can find it
-                    addGroupReg notifyAdminUsers st cc ct gInfo GRSProposed $ \_ -> pure ()
-                    sendChatCmd cc (APIConnectPreparedGroup gId False (Just ownerContact) Nothing) >>= \case
-                      Right CRStartedConnectionToGroup {groupInfo = gInfo'} ->
-                        withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user gInfo' mId) >>= \case
-                          Right ownerMember ->
-                            void $ setGroupRegOwner cc gId ownerMember
-                          Left e -> do
-                            logError $ "could not find owner member: " <> T.pack e
-                            sendMessage cc ct "Error: could not find owner member after joining. Please report it to directory admins."
-                      _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
-                  _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
-              CPGroupLink (GLPOk {ownerVerification = Just (OVFailed reason)}) ->
-                sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
-              CPGroupLink (GLPOk {ownerVerification = Nothing}) ->
-                sendMessage cc ct "Error: could not verify channel ownership. Please report it to directory admins."
-              CPGroupLink (GLPOk {groupSLinkData_ = Nothing}) ->
-                sendMessage cc ct "Error: no channel information available via the link."
-              CPGroupLink (GLPKnown {groupInfo = g, ownerVerification = Just OVVerified, groupSLinkData_}) ->
-                deReregistration ct g ownerSig groupSLinkData_
-              CPGroupLink (GLPKnown {ownerVerification = Just (OVFailed reason)}) ->
-                sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
-              CPGroupLink (GLPKnown {ownerVerification = Nothing}) ->
-                sendMessage cc ct "Error: could not verify ownership."
-              CPGroupLink (GLPConnectingProhibit _) ->
-                sendMessage cc ct "Already connecting to this channel."
-              CPGroupLink GLPConnectingConfirmReconnect ->
-                sendMessage cc ct "Already connecting to this channel."
-              CPGroupLink (GLPNoRelays _) ->
-                sendMessage cc ct "Channel has no active relays. Please try again later."
-              _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
-            _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
-        Just _ -> sendMessage cc ct "To add a channel to directory you must be the owner."
-        Nothing -> sendMessage cc ct "To add a channel to directory you must be the owner."
-      _ -> sendMessage cc ct "Only channels can be added to directory via link."
+    deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just _}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) = do
+      let link = ACL SCMContact $ CLShort connLink
+          mId = MemberId oIdBytes
+      sendChatCmd cc (APIConnectPlan userId (Just link) True (Just ownerSig)) >>= \case
+        Right (CRConnectionPlan _ (ACCL SCMContact ccLink) plan) ->
+          handleGroupLinkPlan ct ccLink mId ownerSig plan
+        _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."
+    deChatLinkReceived ct (MCLGroup {groupProfile = GroupProfile {publicGroup = Just _}}) _ =
+      sendMessage cc ct "To add a channel to directory you must be the owner."
+    deChatLinkReceived ct _ _ =
+      sendMessage cc ct "Only channels can be added to directory via link."
+
+    handleGroupLinkPlan :: Contact -> CreatedLinkContact -> MemberId -> LinkOwnerSig -> ConnectionPlan -> IO ()
+    handleGroupLinkPlan ct ccLink mId ownerSig = \case
+      CPGroupLink glp -> case glp of
+        GLPOk {groupSLinkData_, ownerVerification} -> case (groupSLinkData_, ownerVerification) of
+          (Just groupSLinkData, Just OVVerified) -> joinAndRegisterPublicGroup ct ccLink mId groupSLinkData
+          (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
+          (Nothing, _) -> sendMessage cc ct "Error: no channel information available via the link."
+          _ -> sendMessage cc ct "Error: could not verify channel ownership. Please report it to directory admins."
+        GLPKnown {groupInfo = g, ownerVerification, groupSLinkData_} -> case ownerVerification of
+          Just OVVerified -> deReregistration ct g ownerSig groupSLinkData_
+          Just (OVFailed reason) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the channel owner to register it."
+          Nothing -> sendMessage cc ct "Error: could not verify ownership."
+        GLPConnectingProhibit _ -> sendMessage cc ct "Already connecting to this channel."
+        GLPConnectingConfirmReconnect -> sendMessage cc ct "Already connecting to this channel."
+        GLPNoRelays _ -> sendMessage cc ct "Channel has no active relays. Please try again later."
+        GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
+      _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
+
+    joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> GroupShortLinkData -> IO ()
+    joinAndRegisterPublicGroup ct ccLink mId groupSLinkData = do
+      let GroupShortLinkData {groupProfile = GroupProfile {displayName}} = groupSLinkData
+          ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
+      sendMessage cc ct $ "Joining the channel " <> displayName <> "…"
+      sendChatCmd cc (APIPrepareGroup userId ccLink False groupSLinkData) >>= \case
+        Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) -> do
+          let gId = groupId' gInfo
+          addGroupReg notifyAdminUsers st cc ct gInfo GRSProposed $ \_ -> pure ()
+          sendChatCmd cc (APIConnectPreparedGroup gId False (Just ownerContact) Nothing) >>= \case
+            Right CRStartedConnectionToGroup {groupInfo = gInfo'} ->
+              withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user gInfo' mId) >>= \case
+                Right ownerMember ->
+                  void $ setGroupRegOwner cc gId ownerMember
+                Left e -> do
+                  logError $ "could not find owner member: " <> T.pack e
+                  sendMessage cc ct "Error: could not find owner member after joining. Please report it to directory admins."
+            _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
+        _ -> sendMessage cc ct $ "Error joining channel " <> displayName <> ", please re-send the link!"
 
     deReregistration :: Contact -> GroupInfo -> LinkOwnerSig -> Maybe GroupShortLinkData -> IO ()
     deReregistration _ct _g _ownerSig _groupSLinkData_ = pure () -- TODO implement re-registration per plan
