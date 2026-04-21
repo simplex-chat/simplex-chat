@@ -2090,12 +2090,13 @@ testDeleteChannelRegistration ps =
         bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
         -- owner deletes registration
         bob #> "@'SimpleX Directory' /delete 1:news"
-        bob <# "'SimpleX Directory'> > /delete 1:news"
-        bob <## "      Your channel news is deleted from the directory"
-        concurrentlyN_
-          [ bob <## "#news: 'SimpleX Directory_1' left the group (signed)",
-            relay <## "#news: 'SimpleX Directory' left the group (signed)"
-          ]
+        bob
+          <###
+            [ WithTime "'SimpleX Directory'> > /delete 1:news",
+              "      Your channel news is deleted from the directory",
+              "#news: 'SimpleX Directory_1' left the group (signed)"
+            ]
+        relay <## "#news: 'SimpleX Directory' left the group (signed)"
 
 testReregistrationAlreadyListed :: HasCallStack => TestParams -> IO ()
 testReregistrationAlreadyListed ps =

@@ -80,7 +80,7 @@ main = do
 #endif
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
-          xdescribe'' "SimpleX Directory service bot" directoryServiceTests
+          fdescribe "SimpleX Directory service bot" directoryServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans
