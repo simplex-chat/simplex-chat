@@ -321,6 +321,7 @@ private struct InviteView: View {
         .padding(.bottom, 6)
         #else
         sectionHeaderText
+            .if(onboarding) { $0.padding(.bottom, 6) }
         #endif
     }
 

@@ -241,6 +241,7 @@ struct UserAddressView: View {
             #else
             Text("Use this address in your social media profile, website, or email signature.")
                 .font(.body).foregroundColor(theme.colors.onBackground).textCase(nil)
+                .padding(.bottom, 6)
             #endif
         }
         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
