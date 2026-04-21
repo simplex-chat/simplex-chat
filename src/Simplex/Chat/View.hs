@@ -1621,6 +1621,7 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
     pName = case p of
       SPSMP -> "packet"
       SPXFTP -> "data"
+      SPNTF -> "notification"
 
 viewRelayTestResult :: Maybe RelayProfile -> Maybe RelayTestFailure -> [StyledString]
 viewRelayTestResult relayProfile_ = \case
