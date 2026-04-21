@@ -462,7 +462,7 @@ In Grok mode, each customer message triggers two card updates — one on receipt
 
 If the Grok HTTP API call fails or times out for a per-message request, the Grok profile sends an error message into the group: "Sorry, I couldn't process that. Please try again or send /team for a human team member." Grok remains in the group and the state stays GROK — the customer can retry by sending another message.
 
-Grok API calls are serialized per customer group — if a new customer message arrives while a Grok API call is in flight, it is queued and processed after the current call completes. This ensures Grok's history includes its own prior response before handling the next message.
+Grok API calls are NOT serialized per customer group in the MVP. If a new customer message arrives while a Grok API call is in flight, a second call runs concurrently — `apiGetChat` is re-read at the start of each call so history converges eventually, but two rapid messages in the same group can produce interleaved context. Cross-group calls run concurrently by design (see implementation plan §10 "Cross-group Grok parallelism"). Per-group serialization is a planned future improvement.
 
 #### Grok removal
 

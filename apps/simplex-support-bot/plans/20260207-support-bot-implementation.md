@@ -38,8 +38,9 @@ SimpleX Chat support bot — standalone Node.js app using `simplex-chat-nodejs` 
 
 ```
 apps/simplex-support-bot/
-├── package.json          # deps: simplex-chat, @simplex-chat/types, async-mutex
+├── package.json          # deps: simplex-chat, @simplex-chat/types, async-mutex; devDeps: vitest, @types/node
 ├── tsconfig.json         # ES2022, strict, Node16 module resolution
+├── vitest.config.ts      # test runner config, path aliases for mocks
 ├── src/
 │   ├── index.ts          # Entry: parse config, init instance, run
 │   ├── config.ts         # CLI arg parsing, ID:name validation, Config type
@@ -48,6 +49,11 @@ apps/simplex-support-bot/
 │   ├── grok.ts           # GrokApiClient: xAI API wrapper, system prompt, history
 │   ├── messages.ts       # All user-facing message templates
 │   └── util.ts           # isWeekend, profileMutex, logging helpers
+├── bot.test.ts           # Vitest suite (129 tests, 28 describes)
+├── test/
+│   └── __mocks__/
+│       ├── simplex-chat.js        # MockChatApi + utility re-exports
+│       └── simplex-chat-types.js  # enum re-exports for tests
 └── data/                 # SQLite databases (created at runtime)
 ```
 
@@ -63,11 +69,40 @@ The Grok system-prompt / context file is supplied at runtime via `--context-file
 | `--team-group` | Yes | — | `name` | Team group display name (auto-created if absent, resolved by persisted ID on restarts) |
 | `--auto-add-team-members` / `-a` | No | `""` | `ID:name,...` | Comma-separated team member contacts. Validated at startup — exits on mismatch. |
 | `--context-file` | Required when `GROK_API_KEY` set | — | path | Grok system-prompt file (SimpleX documentation context). `parseConfig` throws if `GROK_API_KEY` is set without this flag. |
-| `--timezone` | No | `"UTC"` | IANA tz | For weekend detection (24h vs 48h). Weekend = Sat 00:00 – Sun 23:59 in this tz. |
-| `--complete-hours` | No | `3` | number | Hours of customer inactivity after last team/Grok reply before auto-completing a conversation (✅) |
-| `--card-flush-seconds` | No | `300` | number | Seconds between card dashboard update flushes |
+| `--timezone` | No | `"UTC"` | IANA tz | For weekend detection (24h vs 48h). Weekend = Sat 00:00 – Sun 23:59 in this tz. `parseConfig` validates the value by constructing a probe `Intl.DateTimeFormat` and throws with a clear error on `RangeError` (invalid IANA zone) — bot exits before init. |
+| `--complete-hours` | No | `3` | integer ≥ 0 | Hours of customer inactivity after last team/Grok reply before auto-completing a conversation (✅). `parseConfig` rejects non-numeric, negative, or `NaN` values with a fail-fast error. `0` is allowed and disables auto-complete. |
+| `--card-flush-seconds` | No | `300` | integer ≥ 0 | Seconds between card dashboard update flushes. `parseConfig` rejects non-numeric, negative, or `NaN` values with a fail-fast error. `0` is allowed and disables periodic flush (card updates still occur on explicit `scheduleUpdate` callers but never auto-drain). |
 
 **Env vars:** `GROK_API_KEY` (optional) — xAI API key. If unset or empty, the bot starts with Grok support fully disabled: it logs `"No GROK_API_KEY provided, disabling Grok support"`, skips Grok profile/contact setup and event handler registration, omits `/grok` from the bot command list, drops the `/grok` clause from customer-facing messages, and treats any `/grok` the customer still types as an unknown command.
+
+**Numeric argument validation:** `parseConfig` MUST validate every numeric flag (`--complete-hours`, `--card-flush-seconds`) using a helper that throws on non-finite or negative results, rather than raw `parseInt`:
+
+```typescript
+function parseNonNegativeInt(raw: string, flag: string): number {
+  const n = parseInt(raw, 10)
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`${flag} must be a non-negative integer, got "${raw}"`)
+  }
+  return n
+}
+
+const completeHours     = parseNonNegativeInt(optionalArg(args, "--complete-hours",     "3"),   "--complete-hours")
+const cardFlushSeconds  = parseNonNegativeInt(optionalArg(args, "--card-flush-seconds", "300"), "--card-flush-seconds")
+```
+
+Rationale: `parseInt("foo", 10)` returns `NaN`, and `NaN * 3600_000 === NaN`. Every subsequent comparison (`now - lastTeamGrokTime >= completeMs`) is `false`, so the feature silently becomes a no-op — auto-complete never fires, cards never auto-refresh — and the operator has no signal that they typo'd a flag. Failing fast at startup surfaces the typo before customers interact. `0` is explicitly allowed as a valid "disable" setting.
+
+**Timezone validation:** `parseConfig` MUST validate `--timezone` by constructing a probe `Intl.DateTimeFormat`:
+
+```typescript
+try {
+  new Intl.DateTimeFormat("en-US", {timeZone: timezone, weekday: "short"})
+} catch (err) {
+  throw new Error(`--timezone "${timezone}" is not a valid IANA time zone: ${(err as Error).message}`)
+}
+```
+
+Rationale: `isWeekend` is called from `queueMessage` and `teamAddedMessage` — both run on the hot customer message path. `new Intl.DateTimeFormat(..., {timeZone: <invalid>, ...})` throws `RangeError: Invalid time zone specified` at every call. Without startup validation, a typo in `--timezone` turns every `/grok`, `/team`, or first-customer-message dispatch into an unhandled error that crashes the per-item handler (though the outer try/catch in `onNewChatItems` contains it, customers receive no reply at all). Validating once at startup surfaces the typo in the operator's console before any customer interaction.
 
 ```typescript
 interface Config {
@@ -92,9 +127,57 @@ Only two keys. All other state is persisted in the group's `customData` (per-con
 
 **Grok contact resolution** (state-file lookup always runs; contact establishment only when enabled):
 1. Read `grokContactId` from state file → validate via `apiListContacts` → set `config.grokContactId` (this always runs, even when `grokApiKey === null`, so the one-way gate can identify and remove Grok members from groups)
-2. If not found and `grokEnabled`: main profile creates one-time invite link, Grok profile connects, wait `contactConnected` (60s), persist new contact ID
+2. If not found and `grokEnabled`: main profile creates one-time invite link, Grok profile connects, wait for a `contactConnected` event filtered by profile identity (60s — see "Grok contact identification" below), persist the resulting `contactId` atomically before proceeding.
 3. If unavailable (with Grok otherwise enabled), bot runs but `/grok` returns "temporarily unavailable"
 4. If `grokApiKey === null`: the Grok profile is not resolved or created, no invite link is issued — but `config.grokContactId` is still set from the state file if the contact exists.
+
+### Grok contact identification
+
+`grokContactId` is written once and used forever — it is the single identifier for every subsequent Grok check (one-way gate, `onMemberConnected` skip, `isGrok` in card rendering). Identification MUST be narrowly scoped so that the `contactId` stored is unambiguously Grok's and no other contact completing a handshake in the 60s establishment window can be latched by mistake.
+
+Use the predicate form of `ChatApi.wait`. The signature (defined in `node_modules/simplex-chat/src/api.ts:217`) is:
+
+```typescript
+wait<K extends CEvt.Tag>(
+  event: K,
+  predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined,
+  timeout: number,
+): Promise<ChatEvent & {type: K} | undefined>
+```
+
+The implementation (api.ts:234) keeps the subscriber attached when the predicate returns `false`, so non-matching events are silently discarded and the wait continues until a matching event arrives or the timeout fires.
+
+Identification accepts only a `contactConnected` event observed by the MAIN profile (the profile whose `apiCreateLink` issued the invite, and whose `contactId` we persist and later pass to `apiAddMember`) whose connecting contact's profile `displayName` equals the Grok profile's displayName:
+
+```typescript
+const grokProfileName = grokUser.profile.displayName   // "Grok" or "Grok AI"
+const evt = await chat.wait(
+  "contactConnected",
+  (e) =>
+    e.user.userId === mainUser.userId &&
+    e.contact.profile.displayName === grokProfileName,
+  60_000,
+)
+if (!evt) {
+  console.error(`Timeout waiting for Grok contact (60s, displayName="${grokProfileName}"). ` +
+    `Check SMP relay availability or re-run after clearing state. Exiting.`)
+  process.exit(1)
+}
+config.grokContactId = evt.contact.contactId
+state.grokContactId = config.grokContactId
+writeState(stateFilePath, state)   // atomic: tmp-file + rename (see §13 state persistence)
+log(`Grok contact established: ID=${config.grokContactId} (displayName="${grokProfileName}")`)
+```
+
+Filter rationale:
+- `e.user.userId === mainUser.userId` selects the main profile's view of the handshake. Both profiles observe the handshake (the Grok-side event describes the main profile as the `contact`); only the main-side event carries the `contactId` we need for subsequent `apiAddMember` calls.
+- `e.contact.profile.displayName === grokProfileName` accepts only the contact whose profile matches the Grok profile just created/updated. This rejects stray inbound contacts (late business-request acceptance, operator test DM, a reconnect of an existing contact) that may complete in the same 60s window. The displayName is read from `evt.contact.profile`, which is `LocalProfile` (see `@simplex-chat/types/src/types.ts:2867`).
+
+`grokProfileName` is captured from `grokUser.profile.displayName` immediately before the wait, so whichever name the Grok profile was created/updated with earlier in startup is the exact string matched here.
+
+Single-tenant deployment caveat: if a human contact happens to set its SimpleX displayName to the literal `"Grok"` (or `"Grok AI"`) and completes a handshake with the main profile in the 60s window, the displayName filter alone cannot distinguish them. MVP is single-tenant and Grok's profile is created by the bot itself, so this is not expected in practice; deployments that need stronger guarantees can add a second filter (e.g. `e.contact.profile.image === grokImage` — the bot knows the exact image bytes it assigned to the Grok profile).
+
+Persistence: `writeState` is atomic (tmp-file + `fs.renameSync`, see §13 "State persistence") so a crash between identification and persistence cannot corrupt the state file. `state.grokContactId` is flushed to disk BEFORE proceeding to bot event wiring — if the process dies after wiring but before persistence, the next startup would issue a second invite link and leave the first Grok contact orphaned in the database.
 
 **Team group resolution** (auto-create):
 1. Read `teamGroupId` from state file → validate via group list
@@ -114,6 +197,8 @@ Only two keys. All other state is persisted in the group's `customData` (per-con
 Per-conversation state is stored in the group's `customData` and written at the moment the bot handles each transition (customer's first message, `/grok`, `/team`, team member's first message). On subsequent events `deriveState` returns the stored state as-is — composition changes (team members leaving, Grok leaving) do **not** demote the stored state. The customer's mode (e.g. "waiting for a team response") is meaningful even when no team member is currently present; keeping the state preserves that. Composition is read only by specific handlers (e.g. the `/team` duplicate-invite guard). No chat-history scans for state decisions. No in-memory conversations map — survives restarts.
 
 **WELCOME detection:** customData has no `state` field until the bot handles the first transition. `deriveState` returns `WELCOME` precisely when `customData.state` is absent.
+
+**Type vs. persisted state.** The `ConversationState` union in `cards.ts` enumerates all five conceptual states (`WELCOME | QUEUE | GROK | TEAM-PENDING | TEAM`) so event handlers and composition can reason about them uniformly. However, `WELCOME` is NEVER written to `customData.state` — the runtime invariant is "persisted state ∈ {QUEUE, GROK, TEAM-PENDING, TEAM}; absence of the `state` field derives as WELCOME". The `isConversationState` guard in `cards.ts` rejects `WELCOME` on read to preserve this invariant (any stale `state: "WELCOME"` from a crashed transition is treated as absent). Do NOT introduce a separate `PersistedState` type in MVP — the invariant is small enough to enforce at two choke points: `getRawCustomData` on read and the dispatch handlers on write.
 
 **State-write matrix:**
 
@@ -188,7 +273,7 @@ Card is two messages. **Message 1 (card text):**
 
 **Message count:** All messages in chat history except the bot's own (`groupSnd` from main profile).
 
-**Message preview:** Last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat from spam. The customer's display name is also sanitized (newlines → spaces) for the card header, but the `/join` command uses the raw name so it matches the actual group profile. Newest messages are prioritized — when the total exceeds ~1000 chars, the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. When truncation occurs, the first visible message is guaranteed to have a sender prefix even if it was a continuation in the original sequence. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender - subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok contact is detected by `grokContactId` and labeled "Grok"; the customer is identified by matching `memberId` to the group's `customerId` and labeled with their display name; all other members use their `memberProfile.displayName`. Bot's own messages (`groupSnd`) are excluded. Each message truncated to ~200 chars. Media-only messages show type labels: `[image]`, `[file]`, `[voice]`, `[video]`.
+**Message preview:** Last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat from spam. The customer's display name is also sanitized (newlines → spaces) for the card header, but the `/join` command uses the raw name so it matches the actual group profile. Newest messages are prioritized — when the total exceeds ~500 chars (`maxTotal = 500` in `composeCard`), the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. When truncation occurs, the first visible message is guaranteed to have a sender prefix even if it was a continuation in the original sequence. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender - subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok contact is detected by `grokContactId` and labeled "Grok"; the customer is identified by matching `memberId` to the group's `customerId` and labeled with their display name; all other members use their `memberProfile.displayName`. Bot's own messages (`groupSnd`) are excluded. Each message truncated to ~200 chars. Media-only messages show type labels: `[image]`, `[file]`, `[voice]`, `[video]`.
 
 **Join command:** `/join groupId:name` — `groupId` is the customer group's ID, `name` is the customer's display name. Names with spaces single-quoted: `/join 42:'First Last'`.
 
@@ -203,17 +288,17 @@ Card is two messages. **Message 1 (card text):**
 
 **Update** (delete + repost) — on every subsequent event (new customer msg, team/Grok reply, state change, agent join):
 1. Read `{cardItemId, joinItemId}` from `customData`
-2. Delete old card + join command via `apiDeleteChatItems([Group, teamGroupId], [cardItemId, joinItemId], "broadcast")` — ignore errors
-3. Post new card text + `/join` command as two messages → get new IDs
-4. Overwrite `customData` with new `{cardItemId, joinItemId}`
+2. Delete old card + join command via `apiDeleteChatItems([Group, teamGroupId], [cardItemId, joinItemId], "broadcast")`. Per `simplex-chat/src/api.ts:436-445` the call either returns `T.ChatItemDeletion[]` (possibly empty if the items no longer exist) or throws `ChatCommandError`. Both outcomes are acceptable: the surrounding `try { ... } catch { /* log and continue */ }` allows execution to proceed whether the items were still present, already gone, or the server returned a transient error.
+3. Post new card text + `/join` command as two messages via `apiSendMessages` → get new IDs. **On failure** the partial-failure policy below applies: log, re-queue this groupId into `pendingUpdates`, return without writing `customData`.
+4. Write `{cardItemId, joinItemId, complete?}` to `customData` via `mergeCustomData`. **On failure** the tracking-write policy below applies.
 
 **Debouncing:** Card updates debounced globally — pending changes flushed every `cardFlushSeconds` seconds (default 300, configurable via `--card-flush-seconds`). Within a batch, each group's card reposted at most once with latest state.
 
 **Wait time rules:** Time since the customer's last unanswered message. For ✅ (auto-completed) conversations, the wait field shows the literal string "done". If customer sends a follow-up, wait time resets to count from that message.
 
-**Auto-complete:** A conversation is marked ✅ when `completeHours` (default 3h, configurable via `--complete-hours`) have passed since the last team/Grok message **without any customer reply**. The card debounce flush (every 15 min) checks elapsed time and transitions to ✅ when the threshold is met. Customer follow-up at any point — including after ✅ — reverts to the derived active icon (👋/💬/⏰ for team states, 🟡/🔴 for queue), and wait time resets from that message.
+**Auto-complete:** A conversation is marked ✅ when `completeHours` (default 3h, configurable via `--complete-hours`) have passed since the last team/Grok message **without any customer reply**. The card debounce flush (every 300 seconds / 5 min, configurable via `--card-flush-seconds`) checks elapsed time and transitions to ✅ when the threshold is met. Customer follow-up at any point — including after ✅ — reverts to the derived active icon (👋/💬/⏰ for team states, 🟡/🔴 for queue), and wait time resets from that message.
 
-**Card icon state machine (TEAM states):**
+**Card icon derivation (TEAM states) — computed at each card render by comparing the timestamps of the most recent customer and team/Grok messages in the group; nothing about the icon is stored:**
 ```
 Team added, no reply yet         → 👋
 Team replied                     → 💬
@@ -225,6 +310,67 @@ Customer sends after ✅           → back to 💬 or ⏰ (derived from wait ti
 **Cleanup** — customer leaves: card remains (TBD retention), clear `customData`.
 
 **Restart recovery:** On startup, `CardManager.refreshAllCards()` lists all groups, finds those with `customData.cardItemId` set and `customData.complete` not set, sorts by `cardItemId` ascending (higher ID = more recently updated), and re-posts them oldest-first so the most recently active cards end up at the bottom of the team group. Completed cards (`complete: true`) and old/pre-bot groups (no `customData`) are skipped. Old card messages are deleted before reposting; deletion failures (e.g., >24h old) are silently ignored. Individual card failures are caught and logged without aborting the batch.
+
+### Partial-failure and retry policy
+
+`createCard` and `updateCard` perform a multi-step sequence (delete + send + customData write). To design the correct policy we MUST be explicit about which failures the SimpleX core already handles for us vs. which surface to the bot:
+
+**SimpleX core semantics** (per `simplex-chat/src/api.ts` JSDoc):
+- `apiSendMessages` — "Network usage: background". The call returns `newChatItems` once the chat item is CREATED LOCALLY (written to SQLite) and the SMP broadcast is QUEUED. The core's background machinery retries relay delivery transparently — **the bot never observes a transient relay failure from `apiSendMessages`**. A thrown `ChatCommandError` means the local create step itself failed: permission denied, chat does not exist, invalid content, DB locked/corrupted.
+- `apiDeleteChatItems` — "Network usage: background". Same pattern: local delete + queued broadcast + core-managed delivery retry. A thrown error means the local delete step failed (item not found, permission, DB error).
+- `apiSetGroupCustomData` — "Network usage: **no**". Pure local SQLite write, no SMP involvement at all. A thrown error means a local DB error.
+
+Consequence: failures surfaced to the bot are **terminal local errors** (bad state, DB problem, permission change), not transient network blips. Retrying the same operation against the same DB/relay state will usually hit the same error. Retry value comes from the narrow slice of genuinely transient local conditions — a brief SQLite lock held by a concurrent write, a race with group-state mutation elsewhere in the same process — where the next attempt sees a different state.
+
+This reshapes the policy: the bot does not need aggressive retry for "network" reasons (core handles that), and compensating actions for customData-write failure are rarely useful (if the pure-local customData write fails, the retry's customData write will almost certainly fail for the same reason). The bot needs a light safety net: re-queue on any step failure, let the flush loop try again at most once per `cardFlushSeconds`, and on persistent failure accept that operator intervention is needed.
+
+Policy (applies to both `createCard` and `updateCard`):
+
+**Any step fails** — whether step 2 (delete), step 3 (send), or step 4 (customData write):
+- Log via `logError` with `{groupId, step, err}` so the operator can diagnose the underlying cause (permission change, DB corruption, bot removed from team group, etc).
+- Re-add `groupId` to `pendingUpdates` via `this.scheduleUpdate(groupId)`.
+- Return. Do NOT attempt compensating actions (no compensating delete for tracking-write failure — the scenario where send succeeds locally but customData write fails requires the SQLite DB to be healthy-then-unhealthy between two synchronous calls in the same transaction window, which is not a realistic transient state; the retry path handles any resulting duplicate by reading the stale `cardItemId` and deleting it on the next update attempt).
+
+**Flush dispatch** — the current `flush` loop calls `updateCard` unconditionally and `updateCard` returns early when `customData.cardItemId` is unset. This silently drops the retry path for a failed `createCard` — the group is in `pendingUpdates` but nothing will ever create a card for it. Replace with a single `flushOne(groupId)` that reads `customData` once and dispatches to create or update:
+
+```typescript
+private async flushOne(groupId: number): Promise<void> {
+  const groupInfo = await this.getGroupInfo(groupId)
+  if (!groupInfo) return                            // group deleted
+  const customData = this.deriveCustomData(groupInfo)
+  if (customData.complete) return                   // ✅ conversations don't auto-repost
+  if (typeof customData.cardItemId === "number") {
+    await this.updateCard(groupId, groupInfo)
+  } else {
+    await this.createCard(groupId, groupInfo)
+  }
+}
+
+async flush(): Promise<void> {
+  const groups = [...this.pendingUpdates]
+  this.pendingUpdates.clear()
+  for (const groupId of groups) {
+    try { await this.flushOne(groupId) }
+    catch (err) {
+      logError(`flush failed for group ${groupId}`, err)
+      this.scheduleUpdate(groupId)                  // re-queue on any thrown error
+    }
+  }
+}
+```
+
+Retry behavior for each failure point under this design:
+
+| Failure point | `customData` after failure | Retry's `flushOne` path | Retry outcome if condition cleared |
+|---|---|---|---|
+| `createCard` send fails | `cardItemId` absent | create-path | fresh card posted, `customData` written |
+| `updateCard` delete fails | old `cardItemId` still set | update-path | delete retried (idempotent — see below) + send + write |
+| `updateCard` send fails (delete succeeded) | old (now-deleted) `cardItemId` still set | update-path | delete retried against stale ID — tolerated (see below) — then send + write |
+| `updateCard` write fails (send succeeded, duplicate may exist) | old `cardItemId` still set, new card orphaned in team group | update-path | delete retried against stale old ID — tolerated — new card posted, tracking written; **leaked** new-card from the failed attempt persists until operator removes it |
+
+**Delete idempotency on retry** — `apiDeleteChatItems` against already-deleted IDs returns either an empty `ChatItemDeletion[]` or throws `ChatCommandError`. The step-2 `try { ... } catch { logError(...) }` swallows both; execution proceeds to step 3. Do NOT escalate a step-2 error to the partial-failure policy — that would create a retry loop for a permanent condition (items past the 24h deletion window will throw on every retry forever).
+
+**Persistent failures** — if the underlying condition is not transient (bot removed from team group, DB corruption, permission revoked), every retry hits the same error and the group stays in `pendingUpdates` indefinitely, logging at each flush. MVP accepts this — the operator-visible log stream makes the problem diagnosable. A bounded-retry-with-backoff-and-giveup strategy can be added later without changing the failure-point table above.
 
 ### Card implementation
 
@@ -390,6 +536,51 @@ async function withProfile<T>(userId: number, fn: () => Promise<T>): Promise<T> 
 
 Grok HTTP API calls are made **outside** the mutex to avoid blocking.
 
+**Per-group customData mutex** — `mergeCustomData` and `clearCustomData` must be serialized per customer group. `mergeCustomData` has two awaits (read via `getRawCustomData` → `apiListGroups`, then write via `apiSetGroupCustomData`); between them the event loop runs, so two concurrent async chains operating on the same `groupId` can both read the same snapshot, both produce a merged object, and the second write clobbers the first's patch.
+
+Concrete call sites that can overlap on one `groupId`:
+- `processMainChatItem` writing `state` transitions (WELCOME→QUEUE, WELCOME→GROK, QUEUE→GROK, one-way gate →TEAM)
+- `activateGrok`'s `revertStateOnFail` (fire-and-forget) racing with subsequent customer messages
+- `activateTeam` writing `TEAM-PENDING` racing with `/grok` or another `/team` on the same group
+- `CardManager.flush → updateCard` writing `{cardItemId, joinItemId, complete}` racing with dispatch writing `state`
+- `createCard` writing `{cardItemId, joinItemId}` immediately after dispatch writes `state`
+
+The CAS-on-state inside `revertStateOnFail` guards only the `state` key — other keys (`cardItemId`, `joinItemId`, `complete`) can still be lost when spread from a stale snapshot.
+
+Implementation:
+
+```typescript
+// In CardManager
+private customDataMutexes = new Map<number, Mutex>()
+
+private getCustomDataMutex(groupId: number): Mutex {
+  let m = this.customDataMutexes.get(groupId)
+  if (!m) { m = new Mutex(); this.customDataMutexes.set(groupId, m) }
+  return m
+}
+
+async mergeCustomData(groupId: number, patch: Partial<CardData>): Promise<void> {
+  return this.getCustomDataMutex(groupId).runExclusive(async () => {
+    const current = (await this.getRawCustomData(groupId)) ?? {}
+    const merged = {...current, ...patch}
+    for (const key of Object.keys(merged) as (keyof CardData)[]) {
+      if (merged[key] === undefined) delete merged[key]
+    }
+    await this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId, merged))
+  })
+}
+
+async clearCustomData(groupId: number): Promise<void> {
+  return this.getCustomDataMutex(groupId).runExclusive(() =>
+    this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId))
+  )
+}
+```
+
+Nesting rule: the per-group customData mutex is the **outer** lock; `profileMutex` (via `withMainProfile`) is the **inner** lock. Never acquire them in the opposite order, and never hold the customData mutex while calling an external (non-SimpleX) async function — this prevents cross-group deadlock and keeps the critical section short.
+
+Cleanup: entries in `customDataMutexes` are bounded by the number of customer groups. Removing the entry on `onLeftMember(customer)` is sufficient (the group's `customData` is also cleared at that point). Skip this refinement in MVP if acceptable — a long-running bot with many customers accumulates a few bytes per group.
+
 **Profile images:** Both profiles have base64-encoded JPEG profile pictures (128x128, quality 85, under the 12,500-char data URI limit enforced by iOS/Android clients) set via the `image` field in `T.Profile`. The images are defined as `data:image/jpg;base64,...` string constants in `index.ts`. The main profile image is passed to `bot.run()` which handles update-on-change automatically. The Grok profile image is passed to `apiCreateActiveUser()` on first run; on subsequent runs, the bot compares the current profile against the desired one using `util.fromLocalProfile()` and calls `apiUpdateProfile()` if any field differs — this sends the update to all Grok contacts.
 
 **Startup sequence:**
@@ -405,7 +596,7 @@ Grok HTTP API calls are made **outside** the mutex to avoid blocking.
 9. Validate `--auto-add-team-members` (`-a`) if provided
 10. Register Grok event handlers on `chat` (filtered by `event.user === grokUserId`)
 10b. Refresh stale cards: `CardManager.refreshAllCards()` — lists all groups, skips those with `customData.complete` or no `customData.cardItemId`, sorts remaining by `cardItemId` ascending, re-posts oldest-first so newest cards land at the bottom of team group
-11. On SIGINT/SIGTERM → delete invite link, exit
+11. On SIGINT/SIGTERM → `clearTimeout(inviteLinkTimer)` (noop if already deleted), `cards.destroy()` (stops the card-flush interval), `deleteInviteLink()` (profileMutex-gated `apiDeleteGroupLink`), `process.exit(0)`. Signal handler is reentrant-safe: an `inviteLinkDeleted` flag prevents double-deletion; `clearTimeout`/`clearInterval` are no-op on undefined.
 
 **Grok event registration** (same ChatApi, filtered by profile):
 
@@ -459,8 +650,7 @@ chat.on("connectedToGroupMember", (evt) => {
 // 4. Skip groupSnd (own messages)
 // 5. Identify sender via businessChat.customerId
 // 6. Team member message → check if first team text (trigger one-way gate: remove Grok, disable /grok), schedule card update
-// 7. Team member or Grok reaction → schedule card update (auto-complete)
-// 8. Customer message → derive state, dispatch:
+// 7. Customer message → derive state, dispatch:
 //    - WELCOME: create card, send queue msg (or handle /grok first msg → WELCOME→GROK, skip queue)
 //    - QUEUE: /grok → invite Grok; /team → add ALL configured team members; else schedule card update
 //    - GROK: /team → add ALL configured team members (Grok stays); else schedule card update
@@ -516,10 +706,10 @@ Type signatures affected:
 
 **Main profile side (invite + failure detection):**
 0. Send `grokInvitingMessage` ("Inviting Grok, please wait...")
-1. `apiAddMember(groupId, grokContactId, Member)` → get `member.memberId`. If `groupDuplicateMember` (customer sent `/grok` again before join completed), silent return — the in-flight activation handles the outcome.
-2. Store `pendingGrokJoins.set(memberId, mainGroupId)`
-3. Drain `bufferedGrokInvitations` — if the `receivedGroupInvitation` event arrived during step 1's await (race condition), process it now.
-4. Set `grokInitialResponsePending.add(groupId)` — suppresses per-message responses from `onGrokNewChatItems` for this group until the initial combined response completes. Without this gate, the message backlog arriving via `newChatItems` would trigger individual per-message responses racing with the initial combined response — producing duplicate replies (e.g., 3 replies for 2 messages).
+1. **Set `grokInitialResponsePending.add(groupId)` FIRST** — the gate must be raised before any operation that could make Grok recognizable to `onGrokNewChatItems`. Specifically: before `apiAddMember`, before `pendingGrokJoins` is set, and before `bufferedGrokInvitations` is drained (which populates `reverseGrokMap`). Without this ordering, the sequence `apiAddMember → pendingGrokJoins.set → drain → reverseGrokMap.set → gate.add` contains a window where `reverseGrokMap` identifies the group as a Grok-active group but the gate is still DOWN. A customer message arriving in that window triggers a per-message response concurrent with the initial combined response — producing duplicate Grok replies. Every error path below MUST clear the gate.
+2. `apiAddMember(groupId, grokContactId, Member)` → get `member.memberId`. On `groupDuplicateMember` (customer sent `/grok` again before join completed), **clear the gate** and silent return — the in-flight activation handles the outcome. On any other error, clear the gate, revert state, send `grokUnavailableMessage`.
+3. Store `pendingGrokJoins.set(memberId, mainGroupId)`
+4. Drain `bufferedGrokInvitations` — if the `receivedGroupInvitation` event arrived during step 2's await (race condition), process it now. (The gate is already up from step 1, so `onGrokNewChatItems` suppresses any per-message responses during drain and the subsequent join.)
 5. `waitForGrokJoin(120s)` — awaits resolver from Grok profile's `connectedToGroupMember` (step 8 below)
 6. Timeout → notify customer (`grokUnavailableMessage`), send queue message if was WELCOME→GROK, fall back to QUEUE (CAS-guarded: only if `customData.state` is still `GROK` — a concurrent `/team` that switched to `TEAM-PENDING` is respected), clear `grokInitialResponsePending`
 
@@ -532,7 +722,7 @@ Type signatures affected:
 10. If no customer messages found (visible history disabled or API failed), send generic greeting asking customer to repeat their question
 11. Call Grok HTTP API (outside mutex)
 12. Send response via `apiSendTextMessage` (through mutex with Grok profile)
-13. Clear `grokInitialResponsePending` (via `finally` block — runs on success, failure, or early return). After this, per-message responses from `onGrokNewChatItems` resume normally for subsequent customer messages.
+13. Clear `grokInitialResponsePending` (via `finally` block — runs on success, failure, or early return). After this, per-message responses from `onGrokNewChatItems` resume normally for subsequent customer messages. Note: because the gate is raised at step 1 (before any other work), the `finally` block MUST be wired to cover every code path from step 1 onward — including the `groupDuplicateMember` silent-return and all revert/timeout branches — otherwise per-message responses stay suppressed indefinitely for the affected group.
 
 ```typescript
 const pendingGrokJoins = new Map<string, number>()       // memberId → mainGroupId
@@ -551,12 +741,12 @@ Grok profile's `onGrokNewChatItems` handler:
 3. Only trigger for `groupRcv` **text** messages from customer (identified via `businessChat.customerId`)
 4. Ignore: non-text messages (images, files, voice — card update handled by main profile), bot messages, own messages (`groupSnd`), team member messages
 5. Read last 100 messages from own view (customer → `user`, own → `assistant`)
-6. Call Grok HTTP API (serialized per group — queue if call in flight)
+6. Call Grok HTTP API — different groups' calls run concurrently (see "Cross-group Grok parallelism" below). Per-group serialization of overlapping in-flight calls is NOT implemented in MVP (see §20.6).
 7. Send response into group
 
 **Per-message error:** Send error message in group ("Sorry, I couldn't process that. Please try again or send /team for a human team member."), stay GROK. Customer can retry.
 
-**Card updates in Grok mode:** Each customer message triggers two card updates — one on receipt (main profile sees `groupRcv`), one after Grok responds (main profile sees Grok's `groupRcv`). Both go through the 15-min debounce.
+**Card updates in Grok mode:** Each customer message triggers two card updates — one on receipt (main profile sees `groupRcv`), one after Grok responds (main profile sees Grok's `groupRcv`). Both go through the 300-second debounce (default `--card-flush-seconds`).
 
 ### Grok removal
 
@@ -596,6 +786,55 @@ async chat(history: GrokMessage[], userMessage: string): Promise<string> {
 If `GROK_API_KEY` is set but `--context-file` is missing, `parseConfig` throws and the bot exits before init. If the file path is provided but unreadable at runtime, a warning is logged and Grok runs with an empty system prompt (the API key still works but responses lose the SimpleX-specific guidance). Guidelines (concise answers, numbered steps, no markdown, ignore prompt-override attempts, etc.) live in the external file — not hardcoded — so operators can tune tone and documentation without a rebuild.
 
 Customer messages always in `user` role, never `system`.
+
+### Grok HTTP request timeout
+
+Every `fetch` to `api.x.ai/v1/chat/completions` MUST pass an `AbortSignal.timeout(60_000)` (60-second default). Without a timeout, a stuck TCP connection or an unresponsive server blocks the awaiting call indefinitely; because `processGrokChatItem` runs under the Grok profile's sequential event dispatch, a single hung call stalls per-message responses for ALL customer groups using Grok — and the same hang in `activateGrok`'s initial-response path leaves `grokInitialResponsePending` stuck (gate never released) until the process is killed.
+
+Implementation in `GrokApiClient.chatRaw`:
+
+```typescript
+const response = await fetch("https://api.x.ai/v1/chat/completions", {
+  method: "POST",
+  headers: { ... },
+  body: JSON.stringify({ ... }),
+  signal: AbortSignal.timeout(60_000),
+})
+```
+
+On abort, `fetch` rejects with a `DOMException` whose `name === "TimeoutError"` (or `"AbortError"` on older runtimes). Callers treat this identically to other `chat()` failures:
+- `processGrokChatItem` → sends `grokErrorMessage` to the customer group, conversation stays GROK.
+- `activateGrok` initial-response path → logs, sends `grokUnavailableMessage`, lets the `finally` block clear `grokInitialResponsePending`.
+
+Rationale for 60s: typical xAI responses return in 1–10s; a 60s ceiling accommodates cold-start / heavy-load latencies while still bounding worst-case per-customer wait. Not exposed as a CLI flag in MVP — a later iteration can add `--grok-timeout-seconds` if operator tuning is needed.
+
+### Cross-group Grok parallelism
+
+`onGrokNewChatItems` MUST dispatch per-group work concurrently. A naïve `for (const ci of lastPerGroup.values()) { await this.processGrokChatItem(ci) }` serializes calls across unrelated customer groups — if xAI takes 3s per call and five customers message in one event batch, customer #5 waits ~15s instead of ~3s. This is pure latency amplification with no ordering benefit (the groups are independent; within-group order is already preserved by batch deduplication picking the last message).
+
+Implementation:
+
+```typescript
+async onGrokNewChatItems(evt: CEvt.NewChatItems): Promise<void> {
+  const lastPerGroup = new Map<number, T.AChatItem>()
+  for (const ci of evt.chatItems) {
+    // filter: groupRcv, customer text, not bot/team
+    // keep last per groupId
+  }
+  await Promise.allSettled(
+    [...lastPerGroup.values()].map((ci) => this.processGrokChatItem(ci)),
+  )
+}
+```
+
+Why `Promise.allSettled` (not `Promise.all`): one group's Grok API failure MUST NOT cancel or reject pending work for other groups. Each `processGrokChatItem` already handles its own errors (sends `grokErrorMessage`, logs); the outer handler only needs to wait until all per-group tasks finish before returning control to the event dispatcher.
+
+Concurrency bound: the number of distinct customer groups that have new Grok-eligible messages in a single event batch — typically ≤ the SimpleX batch-delivery size, practically small. No global semaphore needed in MVP. If xAI rate limits become a concern, add a shared semaphore later; orthogonal to this fix.
+
+Ordering guarantees preserved:
+- Within a group, batch deduplication still picks only the latest message and earlier messages appear in the history context via `apiGetChat`.
+- Across groups, there is no ordering requirement — each customer group is an independent conversation.
+- The per-group gate (`grokInitialResponsePending`) still serializes against `activateGrok`'s initial response; this is a group-local check unaffected by cross-group parallelism.
 
 ## 11. Team Group Commands
 
@@ -835,7 +1074,7 @@ npx ts-node src/index.ts \
 7. Team member sends text → verify Grok removed, `/grok` rejected, card → 💬
 8. `/grok` in TEAM → verify "team mode" rejection
 9. `/team` when already invited → verify "already invited" message
-10. Card debouncing: multiple rapid events → verify single card update per 15min flush
+10. Card debouncing: multiple rapid events → verify single card update per 300s flush (default)
 11. `/join` from team group → verify team member added to customer group, promoted to Owner
 12. `/join` with non-business group → verify error
 13. Weekend → verify "48 hours"
@@ -983,7 +1222,7 @@ async function reachTeam(groupId?)        // reachTeamPending → add team membe
 
 Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); await p;`
 
-### 20.4 Test Catalog (129 tests, 27 suites)
+### 20.4 Test Catalog (129 tests, 28 suites)
 
 #### 1. Welcome & First Message (4 tests)
 - first message → queue reply + card created with /join command
@@ -1021,6 +1260,10 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - /grok after gate → teamLockedMessage
 - customer text in TEAM → no bot reply, card update scheduled
 - /grok in TEAM-PENDING → invite Grok if not present
+
+#### 5b. One-Way Gate with Grok Disabled (2 tests)
+- team text removes Grok even when grokApi is null
+- Grok does not respond when disabled even if grokContactId is set
 
 #### 6. Team Member Lifecycle (6 tests)
 - team member connected → promoted to Owner
@@ -1178,11 +1421,11 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 ### 20.6 Test Coverage Notes
 
 **Covered vs plan catalog:**
-- §20.4 items 1-13, 15, 17-27 fully covered (129 tests across 27 suites)
-- §20.4 item 14 (Weekend Detection) — not unit-tested; `isWeekend` depends on `Intl.DateTimeFormat(new Date())`, would need clock mocking
-- §20.4 item 16 (Profile Mutex) — not unit-tested; mutex serialization is verified implicitly through all other tests (MockChatApi tracks activeUserId)
-- §20.4 item 19 (Startup & State Persistence) — not unit-tested; tests `index.ts` startup which requires native ChatApi. Integration test only. This includes `deleteInviteLink` (profileMutex + `apiSetActiveUser` before `apiDeleteGroupLink`), the conditional `apiUpdateGroupProfile` (compare `fullGroupPreferences` before calling), and the best-effort `apiCreateGroupLink` (catch + log on SMP relay failure) — all are in startup code and cannot be covered by MockChatApi-based tests.
+- §20.4 suites 1-13, 15, 17-27 plus 5b fully covered (129 tests across 28 suites)
+- Weekend detection (`util.isWeekend`) — not unit-tested; depends on `Intl.DateTimeFormat(new Date())`, would need clock mocking. Not present in the §20.4 catalog.
+- Profile Mutex serialization — not a standalone suite in §20.4; verified implicitly through all other tests (MockChatApi tracks activeUserId).
+- Startup & state persistence (`index.ts` path) — not unit-tested; requires native ChatApi. Integration-test only. Includes `deleteInviteLink` (profileMutex + `apiSetActiveUser` before `apiDeleteGroupLink`), the conditional `apiUpdateGroupProfile` (compare `fullGroupPreferences` before calling), and the best-effort `apiCreateGroupLink` (catch + log on SMP relay failure). Not in §20.4 catalog.
 
 **Known plan items NOT implemented (conscious gaps, not test gaps):**
 - Per-group Grok API call serialization (plan §10) — not implemented or tested
-- Team member replacement on leave after sending (plan §15) — not implemented
+- Team member replacement on leave after sending — out of MVP scope. No plan section currently asserts it as a requirement; if added later, specify in SPEC §4.2 "Team replies" and implementation plan §15 "Error Handling" together.
