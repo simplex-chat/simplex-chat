@@ -1111,7 +1111,7 @@
     <string name="share_with_contacts">Delen met contacten</string>
     <string name="your_contacts_will_remain_connected">Uw contacten blijven verbonden.</string>
     <string name="profile_update_will_be_sent_to_contacts">Profiel update wordt naar uw contacten verzonden.</string>
-    <string name="share_address_with_contacts_question">Adres delen met contacten\?</string>
+    <string name="share_address_with_contacts_question">Adres delen met contacten?</string>
     <string name="stop_sharing">Stop met delen</string>
     <string name="stop_sharing_address">Stop met het delen van adres\?</string>
     <string name="invite_friends">Nodig vrienden uit</string>
