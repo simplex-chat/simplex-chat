@@ -472,6 +472,7 @@
   <string name="invite_someone_privately">Invite someone privately</string>
   <string name="a_link_for_one_person">A link for one person to connect</string>
   <string name="create_your_public_address">Create your public address</string>
+  <string name="your_public_address">Your public address</string>
   <string name="for_anyone_to_reach_you">For anyone to reach you</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>

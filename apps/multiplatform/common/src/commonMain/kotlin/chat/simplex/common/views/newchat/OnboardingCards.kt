@@ -388,7 +388,7 @@ fun ConnectOnboardingView() {
                 imageName = MR.images.card_create_your_public_address_alpha,
                 imageNameLight = MR.images.card_create_your_public_address_alpha_light,
                 icon = MR.images.ic_qr_code,
-                title = stringResource(MR.strings.create_your_public_address),
+                title = stringResource(if (chatModel.userAddress.value != null) MR.strings.your_public_address else MR.strings.create_your_public_address),
                 subtitle = stringResource(MR.strings.for_anyone_to_reach_you),
                 labelHeightRatio = 0.195f,
                 onClick = cardClickOverride ?: {

@@ -131,6 +131,7 @@ struct OnboardingCardView: View {
 private let backButtonHeight: CGFloat = 44
 
 struct ConnectOnboardingView: View {
+    @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var currentPage = 0
@@ -293,7 +294,7 @@ struct ConnectOnboardingView: View {
                     OnboardingCardView(
                         imageName: "card-create-your-public-address-alpha",
                         icon: "qrcode",
-                        title: "Create your public address",
+                        title: m.userAddress != nil ? "Your public address" : "Create your public address",
                         subtitle: "For anyone to reach you",
                         labelHeightRatio: 0.195,
                         action: { showCreateAddress = true }
