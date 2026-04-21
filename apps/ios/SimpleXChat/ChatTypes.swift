@@ -2371,6 +2371,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var ready: Bool { get { true } }
     public var nextConnectPrepared: Bool { if let preparedGroup { !preparedGroup.connLinkStartedConnection } else { false } }
     public var profileChangeProhibited: Bool { preparedGroup?.connLinkPreparedConnection ?? false }
+    public var isChannel: Bool { groupProfile.isChannel }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var shortDescr: String? { groupProfile.shortDescr }
@@ -2498,6 +2499,8 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         get { self.memberAdmission ?? GroupMemberAdmission() }
         set { memberAdmission = newValue }
     }
+
+    public var isChannel: Bool { publicGroup?.groupType == .channel }
 
     public static let sampleData = GroupProfile(
         displayName: "team",
@@ -4864,10 +4867,7 @@ public enum MsgChatLink: Equatable, Hashable {
     public var iconName: String {
         switch self {
         case let .group(_, groupProfile):
-            switch groupProfile.publicGroup?.groupType {
-            case .channel: "antenna.radiowaves.left.and.right.circle.fill"
-            case .unknown, .none: "person.2.circle.fill"
-            }
+            groupProfile.isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill"
         case let .contact(_, _, business):
             business ? "briefcase.circle.fill" : "person.crop.circle.fill"
         case .invitation:
@@ -4878,10 +4878,7 @@ public enum MsgChatLink: Equatable, Hashable {
     public var smallIconName: String {
         switch self {
         case let .group(_, groupProfile):
-            switch groupProfile.publicGroup?.groupType {
-            case .channel: "antenna.radiowaves.left.and.right"
-            case .unknown, .none: "person.2"
-            }
+            groupProfile.isChannel ? "antenna.radiowaves.left.and.right" : "person.2"
         case let .contact(_, _, business):
             business ? "briefcase" : "person"
         case .invitation:
@@ -4910,10 +4907,9 @@ public enum MsgChatLink: Equatable, Hashable {
     public func infoLine(signed: Bool) -> String {
         var s: String = switch self {
         case let .group(_, groupProfile):
-            switch groupProfile.publicGroup?.groupType {
-            case .channel: NSLocalizedString("Channel link", comment: "chat link info line")
-            case .unknown, .none: NSLocalizedString("Group link", comment: "chat link info line")
-            }
+            groupProfile.isChannel
+                ? NSLocalizedString("Channel link", comment: "chat link info line")
+                : NSLocalizedString("Group link", comment: "chat link info line")
         case let .contact(_, _, business):
             business
                 ? NSLocalizedString("Business address", comment: "chat link info line")

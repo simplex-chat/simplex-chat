@@ -74,7 +74,7 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
       Column(Modifier.align(Alignment.BottomCenter)) {
         DefaultAppBar(
           navigationButton = { NavigationButtonBack(onButtonClicked = close) },
-          fixedTitleText = generalGetString(MR.strings.new_message),
+          fixedTitleText = generalGetString(MR.strings.new_chat),
           onTop = false,
         )
       }
@@ -359,7 +359,7 @@ private fun ModalData.NewChatSheetLayout(
       item {
         Box(Modifier.padding(top = blankSpaceSize)) {
           AppBarTitle(
-            stringResource(MR.strings.new_message),
+            stringResource(MR.strings.new_chat),
             hostDevice(rh?.remoteHostId),
             bottomPadding = DEFAULT_PADDING
           )

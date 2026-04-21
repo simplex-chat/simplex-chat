@@ -16,7 +16,7 @@ Community Vouchers offer the solution - they are prepaid infrastructure credits 
 
 These vouchers are not tradable tokens or speculative assets — there will be no pre-sale or emission. It's a method to pay directly for the network infrastructure while maintaining privacy.
 
-For early access to test vouchers, if you're familiar with cryptocurrencies, <a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">get a free access pass</a> to the test version &mdash; a free non-transferrable NFT on Ethereum mainnet, you only need to pay for gas.
+For early access to test vouchers, if you're familiar with cryptocurrencies, <a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">get a free access pass</a> to the test version &mdash; a free non-transferable NFT on Ethereum mainnet, you only need to pay for gas.
 
 ## Why Community Vouchers?
 
@@ -37,11 +37,11 @@ In short:
 
 <img src="/img/design_3/community_vouchers_dark.jpg" width="38%" class="float-to-right hidden dark:block">
 
-- Buy Community Vouchers. Initially you would pay with a stablecoin (USDT/USDC). The goal to allow using other popular cryptocurrencies (BTC/ETH/XMR) and also in-app payments - to make direct usage of blockchain optional for the end users.
+- Buy Community Vouchers. Initially you would pay with a stablecoin (USDT/USDC). The goal is to allow using other popular cryptocurrencies (BTC/ETH/XMR) and also in-app payments - to make direct usage of blockchain optional for the end users.
 
 - Funds are locked in an autonomous smart contract not controlled by SimpleX Chat company or by anybody else.
 
-- Assign the Community Voucher to a group or channel you want, using it's public address. This assignment is private, and group owners or server operators won't be able to link it to the purchase, thanks to zero-knowledge proofs.
+- Assign the Community Voucher to a group or channel you want, using its public address. This assignment is private, and group owners or server operators won't be able to link it to the purchase, thanks to zero-knowledge proofs.
 
 - Group or channel owners redeem the Vouchers to the server operators they use. The redemption is also private, and not linkable to the assignment or purchase.
 
@@ -57,14 +57,14 @@ It's the only way to make SimpleX network truly decentralized and secure:
 
 - Private and secure payments based on zero-knowledge proofs in smart-contracts.
 
-We are currently evaluating several popular blockchains that have strong support for zero-knowledge proofs - technology that support private operations on public blockchains.
+We are currently evaluating several popular blockchains that have strong support for zero-knowledge proofs - technology that supports private operations on public blockchains.
 
 ## Timeline & How to Get Involved
 
 **2025**:
 - evaluating blockchains,
 - drafting Community Vouchers whitepaper about system and cryptography design for Community Vouchers.
-- development of large group and communities.
+- development of large groups and communities.
 
 We welcome your feedback on this proposal and any in-progress design documents.
 
@@ -114,7 +114,7 @@ Server operators will receive up to 70% of the infrastructure payments. A higher
 - more reliable servers,
 - servers that operated for a longer time.
 
-**What is technology design?**
+**What is the technology design?**
 
 [The conceptual design](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2025-12-10-vouchers-2.md) for Community Vouchers uses zero-knowledge proofs, making the purchase, assigning vouchers to groups and their redemptions unlinkable.
 
