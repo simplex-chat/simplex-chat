@@ -64,7 +64,7 @@ private fun Modifier.androidBlurredModifier(
     }
   }
   .drawBehind {
-    drawRect(Color.Black)
+    drawRect(CurrentColors.value.colors.background)
     if (onTop) {
       clipRect {
         if (backgroundGraphicsLayer.size != IntSize.Zero) {
@@ -110,7 +110,7 @@ private fun Modifier.desktopBlurredModifier(
     clip = blurRadius.value > 0
   }
   .drawBehind {
-    drawRect(Color.Black)
+    drawRect(CurrentColors.value.colors.background)
     if (onTop) {
       clipRect {
         if (backgroundGraphicsLayer.size != IntSize.Zero) {

@@ -196,12 +196,13 @@ class SelectionManager {
         }
     }
 
-    fun getSelectedCopiedText(items: List<MergedItem>, linkMode: SimplexLinkMode): String {
+    fun getSelectedCopiedText(items: List<MergedItem>, revealedItems: Set<Long>, linkMode: SimplexLinkMode): String {
         val r = range ?: return ""
         val lo = minOf(r.startIndex, r.endIndex)
         val hi = maxOf(r.startIndex, r.endIndex)
         return (lo..hi).mapNotNull { idx ->
             val ci = items.getOrNull(idx)?.newest()?.item ?: return@mapNotNull null
+            if (ci.meta.itemDeleted != null && (!revealedItems.contains(ci.id) || ci.isDeletedContent)) return@mapNotNull null
             val sel = selectedRange(range, idx) ?: return@mapNotNull null
             selectedItemCopiedText(ci, sel, linkMode)
         }.reversed().joinToString("\n")
@@ -291,6 +292,7 @@ fun BoxScope.SelectionHandler(
     manager: SelectionManager,
     listState: State<LazyListState>,
     mergedItems: State<MergedItems>,
+    revealedItems: State<Set<Long>>,
     linkMode: SimplexLinkMode
 ): Modifier {
     val touchSlop = LocalViewConfiguration.current.touchSlop
@@ -311,7 +313,7 @@ fun BoxScope.SelectionHandler(
 
     manager.listState = listState
     manager.onCopySelection = {
-        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, linkMode)))
+        clipboard.setText(AnnotatedString(manager.getSelectedCopiedText(mergedItems.value.items, revealedItems.value, linkMode)))
         showToast(generalGetString(MR.strings.copied))
     }
 

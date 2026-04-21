@@ -58,6 +58,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.util.concurrent.atomic.AtomicBoolean
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Date
@@ -723,14 +724,20 @@ object ChatController {
     val alert = if (r is API.Error) retryableNetworkErrorAlert(r.err) else null
     if ((inProgress == null || inProgress.value) && alert != null) {
       return suspendCancellableCoroutine { cont ->
+        val resumed = AtomicBoolean(false)
+        fun safeResume(result: Result<API?>) {
+          if (resumed.compareAndSet(false, true)) {
+            cont.resumeWith(result)
+          }
+        }
         showRetryAlert(
           alert,
           onCancel = {
-            cont.resumeWith(Result.success(null))
+            safeResume(Result.success(null))
           },
           onRetry = {
             withLongRunningApi {
-              cont.resumeWith(
+              safeResume(
                 runCatching {
                   coroutineScope {
                     sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1)
@@ -742,7 +749,7 @@ object ChatController {
         )
 
         cont.invokeOnCancellation {
-          cont.resumeWith(Result.success(null))
+          safeResume(Result.success(null))
         }
       }
     } else {

@@ -2339,7 +2339,7 @@ fun BoxScope.ChatItemsList(
   }
 
   val manager = LocalSelectionManager.current
-  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, linkMode) else Modifier
+  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
 
   LazyColumnWithScrollBar(
     modifier.align(Alignment.BottomCenter),

@@ -42,7 +42,9 @@ expect fun desktopOpenDir(dir: File)
 
 fun createURIFromPath(absolutePath: String): URI = URI.create(URLEncoder.encode(absolutePath, "UTF-8"))
 
-fun URI.toFile(): File = File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
+fun URI.toFile(): File =
+  if (scheme == "file") File(this)
+  else File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {
