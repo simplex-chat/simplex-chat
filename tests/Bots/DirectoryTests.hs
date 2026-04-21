@@ -1987,12 +1987,7 @@ testRegisterChannelViaCard ps =
         superUser <# ("'SimpleX Directory'> > " <> approve)
         superUser <## "      Channel approved!"
         bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
-        bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
-        bob <## ""
-        bob <## "Supported commands:"
-        bob <## "/'filter 1' - to configure anti-spam filter."
-        bob <## "/'role 1' - to set default member role."
-        bob <## "/'link 1' - to view/upgrade group link."
+        bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do

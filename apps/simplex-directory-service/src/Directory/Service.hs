@@ -326,6 +326,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let msg = "Error: " <> err <> ", group: " <> tshow groupId <> " " <> localDisplayName <> ", " <> T.pack e
           notifyAdminUsers msg
           logError msg
+    ifPublicGroup :: GroupInfo -> IO () -> IO () -> IO ()
+    ifPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} reject action =
+      if isJust publicGroup then reject else action
     groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
     knockingStr :: Maybe GroupMemberAdmission -> [Text]
     knockingStr = \case
@@ -948,7 +951,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               sendReply $ (if isAdmin then "The group " else "Your group ") <> displayName <> " is deleted from the directory"
             Left e -> sendReply $ "Error deleting group " <> displayName <> ": " <> T.pack e
       DCMemberRole gId gName_ mRole_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr -> do
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr ->
+          ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
           let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
           case mRole_ of
             Nothing ->
@@ -968,7 +972,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           initialRole n mRole = "The initial member role for the group " <> n <> " is set to *" <> textEncode mRole <> "*\n"
           onlyViaLink gLink = "*Please note*: it applies only to members joining via this link: " <> groupLinkText gLink
       DCGroupFilter gId gName_ acceptance_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr -> do
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr ->
+          ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
           let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
               a = groupMemberAcceptance g
           case acceptance_ of
@@ -999,7 +1004,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PCAll -> "_enabled_"
             Just PCNoImage -> "_enabled for profiles without image_"
       DCShowUpgradeGroupLink gId gName_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {groupId, localDisplayName = gName} _ -> do
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g@GroupInfo {groupId, localDisplayName = gName} _ ->
+          ifPublicGroup g (sendReply "This command is not available for public groups.") $ do
           let groupRef = groupReference' gId gName
           withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
             \GroupLink {connLinkContact = gLink@(CCLink _ sLnk_), acceptMemberRole, shortLinkDataSet, shortLinkLargeDataSet = BoolDef slLargeDataSet} -> do
@@ -1113,13 +1119,17 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                                     | otherwise = False
                               setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
                                 let approved = "The " <> gt <> " " <> userGroupReference' gr n <> " is approved"
+                                let commands
+                                      | isPublicGroup_ = ""
+                                      | otherwise =
+                                          "\n\nSupported commands:\n"
+                                            <> ("/'filter " <> tshow ugrId <> "' - to configure anti-spam filter.\n")
+                                            <> ("/'role " <> tshow ugrId <> "' - to set default member role.\n")
+                                            <> ("/'link " <> tshow ugrId <> "' - to view/upgrade group link.")
                                 notifyOwner gr $
                                   (approved <> " and listed in directory - please moderate it!\n")
-                                    <> "_Please note_: if you change the group profile it will be hidden from directory until it is re-approved.\n\n"
-                                    <> "Supported commands:\n"
-                                    <> ("/'filter " <> tshow ugrId <> "' - to configure anti-spam filter.\n")
-                                    <> ("/'role " <> tshow ugrId <> "' - to set default member role.\n")
-                                    <> ("/'link " <> tshow ugrId <> "' - to view/upgrade group link.")
+                                    <> "_Please note_: if you change the " <> gt <> " profile it will be hidden from directory until it is re-approved."
+                                    <> commands
                                 invited <-
                                   forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
                                     inviteToOwnersGroup og gr $ \case
