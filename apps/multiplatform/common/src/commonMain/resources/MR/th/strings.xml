@@ -46,7 +46,7 @@
     <string name="icon_descr_asked_to_receive">ขอรับภาพ</string>
     <string name="icon_descr_video_asked_to_receive">ขอรับวิดีโอ</string>
     <string name="clear_chat_warning">ข้อความทั้งหมดจะถูกลบ - การดำเนินการนี้ไม่สามารถยกเลิกได้! ข้อความจะถูกลบสำหรับคุณเท่านั้น</string>
-    <string name="smp_servers_add">เพิ่มเซิร์ฟเวอร์</string>
+    <string name="smp_servers_add">เพิ่มเราเตอร์</string>
     <string name="app_version_title">เวอร์ชันแอป</string>
     <string name="app_version_name">เวอร์ชันแอป: v%s</string>
     <string name="all_your_contacts_will_remain_connected">ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่.</string>
@@ -75,10 +75,10 @@
     <string name="all_app_data_will_be_cleared">ข้อมูลแอปทั้งหมดถูกลบแล้ว.</string>
     <string name="color_secondary_variant">รองเพิ่มเติม</string>
     <string name="users_add">เพิ่มโปรไฟล์</string>
-    <string name="smp_servers_preset_add">เพิ่มเซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า</string>
+    <string name="smp_servers_preset_add">เพิ่มเราเตอร์ที่ตั้งไว้ล่วงหน้า</string>
     <string name="users_delete_all_chats_deleted">แชทและข้อความทั้งหมดจะถูกลบ - การดำเนินการนี้ไม่สามารถยกเลิกได้!</string>
     <string name="address_section_title">ที่อยู่</string>
-    <string name="v4_3_improved_server_configuration_desc">เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัส QR</string>
+    <string name="v4_3_improved_server_configuration_desc">เพิ่มเราเตอร์โดยการสแกนรหัส QR</string>
     <string name="smp_servers_add_to_another_device">เพิ่มเข้าไปในอุปกรณ์อื่น</string>
     <string name="group_member_role_admin">ผู้ดูแลระบบ</string>
     <string name="all_group_members_will_remain_connected">สมาชิกในกลุ่มทุกคนจะยังคงเชื่อมต่ออยู่.</string>
@@ -203,7 +203,7 @@
     <string name="connect_via_link">เชื่อมต่อผ่านลิงก์</string>
     <string name="clear_verification">ล้างการยืนยัน</string>
     <string name="chat_console">คอนโซลแชท</string>
-    <string name="smp_servers_check_address">ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง</string>
+    <string name="smp_servers_check_address">ตรวจสอบที่อยู่เราเตอร์แล้วลองอีกครั้ง</string>
     <string name="contribute">มีส่วนช่วย</string>
     <string name="configure_ICE_servers">กำหนดค่าเซิร์ฟเวอร์ ICE</string>
     <string name="network_session_mode_user">โปรไฟล์แชท</string>
@@ -269,7 +269,7 @@
     <string name="file_will_be_received_when_contact_is_online">จะได้รับไฟล์เมื่อผู้ติดต่อของคุณออนไลน์ โปรดรอหรือตรวจสอบในภายหลัง!</string>
     <string name="alert_message_group_invitation_expired">คำเชิญเข้าร่วมกลุ่มใช้ไม่ถูกต้องอีกต่อไป คำเชิญถูกลบโดยผู้ส่ง</string>
     <string name="group_members_can_delete">สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร</string>
-    <string name="group_profile_is_stored_on_members_devices">โปรไฟล์กลุ่มถูกจัดเก็บไว้ในอุปกรณ์ของสมาชิก ไม่ใช่บนเซิร์ฟเวอร์</string>
+    <string name="group_profile_is_stored_on_members_devices">โปรไฟล์กลุ่มถูกจัดเก็บไว้ในอุปกรณ์ของสมาชิก ไม่ใช่บนเราเตอร์</string>
     <string name="delete_group_for_self_cannot_undo_warning">กลุ่มจะถูกลบสำหรับคุณ - ไม่สามารถยกเลิกได้!</string>
     <string name="set_password_to_export_desc">ฐานข้อมูลถูก encrypt โดยใช้รหัสผ่านแบบสุ่ม โปรดเปลี่ยนก่อนส่งออก</string>
     <string name="decryption_error">ข้อผิดพลาดในการ decrypt</string>
@@ -277,14 +277,14 @@
     <string name="delete_group_question">ลบกลุ่ม\?</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">การตรวจสอบอุปกรณ์ไม่ได้ถูกเปิดใช้งาน คุณสามารถเปิด SimpleX Lock ผ่านการตั้งค่าได้ เมื่อคุณเปิดใช้งานการตรวจสอบอุปกรณ์แล้ว</string>
     <string name="enter_welcome_message_optional">ใส่ข้อความต้อนรับ… (ไม่บังคับ)</string>
-    <string name="error_loading_smp_servers">เกิดข้อผิดพลาดในการโหลดเซิร์ฟเวอร์ SMP</string>
-    <string name="error_loading_xftp_servers">เกิดข้อผิดพลาดในการโหลดเซิร์ฟเวอร์ XFTP</string>
+    <string name="error_loading_smp_servers">เกิดข้อผิดพลาดในการโหลดเราเตอร์แพ็กเก็ต</string>
+    <string name="error_loading_xftp_servers">เกิดข้อผิดพลาดในการโหลดเราเตอร์ข้อมูล</string>
     <string name="server_error">ข้อผิดพลาด</string>
     <string name="deleted_description">ลบแล้ว</string>
     <string name="simplex_link_mode_full">ลิงค์เต็ม</string>
     <string name="simplex_link_mode_description">คำอธิบาย</string>
-    <string name="error_saving_smp_servers">เกิดข้อผิดพลาดในการบันทึกเซิร์ฟเวอร์ SMP</string>
-    <string name="error_saving_xftp_servers">เกิดข้อผิดพลาดในการบันทึกเซิร์ฟเวอร์ XFTP</string>
+    <string name="error_saving_smp_servers">เกิดข้อผิดพลาดในการบันทึกเราเตอร์แพ็กเก็ต</string>
+    <string name="error_saving_xftp_servers">เกิดข้อผิดพลาดในการบันทึกเราเตอร์ข้อมูล</string>
     <string name="error_setting_network_config">เกิดข้อผิดพลาดในการอัปเดตการกำหนดค่าเครือข่าย</string>
     <string name="failed_to_create_user_duplicate_title">ชื่อที่แสดงซ้ำ!</string>
     <string name="failed_to_create_user_title">เกิดข้อผิดพลาดในการสร้างโปรไฟล์!</string>
@@ -326,7 +326,7 @@
     <string name="delete_member_message__question">ลบข้อความสมาชิก\?</string>
     <string name="for_everybody">สําหรับทุกคน</string>
     <string name="for_me_only">ลบให้ฉัน</string>
-    <string name="revoke_file__message">ไฟล์จะถูกลบออกจากเซิร์ฟเวอร์</string>
+    <string name="revoke_file__message">ไฟล์จะถูกลบออกจากเราเตอร์</string>
     <string name="icon_descr_edited">แก้ไขแล้ว</string>
     <string name="image_decoding_exception_title">ข้อผิดพลาดในการถอดรหัส</string>
     <string name="icon_descr_file">ไฟล์</string>
@@ -350,10 +350,10 @@
     <string name="icon_descr_email">อีเมล</string>
     <string name="database_passphrase_and_export">รหัสผ่านฐานข้อมูล &amp; ส่งออก</string>
     <string name="how_to_use_simplex_chat">วิธีการใช้งาน</string>
-    <string name="smp_servers_enter_manually">ใส่เซิร์ฟเวอร์ด้วยตนเอง</string>
-    <string name="smp_servers_delete_server">ลบเซิร์ฟเวอร์</string>
+    <string name="smp_servers_enter_manually">ใส่เราเตอร์ด้วยตนเอง</string>
+    <string name="smp_servers_delete_server">ลบเราเตอร์</string>
     <string name="how_to">วิธี</string>
-    <string name="how_to_use_your_servers">วิธีใช้เซิร์ฟเวอร์ของคุณ</string>
+    <string name="how_to_use_your_servers">วิธีใช้เราเตอร์ของคุณ</string>
     <string name="enter_one_ICE_server_per_line">เซิร์ฟเวอร์ ICE (หนึ่งเครื่องต่อสาย)</string>
     <string name="error_saving_ICE_servers">เกิดข้อผิดพลาดในการบันทึกเซิร์ฟเวอร์ ICE</string>
     <string name="host_verb">โฮสต์</string>
@@ -527,7 +527,7 @@
     <string name="conn_level_desc_indirect">ทางอ้อม (%1$s)</string>
     <string name="install_simplex_chat_for_terminal">ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">มันสามารถเกิดขึ้นได้เมื่อ:
-\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเซิร์ฟเวอร์หลังจาก 30 วัน
+\n1. ข้อความหมดอายุในไคลเอนต์ที่ส่งหลังจาก 2 วันหรือบนเราเตอร์หลังจาก 30 วัน
 \n2. การถอดรหัสข้อความล้มเหลว เนื่องจากคุณหรือผู้ติดต่อของคุณใช้การสำรองฐานข้อมูลเก่า
 \n3. การเชื่อมต่อถูกบุกรุก</string>
     <string name="join_group_incognito_button">เข้าร่วมแบบไม่ระบุตัวตน</string>
@@ -563,7 +563,7 @@
     <string name="invalid_contact_link">ลิงค์ไม่ถูกต้อง!</string>
     <string name="learn_more">ศึกษาเพิ่มเติม</string>
     <string name="incorrect_code">รหัสความปลอดภัยไม่ถูกต้อง!</string>
-    <string name="smp_servers_invalid_address">ที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง!</string>
+    <string name="smp_servers_invalid_address">ที่อยู่เราเตอร์ไม่ถูกต้อง!</string>
     <string name="invite_friends">เชิญเพื่อน ๆ</string>
     <string name="email_invite_subject">มาคุยกันใน SimpleX Chat</string>
     <string name="italic_text">ตัวเอียง</string>
@@ -612,13 +612,13 @@
     <string name="theme_light">สว่าง</string>
     <string name="message_deletion_prohibited_in_chat">การลบข้อความแบบแก้ไขไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้</string>
     <string name="v4_3_improved_privacy_and_security">ปรับปรุงความเป็นส่วนตัวและความปลอดภัยแล้ว</string>
-    <string name="v4_3_improved_server_configuration">ปรับปรุงการกําหนดค่าเซิร์ฟเวอร์แล้ว</string>
+    <string name="v4_3_improved_server_configuration">ปรับปรุงการกําหนดค่าเราเตอร์แล้ว</string>
     <string name="v4_4_live_messages">ข้อความสด</string>
     <string name="v5_1_japanese_portuguese_interface">UI ภาษาญี่ปุ่นและโปรตุเกส</string>
     <string name="opening_database">กำลังเปิดฐานข้อมูล…</string>
     <string name="marked_deleted_description">ทำเครื่องหมายว่าลบแล้ว</string>
     <string name="moderated_description">กลั่นกรองแล้ว</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ XFTP อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เราเตอร์ข้อมูล อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
     <string name="periodic_notifications">การแจ้งเตือนเป็นระยะ</string>
     <string name="enter_passphrase_notification_title">จำเป็นต้องใช้รหัสผ่าน</string>
     <string name="periodic_notifications_disabled">การแจ้งเตือนเป็นระยะปิดอยู่!</string>
@@ -656,7 +656,7 @@
     <string name="markdown_help">ช่วยมาร์คดาวน์</string>
     <string name="markdown_in_messages">Markdown ในข้อความ</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ WebRTC ICE อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
-    <string name="network_and_servers">เครือข่ายและเซิร์ฟเวอร์</string>
+    <string name="network_and_servers">เครือข่ายและเราเตอร์</string>
     <string name="network_settings_title">การตั้งค่าเครือข่าย</string>
     <string name="network_use_onion_hosts_required_desc">จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ</string>
     <string name="network_use_onion_hosts_no">ไม่</string>
@@ -664,7 +664,7 @@
     <string name="password_to_show">รหัสผ่านที่จะแสดง</string>
     <string name="callstatus_missed">สายที่ไม่ได้รับ</string>
     <string name="people_can_connect_only_via_links_you_share">ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เราเตอร์ได้</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[เฉพาะอุปกรณ์ไคลเอ็นต์เท่านั้นที่จัดเก็บโปรไฟล์ผู้ใช้ ผู้ติดต่อ กลุ่ม และข้อความที่ส่งด้วย <b>การเข้ารหัสแบบ encrypted จากต้นจนจบ 2 ชั้น</b>]]></string>
     <string name="onboarding_notifications_mode_periodic">เป็นระยะ</string>
     <string name="paste_the_link_you_received">แปะลิงก์ที่ได้รับ</string>
@@ -745,21 +745,21 @@
     <string name="moderated_item_description">กลั่นกรองโดย %s</string>
     <string name="message_delivery_error_desc">เป็นไปได้มากว่าผู้ติดต่อนี้ได้ลบการเชื่อมต่อกับคุณ</string>
     <string name="message_delivery_error_title">ข้อผิดพลาดในการส่งข้อความ</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ SMP อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เราเตอร์แพ็กเก็ต อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
     <string name="network_use_onion_hosts_prefer_desc">โฮสต์หัวหอมจะถูกใช้เมื่อมี</string>
     <string name="only_your_contact_can_send_voice">ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้</string>
     <string name="simplex_link_mode_browser_warning">การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">โปรดตรวจสอบว่าคุณใช้ลิงก์ที่ถูกต้องหรือขอให้ผู้ติดต่อของคุณส่งลิงก์ใหม่ให้คุณ</string>
     <string name="network_error_desc">โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ %1$s แล้วลองอีกครั้ง</string>
     <string name="contact_developers">โปรดอัปเดตแอปและติดต่อนักพัฒนาแอป</string>
-    <string name="error_smp_test_certificate">อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง</string>
+    <string name="error_smp_test_certificate">อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เราเตอร์ไม่ถูกต้อง</string>
     <string name="received_message">ได้รับข้อความ</string>
     <string name="icon_descr_profile_image_placeholder">ตัวยึดตำแหน่งรูปโปรไฟล์</string>
     <string name="image_descr_profile_image">รูปโปรไฟล์</string>
     <string name="image_descr_qr_code">คิวอาร์โค้ด</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[อ่านเพิ่มเติมใน <font color="#0088ff"> คู่มือผู้ใช้ </font>]]></string>
-    <string name="smp_servers_preset_address">ที่อยู่เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า</string>
-    <string name="smp_servers_preset_server">เซิร์ฟเวอร์ที่ตั้งไว้ล่วงหน้า</string>
+    <string name="smp_servers_preset_address">ที่อยู่เราเตอร์ที่ตั้งไว้ล่วงหน้า</string>
+    <string name="smp_servers_preset_server">เราเตอร์ที่ตั้งไว้ล่วงหน้า</string>
     <string name="rate_the_app">ให้คะแนนแอป</string>
     <string name="port_verb">พอร์ต</string>
     <string name="network_proxy_port">พอร์ต %d</string>
@@ -778,7 +778,7 @@
     <string name="info_row_received_at">ได้รับเมื่อ</string>
     <string name="group_welcome_preview">ดูตัวอย่าง</string>
     <string name="network_option_protocol_timeout">หมดเวลาโปรโตคอล</string>
-    <string name="users_delete_with_connections">การเชื่อมต่อโปรไฟล์และเซิร์ฟเวอร์</string>
+    <string name="users_delete_with_connections">การเชื่อมต่อโปรไฟล์และเราเตอร์</string>
     <string name="profile_password">รหัสผ่านโปรไฟล์</string>
     <string name="color_received_message">ข้อความที่ได้รับ</string>
     <string name="prohibit_sending_disappearing_messages">ห้ามส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages)</string>
@@ -864,8 +864,8 @@
     <string name="info_row_sent_at">ส่งเมื่อ</string>
     <string name="share_message">แชร์ข้อความ…</string>
     <string name="share_text_sent_at">ส่งเมื่อ : %s</string>
-    <string name="error_smp_test_server_auth">เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน</string>
-    <string name="error_xftp_test_server_auth">เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน</string>
+    <string name="error_smp_test_server_auth">เราเตอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน</string>
+    <string name="error_xftp_test_server_auth">เราเตอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน</string>
     <string name="text_field_set_contact_placeholder">ตั้งชื่อผู้ติดต่อ…</string>
     <string name="share_invitation_link">แชร์ลิงก์แบบใช้ครั้งเดียว</string>
     <string name="share_file">แชร์ไฟล์…</string>
@@ -900,10 +900,10 @@
     <string name="security_code">รหัสความปลอดภัย</string>
     <string name="chat_with_the_founder">ส่งคําถามและความคิด</string>
     <string name="send_us_an_email">ส่งอีเมลถึงเรา</string>
-    <string name="smp_servers_save">บันทึกเซิร์ฟเวอร์</string>
-    <string name="smp_servers_test_failed">การทดสอบเซิร์ฟเวอร์ล้มเหลว!</string>
-    <string name="smp_servers_scan_qr">สแกนคิวอาร์โค้ดของเซิร์ฟเวอร์</string>
-    <string name="smp_save_servers_question">บันทึกเซิร์ฟเวอร์\?</string>
+    <string name="smp_servers_save">บันทึกเราเตอร์</string>
+    <string name="smp_servers_test_failed">การทดสอบเราเตอร์ล้มเหลว!</string>
+    <string name="smp_servers_scan_qr">สแกนคิวอาร์โค้ดของเราเตอร์</string>
+    <string name="smp_save_servers_question">บันทึกเราเตอร์\?</string>
     <string name="saved_ICE_servers_will_be_removed">เซิร์ฟเวอร์ WebRTC ICE ที่บันทึกไว้จะถูกลบออก</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[ตั้ง <i>ใช้โฮสต์ .onion</i> เป็น ไม่ หากพร็อกซี SOCKS ไม่รองรับ]]></string>
     <string name="show_dev_options">แสดง:</string>
@@ -920,7 +920,7 @@
     <string name="share_address">แชร์ที่อยู่</string>
     <string name="button_send_direct_message">ส่งข้อความโดยตรง</string>
     <string name="save_welcome_message_question">บันทึกข้อความต้อนรับ\?</string>
-    <string name="conn_stats_section_title_servers">เซิร์ฟเวอร์</string>
+    <string name="conn_stats_section_title_servers">เราเตอร์</string>
     <string name="save_group_profile">บันทึกโปรไฟล์กลุ่ม</string>
     <string name="network_option_seconds_label">วินาที</string>
     <string name="color_sent_message">ข้อความที่ส่งแล้ว</string>
@@ -985,10 +985,10 @@
     <string name="is_not_verified">%s ไม่ได้รับการยืนยัน</string>
     <string name="is_verified">%s ได้รับการยืนยันแล้ว</string>
     <string name="chat_lock">ล็อค SimpleX</string>
-    <string name="smp_servers">เซิร์ฟเวอร์ SMP</string>
-    <string name="smp_servers_test_server">เซิร์ฟเวอร์ทดสอบ</string>
-    <string name="smp_servers_test_servers">เซิร์ฟเวอร์ทดสอบ</string>
-    <string name="smp_servers_test_some_failed">บางเซิร์ฟเวอร์ผ่านการทดสอบล้มเหลว:</string>
+    <string name="smp_servers">เราเตอร์แพ็กเก็ต</string>
+    <string name="smp_servers_test_server">เราเตอร์ทดสอบ</string>
+    <string name="smp_servers_test_servers">เราเตอร์ทดสอบ</string>
+    <string name="smp_servers_test_some_failed">บางเราเตอร์ผ่านการทดสอบล้มเหลว:</string>
     <string name="network_socks_proxy_settings">การตั้งค่าพร็อกซี SOCKS</string>
     <string name="core_simplexmq_version">Simplexmq: v%s (%2s)</string>
     <string name="first_platform_without_user_ids">แพลตฟอร์มแรกที่ไม่มีตัวระบุผู้ใช้ - ถูกออกแบบให้เป็นส่วนตัว</string>
@@ -1017,9 +1017,9 @@
     <string name="network_session_mode_transport_isolation">การแยกการขนส่ง</string>
     <string name="unhide_chat_profile">ยกเลิกการซ่อนโปรไฟล์การแชท</string>
     <string name="update_database">อัปเดต</string>
-    <string name="use_simplex_chat_servers__question">ใช้เซิร์ฟเวอร์ SimpleX Chat ไหม\?</string>
+    <string name="use_simplex_chat_servers__question">ใช้เราเตอร์ SimpleX Chat ไหม\?</string>
     <string name="video_call_no_encryption">การสนทนาทางวิดีโอ (ไม่ได้ encrypt จากต้นจนจบ)</string>
-    <string name="using_simplex_chat_servers">กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่</string>
+    <string name="using_simplex_chat_servers">กำลังใช้เราเตอร์ SimpleX Chat อยู่</string>
     <string name="v5_1_better_messages_descr">- ข้อความเสียงนานสุด 5 นาที
 \n- เวลาที่กำหนดเองที่จะหายไป
 \n- ประวัติการแก้ไข</string>
@@ -1038,16 +1038,16 @@
     <string name="your_current_profile">โปรไฟล์ปัจจุบันของคุณ</string>
     <string name="invite_prohibited_description">คุณกำลังพยายามเชิญผู้ติดต่อที่คุณแบ่งปันโปรไฟล์ที่ไม่ระบุตัวตนไปยังกลุ่มที่คุณใช้โปรไฟล์หลักของคุณ</string>
     <string name="your_privacy">ความเป็นส่วนตัวของคุณ</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น  เซิร์ฟเวอร์ SimpleX  ไม่สามารถดูโปรไฟล์ของคุณได้</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น  เราเตอร์ SimpleX  ไม่สามารถดูโปรไฟล์ของคุณได้</string>
     <string name="settings_section_title_you">คุณ</string>
     <string name="you_are_invited_to_group">คุณได้รับเชิญให้เข้าร่วมกลุ่ม</string>
     <string name="incognito_random_profile">โปรไฟล์แบบสุ่มของคุณ</string>
     <string name="theme">ธีม</string>
-    <string name="error_connecting_to_server_to_receive_messages">กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %1$s)</string>
+    <string name="error_connecting_to_server_to_receive_messages">กำลังพยายามเชื่อมต่อกับเราเตอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %1$s)</string>
     <string name="app_name">SimpleX</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">คุณเชื่อมต่อกับเราเตอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
     <string name="profile_will_be_sent_to_contact_sending_link">โปรไฟล์ของคุณจะถูกส่งไปยังผู้ติดต่อที่ส่งลิงก์นี้มาให้คุณ</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">พยายามเชื่อมต่อกับเราเตอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้</string>
     <string name="unknown_message_format">รูปแบบข้อความที่ไม่รู้จัก</string>
     <string name="sender_you_pronoun">คุณ</string>
     <string name="description_via_group_link">ผ่านลิงค์กลุ่ม</string>
@@ -1122,14 +1122,14 @@
     <string name="your_settings">การตั้งค่าของคุณ</string>
     <string name="your_simplex_contact_address">ที่อยู่ SimpleX ของคุณ</string>
     <string name="your_chat_profiles">โปรไฟล์แชทของคุณ</string>
-    <string name="smp_servers_use_server">ใช้เซิร์ฟเวอร์</string>
-    <string name="smp_servers_your_server">เซิร์ฟเวอร์ของคุณ</string>
-    <string name="smp_servers_your_server_address">ที่อยู่เซิร์ฟเวอร์ของคุณ</string>
-    <string name="smp_servers_per_user">เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ</string>
+    <string name="smp_servers_use_server">ใช้เราเตอร์</string>
+    <string name="smp_servers_your_server">เราเตอร์ของคุณ</string>
+    <string name="smp_servers_your_server_address">ที่อยู่เราเตอร์ของคุณ</string>
+    <string name="smp_servers_per_user">เราเตอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ</string>
     <string name="smp_servers_use_server_for_new_conn">ใช้สำหรับการเชื่อมต่อใหม่</string>
-    <string name="xftp_servers">เซิร์ฟเวอร์ XFTP</string>
-    <string name="your_SMP_servers">เซิร์ฟเวอร์ SMP ของคุณ</string>
-    <string name="your_XFTP_servers">เซิร์ฟเวอร์ XFTP ของคุณ</string>
+    <string name="xftp_servers">เราเตอร์ข้อมูล</string>
+    <string name="your_SMP_servers">เราเตอร์แพ็กเก็ตของคุณ</string>
+    <string name="your_XFTP_servers">เราเตอร์ข้อมูลของคุณ</string>
     <string name="your_ICE_servers">เซิร์ฟเวอร์ ICE ของคุณ</string>
     <string name="network_socks_toggle_use_socks_proxy">ใช้พร็อกซี SOCKS</string>
     <string name="network_disable_socks">ใช้การเชื่อมต่ออินเทอร์เน็ตโดยตรงหรือไม่\?</string>
@@ -1142,7 +1142,7 @@
     <string name="you_can_create_it_later">คุณสามารถสร้างได้ในภายหลัง</string>
     <string name="you_control_your_chat">คุณเป็นผู้ควบคุมการแชทของคุณ!</string>
     <string name="profile_is_only_shared_with_your_contacts">โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">เราไม่เก็บผู้ติดต่อหรือข้อความของคุณ (เมื่อส่งแล้ว) ไว้บนเซิร์ฟเวอร์</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">เราไม่เก็บผู้ติดต่อหรือข้อความของคุณ (เมื่อส่งแล้ว) ไว้บนเราเตอร์</string>
     <string name="your_profile_is_stored_on_your_device">โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:</string>
     <string name="callstate_waiting_for_answer">รอคำตอบ…</string>
@@ -1193,7 +1193,7 @@
     <string name="group_main_profile_sent">โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม</string>
     <string name="update_network_settings_confirmation">อัปเดต</string>
     <string name="update_network_settings_question">อัปเดตการตั้งค่าเครือข่ายไหม\?</string>
-    <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเราเตอร์ทั้งหมดอีกครั้ง</string>
     <string name="user_unhide">ยกเลิกการซ่อน</string>
     <string name="user_unmute">เปิดเสียง</string>
     <string name="you_can_hide_or_mute_user_profile">คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - กดค้างไว้เพื่อที่จะแสดงเมนู</string>
@@ -1220,7 +1220,7 @@
     <string name="this_text_is_available_in_settings">ข้อความนี้มีอยู่ในการตั้งค่า</string>
     <string name="images_limit_title">รูปเยอะเกิน!</string>
     <string name="videos_limit_title">วิดีโอเยอะเกิน!</string>
-    <string name="switch_receiving_address_desc">ที่อยู่ผู้รับจะถูกเปลี่ยนเป็นเซิร์ฟเวอร์อื่น การเปลี่ยนแปลงที่อยู่จะเสร็จสมบูรณ์หลังจากที่ผู้ส่งออนไลน์</string>
+    <string name="switch_receiving_address_desc">ที่อยู่ผู้รับจะถูกเปลี่ยนเป็นเราเตอร์อื่น การเปลี่ยนแปลงที่อยู่จะเสร็จสมบูรณ์หลังจากที่ผู้ส่งออนไลน์</string>
     <string name="to_connect_via_link_title">เพื่อการเชื่อมต่อผ่านลิงค์</string>
     <string name="this_link_is_not_a_valid_connection_link">ลิงค์นี้ไม่ใช่ลิงค์เชื่อมต่อที่ถูกต้อง!</string>
     <string name="this_QR_code_is_not_a_link">รหัสคิวอาร์นี้ไม่ใช่ลิงก์!</string>

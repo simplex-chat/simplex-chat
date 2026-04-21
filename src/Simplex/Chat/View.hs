@@ -469,7 +469,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on packet router " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
   CEvtGroupLinkDataUpdated u g groupLink relays relaysChanged
@@ -1552,16 +1552,16 @@ subStatusStr = \case
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] [] []) = []
 viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
-  [plain $ maybe "Your servers" shortViewOperator operator]
-    <> viewServers SPSMP smpServers
-    <> viewServers SPXFTP xftpServers
+  [plain $ maybe "Your routers" shortViewOperator operator]
+    <> viewServers "packet" SPSMP smpServers
+    <> viewServers "data" SPXFTP xftpServers
     <> viewChatRelays chatRelays
   where
-    viewServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServer p] -> [StyledString]
-    viewServers _ [] = []
-    viewServers p srvs
+    viewServers :: (ProtocolTypeI p, UserProtocol p) => StyledString -> SProtocolType p -> [UserServer p] -> [StyledString]
+    viewServers _ _ [] = []
+    viewServers name p srvs
       | maybe True (\ServerOperator {enabled} -> enabled) operator =
-          ["  " <> protocolName p <> " servers" <> maybe "" ((" " <>) . viewRoles) operator]
+          ["  " <> name <> " routers" <> maybe "" ((" " <>) . viewRoles) operator]
             <> map (plain . ("    " <>) . viewServer) srvs
       | otherwise = []
       where
@@ -1575,7 +1575,7 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
           | storage rs && proxy rs = "enabled"
           | storage rs = "enabled storage"
           | proxy rs = "enabled proxy"
-          | otherwise = "disabled (servers known)"
+          | otherwise = "disabled (routers known)"
           where
             rs = operatorRoles p op
     viewChatRelays :: [UserChatRelay] -> [StyledString]
@@ -1595,10 +1595,10 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
 serversUserHelp :: [StyledString]
 serversUserHelp =
   [ "",
-    "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
-    "use " <> highlight' "/smp <srv1[,srv2,...]>" <> " to configure SMP servers",
-    "or the same commands starting from /xftp for XFTP servers",
-    "chat options " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") and " <> highlight' "--xftp-servers" <> " have precedence over preset servers for new user profiles"
+    "use " <> highlight' "/smp test <srv>" <> " to test packet router connection",
+    "use " <> highlight' "/smp <srv1[,srv2,...]>" <> " to configure packet routers",
+    "or the same commands starting from /xftp for data routers",
+    "chat options " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") and " <> highlight' "--xftp-servers" <> " have precedence over preset routers for new user profiles"
   ]
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
@@ -1608,17 +1608,19 @@ viewServerTestResult :: AProtoServerWithAuth -> Maybe ProtocolTestFailure -> [St
 viewServerTestResult (AProtoServerWithAuth p _) = \case
   Just ProtocolTestFailure {testStep, testError} ->
     result
-      <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && (case testError of SMP _ SMP.AUTH -> True; _ -> False)]
-      <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
-      <> ["Certificate fingerprint in " <> pName <> " server address does not match server certificate" | testStep == TSConnect && unknownCA]
+      <> [pName <> " router requires authorization to create queues, check password" | testStep == TSCreateQueue && (case testError of SMP _ SMP.AUTH -> True; _ -> False)]
+      <> [pName <> " router requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
+      <> ["Certificate fingerprint in " <> pName <> " router address does not match router certificate" | testStep == TSConnect && unknownCA]
     where
-      result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> sShow testError]
+      result = [pName <> " router test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> sShow testError]
       unknownCA = case testError of
         BROKER _ (NETWORK NEUnknownCAError) -> True
         _ -> False
-  _ -> [pName <> " server test passed"]
+  _ -> [pName <> " router test passed"]
   where
-    pName = protocolName p
+    pName = case p of
+      SPSMP -> "packet"
+      SPXFTP -> "data"
 
 viewRelayTestResult :: Maybe RelayProfile -> Maybe RelayTestFailure -> [StyledString]
 viewRelayTestResult relayProfile_ = \case
@@ -1637,7 +1639,7 @@ viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsA
     <> tradeName
     <> maybe "" parens legalName
     <> (", domains: " <> T.intercalate ", " serverDomains)
-    <> (", servers: " <> viewOpEnabled op)
+    <> (", routers: " <> viewOpEnabled op)
     <> (", conditions: " <> viewOpConditions conditionsAcceptance)
 
 shortViewOperator :: ServerOperator -> Text
@@ -1661,7 +1663,7 @@ viewOpConditions = \case
 viewOpEnabled :: ServerOperator' s -> Text
 viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
   | not enabled = "disabled"
-  | no smpRoles && no xftpRoles = "disabled (servers known)"
+  | no smpRoles && no xftpRoles = "disabled (routers known)"
   | both smpRoles && both xftpRoles = "enabled"
   | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP " <> viewRoles xftpRoles
   where
@@ -1671,7 +1673,7 @@ viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
       | both rs = "enabled"
       | storage rs = "enabled storage"
       | proxy rs = "enabled proxy"
-      | otherwise = "disabled (servers known)"
+      | otherwise = "disabled (routers known)"
 
 viewConditionsAction :: UsageConditionsAction -> [StyledString]
 viewConditionsAction = \case
@@ -1705,7 +1707,7 @@ viewChatItemTTL = \case
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, socksMode, tcpTimeout, smpProxyMode, smpProxyFallback} =
-  [ plain $ maybe "direct network connection" ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion servers ONLY." else " for ALL servers.") . show) socksProxy,
+  [ plain $ maybe "direct network connection" ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion routers ONLY." else " for ALL routers.") . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
     plain $ smpProxyModeStr smpProxyMode smpProxyFallback,
     "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ socks-mode=always/onion][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes][ timeout=<seconds>]" <> " to change settings"
@@ -2591,7 +2593,7 @@ viewChatError isCmd logLevel testView = \case
     CEFileImageType _ -> ["image type must be jpg, send as a file using " <> highlight' "/f"]
     CEFileImageSize _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
     CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
-    CEFileNotApproved fileId unknownSrvs -> ["file " <> sShow fileId <> " aborted, unknwon XFTP servers:"] <> map (plain . show) unknownSrvs
+    CEFileNotApproved fileId unknownSrvs -> ["file " <> sShow fileId <> " aborted, unknown data routers:"] <> map (plain . show) unknownSrvs
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidForward -> ["cannot forward message(s)"]
@@ -2604,7 +2606,7 @@ viewChatError isCmd logLevel testView = \case
     CEDirectMessagesProhibited dir ct -> viewDirectMessagesProhibited dir ct
     CEAgentVersion -> ["unsupported agent version"]
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
-    CEServerProtocol p -> [plain $ "Servers for protocol " <> strEncode p <> " cannot be configured by the users"]
+    CEServerProtocol p -> [plain $ "Routers for protocol " <> strEncode p <> " cannot be configured by the users"]
     CECommandError e -> ["bad chat command: " <> plain e]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]

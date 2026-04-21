@@ -30,7 +30,7 @@ testGetSetChatRelays ps =
         alice <## "ok"
 
         alice ##> "/relays"
-        alice <## "Your servers"
+        alice <## "Your routers"
         alice <## "  Chat relays"
         alice <## ("    bob_relay: " <> bobSLink)
 
@@ -38,7 +38,7 @@ testGetSetChatRelays ps =
         alice <## "ok"
 
         alice ##> "/relays"
-        alice <## "Your servers"
+        alice <## "Your routers"
         alice <## "  Chat relays"
         alice <## ("    cath_relay: " <> cathSLink)
 
@@ -46,7 +46,7 @@ testGetSetChatRelays ps =
         alice <## "ok"
 
         alice ##> "/relays"
-        alice <## "Your servers"
+        alice <## "Your routers"
         alice <## "  Chat relays"
         alice
           <### [ ConsoleString $ "    bob_relay: " <> bobSLink,
@@ -75,7 +75,7 @@ testReAddRelaySameAddress ps =
         alice <## "ok"
 
         alice ##> "/relays"
-        alice <## "Your servers"
+        alice <## "Your routers"
         alice <## "  Chat relays"
         alice <## ("    cath_relay: " <> cathSLink)
 
@@ -84,7 +84,7 @@ testReAddRelaySameAddress ps =
         alice <## "ok"
 
         alice ##> "/relays"
-        alice <## "Your servers"
+        alice <## "Your routers"
         alice <## "  Chat relays"
         alice <## ("    bob_relay2: " <> bobSLink)
 
@@ -114,7 +114,7 @@ testReAddRelaySameName ps =
         alice <## "ok"
 
         alice ##> "/relays"
-        alice <## "Your servers"
+        alice <## "Your routers"
         alice <## "  Chat relays"
         alice <## ("    my_relay: " <> bobSLink)
 

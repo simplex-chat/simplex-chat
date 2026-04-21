@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ е потвърдено";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ сървър";
+"%@ router" = "%@ маршрутизатор";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ сървъри";
+"%@ routers" = "%@ маршрутизатори";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ качено";
@@ -405,10 +405,10 @@ swipe action */
 "Add profile" = "Добави профил";
 
 /* No comment provided by engineer. */
-"Add server" = "Добави сървър";
+"Add router" = "Добави маршрутизатор";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Добави сървъри чрез сканиране на QR кодове.";
+"Add routers by scanning QR codes." = "Добави маршрутизатори чрез сканиране на QR кодове.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Добави членове на екипа";
@@ -426,10 +426,10 @@ swipe action */
 "Add your team members to the conversations." = "Добавете членовете на вашия екип към разговорите.";
 
 /* No comment provided by engineer. */
-"Added media & file servers" = "Добавени медийни и файлови сървъри";
+"Added data routers" = "Добавени медийни и файлови маршрутизатори";
 
 /* No comment provided by engineer. */
-"Added message servers" = "Добавени сървъри за съобщения";
+"Added packet routers" = "Добавени маршрутизатори за съобщения";
 
 /* No comment provided by engineer. */
 "Additional accent" = "Допълнителен акцент";
@@ -519,7 +519,7 @@ swipe action */
 "All reports will be archived for you." = "Всички доклади за нарушения ще бъдат архивирани за вас.";
 
 /* No comment provided by engineer. */
-"All servers" = "Всички сървъри";
+"All routers" = "Всички маршрутизатори";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Всички ваши контакти ще останат свързани.";
@@ -636,7 +636,7 @@ swipe action */
 "Answer call" = "Отговор на повикване";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Протокол и код с отворен код – всеки може да оперира собствени сървъри.";
+"Anybody can host routers." = "Протокол и код с отворен код – всеки може да оперира собствени маршрутизатори.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Компилация на приложението: %@";
@@ -1090,7 +1090,7 @@ set passcode view */
 "Check messages when allowed." = "Проверявай за съобщенията, когато е разрешено.";
 
 /* alert title */
-"Check server address and try again." = "Проверете адреса на сървъра и опитайте отново.";
+"Check router address and try again." = "Проверете адреса на маршрутизатора и опитайте отново.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Китайски и Испански интерфейс";
@@ -1183,7 +1183,7 @@ set passcode view */
 "Configure ICE servers" = "Конфигурирай ICE сървъри";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "Конфигуриране на сървърни оператори";
+"Configure router operators" = "Конфигуриране на маршрутизаторни оператори";
 
 /* No comment provided by engineer. */
 "Confirm" = "Потвърди";
@@ -1195,7 +1195,7 @@ set passcode view */
 "Confirm database upgrades" = "Потвърди актуализаациите на базата данни";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "Потвърди файлове от неизвестни сървъри.";
+"Confirm files from unknown routers." = "Потвърди файлове от неизвестни маршрутизатори.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Потвърди мрежовите настройки";
@@ -1265,7 +1265,7 @@ server test step */
 "Connected desktop" = "Свързано настолно устройство";
 
 /* No comment provided by engineer. */
-"Connected servers" = "Свързани сървъри";
+"Connected routers" = "Свързани маршрутизатори";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Свързан с настолно устройство";
@@ -1292,10 +1292,10 @@ server test step */
 "connecting call" = "разговорът се свързва…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Свързване със сървъра…";
+"Connecting router…" = "Свързване със маршрутизатора…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Свързване със сървър…(грешка: %@)";
+"Connecting router… (error: %@)" = "Свързване със маршрутизатор…(грешка: %@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "Тече свързване с контакт, моля изчакайте или проверете по-късно!";
@@ -1310,7 +1310,7 @@ server test step */
 "Connection" = "Връзка";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Състояние на връзката и сървърите.";
+"Connection and routers status." = "Състояние на връзката и маршрутизаторите.";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Връзката е блокирана";
@@ -1325,7 +1325,7 @@ server test step */
 "connection established" = "установена е връзка";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "Връзката е блокирана от оператора на сървъра:\n%@";
+"Connection is blocked by router operator:\n%@" = "Връзката е блокирана от оператора на маршрутизатора:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Връзката не е готова.";
@@ -1947,7 +1947,7 @@ chat item action */
 "Enter password above to show!" = "Въведете парола по-горе, за да се покаже!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Въведи сървъра ръчно";
+"Enter router manually" = "Въведи маршрутизатора ръчно";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Въведи името на това устройство…";
@@ -2171,7 +2171,7 @@ snd error text */
 "Favorite" = "Любим";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Файлът ще бъде изтрит от сървърите.";
+"File will be deleted from routers." = "Файлът ще бъде изтрит от маршрутизаторите.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Файлът ще бъде получен, когато вашият контакт завърши качването му.";
@@ -2214,7 +2214,7 @@ snd error text */
 
 /* relay test error
 server test error */
-"Fingerprint in server address does not match certificate." = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
+"Fingerprint in router address does not match certificate." = "Въжможно е пръстовият отпечатък на сертификата в адреса на маршрутизатора да е неправилен";
 
 /* No comment provided by engineer. */
 "Fix" = "Поправи";
@@ -2325,7 +2325,7 @@ server test error */
 "Group profile" = "Групов профил";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Груповият профил се съхранява на устройствата на членовете, а не на сървърите.";
+"Group profile is stored on members' devices, not on the routers." = "Груповият профил се съхранява на устройствата на членовете, а не на маршрутизаторите.";
 
 /* snd group event chat item */
 "group profile updated" = "профилът на групата е актуализиран";
@@ -2382,7 +2382,7 @@ server test error */
 "How to use it" = "Как се използва";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Как да използвате вашите сървъри";
+"How to use your routers" = "Как да използвате вашите маршрутизатори";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Унгарски интерфейс";
@@ -2439,7 +2439,7 @@ server test error */
 "Improved privacy and security" = "Подобрена поверителност и сигурност";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Подобрена конфигурация на сървъра";
+"Improved router configuration" = "Подобрена конфигурация на маршрутизатора";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "За да продължите, чатът трябва да бъде спрян.";
@@ -2544,7 +2544,7 @@ server test error */
 "Invalid response" = "Невалиден отговор";
 
 /* alert title */
-"Invalid server address!" = "Невалиден адрес на сървъра!";
+"Invalid router address!" = "Невалиден адрес на маршрутизатора!";
 
 /* item status text */
 "Invalid status" = "Невалиден статус";
@@ -2598,7 +2598,7 @@ server test error */
 "It can happen when you or your connection used the old database backup." = "Това може да се случи, когато вие или вашата връзка използвате старо резервно копие на базата данни.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Това може да се случи, когато:\n1. Времето за пазене на съобщенията е изтекло - в изпращащия клиент е 2 дена а на сървъра е 30.\n2. Декриптирането на съобщението е неуспешно, защото вие или вашият контакт сте използвали старо копие на базата данни.\n3. Връзката е била компрометирана.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Това може да се случи, когато:\n1. Времето за пазене на съобщенията е изтекло - в изпращащия клиент е 2 дена а на маршрутизатора е 30.\n2. Декриптирането на съобщението е неуспешно, защото вие или вашият контакт сте използвали старо копие на базата данни.\n3. Връзката е била компрометирана.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Изглежда, че вече сте свързани чрез този линк. Ако не е така, има грешка (%@).";
@@ -2904,7 +2904,7 @@ server test error */
 "Name" = "Име";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Мрежа и сървъри";
+"Network & routers" = "Мрежа и маршрутизатори";
 
 /* No comment provided by engineer. */
 "Network connection" = "Мрежова връзка";
@@ -3242,7 +3242,7 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Запазете последната чернова на съобщението с прикачени файлове.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Предварително зададен адрес на сървъра";
+"Preset router address" = "Предварително зададен адрес на маршрутизатора";
 
 /* No comment provided by engineer. */
 "Preview" = "Визуализация";
@@ -3260,7 +3260,7 @@ new chat action */
 "Private notes" = "Лични бележки";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Профилни и сървърни връзки";
+"Profile and router connections" = "Профилни и маршрутизаторни връзки";
 
 /* No comment provided by engineer. */
 "Profile image" = "Профилно изображение";
@@ -3368,7 +3368,7 @@ new chat action */
 "Received message" = "Получено съобщение";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Получаващият адрес ще бъде променен към друг сървър. Промяната на адреса ще завърши, след като подателят е онлайн.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "Получаващият адрес ще бъде променен към друг маршрутизатор. Промяната на адреса ще завърши, след като подателят е онлайн.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Получаващият се файл ще бъде спрян.";
@@ -3386,10 +3386,10 @@ new chat action */
 "Recipients see updates as you type them." = "Получателите виждат актуализации, докато ги въвеждате.";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Повторно се свържете с всички свързани сървъри, за да принудите доставката на съобщенията. Използва се допълнителен трафик.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Повторно се свържете с всички свързани маршрутизатори, за да принудите доставката на съобщенията. Използва се допълнителен трафик.";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Повторно свърване със сървърите?";
+"Reconnect routers?" = "Повторно свърване със маршрутизаторите?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Записът е актуализиран на";
@@ -3415,10 +3415,10 @@ swipe action */
 "rejected call" = "отхвърлено повикване";
 
 /* No comment provided by engineer. */
-"Relay server is only used if necessary. Another party can observe your IP address." = "Реле сървър се използва само ако е необходимо. Друга страна може да наблюдава вашия IP адрес.";
+"Relay server is only used if necessary. Another party can observe your IP address." = "Реле маршрутизатор се използва само ако е необходимо. Друга страна може да наблюдава вашия IP адрес.";
 
 /* No comment provided by engineer. */
-"Relay server protects your IP address, but it can observe the duration of the call." = "Relay сървърът защитава вашия IP адрес, но може да наблюдава продължителността на разговора.";
+"Relay server protects your IP address, but it can observe the duration of the call." = "Relay маршрутизаторът защитава вашия IP адрес, но може да наблюдава продължителността на разговора.";
 
 /* alert action */
 "Remove" = "Премахване";
@@ -3554,10 +3554,10 @@ chat item action */
 "Save profile password" = "Запази паролата на профила";
 
 /* No comment provided by engineer. */
-"Save servers" = "Запази сървърите";
+"Save routers" = "Запази маршрутизаторите";
 
 /* alert title */
-"Save servers?" = "Запази сървърите?";
+"Save routers?" = "Запази маршрутизаторите?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Запази съобщението при посрещане?";
@@ -3593,7 +3593,7 @@ chat item action */
 "Scan security code from your contact's app." = "Сканирайте кода за сигурност от приложението на вашия контакт.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Сканирай QR кода на сървъра";
+"Scan router QR code" = "Сканирай QR кода на маршрутизатора";
 
 /* No comment provided by engineer. */
 "Search" = "Търсене";
@@ -3719,16 +3719,16 @@ chat item action */
 "Sent messages will be deleted after set time." = "Изпратените съобщения ще бъдат изтрити след зададеното време.";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Сървърът изисква оторизация за създаване на опашки, проверете паролата";
+"Router requires authorization to create queues, check password." = "Маршрутизаторът изисква оторизация за създаване на опашки, проверете паролата";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Сървърът изисква оторизация за качване, проверете паролата";
+"Router requires authorization to upload, check password." = "Маршрутизаторът изисква оторизация за качване, проверете паролата";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Тестът на сървъра е неуспешен!";
+"Router test failed!" = "Тестът на маршрутизатора е неуспешен!";
 
 /* No comment provided by engineer. */
-"Servers" = "Сървъри";
+"Routers" = "Маршрутизатори";
 
 /* No comment provided by engineer. */
 "Session code" = "Код на сесията";
@@ -3982,10 +3982,10 @@ server test failure */
 "Test failed at step %@." = "Тестът е неуспешен на стъпка %@.";
 
 /* No comment provided by engineer. */
-"Test server" = "Тествай сървър";
+"Test router" = "Тествай маршрутизатор";
 
 /* No comment provided by engineer. */
-"Test servers" = "Тествай сървърите";
+"Test routers" = "Тествай маршрутизаторите";
 
 /* alert title */
 "Tests failed!" = "Тестовете са неуспешни!";
@@ -4045,7 +4045,7 @@ server test failure */
 "The sender will NOT be notified" = "Подателят НЯМА да бъде уведомен";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Сървърите за нови връзки на текущия ви чат профил **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "Маршрутизаторите за нови връзки на текущия ви чат профил **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Текстът, който поставихте, не е SimpleX линк за връзка.";
@@ -4234,7 +4234,7 @@ server test failure */
 "updated profile" = "актуализиран профил";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Актуализирането на настройките ще свърже отново клиента към всички сървъри.";
+"Updating settings will re-connect the client to all routers." = "Актуализирането на настройките ще свърже отново клиента към всички маршрутизатори.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Актуализирай и отвори чата";
@@ -4273,16 +4273,16 @@ server test failure */
 "Use only local notifications?" = "Използвай само локални известия?";
 
 /* No comment provided by engineer. */
-"Use server" = "Използвай сървър";
+"Use router" = "Използвай маршрутизатор";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "Използвай сървърите на SimpleX Chat?";
+"Use SimpleX Chat servers?" = "Използвай маршрутизаторите на SimpleX Chat?";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Използвайте приложението по време на разговора.";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Използват се сървърите на SimpleX Chat.";
+"Using SimpleX Chat servers." = "Използват се маршрутизаторите на SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -4681,13 +4681,13 @@ server test failure */
 "Your profile is stored on your device and only shared with your contacts." = "Профилът се споделя само с вашите контакти.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX сървърите не могат да видят вашия профил.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX маршрутизаторите не могат да видят вашия профил.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Вашият автоматично генериран профил";
 
 /* No comment provided by engineer. */
-"Your server address" = "Вашият адрес на сървъра";
+"Your router address" = "Вашият адрес на маршрутизатора";
 
 /* No comment provided by engineer. */
 "Your settings" = "Вашите настройки";

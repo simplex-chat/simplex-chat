@@ -72,7 +72,7 @@ struct AddChannelView: View {
                 channelNameTextField()
                 NavigationLink {
                     NetworkAndServers()
-                        .navigationTitle("Network & servers")
+                        .navigationTitle("Network & routers")
                         .modifier(ThemedBackground(grouped: true))
                         .environmentObject(ss)
                 } label: {
@@ -88,7 +88,7 @@ struct AddChannelView: View {
                 .disabled(!canCreate)
             } footer: {
                 if !hasRelays {
-                    ServersWarningView(warnStr: NSLocalizedString("Enable at least one chat relay in Network & Servers.", comment: "channel creation warning"))
+                    ServersWarningView(warnStr: NSLocalizedString("Enable at least one chat relay in Network & routers.", comment: "channel creation warning"))
                 } else {
                     let name = ChatModel.shared.currentUser?.displayName ?? ""
                     Text("Your profile **\(name)** will be shared with channel relays and subscribers.\nRelays can access channel messages.")

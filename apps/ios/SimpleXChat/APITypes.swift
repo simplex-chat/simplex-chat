@@ -316,7 +316,7 @@ public enum SMPProxyMode: String, Codable, SelectableItem {
     public var label: LocalizedStringKey {
         switch self {
         case .always: return "always"
-        case .unknown: return "unknown servers"
+        case .unknown: return "unknown routers"
         case .unprotected: return "unprotected"
         case .never: return "never"
         }
@@ -352,8 +352,8 @@ public enum SMPWebPortServers: String, Codable, CaseIterable {
     
     public var text: LocalizedStringKey {
         switch self {
-        case .all: "All servers"
-        case .preset: "Preset servers"
+        case .all: "All routers"
+        case .preset: "Preset routers"
         case .off: "Off"
         }
     }
@@ -403,7 +403,7 @@ public enum TransportSessionMode: String, Codable, Identifiable {
         switch self {
         case .user: return "Chat profile"
         case .session: return "App session"
-        case .server: return "Server"
+        case .server: return "Router"
         case .entity: return "Connection"
         }
     }
@@ -639,10 +639,10 @@ public enum SubscriptionStatus: Decodable, Hashable {
 
     public var statusExplanation: String {
         switch self {
-        case .active: NSLocalizedString("You are connected to the server used to receive messages from this connection.", comment: "subscription status explanation")
-        case .pending: NSLocalizedString("Trying to connect to the server used to receive messages from this connection.", comment: "subscription status explanation")
-        case let .removed(err): String.localizedStringWithFormat(NSLocalizedString("Error connecting to the server used to receive messages from this connection: %@", comment: "subscription status explanation"), err)
-        case .noSub: NSLocalizedString("You are not connected to the server used to receive messages from this connection (no subscription).", comment: "subscription status explanation")
+        case .active: NSLocalizedString("You are connected to the router used to receive messages from this connection.", comment: "subscription status explanation")
+        case .pending: NSLocalizedString("Trying to connect to the router used to receive messages from this connection.", comment: "subscription status explanation")
+        case let .removed(err): String.localizedStringWithFormat(NSLocalizedString("Error connecting to the router used to receive messages from this connection: %@", comment: "subscription status explanation"), err)
+        case .noSub: NSLocalizedString("You are not connected to the router used to receive messages from this connection (no subscription).", comment: "subscription status explanation")
         }
     }
 

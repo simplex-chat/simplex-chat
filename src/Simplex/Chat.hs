@@ -145,8 +145,8 @@ newChatController
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op
         opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1 ..] rndSrvs
-    agentSMP <- randomServerCfgs "agent SMP servers" SPSMP opDomains rndSrvs
-    agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
+    agentSMP <- randomServerCfgs "agent packet routers" SPSMP opDomains rndSrvs
+    agentXFTP <- randomServerCfgs "agent data routers" SPXFTP opDomains rndSrvs
     let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
     currentRemoteHost <- newTVarIO Nothing
     servers <- withTransaction chatStore $ \db -> agentServers db config randomPresetServers randomAgentServers

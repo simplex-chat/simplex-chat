@@ -3,7 +3,7 @@
     <string name="share_image">चित्र साझा करें…</string>
     <string name="chat_preferences_off">बंद</string>
     <string name="accept_feature_set_1_day">1 दिन निर्धारित करें</string>
-    <string name="v4_3_improved_server_configuration_desc">क्यूआर संहिता स्कैन करके सर्वर जोड़ें।</string>
+    <string name="v4_3_improved_server_configuration_desc">क्यूआर संहिता स्कैन करके राउटर जोड़ें।</string>
     <string name="group_preview_you_are_invited">आपको समूह में आमंत्रित किया जाता है</string>
     <string name="icon_descr_server_status_connected">जुड़े हुए</string>
     <string name="use_camera_button">कैमरे का प्रयोग करें</string>
@@ -34,9 +34,9 @@
     <string name="accept_connection_request__question">संबंध अनुरोध स्वीकार करें\?</string>
     <string name="callstatus_accepted">स्वीकृत कॉल</string>
     <string name="accept_contact_incognito_button">गुप्त स्वीकार करें</string>
-    <string name="smp_servers_preset_add">पूर्वनिर्धारित सर्वर जोड़ें</string>
+    <string name="smp_servers_preset_add">पूर्वनिर्धारित राउटर जोड़ें</string>
     <string name="users_add">प्रोफ़ाइल जोड़ें</string>
-    <string name="smp_servers_add">सर्वर जोड़े</string>
+    <string name="smp_servers_add">राउटर जोड़े</string>
     <string name="notifications_mode_service">हमेशा बने रहें</string>
     <string name="attach">संलग्न करना</string>
     <string name="network_settings">उन्नत संजाल समायोजन</string>
@@ -278,7 +278,7 @@
     <string name="chat_preferences_on">चालू</string>
     <string name="la_lock_mode_system">प्रणाली प्रमाणीकरण</string>
     <string name="la_mode_system">प्रणाली</string>
-    <string name="your_SMP_servers">आपका एसएमपी सर्वर</string>
+    <string name="your_SMP_servers">आपका पैकेट राउटर</string>
     <string name="messages_section_title">संदेशों</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">सदस्य को समूह से निकाल दिया जाएगा - इसे पूर्ववत नहीं किया जा सकता!</string>
     <string name="member_info_section_title_member">सदस्य</string>

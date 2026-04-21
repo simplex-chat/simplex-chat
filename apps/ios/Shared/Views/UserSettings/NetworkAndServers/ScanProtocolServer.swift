@@ -19,7 +19,7 @@ struct ScanProtocolServer: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Scan server QR code")
+            Text("Scan router QR code")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)

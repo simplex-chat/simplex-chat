@@ -14,10 +14,10 @@
 "connecting call" = "connecting call…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Connecting to server…";
+"Connecting router…" = "Connecting to router…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Connecting to server… (error: %@)";
+"Connecting router… (error: %@)" = "Connecting to router… (error: %@)";
 
 /* rcv group event chat item */
 "member connected" = "connected";

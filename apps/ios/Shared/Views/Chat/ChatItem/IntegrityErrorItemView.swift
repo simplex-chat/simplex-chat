@@ -25,7 +25,7 @@ struct IntegrityErrorItemView: View {
                     title: "Skipped messages",
                     message: """
                         It can happen when:
-                        1. The messages expired in the sending client after 2 days or on the server after 30 days.
+                        1. The messages expired in the sending client after 2 days or on the router after 30 days.
                         2. Message decryption failed, because you or your contact used old database backup.
                         3. The connection was compromised.
                         """

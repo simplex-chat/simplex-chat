@@ -868,7 +868,7 @@ testXFTPContinueRcv ps = do
 
   -- server is down - file is not received
   withTestChat ps "bob" $ \bob -> do
-    bob <## "subscribed 1 connections on server localhost"
+    bob <## "subscribed 1 connections on packet router localhost"
     bob ##> "/fr 1 ./tests/tmp"
     bob
       <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
@@ -883,7 +883,7 @@ testXFTPContinueRcv ps = do
   withXFTPServer $ do
     -- server is up - file reception is continued
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       bob <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
@@ -916,7 +916,7 @@ testXFTPMarkToReceive = do
 
       bob
         <### [ "chat started",
-               "subscribed 1 connections on server localhost",
+               "subscribed 1 connections on packet router localhost",
                "started receiving file 1 (test.pdf) from alice",
                "saving file 1 from alice to test.pdf"
              ]
@@ -942,7 +942,7 @@ testXFTPRcvError ps = do
   -- server is up w/t store log - file reception should fail
   withXFTPServer' xftpServerConfig {storeLogFile = Nothing} $ do
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       bob ##> "/fr 1 ./tests/tmp"
       bob
         <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",

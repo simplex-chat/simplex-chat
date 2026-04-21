@@ -71,7 +71,7 @@ testBroadcastMessages ps = do
     withTestChat ps "alice" $ \alice ->
       withNewTestChat ps "bob" bobProfile $ \bob ->
         withNewTestChat ps "cath" cathProfile $ \cath -> do
-          alice <## "subscribed 1 connections on server localhost"
+          alice <## "subscribed 1 connections on packet router localhost"
           bob `connectVia` botLink
           bob #> "@broadcast_bot hello"
           bob <# "broadcast_bot> > hello"

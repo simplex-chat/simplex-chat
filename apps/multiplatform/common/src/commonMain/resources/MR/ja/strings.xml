@@ -3,7 +3,7 @@
     <string name="chat_item_ttl_day">1日</string>
     <string name="chat_item_ttl_week">1週間</string>
     <string name="callstatus_accepted">受けた通話</string>
-    <string name="smp_servers_preset_add">既存サーバを追加</string>
+    <string name="smp_servers_preset_add">既存ルーターを追加</string>
     <string name="group_member_role_admin">管理者</string>
     <string name="v4_2_group_links_desc">管理者はグループの参加リンクを発行できます。</string>
     <string name="network_settings">ネットワーク詳細設定</string>
@@ -18,10 +18,10 @@
     <string name="accept_feature">承諾</string>
     <string name="accept_call_on_lock_screen">承諾</string>
     <string name="accept_contact_incognito_button">シークレットモードで承諾</string>
-    <string name="v4_3_improved_server_configuration_desc">QRコードでサーバを追加</string>
+    <string name="v4_3_improved_server_configuration_desc">QRコードでルーターを追加</string>
     <string name="smp_servers_add_to_another_device">別の端末に追加</string>
     <string name="users_add">プロフィールを追加</string>
-    <string name="smp_servers_add">サーバを追加</string>
+    <string name="smp_servers_add">ルーターを追加</string>
     <string name="network_enable_socks_info">SOCKSプロキシ(ポート%d)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>
@@ -137,7 +137,7 @@
     <string name="error_creating_link_for_group">グループリンク発行にエラー発生</string>
     <string name="error_changing_role">役割変更にエラー発生</string>
     <string name="error_exporting_chat_database">チャットデータベースの書き出しでエラー発生</string>
-    <string name="error_saving_smp_servers">SMPサーバ保存でエラー発生</string>
+    <string name="error_saving_smp_servers">パケットルーター保存でエラー発生</string>
     <string name="error_saving_ICE_servers">ICEサーバ保存でエラー発生</string>
     <string name="error_setting_network_config">ネットワーク設定の更新にエラー発生</string>
     <string name="icon_descr_file">ファイル</string>
@@ -147,11 +147,11 @@
     <string name="icon_descr_group_inactive">非アクティブなグループ</string>
     <string name="group_members_can_send_voice">グループのメンバーが音声メッセージを送信できます。</string>
     <string name="group_members_can_delete">送信したメッセージをグループのメンバーが完全削除することができます。（24時間）</string>
-    <string name="group_profile_is_stored_on_members_devices">グループのプロフィールはサーバではなく、メンバーの端末に保存されます。</string>
+    <string name="group_profile_is_stored_on_members_devices">グループのプロフィールはルーターではなく、メンバーの端末に保存されます。</string>
     <string name="snd_group_event_group_profile_updated">グループのプロフィールが更新されました。</string>
     <string name="notification_display_mode_hidden_desc">連絡先とメッセージ内容をプライベートにする。</string>
     <string name="icon_descr_instant_notifications">通知の常時受信</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">パケットルーターのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
@@ -173,7 +173,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing">アドレスを変更しています…</string>
     <string name="chat_database_section">チャットのデータベース</string>
     <string name="chat_is_stopped_indication">チャットが停止してます。</string>
-    <string name="network_disable_socks_info">承諾すると、メッセージのサーバがIPアドレス、ISP、接続サーバを特定できます。</string>
+    <string name="network_disable_socks_info">承諾すると、メッセージのサーバーがIPアドレス、ISP、接続サーバーを特定できます。</string>
     <string name="chat_preferences">チャット設定</string>
     <string name="clear_chat_button">チャットを削除</string>
     <string name="icon_descr_close_button">閉じるボタン</string>
@@ -184,7 +184,7 @@
     <string name="image_will_be_received_when_contact_is_online">連絡先がオンラインになったら受信されます。しばらくお待ちください。</string>
     <string name="v4_4_verify_connection_security_desc">連絡先とセキュリティコードを確認</string>
     <string name="install_simplex_chat_for_terminal">ターミナル版の SimpleX Chat をインストール</string>
-    <string name="v4_3_improved_server_configuration">サーバ設定の向上</string>
+    <string name="v4_3_improved_server_configuration">ルーター設定の向上</string>
     <string name="v4_3_improved_privacy_and_security">プライバシーとセキュリティ強化</string>
     <string name="settings_section_title_incognito">シークレットモード</string>
     <string name="new_in_version">%s の新機能</string>
@@ -244,11 +244,11 @@
     <string name="delete_image">画像を削除</string>
     <string name="group_invitation_item_description">グループへの招待 %1$s</string>
     <string name="invalid_connection_link">無効な繋がりリンク</string>
-    <string name="smp_servers_invalid_address">無効なサーバアドレス</string>
+    <string name="smp_servers_invalid_address">無効なルーターアドレス</string>
     <string name="invalid_message_format">無効なメッセージのフォーマット</string>
     <string name="simplex_link_mode_description">説明</string>
     <string name="alert_title_group_invitation_expired">招待が期限切れました！</string>
-    <string name="smp_servers_delete_server">サーバを削除</string>
+    <string name="smp_servers_delete_server">ルーターを削除</string>
     <string name="auth_device_authentication_is_disabled_turning_off">端末認証がオフです。SimpleXロックを解除します。</string>
     <string name="direct_messages_are_prohibited_in_group">このグループではメンバー間のダイレクトメッセージが無効です。</string>
     <string name="disappearing_messages_are_prohibited">このグループでは消えるメッセージが無効です。</string>
@@ -263,8 +263,8 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">リンクが正しいかどうかご確認ください。または、連絡相手にもう一度リンクをお求めください。</string>
     <string name="network_error_desc">%1$s との接続を確認し、もう一度お試しください。</string>
     <string name="enter_correct_current_passphrase">現在の正しいパスフレーズを入力してください。</string>
-    <string name="smp_servers_preset_server">プレセットサーバ</string>
-    <string name="smp_servers_preset_address">プレセットサーバのアドレス</string>
+    <string name="smp_servers_preset_server">プレセットルーター</string>
+    <string name="smp_servers_preset_address">プレセットルーターのアドレス</string>
     <string name="display_name_connecting">接続待ち…</string>
     <string name="description_via_contact_address_link_incognito">連絡先リンク経由でシークレットモード</string>
     <string name="description_via_one_time_link_incognito">使い捨てリンク経由でシークレットモード</string>
@@ -277,7 +277,7 @@
     <string name="error_deleting_contact">連絡先の削除にエラー発生</string>
     <string name="error_deleting_group">グループ削除にエラー発生</string>
     <string name="error_deleting_pending_contact_connection">接続待ちの連絡先削除にエラー発生</string>
-    <string name="error_smp_test_certificate">サーバアドレスの証明証IDが正しくないかもしれません。</string>
+    <string name="error_smp_test_certificate">ルーターアドレスの証明証IDが正しくないかもしれません。</string>
     <string name="smp_server_test_connect">接続</string>
     <string name="error_deleting_user">ユーザのプロフィール削除にエラー発生</string>
     <string name="periodic_notifications">定期的な通知</string>
@@ -305,9 +305,9 @@
     <string name="paste_button">貼り付け</string>
     <string name="chat_console">チャットのコンソール</string>
     <string name="configure_ICE_servers">ICEサーバを設定</string>
-    <string name="how_to_use_your_servers">自分のサーバの使い方</string>
+    <string name="how_to_use_your_servers">自分のルーターの使い方</string>
     <string name="enter_one_ICE_server_per_line">ICEサーバ (1行に1サーバ)</string>
-    <string name="network_and_servers">ネットワークとサーバ</string>
+    <string name="network_and_servers">ネットワークとルーター</string>
     <string name="network_settings_title">高度な設定</string>
     <string name="delete_address">アドレスを削除</string>
     <string name="exit_without_saving">保存せずに閉じる</string>
@@ -320,7 +320,7 @@
     <string name="callstate_connected">接続中</string>
     <string name="callstatus_connecting">発信中…</string>
     <string name="callstate_ended">終了</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">誰でもサーバーをホストできます。</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">誰でもルーターをホストできます。</string>
     <string name="privacy_redefined">プライバシーを再定義</string>
     <string name="how_it_works">技術の説明</string>
     <string name="make_private_connection">プライベートな接続をする</string>
@@ -430,7 +430,7 @@
     <string name="image_descr_link_preview">リンクプレビュー画像</string>
     <string name="image_descr_profile_image">プロフィール画像</string>
     <string name="markdown_in_messages">メッセージのマークダウン (書式編集)</string>
-    <string name="smp_servers_check_address">サーバのアドレスを確認してから再度試してください。</string>
+    <string name="smp_servers_check_address">ルーターのアドレスを確認してから再度試してください。</string>
     <string name="contribute">貢献する</string>
     <string name="rate_the_app">アプリを評価</string>
     <string name="network_session_mode_user">チャットのプロフィール</string>
@@ -469,7 +469,7 @@
     <string name="failed_to_create_user_title">プロフィール作成にエラー発生</string>
     <string name="failed_to_active_user_title">プロフィール切り替えにエラー発生</string>
     <string name="error_adding_members">メンバー追加にエラー発生</string>
-    <string name="smp_server_test_create_queue">サーバの待ち行列を作成する</string>
+    <string name="smp_server_test_create_queue">ルーターの待ち行列を作成する</string>
     <string name="smp_server_test_delete_queue">未配信のメッセージを削除</string>
     <string name="smp_server_test_disconnect">切断</string>
     <string name="turn_off_battery_optimization"><![CDATA[利用するには次の画面にてSimpleXに対する <b>SimpleX のバックグラウンドでの実行を許可</b> してください。そうしないと通知が無効になります。]]></string>
@@ -516,9 +516,9 @@
     <string name="database_passphrase_and_export">データベースパスフレーズとエクスポート</string>
     <string name="how_to_use_simplex_chat">使い方</string>
     <string name="markdown_help">マークダウン (書式編集) ガイド</string>
-    <string name="smp_servers_enter_manually">サーバを手動で入力</string>
+    <string name="smp_servers_enter_manually">ルーターを手動で入力</string>
     <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。
-\n注意: .onion アドレスがないとサーバーに接続できません。</string>
+\n注意: .onion アドレスがないとルーターに接続できません。</string>
     <string name="create_address">アドレスを作成</string>
     <string name="delete_address__question">アドレスを削除？</string>
     <string name="display_name__field">プロフィール名：</string>
@@ -538,7 +538,7 @@
     <string name="call_connection_peer_to_peer">P2P</string>
     <string name="privacy_and_security">プライバシーとセキュリティ</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">次の場合に起こる場合があります：
-\n① メッセージの有効期限（送信側のクライアントでは2日後、サーバーでは30日後）が切れた
+\n① メッセージの有効期限（送信側のクライアントでは2日後、ルーターでは30日後）が切れた
 \n②あなたや 連絡相手が古いデータベースのバックアップを使用したため、メッセージの復号化に失敗した
 \n③ 接続に問題があった</string>
     <string name="settings_section_title_device">端末</string>
@@ -551,7 +551,7 @@
     <string name="error_deleting_link_for_group">グループリンク削除にエラー発生</string>
     <string name="users_delete_question">チャットのプロフィールを削除しますか？</string>
     <string name="users_delete_data_only">ローカルなプロフィールデータのみ</string>
-    <string name="users_delete_with_connections">プロフィールとサーバ接続</string>
+    <string name="users_delete_with_connections">プロフィールとルーター接続</string>
     <string name="theme_light">ライトテーマ</string>
     <string name="chat_preferences_default">デフォルト (%s)</string>
     <string name="prohibit_sending_disappearing_messages">消えるメッセージを使用禁止にする。</string>
@@ -634,9 +634,9 @@
     <string name="voice_messages">音声メッセージ</string>
     <string name="app_name">SimpleX</string>
     <string name="you_will_join_group">グループメンバー全員と接続する。</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">この連絡先から受信するメッセージのサーバに既に接続してます。</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">この連絡先から受信するメッセージのルーターに既に接続してます。</string>
     <string name="sending_files_not_yet_supported">ファイル送信機能がまだ実装されてません</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">このコンタクトから受信するメッセージのサーバに接続しようとしてます。</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">このコンタクトから受信するメッセージのルーターに接続しようとしてます。</string>
     <string name="unknown_message_format">不明なメッセージ形式</string>
     <string name="sender_you_pronoun">あなた</string>
     <string name="description_via_group_link">グループリンク経由</string>
@@ -652,7 +652,7 @@
     <string name="to_connect_via_link_title">リンク経由で接続</string>
     <string name="security_code">セキュリティコード</string>
     <string name="is_verified">%s は認証済み</string>
-    <string name="smp_servers">SMPサーバ</string>
+    <string name="smp_servers">パケットルーター</string>
     <string name="save_servers_button">保存</string>
     <string name="update_network_session_mode_question">トランスポート隔離モードを更新しますか？</string>
     <string name="save_preferences_question">この設定でよろしいですか？</string>
@@ -671,7 +671,7 @@
     <string name="simplex_link_mode_browser">ブラウザ経由</string>
     <string name="sender_cancelled_file_transfer">ファイル送信が中止されました。</string>
     <string name="sender_may_have_deleted_the_connection_request">送信元が繋がりリクエストを削除したかもしれません。</string>
-    <string name="error_smp_test_server_auth">このサーバで待ち行列を作るには認証が必要です。パスワードをご確認ください。</string>
+    <string name="error_smp_test_server_auth">このルーターで待ち行列を作るには認証が必要です。パスワードをご確認ください。</string>
     <string name="la_notice_title_simplex_lock">SimpleXロック</string>
     <string name="enter_passphrase_notification_desc">通知を受けるには、データベースのパスフレーズを入力してください。</string>
     <string name="simplex_service_notification_title">SimpleX Chat サービス</string>
@@ -711,13 +711,13 @@
     <string name="chat_lock">SimpleXロック</string>
     <string name="is_not_verified">%s は未検証</string>
     <string name="your_settings">あなたの設定</string>
-    <string name="smp_servers_test_server">テストサーバ</string>
-    <string name="smp_servers_save">サーバを保存</string>
-    <string name="smp_servers_test_failed">サーバテスト失敗！</string>
-    <string name="smp_servers_use_server">サーバを使う</string>
-    <string name="smp_servers_your_server">あなたのサーバ</string>
-    <string name="smp_servers_your_server_address">あなたのサーバアドレス</string>
-    <string name="smp_servers_per_user">現在のチャットプロフィールの新しい接続のサーバ</string>
+    <string name="smp_servers_test_server">テストルーター</string>
+    <string name="smp_servers_save">ルーターを保存</string>
+    <string name="smp_servers_test_failed">ルーターテスト失敗！</string>
+    <string name="smp_servers_use_server">ルーターを使う</string>
+    <string name="smp_servers_your_server">あなたのルーター</string>
+    <string name="smp_servers_your_server_address">あなたのルーターアドレス</string>
+    <string name="smp_servers_per_user">現在のチャットプロフィールの新しい接続のルーター</string>
     <string name="smp_servers_use_server_for_new_conn">新しい接続に使う</string>
     <string name="saved_ICE_servers_will_be_removed">保存されたWebRTC ICEサーバが削除されます。</string>
     <string name="your_ICE_servers">あなたのICEサーバ</string>
@@ -730,7 +730,7 @@
     <string name="your_current_profile">現在のプロフィール</string>
     <string name="save_and_notify_contacts">保存して連絡先に公開</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">あなたのプライバシーとセキュリティを守るメッセージとアプリのプラットフォーム</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">連絡先情報と届けたメッセージをサーバに保存することは一切ありません。</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">連絡先情報と届けたメッセージをルーターに保存することは一切ありません。</string>
     <string name="you_control_your_chat">あなたのチャットはあなたが決めます！</string>
     <string name="your_profile_is_stored_on_your_device">あなたのプロフィール、連絡先、送信したメッセージがご自分の端末に保存されます。</string>
     <string name="profile_is_only_shared_with_your_contacts">プロフィールは連絡先にしか共有されません。</string>
@@ -772,12 +772,12 @@
     <string name="snd_group_event_member_deleted">除名しました： %1$s</string>
     <string name="switch_verb">切り替える</string>
     <string name="member_role_will_be_changed_with_notification">役割が「%s」となります。グループの全員に通知が出ます。</string>
-    <string name="conn_stats_section_title_servers">サーバ</string>
+    <string name="conn_stats_section_title_servers">ルーター</string>
     <string name="member_role_will_be_changed_with_invitation">役割が「%s」となります。メンバーに新しい招待が届きます。</string>
     <string name="group_is_decentralized">非中央集権型で、メンバーのみ閲覧可能。</string>
     <string name="network_options_save">保存</string>
     <string name="update_network_settings_question">ネットワーク設定を更新しますか？</string>
-    <string name="updating_settings_will_reconnect_client_to_all_servers">設定を更新すると、全サーバにクライントの再接続が行われます。</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">設定を更新すると、全ルーターにクライントの再接続が行われます。</string>
     <string name="chat_preferences_you_allow">あなたが次を許可しています：</string>
     <string name="chat_preferences_yes">オン</string>
     <string name="set_group_preferences">グループ設定を行う</string>
@@ -808,7 +808,7 @@
     <string name="this_string_is_not_a_connection_link">このストリングは接続リンクではありません！</string>
     <string name="chat_with_the_founder">質問やアイデアを送る</string>
     <string name="star_on_github">GithubでStar</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 SimpleXのサーバには開示されません。</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 SimpleXのルーターには開示されません。</string>
     <string name="your_calls">あなたの通話</string>
     <string name="integrity_msg_skipped">%1$dスキップしたメッセージ</string>
     <string name="send_link_previews">リンクのプレビューを送信</string>
@@ -850,10 +850,10 @@
     <string name="contact_wants_to_connect_with_you">あなたと接続を希望しています！</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[リンクをクリックすることでも接続できます。ブラウザが起動すれば <b>Open in mobile app (アプリで開く)</b>ボタンをクリックしてください。]]></string>
     <string name="your_chat_profiles">チャットプロフィール</string>
-    <string name="smp_servers_scan_qr">サーバのQRコードを読み込む</string>
-    <string name="smp_servers_test_some_failed">テストに失敗したサーバがあります：</string>
-    <string name="use_simplex_chat_servers__question">SimpleX Chatサーバを使いますか？</string>
-    <string name="using_simplex_chat_servers">SimpleX Chatサーバを使用中。</string>
+    <string name="smp_servers_scan_qr">ルーターのQRコードを読み込む</string>
+    <string name="smp_servers_test_some_failed">テストに失敗したルーターがあります：</string>
+    <string name="use_simplex_chat_servers__question">SimpleX Chatルーターを使いますか？</string>
+    <string name="using_simplex_chat_servers">SimpleX Chatルーターを使用中。</string>
     <string name="share_link">リンクを送る</string>
     <string name="core_simplexmq_version">simplexmq: バージョン%s (%2s)</string>
     <string name="callstate_waiting_for_answer">応答を待機中…</string>
@@ -882,12 +882,12 @@
     <string name="share_image">メディア共有…</string>
     <string name="simplex_link_mode">SimpleXリンク</string>
     <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
-    <string name="smp_servers_test_servers">テストサーバ</string>
-    <string name="switch_receiving_address_desc">受信アドレスは別のサーバーに変更されます。アドレス変更は送信者がオンラインになった後に完了します。</string>
+    <string name="smp_servers_test_servers">テストルーター</string>
+    <string name="switch_receiving_address_desc">受信アドレスは別のルーターに変更されます。アドレス変更は送信者がオンラインになった後に完了します。</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
     <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに公開されます。</string>
     <string name="to_verify_compare">エンドツーエンド暗号化を確認するには、ご自分の端末と連絡先の端末のコードを比べます (スキャンします)。</string>
-    <string name="error_connecting_to_server_to_receive_messages">このコンタクトから受信するメッセージのサーバに接続しようとしてます。(エラー： %1$s)。</string>
+    <string name="error_connecting_to_server_to_receive_messages">このコンタクトから受信するメッセージのルーターに接続しようとしてます。(エラー： %1$s)。</string>
     <string name="connection_error_auth_desc">使用済みリンク、または連絡先による接続の削除ではなければ、バッグの可能性があります。開発者にお伝えください。
 \n繋がるには、連絡先に新しくリンクを発行してもらって、電波が安定かどうかご確認ください。</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">接続を完了するには、連絡相手がオンラインになる必要があります。
@@ -901,7 +901,7 @@
     <string name="alert_title_cant_invite_contacts_descr">シークレットモードのプロフィールでこのグループに参加しています。メインのプロフィールを守るために、招待することができません。</string>
     <string name="description_you_shared_one_time_link">使い捨てリンクを送りました</string>
     <string name="profile_will_be_sent_to_contact_sending_link">リンクを送ってくれた連絡先にあなたのプロフィールを送ります。</string>
-    <string name="your_SMP_servers">あなたのSMPサーバ</string>
+    <string name="your_SMP_servers">あなたのパケットルーター</string>
     <string name="your_simplex_contact_address">あなたのSimpleXアドレス</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">連絡先が繋がりリクエストを承認したら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="switch_receiving_address">受信アドレスを変える</string>
@@ -917,7 +917,7 @@
     <string name="select_contacts">連絡先を選択</string>
     <string name="skip_inviting_button">今はメンバーを招待しません</string>
     <string name="group_info_section_title_num_members">%1$sメンバー</string>
-    <string name="xftp_servers">XFTPサーバ</string>
+    <string name="xftp_servers">データルーター</string>
     <string name="save_welcome_message_question">ウェルカムメッセージを保存しますか？</string>
     <string name="dont_show_again">次から表示しない</string>
     <string name="la_change_app_passcode">パスコードを変更</string>
@@ -948,7 +948,7 @@
     <string name="confirm_passcode">パスコードを確認</string>
     <string name="la_mode_passcode">パスコード</string>
     <string name="group_welcome_preview">プレビュー</string>
-    <string name="smp_save_servers_question">サーバを保存しますか？</string>
+    <string name="smp_save_servers_question">ルーターを保存しますか？</string>
     <string name="incompatible_database_version">データベースのバージョンと互換性がない</string>
     <string name="database_downgrade">データーベースダウングレード</string>
     <string name="scan_qr_to_connect_to_contact">接続するにはQRコードを読み込むか、アプリ内のリンクを使用する必要があります。</string>
@@ -965,7 +965,7 @@
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
     <string name="feature_received_prohibited">受信拒絶</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">データルーターのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
     <string name="smp_server_test_delete_file">ファイルの削除</string>
     <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
     <string name="waiting_for_video">ビデオを待機中</string>
@@ -977,7 +977,7 @@
     <string name="gallery_video_button">ビデオ</string>
     <string name="above_then_preposition_continuation">← から：</string>
     <string name="network_socks_proxy_settings">SOCKSプロキシー設定</string>
-    <string name="your_XFTP_servers">あなたのXFTPサーバ</string>
+    <string name="your_XFTP_servers">あなたのデータルーター</string>
     <string name="add_address_to_your_profile">プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。</string>
     <string name="auto_accept_contact">自動承認</string>
     <string name="enable_lock">ロックモード</string>
@@ -1007,7 +1007,7 @@
     <string name="only_your_contact_can_make_calls">連絡先からのみ通話ができます。</string>
     <string name="both_you_and_your_contact_can_make_calls">あなたからも連絡先からも通話ができます。</string>
     <string name="language_system">システム</string>
-    <string name="error_saving_xftp_servers">XFTP サーバーの保存中にエラーが発生しました</string>
+    <string name="error_saving_xftp_servers">データルーターの保存中にエラーが発生しました</string>
     <string name="smp_server_test_create_file">ファイルを作成</string>
     <string name="moderate_message_will_be_deleted_warning">メッセージはすべてのメンバーに対して削除されます。</string>
     <string name="la_could_not_be_verified">確認できませんでした。 もう一度お試しください。</string>
@@ -1043,11 +1043,11 @@
     <string name="v5_0_large_files_support">1GBまでのビデオとファイル</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d メッセージの復号化に失敗しました。</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d メッセージをスキップしました</string>
-    <string name="error_loading_smp_servers">SMPサーバーのロード中にエラーが発生しました</string>
+    <string name="error_loading_smp_servers">パケットルーターのロード中にエラーが発生しました</string>
     <string name="error_saving_user_password">ユーザーパスワードの保存中にエラー発生</string>
-    <string name="error_loading_xftp_servers">XFTPサーバーのロード中にエラーが発生しました</string>
+    <string name="error_loading_xftp_servers">データルーターのロード中にエラーが発生しました</string>
     <string name="export_theme">テーマのエクスポート</string>
-    <string name="revoke_file__message">ファイルはサーバーから削除されます。</string>
+    <string name="revoke_file__message">ファイルはルーターから削除されます。</string>
     <string name="if_you_cant_meet_in_person">直接会えない場合は、ビデオ通話で QR コードを表示するか、リンクを共有してください。</string>
     <string name="v4_6_reduced_battery_usage">バッテリー使用量をさらに削減</string>
     <string name="la_no_app_password">アプリのパスコードがありません</string>
@@ -1103,7 +1103,7 @@
     <string name="feature_offered_item">%s を提供しました</string>
     <string name="callstate_received_confirmation">確認を受け取りました…</string>
     <string name="feature_offered_item_with_param">提供された %s: %2s</string>
-    <string name="error_xftp_test_server_auth">アップロードにはサーバーの認証が必要です。パスワードを確認してください</string>
+    <string name="error_xftp_test_server_auth">アップロードにはルーターの認証が必要です。パスワードを確認してください</string>
     <string name="moderate_verb">検閲</string>
     <string name="icon_descr_video_asked_to_receive">ビデオの受信を要求されました</string>
     <string name="moderated_item_description">%sにより検閲</string>
@@ -1752,7 +1752,7 @@
     <string name="settings_section_title_profile_images">プロフィール画像</string>
     <string name="v5_7_shape_profile_images_descr">正方形、円形またはその中間</string>
     <string name="v5_7_shape_profile_images">プロフィール画像をシェイプ</string>
-    <string name="snd_error_relay">宛先サーバエラー： %1$s</string>
+    <string name="snd_error_relay">宛先ルーターエラー： %1$s</string>
     <string name="ci_status_other_error">エラー： %1$s</string>
     <string name="network_smp_proxy_mode_private_routing">プライベートルーティング</string>
     <string name="network_smp_proxy_mode_unknown">不明なリレー</string>
@@ -1781,7 +1781,7 @@
     <string name="settings_section_title_chat_colors">チャットカラー</string>
     <string name="settings_section_title_chat_theme">チャットテーマ</string>
     <string name="file_error">ファイルエラー</string>
-    <string name="file_error_relay">ファイルサーバーエラー: %1$s</string>
+    <string name="file_error_relay">ファイルルーターエラー: %1$s</string>
     <string name="info_row_file_status">ファイルステータス</string>
     <string name="share_text_file_status">ファイルステータス： %s</string>
     <string name="v5_8_persian_ui">ペルシャ語UI</string>
@@ -1805,16 +1805,16 @@
     <string name="chat_theme_reset_to_user_theme">ユーザーテーマをリセット</string>
     <string name="chat_theme_set_default_theme">デフォルトのテーマを設定</string>
     <string name="v5_8_private_routing">プライベートメッセージルーティング 🚀</string>
-    <string name="v5_8_safe_files_descr">不明なサーバーからのファイルを確認できます</string>
+    <string name="v5_8_safe_files_descr">不明なルーターからのファイルを確認できます</string>
     <string name="v5_8_message_delivery_descr">バッテリーの使用量が減少しました</string>
     <string name="v5_8_message_delivery">メッセージ配信の改善</string>
-    <string name="file_not_approved_title">不明なサーバーです！</string>
+    <string name="file_not_approved_title">不明なルーターです！</string>
     <string name="network_smp_proxy_mode_never_description">プライベートルーティングを使用しない</string>
     <string name="protect_ip_address">IPアドレス保護</string>
     <string name="copy_error">コピーエラー</string>
     <string name="v5_8_chat_themes">新しいチャットテーマ</string>
     <string name="v5_8_private_routing_descr">連絡先が選択したメッセージリレーからあなたのIPアドレスを保護します。
-\n*ネットワークとサーバー*設定から有効にして下さい。</string>
+\n*ネットワークとルーター*設定から有効にして下さい。</string>
     <string name="network_smp_proxy_fallback_prohibit">いいえ</string>
     <string name="network_smp_proxy_fallback_allow">はい</string>
     <string name="update_network_smp_proxy_mode_question">メッセージルーティングモード</string>
@@ -1823,13 +1823,13 @@
     <string name="app_check_for_updates_notice_title">アップデートを確認</string>
     <string name="app_check_for_updates">アップデートを確認</string>
     <string name="completed">完了</string>
-    <string name="smp_servers_configured">SMPサーバーの構成</string>
+    <string name="smp_servers_configured">パケットルーターの構成</string>
     <string name="servers_info_sessions_connected">接続中</string>
-    <string name="xftp_servers_configured">XFTPサーバーの構成</string>
+    <string name="xftp_servers_configured">データルーターの構成</string>
     <string name="one_hand_ui_card_title">チャットリスト表示切り替え</string>
     <string name="contact_list_header_title">連絡先</string>
-    <string name="message_servers">メッセージサーバ</string>
-    <string name="media_and_file_servers">メディア&amp;ファイルサーバ</string>
+    <string name="message_servers">メッセージルーター</string>
+    <string name="media_and_file_servers">メディア&amp;ファイルルーター</string>
     <string name="one_hand_ui">チャットツールバーを近づける</string>
     <string name="invite_friends_short">招待</string>
     <string name="create_address_button">作成</string>
@@ -1859,9 +1859,9 @@
     <string name="cant_call_contact_deleted_alert_text">連絡先が削除されました。</string>
     <string name="member_info_member_disabled">無効</string>
     <string name="v6_0_delete_many_messages_descr">一度に最大20件のメッセージを削除できます。</string>
-    <string name="servers_info_connected_servers_section_header">接続中のサーバ</string>
+    <string name="servers_info_connected_servers_section_header">接続中のルーター</string>
     <string name="servers_info_modal_error_title">エラー</string>
-    <string name="servers_info_reconnect_server_error">サーバーへの再接続エラー</string>
+    <string name="servers_info_reconnect_server_error">ルーターへの再接続エラー</string>
     <string name="servers_info_sessions_errors">エラー</string>
     <string name="servers_info_files_tab">ファイル</string>
     <string name="decryption_errors">復号化エラー</string>
@@ -1870,7 +1870,7 @@
     <string name="expired_label">期限切れ</string>
     <string name="servers_info_detailed_statistics">統計の詳細</string>
     <string name="network_proxy_auth_mode_no_auth">プロキシで認証情報を使用しないでください。</string>
-    <string name="servers_info_reconnect_servers_error">サーバーへの再接続エラー</string>
+    <string name="servers_info_reconnect_servers_error">ルーターへの再接続エラー</string>
     <string name="servers_info_reset_stats_alert_error_title">統計のリセットエラー</string>
     <string name="cannot_share_message_alert_title">メッセージを送信することができません</string>
     <string name="cant_call_contact_alert_title">連絡先と通話することができません</string>
@@ -1882,7 +1882,7 @@
     <string name="privacy_media_blur_radius_medium">普通</string>
     <string name="subscription_percentage">パーセンテージを表示</string>
     <string name="one_hand_ui_change_instruction">これは見た目の設定から変更できます。</string>
-    <string name="servers_info_previously_connected_servers_section_header">以前接続していたサーバ</string>
+    <string name="servers_info_previously_connected_servers_section_header">以前接続していたルーター</string>
     <string name="servers_info_subscriptions_connections_subscribed">アクティブな接続</string>
     <string name="servers_info_statistics_section_header">統計情報</string>
     <string name="deleted_chats">アーカイブされた連絡先</string>
@@ -1891,10 +1891,10 @@
     <string name="servers_info_reset_stats_alert_title">全ての統計情報をリセットしますか？</string>
     <string name="servers_info_subscriptions_total">合計</string>
     <string name="settings_message_shape_tail">しっぽ</string>
-    <string name="servers_info">サーバ情報</string>
+    <string name="servers_info">ルーター情報</string>
     <string name="servers_info_private_data_disclaimer">%sから計測されています。\nデバイス上の全てのデータはプライベートです。</string>
     <string name="servers_info_messages_received">受信したメッセージ数</string>
-    <string name="servers_info_reset_stats_alert_message">サーバの統計情報をリセットしようとしています - これは元に戻せません！</string>
+    <string name="servers_info_reset_stats_alert_message">ルーターの統計情報をリセットしようとしています - これは元に戻せません！</string>
     <string name="servers_info_reset_stats">全統計情報をリセットする</string>
     <string name="reset_all_hints">ヒントをリセットする</string>
     <string name="snd_error_quota">容量を超えました - 受信者は以前に送信されたメッセージを受け取っていません。</string>
@@ -1920,16 +1920,16 @@
     <string name="app_check_for_updates_button_download">%s（%s）をダウンロード</string>
     <string name="cant_send_message_to_member_alert_title">グループメンバーにメッセージを送信できません。</string>
     <string name="v6_0_your_contacts_descr">後でチャットするために連絡先をアーカイブします。</string>
-    <string name="v6_0_connection_servers_status_descr">接続とサーバーのステータス</string>
+    <string name="v6_0_connection_servers_status_descr">接続とルーターのステータス</string>
     <string name="call_desktop_permission_denied_chrome">アドレスフィールドの近くにある情報ボタンをクリックして、マイクの使用を許可してください。</string>
     <string name="connections">接続</string>
     <string name="v6_1_customizable_message_descr">カスタマイズ可能なメッセージの形。</string>
     <string name="network_smp_proxy_fallback_prohibit_description">プライベートルーティングをサポートしていなくても、メッセージを直接送信しないでください。</string>
-    <string name="smp_proxy_error_connecting">転送サーバー%1$sへの接続エラーです。後ほど再試行してください。</string>
+    <string name="smp_proxy_error_connecting">転送ルーター%1$sへの接続エラーです。後ほど再試行してください。</string>
     <string name="error_initializing_web_view_wrong_arch">WebViewの初期化エラーです。WebViewがインストールされており、サポートされているアーキテクチャがarm64であることを確認してください。\nエラー：%s</string>
     <string name="error_initializing_web_view">WebViewの初期化エラーです。システムを新しいバージョンに更新してください。開発者にお問い合わせください。\nエラー：%s</string>
-    <string name="proxy_destination_error_broker_host">%1$sの宛先サーバーアドレスは、転送サーバー%2$sの設定と互換性がありません。</string>
-    <string name="proxy_destination_error_broker_version">%1$sの宛先サーバーバージョンは、転送サーバー%2$sと互換性がありません。</string>
+    <string name="proxy_destination_error_broker_host">%1$sの宛先ルーターアドレスは、転送ルーター%2$sの設定と互換性がありません。</string>
+    <string name="proxy_destination_error_broker_version">%1$sの宛先ルーターバージョンは、転送ルーター%2$sと互換性がありません。</string>
     <string name="delete_without_notification">通知なしで削除</string>
     <string name="chunks_deleted">チャンクが削除されました</string>
     <string name="chat_theme_apply_to_all_modes">すべてのカラーモード</string>
@@ -1960,20 +1960,20 @@
     <string name="network_proxy_password">パスワード</string>
     <string name="toolbar_settings">設定</string>
     <string name="servers_info_missing">情報がありません、リロードしてください</string>
-    <string name="smp_server">SMPサーバ</string>
+    <string name="smp_server">パケットルーター</string>
     <string name="info_view_message_button">メッセージ</string>
     <string name="operator_website">ウェブサイト</string>
     <string name="info_view_video_button">ビデオ</string>
-    <string name="onboarding_network_operators_configure_via_settings">設定画面からサーバを構成できます。</string>
+    <string name="onboarding_network_operators_configure_via_settings">設定画面からルーターを構成できます。</string>
     <string name="operator_open_changes">改定履歴を開く</string>
     <string name="delete_chat_list_warning">全てのチャットが %s から削除され、リスト自体も削除されます</string>
     <string name="appearance_app_toolbars">アプリのツールバー</string>
     <string name="debug_logs">ログを有効化</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">メッセージ受信を10分毎に確認します</string>
     <string name="onboarding_notifications_mode_service_desc_short">バックグラウンドでアプリが常時動作します</string>
-    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX ChatとFluxは、Fluxが運営するサーバをアプリに組み込むことに合意しました。</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX ChatとFluxは、Fluxが運営するルーターをアプリに組み込むことに合意しました。</string>
     <string name="operator_review_conditions">利用条件をレビュー</string>
-    <string name="network_preset_servers_title">プリセットサーバ</string>
+    <string name="network_preset_servers_title">プリセットルーター</string>
     <string name="operator_conditions_accepted">利用条件を承諾</string>
     <string name="appearance_in_app_bars_alpha">透過度</string>
     <string name="operators_conditions_accepted_for"><![CDATA[オペレータ <b>%s</b> の利用条件が受け入れられます。]]></string>
@@ -1987,7 +1987,7 @@
     <string name="operator_conditions_of_use">利用条件</string>
     <string name="onboarding_network_operators_continue">続ける</string>
     <string name="create_list">リストを作成</string>
-    <string name="onboarding_choose_server_operators">サーバオペレータ</string>
+    <string name="onboarding_choose_server_operators">ルーターオペレータ</string>
     <string name="operator_open_conditions">利用条件を開く</string>
     <string name="onboarding_notifications_mode_off_desc_short">バックグラウンドサービスを使用しません</string>
     <string name="accept_conditions">利用条件の承諾</string>
@@ -2001,7 +2001,7 @@
     <string name="add_to_list">リストに追加</string>
     <string name="address_settings">アドレス設定</string>
     <string name="add_your_team_members_to_conversations">チームのメンバーを会話に追加する</string>
-    <string name="operator_added_message_servers">追加されたメッセージサーバー</string>
+    <string name="operator_added_message_servers">追加されたメッセージルーター</string>
     <string name="address_or_1_time_link">アドレスか使い捨てのリンク?</string>
     <string name="button_add_friends">友達を追加</string>
     <string name="button_add_team_members">チームメンバーを追加</string>
@@ -2014,9 +2014,9 @@
     <string name="v6_3_better_privacy_and_security">プライバシーとセキュリティの向上</string>
     <string name="accept_pending_member_button">承諾</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">プライバシーポリシーと利用条件</string>
-    <string name="onboarding_conditions_configure_server_operators">サーバオペレータの設定</string>
+    <string name="onboarding_conditions_configure_server_operators">ルーターオペレータの設定</string>
     <string name="onboarding_conditions_accept">承諾</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">サーバオペレータは、プライベートチャット・グループ・連絡先にはアクセスできません。</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">ルーターオペレータは、プライベートチャット・グループ・連絡先にはアクセスできません。</string>
     <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat を利用することで、以下の事項に同意したものと見なされます：\n- パブリックグループでは合法なコンテンツのみを送信すること。\n- 他のユーザを尊重すること、またスパムメッセージを送信しないこと。</string>
     <string name="connect_plan_open_chat">チャットを開く</string>
     <string name="connect_plan_open_new_chat">新しいチャットを開始</string>
@@ -2036,15 +2036,15 @@
     <string name="report_reason_community">コミュニティガイドライン違反</string>
     <string name="report_reason_profile">不適切なプロフィール</string>
     <string name="report_reason_other">他の理由</string>
-    <string name="failed_to_save_servers">サーバーの保存中にエラーが発生しました</string>
-    <string name="no_message_servers_configured">メッセージサーバーがありません</string>
-    <string name="no_message_servers_configured_for_receiving">メッセージを受信するサーバーがありません</string>
-    <string name="no_message_servers_configured_for_private_routing">プライベートメッセージルーティング用のサーバーがありません。</string>
-    <string name="no_media_servers_configured">メディアおよびファイルサーバーは存在しません。</string>
-    <string name="no_media_servers_configured_for_sending">ファイルを送信するサーバーがありません。</string>
+    <string name="failed_to_save_servers">ルーターの保存中にエラーが発生しました</string>
+    <string name="no_message_servers_configured">メッセージルーターがありません</string>
+    <string name="no_message_servers_configured_for_receiving">メッセージを受信するルーターがありません</string>
+    <string name="no_message_servers_configured_for_private_routing">プライベートメッセージルーティング用のルーターがありません。</string>
+    <string name="no_media_servers_configured">メディアおよびファイルルーターは存在しません。</string>
+    <string name="no_media_servers_configured_for_sending">ファイルを送信するルーターがありません。</string>
     <string name="for_social_media">ソーシャルメディア向け</string>
-    <string name="operator_use_operator_toggle_description">サーバを利用する</string>
-    <string name="your_servers">あなたのサーバ</string>
+    <string name="operator_use_operator_toggle_description">ルーターを利用する</string>
+    <string name="your_servers">あなたのルーター</string>
     <string name="content_filter_videos">ビデオ</string>
     <string name="content_filter_files">ファイル</string>
     <string name="content_filter_images">画像</string>

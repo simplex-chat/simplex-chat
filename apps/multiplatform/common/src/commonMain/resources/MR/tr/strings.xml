@@ -18,7 +18,7 @@
     <string name="connect_via_link">Bağlantı ile bağlan</string>
     <string name="your_chat_profiles">Sohbet profillerin</string>
     <string name="chat_preferences">Konuşma tercihleri</string>
-    <string name="network_and_servers">Ağ ve sunucular</string>
+    <string name="network_and_servers">Ağ ve yönlendiriciler</string>
     <string name="appearance_settings">Görünüm</string>
     <string name="your_settings">Ayarlarınız</string>
     <string name="mute_chat">Sessize al</string>
@@ -38,7 +38,7 @@
     <string name="abort_switch_receiving_address_desc">Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</string>
     <string name="send_disappearing_message_1_minute">1 dakika</string>
     <string name="clear_chat_warning">Tüm mesajlar silinecektir. Bu, geri alınamaz! Mesajlar, YALNIZCA senin için silinecektir.</string>
-    <string name="smp_servers_add">Sunucu ekle</string>
+    <string name="smp_servers_add">Yönlendirici ekle</string>
     <string name="database_passphrase_and_export">Veri tabanı ayarları</string>
     <string name="one_time_link_short">tek kullanımlık bağlantı</string>
     <string name="network_settings">Gelişmiş ağ ayarları</string>
@@ -60,7 +60,7 @@
     <string name="color_primary">Ana renk</string>
     <string name="chat_preferences_always">her zaman</string>
     <string name="allow_message_reactions">Mesaj tepkilerine izin ver.</string>
-    <string name="v4_3_improved_server_configuration_desc">Karekodu okutarak sunucular ekle.</string>
+    <string name="v4_3_improved_server_configuration_desc">Karekodu okutarak yönlendiriciler ekle.</string>
     <string name="v4_6_audio_video_calls">Sesli ve görüntülü aramalar</string>
     <string name="chat_item_ttl_day">1 gün</string>
     <string name="chat_item_ttl_month">1 ay</string>
@@ -80,9 +80,9 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(kodu okut ya da panodan yapıştır)</string>
     <string name="scan_QR_code">Karekodu okut</string>
     <string name="simplex_address">SimpleX adresi</string>
-    <string name="smp_servers_save">Sunucuları kaydet</string>
+    <string name="smp_servers_save">Yönlendiricileri kaydet</string>
     <string name="scan_code">Kodu okut</string>
-    <string name="smp_servers_scan_qr">Sunucunun karekodunu okut</string>
+    <string name="smp_servers_scan_qr">Yönlendiricinin karekodunu okut</string>
     <string name="scan_code_from_contacts_app">Konuştuğunuz kişinin uygulamasından güvenlik kodunu okut.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICE sunucu adreslerinin doğru formatta olduğundan emin olun: Satırlara ayrılmış ve yinelenmemiş şekilde.</string>
     <string name="save_servers_button">Kaydet</string>
@@ -126,12 +126,12 @@
     <string name="reset_color">Renkleri sıfırla</string>
     <string name="color_secondary">İkincil renk</string>
     <string name="audio_video_calls">Sesli/görüntülü aramalar</string>
-    <string name="v4_3_improved_server_configuration">Geliştirilmiş sunucu yapılandırması</string>
+    <string name="v4_3_improved_server_configuration">Geliştirilmiş yönlendirici yapılandırması</string>
     <string name="v4_3_improved_privacy_and_security">Geliştirilmiş gizlilik ve güvenlik</string>
     <string name="custom_time_unit_seconds">saniye</string>
     <string name="save_verb">Kaydet</string>
     <string name="saved_ICE_servers_will_be_removed">Kaydedilen WebRTC ICE sunucuları kaldırılacaktır.</string>
-    <string name="smp_save_servers_question">Sunucular kaydedilsin mi?</string>
+    <string name="smp_save_servers_question">Yönlendiriciler kaydedilsin mi?</string>
     <string name="save_passphrase_and_open_chat">Parolayı kaydet ve konuşmayı aç</string>
     <string name="save_and_notify_contact">Kaydet ve kişiyi bilgilendir</string>
     <string name="save_passphrase_in_keychain">Parolayı, Keystore\'a kaydet.</string>
@@ -215,7 +215,7 @@
     <string name="reject_contact_button">Geri çevir</string>
     <string name="connection_request_sent">Bağlantı isteği gönderildi!</string>
     <string name="connect_button">Bağlan</string>
-    <string name="smp_servers_check_address">Sunucu adresini denetle ve yeniden dene.</string>
+    <string name="smp_servers_check_address">Yönlendirici adresini denetle ve yeniden dene.</string>
     <string name="network_session_mode_entity">Bağlantı</string>
     <string name="network_session_mode_user">Konuşma profili</string>
     <string name="create_address">Adres oluştur</string>
@@ -313,10 +313,10 @@
     <string name="description_via_contact_address_link">kişi adres bağlantısı ile</string>
     <string name="simplex_link_contact">SimpleX bağlantı adresi</string>
     <string name="simplex_link_mode_browser_warning">Bağlantıyı tarayıcıda açmak, bağlantı gizliliğini ve güvenliğini azaltabilir. Güvenilmeyen SimpleX bağlantıları kırmızı olacaktır.</string>
-    <string name="error_saving_smp_servers">SMP sunucuları kaydedilirken hata oluştu</string>
-    <string name="error_saving_xftp_servers">XFTP sunucuları kaydedilirken hata oluştu</string>
-    <string name="error_loading_smp_servers">SMP sunucuları yüklenirken hata oluştu</string>
-    <string name="error_loading_xftp_servers">XFTP sunucuları yüklenirken hata oluştu</string>
+    <string name="error_saving_smp_servers">Paket yönlendiricileri kaydedilirken hata oluştu</string>
+    <string name="error_saving_xftp_servers">Veri yönlendiricileri kaydedilirken hata oluştu</string>
+    <string name="error_loading_smp_servers">Paket yönlendiricileri yüklenirken hata oluştu</string>
+    <string name="error_loading_xftp_servers">Veri yönlendiricileri yüklenirken hata oluştu</string>
     <string name="error_setting_network_config">Bağlantı yapılandırması güncellenirken hata</string>
     <string name="failed_to_parse_chat_title">Konuşma yüklenemedi</string>
     <string name="failed_to_parse_chats_title">Konuşmalar yüklenemedi</string>
@@ -388,7 +388,7 @@
     <string name="delete_group_menu_action">Sil</string>
     <string name="image_descr_qr_code">Karekod</string>
     <string name="scan_qr_to_connect_to_contact">Konuştuğun kişi, bağlanmak için karakodu okutabilir ya da uygulamadaki bağlantıyı kullanabilir.</string>
-    <string name="smp_servers_delete_server">Sunucuyu sil</string>
+    <string name="smp_servers_delete_server">Yönlendiriciyi sil</string>
     <string name="contribute">Katkıda bulun</string>
     <string name="network_use_onion_hosts_no">Hayır</string>
     <string name="customize_theme_title">Renk temalarını kişiselleştir</string>
@@ -538,7 +538,7 @@
     <string name="dont_enable_receipts">Etkinleştirme</string>
     <string name="enable_receipts_all">Etkinleştir</string>
     <string name="error_saving_file">Dosya kaydedilirken hata oluştu</string>
-    <string name="smp_servers_enter_manually">Sunucuyu elle gir</string>
+    <string name="smp_servers_enter_manually">Yönlendiriciyi elle gir</string>
     <string name="callstate_ended">bitti</string>
     <string name="snd_conn_event_ratchet_sync_allowed">%s üyesi için şifrelemenin yeniden anlaşmasını izin verildi</string>
     <string name="snd_conn_event_ratchet_sync_required">%s üyesi için şifrelemenin yeniden anlaşması gerekiyor</string>
@@ -574,7 +574,7 @@
     <string name="icon_descr_help">yardım</string>
     <string name="how_to_use_simplex_chat">Nasıl kullanılır</string>
     <string name="incorrect_code">Yanlış güvenlik kodu!</string>
-    <string name="how_to_use_your_servers">Sunucuların nasıl kullanılır</string>
+    <string name="how_to_use_your_servers">Yönlendiricilerin nasıl kullanılır</string>
     <string name="enter_one_ICE_server_per_line">ICE sunucuları (her satır başı bir tane)</string>
     <string name="host_verb">Ana bilgisayar</string>
     <string name="hide_dev_options">Gizle:</string>
@@ -601,12 +601,12 @@
     <string name="error_updating_user_privacy">Kullanıcı gizliliği güncellenirken hata oluştu</string>
     <string name="favorite_chat">Gözde</string>
     <string name="settings_section_title_experimenta">DENEYSEL</string>
-    <string name="revoke_file__message">Dosya, sunuculardan silinecektir.</string>
+    <string name="revoke_file__message">Dosya, yönlendiricilerden silinecektir.</string>
     <string name="v5_2_fix_encryption_descr">Yedekleri geri yükledikten sonra şifrelemeyi onar.</string>
     <string name="v4_4_french_interface">Fransız arayüzü</string>
     <string name="v4_6_reduced_battery_usage">Daha da azaltılmış pil kullanımı</string>
     <string name="group_members_can_add_message_reactions">Üyeler, mesajlara tepki ekleyebilir.</string>
-    <string name="group_profile_is_stored_on_members_devices">Grup profili, üyelerinin aygıtlarında barındırılmaktadır, sunucularda değil.</string>
+    <string name="group_profile_is_stored_on_members_devices">Grup profili, üyelerinin aygıtlarında barındırılmaktadır, yönlendiricilerde değil.</string>
     <string name="hide_verb">Gizle</string>
     <string name="user_hide">Gizle</string>
     <string name="notification_display_mode_hidden_desc">Konuşulan kişileri ve mesajları gizle</string>
@@ -676,7 +676,7 @@
     <string name="you_can_accept_or_reject_connection">İnsanlar bağlantı talebinde bulunduğunda, kabul edebilir veya reddedebilirsiniz.</string>
     <string name="network_use_onion_hosts_prefer">Mevcut olduğunda</string>
     <string name="auto_accept_contact">Otomatik kabul etme</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Kişilerinizin veya mesajlarınızın hiçbirini (teslim edildikten sonra) sunucularda saklamıyoruz.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">Kişilerinizin veya mesajlarınızın hiçbirini (teslim edildikten sonra) yönlendiricilerde saklamıyoruz.</string>
     <string name="callstate_waiting_for_answer">yanıt bekleniyor…</string>
     <string name="callstate_waiting_for_confirmation">onay bekleniyor…</string>
     <string name="onboarding_notifications_mode_off">Uygulama çalışıyorken</string>
@@ -712,7 +712,7 @@
     <string name="group_preview_join_as">%s olarak katılın</string>
     <string name="invalid_contact_link">Geçersiz link!</string>
     <string name="invalid_QR_code">Geçersiz QR kodu</string>
-    <string name="smp_servers_invalid_address">Geçersiz sunucu adresi!</string>
+    <string name="smp_servers_invalid_address">Geçersiz yönlendirici adresi!</string>
     <string name="install_simplex_chat_for_terminal">Terminal için SimpleX Chat\'i yükleyin</string>
     <string name="icon_descr_call_connecting">Aramaya bağlanılıyor</string>
     <string name="integrity_msg_bad_hash">kötü mesaj hash\'i</string>
@@ -781,13 +781,13 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Kişinizin cihazı çevrimiçi olduğunda bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="learn_more">Daha fazla bilgi edinin</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Eğer sonradan bağlantınızı silseniz bile kişilerinizi kaybetmeyeceksiniz.</string>
-    <string name="smp_servers_your_server">Sunucunuz</string>
-    <string name="smp_servers_your_server_address">Sunucu adresiniz</string>
-    <string name="your_SMP_servers">SMP sunucularınız</string>
-    <string name="your_XFTP_servers">XFTP sunucularınız</string>
+    <string name="smp_servers_your_server">Yönlendiriciniz</string>
+    <string name="smp_servers_your_server_address">Yönlendirici adresiniz</string>
+    <string name="your_SMP_servers">paket yönlendiricilerinizi</string>
+    <string name="your_XFTP_servers">veri yönlendiricilerinizi</string>
     <string name="configure_ICE_servers">ICE sunucularını yapılandır</string>
     <string name="email_invite_subject">Hadi SimpleX Chat\'te konuşalım</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX yönlendiricileri profilinizi göremez.</string>
     <string name="integrity_msg_bad_id">kötü mesaj kimliği</string>
     <string name="your_privacy">Gizliliğiniz</string>
     <string name="chat_is_running">Sohbet çalışıyor</string>
@@ -836,7 +836,7 @@
     <string name="message_reactions">Mesaj tepkileri</string>
     <string name="your_preferences">Tercihleriniz</string>
     <string name="message_reactions_are_prohibited">Mesaj tepkileri yasaklıdır.</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Bu bağlantıdan gelen mesajları almak için kullanılan sunucuya bağlısınız.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Bu bağlantıdan gelen mesajları almak için kullanılan yönlendiriciye bağlısınız.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Zaten %1$s e bağlısınız</string>
     <string name="la_could_not_be_verified">Doğrulanamadınız; lütfen tekrar deneyin.</string>
     <string name="you_can_turn_on_lock">SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</string>
@@ -846,7 +846,7 @@
     <string name="observer_cant_send_message_title">sen gözlemcisin</string>
     <string name="view_security_code">Güvenlik kodunu görüntüle</string>
     <string name="you_need_to_allow_to_send_voice">Sesli mesaj gönderebilmeniz için kişinizin de sesli mesaj göndermesine izin vermeniz gerekir.</string>
-    <string name="xftp_servers">XFTP sunucuları</string>
+    <string name="xftp_servers">Veri yönlendiricileri</string>
     <string name="your_ICE_servers">ICE sunucularınız</string>
     <string name="how_to">Nasıl</string>
     <string name="your_current_profile">Mevcut profiliniz</string>
@@ -938,7 +938,7 @@
     <string name="feature_off">kapalı</string>
     <string name="chat_preferences_on">açık</string>
     <string name="change_lock_mode">Kilit modunu değiştir</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Bu bağlantıdan gelen mesajları almak için kullanılan sunucuya bağlanmayı dene.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Bu bağlantıdan gelen mesajları almak için kullanılan yönlendiriciye bağlanmayı dene.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Lütfen doğru bağlantıyı kullandığınızı kontrol edin veya irtibat kişinizden size başka bir bağlantı göndermesini isteyin.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Gizliliğinizi korumak için anlık bildirimler kullanmak yerine, <b>SimpleX arka planda çalışır</b>.]]></string>
     <string name="periodic_notifications">Periyodik bildirimler</string>
@@ -1006,7 +1006,7 @@
     <string name="profile_update_will_be_sent_to_contacts">Profil güncellemesi kişilerinize gönderilecektir.</string>
     <string name="read_more_in_github_with_link"><![CDATA[<font color="#0088ff">GitHub repomuzda</font> daha fazlasını okuyun.]]></string>
     <string name="alert_text_fragment_please_report_to_developers">Lütfen geliştiricilere bildirin.</string>
-    <string name="users_delete_with_connections">Profil ve sunucu bağlantıları</string>
+    <string name="users_delete_with_connections">Profil ve yönlendirici bağlantıları</string>
     <string name="user_unhide">gizlemeyi kaldır</string>
     <string name="v4_3_voice_messages_desc">Maksimum 40 saniye, anında alınır.</string>
     <string name="icon_descr_record_voice_message">Sesli mesaj kaydet</string>
@@ -1023,7 +1023,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">Sohbet profillerini parola ile koru!</string>
     <string name="v4_5_reduced_battery_usage">Daha az pil kullanımı</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Gizliliği korumak için, SimpleX her bir konuşma için farklı bir ID kullanır.</string>
-    <string name="error_connecting_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan yönlendiriciye bağlanılmaya çalışılıyor (hata: %1$s).</string>
     <string name="v4_4_live_messages_desc">Alıcılar güncellemeleri siz yazdıkça görürler.</string>
     <string name="auth_log_in_using_credential">Bilgilerinizi kullanarak giriş yapın</string>
     <string name="markdown_in_messages">Mesajlarda Markdown</string>
@@ -1056,7 +1056,7 @@
     <string name="connect_plan_repeat_connection_request">Bağlantı isteğini tekrarla?</string>
     <string name="no_details">detay yok</string>
     <string name="database_initialization_error_desc">Veri tabanı düzgün çalışmıyor. Daha fazla bilgi için dokunun</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Açık kaynaklı protokol ve kod - sunucuları herkes çalıştırabilir.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Açık kaynaklı protokol ve kod - yönlendiricileri herkes çalıştırabilir.</string>
     <string name="rcv_group_event_open_chat">Aç</string>
     <string name="settings_notification_preview_mode_title">Önizlemeyi göster</string>
     <string name="v5_3_encrypt_local_files">Depolanan dosyaları ve medyayı şifrele</string>
@@ -1076,7 +1076,7 @@
     <string name="rcv_group_event_n_members_connected">%s, %s ve %d diğer üye bağlandı</string>
     <string name="only_your_contact_can_make_calls">Sadece senin kişin arama yapabilir.</string>
     <string name="desktop_address">Masaüstü adresi</string>
-    <string name="smp_servers_test_some_failed">Bazı sunucular testi geçemedi:</string>
+    <string name="smp_servers_test_some_failed">Bazı yönlendiriciler testi geçemedi:</string>
     <string name="chat_with_the_founder">Sorularınızı ve fikirlerinizi gönderin</string>
     <string name="delete_files_and_media_desc">Bu eylem geri alınamaz - tüm alınan ve gönderilen dosyalar ve medyalar silinecek. Düşük çözünürlükteki resimlar kalacaktır.</string>
     <string name="encrypt_local_files">Yerel dosyaları şifrele</string>
@@ -1137,7 +1137,7 @@
     <string name="rcv_group_event_3_members_connected">%s, %s ve %s bağlandı</string>
     <string name="settings_section_title_socks">SOCKS VEKİLİ</string>
     <string name="desktop_devices">Masaüstür cihazlar</string>
-    <string name="smp_servers">SMP sunucuları</string>
+    <string name="smp_servers">Paket yönlendiricileri</string>
     <string name="not_compatible">Uyumlu değil!</string>
     <string name="v4_4_verify_connection_security">Bağlantı güvenliğini onayla</string>
     <string name="connect_with_contact_name_question">%1$s ile bağlan?</string>
@@ -1170,7 +1170,7 @@
     <string name="icon_descr_sent_msg_status_sent">gönderildi</string>
     <string name="send_live_message">Canlı mesaj gönder</string>
     <string name="enter_this_device_name">Bu cihazın adını girin…</string>
-    <string name="smp_servers_per_user">Mevcut sohbet profilinizin yeni bağlantıları için sunucular</string>
+    <string name="smp_servers_per_user">Mevcut sohbet profilinizin yeni bağlantıları için yönlendiriciler</string>
     <string name="show_QR_code">QR kodu göster</string>
     <string name="network_socks_proxy_settings">SOCKS proxy ayarları</string>
     <string name="rcv_group_events_count">%d grup etkinlikleri</string>
@@ -1206,7 +1206,7 @@
     <string name="chat_lock">SimpleX Kilit</string>
     <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
     <string name="receipts_section_description">Bu ayarlar mevcut profiliniz içindir</string>
-    <string name="smp_servers_test_failed">Sunucu testi başarısız!</string>
+    <string name="smp_servers_test_failed">Yönlendirici testi başarısız!</string>
     <string name="verify_connection">Bağlantıyı onayla</string>
     <string name="add_contact_or_create_group">Yeni sohbet başlat</string>
     <string name="connect__your_profile_will_be_shared">Profiliniz %1$s paylaşılacaktır.</string>
@@ -1262,15 +1262,15 @@
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Veritabanı şifrelenecek ve parola ayarlarda depolanacak.</string>
     <string name="v5_4_block_group_members">Grup üyelerini engelle</string>
     <string name="feature_received_prohibited">alınmış, yasaklanmış</string>
-    <string name="error_xftp_test_server_auth">Sunucunun yükleme yapması için yetkilendirilmesi gerekli, şifreyi kontrol et</string>
+    <string name="error_xftp_test_server_auth">Yönlendiricinin yükleme yapması için yetkilendirilmesi gerekli, şifreyi kontrol et</string>
     <string name="encryption_renegotiation_error">Şifreleme yeniden aşma hatası</string>
-    <string name="smp_servers_preset_server">Ön ayarlı sunucu</string>
+    <string name="smp_servers_preset_server">Ön ayarlı yönlendirici</string>
     <string name="feature_cancelled_item">%s iptal edildi</string>
     <string name="rcv_direct_event_contact_deleted">silinmiş kişi</string>
     <string name="network_option_tcp_connection_timeout">TCP bağlantısı zaman aşımına uğradı</string>
     <string name="mtr_error_different">uygulama/veritabanı içinde farklı değişim: %s / %s</string>
-    <string name="using_simplex_chat_servers">SimpleX Chat serverları kullanılıyor.</string>
-    <string name="smp_servers_preset_add">Ön ayarlı sunucular ekle</string>
+    <string name="using_simplex_chat_servers">SimpleX Chat yönlendiricileri kullanılıyor.</string>
+    <string name="smp_servers_preset_add">Ön ayarlı yönlendiriciler ekle</string>
     <string name="secret_text">gizli</string>
     <string name="receipts_groups_disable_for_all">Bütün gruplar için devre dışı bırak</string>
     <string name="v4_6_group_welcome_message_descr">Yeni üyeler için gösterilecek mesajı seç!</string>
@@ -1278,7 +1278,7 @@
     <string name="moderated_description">yönetildi</string>
     <string name="error_creating_member_contact">Üye bağlantısı oluşturulurken hata</string>
     <string name="sending_delivery_receipts_will_be_enabled">Tüm kişiler için iletim bilgisi gönderme özelliği etkinleştirilecek</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">veri yönlendirici adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="refresh_qr_code">Yenile</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Lütfen unutmayın</b>: mesaj ve dosya yönlendiricileri SOCKS vekili tarafından bağlandı. Aramalar ve bağlantı ön gösterimleri doğrudan bağlantı kullanıyor.]]></string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱mobil: <b>Telefon uygulamasında aç</b> seçeneğine tıkla, sonra uygulama içinden <b>Bağlan</b> seçeneğine tıkla.]]></string>
@@ -1319,7 +1319,7 @@
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i> .onion ana bilgisayarlarını kullan</i> seçeneğini eğer SOCKS vekili destek vermiyorsa devre dışı bırak]]></string>
     <string name="you_can_change_it_later">Rasgele şifreler düz metin olarak ayarlarda saklanacaktır.
 \nBunu sonra değiştirebilirsin.</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">paket yönlendirici adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="group_invitation_tap_to_join_incognito">Sahte İsimle katılmak için tıkla</string>
     <string name="network_use_onion_hosts_no_desc">Onion ana bilgisayarları kullanılmayacaktır.</string>
     <string name="set_password_to_export">Dışarıya çıkarmak için parola belirle</string>
@@ -1328,7 +1328,7 @@
     <string name="notification_new_contact_request">Yeni bağlantı isteği</string>
     <string name="unlink_desktop_question">Bilgisayarla bağlantıyı kes?</string>
     <string name="camera_not_available">Kamera hazır değil</string>
-    <string name="use_simplex_chat_servers__question">SimpleX Chat sunucularını kullan?</string>
+    <string name="use_simplex_chat_servers__question">SimpleX Chat yönlendiricilerinı kullan?</string>
     <string name="linked_desktop_options">Bağlanmış bilgisayar ayarları</string>
     <string name="developer_options">Veritabanı kimlikleri ve Taşıma izolasyonu seçeneği.</string>
     <string name="network_option_ping_count">PING sayısı</string>
@@ -1352,9 +1352,9 @@
     <string name="unblock_member_button">Kişinin engelini kaldır</string>
     <string name="relay_server_if_necessary">Yönlendirici sunucusu sadece lazım ise kullanılacak. Diğer taraf IP adresini görebilir.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Telefon bağlantılı <b>%s</b> ın bağlantısı kesildi]]></string>
-    <string name="smp_servers_test_server">Sunucuyu test et</string>
-    <string name="conn_stats_section_title_servers">SUNUCULAR</string>
-    <string name="smp_servers_test_servers">Sunucuları test et</string>
+    <string name="smp_servers_test_server">Yönlendiriciyi test et</string>
+    <string name="conn_stats_section_title_servers">YÖNLENDİRİCİLER</string>
+    <string name="smp_servers_test_servers">Yönlendiricileri test et</string>
     <string name="privacy_message_draft">Mesaj taslağı</string>
     <string name="v5_2_disappear_one_message">Bir mesajı yok edin</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Kişi ekle</b> yeni bir davet bağlantısı oluşturmak için, veya aldığın bir davet bağlantısından bağlan.]]></string>
@@ -1366,9 +1366,9 @@
     <string name="network_disable_socks">Direkt internet bağlantısı kullan?</string>
     <string name="rcv_group_event_updated_group_profile">grup profili güncellendi</string>
     <string name="network_use_onion_hosts_required_desc">Onion ana bilgisayarları bağlantı için gerekli olacaktır.
-\nLütfen unutmayın: artık .onion adresi olmayan sunuculara bağlanamayacaksınız.</string>
-    <string name="switch_receiving_address_desc">Alınan adres başka bir sunucuda değiştirilecektir. Adres değişimi gönderen çevrimiçi olunca tamamlanacaktır.</string>
-    <string name="error_smp_test_server_auth">Sunucunun sıralar oluşturması için yetkilendirilmesi gerekli, şifreyi kontrol et</string>
+\nLütfen unutmayın: artık .onion adresi olmayan yönlendiricilere bağlanamayacaksınız.</string>
+    <string name="switch_receiving_address_desc">Alınan adres başka bir yönlendiricide değiştirilecektir. Adres değişimi gönderen çevrimiçi olunca tamamlanacaktır.</string>
+    <string name="error_smp_test_server_auth">Yönlendiricinin sıralar oluşturması için yetkilendirilmesi gerekli, şifreyi kontrol et</string>
     <string name="system_restricted_background_in_call_title">Arkaplan araması yok</string>
     <string name="group_is_decentralized">Tamamiyle merkezi olmayan - sadece üyelere görünür.</string>
     <string name="error_showing_content">içerik gösterilirken hata</string>
@@ -1382,7 +1382,7 @@
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Tarattığın kod SimpleX QR kodu bağlantısı değil.</string>
     <string name="send_receipts_disabled_alert_msg">Bu grupta %1$d den fazla kişi var,çoklu gönderim yapılamıyor.</string>
     <string name="connected_to_desktop">Masaüstüne bağlandı</string>
-    <string name="error_smp_test_certificate">Muhtemelen, sunucu adresindeki sertifika parmak izi doğru değil</string>
+    <string name="error_smp_test_certificate">Muhtemelen, yönlendirici adresindeki sertifika parmak izi doğru değil</string>
     <string name="v5_2_message_delivery_receipts_descr">✅ özlediğimiz ikinci tik!</string>
     <string name="clear_verification">Doğrulamayı temizle</string>
     <string name="setup_database_passphrase">Veritabanı parolası ayarla</string>
@@ -1438,9 +1438,9 @@
     <string name="rcv_group_event_2_members_connected">%s ve %s bağlandı</string>
     <string name="delete_after">Sonra sil</string>
     <string name="info_row_sent_at">Gönderildi</string>
-    <string name="smp_servers_preset_address">Önceden ayarlanmış sunucu adresi</string>
+    <string name="smp_servers_preset_address">Önceden ayarlanmış yönlendirici adresi</string>
     <string name="desktop_connection_terminated">Bağlantı sonlandırıldı</string>
-    <string name="updating_settings_will_reconnect_client_to_all_servers">Ayarları güncellemek alıcıyı bütün sunuculara yeniden bağlandıracak.</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Ayarları güncellemek alıcıyı bütün yönlendiricilere yeniden bağlandıracak.</string>
     <string name="unlink_desktop">Bağlantıyı kes</string>
     <string name="feature_offered_item">%s teklif edildi</string>
     <string name="icon_descr_received_msg_status_unread">okunmamış</string>
@@ -1459,7 +1459,7 @@
 \nBazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.</string>
     <string name="notification_preview_somebody">Kişi gizlendi:</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Şu durumlarda gerçekleşebilir:
-\n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya sunucuda 30 gün sonra sona erdi.
+\n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya yönlendiricide 30 gün sonra sona erdi.
 \n2. Siz veya kişiniz eski veritabanı yedeğini kullandığınız için mesajın şifresini çözme işlemi başarısız oldu.
 \n3. Bağlantı tehlikeye girdi.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion ana bilgisayarları mümkün olduğu zaman kullanılacaktır.</string>
@@ -1512,7 +1512,7 @@
     <string name="make_private_connection">Gizli bir bağlantı kur</string>
     <string name="multicast_discoverable_via_local_network">Yerel ağ üzerinden keşfedilebilir</string>
     <string name="info_row_updated_at">Kayıt güncellendi</string>
-    <string name="smp_servers_use_server">Sunucu kullan</string>
+    <string name="smp_servers_use_server">Yönlendirici kullan</string>
     <string name="share_text_received_at">Alınma tarihi: %s</string>
     <string name="add_contact_tab">Kişi Ekle</string>
     <string name="v5_3_discover_join_groups_descr">- dizin hizmetine bağlan
@@ -1754,36 +1754,36 @@
     <string name="v5_7_shape_profile_images">Profil resimlerini şekillendir</string>
     <string name="v5_7_shape_profile_images_descr">Kare,daire, veya aralarında herhangi bir şey.</string>
     <string name="snd_error_quota">Kapasite aşıldı - alıcı önceden gönderilen mesajları almadı.</string>
-    <string name="snd_error_relay">Hedef sunucu hatası: %1$s</string>
+    <string name="snd_error_relay">Hedef yönlendirici hatası: %1$s</string>
     <string name="ci_status_other_error">Hata: %1$s</string>
-    <string name="snd_error_proxy_relay">Yönlendirme sunucusu: %1$s
-\nHedef sunucu hatası: %2$s</string>
-    <string name="snd_error_proxy">Yönlendirme sunucusu: %1$s
+    <string name="snd_error_proxy_relay">Yönlendirme yönlendiricisi: %1$s
+\nHedef yönlendirici hatası: %2$s</string>
+    <string name="snd_error_proxy">Yönlendirme yönlendiricisi: %1$s
 \nHata: %2$s</string>
     <string name="message_delivery_warning_title">Mesaj iletimi uyarısı</string>
     <string name="snd_error_expired">Ağ sorunları - birçok gönderme denemesinden sonra mesajın süresi doldu.</string>
-    <string name="srv_error_host">Sunucu adresi ağ ayarlarıyla uyumlu değil.</string>
-    <string name="srv_error_version">Sunucu sürümü ağ ayarlarıyla uyumlu değil.</string>
+    <string name="srv_error_host">Yönlendirici adresi ağ ayarlarıyla uyumlu değil.</string>
+    <string name="srv_error_version">Yönlendirici sürümü ağ ayarlarıyla uyumlu değil.</string>
     <string name="snd_error_auth">Yanlış anahtar veya bilinmeyen bağlantı - büyük olasılıkla bu bağlantı silinmiştir.</string>
     <string name="network_smp_proxy_mode_private_routing">Gizli yönlendirme</string>
-    <string name="network_smp_proxy_mode_unknown">Bilinmeyen sunucular</string>
+    <string name="network_smp_proxy_mode_unknown">Bilinmeyen yönlendiriciler</string>
     <string name="network_smp_proxy_mode_always_description">Her zaman gizli yönlendirmeyi kullan.</string>
     <string name="network_smp_proxy_mode_never_description">Gizli yönlendirmeyi KULLANMA.</string>
     <string name="update_network_smp_proxy_mode_question">Mesaj yönlendirme modu</string>
     <string name="network_smp_proxy_mode_never">Hiçbir zaman</string>
-    <string name="network_smp_proxy_mode_unknown_description">Bilinmeyen sunucularla gizli yönlendirme kullan.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Bilinmeyen yönlendiricilerle gizli yönlendirme kullan.</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Sürüm düşürmeye izin ver</string>
     <string name="network_smp_proxy_fallback_prohibit">Hayır</string>
     <string name="update_network_smp_proxy_fallback_question">Mesaj yönlendirme yedeklemesi</string>
     <string name="network_smp_proxy_mode_always">Her zaman</string>
-    <string name="network_smp_proxy_fallback_prohibit_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</string>
-    <string name="network_smp_proxy_fallback_allow_protected_description">IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
-    <string name="network_smp_proxy_fallback_allow_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Sizin veya hedef yönlendiricinin özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">IP adresi korumalı olduğunda ve sizin veya hedef yönlendiricinin özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Sizin veya hedef yönlendiricinin özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
     <string name="settings_section_title_private_message_routing">GİZLİ MESAJ YÖNLENDİRME</string>
     <string name="private_routing_show_message_status">Mesaj durumunu göster</string>
-    <string name="private_routing_explanation">IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.</string>
+    <string name="private_routing_explanation">IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için paket yönlendiricilerinizi kullanır.</string>
     <string name="network_smp_proxy_mode_unprotected">Korumasız</string>
-    <string name="network_smp_proxy_mode_unprotected_description">IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">IP adresi korunmadığında bilinmeyen yönlendiricilerle gizli yönlendirme kullan.</string>
     <string name="network_smp_proxy_fallback_allow_protected">IP gizliyken</string>
     <string name="network_smp_proxy_fallback_allow">Evet</string>
     <string name="settings_section_title_chat_theme">Sohbet teması</string>
@@ -1815,22 +1815,22 @@
     <string name="wallpaper_scale_repeat">Tekrarla</string>
     <string name="reset_single_color">Rengi sıfırla</string>
     <string name="chat_list_always_visible">Sohbet listesini yeni pencerede göster</string>
-    <string name="file_not_approved_title">Bilinmeyen sunucular!</string>
+    <string name="file_not_approved_title">Bilinmeyen yönlendiriciler!</string>
     <string name="file_not_approved_descr">Tor veya VPN olmadan, IP adresiniz bu XFTP yönlendiricileri tarafından görülebilir:
 \n%1$s.</string>
-    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor veya VPN olmadan, IP adresiniz dosya yönlendiricilerina görülebilir.</string>
     <string name="color_wallpaper_tint">Duvar kağıdı vurgusu</string>
     <string name="color_wallpaper_background">Duvar kağıdı arkaplanı</string>
-    <string name="app_will_ask_to_confirm_unknown_file_servers">Uygulama, bilinmeyen dosya sunucularından indirmeleri onaylamanızı isteyecektir (.onion veya SOCKS vekilleri etkin değilse).</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Uygulama, bilinmeyen dosya yönlendiricilerindan indirmeleri onaylamanızı isteyecektir (.onion veya SOCKS vekilleri etkin değilse).</string>
     <string name="error_initializing_web_view">WebView başlatılırken hata oluştu. Sisteminizi yeni sürüme güncelleyin. Lütfen geliştiricilerle iletişime geçin.
 \nHata: %s</string>
     <string name="v5_8_chat_themes_descr">Sohbetlerinizin farklı görünmesini sağlayın!</string>
     <string name="v5_8_persian_ui">Farsça Arayüz</string>
     <string name="chat_theme_reset_to_user_theme">Kullanıcı temasına sıfırla</string>
     <string name="v5_8_private_routing_descr">IP adresinizi kişileriniz tarafından seçilen mesajlaşma yönlendiricilerinden koruyun.
-\n*Ağ ve sunucular* ayarlarında etkinleştirin.</string>
+\n*Ağ ve yönlendiriciler* ayarlarında etkinleştirin.</string>
     <string name="v5_8_private_routing">Gizli mesaj yönlendirme 🚀</string>
-    <string name="v5_8_safe_files_descr">Bilinmeyen sunuculardan gelen dosyaları onayla.</string>
+    <string name="v5_8_safe_files_descr">Bilinmeyen yönlendiricilerden gelen dosyaları onayla.</string>
     <string name="v5_8_message_delivery">Geliştirilmiş mesaj iletimi</string>
     <string name="v5_8_chat_themes">Yeni sohbet temaları</string>
     <string name="v5_8_safe_files">Dosyaları güvenle alın</string>
@@ -1840,18 +1840,18 @@
     <string name="info_row_debug_delivery">Hata ayıklama teslimatı</string>
     <string name="message_queue_info">Mesaj kuyruğu bilgisi</string>
     <string name="message_queue_info_none">hiçbiri</string>
-    <string name="message_queue_info_server_info">sunucu kuyruk bilgisi: %1$s
+    <string name="message_queue_info_server_info">yönlendirici kuyruk bilgisi: %1$s
 \n
 \nson alınan msj: %2$s</string>
-    <string name="smp_proxy_error_connecting">Yönlendirme sunucusuna (%1$s) bağlantı sırasında hata oluştu. Lütfen daha sonra tekrar deneyin.</string>
-    <string name="file_error_relay">Dosya sunucusu hatası. %1$s</string>
+    <string name="smp_proxy_error_connecting">Yönlendirme yönlendiricisina (%1$s) bağlantı sırasında hata oluştu. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="file_error_relay">Dosya yönlendiricisi hatası. %1$s</string>
     <string name="scan_paste_link">Tara / Bağlantı yapıştır</string>
     <string name="app_check_for_updates">Güncellemeleri kontrol et</string>
     <string name="app_check_for_updates_disabled">Devre dışı</string>
     <string name="app_check_for_updates_download_completed_title">Uygulama Güncellemesi indirildi</string>
     <string name="app_check_for_updates_button_remind_later">Daha sonra hatırlat</string>
     <string name="app_check_for_updates_notice_title">Güncellemeleri kontrol et</string>
-    <string name="servers_info_reconnect_server_message">Mesajı göndermeye zorlamak için sunucuya yeniden bağlan. Bu ekstra internet kullanır.</string>
+    <string name="servers_info_reconnect_server_message">Mesajı göndermeye zorlamak için yönlendiriciye yeniden bağlan. Bu ekstra internet kullanır.</string>
     <string name="servers_info_modal_error_title">Hata</string>
     <string name="error_forwarding_messages">Mesajların yönlendirilmesi sırasında hata oluştu.</string>
     <string name="file_error_no_file">Dosya bulunamadı - muhtemelen dosya silindi veya göderim iptal edildi.</string>
@@ -1874,8 +1874,8 @@
     <string name="info_view_search_button">ara</string>
     <string name="switching_profile_error_title">Profil değiştirme sırasında hata oluştu.</string>
     <string name="select_chat_profile">Sohbet profili seç</string>
-    <string name="xftp_servers_configured">XFTP sunucuları yapılandırıldı</string>
-    <string name="media_and_file_servers">Medya ve dosya sunucuları</string>
+    <string name="xftp_servers_configured">Veri yönlendiricileri yapılandırıldı</string>
+    <string name="media_and_file_servers">Medya ve dosya yönlendiricileri</string>
     <string name="network_proxy_auth_mode_no_auth">Kimlik bilgilerini proxy ile kullanmayın.</string>
     <string name="network_proxy_incorrect_config_title">Proxy kayıt edilirken hata oluştu.</string>
     <string name="network_proxy_incorrect_config_desc">Proxy konfigürasyonunun doğru olduğundan emin olun.</string>
@@ -1896,12 +1896,12 @@
     <string name="appearance_font_size">Yazı tipi boyutu</string>
     <string name="v6_0_new_chat_experience">Yeni bir sohbet deneyimi 🎉</string>
     <string name="v6_0_connection_servers_status">Ağınızı kontrol edin</string>
-    <string name="v6_0_connection_servers_status_descr">Bağlantı ve sunucuların durumu</string>
+    <string name="v6_0_connection_servers_status_descr">Bağlantı ve yönlendiricilerin durumu</string>
     <string name="v6_0_increase_font_size">Yazı boyutunu arttır</string>
     <string name="remote_ctrl_connection_stopped_desc">Lütfen telefonun ve bilgisayarın aynı lokal ağa bağlı olduğundan ve bilgisayar güvenlik duvarının bağlantıya izin verdiğinden emin olun. Lütfen diğer herhangi bir sorunu geliştiricilerle paylaşın.</string>
     <string name="servers_info_reset_stats_alert_title">Tüm istatistikler sıfırlansın mı ?</string>
-    <string name="servers_info_reconnect_server_error">Hata, sunucuya yeniden bağlanılıyor</string>
-    <string name="servers_info_reconnect_all_servers_button">Tüm sunuculara yeniden bağlan</string>
+    <string name="servers_info_reconnect_server_error">Hata, yönlendiriciye yeniden bağlanılıyor</string>
+    <string name="servers_info_reconnect_all_servers_button">Tüm yönlendiricilere yeniden bağlan</string>
     <string name="duplicates_label">Kopyalar</string>
     <string name="chunks_uploaded">Parçalar yüklendi</string>
     <string name="downloaded_files">Dosyalar İndirildi</string>
@@ -1909,8 +1909,8 @@
     <string name="info_row_message_status">Mesaj durumu</string>
     <string name="error_parsing_uri_title">Geçersiz link</string>
     <string name="error_parsing_uri_desc">Lütfen SimpleX bağlantısının doğru olup olmadığını kontrol edin.</string>
-    <string name="proxy_destination_error_broker_host">Varış sunucusu ardesi (%1$s) yönlendirme sunucusu (%2$s) ile uyumsuz.</string>
-    <string name="proxy_destination_error_broker_version">Varış sunucusu sürümü (%1$s) yönlendirme sunucusu (%2$s) ile uyumsuz.</string>
+    <string name="proxy_destination_error_broker_host">Varış yönlendiricisi ardesi (%1$s) yönlendirme yönlendiricisi (%2$s) ile uyumsuz.</string>
+    <string name="proxy_destination_error_broker_version">Varış yönlendiricisi sürümü (%1$s) yönlendirme yönlendiricisi (%2$s) ile uyumsuz.</string>
     <string name="message_forwarded_title">Mesaj iletildi</string>
     <string name="member_inactive_desc">Kullanıcı aktif olursa mesaj iletilebilir.</string>
     <string name="compose_message_placeholder">Mesaj</string>
@@ -1941,10 +1941,10 @@
     <string name="servers_info_sessions_errors">Hatalar</string>
     <string name="servers_info_messages_received">Mesajlar alındı</string>
     <string name="servers_info_messages_sent">Mesajlar gönderildi</string>
-    <string name="servers_info_reconnect_servers_message">Mesaj iletimine zorlamak için tüm sunuculara yeniden bağlan. Bu ekstra internet kullanılır.</string>
-    <string name="servers_info_reconnect_server_title">Sunucuya yeniden bağlansın mı ?</string>
-    <string name="servers_info_reconnect_servers_title">Sunuculara yeniden bağlanılsın mı ?</string>
-    <string name="servers_info_reconnect_servers_error">Hata sunuculara yeniden bağlanılıyor</string>
+    <string name="servers_info_reconnect_servers_message">Mesaj iletimine zorlamak için tüm yönlendiricilere yeniden bağlan. Bu ekstra internet kullanılır.</string>
+    <string name="servers_info_reconnect_server_title">Yönlendiriciye yeniden bağlansın mı ?</string>
+    <string name="servers_info_reconnect_servers_title">Yönlendiricilera yeniden bağlanılsın mı ?</string>
+    <string name="servers_info_reconnect_servers_error">Hata yönlendiricilere yeniden bağlanılıyor</string>
     <string name="servers_info_reset_stats_alert_confirm">Sıfırla</string>
     <string name="connections">Bağlantılar</string>
     <string name="created">Yaratıldı</string>
@@ -1953,10 +1953,10 @@
     <string name="completed">Tamamlandı</string>
     <string name="deleted">Silindi</string>
     <string name="deletion_errors">Silme hatası</string>
-    <string name="open_server_settings_button">Sunucu ayarlarını aç</string>
+    <string name="open_server_settings_button">Yönlendirici ayarlarını aç</string>
     <string name="share_text_file_status">Dosya durumu: %s</string>
     <string name="new_message">Yeni mesaj</string>
-    <string name="smp_servers_other">Diğer SMP sunucuları</string>
+    <string name="smp_servers_other">Diğer Paket yönlendiricileri</string>
     <string name="reconnect">Yeniden bağlan</string>
     <string name="sent_directly">Direkt gönderildi.</string>
     <string name="all_users">Tüm Profiller</string>
@@ -1964,19 +1964,19 @@
     <string name="chat_database_exported_title">Veritabanı dışa aktarıldı</string>
     <string name="chunks_deleted">Parçalar silindi</string>
     <string name="chunks_downloaded">Parçalar indirildi</string>
-    <string name="servers_info_connected_servers_section_header">Bağlı sunucular</string>
+    <string name="servers_info_connected_servers_section_header">Bağlı yönlendiriciler</string>
     <string name="cant_call_contact_connecting_wait_alert_text">Kişiye bağlanılıyor, lütfen bekleyin ya da daha sonra kontrol edin.</string>
     <string name="copy_error">Kopyalama hatası</string>
     <string name="delete_without_notification">Bildirim göndermeden sil</string>
     <string name="v6_0_upgrade_app_descr">Yeni versiyonları GitHub\'dan indirin</string>
     <string name="servers_info_reset_stats_alert_error_title">Hata istatistikler sıfırlanıyor</string>
-    <string name="smp_proxy_error_broker_host">Yönlendirme sunucu adresi (%1$s) ağ ayarlarıyla uyumsuz.</string>
+    <string name="smp_proxy_error_broker_host">Yönlendirme yönlendirici adresi (%1$s) ağ ayarlarıyla uyumsuz.</string>
     <string name="info_row_file_status">Dosya durumu</string>
-    <string name="proxy_destination_error_failed_to_connect">Yönlendirme sunucusu (%1$s) varış sunucusuna (%2$s) bağlanamadı. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="proxy_destination_error_failed_to_connect">Yönlendirme yönlendiricisi (%1$s) varış yönlendiricisina (%2$s) bağlanamadı. Lütfen daha sonra tekrar deneyin.</string>
     <string name="smp_proxy_error_broker_version">Yönlendirme suncusu sürümü ağ ayarlarıyla uyumsuz: %1$s</string>
     <string name="servers_info_subscriptions_connections_pending">Bekliyor</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Lütfen kişinizden çağrılara izin vermesini isteyin.</string>
-    <string name="servers_info_previously_connected_servers_section_header">Önceden bağlanılmış sunucular</string>
+    <string name="servers_info_previously_connected_servers_section_header">Önceden bağlanılmış yönlendiriciler</string>
     <string name="cant_call_contact_alert_title">Kişi aranamıyor</string>
     <string name="network_options_save_and_reconnect">Kayıt et ve yeniden bağlan</string>
     <string name="delete_messages_cannot_be_undone_warning">Mesajlar silinecek - bu geri alınamaz!</string>
@@ -1984,9 +1984,9 @@
     <string name="delete_members_messages__question">Üylerin %d mesajı silinsin mi ?</string>
     <string name="member_inactive_title">Üye inaktif</string>
     <string name="message_forwarded_desc">Henüz direkt bağlantı yok mesaj admin tarafından yönlendirildi.</string>
-    <string name="message_servers">Mesaj sunucuları</string>
-    <string name="smp_servers_configured">SMP sunucları yapılandırıldı</string>
-    <string name="xftp_servers_other">Diğer XFTP sunucuları</string>
+    <string name="message_servers">Mesaj yönlendiricileri</string>
+    <string name="smp_servers_configured">Paket yönlendiricileri yapılandırıldı</string>
+    <string name="xftp_servers_other">Diğer Veri yönlendiricileri</string>
     <string name="privacy_media_blur_radius">Medyayı bulanıklaştır.</string>
     <string name="delete_contact_cannot_undo_warning">Kişiler silinecek - bu geri alınamaz !</string>
     <string name="keep_conversation">Sohbeti sakla.</string>
@@ -2021,7 +2021,7 @@
     <string name="acknowledged">Onaylandı</string>
     <string name="error_initializing_web_view_wrong_arch">WebView başlatılırken hata oluştu. WebView\'in yüklü olduğundan ve desteklenen mimarisinin arm64 olduğundan emin olun.\nHata: %s</string>
     <string name="network_session_mode_session_description">Uygulamayı her başlattığınızda yeni SOCKS kimlik bilgileri kullanılacaktır.</string>
-    <string name="network_session_mode_server_description">Her sunucu için yeni SOCKS kimlik bilgileri kullanılacaktır.</string>
+    <string name="network_session_mode_server_description">Her yönlendirici için yeni SOCKS kimlik bilgileri kullanılacaktır.</string>
     <string name="app_check_for_updates_button_download">İndir %s (%s)</string>
     <string name="settings_section_title_message_shape">Mesaj şekli</string>
     <string name="subscription_percentage">Yüzdeyi göster</string>
@@ -2052,7 +2052,7 @@
     <string name="contact_list_header_title">Bağlantılarınız</string>
     <string name="icon_descr_sound_muted">Ses kapatıldı</string>
     <string name="servers_info_uploaded">Yüklendi</string>
-    <string name="servers_info_reset_stats_alert_message">Sunucu istatistikleri sıfırlanacaktır - bu geri alınamaz!</string>
+    <string name="servers_info_reset_stats_alert_message">Yönlendirici istatistikleri sıfırlanacaktır - bu geri alınamaz!</string>
     <string name="one_hand_ui">Erişilebilir uygulama araç çubukları</string>
     <string name="one_hand_ui_change_instruction">Görünüm ayarlarından değiştirebilirsiniz.</string>
     <string name="one_hand_ui_card_title">Sohbet listesini değiştir:</string>
@@ -2062,26 +2062,26 @@
     <string name="servers_info_statistics_section_header">İstatistikler</string>
     <string name="servers_info_private_data_disclaimer">%s\'den başlayarak.\nTüm veriler cihazınızda gizli tutulur.</string>
     <string name="sent_via_proxy">Bir proxy aracılığıyla gönderildi</string>
-    <string name="server_address">Sunucu adresi</string>
+    <string name="server_address">Yönlendirici adresi</string>
     <string name="upload_errors">Yükleme hataları</string>
     <string name="network_option_tcp_connection">TCP bağlantısı</string>
     <string name="network_socks_proxy">SOCKS proxy</string>
-    <string name="servers_info_proxied_servers_section_header">Proxy sunucuları</string>
+    <string name="servers_info_proxied_servers_section_header">Proxy yönlendiricileri</string>
     <string name="temporary_file_error">Geçici dosya hatası</string>
     <string name="info_view_video_button">Video</string>
     <string name="you_can_still_send_messages_to_contact">Arşivlenen kişilerden %1$s\'e mesaj gönderebilirsiniz.</string>
     <string name="you_can_still_view_conversation_with_contact">Sohbetler listesinde %1$s ile yapılan konuşmayı hala görüntüleyebilirsiniz.</string>
-    <string name="xftp_server">XFTP sunucusu</string>
+    <string name="xftp_server">Veri yönlendiricisi</string>
     <string name="servers_info_detailed_statistics_receive_errors">Alım sırasında hata</string>
-    <string name="smp_server">SMP sunucusu</string>
-    <string name="network_error_broker_host_desc">Sunucu adresi ağ ayarlarıyla uyumsuz: %1$s.</string>
-    <string name="network_error_broker_version_desc">Sunucu sürümü uygulamanızla uyumlu değil: %1$s.</string>
+    <string name="smp_server">Paket yönlendiricisi</string>
+    <string name="network_error_broker_host_desc">Yönlendirici adresi ağ ayarlarıyla uyumsuz: %1$s.</string>
+    <string name="network_error_broker_version_desc">Yönlendirici sürümü uygulamanızla uyumlu değil: %1$s.</string>
     <string name="you_need_to_allow_calls">Kendiniz arayabilmeniz için önce irtibat kişinizin sizi aramasına izin vermelisiniz.</string>
     <string name="servers_info_starting_from">%s\'den başlayarak.</string>
     <string name="acknowledgement_errors">Onay hataları</string>
     <string name="secured">Güvenli</string>
     <string name="network_session_mode_session">Uygulama oturumu</string>
-    <string name="network_session_mode_server">Sunucu</string>
+    <string name="network_session_mode_server">Yönlendirici</string>
     <string name="app_check_for_updates_stable">Stabil</string>
     <string name="app_check_for_updates_update_available">Güncelleme mevcut: %s</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Bu bağlantı başka bir mobil cihazda kullanıldı, lütfen masaüstünde yeni bir bağlantı oluşturun.</string>
@@ -2091,12 +2091,12 @@
     <string name="settings_message_shape_tail">Konuşma balonu</string>
     <string name="privacy_media_blur_radius_strong">Güçlü</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Uygulamayı tek elle kullan.</string>
-    <string name="servers_info">Sunucu bilgileri</string>
+    <string name="servers_info">Yönlendirici bilgileri</string>
     <string name="servers_info_subscriptions_total">Toplam</string>
-    <string name="servers_info_proxied_servers_section_footer">Bu sunuculara bağlı değilsiniz. Mesajları onlara iletmek için özel yönlendirme kullanılır.</string>
+    <string name="servers_info_proxied_servers_section_footer">Bu yönlendiricilere bağlı değilsiniz. Mesajları onlara iletmek için özel yönlendirme kullanılır.</string>
     <string name="servers_info_subscriptions_connections_subscribed">Aktif bağlantılar</string>
     <string name="settings_message_shape_corner">Köşeleri yuvarlama</string>
-    <string name="migrate_from_device_uploaded_archive_will_be_removed">Yüklenen veritabanı arşivi sunuculardan kalıcı olarak kaldırılacaktır.</string>
+    <string name="migrate_from_device_uploaded_archive_will_be_removed">Yüklenen veritabanı arşivi yönlendiricilerden kalıcı olarak kaldırılacaktır.</string>
     <string name="proxied">Proxyli</string>
     <string name="servers_info_transport_sessions_section_header">Taşıma oturumları</string>
     <string name="chat_database_exported_migrate">Dışa aktarılan veritabanını taşıyabilirsiniz.</string>
@@ -2114,10 +2114,10 @@
     <string name="v6_1_better_security">Daha iyi güvenlik ✅</string>
     <string name="v6_1_better_security_descr">SimpleX protokolleri Trail of Bits tarafından incelenmiştir.</string>
     <string name="address_or_1_time_link">Adres mi yoksa tek seferlik bağlantı mı?</string>
-    <string name="operator_added_message_servers">Mesaj sunucuları eklendi</string>
+    <string name="operator_added_message_servers">Mesaj yönlendiricileri eklendi</string>
     <string name="accept_conditions">Koşulları kabul edin</string>
     <string name="operator_conditions_accepted">Kabul edilen koşullar</string>
-    <string name="operator_added_xftp_servers">Medya ve dosya sunucuları eklendi</string>
+    <string name="operator_added_xftp_servers">Medya ve dosya yönlendiricileri eklendi</string>
     <string name="appearance_app_toolbars">Uygulama araç çubukları</string>
     <string name="address_settings">Adres ayarları</string>
     <string name="appearance_bars_blur_radius">Bulanıklık</string>
@@ -2164,7 +2164,7 @@
     <string name="connection_not_ready">Bağlantı hazır değil.</string>
     <string name="operator_conditions_of_use">Kullanım şartları</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">daha iyi üstveri gizliliği için.</string>
-    <string name="failed_to_save_servers">Sunucuları kaydederken hata oluştu</string>
+    <string name="failed_to_save_servers">Yönlendiricileri kaydederken hata oluştu</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Şartlar 30 gün sonra etkin operatörler için kabul edilecektir.</string>
     <string name="delete_report">Raporu sil</string>
     <string name="change_list">Listeyi değiştir</string>
@@ -2178,8 +2178,8 @@
     <string name="blocking_reason_content">İçerik kullanım şartlarını ihlal ediyor</string>
     <string name="error_creating_report">Rapor oluşturulurken hata oluştu</string>
     <string name="connection_error_blocked">Bağlantı engellendi</string>
-    <string name="connection_error_blocked_desc">Bağlantı sunucu operatörü tarafından engellendi:\n%1$s.</string>
-    <string name="file_error_blocked">Dosya sunucu operatörü tarafından engellendi:\n%1$s.</string>
+    <string name="connection_error_blocked_desc">Bağlantı yönlendirici operatörü tarafından engellendi:\n%1$s.</string>
+    <string name="file_error_blocked">Dosya yönlendirici operatörü tarafından engellendi:\n%1$s.</string>
     <string name="group_reports_active">%d rapor</string>
     <string name="maximum_message_size_title">Mesaj çok büyük!</string>
     <string name="change_automatic_deletion_question">Otomatik silinen mesajlar değiştirilsin mi?</string>
@@ -2189,7 +2189,7 @@
     <string name="edit_chat_list_menu_action">Düzenle</string>
     <string name="for_social_media">Sosyal medya için</string>
     <string name="create_1_time_link">Tek kullanımlık bağlantı oluştur</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Örneğin, eğer kişiniz SimpleX Sohbet sunucusundan mesajları alıyorsa, uygulamanız bu mesajları Flux sunucusundan iletecektir.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Örneğin, eğer kişiniz SimpleX Sohbet yönlendiricisinden mesajları alıyorsa, uygulamanız bu mesajları Flux yönlendiricisinden iletecektir.</string>
     <string name="chat_item_ttl_default">varsayılan (%s)</string>
     <string name="block_members_desc">Bu üyelerden gelen yeni mesajların hepsi gizlenecektir.</string>
     <string name="v6_3_better_groups_performance">İyileştirilmiş grup performansı</string>
@@ -2219,13 +2219,13 @@
     <string name="info_row_chat">Sohbet</string>
     <string name="v6_3_faster_deletion_of_groups">Grupların daha hızlı silinmesi.</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">Sohbet bütün üyeler için silinecek - bu geri alınamaz!</string>
-    <string name="error_adding_server">Sunucu eklerken hata oluştu</string>
+    <string name="error_adding_server">Yönlendirici eklerken hata oluştu</string>
     <string name="sync_connection_confirm">Onar</string>
     <string name="sync_connection_question">Bağlantı onarılsın mı?</string>
-    <string name="error_updating_server_title">Sunucuyu güncellerken hata oluştu</string>
-    <string name="no_message_servers_configured">Mesaj sunucuları yok.</string>
-    <string name="errors_in_servers_configuration">Sunucu yapılandırmasında hatalar.</string>
-    <string name="smp_servers_new_server">Yeni sunucu</string>
+    <string name="error_updating_server_title">Yönlendiriciyi güncellerken hata oluştu</string>
+    <string name="no_message_servers_configured">Mesaj yönlendiricileri yok.</string>
+    <string name="errors_in_servers_configuration">Yönlendirici yapılandırmasında hatalar.</string>
+    <string name="smp_servers_new_server">Yeni yönlendirici</string>
     <string name="feature_roles_moderators">yöneticiler</string>
     <string name="v6_3_mentions_descr">Bahsedildiğinizde haberdar olun.</string>
     <string name="report_reason_illegal">Uygunsuz içerik</string>
@@ -2235,7 +2235,7 @@
     <string name="duplicated_list_error">Liste adı ve emoji tüm listeler için farklı olmalıdır.</string>
     <string name="mute_all_chat">Herkesi sustur</string>
     <string name="v6_2_network_decentralization">Ağ merkezsizleştirme</string>
-    <string name="v6_2_network_decentralization_enable_flux">Daha iyi meta veri gizliliği için Ağ ve sunucular ayarlarında Flux\'u etkinleştirin.</string>
+    <string name="v6_2_network_decentralization_enable_flux">Daha iyi meta veri gizliliği için Ağ ve yönlendiriciler ayarlarında Flux\'u etkinleştirin.</string>
     <string name="disable_automatic_deletion">Mesaj silme özelliğini devre dışı bırak</string>
     <string name="disable_automatic_deletion_message">Bu sohbetteki mesajlar asla silinmeyecektir.</string>
     <string name="error_accepting_member">Üyeyi kabul ederken hata oluştu</string>
@@ -2270,15 +2270,15 @@
     <string name="onboarding_notifications_mode_off_desc_short">Arkaplan servisi yok</string>
     <string name="onboarding_conditions_accept">Kabul Et</string>
     <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat\'i kullanarak şunları kabul etmiş olursunuz:\n- genel gruplarda sadece yasal içerik göndermeyi.\n- diğer kullanıcılara saygı göstermeyi - spam yapmamayı.</string>
-    <string name="onboarding_conditions_configure_server_operators">Sunucu operatörlerini yapılandırma</string>
+    <string name="onboarding_conditions_configure_server_operators">Yönlendirici operatörlerini yapılandırma</string>
     <string name="leave_chat_question">Sohbetten çıkılsın mı?</string>
     <string name="group_member_role_moderator">yönetici</string>
-    <string name="network_smp_web_port_all">Bütün sunucular</string>
+    <string name="network_smp_web_port_all">Bütün yönlendiriciler</string>
     <string name="users_delete_profile_for">Şunlar için sohbet profilini sil</string>
     <string name="v6_3_organize_chat_lists_descr">Önemli mesajları kaçırmayın.</string>
     <string name="unblock_members_desc">Bu üyelerden gelen mesajlar gösterilecektir!</string>
     <string name="operator_conditions_accepted_on">Kabul edilen koşullar: %s.</string>
-    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the servers of <b>%s</b> , kullanım koşullarını kabul edin.]]></string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the routers of <b>%s</b> , kullanım koşullarını kabul edin.]]></string>
     <string name="group_members_can_send_reports">Üyeler mesajları moderatörlere bildirebilir.</string>
     <string name="delete_member_support_chat_alert_title">Üye ile birlikte sohbet silinsin mi?</string>
     <string name="no_support_chats">Üyeli sohbetler yok</string>
@@ -2303,12 +2303,12 @@
     <string name="cant_send_message_contact_deleted">kişi silindi</string>
     <string name="members_will_be_removed_from_group_cannot_be_undone">Üyeler gruptan çıkarılacaktır - bu geri alınamaz!</string>
     <string name="accept_pending_member_alert_question">Üye gruba katılacak, üye kabul edilsin mi?</string>
-    <string name="no_message_servers_configured_for_private_routing">Özel mesaj yönlendirmesi için sunucu yok.</string>
+    <string name="no_message_servers_configured_for_private_routing">Özel mesaj yönlendirmesi için yönlendirici yok.</string>
     <string name="cant_send_message_generic">mesajlar gönderilemiyor</string>
-    <string name="no_media_servers_configured">Medya ve dosya sunucuları yok.</string>
+    <string name="no_media_servers_configured">Medya ve dosya yönlendiricileri yok.</string>
     <string name="restore_passphrase_can_not_be_read_desc">Anahtar deposundaki parola okunamıyor. Bu, uygulamayla uyumsuz bir sistem güncellemesinden sonra gerçekleşmiş olabilir. Eğer durum bu değilse, lütfen geliştiricilerle iletişime geçin.</string>
     <string name="group_member_status_rejected">reddedildi</string>
-    <string name="operator_servers_title">%s sunucuları</string>
+    <string name="operator_servers_title">%s yönlendiricileri</string>
     <string name="operator_updated_conditions">Güncellenen koşullar</string>
     <string name="report_item_visibility_submitter">Sadece siz ve moderatörler görebilir.</string>
     <string name="report_item_visibility_moderators">Sadece gönderen ve moderatörler görebilir.</string>
@@ -2317,8 +2317,8 @@
     <string name="operator_use_for_files">Dosyalar için kullanın</string>
     <string name="v6_3_set_message_expiration_in_chats">Sohbetlerde mesajların geçerlilik süresini ayarlayın.</string>
     <string name="report_reason_spam">İstenmeyen</string>
-    <string name="no_media_servers_configured_for_sending">Dosya göndermek için sunucu yok.</string>
-    <string name="no_media_servers_configured_for_private_routing">Dosyaları alacak sunucu yok.</string>
+    <string name="no_media_servers_configured_for_sending">Dosya göndermek için yönlendirici yok.</string>
+    <string name="no_media_servers_configured_for_private_routing">Dosyaları alacak yönlendirici yok.</string>
     <string name="connection_error_quota">Teslim edilmeyen mesajlar</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Bağlantınızın değiştirilmesini önlemek için, iletişim güvenlik kodlarını karşılaştırabilirsiniz.</string>
     <string name="cant_send_message_mem_removed">gruptan çıkarıldı</string>
@@ -2339,7 +2339,7 @@
     <string name="unread_mentions">Okunmamış bahsetmeler</string>
     <string name="operator_review_conditions">Koşulları gözden geçirin</string>
     <string name="chat_main_profile_sent">Sohbet profiliniz sohbet üyelerine gönderilecektir.</string>
-    <string name="your_servers">Sunucularınız</string>
+    <string name="your_servers">Yönlendiricileriniz</string>
     <string name="operator_open_conditions">Açık koşullar</string>
     <string name="change_automatic_chat_deletion_message">Bu işlem geri alınamaz - seçilen tarihten önce bu sohbette gönderilen ve alınan mesajlar silinecektir.</string>
     <string name="you_can_set_connection_name_to_remember">Bağlantının kimlerle paylaşıldığını hatırlamak için bağlantı adını ayarlayabilirsiniz.</string>
@@ -2350,11 +2350,11 @@
     <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX adresi ve tek kullanımlık bağlantılar herhangi bir mesajlaşma uygulaması üzerinden güvenle paylaşılabilir.</string>
     <string name="short_link_button_text">Kısa bağlantı</string>
     <string name="save_admission_question">Giriş ayarlarını kaydetmek ister misiniz?</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">Özel sohbetler, gruplar ve kişileriniz sunucu operatörleri tarafından erişilemez.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Özel sohbetler, gruplar ve kişileriniz yönlendirici operatörleri tarafından erişilemez.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Birden fazla operatör etkinleştirildiğinde, hiçbirinin kimin kiminle iletişim kurduğunu öğrenmek için meta verisi yoktur.</string>
     <string name="onboarding_select_network_operators_to_use">Kullanılacak ağ operatörlerini seçin.</string>
     <string name="onboarding_network_operators_update">Güncelleme</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Ağ ve sunucular ayarlarında operatörleri yapılandırabilirsiniz.</string>
+    <string name="onboarding_network_operators_conditions_you_can_configure">Ağ ve yönlendiriciler ayarlarında operatörleri yapılandırabilirsiniz.</string>
     <string name="privacy_chat_list_open_web_link">Bağlantıyı aç</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Anahtar deposundaki parola okunamıyor, lütfen elle girin. Bu, uygulamayla uyumsuz bir sistem güncellemesinden sonra meydana gelmiş olabilir. Eğer durum bu değilse, lütfen geliştiricilerle iletişime geçin.</string>
     <string name="snd_group_event_member_accepted">Bu üyeyi kabul ettiniz.</string>
@@ -2366,8 +2366,8 @@
     <string name="add_short_link">Kısa bağlantı ekle</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Gizlilik politikası ve kullanım koşulları.</string>
     <string name="onboarding_network_operators_review_later">Daha sonra incele</string>
-    <string name="onboarding_choose_server_operators">Sunucu operatörleri</string>
-    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat ve Flux, Flux tarafından işletilen sunucuların uygulamaya dahil edilmesi konusunda bir anlaşma yaptı.</string>
+    <string name="onboarding_choose_server_operators">Yönlendirici operatörleri</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat ve Flux, Flux tarafından işletilen yönlendiricilerin uygulamaya dahil edilmesi konusunda bir anlaşma yaptı.</string>
     <string name="privacy_chat_list_open_links">Sohbet listesinden bağlantıları aç</string>
     <string name="privacy_chat_list_open_links_yes">Evet</string>
     <string name="privacy_chat_list_open_web_link_question">Web bağlantısını açmak ister misiniz?</string>
@@ -2376,11 +2376,11 @@
     <string name="group_member_status_pending_review_short">inceleme</string>
     <string name="button_remove_members_question">Üyeleri kaldırmak mı?</string>
     <string name="unblock_members_for_all_question">Tüm üyeler için engellemeyi kaldırmak mı?</string>
-    <string name="error_server_protocol_changed">Sunucu protokolü değiştirildi.</string>
-    <string name="operator_use_operator_toggle_description">Sunucuları kullanın</string>
-    <string name="operator_server_alert_title">Operatör sunucusu</string>
-    <string name="server_added_to_operator__name">Sunucu operatöre %s eklendi.</string>
-    <string name="error_server_operator_changed">Sunucu operatörü değişti.</string>
+    <string name="error_server_protocol_changed">Yönlendirici protokolü değiştirildi.</string>
+    <string name="operator_use_operator_toggle_description">Yönlendiricileri kullanın</string>
+    <string name="operator_server_alert_title">Operatör yönlendiricisi</string>
+    <string name="server_added_to_operator__name">Yönlendirici operatöre %s eklendi.</string>
+    <string name="error_server_operator_changed">Yönlendirici operatörü değişti.</string>
     <string name="disable_sending_member_reports">Moderatörlere mesaj gönderilmesini yasaklayın.</string>
     <string name="reject_pending_member_alert_title">Üyeyi reddetmek mi?</string>
     <string name="v6_3_reports">Özel raporlar gönder</string>
@@ -2393,7 +2393,7 @@
     <string name="group_preview_rejected">reddedildi</string>
     <string name="text_field_set_chat_placeholder">Sohbet adını ayarla…</string>
     <string name="max_group_mentions_per_message_reached">Her mesajda en fazla %1$s üyeye atıfta bulunabilirsiniz!</string>
-    <string name="no_message_servers_configured_for_receiving">İletileri alacak sunucu yok.</string>
+    <string name="no_message_servers_configured_for_receiving">İletileri alacak yönlendirici yok.</string>
     <string name="message_deleted_or_not_received_error_desc">Bu mesaj silindi veya henüz alınmadı.</string>
     <string name="maximum_message_size_reached_text">Lütfen mesaj boyutunu küçültün ve tekrar gönderin.</string>
     <string name="maximum_message_size_reached_non_text">Lütfen mesaj boyutunu küçültün veya medyayı kaldırın ve tekrar gönderin.</string>
@@ -2405,7 +2405,7 @@
     <string name="report_compose_reason_header_other">Diğerlerini bildir: Yalnızca grup moderatörleri bunu görebilir.</string>
     <string name="report_sent_alert_title">Moderatörlere gönderilen rapor</string>
     <string name="report_sent_alert_msg_view_in_support_chat">Raporlarınızı yöneticilerle sohbet bölümünde görüntüleyebilirsiniz.</string>
-    <string name="onboarding_network_operators_configure_via_settings">Ayarlar aracılığıyla sunucuları yapılandırabilirsiniz.</string>
+    <string name="onboarding_network_operators_configure_via_settings">Ayarlar aracılığıyla yönlendiricileri yapılandırabilirsiniz.</string>
     <string name="remote_hosts_section">Uzaktan kumandalı cep telefonları</string>
     <string name="member_criteria_off">kapalı</string>
     <string name="admission_stage_review">İnceleme üyeleri</string>
@@ -2413,13 +2413,13 @@
     <string name="onboarding_notifications_mode_battery">Bildirimler ve pil</string>
     <string name="group_member_status_pending_review">inceleme bekliyor</string>
     <string name="network_smp_web_port_off">Kapalı</string>
-    <string name="network_smp_web_port_preset">Önceden ayarlanmış sunucular</string>
-    <string name="network_smp_web_port_preset_footer">Önceden ayarlanmış sunucular için yalnızca TCP bağlantı noktası 443\'ü kullanın.</string>
+    <string name="network_smp_web_port_preset">Önceden ayarlanmış yönlendiriciler</string>
+    <string name="network_smp_web_port_preset_footer">Önceden ayarlanmış yönlendiriciler için yalnızca TCP bağlantı noktası 443\'ü kullanın.</string>
     <string name="only_chat_owners_can_change_prefs">Sohbet sahipleri tercihleri değiştirebilir.</string>
     <string name="v6_3_organize_chat_lists">Sohbetleri listeler halinde düzenleyin</string>
-    <string name="network_preset_servers_title">Önceden ayarlanmış sunucular</string>
+    <string name="network_preset_servers_title">Önceden ayarlanmış yönlendiriciler</string>
     <string name="operator_use_for_messages">Mesajlar için kullanın</string>
-    <string name="xftp_servers_per_user">Mevcut sohbet profilinizin yeni dosyaları için sunucular</string>
+    <string name="xftp_servers_per_user">Mevcut sohbet profilinizin yeni dosyaları için yönlendiriciler</string>
     <string name="member_reports_are_prohibited">Bu grupta mesajların bildirilmesi yasaktır.</string>
     <string name="reject_pending_member_button">Reddet</string>
     <string name="connection_error_quota_desc">Bağlantı, teslim edilemeyen mesajların sınırına ulaştı, bağlantınız çevrimdışı olabilir.</string>
@@ -2510,6 +2510,6 @@
     <string name="member_is_deleted_cant_accept_request">Üye silinmiş - isteği kabul edemeyecek</string>
     <string name="upgrade_group_link">Grup linkini güncelle</string>
     <string name="server_no_sub">Abonelik yok</string>
-    <string name="not_connected_to_server_to_receive_messages_no_sub">Bu bağlantıdan mesaj almak için kullanılan sunucuya bağlı değilsiniz (abonelik yok).</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Bu bağlantıdan mesaj almak için kullanılan yönlendiriciye bağlı değilsiniz (abonelik yok).</string>
     <string name="simplex_link_relay">SimpleX Relay Linki</string>
 </resources>

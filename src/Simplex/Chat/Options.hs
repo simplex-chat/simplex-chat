@@ -98,8 +98,8 @@ coreChatOptsP appDir defaultDbName = do
           <> short 's'
           <> metavar "SERVER"
           <> help
-            ( ("Space-separated list of SMP server(s) to use (each server can have more than one hostname)." <> "\n")
-                <> ("If you pass multiple servers, surround the entire list in quotes." <> "\n")
+            ( ("Space-separated list of packet router(s) to use (each router can have more than one hostname)." <> "\n")
+                <> ("If you pass multiple routers, surround the entire list in quotes." <> "\n")
                 <> "Examples: smp1.example.com, \"smp1.example.com smp2.example.com smp3.example.com\""
             )
           <> value []
@@ -110,8 +110,8 @@ coreChatOptsP appDir defaultDbName = do
       ( long "xftp-server"
           <> metavar "SERVER"
           <> help
-            ( ("Space-separated list of XFTP server(s) to use (each server can have more than one hostname)." <> "\n")
-                <> ("If you pass multiple servers, surround the entire list in quotes." <> "\n")
+            ( ("Space-separated list of data router(s) to use (each router can have more than one hostname)." <> "\n")
+                <> ("If you pass multiple routers, surround the entire list in quotes." <> "\n")
                 <> "Examples: xftp1.example.com, \"xftp1.example.com xftp2.example.com xftp3.example.com\""
             )
           <> value []
@@ -139,12 +139,12 @@ coreChatOptsP appDir defaultDbName = do
         parseHostMode
         ( long "host-mode"
             <> metavar "HOST_MODE"
-            <> help "Preferred server host type: onion (when SOCKS proxy with isolate-by-auth is used), public"
+            <> help "Preferred router host type: onion (when SOCKS proxy with isolate-by-auth is used), public"
         )
   requiredHostMode <-
     switch
       ( long "required-host-mode"
-          <> help "Refuse connection if preferred server host type is not available"
+          <> help "Refuse connection if preferred router host type is not available"
       )
   smpProxyMode_ <-
     optional $
@@ -165,12 +165,12 @@ coreChatOptsP appDir defaultDbName = do
   smpWebPortServers <-
     flag' SWPAll
       ( long "smp-web-port"
-          <> help "Use port 443 with SMP servers when not specified"
+          <> help "Use port 443 with packet routers when not specified"
       )
       <|> option
         strParse
           ( long "smp-web-port-servers"
-              <> help "Use port 443 with SMP servers when not specified: all, preset (default), off"
+              <> help "Use port 443 with packet routers when not specified: all, preset (default), off"
               <> value SWPPreset
           )
   t <-
@@ -204,7 +204,7 @@ coreChatOptsP appDir defaultDbName = do
   logServerHosts <-
     switch
       ( long "log-hosts"
-          <> help "Log connections to servers (also with `-l info`)"
+          <> help "Log connections to routers (also with `-l info`)"
       )
   logAgent <-
     switch
@@ -450,7 +450,7 @@ getChatOpts appDir defaultDbName =
   execParser $
     info
       (helper <*> versionOption <*> chatOptsP appDir defaultDbName)
-      (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
+      (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as packet router")
   where
     versionStr = versionString versionNumber
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")

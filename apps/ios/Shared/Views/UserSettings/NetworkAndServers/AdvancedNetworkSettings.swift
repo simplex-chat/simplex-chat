@@ -99,7 +99,7 @@ struct AdvancedNetworkSettings: View {
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     VStack(alignment: .leading) {
-                        Text("To protect your IP address, private routing uses your SMP servers to deliver messages.")
+                        Text("To protect your IP address, private routing uses your packet routers to deliver messages.")
                         if showSentViaProxy {
                             Text("Show → on messages sent via private routing.")
                         }
@@ -216,7 +216,7 @@ struct AdvancedNetworkSettings: View {
                     Text("TCP port for messaging")
                 } footer: {
                     netCfg.smpWebPortServers == .preset
-                    ? Text("Use TCP port 443 for preset servers only.")
+                    ? Text("Use TCP port 443 for preset routers only.")
                     : Text("Use TCP port \(netCfg.smpWebPortServers == .all ? "443" : "5223") when no port is specified.")
                 }
 
@@ -281,7 +281,7 @@ struct AdvancedNetworkSettings: View {
             case .update:
                 return Alert(
                     title: Text("Update settings?"),
-                    message: Text("Updating settings will re-connect the client to all servers."),
+                    message: Text("Updating settings will re-connect the client to all routers."),
                     primaryButton: .default(Text("Ok")) {
                         _ = saveNetCfg()
                     },
@@ -374,7 +374,7 @@ struct AdvancedNetworkSettings: View {
         return switch mode {
         case .user: userMode
         case .session: userMode + textNewLine + Text("New SOCKS credentials will be used every time you start the app.")
-        case .server: userMode + textNewLine + Text("New SOCKS credentials will be used for each server.")
+        case .server: userMode + textNewLine + Text("New SOCKS credentials will be used for each router.")
         case .entity: Text("A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.")
         }
     }
@@ -382,17 +382,17 @@ struct AdvancedNetworkSettings: View {
     private func proxyModeInfo(_ mode: SMPProxyMode) -> LocalizedStringKey {
         switch mode {
         case .always: return "Always use private routing."
-        case .unknown: return "Use private routing with unknown servers."
-        case .unprotected: return "Use private routing with unknown servers when IP address is not protected."
+        case .unknown: return "Use private routing with unknown routers."
+        case .unprotected: return "Use private routing with unknown routers when IP address is not protected."
         case .never: return "Do NOT use private routing."
         }
     }
 
     private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
         switch proxyFallback {
-        case .allow: return "Send messages directly when your or destination server does not support private routing."
-        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support private routing."
-        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support private routing."
+        case .allow: return "Send messages directly when your or destination router does not support private routing."
+        case .allowProtected: return "Send messages directly when IP address is protected and your or destination router does not support private routing."
+        case .prohibit: return "Do NOT send messages directly, even if your or destination router does not support private routing."
         }
     }
 }

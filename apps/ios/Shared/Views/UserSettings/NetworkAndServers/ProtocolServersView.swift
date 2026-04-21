@@ -55,7 +55,7 @@ struct YourServersView: View {
                                 serverWarnings: $serverWarnings,
                                 relay: relay,
                                 duplicateRelayAddresses: duplicateRelayAddresses,
-                                backLabel: "Your servers",
+                                backLabel: "Your routers",
                                 selectedServer: $selectedServer
                             )
                         } else { EmptyView() }
@@ -82,7 +82,7 @@ struct YourServersView: View {
                                 duplicateHosts: duplicateHosts,
                                 server: srv,
                                 serverProtocol: .smp,
-                                backLabel: "Your servers",
+                                backLabel: "Your routers",
                                 selectedServer: $selectedServer
                             )
                         } else {
@@ -94,13 +94,13 @@ struct YourServersView: View {
                         validateServers_($userServers, $serverErrors, $serverWarnings)
                     }
                 } header: {
-                    Text("Message servers")
+                    Text("Packet routers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     if let errStr = globalSMPServersError(serverErrors) {
                         ServersErrorView(errStr: errStr)
                     } else {
-                        Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                        Text("The routers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
                             .foregroundColor(theme.colors.secondary)
                             .lineLimit(10)
                     }
@@ -118,7 +118,7 @@ struct YourServersView: View {
                                 duplicateHosts: duplicateHosts,
                                 server: srv,
                                 serverProtocol: .xftp,
-                                backLabel: "Your servers",
+                                backLabel: "Your routers",
                                 selectedServer: $selectedServer
                             )
                         } else {
@@ -130,13 +130,13 @@ struct YourServersView: View {
                         validateServers_($userServers, $serverErrors, $serverWarnings)
                     }
                 } header: {
-                    Text("Media & file servers")
+                    Text("Data routers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     if let errStr = globalXFTPServersError(serverErrors) {
                         ServersErrorView(errStr: errStr)
                     } else {
-                        Text("The servers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                        Text("The routers for new files of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
                             .foregroundColor(theme.colors.secondary)
                             .lineLimit(10)
                     }
@@ -145,7 +145,7 @@ struct YourServersView: View {
 
             Section {
                 ZStack {
-                    Button("Add server") {
+                    Button("Add router") {
                         showAddServer = true
                     }
 
@@ -195,9 +195,9 @@ struct YourServersView: View {
                 EditButton()
             }
         }
-        .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
-            Button("Enter server manually") { newServerNavLinkActive = true }
-            Button("Scan server QR code") { showScanProtoServer = true }
+        .confirmationDialog("Add router", isPresented: $showAddServer, titleVisibility: .hidden) {
+            Button("Enter router manually") { newServerNavLinkActive = true }
+            Button("Scan router QR code") { showScanProtoServer = true }
             Button("Chat relay") { newChatRelayNavLinkActive = true }
         }
         .sheet(isPresented: $showScanProtoServer) {
@@ -216,7 +216,7 @@ struct YourServersView: View {
             serverErrors: $serverErrors,
             serverWarnings: $serverWarnings
         )
-        .navigationTitle("New server")
+        .navigationTitle("New router")
         .navigationBarTitleDisplayMode(.large)
         .modifier(ThemedBackground(grouped: true))
     }
@@ -228,7 +228,7 @@ struct YourServersView: View {
             }
         } label: {
             HStack {
-                Text("How to use your servers")
+                Text("How to use your routers")
                 Image(systemName: "arrow.up.right.circle")
             }
         }
@@ -258,7 +258,7 @@ struct ProtocolServerViewLink: View {
                 serverToEdit: server,
                 backLabel: backLabel
             )
-            .navigationBarTitle("\(proto) server")
+            .navigationBarTitle("\(proto) router")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -355,7 +355,7 @@ struct TestServersButton: View {
     @Binding var testing: Bool
 
     var body: some View {
-        Button("Test servers", action: testServers)
+        Button("Test routers", action: testServers)
             .disabled(testing || allServersDisabled)
     }
 
@@ -380,7 +380,7 @@ struct TestServersButton: View {
                     let msg = failures.joined(separator: "\n")
                     showAlert(
                         NSLocalizedString("Tests failed!", comment: "alert title"),
-                        message: String.localizedStringWithFormat(NSLocalizedString("Some servers failed the test:\n%@", comment: "alert message"), msg)
+                        message: String.localizedStringWithFormat(NSLocalizedString("Some routers failed the test:\n%@", comment: "alert message"), msg)
                     )
                 }
             }
