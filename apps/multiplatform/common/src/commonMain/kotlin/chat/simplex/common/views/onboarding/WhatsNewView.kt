@@ -882,7 +882,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v6.5",
-    post = "https://simplex.chat/blog/20260421-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
+    post = "https://simplex.chat/blog/20260428-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html",
     features = listOf(
       VersionFeature.FeatureDescription(
         icon = null,
