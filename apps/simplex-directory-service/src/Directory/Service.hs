@@ -329,7 +329,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     ifPublicGroup :: GroupInfo -> IO () -> IO () -> IO ()
     ifPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} reject action =
       if isJust publicGroup then reject else action
-    groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
+    groupInfoText p@GroupProfile {description = d, publicGroup = pg_} =
+      groupNameDescr p
+        <> maybe "" ("\nWelcome message:\n" <>) d
+        <> case pg_ of
+          Just pg@PublicGroupProfile {groupLink = sLnk} ->
+            "\nLink to join " <> groupTypeStr' pg <> ": " <> strEncodeTxt sLnk
+          Nothing -> ""
     knockingStr :: Maybe GroupMemberAdmission -> [Text]
     knockingStr = \case
       Just GroupMemberAdmission {review = Just MCAll} -> ["New members are reviewed by admins"]

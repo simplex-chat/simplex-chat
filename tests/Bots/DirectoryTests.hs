@@ -1981,6 +1981,7 @@ testRegisterChannelViaCard ps =
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
+        superUser <##. "Link to join channel: "
         superUser <## "2 members"
         superUser <## ""
         superUser <## "To approve send:"
@@ -2002,6 +2003,7 @@ testRegisterChannelViaCard ps =
         superUser <# "'SimpleX Directory'> The channel ID 1 (news) is updated."
         superUser <# ("'SimpleX Directory'> bob submitted the channel ID 1:")
         superUser <## "news (News and Updates)"
+        superUser <##. "Link to join channel: "
         superUser <## "3 members"
         superUser <## ""
         superUser <## "To approve send:"
@@ -2075,6 +2077,7 @@ testDeleteChannelRegistration ps =
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
+        superUser <##. "Link to join channel: "
         superUser <## "2 members"
         superUser <## ""
         superUser <## "To approve send:"
@@ -2116,6 +2119,7 @@ testReregistrationAlreadyListed ps =
         bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
         superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
         superUser <## "news"
+        superUser <##. "Link to join channel: "
         superUser <## "2 members"
         superUser <## ""
         superUser <## "To approve send:"
@@ -2126,6 +2130,13 @@ testReregistrationAlreadyListed ps =
         superUser <## "      Channel approved!"
         bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
         bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+        -- search finds the channel with its link
+        bob #> "@'SimpleX Directory' news"
+        bob <# "'SimpleX Directory'> > news"
+        bob <## "      Found 1 group(s)."
+        bob <# "'SimpleX Directory'> news"
+        bob <##. "Link to join channel: "
+        bob <## "3 members"
         -- owner re-shares card while already listed
         bob ##> "/share chat #news @'SimpleX Directory'"
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
