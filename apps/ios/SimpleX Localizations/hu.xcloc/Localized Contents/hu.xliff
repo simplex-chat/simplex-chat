@@ -11585,7 +11585,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve" approved="no">
         <source>Please create a profile in the SimpleX app</source>
-        <target state="translated">Hozzon létre egy profilt a SimpleX-alkalmazásban</target>
+        <target state="translated">Hozzon létre egy profilt a SimpleX alkalmazásban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
