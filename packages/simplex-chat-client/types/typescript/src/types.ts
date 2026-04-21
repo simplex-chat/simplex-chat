@@ -2610,6 +2610,8 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+    ownerVerification?: OwnerVerification
+    groupSLinkData_?: GroupShortLinkData
   }
 
   export interface NoRelays extends Interface {
@@ -2776,6 +2778,7 @@ export interface GroupSupportChat {
 
 export enum GroupType {
   Channel = "channel",
+  Group = "group",
 }
 
 export enum HandshakeError {
