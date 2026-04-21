@@ -20,8 +20,10 @@ struct GroupChatInfoView: View {
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
     @Binding var scrollToItemId: ChatItem.ID?
+    @Binding var composeState: ComposeState
     var onSearch: () -> Void
     @State var localAlias: String
+    @State private var showSharePicker = false
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: GroupLink?
@@ -113,6 +115,11 @@ struct GroupChatInfoView: View {
                                 } label: {
                                     Label("Share link", systemImage: "square.and.arrow.up")
                                 }
+                                Button {
+                                    showSharePicker = true
+                                } label: {
+                                    Label("Share via chat", systemImage: "arrowshape.turn.up.forward")
+                                }
                             }
                             if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
                                 channelMembersButton()
@@ -150,19 +157,17 @@ struct GroupChatInfoView: View {
                         if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
                             addOrEditWelcomeMessage()
                         }
-                        if !groupInfo.useRelays {
-                            GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                        }
+                        GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                     } footer: {
-                        if !groupInfo.useRelays {
-                            let label: LocalizedStringKey = (
-                                groupInfo.businessChat == nil
-                                ? "Only group owners can change group preferences."
-                                : "Only chat owners can change preferences."
-                            )
-                            Text(label)
-                                .foregroundColor(theme.colors.secondary)
-                        }
+                        let label: LocalizedStringKey = (
+                            groupInfo.useRelays
+                            ? "Only channel owners can change channel preferences."
+                            : groupInfo.businessChat == nil
+                            ? "Only group owners can change group preferences."
+                            : "Only chat owners can change preferences."
+                        )
+                        Text(label)
+                            .foregroundColor(theme.colors.secondary)
                     }
 
                     Section {
@@ -248,6 +253,9 @@ struct GroupChatInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .sheet(isPresented: $showSharePicker) {
+            shareChannelPicker(groupInfo: groupInfo, composeState: $composeState)
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteGroupAlert: return deleteGroupAlert()
@@ -638,7 +646,9 @@ struct GroupChatInfoView: View {
             groupLinkMemberRole: $groupLinkMemberRole,
             showTitle: false,
             creatingGroup: false,
-            isChannel: groupInfo.useRelays
+            isChannel: groupInfo.useRelays,
+            groupInfo: groupInfo,
+            composeState: $composeState
         )
         .navigationBarTitle(groupInfo.useRelays ? "Channel link" : "Group link")
         .modifier(ThemedBackground(grouped: true))
@@ -976,7 +986,9 @@ struct GroupPreferencesButton: View {
     var creatingGroup: Bool = false
 
     private var label: LocalizedStringKey {
-        groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
+        groupInfo.useRelays ? "Channel preferences"
+        : groupInfo.businessChat == nil ? "Group preferences"
+        : "Chat preferences"
     }
 
     var body: some View {
@@ -993,7 +1005,9 @@ struct GroupPreferencesButton: View {
             .navigationBarTitleDisplayMode(.large)
             .onDisappear {
                 let saveText = NSLocalizedString(
-                    creatingGroup ? "Save" : "Save and notify group members",
+                    creatingGroup ? "Save"
+                    : groupInfo.useRelays ? "Save and notify subscribers"
+                    : "Save and notify group members",
                     comment: "alert button"
                 )
 
@@ -1048,12 +1062,66 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
     )
 }
 
+@ViewBuilder
+func shareChannelPicker(groupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) -> some View {
+    let v = ChatItemForwardingView(
+        title: "Share channel",
+        isProhibited: { $0.prohibitedByPref(hasSimplexLink: true, isMediaOrFileAttachment: false, isVoice: false) },
+        onSelectChat: { chat in shareChatLink(chat, sourceGroupInfo: groupInfo, composeState: composeState) }
+    )
+    if #available(iOS 16.0, *) {
+        v.presentationDetents([.fraction(0.8)])
+    } else {
+        v
+    }
+}
+
+func shareChatLink(_ destChat: Chat, sourceGroupInfo: GroupInfo, composeState: Binding<ComposeState>? = nil) {
+    let sendAsGroup = if let gInfo = destChat.chatInfo.groupInfo { gInfo.useRelays && gInfo.membership.memberRole >= .owner } else { false }
+    Task {
+        do {
+            let mc = try await apiShareChatMsgContent(
+                shareChatType: .group, shareChatId: Int64(sourceGroupInfo.groupId),
+                toChatType: destChat.chatInfo.chatType, toChatId: destChat.chatInfo.apiId,
+                toScope: destChat.chatInfo.groupChatScope(), sendAsGroup: sendAsGroup
+            )
+            if case let .chat(_, chatLink, ownerSig) = mc {
+                await MainActor.run {
+                    dismissAllSheets {
+                        let cs = ComposeState(preview: .chatLinkPreview(chatLink: chatLink, ownerSig: ownerSig))
+                        if let composeState {
+                            composeState.wrappedValue = cs
+                        } else {
+                            ChatModel.shared.draft = cs
+                            ChatModel.shared.draftChatId = destChat.id
+                        }
+                        if destChat.id != ChatModel.shared.chatId {
+                            ItemsModel.shared.loadOpenChat(destChat.id)
+                        }
+                    }
+                }
+            } else {
+                logger.error("shareChatLink: unexpected MsgContent: \(String(describing: mc))")
+                await MainActor.run {
+                    showAlert(NSLocalizedString("Error sharing channel", comment: "alert title"), message: String(describing: mc))
+                }
+            }
+        } catch {
+            logger.error("shareChatLink error: \(error.localizedDescription)")
+            await MainActor.run {
+                showAlert(NSLocalizedString("Error sharing channel", comment: "alert title"), message: error.localizedDescription)
+            }
+        }
+    }
+}
+
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
             scrollToItemId: Binding.constant(nil),
+            composeState: Binding.constant(ComposeState()),
             onSearch: {},
             localAlias: ""
         )

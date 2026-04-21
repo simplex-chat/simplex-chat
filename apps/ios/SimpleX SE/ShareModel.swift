@@ -465,8 +465,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
         case .url:
             if let url = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? URL {
                 let content: SharedContent
-                if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
-                    privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
+                if privacyLinkPreviewsGroupDefault.get() && !privacyLinkPreviewsShowAlertGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
                     content = .url(preview: linkPreview)
                 } else {
                     content = .text(string: url.absoluteString)

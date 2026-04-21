@@ -34,6 +34,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -383,7 +384,9 @@ fun CenterPartOfScreen() {
   }
   when (currentChatId.value) {
     null -> {
-      if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+      if (shouldShowOnboarding()) {
+        ConnectOnboardingView()
+      } else if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
         Box(
           Modifier
             .fillMaxSize()

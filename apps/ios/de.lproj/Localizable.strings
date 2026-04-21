@@ -1248,7 +1248,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Bestätigt";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Verbinden";
 
 /* No comment provided by engineer. */
@@ -1352,6 +1353,9 @@ set passcode view */
 
 /* chat list item title (it should not be shown */
 "connection established" = "Verbindung hergestellt";
+
+/* No comment provided by engineer. */
+"Connection failed" = "Verbindung fehlgeschlagen";
 
 /* No comment provided by engineer. */
 "Connection is blocked by server operator:\n%@" = "Die Verbindung wurde vom Serverbetreiber blockiert:\n%@";
@@ -1464,7 +1468,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Abrundung Ecken";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Richtiger Name für %@?";
 
 /* No comment provided by engineer. */
@@ -2338,9 +2342,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Fehler beim Öffnen des Chat";
 
-/* No comment provided by engineer. */
-"Error opening group" = "Fehler beim Vorbereiten der Gruppe";
-
 /* alert title */
 "Error receiving file" = "Fehler beim Herunterladen der Datei";
 
@@ -2454,7 +2455,8 @@ file error text
 snd error text */
 "Error: %@" = "Fehler: %@";
 
-/* server test error */
+/* relay test error
+server test error */
 "Error: %@." = "Fehler: %@.";
 
 /* No comment provided by engineer. */
@@ -2501,6 +2503,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Exporting database archive…" = "Exportieren des Datenbank-Archivs…";
+
+/* No comment provided by engineer. */
+"failed" = "Fehlgeschlagen";
 
 /* No comment provided by engineer. */
 "Failed to remove passphrase" = "Das Entfernen des Passworts ist fehlgeschlagen";
@@ -2604,7 +2609,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fingerprint in server address does not match certificate: %@." = "Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein: %@.";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein.";
 
 /* No comment provided by engineer. */
@@ -2628,7 +2634,8 @@ snd error text */
 /* No comment provided by engineer. */
 "For all moderators" = "Für alle Moderatoren";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Für das Chat-Profil %@:";
 
 /* No comment provided by engineer. */
@@ -2871,6 +2878,9 @@ snd error text */
 /* No comment provided by engineer. */
 "If you enter your self-destruct passcode while opening the app:" = "Wenn Sie Ihren Selbstzerstörungs-Zugangscode während des Öffnens der App eingeben:";
 
+/* down migration warning */
+"If you joined or created channels, they will stop working permanently." = "Kanäle, welche Sie erstellt haben oder denen Sie beigetreten sind, werden dauerhaft deaktiviert.";
+
 /* No comment provided by engineer. */
 "If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Tippen Sie unten auf **Später wiederholen**, wenn Sie den Chat jetzt benötigen (es wird Ihnen angeboten, die Datenbank bei einem Neustart der App zu migrieren).";
 
@@ -3042,7 +3052,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Migrations-Bestätigung ungültig";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Ungültiger Name!";
 
 /* No comment provided by engineer. */
@@ -5172,9 +5182,6 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Die SimpleX-Protokolle wurden von Trail of Bits überprüft.";
 
-/* simplex link type */
-"SimpleX relay link" = "SimpleX Relais-Link";
-
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Vereinfachter Inkognito-Modus";
 
@@ -5380,7 +5387,8 @@ report reason */
 /* file error alert title */
 "Temporary file error" = "Temporärer Datei-Fehler";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Der Test ist beim Schritt %@ fehlgeschlagen.";
 
 /* No comment provided by engineer. */
