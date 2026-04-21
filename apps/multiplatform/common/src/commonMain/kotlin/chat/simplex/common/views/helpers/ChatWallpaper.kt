@@ -172,38 +172,38 @@ enum class PresetWallpaper(
       ),
     )
   ),
-  SCHOOL(MR.images.wallpaper_school, "school", 0.53f, 243.37f, 0.7950f,
-    wallpaperBackgrounds(light = oklch(0.9626785f, 0.02004578f, 238.6614f)), // #ffE7F5FF
+  SCHOOL(MR.images.wallpaper_school, "school", 0.53f, 243.0f, 0.7950f,
+    wallpaperBackgrounds(light = oklch(0.96f, 0.0197f, 243.0f)), // P3 85% max
     _tint = mapOf(
-      DefaultTheme.LIGHT to oklch(0.9252349f, 0.04096641f, 238.0518f), // #ffCEEBFF
-      DefaultTheme.DARK to oklch(0.2700986f, 0.04630937f, 241.5568f), // #ff0F293B
-      DefaultTheme.SIMPLEX to oklch(0.2929108f, 0.05102392f, 240.8139f), // #ff112f43
-      DefaultTheme.BLACK to oklch(0.2700986f, 0.04630937f, 241.5568f) // #ff0F293B
+      DefaultTheme.LIGHT to oklch(0.915f, 0.0420f, 243.0f), // P3 85%
+      DefaultTheme.DARK to oklch(0.270f, 0.0726f, 243.0f), // P3 85%
+      DefaultTheme.SIMPLEX to oklch(0.293f, 0.0787f, 243.0f), // P3 85%
+      DefaultTheme.BLACK to oklch(0.270f, 0.0726f, 243.0f) // P3 85%
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
-        sentMessage = oklch(0.9756479f, 0.01416295f, 231.2013f), // #ffeef9ff
-        sentQuote = oklch(0.9331527f, 0.03006113f, 232.4212f), // #ffD6EDFA
-        receivedMessage = oklch(0.9697657f, 0.005748723f, 264.5325f), // #ffF3F5F9
-        receivedQuote = oklch(0.9296755f, 0.00918803f, 258.3366f), // #ffe4e8ee
+        sentMessage = oklch(0.978f, 0.0116f, 243.0f), // P3 90%
+        sentQuote = oklch(0.940f, 0.0295f, 243.0f), // P3 85%
+        receivedMessage = oklch(0.968f, 0.0083f, 243.0f), // P3 45%
+        receivedQuote = oklch(0.930f, 0.0162f, 243.0f), // P3 40%
       ),
       DefaultTheme.DARK to ResolvedColors(
-        sentMessage = oklch(0.267226f, 0.03061943f, 237.8609f), // #ff172833
-        sentQuote = oklch(0.3464064f, 0.04943852f, 232.4005f), // #ff1C3E4F
-        receivedMessage = oklch(0.2764251f, 0.007910622f, 264.4375f), // #ff26282c
-        receivedQuote = oklch(0.3548081f, 0.008034593f, 255.5451f), // #ff393c40
+        sentMessage = oklch(0.280f, 0.0443f, 243.0f), // P3 50%
+        sentQuote = oklch(0.360f, 0.0625f, 243.0f), // P3 55%
+        receivedMessage = oklch(0.255f, 0.0121f, 243.0f), // P3 15%
+        receivedQuote = oklch(0.340f, 0.0161f, 243.0f), // P3 15%
       ),
       DefaultTheme.SIMPLEX to ResolvedColors(
-        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f), // #ff1A3C5D
-        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f), // #ff235b80
-        receivedMessage = oklch(0.2764251f, 0.007910622f, 264.4375f), // #ff26282c
-        receivedQuote = oklch(0.3548081f, 0.008034593f, 255.5451f), // #ff393c40
+        sentMessage = oklch(0.340f, 0.0698f, 243.0f), // P3 65%
+        sentQuote = oklch(0.445f, 0.0842f, 243.0f), // P3 60%
+        receivedMessage = oklch(0.268f, 0.0170f, 243.0f), // P3 20%
+        receivedQuote = oklch(0.343f, 0.0195f, 243.0f), // P3 18%
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f), // #ff1A3C5D
-        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f), // #ff235b80
-        receivedMessage = oklch(0.2356588f, 0.007789041f, 274.6063f), // #ff1d1e22
-        receivedQuote = oklch(0.2886546f, 0.007823012f, 264.445f), // #ff292b2f
+        sentMessage = oklch(0.340f, 0.0698f, 243.0f), // P3 65%
+        sentQuote = oklch(0.445f, 0.0842f, 243.0f), // P3 60%
+        receivedMessage = oklch(0.236f, 0.0112f, 243.0f), // P3 15%
+        receivedQuote = oklch(0.288f, 0.0137f, 243.0f), // P3 15%
       ),
     )
   ),
@@ -243,9 +243,9 @@ enum class PresetWallpaper(
     )
   );
 
-  val background: Map<DefaultTheme, Color> get() = generateBackground(this) // legacy: _background
-  val tint: Map<DefaultTheme, Color> get() = generateTint(this) // legacy: _tint
-  val colors: Map<DefaultTheme, ResolvedColors> get() = generateColors(this) // legacy: _colors
+  val background: Map<DefaultTheme, Color> get() = _background // generated: generateBackground(this)
+  val tint: Map<DefaultTheme, Color> get() = _tint // generated: generateTint(this)
+  val colors: Map<DefaultTheme, ResolvedColors> get() = _colors // generated: generateColors(this)
 
   fun toType(base: DefaultTheme, scale: Float? = null): WallpaperType =
     WallpaperType.Preset(
