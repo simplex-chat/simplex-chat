@@ -1109,7 +1109,7 @@
     <string name="create_address_and_let_people_connect">Crea un indirizzo per consentire alle persone di connettersi con te.</string>
     <string name="create_simplex_address">Crea indirizzo SimpleX</string>
     <string name="share_with_contacts">Condividi con i contatti</string>
-    <string name="share_address_with_contacts_question">Condividere l\'indirizzo con i contatti\?</string>
+    <string name="share_address_with_contacts_question">Condividere l\'indirizzo con i contatti?</string>
     <string name="stop_sharing">Smetti di condividere</string>
     <string name="enter_welcome_message_optional">Inserisci il messaggio di benvenuto… (facoltativo)</string>
     <string name="email_invite_body">Ciao!
