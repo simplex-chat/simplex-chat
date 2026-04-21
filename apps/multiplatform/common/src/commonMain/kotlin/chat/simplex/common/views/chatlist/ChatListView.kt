@@ -1236,11 +1236,11 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
       else -> false
     }
     PresetTagKind.GROUPS -> when (chatInfo) {
-      is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null && !chatInfo.groupInfo.useRelays
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null && !chatInfo.groupInfo.isChannel
       else -> false
     }
     PresetTagKind.CHANNELS -> when (chatInfo) {
-      is ChatInfo.Group -> chatInfo.groupInfo.useRelays
+      is ChatInfo.Group -> chatInfo.groupInfo.isChannel
       else -> false
     }
     PresetTagKind.BUSINESS -> when (chatInfo) {

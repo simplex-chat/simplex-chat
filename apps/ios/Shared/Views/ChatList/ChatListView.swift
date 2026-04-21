@@ -926,12 +926,12 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.businessChat == nil && !groupInfo.useRelays
+        case let .group(groupInfo, _): groupInfo.businessChat == nil && !groupInfo.isChannel
         default: false
         }
     case .channels:
         switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.useRelays
+        case let .group(groupInfo, _): groupInfo.isChannel
         default: false
         }
     case .business:
