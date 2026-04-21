@@ -1231,7 +1231,7 @@
     <string name="prohibit_message_reactions_group">Запретить реакции на сообщения.</string>
     <string name="custom_time_unit_seconds">секунд</string>
     <string name="theme_colors_section_title">ЦВЕТА ИНТЕРФЕЙСА</string>
-    <string name="share_address_with_contacts_question">Поделиться адресом с контактами\?</string>
+    <string name="share_address_with_contacts_question">Поделиться адресом с контактами?</string>
     <string name="profile_update_will_be_sent_to_contacts">Обновлённый профиль будет отправлен Вашим контактам.</string>
     <string name="learn_more_about_address">Об адресе SimpleX</string>
     <string name="learn_more">Узнать больше</string>
