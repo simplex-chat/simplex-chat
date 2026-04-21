@@ -29,7 +29,7 @@
     <string name="accept_connection_request__question">Elfogadja a kapcsolódási kérést?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
-    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a SimpleX-partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a SimpleX-partnerei számára.</string>
+    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a SimpleX partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a SimpleX partnerei számára.</string>
     <string name="color_primary_variant">További kiemelőszín</string>
     <string name="callstatus_error">híváshiba</string>
     <string name="v5_4_block_group_members">Csoporttagok letiltása</string>
@@ -979,7 +979,7 @@
     <string name="current_version_timestamp">%s (jelenlegi)</string>
     <string name="smp_servers_your_server">Saját SMP-kiszolgáló</string>
     <string name="random_port">Véletlen</string>
-    <string name="share_with_contacts">Megosztás a SimpleX-partnerekkel</string>
+    <string name="share_with_contacts">Megosztás a SimpleX partnerekkel</string>
     <string name="sender_you_pronoun">Ön</string>
     <string name="you_have_no_chats">Nincsenek csevegései</string>
     <string name="send_disappearing_message_send">Küldés</string>
@@ -995,7 +995,7 @@
     <string name="share_text_sent_at">Elküldve: %s</string>
     <string name="connect_use_current_profile">Jelenlegi profil használata</string>
     <string name="this_device">Ez az eszköz</string>
-    <string name="share_address_with_contacts_question">Megosztja a címet a SimpleX-partnereivel?</string>
+    <string name="share_address_with_contacts_question">Megosztja a címet a SimpleX partnereivel?</string>
     <string name="profile_password">Profiljelszó</string>
     <string name="theme">Téma</string>
     <string name="remove_passphrase_from_settings">Eltávolítja a jelmondatot a beállításokból?</string>
@@ -1038,7 +1038,7 @@
     <string name="smp_servers_save">Kiszolgálók mentése</string>
     <string name="group_welcome_title">Üdvözlőüzenet</string>
     <string name="network_option_seconds_label">mp</string>
-    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a SimpleX-partnerei számára.</string>
+    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a SimpleX partnerei számára.</string>
     <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognitómód</string>
     <string name="save_welcome_message_question">Menti az üdvözlőüzenetet?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Új csevegési profil létrehozásához indítsa újra az alkalmazást.</string>
@@ -2693,14 +2693,14 @@
     <string name="chat_list_channels">Csatornák</string>
     <string name="create_your_public_address">Saját nyilvános cím létrehozása</string>
     <string name="connect_via_link_or_qr_code">Kapcsolódás hivatkozáson vagy QR-kódon keresztül</string>
-    <string name="a_link_for_one_person">Egy hivatkozás, ami egyetlen partner kapcsolódásához való</string>
-    <string name="connect_with_someone">Kapcsolódás valakivel</string>
+    <string name="a_link_for_one_person">Egy hivatkozás, ami egyetlen partnerrel való kapcsolat létrehozására szolgál</string>
+    <string name="connect_with_someone">Kapcsolatba lépés valakivel</string>
     <string name="for_anyone_to_reach_you">Bárki számára, aki el szeretné érni Önt</string>
     <string name="invite_someone_privately">Partner meghívása privátban</string>
     <string name="let_someone_connect_to_you">Hagyja, hogy valaki kapcsolatba lépjen Önnel</string>
     <string name="onboarding_or_show_qr_code">Vagy mutassa meg a QR-kódot személyesen vagy videóhíváson keresztül.</string>
     <string name="onboarding_or_use_qr_code">Vagy használja ezt a QR-kódot – nyomtassa ki vagy mutassa meg online.</string>
-    <string name="onboarding_send_1_time_link">Küldje el a hivatkozást bármilyen üzenetváltó alkalmazáson keresztül – ez a módszer biztonságos. Kérje meg a partnerét, hogy illessze be a SimpleX-alkalmazásba.</string>
+    <string name="onboarding_send_1_time_link">Küldje el a hivatkozást bármilyen üzenetváltó alkalmazáson keresztül – ez egy biztonságos módszer – és kérje meg a partnerét, hogy illessze be a SimpleX alkalmazásba.</string>
     <string name="talk_to_someone">Beszélgessen valakivel</string>
     <string name="onboarding_post_address">Használja ezt a címet a közösségi oldalakon használt profiljaiban, weboldalakon vagy az e-mail aláírásában.</string>
 </resources>
