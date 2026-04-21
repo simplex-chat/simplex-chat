@@ -1563,8 +1563,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
-        get {
+    public func userCantSendReason(allRelaysBroken: Bool = false) -> (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
             switch self {
             case let .direct(contact):
                 if contact.sendMsgToConnect { return nil }
@@ -1578,6 +1577,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if groupInfo.membership.memberActive {
                     switch(groupChatScope) {
                     case .none:
+                        if allRelaysBroken && groupInfo.useRelays { return ("can't broadcast", nil) }
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
                         if groupInfo.membership.memberRole == .observer {
                             return groupInfo.useRelays ? ("you are subscriber", nil) : ("you are observer", "Please contact group admin.")
@@ -1613,10 +1613,9 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             case .invalidJSON:
                 return ("can't send messages", nil)
             }
-        }
     }
 
-    public var sendMsgEnabled: Bool { userCantSendReason == nil }
+    public var sendMsgEnabled: Bool { userCantSendReason() == nil }
 
     public var incognito: Bool {
         get {
@@ -1650,6 +1649,10 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case let .group(groupInfo, _): return groupInfo
         default: return nil
         }
+    }
+
+    public var isChannel: Bool {
+        groupInfo?.useRelays == true
     }
 
     // this works for features that are common for contacts and groups
@@ -2560,6 +2563,7 @@ public enum RelayStatus: String, Decodable, Equatable, Hashable {
     case rsInvited = "invited"
     case rsAccepted = "accepted"
     case rsActive = "active"
+    case rsInactive = "inactive"
 }
 
 public struct RelayProfile: Codable, Equatable, Hashable {
@@ -2632,6 +2636,7 @@ extension RelayStatus {
         case .rsInvited: "invited"
         case .rsAccepted: "accepted"
         case .rsActive: "active"
+        case .rsInactive: "inactive"
         }
     }
 }
@@ -3191,11 +3196,13 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
 
     public var timestampText: Text { meta.timestampText }
 
-    public var text: String {
-        switch (content.text, content.msgContent, file) {
+    public var text: String { text(isChannel: false) }
+
+    public func text(isChannel: Bool) -> String {
+        switch (content.text(isChannel: isChannel), content.msgContent, file) {
         case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
         case let ("", _, .some(file)): return file.fileName
-        default: return content.text
+        default: return content.text(isChannel: isChannel)
         }
     }
 
@@ -3265,6 +3272,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case .rcvCall: return false // notification is shown on .callInvitation instead
         case .rcvIntegrityError: return false
         case .rcvDecryptionError: return false
+        case .rcvMsgError: return false
         case .rcvGroupInvitation: return true
         case .sndGroupInvitation: return false
         case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
@@ -4022,6 +4030,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
     case rcvDecryptionError(msgDecryptError: MsgDecryptError, msgCount: UInt32)
+    case rcvMsgError(rcvMsgError: RcvMsgError)
     case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case rcvDirectEvent(rcvDirectEvent: RcvDirectEvent)
@@ -4047,42 +4056,43 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     case chatBanner
     case invalidJSON(json: Data?)
 
-    public var text: String {
-        get {
-            switch self {
-            case let .sndMsgContent(mc): return mc.text
-            case let .rcvMsgContent(mc): return mc.text
-            case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
-            case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
-            case let .sndCall(status, duration): return status.text(duration)
-            case let .rcvCall(status, duration): return status.text(duration)
-            case let .rcvIntegrityError(msgError): return msgError.text
-            case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
-            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
-            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
-            case let .rcvDirectEvent(rcvDirectEvent): return rcvDirectEvent.text
-            case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
-            case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
-            case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
-            case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
-            case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
-            case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
-            case let .rcvChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
-            case let .sndChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
-            case let .rcvGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
-            case let .sndGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
-            case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
-            case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
-            case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
-            case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
-            case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
-            case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
-            case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
-            case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
-            case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
-            case .chatBanner: return ""
-            case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
-            }
+    public var text: String { text(isChannel: false) }
+
+    public func text(isChannel: Bool) -> String {
+        switch self {
+        case let .sndMsgContent(mc): return mc.text
+        case let .rcvMsgContent(mc): return mc.text
+        case .sndDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+        case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
+        case let .sndCall(status, duration): return status.text(duration)
+        case let .rcvCall(status, duration): return status.text(duration)
+        case let .rcvIntegrityError(msgError): return msgError.text
+        case let .rcvDecryptionError(msgDecryptError, _): return msgDecryptError.text
+        case let .rcvMsgError(rcvMsgError): return rcvMsgError.text
+        case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
+        case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
+        case let .rcvDirectEvent(rcvDirectEvent): return rcvDirectEvent.text
+        case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text(isChannel: isChannel)
+        case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text(isChannel: isChannel)
+        case let .rcvConnEvent(rcvConnEvent): return rcvConnEvent.text
+        case let .sndConnEvent(sndConnEvent): return sndConnEvent.text
+        case let .rcvChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+        case let .sndChatFeature(feature, enabled, param): return CIContent.featureText(feature, enabled.text, param)
+        case let .rcvChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
+        case let .sndChatPreference(feature, allowed, param): return CIContent.preferenceText(feature, allowed, param)
+        case let .rcvGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
+        case let .sndGroupFeature(feature, preference, param, role): return CIContent.featureText(feature, preference.enable.text, param, role)
+        case let .rcvChatFeatureRejected(feature): return String.localizedStringWithFormat("%@: received, prohibited", feature.text)
+        case let .rcvGroupFeatureRejected(groupFeature): return String.localizedStringWithFormat("%@: received, prohibited", groupFeature.text)
+        case .sndModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
+        case .rcvModerated: return NSLocalizedString("moderated", comment: "moderated chat item")
+        case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
+        case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+        case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
+        case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
+        case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
+        case .chatBanner: return ""
+        case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
         }
     }
 
@@ -4150,6 +4160,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvCall: return true
         case .rcvIntegrityError: return true
         case .rcvDecryptionError: return true
+        case .rcvMsgError: return true
         case .rcvGroupInvitation: return true
         case .rcvModerated: return true
         case .rcvBlocked: return true
@@ -4579,9 +4590,13 @@ public enum MsgContent: Equatable, Hashable {
     case voice(text: String, duration: Int)
     case file(String)
     case report(text: String, reason: ReportReason)
-    case chat(text: String, chatLink: MsgChatLink)
+    case chat(text: String, chatLink: MsgChatLink, ownerSig: LinkOwnerSig?)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
+
+    public var chatLinkStr: String? {
+        if case let .chat(_, chatLink, _) = self { chatLink.connLinkStr } else { nil }
+    }
 
     public var text: String {
         switch self {
@@ -4592,7 +4607,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .report(text, _): return text
-        case let .chat(text, _): return text
+        case let .chat(text, _, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -4655,6 +4670,7 @@ public enum MsgContent: Equatable, Hashable {
         case duration
         case reason
         case chatLink
+        case ownerSig
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
@@ -4666,7 +4682,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
         case let (.file(lf), .file(rf)): return lf == rf
         case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
-        case let (.chat(lt, ll), .chat(rt, rl)): return lt == rt && ll == rl
+        case let (.chat(lt, ll, ls), .chat(rt, rl, rs)): return lt == rt && ll == rl && ls == rs
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -4709,7 +4725,8 @@ extension MsgContent: Decodable {
             case "chat":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
-                self = .chat(text: text, chatLink: chatLink)
+                let ownerSig = try container.decodeIfPresent(LinkOwnerSig.self, forKey: CodingKeys.ownerSig)
+                self = .chat(text: text, chatLink: chatLink, ownerSig: ownerSig)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -4751,10 +4768,11 @@ extension MsgContent: Encodable {
             try container.encode("report", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(reason, forKey: .reason)
-        case let .chat(text, chatLink):
+        case let .chat(text, chatLink, ownerSig):
             try container.encode("chat", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(chatLink, forKey: .chatLink)
+            try container.encodeIfPresent(ownerSig, forKey: .ownerSig)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -4763,7 +4781,7 @@ extension MsgContent: Encodable {
     }
 }
 
-public enum MsgContentTag: String, Decodable {
+public enum MsgContentTag: Codable, Hashable {
     case text
     case link
     case image
@@ -4771,12 +4789,202 @@ public enum MsgContentTag: String, Decodable {
     case voice
     case file
     case report
+    case chat
+    case unknown(type: String)
+
+    public var rawValue: String {
+        switch self {
+        case .text: return "text"
+        case .link: return "link"
+        case .image: return "image"
+        case .video: return "video"
+        case .voice: return "voice"
+        case .file: return "file"
+        case .report: return "report"
+        case .chat: return "chat"
+        case let .unknown(type): return type
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let s = try decoder.singleValueContainer().decode(String.self)
+        switch s {
+        case "text": self = .text
+        case "link": self = .link
+        case "image": self = .image
+        case "video": self = .video
+        case "voice": self = .voice
+        case "file": self = .file
+        case "report": self = .report
+        case "chat": self = .chat
+        case "liveText": self = .text
+        default: self = .unknown(type: s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
 
-public enum MsgChatLink: Codable, Equatable, Hashable {
+public enum MsgChatLink: Equatable, Hashable {
     case contact(connLink: String, profile: Profile, business: Bool)
     case invitation(invLink: String, profile: Profile)
     case group(connLink: String, groupProfile: GroupProfile)
+
+    public var isPublicGroup: Bool {
+        if case let .group(_, gp) = self { gp.publicGroup != nil } else { false }
+    }
+
+    public var connLinkStr: String {
+        switch self {
+        case let .group(connLink, _): connLink
+        case let .contact(connLink, _, _): connLink
+        case let .invitation(invLink, _): invLink
+        }
+    }
+
+    public var image: String? {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.image
+        case let .contact(_, profile, _): profile.image
+        case let .invitation(_, profile): profile.image
+        }
+    }
+
+    public var displayName: String {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.displayName
+        case let .contact(_, profile, _): profile.displayName
+        case let .invitation(_, profile): profile.displayName
+        }
+    }
+
+    public var iconName: String {
+        switch self {
+        case let .group(_, groupProfile):
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: "antenna.radiowaves.left.and.right.circle.fill"
+            case .unknown, .none: "person.2.circle.fill"
+            }
+        case let .contact(_, _, business):
+            business ? "briefcase.circle.fill" : "person.crop.circle.fill"
+        case .invitation:
+            "person.crop.circle.fill"
+        }
+    }
+
+    public var smallIconName: String {
+        switch self {
+        case let .group(_, groupProfile):
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: "antenna.radiowaves.left.and.right"
+            case .unknown, .none: "person.2"
+            }
+        case let .contact(_, _, business):
+            business ? "briefcase" : "person"
+        case .invitation:
+            "person"
+        }
+    }
+
+    public var fullName: String {
+        switch self {
+        case let .group(_, groupProfile): groupProfile.fullName
+        case let .contact(_, profile, _): profile.fullName
+        case let .invitation(_, profile): profile.fullName
+        }
+    }
+
+    public var shortDescription: String? {
+        let s: String? = switch self {
+        case let .group(_, groupProfile): groupProfile.shortDescr
+        case let .contact(_, profile, _): profile.shortDescr
+        case let .invitation(_, profile): profile.shortDescr
+        }
+        if let d = s?.trimmingCharacters(in: .whitespacesAndNewlines), !d.isEmpty { return d }
+        return nil
+    }
+
+    public func infoLine(signed: Bool) -> String {
+        var s: String = switch self {
+        case let .group(_, groupProfile):
+            switch groupProfile.publicGroup?.groupType {
+            case .channel: NSLocalizedString("Channel link", comment: "chat link info line")
+            case .unknown, .none: NSLocalizedString("Group link", comment: "chat link info line")
+            }
+        case let .contact(_, _, business):
+            business
+                ? NSLocalizedString("Business address", comment: "chat link info line")
+                : NSLocalizedString("Contact address", comment: "chat link info line")
+        case .invitation:
+            NSLocalizedString("One-time link", comment: "chat link info line")
+        }
+        if signed {
+            s += " " + (
+                self.isPublicGroup
+                    ? NSLocalizedString("(from owner)", comment: "chat link info line")
+                    : NSLocalizedString("(signed)", comment: "chat link info line")
+            )
+        }
+        return s
+    }
+}
+
+extension MsgChatLink: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case type, connLink, invLink, profile, business, groupProfile
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "contact":
+            let connLink = try container.decode(String.self, forKey: .connLink)
+            let profile = try container.decode(Profile.self, forKey: .profile)
+            let business = try container.decode(Bool.self, forKey: .business)
+            self = .contact(connLink: connLink, profile: profile, business: business)
+        case "invitation":
+            let invLink = try container.decode(String.self, forKey: .invLink)
+            let profile = try container.decode(Profile.self, forKey: .profile)
+            self = .invitation(invLink: invLink, profile: profile)
+        case "group":
+            let connLink = try container.decode(String.self, forKey: .connLink)
+            let groupProfile = try container.decode(GroupProfile.self, forKey: .groupProfile)
+            self = .group(connLink: connLink, groupProfile: groupProfile)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown MsgChatLink type: \(type)")
+        }
+    }
+}
+
+extension MsgChatLink: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .contact(connLink, profile, business):
+            try container.encode("contact", forKey: .type)
+            try container.encode(connLink, forKey: .connLink)
+            try container.encode(profile, forKey: .profile)
+            try container.encode(business, forKey: .business)
+        case let .invitation(invLink, profile):
+            try container.encode("invitation", forKey: .type)
+            try container.encode(invLink, forKey: .invLink)
+            try container.encode(profile, forKey: .profile)
+        case let .group(connLink, groupProfile):
+            try container.encode("group", forKey: .type)
+            try container.encode(connLink, forKey: .connLink)
+            try container.encode(groupProfile, forKey: .groupProfile)
+        }
+    }
+}
+
+public struct LinkOwnerSig: Codable, Equatable, Hashable {
+    public var ownerId: String?
+    public var chatBinding: String
+    public var ownerSig: String
 }
 
 public struct FormattedText: Decodable, Hashable {
@@ -5076,6 +5284,20 @@ public enum MsgErrorType: Decodable, Hashable {
     }
 }
 
+public enum RcvMsgError: Decodable, Hashable {
+    case dropped(attempts: Int)
+    case parseError(parseError: String)
+
+    var text: String {
+        switch self {
+        case let .dropped(attempts):
+            String.localizedStringWithFormat(NSLocalizedString("removed (%d attempts)", comment: "receive error chat item"), attempts)
+        case let .parseError(parseError):
+            String.localizedStringWithFormat(NSLocalizedString("error: %@", comment: "receive error chat item"), parseError)
+        }
+    }
+}
+
 public struct CIGroupInvitation: Decodable, Hashable {
     public var groupId: Int64
     public var groupMemberId: Int64
@@ -5153,7 +5375,9 @@ public enum RcvGroupEvent: Decodable, Hashable {
     case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case newMemberPendingReview
 
-    var text: String {
+    var text: String { text(isChannel: false) }
+
+    func text(isChannel: Bool) -> String {
         switch self {
         case let .memberAdded(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
@@ -5175,8 +5399,12 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
-        case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
-        case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
+        case .groupDeleted: return isChannel
+            ? NSLocalizedString("deleted channel", comment: "rcv group event chat item")
+            : NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        case .groupUpdated: return isChannel
+            ? NSLocalizedString("updated channel profile", comment: "rcv group event chat item")
+            : NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
@@ -5208,7 +5436,9 @@ public enum SndGroupEvent: Decodable, Hashable {
     case memberAccepted(groupMemberId: Int64, profile: Profile)
     case userPendingReview
 
-    var text: String {
+    var text: String { text(isChannel: false) }
+
+    func text(isChannel: Bool) -> String {
         switch self {
         case let .memberRole(_, profile, role):
             return  String.localizedStringWithFormat(NSLocalizedString("you changed role of %@ to %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
@@ -5223,7 +5453,9 @@ public enum SndGroupEvent: Decodable, Hashable {
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
-        case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
+        case .groupUpdated: return isChannel
+            ? NSLocalizedString("channel profile updated", comment: "snd group event chat item")
+            : NSLocalizedString("group profile updated", comment: "snd group event chat item")
         case .memberAccepted: return NSLocalizedString("you accepted this member", comment: "snd group event chat item")
         case .userPendingReview:
             return NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")

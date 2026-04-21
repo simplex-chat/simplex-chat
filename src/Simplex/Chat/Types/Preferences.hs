@@ -177,6 +177,7 @@ data GroupFeature
   | GFReports
   | GFHistory
   | GFSessions
+  | GFComments
   deriving (Show)
 
 data SGroupFeature (f :: GroupFeature) where
@@ -190,6 +191,7 @@ data SGroupFeature (f :: GroupFeature) where
   SGFReports :: SGroupFeature 'GFReports
   SGFHistory :: SGroupFeature 'GFHistory
   SGFSessions :: SGroupFeature 'GFSessions
+  SGFComments :: SGroupFeature 'GFComments
 
 deriving instance Show (SGroupFeature f)
 
@@ -217,6 +219,7 @@ groupFeatureNameText = \case
   GFReports -> "Member reports"
   GFHistory -> "Recent history"
   GFSessions -> "Chat sessions"
+  GFComments -> "Comments"
 
 groupFeatureNameText' :: SGroupFeature f -> Text
 groupFeatureNameText' = groupFeatureNameText . toGroupFeature
@@ -230,6 +233,11 @@ groupFeatureMemberAllowed' feature role prefs =
   let pref = getGroupPreference feature prefs
    in getField @"enable" pref == FEOn && maybe True (role >=) (getField @"role" pref)
 
+-- TODO: some preferences are channel-only (e.g., comments) and should not generate
+-- UI items or be configurable in regular groups. Currently they are simply excluded
+-- from this list. When more channel-only or group-only preferences are added,
+-- consider adding a scope property to GroupFeatureI (e.g., GFScopeAll | GFScopeChannel | GFScopeGroup)
+-- and filtering at the call sites in createGroupFeatureItems_ / createGroupFeatureChangedItems.
 allGroupFeatures :: [AGroupFeature]
 allGroupFeatures =
   [ AGF SGFTimedMessages,
@@ -244,7 +252,7 @@ allGroupFeatures =
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, sessions} = case f of
+groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, sessions, comments} = case f of
   SGFTimedMessages -> timedMessages
   SGFDirectMessages -> directMessages
   SGFFullDelete -> fullDelete
@@ -255,6 +263,7 @@ groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reac
   SGFReports -> reports
   SGFHistory -> history
   SGFSessions -> sessions
+  SGFComments -> comments
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -268,6 +277,7 @@ toGroupFeature = \case
   SGFReports -> GFReports
   SGFHistory -> GFHistory
   SGFSessions -> GFSessions
+  SGFComments -> GFComments
 
 class GroupPreferenceI p where
   getGroupPreference :: SGroupFeature f -> p -> GroupFeaturePreference f
@@ -279,7 +289,7 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, sessions} = case f of
+  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, sessions, comments} = case f of
     SGFTimedMessages -> timedMessages
     SGFDirectMessages -> directMessages
     SGFFullDelete -> fullDelete
@@ -290,6 +300,7 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFReports -> reports
     SGFHistory -> history
     SGFSessions -> sessions
+    SGFComments -> comments
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -304,6 +315,7 @@ data GroupPreferences = GroupPreferences
     reports :: Maybe ReportsGroupPreference,
     history :: Maybe HistoryGroupPreference,
     sessions :: Maybe SessionsGroupPreference,
+    comments :: Maybe CommentsGroupPreference,
     commands :: Maybe [ChatBotCommand]
   }
   deriving (Eq, Show)
@@ -354,6 +366,7 @@ setGroupPreference_ f pref prefs =
     SGFReports -> prefs {reports = pref}
     SGFHistory -> prefs {history = pref}
     SGFSessions -> prefs {sessions = pref}
+    SGFComments -> prefs {comments = pref}
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
 setGroupTimedMessagesPreference pref prefs_ =
@@ -396,6 +409,7 @@ data FullGroupPreferences = FullGroupPreferences
     reports :: ReportsGroupPreference,
     history :: HistoryGroupPreference,
     sessions :: SessionsGroupPreference,
+    comments :: CommentsGroupPreference,
     commands :: ListDef ChatBotCommand
   }
   deriving (Eq, Show)
@@ -465,11 +479,12 @@ defaultGroupPrefs =
       reports = ReportsGroupPreference {enable = FEOn},
       history = HistoryGroupPreference {enable = FEOff},
       sessions = SessionsGroupPreference {enable = FEOff, role = Nothing},
+      comments = CommentsGroupPreference {enable = FEOff, duration = Nothing},
       commands = ListDef []
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
@@ -501,6 +516,7 @@ defaultBusinessGroupPrefs =
       reports = Just $ ReportsGroupPreference FEOff,
       history = Just $ HistoryGroupPreference FEOn,
       sessions = Just $ SessionsGroupPreference FEOn Nothing,
+      comments = Just $ CommentsGroupPreference FEOff Nothing,
       commands = Nothing
     }
 
@@ -635,6 +651,14 @@ data SessionsGroupPreference = SessionsGroupPreference
   {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
+-- Channel comments. ``duration` is time in seconds since post creation
+-- after which a channel post stops accepting new comments; `Nothing` means accept comments indefinitely.
+data CommentsGroupPreference = CommentsGroupPreference
+  { enable :: GroupFeatureEnabled,
+    duration :: Maybe Int
+  }
+  deriving (Eq, Show)
+
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
   sGroupFeature :: SGroupFeature f
@@ -677,6 +701,9 @@ instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
 
 instance HasField "enable" SessionsGroupPreference GroupFeatureEnabled where
   hasField p@SessionsGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" CommentsGroupPreference GroupFeatureEnabled where
+  hasField p@CommentsGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
@@ -738,6 +765,12 @@ instance GroupFeatureI 'GFSessions where
   groupPrefParam _ = Nothing
   groupPrefRole SessionsGroupPreference {role} = role
 
+instance GroupFeatureI 'GFComments where
+  type GroupFeaturePreference 'GFComments = CommentsGroupPreference
+  sGroupFeature = SGFComments
+  groupPrefParam CommentsGroupPreference {duration} = duration
+  groupPrefRole _ = Nothing
+
 instance GroupFeatureNoRoleI 'GFTimedMessages
 
 instance GroupFeatureNoRoleI 'GFFullDelete
@@ -747,6 +780,8 @@ instance GroupFeatureNoRoleI 'GFReactions
 instance GroupFeatureNoRoleI 'GFReports
 
 instance GroupFeatureNoRoleI 'GFHistory
+
+instance GroupFeatureNoRoleI 'GFComments
 
 instance HasField "role" DirectMessagesGroupPreference (Maybe GroupMemberRole) where
   hasField p@DirectMessagesGroupPreference {role} = (\r -> p {role = r}, role)
@@ -788,6 +823,7 @@ groupPrefStateText feature pref param role =
 groupParamText_ :: GroupFeature -> Maybe Int -> Text
 groupParamText_ feature param = case feature of
   GFTimedMessages -> maybe "" (\p -> " (" <> timedTTLText p <> ")") param
+  GFComments -> maybe "" (\p -> " (close after " <> timedTTLText p <> ")") param
   _ -> ""
 
 groupPreferenceText :: forall f. GroupFeatureI f => GroupFeaturePreference f -> Text
@@ -938,6 +974,7 @@ mergeGroupPreferences groupPreferences =
       reports = pref SGFReports,
       history = pref SGFHistory,
       sessions = pref SGFSessions,
+      comments = pref SGFComments,
       commands = ListDef $ fromMaybe [] $ groupPreferences >>= commands_
     }
   where
@@ -957,6 +994,7 @@ toGroupPreferences groupPreferences@FullGroupPreferences {commands = ListDef cmd
       reports = pref SGFReports,
       history = pref SGFHistory,
       sessions = pref SGFSessions,
+      comments = pref SGFComments,
       commands = Just cmds
     }
   where
@@ -1090,6 +1128,12 @@ $(J.deriveToJSON defaultJSON ''SessionsGroupPreference)
 instance FromJSON SessionsGroupPreference where
   parseJSON v = $(J.mkParseJSON defaultJSON ''SessionsGroupPreference) v
   omittedField = Just SessionsGroupPreference {enable = FEOff, role = Nothing}
+
+$(J.deriveToJSON defaultJSON ''CommentsGroupPreference)
+
+instance FromJSON CommentsGroupPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''CommentsGroupPreference) v
+  omittedField = Just CommentsGroupPreference {enable = FEOff, duration = Nothing}
 
 $(J.deriveJSON defaultJSON ''GroupPreferences)
 

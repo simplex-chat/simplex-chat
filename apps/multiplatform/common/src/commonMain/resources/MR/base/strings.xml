@@ -191,6 +191,8 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="unsupported_connection_link">Unsupported connection link</string>
   <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
+  <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
+  <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="connection_error_blocked">Connection blocked</string>
@@ -539,8 +541,21 @@
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
+  <string name="share_channel">Share channel…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
+  <string name="share_via_chat">Share via chat</string>
+  <string name="tap_to_open">Tap to open</string>
+  <string name="chat_link_channel">Channel link</string>
+  <string name="chat_link_group">Group link</string>
+  <string name="chat_link_business_address">Business address</string>
+  <string name="chat_link_contact_address">Contact address</string>
+  <string name="chat_link_one_time">One-time link</string>
+  <string name="chat_link_from_owner">(from owner)</string>
+  <string name="chat_link_signed">(signed)</string>
+  <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="owner_verification_passed">Link signature verified.</string>
+  <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -599,6 +614,7 @@
   <string name="cant_send_message_mem_removed">removed from group</string>
   <string name="cant_send_message_you_left">you left</string>
   <string name="cant_send_message_generic">can\'t send messages</string>
+  <string name="cant_broadcast_message">can\'t broadcast</string>
   <string name="you_are_observer">you are observer</string>
   <string name="reviewed_by_admins">reviewed by admins</string>
   <string name="cant_send_message_member_has_old_version">member has old version</string>
@@ -1184,6 +1200,7 @@
   <string name="save_and_notify_contact">Save and notify contact</string>
   <string name="save_and_notify_contacts">Save and notify contacts</string>
   <string name="save_and_notify_group_members">Save and notify group members</string>
+  <string name="save_and_notify_channel_subscribers">Save and notify channel subscribers</string>
   <string name="exit_without_saving">Exit without saving</string>
 
   <!-- HiddenProfileView.kt -->
@@ -1389,6 +1406,10 @@
   <string name="integrity_msg_bad_hash">bad message hash</string>
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
+  <string name="rcv_msg_error_dropped">dropped (%1$d attempts)</string>
+  <string name="rcv_msg_error_parse">error: %s</string>
+  <string name="alert_title_msg_error">Message error</string>
+  <string name="alert_text_msg_reception_error">The app removed this message after %1$d attempts to receive it.</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
   <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised.</string>
   <string name="alert_title_msg_bad_hash">Bad message hash</string>
@@ -1719,7 +1740,9 @@
   <string name="rcv_group_event_member_deleted">removed %1$s</string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_channel_event_channel_deleted">deleted channel</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
+  <string name="rcv_channel_event_updated_channel_profile">updated channel profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
@@ -1730,6 +1753,7 @@
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+  <string name="snd_channel_event_channel_profile_updated">channel profile updated</string>
   <string name="snd_group_event_member_accepted">you accepted this member</string>
   <string name="snd_group_event_user_pending_review">Please wait for group moderators to review your request to join the group.</string>
 
@@ -1738,6 +1762,7 @@
   <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
   <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
   <string name="rcv_group_events_count">%d group events</string>
+  <string name="rcv_channel_events_count">%d channel events</string>
   <string name="rcv_group_and_other_events">and %d other events</string>
   <string name="group_members_2">%s and %s</string>
   <string name="group_members_n">%s, %s and %d members</string>
@@ -1863,6 +1888,7 @@
   <string name="error_creating_member_contact">Error creating member contact</string>
   <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="only_channel_owners_can_change_prefs">Only channel owners can change channel preferences.</string>
   <string name="only_chat_owners_can_change_prefs">Only chat owners can change preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
@@ -2012,6 +2038,7 @@
   <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
+  <string name="channel_full_name_field">Channel full name:</string>
   <string name="group_short_descr_field">Short description:</string>
   <string name="group_descr_too_large">Description too large</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
@@ -2020,8 +2047,11 @@
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="channel_profile_is_stored_on_subscribers_devices">Channel profile is stored on subscribers\' devices and on the chat relays.</string>
   <string name="save_group_profile">Save group profile</string>
+  <string name="save_channel_profile">Save channel profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+  <string name="error_saving_channel_profile">Error saving channel profile</string>
 
   <!-- NetworkAndServers.kt -->
   <string name="network_preset_servers_title">Preset servers</string>
@@ -2201,6 +2231,7 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="channel_preferences">Channel preferences</string>
   <string name="set_group_preferences">Set group preferences</string>
   <string name="set_member_admission">Set member admission</string>
   <string name="your_preferences">Your preferences</string>
@@ -2881,17 +2912,30 @@
   <string name="relay_conn_status_connecting">connecting</string>
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
+  <string name="relay_conn_status_removed_by_operator">removed by operator</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
   <string name="relay_status_active">active</string>
+  <string name="relay_status_inactive">inactive</string>
 
   <!-- ComposeView.kt channel relay bars -->
+  <string name="relay_bar_all_relays_removed">All relays removed</string>
+  <string name="relay_bar_all_relays_failed">All relays failed</string>
+  <string name="relay_bar_no_active_relays">No active relays</string>
+  <string name="relay_bar_relays_removed">%1$d relays removed</string>
+  <string name="relay_bar_relays_failed">%1$d relays failed</string>
+  <string name="relay_bar_relays_not_active">%1$d relays not active</string>
   <string name="relay_bar_active_with_failures">%1$d/%2$d relays active, %3$d failed</string>
+  <string name="relay_bar_active_with_removed">%1$d/%2$d relays active, %3$d removed</string>
+  <string name="relay_bar_active_with_errors">%1$d/%2$d relays active, %3$d errors</string>
   <string name="relay_bar_active">%1$d/%2$d relays active</string>
   <string name="relay_bar_connected_with_errors">%1$d/%2$d relays connected, %3$d errors</string>
+  <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
+  <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_count">%1$d relays</string>
+  <string name="relay_bar_owner_no_delivery">Adding relays will be supported later.</string>
+  <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
   <string name="member_info_section_title_relay">RELAY</string>
@@ -2914,6 +2958,10 @@
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
+  <string name="relay_results">Relay results:</string>
+  <string name="connection_reached_limit_of_undelivered_messages">The connection reached the limit of undelivered messages</string>
+  <string name="network_error">Network error</string>
+  <string name="error_prefix">Error</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
   <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
@@ -2937,4 +2985,11 @@
 
   <!-- ChatListNavLinkView.kt channel-related -->
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
+
+  <!-- ComposeView.kt link previews opt-in alert -->
+  <string name="link_previews_alert_title">Enable link previews?</string>
+  <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
+  <string name="link_previews_alert_enable">Enable</string>
+  <string name="link_previews_alert_disable">Disable</string>
+  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
 </resources>

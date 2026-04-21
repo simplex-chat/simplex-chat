@@ -1218,7 +1218,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Потвърдено";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Свързване";
 
 /* No comment provided by engineer. */
@@ -1389,7 +1390,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Core version: v%@" = "Версия на ядрото: v%@";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Поправи име на %@?";
 
 /* No comment provided by engineer. */
@@ -2211,7 +2212,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Намирайте чатове по-бързо";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
 
 /* No comment provided by engineer. */
@@ -2532,7 +2534,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Невалидно потвърждение за мигриране";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Невалидно име!";
 
 /* No comment provided by engineer. */
@@ -3975,7 +3977,8 @@ chat item action */
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Тестът е неуспешен на стъпка %@.";
 
 /* No comment provided by engineer. */

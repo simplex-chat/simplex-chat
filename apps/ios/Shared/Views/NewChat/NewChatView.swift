@@ -988,11 +988,13 @@ private func showAskCurrentOrIncognitoProfileSheet(
     actionStyle: UIAlertAction.Style = .default,
     connectionLink: CreatedConnLink,
     connectionPlan: ConnectionPlan?,
+    ownerVerification: OwnerVerification? = nil,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
     showSheet(
         title,
+        message: ownerVerificationMessage(ownerVerification),
         actions: {[
             UIAlertAction(
                 title: NSLocalizedString("Use current profile", comment: "new chat action"),
@@ -1128,6 +1130,7 @@ private func showOwnGroupLinkConfirmConnectSheet(
 private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
+    ownerVerification: OwnerVerification? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1146,6 +1149,7 @@ private func showPrepareContactAlert(
                 size: alertProfileImageSize
             ),
         theme: theme,
+        information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
         onCancel: { cleanup?() },
@@ -1173,6 +1177,7 @@ private func showPrepareGroupAlert(
     connectionLink: CreatedConnLink,
     groupShortLinkInfo: GroupShortLinkInfo?,
     groupShortLinkData: GroupShortLinkData,
+    ownerVerification: OwnerVerification? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
@@ -1192,6 +1197,7 @@ private func showPrepareGroupAlert(
             ),
         theme: theme,
         subtitle: isChannel ? subscriberCount : nil,
+        information: ownerVerificationMessage(ownerVerification),
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: isChannel
             ? NSLocalizedString("Open new channel", comment: "new chat action")
@@ -1289,6 +1295,7 @@ private func showOpenKnownGroupAlert(
 // Spec: spec/client/navigation.md#planAndConnect
 func planAndConnect(
     _ shortOrFullLink: String,
+    linkOwnerSig: LinkOwnerSig? = nil,
     theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
@@ -1313,7 +1320,7 @@ func planAndConnect(
 
     func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
-            let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, inProgress: inProgress)
+            let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
             await MainActor.run {
                 ConnectProgressManager.shared.stopConnectProgress()
             }
@@ -1322,13 +1329,14 @@ func planAndConnect(
                 switch connectionPlan {
                 case let .invitationLink(ilp):
                     switch ilp {
-                    case let .ok(contactSLinkData_):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1341,6 +1349,7 @@ func planAndConnect(
                                     title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
                                     connectionLink: connectionLink,
                                     connectionPlan: connectionPlan,
+                                    ownerVerification: ownerVerification,
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1383,13 +1392,14 @@ func planAndConnect(
                     }
                 case let .contactAddress(cap):
                     switch cap {
-                    case let .ok(contactSLinkData_):
+                    case let .ok(contactSLinkData_, ownerVerification):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                             await MainActor.run {
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
                                     contactShortLinkData: contactSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1402,6 +1412,7 @@ func planAndConnect(
                                     title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
                                     connectionLink: connectionLink,
                                     connectionPlan: connectionPlan,
+                                    ownerVerification: ownerVerification,
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1461,7 +1472,7 @@ func planAndConnect(
                     }
                 case let .groupLink(glp):
                     switch glp {
-                    case let .ok(groupShortLinkInfo_, groupSLinkData_):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
                             await MainActor.run {
@@ -1469,6 +1480,7 @@ func planAndConnect(
                                     connectionLink: connectionLink,
                                     groupShortLinkInfo: groupShortLinkInfo_,
                                     groupShortLinkData: groupSLinkData,
+                                    ownerVerification: ownerVerification,
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1481,6 +1493,7 @@ func planAndConnect(
                                     title: NSLocalizedString("Join group", comment: "new chat sheet title"),
                                     connectionLink: connectionLink,
                                     connectionPlan: connectionPlan,
+                                    ownerVerification: ownerVerification,
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1524,6 +1537,33 @@ func planAndConnect(
                                 f(groupInfo)
                             } else {
                                 showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
+                            }
+                        }
+                    case let .noRelays(groupSLinkData_):
+                        logger.debug("planAndConnect, .groupLink, .noRelays")
+                        await MainActor.run {
+                            if let groupSLinkData = groupSLinkData_ {
+                                showOpenChatAlert(
+                                    profileName: groupSLinkData.groupProfile.displayName,
+                                    profileFullName: groupSLinkData.groupProfile.fullName,
+                                    profileImage:
+                                        ProfileImage(
+                                            imageStr: groupSLinkData.groupProfile.image,
+                                            iconName: "antenna.radiowaves.left.and.right.circle.fill",
+                                            size: alertProfileImageSize
+                                        ),
+                                    theme: theme,
+                                    subtitle: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert subtitle"),
+                                    cancelTitle: NSLocalizedString("OK", comment: "alert button"),
+                                    confirmTitle: nil,
+                                    onCancel: { cleanup?() }
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("Channel temporarily unavailable", comment: "alert title"),
+                                    message: NSLocalizedString("Channel has no active relays. Please try to join later.", comment: "alert message")
+                                )
+                                cleanup?()
                             }
                         }
                     }
@@ -1671,6 +1711,14 @@ private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType?
     case .contactAddress: .contact
     case .groupLink: .groupLink
     case .error: nil
+    }
+}
+
+private func ownerVerificationMessage(_ ov: OwnerVerification?) -> String? {
+    switch ov {
+    case .verified: NSLocalizedString("Link signature verified.", comment: "owner verification")
+    case let .failed(reason): String.localizedStringWithFormat(NSLocalizedString("⚠️ Signature verification failed: %@.", comment: "owner verification"), reason)
+    case .none: nil
     }
 }
 

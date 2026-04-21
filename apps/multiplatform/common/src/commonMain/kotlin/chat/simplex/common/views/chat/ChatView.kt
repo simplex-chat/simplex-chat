@@ -1953,7 +1953,7 @@ fun BoxScope.ChatItemsList(
           }
           false
         }
-        val swipeableModifier = if (appPlatform.isDesktop) Modifier else SwipeToDismissModifier(
+        val swipeableModifier = if (appPlatform.isDesktop || !chatInfo.sendMsgEnabled) Modifier else SwipeToDismissModifier(
           state = dismissState,
           directions = setOf(DismissDirection.EndToStart),
           swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
@@ -3204,7 +3204,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
     ModalManager.end.showModalCloseable(true) {
-      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays)
+      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }
 }

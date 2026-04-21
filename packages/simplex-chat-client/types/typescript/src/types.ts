@@ -17,6 +17,11 @@ export interface AChatItem {
   chatItem: ChatItem
 }
 
+export interface AddRelayResult {
+  relay: UserChatRelay
+  relayError?: ChatError
+}
+
 export interface AddressSettings {
   businessAddress: boolean
   autoAccept?: AutoAccept
@@ -278,6 +283,7 @@ export type CIContent =
   | CIContent.RcvCall
   | CIContent.RcvIntegrityError
   | CIContent.RcvDecryptionError
+  | CIContent.RcvMsgError
   | CIContent.RcvGroupInvitation
   | CIContent.SndGroupInvitation
   | CIContent.RcvDirectEvent
@@ -312,6 +318,7 @@ export namespace CIContent {
     | "rcvCall"
     | "rcvIntegrityError"
     | "rcvDecryptionError"
+    | "rcvMsgError"
     | "rcvGroupInvitation"
     | "sndGroupInvitation"
     | "rcvDirectEvent"
@@ -381,6 +388,11 @@ export namespace CIContent {
     type: "rcvDecryptionError"
     msgDecryptError: MsgDecryptError
     msgCount: number // word32
+  }
+
+  export interface RcvMsgError extends Interface {
+    type: "rcvMsgError"
+    rcvMsgError: RcvMsgError
   }
 
   export interface RcvGroupInvitation extends Interface {
@@ -1714,6 +1726,11 @@ export namespace CommandErrorType {
   }
 }
 
+export interface CommentsGroupPreference {
+  enable: GroupFeatureEnabled
+  duration?: number // int
+}
+
 export interface ComposedMessage {
   fileSource?: CryptoFile
   quotedItemId?: number // int64
@@ -1974,6 +1991,7 @@ export namespace ContactAddressPlan {
   export interface Ok extends Interface {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
+    ownerVerification?: OwnerVerification
   }
 
   export interface OwnLink extends Interface {
@@ -2068,6 +2086,11 @@ export interface CryptoFile {
 export interface CryptoFileArgs {
   fileKey: string
   fileNonce: string
+}
+
+export interface DroppedMsg {
+  brokerTs: string // ISO-8601 timestamp
+  attempts: number // int
 }
 
 export interface E2EInfo {
@@ -2420,6 +2443,7 @@ export interface FullGroupPreferences {
   reports: GroupPreference
   history: GroupPreference
   sessions: RoleGroupPreference
+  comments: CommentsGroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -2492,6 +2516,7 @@ export enum GroupFeature {
   Reports = "reports",
   History = "history",
   Sessions = "sessions",
+  Comments = "comments",
 }
 
 export enum GroupFeatureEnabled {
@@ -2546,9 +2571,16 @@ export type GroupLinkPlan =
   | GroupLinkPlan.ConnectingConfirmReconnect
   | GroupLinkPlan.ConnectingProhibit
   | GroupLinkPlan.Known
+  | GroupLinkPlan.NoRelays
 
 export namespace GroupLinkPlan {
-  export type Tag = "ok" | "ownLink" | "connectingConfirmReconnect" | "connectingProhibit" | "known"
+  export type Tag = 
+    | "ok"
+    | "ownLink"
+    | "connectingConfirmReconnect"
+    | "connectingProhibit"
+    | "known"
+    | "noRelays"
 
   interface Interface {
     type: Tag
@@ -2558,6 +2590,7 @@ export namespace GroupLinkPlan {
     type: "ok"
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
+    ownerVerification?: OwnerVerification
   }
 
   export interface OwnLink extends Interface {
@@ -2577,6 +2610,11 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+  }
+
+  export interface NoRelays extends Interface {
+    type: "noRelays"
+    groupSLinkData_?: GroupShortLinkData
   }
 }
 
@@ -2669,6 +2707,7 @@ export interface GroupPreferences {
   reports?: GroupPreference
   history?: GroupPreference
   sessions?: RoleGroupPreference
+  comments?: CommentsGroupPreference
   commands?: ChatBotCommand[]
 }
 
@@ -2767,6 +2806,7 @@ export namespace InvitationLinkPlan {
   export interface Ok extends Interface {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
+    ownerVerification?: OwnerVerification
   }
 
   export interface OwnLink extends Interface {
@@ -2834,6 +2874,12 @@ export namespace LinkContent {
     tag: string
     json: object
   }
+}
+
+export interface LinkOwnerSig {
+  ownerId?: string
+  chatBinding: string
+  ownerSig: string
 }
 
 export interface LinkPreview {
@@ -2953,6 +2999,7 @@ export namespace MsgContent {
     type: "chat"
     text: string
     chatLink: MsgChatLink
+    ownerSig?: LinkOwnerSig
   }
 
   export interface Unknown extends Interface {
@@ -3109,6 +3156,25 @@ export interface NoteFolder {
   chatTs: string // ISO-8601 timestamp
   favorite: boolean
   unread: boolean
+}
+
+export type OwnerVerification = OwnerVerification.Verified | OwnerVerification.Failed
+
+export namespace OwnerVerification {
+  export type Tag = "verified" | "failed"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Verified extends Interface {
+    type: "verified"
+  }
+
+  export interface Failed extends Interface {
+    type: "failed"
+    reason: string
+  }
 }
 
 export interface PendingContactConnection {
@@ -3598,6 +3664,26 @@ export namespace RcvGroupEvent {
   }
 }
 
+export type RcvMsgError = RcvMsgError.Dropped | RcvMsgError.ParseError
+
+export namespace RcvMsgError {
+  export type Tag = "dropped" | "parseError"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Dropped extends Interface {
+    type: "dropped"
+    attempts: number // int
+  }
+
+  export interface ParseError extends Interface {
+    type: "parseError"
+    parseError: string
+  }
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3610,6 +3696,7 @@ export enum RelayStatus {
   Invited = "invited",
   Accepted = "accepted",
   Active = "active",
+  Inactive = "inactive",
 }
 
 export enum ReportReason {
@@ -3673,6 +3760,7 @@ export namespace SMPAgentError {
 
   export interface A_DUPLICATE extends Interface {
     type: "A_DUPLICATE"
+    droppedMsg_?: DroppedMsg
   }
 
   export interface A_QUEUE extends Interface {
