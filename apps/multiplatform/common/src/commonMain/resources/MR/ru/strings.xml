@@ -2699,4 +2699,6 @@
     <string name="link_previews_alert_disable">Отключить</string>
     <string name="link_previews_alert_enable">Включить</string>
     <string name="error_prefix">Ошибка</string>
+    <string name="chat_link_business_address">Бизнес-адрес</string>
+    <string name="cant_broadcast_message">не может вещать</string>
 </resources>
