@@ -816,37 +816,37 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             >>= mapM_ (\cm@GroupMember {memberRole} -> when (memberRole == GROwner && memberActive cm) action)
 
     deContactRemovedFromGroup :: ContactId -> GroupInfo -> IO ()
-    deContactRemovedFromGroup ctId g@GroupInfo {groupId} = do
-      logInfo $ "contact ID " <> tshow ctId <> " removed from group " <> viewGroupName g
-      withGroupReg g "contact removed" $ \gr -> do
-        when (ctId `isOwner` gr) $
-          setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr' -> do
-            notifyOwner gr' $ "You are removed from the group " <> userGroupReference gr' g <> ".\n\nThe group is no longer listed in the directory."
-            notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group owner is removed)."
+    deContactRemovedFromGroup ctId g = deOwnerDeparture ctId g "removed from" "are removed from" "is removed"
 
     deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
-    deContactLeftGroup ctId g@GroupInfo {groupId} = do
-      logInfo $ "contact ID " <> tshow ctId <> " left group " <> viewGroupName g
-      -- TODO combine
-      withGroupReg g "contact left" $ \gr ->
+    deContactLeftGroup ctId g = deOwnerDeparture ctId g "left" "left" "left"
+
+    deOwnerDeparture :: ContactId -> GroupInfo -> Text -> Text -> Text -> IO ()
+    deOwnerDeparture ctId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} logAction ownerAction adminAction = do
+      let gt = maybe "group" groupTypeStr' pg_
+      logInfo $ "contact ID " <> tshow ctId <> " " <> logAction <> " group " <> viewGroupName g
+      withGroupReg g ("contact " <> logAction) $ \gr ->
         when (ctId `isOwner` gr) $
           setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr' -> do
-            notifyOwner gr' $ "You left the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
-            notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group owner left)."
+            notifyOwner gr' $ "You " <> ownerAction <> " the " <> gt <> " " <> userGroupReference gr' g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
+            notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " owner " <> adminAction <> ")."
+            when (isJust pg_) $ leavePublicGroup g
 
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
-    deServiceRemovedFromGroup g@GroupInfo {groupId} = do
+    deServiceRemovedFromGroup g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
+      let gt = maybe "group" groupTypeStr' pg_
       logInfo $ "service removed from group " <> viewGroupName g
       setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr -> do
-        notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
-        notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
+        notifyOwner gr $ serviceName <> " is removed from the " <> gt <> " " <> userGroupReference gr g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
+        notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (directory service is removed)."
 
     deGroupDeleted :: GroupInfo -> IO ()
-    deGroupDeleted g@GroupInfo {groupId} = do
+    deGroupDeleted g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
+      let gt = maybe "group" groupTypeStr' pg_
       logInfo $ "group removed " <> viewGroupName g
       setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr -> do
-        notifyOwner gr $ "The group " <> userGroupReference gr g <> " is deleted.\n\nThe group is no longer listed in the directory."
-        notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
+        notifyOwner gr $ "The " <> gt <> " " <> userGroupReference gr g <> " is deleted.\n\nThe " <> gt <> " is no longer listed in the directory."
+        notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " is deleted)."
 
     deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
     deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just pg}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) =
@@ -873,6 +873,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     groupTypeStr' :: PublicGroupProfile -> Text
     groupTypeStr' = groupTypeStr . groupType
+
+    leavePublicGroup :: GroupInfo -> IO ()
+    leavePublicGroup GroupInfo {groupId} =
+      void $ sendChatCmd cc (APILeaveGroup groupId)
 
     handleGroupLinkPlan :: Contact -> CreatedLinkContact -> MemberId -> LinkOwnerSig -> Text -> ConnectionPlan -> IO ()
     handleGroupLinkPlan ct ccLink mId ownerSig gt = \case
@@ -984,12 +988,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           Left e -> sendReply $ "Error reading groups: " <> T.pack e
           Right gs -> sendGroupsInfo ct ciId isAdmin (gs, length gs)
       DCDeleteGroup gId gName ->
-        (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} GroupReg {dbGroupId} -> do
+        (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName, publicGroup = pg_}} GroupReg {dbGroupId} -> do
+          let gt = maybe "group" groupTypeStr' pg_
           delGroupReg cc dbGroupId >>= \case
             Right () -> do
               logGDelete st dbGroupId
-              sendReply $ (if isAdmin then "The group " else "Your group ") <> displayName <> " is deleted from the directory"
-            Left e -> sendReply $ "Error deleting group " <> displayName <> ": " <> T.pack e
+              sendReply $ (if isAdmin then "The " <> gt <> " " else "Your " <> gt <> " ") <> displayName <> " is deleted from the directory"
+              when (isJust pg_) $ leavePublicGroup g
+            Left e -> sendReply $ "Error deleting " <> gt <> " " <> displayName <> ": " <> T.pack e
       DCMemberRole gId gName_ mRole_ ->
         (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr ->
           ifPublicGroup g (sendReply "This command is not available for public groups.") $ do

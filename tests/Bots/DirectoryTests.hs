@@ -2002,6 +2002,26 @@ testRegisterChannelViaCard ps =
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
+        -- re-approve after profile update
+        let approve2 = "/approve 1:news 1"
+        superUser #> ("@'SimpleX Directory' " <> approve2)
+        superUser <# ("'SimpleX Directory'> > " <> approve2)
+        superUser <## "      Channel approved!"
+        bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
+        bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+        -- owner leaves channel, triggering de-listing and bot leaving
+        bob ##> "/leave #news"
+        concurrentlyN_
+          [ do
+              bob <## "#news: you left the group"
+              bob <## "use /d #news to delete the group",
+            relay <## "#news: bob left the group (signed)"
+          ]
+        bob <# "'SimpleX Directory'> You left the channel ID 1 (news)."
+        bob <## ""
+        bob <## "The channel is no longer listed in the directory."
+        superUser <# "'SimpleX Directory'> The channel ID 1 (news) is de-listed (channel owner left)."
+        relay <## "#news: 'SimpleX Directory' left the group (signed)"
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do
