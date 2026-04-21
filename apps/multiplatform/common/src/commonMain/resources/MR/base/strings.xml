@@ -1140,12 +1140,12 @@
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
   <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
-  <string name="add_address_to_your_profile">Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</string>
+  <string name="add_address_to_your_profile">Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</string>
   <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
   <string name="create_simplex_address">Create SimpleX address</string>
-  <string name="share_with_contacts">Share with contacts</string>
-  <string name="share_address_with_contacts_question">Share address with contacts?</string>
-  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your contacts.</string>
+  <string name="share_with_contacts">Share with SimpleX contacts</string>
+  <string name="share_address_with_contacts_question">Share address with SimpleX contacts?</string>
+  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your SimpleX contacts.</string>
   <string name="stop_sharing_address">Stop sharing address?</string>
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>

@@ -135,8 +135,8 @@ struct UserAddressView: View {
                 )
             case .shareOnCreate:
                 return Alert(
-                    title: Text("Share address with contacts?"),
-                    message: Text("Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts."),
+                    title: Text("Share address with SimpleX contacts?"),
+                    message: Text("Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts."),
                     primaryButton: .default(Text("Share")) {
                         setProfileAddress($progressIndicator, true)
                         shareViaProfile = true
@@ -278,9 +278,22 @@ struct UserAddressView: View {
                 DispatchQueue.main.async {
                     if let connLinkContact {
                         chatModel.userAddress = UserContactLink(connLinkContact)
-                        alert = .shareOnCreate
+                        let hasRelevantContacts = chatModel.chats.contains { chat in
+                            if case let .direct(contact) = chat.chatInfo {
+                                return contact.active && !contact.isContactCard && !contact.contactConnIncognito
+                            }
+                            return false
+                        }
+                        if hasRelevantContacts {
+                            alert = .shareOnCreate
+                            progressIndicator = false
+                        } else {
+                            setProfileAddress($progressIndicator, true)
+                            shareViaProfile = true
+                        }
+                    } else {
+                        progressIndicator = false
                     }
-                    progressIndicator = false
                 }
             } catch let error {
                 logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
@@ -564,15 +577,15 @@ struct UserAddressSettingsView: View {
 
     private func shareWithContactsButton() -> some View {
         settingsRow("person", color: theme.colors.secondary) {
-            Toggle("Share with contacts", isOn: $shareViaProfile)
+            Toggle("Share with SimpleX contacts", isOn: $shareViaProfile)
                 .onChange(of: shareViaProfile) { on in
                     if ignoreShareViaProfileChange {
                         ignoreShareViaProfileChange = false
                     } else {
                         if on {
                             showAlert(
-                                NSLocalizedString("Share address with contacts?", comment: "alert title"),
-                                message: NSLocalizedString("Profile update will be sent to your contacts.", comment: "alert message"),
+                                NSLocalizedString("Share address with SimpleX contacts?", comment: "alert title"),
+                                message: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert message"),
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),
@@ -594,7 +607,7 @@ struct UserAddressSettingsView: View {
                         } else {
                             showAlert(
                                 NSLocalizedString("Stop sharing address?", comment: "alert title"),
-                                message: NSLocalizedString("Profile update will be sent to your contacts.", comment: "alert message"),
+                                message: NSLocalizedString("Profile update will be sent to your SimpleX contacts.", comment: "alert message"),
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),

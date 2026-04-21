@@ -79,17 +79,31 @@ fun UserAddressView(
           addressSettings = AddressSettings(businessAddress = false, autoAccept = null, autoReply = null)
         )
 
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.share_address_with_contacts_question),
-          text = generalGetString(MR.strings.add_address_to_your_profile),
-          confirmText = generalGetString(MR.strings.share_verb),
-          onConfirm = {
-            setProfileAddress(true)
-            shareViaProfile.value = true
-          }
-        )
+        val hasRelevantContacts = chatModel.chats.value.any { chat ->
+          val ci = chat.chatInfo
+          ci is ChatInfo.Direct &&
+            ci.contact.active &&
+            !ci.contact.isContactCard &&
+            !ci.contact.contactConnIncognito
+        }
+        if (hasRelevantContacts) {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.share_address_with_contacts_question),
+            text = generalGetString(MR.strings.add_address_to_your_profile),
+            confirmText = generalGetString(MR.strings.share_verb),
+            onConfirm = {
+              setProfileAddress(true)
+              shareViaProfile.value = true
+            }
+          )
+          progressIndicator.value = false
+        } else {
+          setProfileAddress(true)
+          shareViaProfile.value = true
+        }
+      } else {
+        progressIndicator.value = false
       }
-      progressIndicator.value = false
     }
   }
 
