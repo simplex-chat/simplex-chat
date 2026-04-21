@@ -65,7 +65,7 @@ module Simplex.Chat.Store.Messages
     updateGroupCIMentions,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
-    fullDeleteMemberCIs,
+    deleteMemberCIs,
     updateGroupCIBlockedByAdmin,
     markGroupChatItemDeleted,
     markMemberCIsDeleted,
@@ -2814,8 +2814,8 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
   pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
-fullDeleteMemberCIs :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO ()
-fullDeleteMemberCIs db User {userId} GroupInfo {groupId, membership} member
+deleteMemberCIs :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO ()
+deleteMemberCIs db User {userId} GroupInfo {groupId, membership} member
   | memId == groupMemberId' membership = deleteWithCond " AND group_member_id IS NULL AND item_sent = 1 " (userId, groupId)
   | otherwise = deleteWithCond " AND group_member_id = ? " (userId, groupId, memId)
   where

@@ -3115,7 +3115,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           groupMsgToView cInfo ci
         deleteMessages :: GroupInfo -> GroupMember -> CM ()
         deleteMessages gInfo' delMem
-          | groupFeatureMemberAllowed SGFFullDelete m gInfo' = fullDeleteGroupMemberCIs user gInfo' delMem
+          | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =

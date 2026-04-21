@@ -510,20 +510,20 @@ updateACIGroupInfo gInfo' = \case
     AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
-fullDeleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
-fullDeleteGroupMemberCIs user gInfo member = do
+deleteGroupMemberCIs :: User -> GroupInfo -> GroupMember -> CM ()
+deleteGroupMemberCIs user gInfo member = do
   filesInfo <- withStore' $ \db -> getGroupMemberFileInfo db user gInfo member
   deleteCIFiles user filesInfo
   withStore' $ \db -> do
-    fullDeleteMemberCIs db user gInfo member
+    deleteMemberCIs db user gInfo member
     deleteGroupMember db user member
 
-fullDeleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
-fullDeleteGroupMembersCIs user gInfo members = do
+deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> CM ()
+deleteGroupMembersCIs user gInfo members = do
   filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> getGroupMemberFileInfo db user gInfo m
   deleteCIFiles user filesInfo
   withStore' $ \db -> forM_ members $ \m -> do
-    fullDeleteMemberCIs db user gInfo m
+    deleteMemberCIs db user gInfo m
     deleteGroupMember db user m
 
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse

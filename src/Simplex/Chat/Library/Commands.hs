@@ -2890,7 +2890,7 @@ processChatCommand vr nm = \case
               void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
       deleteMessages user gInfo@GroupInfo {membership} ms
-        | groupFeatureUserAllowed SGFFullDelete gInfo = fullDeleteGroupMembersCIs user gInfo ms
+        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db vr user groupId
