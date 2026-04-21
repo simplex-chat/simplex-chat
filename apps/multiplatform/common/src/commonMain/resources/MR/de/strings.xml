@@ -1204,7 +1204,7 @@
     <string name="profile_update_will_be_sent_to_contacts">Profil-Aktualisierung wird an Ihre Kontakte gesendet.</string>
     <string name="save_auto_accept_settings">SimpleX-Adress-Einstellungen speichern</string>
     <string name="save_settings_question">Einstellungen speichern\?</string>
-    <string name="share_address_with_contacts_question">Die Adresse mit Kontakten teilen\?</string>
+    <string name="share_address_with_contacts_question">Die Adresse mit Kontakten teilen?</string>
     <string name="stop_sharing">Teilen beenden</string>
     <string name="stop_sharing_address">Das Teilen der Adresse beenden\?</string>
     <string name="dont_create_address">Keine Adresse erstellt</string>
