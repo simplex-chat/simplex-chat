@@ -519,6 +519,15 @@ SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
 
 Query: 
+        UPDATE rcv_messages
+        SET receive_attempts = receive_attempts + 1
+        WHERE conn_id = ? AND internal_id = ?
+        RETURNING receive_attempts
+      
+Plan:
+SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+
+Query: 
       DELETE FROM conn_confirmations
       WHERE conn_id = ?
     
@@ -1197,6 +1206,10 @@ Query: UPDATE connections SET smp_agent_version = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
+Query: UPDATE deleted_snd_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE deleted_snd_chunk_replica_id = ?
+Plan:
+SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE messages SET msg_body = x'' WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
@@ -1204,10 +1217,6 @@ SEARCH messages USING PRIMARY KEY (conn_id=? AND internal_id=?)
 Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
-
-Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
-Plan:
-SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:
