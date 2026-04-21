@@ -2705,4 +2705,13 @@
     <string name="onboarding_post_address">Használja ezt a címet a közösségi oldalakon használt profiljaiban, weboldalakon vagy az e-mail aláírásában.</string>
     <string name="v6_5_invite_friends">Könnyebben hívhatja meg a barátait 👋</string>
     <string name="v6_5_non_profit_governance">Nonprofit irányítás</string>
+    <string name="v6_5_safe_web_links_descr">- hivatkozások előnézetének küldése.\n- hiperhivatkozásokon keresztüli adathalászat megakadályozása.\n- hivatkozások nyomonkövetési paramétereinek eltávolítása.</string>
+    <string name="v6_5_ownership">Tulajdonjog: saját átjátszókat üzemeltethet.</string>
+    <string name="v6_5_privacy">Adatvédelem: tulajdonosok és előfizetők számára.</string>
+    <string name="v6_5_public_channels">Nyilvános csatornák – mondja el szabadon a véleményét 🚀</string>
+    <string name="v6_5_reliability">Megbízhatóság: több átjátszó is használható csatornánként.</string>
+    <string name="v6_5_safe_web_links">Biztonságos webhivatkozások</string>
+    <string name="v6_5_security">Biztonság: a csatornák kulcsait a tulajdonosok őrzik.</string>
+    <string name="v6_5_non_profit_governance_descr">A SimpleX hálózat hosszú távú működésének biztosítása érdekében.</string>
+    <string name="v6_5_invite_friends_descr">Az új felhasználók számára egyszerűbbé tettük a kapcsolatok létrehozását.</string>
 </resources>
