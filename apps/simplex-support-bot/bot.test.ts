@@ -577,7 +577,7 @@ describe("Welcome & First Message", () => {
     expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
     expect(teamMsgs.length).toBeGreaterThan(0)
-    expect(teamMsgs[teamMsgs.length - 1]).toContain("/join")
+    expect(teamMsgs[teamMsgs.length - 1]).toContain(`/'join ${CUSTOMER_GROUP_ID}'`)
   })
 
   test("non-text first message → no queue reply, no card", async () => {
@@ -954,27 +954,15 @@ describe("Team Member Lifecycle", () => {
 describe("Card Dashboard", () => {
   beforeEach(() => setup())
 
-  test("first message creates card with customer name and /join command", async () => {
+  test("first message creates card with /'join <id>' final line", async () => {
     await bot.onNewChatItems(customerMessage("Hello"))
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
-    expect(teamMsgs.length).toBeGreaterThan(0)
-    const card = teamMsgs[teamMsgs.length - 1]
-    expect(card).toContain(`/join ${CUSTOMER_GROUP_ID}:`)
-  })
-
-  test("card /join uses single-quotes for names with spaces", async () => {
-    const groupInfo = makeGroupInfo(CUSTOMER_GROUP_ID, {displayName: "John Doe"})
-    chat.groups.set(CUSTOMER_GROUP_ID, groupInfo)
-    // Build event with correct groupInfo embedded
-    const ci = makeChatItem({dir: "groupRcv", text: "Hello", memberId: CUSTOMER_ID})
-    const evt = {
-      type: "newChatItems" as const,
-      user: makeUser(MAIN_USER_ID),
-      chatItems: [{chatInfo: {type: "group" as const, groupInfo}, chatItem: ci}],
-    }
-    await bot.onNewChatItems(evt)
-    const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
-    expect(teamMsgs.some(m => m.includes(`/join ${CUSTOMER_GROUP_ID}:'John Doe'`))).toBe(true)
+    expect(teamMsgs.length).toBe(1)
+    const card = teamMsgs[0]
+    expect(card).toContain(`/'join ${CUSTOMER_GROUP_ID}'`)
+    // Join command is the final line of the card
+    const lines = card.split("\n")
+    expect(lines[lines.length - 1]).toBe(`/'join ${CUSTOMER_GROUP_ID}'`)
   })
 
   test("card update deletes old card then posts new one", async () => {
@@ -1024,9 +1012,9 @@ describe("Card Debouncing", () => {
     await cards.flush()
     // Only one delete and one post
     expect(chat.deleted.length).toBe(1)
-    // Multiple schedules → single update (2 messages per card: text + /join)
+    // Multiple schedules → single update (one card message)
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
-    expect(teamMsgs.length).toBe(2)
+    expect(teamMsgs.length).toBe(1)
   })
 
   test("multiple groups pending → each reposted once per flush", async () => {
@@ -1100,7 +1088,12 @@ describe("Card Format & State Derivation", () => {
 describe("/join Command (Team Group)", () => {
   beforeEach(() => setup())
 
-  test("/join groupId:name → team member added to customer group", async () => {
+  test("/join <id> (numeric only) → team member added to customer group", async () => {
+    await bot.onNewChatItems(teamGroupMessage(`/join ${CUSTOMER_GROUP_ID}`))
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+  })
+
+  test("/join <id>:<name> (legacy form) → team member added", async () => {
     await bot.onNewChatItems(teamGroupMessage(`/join ${CUSTOMER_GROUP_ID}:Customer`))
     expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
   })
@@ -1765,12 +1758,11 @@ describe("Card Preview Sender Prefixes", () => {
   // Helper: extract preview line from card text posted to team group
   function getCardPreview(): string {
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
-    // Card text is the first sent message; /join command is the second
     const cardText = teamMsgs[0]
     if (!cardText) return ""
     const lines = cardText.split("\n")
-    // Preview is the last line of the card
-    return lines[lines.length - 1] || ""
+    // Card layout: header, state, preview, /'join N' — preview is second to last
+    return lines[lines.length - 2] || ""
   }
 
   test("customer-only messages: first prefixed, rest not", async () => {
@@ -1937,19 +1929,19 @@ describe("Card Preview Sender Prefixes", () => {
     expect(preview).toContain("line1 line2 line3")
   })
 
-  test("newlines in customer display name → sanitized in card header, raw in /join", async () => {
+  test("newlines in customer display name → sanitized in card header", async () => {
     const gi = makeGroupInfo(CUSTOMER_GROUP_ID, {displayName: "First\nLast"})
     chat.groups.set(CUSTOMER_GROUP_ID, gi)
     addCustomerMessageToHistory("Hello")
     await cards.createCard(CUSTOMER_GROUP_ID, gi)
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
+    expect(teamMsgs.length).toBe(1)
     const cardText = teamMsgs[0]
     // Card header should have sanitized name (no newlines)
     expect(cardText).toContain("First Last")
-    expect(cardText.split("\n").length).toBe(3) // exactly 3 lines: header, state, preview
-    // /join command (second message) should use raw name
-    const joinCmd = teamMsgs[1]
-    expect(joinCmd).toContain("First\nLast")
+    // Exactly 4 lines: header, state, preview, /'join N'
+    expect(cardText.split("\n").length).toBe(4)
+    expect(cardText).toContain(`/'join ${CUSTOMER_GROUP_ID}'`)
   })
 })
 
@@ -1963,14 +1955,14 @@ describe("Restart Card Recovery", () => {
     chat.groups.set(GROUP_A, makeGroupInfo(GROUP_A))
     chat.groups.set(GROUP_B, makeGroupInfo(GROUP_B))
     chat.groups.set(GROUP_NO_CARD, makeGroupInfo(GROUP_NO_CARD))
-    chat.customData.set(GROUP_A, {cardItemId: 501, joinItemId: 502})
-    chat.customData.set(GROUP_B, {cardItemId: 503, joinItemId: 504})
+    chat.customData.set(GROUP_A, {cardItemId: 501})
+    chat.customData.set(GROUP_B, {cardItemId: 503})
 
     await cards.refreshAllCards()
 
     expectCardDeleted(501)
     expectCardDeleted(503)
-    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(4) // 2 cards × 2 messages each
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(2) // 2 cards × 1 message each
   })
 
   test("refreshAllCards with no active cards → no-op", async () => {
@@ -2007,9 +1999,9 @@ describe("Restart Card Recovery", () => {
     expect(chat.deleted[1].itemIds).toEqual([500])
     expect(chat.deleted[2].itemIds).toEqual([900])
 
-    // Newest card's messages are posted last → appear at bottom of team group
+    // Newest card is posted last → appears at bottom of team group
     const teamMsgs = chat.sentTo(TEAM_GROUP_ID)
-    expect(teamMsgs.length).toBe(6) // 3 cards × 2 messages each
+    expect(teamMsgs.length).toBe(3) // 3 cards × 1 message each
   })
 
   test("refreshAllCards skips cards marked complete", async () => {
@@ -2029,15 +2021,15 @@ describe("Restart Card Recovery", () => {
   test("refreshAllCards deletes old card before reposting", async () => {
     const GROUP_A = 101
     chat.groups.set(GROUP_A, makeGroupInfo(GROUP_A))
-    chat.customData.set(GROUP_A, {cardItemId: 501, joinItemId: 502})
+    chat.customData.set(GROUP_A, {cardItemId: 501})
 
     await cards.refreshAllCards()
 
-    // Old card + join command should be deleted
+    // Old card should be deleted
     expect(chat.deleted.length).toBe(1)
-    expect(chat.deleted[0].itemIds).toEqual([501, 502])
+    expect(chat.deleted[0].itemIds).toEqual([501])
     // New card posted
-    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(2)
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(1)
   })
 
   test("refreshAllCards ignores delete failure (>24h old card)", async () => {
@@ -2049,7 +2041,7 @@ describe("Restart Card Recovery", () => {
     await cards.refreshAllCards()
 
     // Delete failed but new card still posted
-    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(2)
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(1)
     // customData updated with new cardItemId
     const newData = chat.customData.get(GROUP_A)
     expect(typeof newData.cardItemId).toBe("number")

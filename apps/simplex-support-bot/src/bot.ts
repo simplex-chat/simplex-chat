@@ -726,7 +726,7 @@ export class SupportBot {
     const senderContactId = chatItem.chatDir.groupMember.memberContactId
     if (!senderContactId) return
 
-    const joinMatch = text.match(/^\/join\s+(\d+):/)
+    const joinMatch = text.match(/^\/join\s+(\d+)(?::.*)?\s*$/)
     if (joinMatch) {
       await this.handleJoinCommand(parseInt(joinMatch[1], 10), senderContactId)
       return

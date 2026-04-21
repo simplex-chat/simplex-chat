@@ -18,7 +18,6 @@ export interface GroupComposition {
 interface CardData {
   state?: ConversationState
   cardItemId?: number
-  joinItemId?: number
   complete?: boolean
 }
 
@@ -82,20 +81,14 @@ export class CardManager {
   }
 
   async createCard(groupId: number, groupInfo: T.GroupInfo): Promise<void> {
-    const {text, joinCmd} = await this.composeCard(groupId, groupInfo)
-    // Send card text and /join command as separate messages.
-    // The /join must be a standalone single-line message so the client renders
-    // the full command (including arguments) as clickable.
+    const {text} = await this.composeCard(groupId, groupInfo)
     const chatRef: T.ChatRef = {chatType: T.ChatType.Group, chatId: this.config.teamGroup.id}
     const items = await this.withMainProfile(() =>
       this.chat.apiSendMessages(chatRef, [
         {msgContent: {type: "text", text}, mentions: {}},
-        {msgContent: {type: "text", text: joinCmd}, mentions: {}},
       ])
     )
-    const patch: Partial<CardData> = {cardItemId: items[0].chatItem.meta.itemId}
-    patch.joinItemId = items.length > 1 ? items[1].chatItem.meta.itemId : undefined
-    await this.mergeCustomData(groupId, patch)
+    await this.mergeCustomData(groupId, {cardItemId: items[0].chatItem.meta.itemId})
   }
 
   async flush(): Promise<void> {
@@ -199,7 +192,6 @@ export class CardManager {
     const result: Partial<CardData> = {}
     if (isConversationState(data.state)) result.state = data.state
     if (typeof data.cardItemId === "number") result.cardItemId = data.cardItemId
-    if (typeof data.joinItemId === "number") result.joinItemId = data.joinItemId
     if (data.complete === true) result.complete = true
     return result
   }
@@ -235,73 +227,59 @@ export class CardManager {
     const cardItemId = customData?.cardItemId
     if (typeof cardItemId !== "number") return
 
-    // Delete old card + join command messages
-    const deleteIds = [cardItemId]
-    const joinItemId = customData?.joinItemId
-    if (typeof joinItemId === "number") deleteIds.push(joinItemId)
     try {
       await this.withMainProfile(() =>
         this.chat.apiDeleteChatItems(
-          T.ChatType.Group, this.config.teamGroup.id, deleteIds, T.CIDeleteMode.Broadcast
+          T.ChatType.Group, this.config.teamGroup.id, [cardItemId], T.CIDeleteMode.Broadcast
         )
       )
     } catch {
       // card may already be deleted
     }
 
-    const {text, joinCmd, complete} = await this.composeCard(groupId, groupInfo)
+    const {text, complete} = await this.composeCard(groupId, groupInfo)
     const chatRef: T.ChatRef = {chatType: T.ChatType.Group, chatId: this.config.teamGroup.id}
     const items = await this.withMainProfile(() =>
       this.chat.apiSendMessages(chatRef, [
         {msgContent: {type: "text", text}, mentions: {}},
-        {msgContent: {type: "text", text: joinCmd}, mentions: {}},
       ])
     )
-    const patch: Partial<CardData> = {cardItemId: items[0].chatItem.meta.itemId}
-    patch.joinItemId = items.length > 1 ? items[1].chatItem.meta.itemId : undefined
-    patch.complete = complete ? true : undefined
+    const patch: Partial<CardData> = {
+      cardItemId: items[0].chatItem.meta.itemId,
+      complete: complete ? true : undefined,
+    }
     await this.mergeCustomData(groupId, patch)
   }
 
-  private async composeCard(groupId: number, groupInfo: T.GroupInfo): Promise<{text: string, joinCmd: string, complete: boolean}> {
+  private async composeCard(groupId: number, groupInfo: T.GroupInfo): Promise<{text: string, complete: boolean}> {
     const rawName = groupInfo.groupProfile.displayName || `group-${groupId}`
     const customerName = rawName.replace(/\n+/g, " ")
     const bc = groupInfo.businessChat
     const customerId = bc?.customerId
 
-    // State is written into customData at event time by the bot's dispatch handlers.
     const state = await this.deriveState(groupId)
-    // Composition is needed for the agent-names list only.
     const {teamMembers} = await this.getGroupComposition(groupId)
 
-    // Icon
     const icon = await this.computeIcon(groupId, state, customerId ?? undefined)
-
-    // Wait time
     const waitStr = await this.computeWaitTime(groupId, state, customerId ?? undefined)
 
-    // Message count (all except bot's own groupSnd)
     const chat = await this.getChat(groupId, 100)
     const msgCount = chat.chatItems.filter((ci: T.ChatItem) => ci.chatDir.type !== "groupSnd").length
 
-    // State label
     const stateLabel = this.stateLabel(state)
 
-    // Agents
     const agentNames = teamMembers.map(m => m.memberProfile.displayName)
     const agentStr = agentNames.length > 0 ? ` · ${agentNames.join(", ")}` : ""
 
-    // Message preview
     const preview = this.buildPreview(chat.chatItems, customerName, customerId)
 
-    // /join command uses raw name so it matches the actual group profile
-    const formatted = rawName.includes(" ") ? `'${rawName}'` : rawName
-    const joinCmd = `/join ${groupId}:${formatted}`
+    // Final line uses /'join <id>' quoting so SimpleX clients render the full
+    // command (including the argument) as a single clickable token.
+    const joinCmd = `/'join ${groupId}'`
 
-    // Compose card text (without /join)
     const line1 = `${icon} *${customerName}* · ${waitStr} · ${msgCount} msgs`
     const line2 = `${stateLabel}${agentStr}`
-    return {text: `${line1}\n${line2}\n${preview}`, joinCmd, complete: icon === "✅"}
+    return {text: `${line1}\n${line2}\n${preview}\n${joinCmd}`, complete: icon === "✅"}
   }
 
   private async computeIcon(
