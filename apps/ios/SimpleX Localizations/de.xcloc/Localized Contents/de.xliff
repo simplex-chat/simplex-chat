@@ -6019,9 +6019,9 @@ Dies erfordert die Aktivierung eines VPNs.</target>
         <target>Onion-Hosts werden nicht verwendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve" approved="no">
         <source>Only chat owners can change preferences.</source>
-        <target>Nur Chat-Eigentümer können die Präferenzen ändern.</target>
+        <target state="translated">Präferenzen können nur von Chat-Eigentümern geändert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
@@ -7525,9 +7525,9 @@ chat item action</note>
         <target>%lld ausgewählt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.</target>
+        <target state="translated">Diese Nachricht ist wegen der gewählten Chat-Präferenzen nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Self-destruct" xml:space="preserve">
@@ -11588,9 +11588,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Bitte erstellen Sie in der SimpleX-App ein Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>Die gewählten Chat-Einstellungen erlauben diese Nachricht nicht.</target>
+        <target state="translated">Diese Nachricht ist wegen der gewählten Chat-Präferenzen nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
