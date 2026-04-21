@@ -28,19 +28,19 @@ enum class PresetWallpaper(
   val scale: Float,
   val hue: Float,
   val cScale: Float,
-  val background: Map<DefaultTheme, Color>,
-  val tint: Map<DefaultTheme, Color>,
-  val colors: Map<DefaultTheme, ResolvedColors>,
+  private val _background: Map<DefaultTheme, Color>,
+  private val _tint: Map<DefaultTheme, Color>,
+  private val _colors: Map<DefaultTheme, ResolvedColors>,
 ) {
   CATS(MR.images.wallpaper_cats, "cats", 0.63f, 88.34f, 0.8172f,
     wallpaperBackgrounds(light = oklch(0.9714242f, 0.01596467f, 98.99223f)), // #ffF8F6EA
-    tint = mapOf(
+    _tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.897064f, 0.07281305f, 90.95935f), // #ffefdca6
       DefaultTheme.DARK to oklch(0.3603656f, 0.0643012f, 88.54155f), // #ff4b3b0e
       DefaultTheme.SIMPLEX to oklch(0.3797781f, 0.06842897f, 88.88896f), // #ff51400f
       DefaultTheme.BLACK to oklch(0.3603656f, 0.0643012f, 88.54155f) // #ff4b3b0e
     ),
-    mapOf(
+    _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
         sentMessage = oklch(0.9854474f, 0.01790464f, 89.3544f), // #fffffaed
         sentQuote = oklch(0.9562038f, 0.0357691f, 89.44265f), // #fffaf0d6
@@ -69,13 +69,13 @@ enum class PresetWallpaper(
   ),
   FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f, 143.42f, 1.3553f,
     wallpaperBackgrounds(light = oklch(0.9718878f, 0.04671557f, 147.1246f)), // #ffE2FFE4
-    tint = mapOf(
+    _tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.8574244f, 0.1932141f, 133.0531f), // #ff9CEA59
       DefaultTheme.DARK to oklch(0.409874f, 0.1074549f, 133.4271f), // #ff31560D
       DefaultTheme.SIMPLEX to oklch(0.4415422f, 0.1170956f, 133.8571f), // #ff36600f
       DefaultTheme.BLACK to oklch(0.409874f, 0.1074549f, 133.4271f) // #ff31560D
     ),
-    mapOf(
+    _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
         sentMessage = oklch(0.9827452f, 0.03710413f, 130.3627f), // #fff1ffe5
         sentQuote = oklch(0.9477894f, 0.07588911f, 131.1257f), // #ffdcf9c4
@@ -104,13 +104,13 @@ enum class PresetWallpaper(
   ),
   HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f, 17.95f, 1.0504f,
     wallpaperBackgrounds(light = oklch(0.9565624f, 0.01848713f, 17.48077f)), // #ffFDECEC
-    tint = mapOf(
+    _tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9304586f, 0.03207239f, 17.7425f), // #fffde0e0
       DefaultTheme.DARK to oklch(0.2458526f, 0.07098409f, 23.94782f), // #ff3C0F0F
       DefaultTheme.SIMPLEX to oklch(0.2574974f, 0.07614605f, 24.19117f), // #ff411010
       DefaultTheme.BLACK to oklch(0.2458526f, 0.07098409f, 23.94782f) // #ff3C0F0F
     ),
-    mapOf(
+    _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
         sentMessage = oklch(0.9757184f, 0.01184164f, 17.35934f), // #fffff4f4
         sentQuote = oklch(0.9300344f, 0.0354728f, 17.80723f), // #ffffdfdf
@@ -139,13 +139,13 @@ enum class PresetWallpaper(
   ),
   KIDS(MR.images.wallpaper_kids, "kids", 0.53f, 200.75f, 0.7723f,
     wallpaperBackgrounds(light = oklch(0.9693045f, 0.03516977f, 192.2433f)), // #ffdbfdfb
-    tint = mapOf(
+    _tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9123625f, 0.06815507f, 211.1344f), // #ffadeffc
       DefaultTheme.DARK to oklch(0.3473769f, 0.04958945f, 218.0525f), // #ff16404B
       DefaultTheme.SIMPLEX to oklch(0.3716418f, 0.05389406f, 217.7104f), // #ff184753
       DefaultTheme.BLACK to oklch(0.3473769f, 0.04958945f, 218.0525f) // #ff16404B
     ),
-    mapOf(
+    _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
         sentMessage = oklch(0.9827091f, 0.02093746f, 200.4479f), // #ffeafeff
         sentQuote = oklch(0.9392156f, 0.04239295f, 201.9221f), // #ffcbf4f7
@@ -174,13 +174,13 @@ enum class PresetWallpaper(
   ),
   SCHOOL(MR.images.wallpaper_school, "school", 0.53f, 243.37f, 0.7950f,
     wallpaperBackgrounds(light = oklch(0.9626785f, 0.02004578f, 238.6614f)), // #ffE7F5FF
-    tint = mapOf(
+    _tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9252349f, 0.04096641f, 238.0518f), // #ffCEEBFF
       DefaultTheme.DARK to oklch(0.2700986f, 0.04630937f, 241.5568f), // #ff0F293B
       DefaultTheme.SIMPLEX to oklch(0.2929108f, 0.05102392f, 240.8139f), // #ff112f43
       DefaultTheme.BLACK to oklch(0.2700986f, 0.04630937f, 241.5568f) // #ff0F293B
     ),
-    mapOf(
+    _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
         sentMessage = oklch(0.9756479f, 0.01416295f, 231.2013f), // #ffeef9ff
         sentQuote = oklch(0.9331527f, 0.03006113f, 232.4212f), // #ffD6EDFA
@@ -209,13 +209,13 @@ enum class PresetWallpaper(
   ),
   TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f, 304.95f, 1.2099f,
     wallpaperBackgrounds(light = oklch(0.9626377f, 0.0253131f, 313.9639f)), // #fff9eeff
-    tint = mapOf(
+    _tint = mapOf(
       DefaultTheme.LIGHT to oklch(0.9174161f, 0.05105522f, 309.6281f), // #ffeedbfe
       DefaultTheme.DARK to oklch(0.2817417f, 0.07665313f, 302.6645f), // #ff311E48
       DefaultTheme.SIMPLEX to oklch(0.2948376f, 0.08277514f, 302.7197f), // #ff35204e
       DefaultTheme.BLACK to oklch(0.2817417f, 0.07665313f, 302.6645f) // #ff311E48
     ),
-    mapOf(
+    _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
         sentMessage = oklch(0.9803204f, 0.01342671f, 314.7601f), // #fffcf6ff
         sentQuote = oklch(0.9294779f, 0.04197705f, 313.6968f), // #fff2e0fc
@@ -243,9 +243,9 @@ enum class PresetWallpaper(
     )
   );
 
-  val generatedBackground: Map<DefaultTheme, Color> get() = generateBackground(this)
-  val generatedTint: Map<DefaultTheme, Color> get() = generateTint(this)
-  val generatedColors: Map<DefaultTheme, ResolvedColors> get() = generateColors(this)
+  val background: Map<DefaultTheme, Color> get() = generateBackground(this) // legacy: _background
+  val tint: Map<DefaultTheme, Color> get() = generateTint(this) // legacy: _tint
+  val colors: Map<DefaultTheme, ResolvedColors> get() = generateColors(this) // legacy: _colors
 
   fun toType(base: DefaultTheme, scale: Float? = null): WallpaperType =
     WallpaperType.Preset(
