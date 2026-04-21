@@ -1,17 +1,17 @@
 ---
 layout: layouts/article.html
 title: "SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech"
-date: 2026-04-21
+date: 2026-04-28
 # previewBody: blog_previews/20260421.html
 # image: images/20260421-channel.png
 # imageBottom: true
 draft: true
-permalink: "/blog/20260421-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"
+permalink: "/blog/20260428-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"
 ---
 
 # SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech
 
-**To be published:** Apr 21, 2026
+**To be published:** Apr 28, 2026
 
 This is a permalink for a blog post about:
 
