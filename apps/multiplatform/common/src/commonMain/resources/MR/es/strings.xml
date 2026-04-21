@@ -1145,7 +1145,7 @@
     <string name="stop_sharing_address">¿Dejar de compartir la dirección\?</string>
     <string name="theme_colors_section_title">COLORES DE LA INTERFAZ</string>
     <string name="you_can_create_it_later">Puedes crearla más tarde</string>
-    <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos\?</string>
+    <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos?</string>
     <string name="share_with_contacts">Compartir con contactos</string>
     <string name="color_title">Título</string>
     <string name="you_can_share_this_address_with_your_contacts">Puedes compartir esta dirección con tus contactos para que puedan conectar con %s.</string>
