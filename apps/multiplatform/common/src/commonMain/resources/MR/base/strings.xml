@@ -191,6 +191,8 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="unsupported_connection_link">Unsupported connection link</string>
   <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
+  <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
+  <string name="channel_no_active_relays_try_later">Channel has no active relays. Please try to join later.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="connection_error_blocked">Connection blocked</string>
@@ -463,6 +465,15 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="talk_to_someone">Talk to someone</string>
+  <string name="let_someone_connect_to_you">Let someone connect to you</string>
+  <string name="connect_via_link_or_qr_code">Connect via link or QR code</string>
+  <string name="connect_with_someone">Connect with someone</string>
+  <string name="invite_someone_privately">Invite someone privately</string>
+  <string name="a_link_for_one_person">A link for one person to connect</string>
+  <string name="create_your_public_address">Create your public address</string>
+  <string name="your_public_address">Your public address</string>
+  <string name="for_anyone_to_reach_you">For anyone to reach you</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="no_chats_in_list">No chats in list %s.</string>
@@ -495,6 +506,7 @@
   <string name="chat_list_favorites">Favorites</string>
   <string name="chat_list_contacts">Contacts</string>
   <string name="chat_list_groups">Groups</string>
+  <string name="chat_list_channels">Channels</string>
   <string name="chat_list_businesses">Businesses</string>
   <string name="chat_list_notes">Notes</string>
   <string name="chat_list_group_reports">Reports</string>
@@ -531,8 +543,21 @@
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
   <string name="forward_multiple">Forward messages…</string>
+  <string name="share_channel">Share channel…</string>
   <string name="cannot_share_message_alert_title">Cannot send message</string>
   <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
+  <string name="share_via_chat">Share via chat</string>
+  <string name="tap_to_open">Tap to open</string>
+  <string name="chat_link_channel">Channel link</string>
+  <string name="chat_link_group">Group link</string>
+  <string name="chat_link_business_address">Business address</string>
+  <string name="chat_link_contact_address">Contact address</string>
+  <string name="chat_link_one_time">One-time link</string>
+  <string name="chat_link_from_owner">(from owner)</string>
+  <string name="chat_link_signed">(signed)</string>
+  <string name="error_sharing_channel">Error sharing channel</string>
+  <string name="owner_verification_passed">Link signature verified.</string>
+  <string name="owner_verification_failed">⚠️ Signature verification failed: %s.</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -591,6 +616,7 @@
   <string name="cant_send_message_mem_removed">removed from group</string>
   <string name="cant_send_message_you_left">you left</string>
   <string name="cant_send_message_generic">can\'t send messages</string>
+  <string name="cant_broadcast_message">can\'t broadcast</string>
   <string name="you_are_observer">you are observer</string>
   <string name="reviewed_by_admins">reviewed by admins</string>
   <string name="cant_send_message_member_has_old_version">member has old version</string>
@@ -887,7 +913,7 @@
   <string name="new_chat">New chat</string>
   <string name="new_message">New message</string>
   <string name="add_contact_tab">Add contact</string>
-  <string name="scan_paste_link">Scan / Paste link</string>
+  <string name="scan_paste_link">Paste link / Scan</string>
   <string name="paste_link">Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
@@ -1115,12 +1141,12 @@
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
   <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
-  <string name="add_address_to_your_profile">Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</string>
+  <string name="add_address_to_your_profile">Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</string>
   <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
   <string name="create_simplex_address">Create SimpleX address</string>
-  <string name="share_with_contacts">Share with contacts</string>
-  <string name="share_address_with_contacts_question">Share address with contacts?</string>
-  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your contacts.</string>
+  <string name="share_with_contacts">Share with SimpleX contacts</string>
+  <string name="share_address_with_contacts_question">Share address with SimpleX contacts?</string>
+  <string name="profile_update_will_be_sent_to_contacts">Profile update will be sent to your SimpleX contacts.</string>
   <string name="stop_sharing_address">Stop sharing address?</string>
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>
@@ -1137,6 +1163,11 @@
   <string name="or_to_share_privately">Or to share privately</string>
   <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
   <string name="create_1_time_link">Create 1-time link</string>
+  <string name="new_1_time_link">New 1-time link</string>
+  <string name="onboarding_send_1_time_link">Send the link via any messenger - it\'s secure. Ask to paste into SimpleX.</string>
+  <string name="onboarding_or_show_qr_code">Or show QR in person or via video call.</string>
+  <string name="onboarding_post_address">Use this address in your social media profile, website, or email signature.</string>
+  <string name="onboarding_or_use_qr_code">Or use this QR - print or show online.</string>
   <string name="address_settings">Address settings</string>
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
@@ -1859,6 +1890,7 @@
   <string name="error_creating_member_contact">Error creating member contact</string>
   <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="only_channel_owners_can_change_prefs">Only channel owners can change channel preferences.</string>
   <string name="only_chat_owners_can_change_prefs">Only chat owners can change preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
@@ -2201,6 +2233,7 @@
   <string name="chat_preferences">Chat preferences</string>
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
+  <string name="channel_preferences">Channel preferences</string>
   <string name="set_group_preferences">Set group preferences</string>
   <string name="set_member_admission">Set member admission</string>
   <string name="your_preferences">Your preferences</string>
@@ -2546,6 +2579,17 @@
   <string name="v6_4_1_short_address_share">Share your address</string>
   <string name="v6_4_1_new_interface_languages">4 new interface languages</string>
   <string name="v6_4_1_new_interface_languages_descr">Catalan, Indonesian, Romanian and Vietnamese - thanks to our users!</string>
+  <string name="v6_5_public_channels">Public channels - speak freely 🚀</string>
+  <string name="v6_5_reliability">Reliability: many relays per channel.</string>
+  <string name="v6_5_ownership">Ownership: you can run your own relays.</string>
+  <string name="v6_5_security">Security: owners hold channel keys.</string>
+  <string name="v6_5_privacy">Privacy: for owners and subscribers.</string>
+  <string name="v6_5_invite_friends">Easier to invite your friends 👋</string>
+  <string name="v6_5_invite_friends_descr">We made connecting simpler for new users.</string>
+  <string name="v6_5_safe_web_links">Safe web links</string>
+  <string name="v6_5_safe_web_links_descr">- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking.</string>
+  <string name="v6_5_non_profit_governance">Non-profit governance</string>
+  <string name="v6_5_non_profit_governance_descr">To make SimpleX Network last.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
@@ -2881,17 +2925,30 @@
   <string name="relay_conn_status_connecting">connecting</string>
   <string name="relay_conn_status_deleted">deleted</string>
   <string name="relay_conn_status_failed">failed</string>
+  <string name="relay_conn_status_removed_by_operator">removed by operator</string>
   <string name="relay_status_new">new</string>
   <string name="relay_status_invited">invited</string>
   <string name="relay_status_accepted">accepted</string>
   <string name="relay_status_active">active</string>
+  <string name="relay_status_inactive">inactive</string>
 
   <!-- ComposeView.kt channel relay bars -->
+  <string name="relay_bar_all_relays_removed">All relays removed</string>
+  <string name="relay_bar_all_relays_failed">All relays failed</string>
+  <string name="relay_bar_no_active_relays">No active relays</string>
+  <string name="relay_bar_relays_removed">%1$d relays removed</string>
+  <string name="relay_bar_relays_failed">%1$d relays failed</string>
+  <string name="relay_bar_relays_not_active">%1$d relays not active</string>
   <string name="relay_bar_active_with_failures">%1$d/%2$d relays active, %3$d failed</string>
+  <string name="relay_bar_active_with_removed">%1$d/%2$d relays active, %3$d removed</string>
+  <string name="relay_bar_active_with_errors">%1$d/%2$d relays active, %3$d errors</string>
   <string name="relay_bar_active">%1$d/%2$d relays active</string>
   <string name="relay_bar_connected_with_errors">%1$d/%2$d relays connected, %3$d errors</string>
+  <string name="relay_bar_connected_with_failures">%1$d/%2$d relays connected, %3$d failed</string>
+  <string name="relay_bar_connected_with_removed">%1$d/%2$d relays connected, %3$d removed</string>
   <string name="relay_bar_connected">%1$d/%2$d relays connected</string>
-  <string name="relay_bar_count">%1$d relays</string>
+  <string name="relay_bar_owner_no_delivery">Adding relays will be supported later.</string>
+  <string name="relay_bar_subscriber_waiting">Waiting for channel owner to add relays.</string>
 
   <!-- GroupMemberInfoView.kt channel-related -->
   <string name="member_info_section_title_relay">RELAY</string>
@@ -2914,6 +2971,10 @@
   <string name="channel_display_name_field">Channel name</string>
   <string name="creating_channel">Creating channel</string>
   <string name="error_creating_channel">Error creating channel</string>
+  <string name="relay_results">Relay results:</string>
+  <string name="connection_reached_limit_of_undelivered_messages">The connection reached the limit of undelivered messages</string>
+  <string name="network_error">Network error</string>
+  <string name="error_prefix">Error</string>
   <string name="cancel_creating_channel_question">Cancel creating channel?</string>
   <string name="cancel_creating_channel_confirm">Cancel</string>
   <string name="enable_at_least_one_chat_relay">Enable at least one chat relay to create a channel.</string>
@@ -2937,4 +2998,11 @@
 
   <!-- ChatListNavLinkView.kt channel-related -->
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
+
+  <!-- ComposeView.kt link previews opt-in alert -->
+  <string name="link_previews_alert_title">Enable link previews?</string>
+  <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
+  <string name="link_previews_alert_enable">Enable</string>
+  <string name="link_previews_alert_disable">Disable</string>
+  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
 </resources>

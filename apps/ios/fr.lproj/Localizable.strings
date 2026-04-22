@@ -1194,7 +1194,8 @@ set passcode view */
 /* token status text */
 "Confirmed" = "Confirmé";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "Se connecter";
 
 /* No comment provided by engineer. */
@@ -1392,7 +1393,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Corner" = "Coin";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Correct name to %@?" = "Corriger le nom pour %@ ?";
 
 /* No comment provided by engineer. */
@@ -2466,7 +2467,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Recherche de message plus rapide";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
 
 /* No comment provided by engineer. */
@@ -2487,7 +2489,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "Correction non prise en charge par un membre du groupe";
 
-/* servers error */
+/* servers error
+servers warning */
 "For chat profile %@:" = "Pour le profil de discussion %@ :";
 
 /* No comment provided by engineer. */
@@ -2853,7 +2856,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid migration confirmation" = "Confirmation de migration invalide";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid name!" = "Nom invalide !";
 
 /* No comment provided by engineer. */
@@ -4803,7 +4806,8 @@ chat item action */
 /* file error alert title */
 "Temporary file error" = "Erreur de fichier temporaire";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "Échec du test à l'étape %@.";
 
 /* No comment provided by engineer. */

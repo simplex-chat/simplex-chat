@@ -24,6 +24,7 @@ enum class ConnectionLinkType {
 suspend fun planAndConnect(
   rhId: Long?,
   shortOrFullLink: String,
+  linkOwnerSig: LinkOwnerSig? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
   filterKnownContact: ((Contact) -> Unit)? = null,
@@ -44,12 +45,13 @@ suspend fun planAndConnect(
     inProgress.value = false
     cleanup?.invoke()
   }
-  return planAndConnectTask(rhId, shortOrFullLink, close, cleanup, filterKnownContact, filterKnownGroup, inProgress)
+  return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, inProgress)
 }
 
 private suspend fun planAndConnectTask(
   rhId: Long?,
   shortOrFullLink: String,
+  linkOwnerSig: LinkOwnerSig? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
   filterKnownContact: ((Contact) -> Unit)? = null,
@@ -66,7 +68,7 @@ private suspend fun planAndConnectTask(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
-  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, inProgress = inProgress)
+  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, linkOwnerSig, inProgress = inProgress)
   connectProgressManager.stopConnectProgress()
   if (!inProgress.value) { return completable }
   if (result != null) {
@@ -85,6 +87,7 @@ private suspend fun planAndConnectTask(
               rhId,
               connectionLink,
               connectionPlan.invitationLinkPlan.contactSLinkData_,
+              ownerVerification = connectionPlan.invitationLinkPlan.ownerVerification,
               close,
               cleanup
             )
@@ -96,6 +99,7 @@ private suspend fun planAndConnectTask(
               text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
               connectDestructive = false,
               cleanup = cleanup,
+              ownerVerification = connectionPlan.invitationLinkPlan.ownerVerification,
             )
           }
         InvitationLinkPlan.OwnLink -> {
@@ -146,6 +150,7 @@ private suspend fun planAndConnectTask(
               rhId,
               connectionLink,
               connectionPlan.contactAddressPlan.contactSLinkData_,
+              ownerVerification = connectionPlan.contactAddressPlan.ownerVerification,
               close,
               cleanup
             )
@@ -157,6 +162,7 @@ private suspend fun planAndConnectTask(
               text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
               connectDestructive = false,
               cleanup,
+              ownerVerification = connectionPlan.contactAddressPlan.ownerVerification,
             )
           }
         ContactAddressPlan.OwnLink -> {
@@ -215,6 +221,7 @@ private suspend fun planAndConnectTask(
               connectionLink,
               connectionPlan.groupLinkPlan.groupSLinkInfo_,
               connectionPlan.groupLinkPlan.groupSLinkData_,
+              ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
               close,
               cleanup
             )
@@ -226,6 +233,7 @@ private suspend fun planAndConnectTask(
               text = generalGetString(MR.strings.you_will_join_group) + linkText,
               connectDestructive = false,
               cleanup = cleanup,
+              ownerVerification = connectionPlan.groupLinkPlan.ownerVerification,
             )
           }
         is GroupLinkPlan.OwnLink -> {
@@ -278,6 +286,33 @@ private suspend fun planAndConnectTask(
             filterKnownGroup(groupInfo)
           } else {
             showOpenKnownGroupAlert(chatModel, rhId, close, groupInfo)
+            cleanup()
+          }
+        }
+        is GroupLinkPlan.NoRelays -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .NoRelays")
+          val groupSLinkData = connectionPlan.groupLinkPlan.groupSLinkData_
+          if (groupSLinkData != null) {
+            AlertManager.privacySensitive.showOpenChatAlert(
+              profileName = groupSLinkData.groupProfile.displayName,
+              profileFullName = groupSLinkData.groupProfile.fullName,
+              profileImage = {
+                ProfileImage(
+                  size = alertProfileImageSize,
+                  image = groupSLinkData.groupProfile.image,
+                  icon = MR.images.ic_bigtop_updates_circle_filled
+                )
+              },
+              subtitle = generalGetString(MR.strings.channel_no_active_relays_try_later),
+              confirmText = null,
+              dismissText = generalGetString(MR.strings.ok),
+              onDismiss = { cleanup() }
+            )
+          } else {
+            AlertManager.privacySensitive.showAlertMsg(
+              generalGetString(MR.strings.channel_temporarily_unavailable),
+              generalGetString(MR.strings.channel_no_active_relays_try_later)
+            )
             cleanup()
           }
         }
@@ -348,10 +383,12 @@ fun askCurrentOrIncognitoProfileAlert(
   text: String? = null,
   connectDestructive: Boolean,
   cleanup: (() -> Unit)?,
+  ownerVerification: OwnerVerification? = null,
 ) {
+  val fullText = listOfNotNull(text, ownerVerificationMessage(ownerVerification)).joinToString("\n\n").ifEmpty { null }
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = title,
-    text = text,
+    text = fullText,
     buttons = {
       Column {
         val connectColor = if (connectDestructive) MaterialTheme.colors.error else MaterialTheme.colors.primary
@@ -546,6 +583,7 @@ fun showPrepareContactAlert(
   rhId: Long?,
   connectionLink: CreatedConnLink,
   contactShortLinkData: ContactShortLinkData,
+  ownerVerification: OwnerVerification? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -562,6 +600,7 @@ fun showPrepareContactAlert(
           else MR.images.ic_account_circle_filled
       )
     },
+    information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
@@ -587,6 +626,7 @@ fun showPrepareGroupAlert(
   connectionLink: CreatedConnLink,
   groupShortLinkInfo: GroupShortLinkInfo?,
   groupShortLinkData: GroupShortLinkData,
+  ownerVerification: OwnerVerification? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -599,10 +639,11 @@ fun showPrepareGroupAlert(
       ProfileImage(
         size = alertProfileImageSize,
         image = groupShortLinkData.groupProfile.image,
-        icon = if (isChannel) MR.images.ic_bigtop_updates_padded else MR.images.ic_supervised_user_circle_filled
+        icon = if (isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
       )
     },
     subtitle = subscriberCount,
+    information = ownerVerificationMessage(ownerVerification),
     confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_new_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
@@ -629,4 +670,10 @@ fun showPrepareGroupAlert(
       cleanup?.invoke()
     }
   )
+}
+
+fun ownerVerificationMessage(ov: OwnerVerification?): String? = when (ov) {
+  is OwnerVerification.Verified -> generalGetString(MR.strings.owner_verification_passed)
+  is OwnerVerification.Failed -> String.format(generalGetString(MR.strings.owner_verification_failed), ov.reason)
+  null -> null
 }

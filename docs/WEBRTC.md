@@ -18,7 +18,7 @@ For this guide, we'll be using the most featureful and battle-tested STUN/TURN s
 1. Install `coturn` package from the main repository.
 
 ```sh
-apt update && apt install coturn`
+apt update && apt install coturn
 ```
 
 2. Uncomment `TURNSERVER_ENABLED=1` from `/etc/default/coturn`:
@@ -44,7 +44,7 @@ user=$YOUR_LOGIN:$YOUR_PASSWORD
 server-name=$YOUR_DOMAIN
 # The default realm to be used for the users when no explicit origin/realm relationship was found
 realm=$YOUR_DOMAIN
-# Path to your certificates. Make sure they're readable by cotun process user/group
+# Path to your certificates. Make sure they're readable by coturn process user/group
 cert=/var/lib/turn/cert.pem
 pkey=/var/lib/turn/key.pem
 # Use 2066 bits predefined DH TLS key
@@ -97,7 +97,7 @@ To configure your mobile app to use your server:
 
 1. Open `Settings / Network & Servers / WebRTC ICE servers` and switch toggle `Configure ICE servers`.
 
-2. Enter all server addresses in the field, one per line, for example if you servers are on the port 5349:
+2. Enter all server addresses in the field, one per line, for example if your servers are on the port 5349:
 
 ```
 stun:stun.example.com:5349
@@ -116,7 +116,7 @@ This is it - you now can make audio and video calls via your own server, without
   ping <your_ip_or_domain>
   ```
 
-  If packets being transmitted, server is up!
+  If packets are being transmitted, the server is up!
 
 - **Determine if ports are open**:
 

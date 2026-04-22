@@ -73,7 +73,9 @@ struct ChannelRelaysView: View {
     }
 
     private func ownerRelayStatusText(_ member: GroupMember) -> LocalizedStringKey {
-        if case .failed = member.activeConn?.connStatus {
+        if [.memLeft, .memRemoved, .memGroupDeleted].contains(member.memberStatus) {
+            relayConnStatus(member).text
+        } else if case .failed = member.activeConn?.connStatus {
             "failed"
         } else if member.activeConn?.connDisabled ?? false {
             "disabled"
@@ -104,11 +106,16 @@ struct ChannelRelaysView: View {
 }
 
 func relayConnStatus(_ member: GroupMember) -> (text: LocalizedStringKey, color: Color) {
-    switch member.activeConn?.connStatus {
-    case .ready: ("connected", .green)
-    case .deleted: ("deleted", .red)
-    case .failed: ("failed", .red)
-    default: ("connecting", .yellow)
+    switch member.memberStatus {
+    case .memLeft: ("removed by operator", .red)
+    case .memRemoved, .memGroupDeleted: (member.memberStatus.text, .red)
+    default:
+        switch member.activeConn?.connStatus {
+        case .ready: ("connected", .green)
+        case .deleted: ("deleted", .red)
+        case .failed: ("failed", .red)
+        default: ("connecting", .yellow)
+        }
     }
 }
 

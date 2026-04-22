@@ -167,7 +167,7 @@ fun ModalData.GroupChatInfoView(
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo) }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -554,6 +554,11 @@ fun ModalData.GroupChatInfoLayout(
           } else if (channelLink != null) {
             anyTopSectionRowShow = true
             ChannelLinkQRCodeSection(channelLink)
+            ShareViaChatButton {
+              chatModel.sharedContent.value = SharedContent.ChatLink(groupInfo)
+              chatModel.chatId.value = null
+              ModalManager.closeAllModalsEverywhere()
+            }
           }
           if (groupInfo.isOwner || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
             anyTopSectionRowShow = true
@@ -594,32 +599,27 @@ fun ModalData.GroupChatInfoLayout(
           }
         }
       }
-      val showEditSection = (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)
-        || groupInfo.groupProfile.description != null
-        || !groupInfo.useRelays
       if (anyTopSectionRowShow) {
         SectionDividerSpaced(maxBottomPadding = false)
       }
-      if (showEditSection) {
-        SectionView {
-          if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
-            val editProfileTitleId = if (groupInfo.useRelays) MR.strings.button_edit_channel_profile else MR.strings.button_edit_group_profile
-            EditGroupProfileButton(editProfileTitleId, editGroupProfile)
-          }
-          if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
-            AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
-          }
-          if (!groupInfo.useRelays) {
-            val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
-            GroupPreferencesButton(prefsTitleId, openPreferences)
-          }
+      SectionView {
+        if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
+          val editProfileTitleId = if (groupInfo.useRelays) MR.strings.button_edit_channel_profile else MR.strings.button_edit_group_profile
+          EditGroupProfileButton(editProfileTitleId, editGroupProfile)
         }
-        if (!groupInfo.useRelays) {
-          val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
-          SectionTextFooter(stringResource(footerId))
+        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
+          AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
         }
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        val prefsTitleId = if (groupInfo.useRelays) MR.strings.channel_preferences
+          else if (groupInfo.businessChat == null) MR.strings.group_preferences
+          else MR.strings.chat_preferences
+        GroupPreferencesButton(prefsTitleId, openPreferences)
       }
+      val footerId = if (groupInfo.useRelays) MR.strings.only_channel_owners_can_change_prefs
+        else if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs
+        else MR.strings.only_chat_owners_can_change_prefs
+      SectionTextFooter(stringResource(footerId))
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
       SectionView {
         if (!groupInfo.useRelays) {
@@ -1135,6 +1135,15 @@ private fun ChannelLinkQRCodeSection(groupLink: String) {
     Icon(painterResource(MR.images.ic_share), null, tint = MaterialTheme.colors.primary)
     Spacer(Modifier.width(8.dp))
     Text(stringResource(MR.strings.share_link), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
+private fun ShareViaChatButton(onClick: () -> Unit) {
+  SectionItemView(onClick) {
+    Icon(painterResource(MR.images.ic_forward), null, tint = MaterialTheme.colors.primary)
+    Spacer(Modifier.width(8.dp))
+    Text(stringResource(MR.strings.share_via_chat), color = MaterialTheme.colors.primary)
   }
 }
 

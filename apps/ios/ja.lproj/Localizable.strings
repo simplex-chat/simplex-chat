@@ -890,7 +890,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Confirm password" = "パスワードを確認";
 
-/* server test step */
+/* relay test step
+server test step */
 "Connect" = "接続";
 
 /* No comment provided by engineer. */
@@ -1720,7 +1721,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "チャットを素早く検索";
 
-/* server test error */
+/* relay test error
+server test error */
 "Fingerprint in server address does not match certificate." = "サーバアドレスの証明証IDが正しくないかもしれません";
 
 /* No comment provided by engineer. */
@@ -3133,7 +3135,8 @@ chat item action */
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* server test failure */
+/* relay test failure
+server test failure */
 "Test failed at step %@." = "テストはステップ %@ で失敗しました。";
 
 /* No comment provided by engineer. */

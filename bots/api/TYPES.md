@@ -5,6 +5,7 @@ This file is generated automatically.
 - [ACIReaction](#acireaction)
 - [AChat](#achat)
 - [AChatItem](#achatitem)
+- [AddRelayResult](#addrelayresult)
 - [AddressSettings](#addresssettings)
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
@@ -117,6 +118,7 @@ This file is generated automatically.
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
 - [LinkContent](#linkcontent)
+- [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
 - [LocalProfile](#localprofile)
 - [MemberCriteria](#membercriteria)
@@ -132,6 +134,7 @@ This file is generated automatically.
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
+- [OwnerVerification](#ownerverification)
 - [PendingContactConnection](#pendingcontactconnection)
 - [PrefEnabled](#prefenabled)
 - [Preferences](#preferences)
@@ -216,6 +219,15 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
+
+
+---
+
+## AddRelayResult
+
+**Record type**:
+- relay: [UserChatRelay](#userchatrelay)
+- relayError: [ChatError](#chaterror)?
 
 
 ---
@@ -1698,6 +1710,7 @@ Error:
 Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 OwnLink:
 - type: "ownLink"
@@ -2261,6 +2274,7 @@ Ok:
 - type: "ok"
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 OwnLink:
 - type: "ownLink"
@@ -2276,6 +2290,10 @@ ConnectingProhibit:
 Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
+
+NoRelays:
+- type: "noRelays"
+- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 
 ---
@@ -2526,6 +2544,7 @@ Public:
 Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 OwnLink:
 - type: "ownLink"
@@ -2576,6 +2595,16 @@ Unknown:
 - type: "unknown"
 - tag: string
 - json: JSONObject
+
+
+---
+
+## LinkOwnerSig
+
+**Record type**:
+- ownerId: string?
+- chatBinding: string
+- ownerSig: string
 
 
 ---
@@ -2683,6 +2712,7 @@ Chat:
 - type: "chat"
 - text: string
 - chatLink: [MsgChatLink](#msgchatlink)
+- ownerSig: [LinkOwnerSig](#linkownersig)?
 
 Unknown:
 - type: "unknown"
@@ -2828,6 +2858,20 @@ SubscribeError:
 - chatTs: UTCTime
 - favorite: bool
 - unread: bool
+
+
+---
+
+## OwnerVerification
+
+**Discriminated union type**:
+
+Verified:
+- type: "verified"
+
+Failed:
+- type: "failed"
+- reason: string
 
 
 ---
@@ -3242,6 +3286,7 @@ ParseError:
 - "invited"
 - "accepted"
 - "active"
+- "inactive"
 
 
 ---
