@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -92,6 +93,7 @@ internal val lightStops = arrayOf(
   0.0f to oklch(0.9219f, 0.0431f, 249.4f),
   0.5f to oklch(0.9198f, 0.0471f, 240.7f),
   0.9f to oklch(0.9772f, 0.0358f, 196.6f),
+  0.95f to oklch(0.9829f, 0.0104f, 70.0f),
   1.0f to oklch(0.9886f, 0.0272f, 99.1f)
 )
 
@@ -99,6 +101,7 @@ internal val darkStops = arrayOf(
   0.4f to oklch(0.1578f, 0.0609f, 267.3f),
   0.72f to oklch(0.4729f, 0.1574f, 267.3f),
   0.9f to oklch(0.9024f, 0.0760f, 202.8f),
+  0.95f to oklch(0.9384f, 0.0354f, 65.0f),
   1.0f to oklch(0.9744f, 0.0370f, 88.4f)
 )
 
