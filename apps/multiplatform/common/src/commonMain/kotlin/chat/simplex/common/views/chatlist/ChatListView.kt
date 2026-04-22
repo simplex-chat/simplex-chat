@@ -1144,7 +1144,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     is ActiveFilter.PresetTag -> af.tag == tag
     else -> false
   }
-  val (icon, text) = presetTagLabel(tag, active)
+  val (icon, menuIcon, text) = presetTagLabel(tag, active)
   val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
 
   Row(
@@ -1164,7 +1164,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     horizontalArrangement = Arrangement.Center
   ) {
     Icon(
-      painterResource(icon),
+      painterResource(menuIcon ?: icon),
       stringResource(text),
       Modifier.size(18.sp.toDp()),
       tint = color
@@ -1206,9 +1206,9 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
     contentAlignment = Alignment.Center
   ) {
     if (selectedPresetTag != null) {
-      val (icon, text) = presetTagLabel(selectedPresetTag, true)
+      val (icon, menuIcon, text) = presetTagLabel(selectedPresetTag, true)
       Icon(
-        painterResource(icon),
+        painterResource(menuIcon ?: icon),
         stringResource(text),
         Modifier.size(18.sp.toDp()),
         tint = MaterialTheme.colors.primary
@@ -1254,7 +1254,7 @@ fun ItemPresetFilterAction(
   showMenu: MutableState<Boolean>,
   onCloseMenuAction: MutableState<(() -> Unit)>
 ) {
-  val (icon, text) = presetTagLabel(presetTag, active)
+  val (icon, _, text) = presetTagLabel(presetTag, active)
   ItemAction(
     stringResource(text),
     painterResource(icon),
@@ -1336,15 +1336,15 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
     }
   }
 
-private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
+private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Triple<ImageResource, ImageResource?, StringResource> =
   when (tag) {
-    PresetTagKind.GROUP_REPORTS -> (if (active) MR.images.ic_flag_filled else MR.images.ic_flag) to MR.strings.chat_list_group_reports
-    PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
-    PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
-    PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
-    PresetTagKind.CHANNELS -> (if (active) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_bigtop_updates) to MR.strings.chat_list_channels
-    PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
-    PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed) to MR.strings.chat_list_notes
+    PresetTagKind.GROUP_REPORTS -> Triple(if (active) MR.images.ic_flag_filled else MR.images.ic_flag, null, MR.strings.chat_list_group_reports)
+    PresetTagKind.FAVORITES -> Triple(if (active) MR.images.ic_star_filled else MR.images.ic_star, null, MR.strings.chat_list_favorites)
+    PresetTagKind.CONTACTS -> Triple(if (active) MR.images.ic_person_filled else MR.images.ic_person, null, MR.strings.chat_list_contacts)
+    PresetTagKind.GROUPS -> Triple(if (active) MR.images.ic_group_filled else MR.images.ic_group, null, MR.strings.chat_list_groups)
+    PresetTagKind.CHANNELS -> Triple(if (active) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_bigtop_updates, MR.images.ic_bigtop_updates, MR.strings.chat_list_channels)
+    PresetTagKind.BUSINESS -> Triple(if (active) MR.images.ic_work_filled else MR.images.ic_work, null, MR.strings.chat_list_businesses)
+    PresetTagKind.NOTES -> Triple(if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed, null, MR.strings.chat_list_notes)
   }
 
 private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
