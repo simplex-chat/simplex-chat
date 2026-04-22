@@ -500,7 +500,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
             Text(d)
           }
           val website = serverOperator.info.website
-          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(website) })
+          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(website) })
         }
       }
     }
@@ -511,7 +511,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
       SectionView {
         SectionItemView {
           val (text, link) = selfhost
-          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(link) })
+          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(link) })
         }
       }
     }
@@ -841,7 +841,7 @@ private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = objec
     if (uri.startsWith("https://simplex.chat/contact#")) {
       openVerifiedSimplexUri(uri)
     } else {
-      parentUriHandler.openUriCatching(uri)
+      parentUriHandler.openExternalLink(uri)
     }
   }
 }

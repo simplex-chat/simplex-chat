@@ -74,7 +74,7 @@ struct ConditionsWebView: UIViewRepresentable {
                 if url.absoluteString.starts(with: "https://simplex.chat/contact#") {
                     ChatModel.shared.appOpenUrl = url
                 } else {
-                    UIApplication.shared.open(url)
+                    openExternalLink(url)
                 }
             default:
                 decisionHandler(.allow)

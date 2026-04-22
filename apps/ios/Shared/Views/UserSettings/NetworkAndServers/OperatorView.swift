@@ -364,11 +364,19 @@ struct OperatorInfoView: View {
                             Text(d)
                         }
                     }
-                    Link(serverOperator.info.website.absoluteString, destination: serverOperator.info.website)
+                    Button {
+                        openExternalLink(serverOperator.info.website)
+                    } label: {
+                        Text(serverOperator.info.website.absoluteString)
+                    }
                 }
                 if let selfhost = serverOperator.info.selfhost {
                     Section {
-                        Link(selfhost.text, destination: selfhost.link)
+                        Button {
+                            openExternalLink(selfhost.link)
+                        } label: {
+                            Text(selfhost.text)
+                        }
                     }
                 }
             }
