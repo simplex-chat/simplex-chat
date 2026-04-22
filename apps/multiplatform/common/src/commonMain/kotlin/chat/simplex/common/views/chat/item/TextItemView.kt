@@ -85,6 +85,14 @@ fun itemDisplayText(ci: ChatItem, linkMode: SimplexLinkMode): String {
   return formattedText.joinToString("") { itemSegmentDisplayText(it, ci, linkMode) }
 }
 
+// Leading display-only prefix rendered before ci.text (e.g. "Spam: " for reports).
+// Callers that render this prefix and callers that operate on rendered-text selection offsets MUST
+// share this string — otherwise copy/selection offsets drift from what is on screen.
+fun itemPrefixText(ci: ChatItem): String = when (val mc = ci.content.msgContent) {
+  is MsgContent.MCReport -> if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: "
+  else -> ""
+}
+
 // Text transformations in MarkdownText must match itemSegmentDisplayText above
 @Composable
 fun MarkdownText (

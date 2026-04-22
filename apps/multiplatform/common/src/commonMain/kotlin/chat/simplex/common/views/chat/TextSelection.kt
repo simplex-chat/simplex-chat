@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.item.itemPrefixText
 import chat.simplex.common.views.chat.item.itemSegmentDisplayText
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -239,17 +240,26 @@ fun selectedRange(range: SelectionRange?, index: Int): IntRange? {
     }
 }
 
+// Ordered display segments for an item, matching the rendered string used for selection offsets.
+// itemPrefixText is included as a leading plain segment so offsets in prefix-bearing items (reports)
+// map to the same positions the user sees.
+private fun itemDisplaySegments(ci: ChatItem): List<FormattedText> {
+    val segs = mutableListOf<FormattedText>()
+    val prefix = itemPrefixText(ci)
+    if (prefix.isNotEmpty()) segs.add(FormattedText(prefix, null))
+    val ft = ci.formattedText
+    if (ft != null) segs.addAll(ft)
+    else if (ci.text.isNotEmpty()) segs.add(FormattedText(ci.text, null))
+    return segs
+}
+
 // Extracts source text for the selected range within one item.
 // Selection offsets are in display-text space. For transformed segments (mentions, links with showText),
 // the full source is emitted if any part is selected. For untransformed segments, partial substring works.
 private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: SimplexLinkMode): String {
-    val formattedText = ci.formattedText ?: return ci.text.substring(
-        sel.first.coerceAtMost(ci.text.length),
-        (sel.last + 1).coerceAtMost(ci.text.length)
-    )
     val sb = StringBuilder()
     var displayOffset = 0
-    for (ft in formattedText) {
+    for (ft in itemDisplaySegments(ci)) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
         val overlapStart = maxOf(displayOffset, sel.first)
@@ -268,9 +278,8 @@ private fun selectedItemCopiedText(ci: ChatItem, sel: IntRange, linkMode: Simple
 
 // Snaps a boundary offset to include full transformed segments.
 private fun snapOffset(ci: ChatItem, offset: Int, linkMode: SimplexLinkMode, expandRight: Boolean): Int {
-    val formattedText = ci.formattedText ?: return offset
     var displayOffset = 0
-    for (ft in formattedText) {
+    for (ft in itemDisplaySegments(ci)) {
         val segDisplay = itemSegmentDisplayText(ft, ci, linkMode)
         val displayEnd = displayOffset + segDisplay.length
         if (offset > displayOffset && offset < displayEnd && ft.text.length != segDisplay.length) {
