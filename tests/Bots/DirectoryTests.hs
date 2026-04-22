@@ -585,12 +585,14 @@ testInviteOwnerAfterLeavingOwnersGroup ps =
       -- owner leaves owners' group; GroupMember row keeps status GSMemLeft
       leaveGroup "owners" bob
       superUser <## "#owners: bob left the group"
+      -- owners' group has no GroupReg, so directory service notifies admins on contact left
+      superUser <# "'SimpleX Directory'> Error: contact left, group: 1 owners, group registration not found"
       -- super-user re-invites via /invite — must send a fresh invitation, not "already a member"
       superUser #> "@'SimpleX Directory' /invite 2:privacy"
       superUser <# "'SimpleX Directory'> > /invite 2:privacy"
       superUser <## "      you invited @bob, the owner of the group ID 2 (privacy) to owners' group owners"
-      bob <## "#owners: 'SimpleX Directory' invites you to join the group as member"
-      bob <## "use /j owners to accept"
+      bob <## "#owners_1: 'SimpleX Directory' invites you to join the group as member"
+      bob <## "use /j owners_1 to accept"
 
 testDelistedOwnerLeaves :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerLeaves ps =
