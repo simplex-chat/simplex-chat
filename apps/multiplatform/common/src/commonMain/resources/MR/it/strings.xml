@@ -2740,4 +2740,14 @@
     <string name="onboarding_post_address">Usa questo indirizzo nel tuo profilo di social media, sito web o firma email.</string>
     <string name="your_public_address">Il tuo indirizzo pubblico</string>
     <string name="v6_5_invite_friends">È più facile invitare i tuoi amici 👋</string>
+    <string name="v6_5_non_profit_governance">Organizzazione non a scopo di lucro</string>
+    <string name="v6_5_non_profit_governance_descr">Per la sostenibilità della rete di SimpleX.</string>
+    <string name="v6_5_safe_web_links_descr">- scegli se inviare anteprime dei link.\n- previeni il phishing dei collegamenti ipertestuali.\n- rimuovi il tracciamento dei link.</string>
+    <string name="v6_5_ownership">Proprietà: puoi gestire i tuoi relay personali.</string>
+    <string name="v6_5_privacy">Privacy: per i proprietari e gli iscritti.</string>
+    <string name="v6_5_public_channels">Canali pubblici - parla liberamente 🚀</string>
+    <string name="v6_5_reliability">Affidabilità: relay multipli per canale.</string>
+    <string name="v6_5_safe_web_links">Link web sicuri</string>
+    <string name="v6_5_security">Sicurezza: solo i proprietari hanno le chiavi del canale.</string>
+    <string name="v6_5_invite_friends_descr">Abbiamo semplificato la connessione per i nuovi utenti.</string>
 </resources>
