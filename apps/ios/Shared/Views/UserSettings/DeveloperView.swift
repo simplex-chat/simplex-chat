@@ -22,14 +22,20 @@ struct DeveloperView: View {
         VStack {
             List {
                 Section {
-                    ZStack(alignment: .leading) {
-                        Image(colorScheme == .dark ? "github_light" : "github")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                            .opacity(0.5)
-                            .colorMultiply(theme.colors.secondary)
-                        Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
-                            .padding(.leading, 36)
+                    Button {
+                        if let url = URL(string: "https://github.com/simplex-chat/simplex-chat") {
+                            openExternalLink(url)
+                        }
+                    } label: {
+                        ZStack(alignment: .leading) {
+                            Image(colorScheme == .dark ? "github_light" : "github")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .opacity(0.5)
+                                .colorMultiply(theme.colors.secondary)
+                            Text("Install SimpleX Chat for terminal")
+                                .padding(.leading, 36)
+                        }
                     }
                     NavigationLink {
                         TerminalView()

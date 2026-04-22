@@ -787,7 +787,7 @@ private fun ConditionsLinkView(conditionsLink: String) {
   SectionItemView {
     val uriHandler = LocalUriHandler.current
     Text(stringResource(MR.strings.operator_conditions_failed_to_load), color = MaterialTheme.colors.onBackground)
-    Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(conditionsLink) })
+    Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(conditionsLink) })
   }
 }
 
@@ -821,13 +821,13 @@ fun ConditionsLinkButton() {
       val commit = chatModel.conditions.value.currentConditions.conditionsCommit
       ItemAction(stringResource(MR.strings.operator_open_conditions), painterResource(MR.images.ic_draft), onClick = {
         val mdUrl = "https://github.com/simplex-chat/simplex-chat/blob/$commit/PRIVACY.md"
-        uriHandler.openUriCatching(mdUrl)
         showMenu.value = false
+        uriHandler.openExternalLink(mdUrl)
       })
       ItemAction(stringResource(MR.strings.operator_open_changes), painterResource(MR.images.ic_more_horiz), onClick = {
         val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
-        uriHandler.openUriCatching(commitUrl)
         showMenu.value = false
+        uriHandler.openExternalLink(commitUrl)
       })
     }
     IconButton({ showMenu.value = true }) {

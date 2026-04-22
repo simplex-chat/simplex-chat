@@ -432,7 +432,11 @@ struct ConditionsTextView: View {
     private func conditionsLinkView(_ conditionsLink: String) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Current conditions text couldn't be loaded, you can review conditions via this link:")
-            Link(destination: URL(string: conditionsLink)!) {
+            Button {
+                if let url = URL(string: conditionsLink) {
+                    openExternalLink(url)
+                }
+            } label: {
                 Text(conditionsLink)
                     .multilineTextAlignment(.leading)
             }
@@ -591,11 +595,15 @@ func conditionsLinkButton() -> some View {
     let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
     let mdUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/\(commit)/PRIVACY.md") ?? conditionsURL
     return Menu {
-        Link(destination: mdUrl) {
+        Button {
+            openExternalLink(mdUrl)
+        } label: {
             Label("Open conditions", systemImage: "doc")
         }
         if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
-            Link(destination: commitUrl) {
+            Button {
+                openExternalLink(commitUrl)
+            } label: {
                 Label("Open changes", systemImage: "ellipsis")
             }
         }

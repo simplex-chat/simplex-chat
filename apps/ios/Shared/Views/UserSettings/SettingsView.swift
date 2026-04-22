@@ -399,7 +399,13 @@ struct SettingsView: View {
             }
 
             Section(header: Text("Support SimpleX Chat").foregroundColor(theme.colors.secondary)) {
-                settingsRow("keyboard", color: theme.colors.secondary) { Text("[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)") }
+                settingsRow("keyboard", color: theme.colors.secondary) {
+                    Button("Contribute") {
+                        if let url = URL(string: "https://github.com/simplex-chat/simplex-chat#contribute") {
+                            openExternalLink(url)
+                        }
+                    }
+                }
                 settingsRow("star", color: theme.colors.secondary) {
                     Button("Rate the app") {
                         if let scene = sceneDelegate.windowScene {
@@ -407,14 +413,20 @@ struct SettingsView: View {
                         }
                     }
                 }
-                ZStack(alignment: .leading) {
-                    Image(colorScheme == .dark ? "github_light" : "github")
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                        .opacity(0.5)
-                        .colorMultiply(theme.colors.secondary)
-                    Text("[Star on GitHub](https://github.com/simplex-chat/simplex-chat)")
-                        .padding(.leading, indent)
+                Button {
+                    if let url = URL(string: "https://github.com/simplex-chat/simplex-chat") {
+                        openExternalLink(url)
+                    }
+                } label: {
+                    ZStack(alignment: .leading) {
+                        Image(colorScheme == .dark ? "github_light" : "github")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .opacity(0.5)
+                            .colorMultiply(theme.colors.secondary)
+                        Text("Star on GitHub")
+                            .padding(.leading, indent)
+                    }
                 }
             }
 

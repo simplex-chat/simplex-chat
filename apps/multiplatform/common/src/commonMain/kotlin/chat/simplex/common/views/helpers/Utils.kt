@@ -537,6 +537,15 @@ fun UriHandler.openUriCatching(uri: String) {
   }
 }
 
+fun UriHandler.openExternalLink(uri: String) {
+  val uriHandler = this
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.open_link_in_browser_title),
+    confirmText = generalGetString(MR.strings.open_verb),
+    onConfirm = { uriHandler.openUriCatching(uri) }
+  )
+}
+
 fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   save = { it.width to it.height },
   restore = { IntSize(it.first, it.second) }
