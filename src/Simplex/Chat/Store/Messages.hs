@@ -2822,9 +2822,8 @@ deleteMemberCIs db User {userId} GroupInfo {groupId, membership} member
     memId = groupMemberId' member
     deleteWithCond :: ToRow p => Query -> p -> IO ()
     deleteWithCond cond params = do
-      let ciQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? " <> cond
-      -- delete messages first (they don't cascade from chat_items), using chat_item_messages join
-      DB.execute db ("DELETE FROM messages WHERE message_id IN (SELECT message_id FROM chat_item_messages WHERE chat_item_id IN (" <> ciQuery <> "))") params
+      -- delete messages first (they don't cascade from chat_items)
+      DB.execute db ("DELETE FROM messages WHERE message_id IN (SELECT m.message_id FROM chat_item_messages m JOIN chat_items i ON i.chat_item_id = m.chat_item_id WHERE i.user_id = ? AND i.group_id = ? " <> cond <> ")") params
       -- delete chat_items; chat_item_messages, chat_item_versions, chat_item_mentions, files, calls, group_snd_item_statuses all cascade
       DB.execute db ("DELETE FROM chat_items WHERE user_id = ? AND group_id = ? " <> cond) params
 
