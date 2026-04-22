@@ -67,7 +67,7 @@ You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 By default, the package uses SQLite. To use PostgreSQL instead:
 
 ```bash
-SIMPLEX_BACKEND=postgres npm install simplex-chat
+npm install simplex-chat --simplex_backend=postgres
 ```
 
 Or persist the setting in `.npmrc`:
