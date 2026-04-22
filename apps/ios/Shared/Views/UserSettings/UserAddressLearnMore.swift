@@ -31,8 +31,12 @@ struct UserAddressLearnMore: View {
                             .padding(.top)
                         Text("SimpleX address and 1-time links are safe to share via any messenger.")
                         Text("To protect against your link being replaced, you can compare contact security codes.")
-                        Text("Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).")
-                            .padding(.top)
+                        Button {
+                            openExternalLink(URL(string: "https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses")!)
+                        } label: {
+                            Text("Read more in User Guide.")
+                        }
+                        .padding(.top)
                     }
 
                 }
