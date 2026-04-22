@@ -540,7 +540,7 @@ fun UriHandler.openUriCatching(uri: String) {
 fun UriHandler.openExternalLink(uri: String) {
   val uriHandler = this
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.open_link_in_browser_title),
+    title = generalGetString(MR.strings.open_external_link_title),
     confirmText = generalGetString(MR.strings.open_verb),
     onConfirm = { uriHandler.openUriCatching(uri) }
   )
