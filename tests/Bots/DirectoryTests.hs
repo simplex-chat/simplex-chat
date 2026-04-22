@@ -42,6 +42,7 @@ directoryServiceTests = do
   it "should support group names with spaces" testGroupNameWithSpaces
   it "should return more groups in search, all and recent groups" testSearchGroups
   it "should invite to owners' group if specified" testInviteToOwnersGroup
+  it "should re-invite owner who left owners' group" testInviteOwnerAfterLeavingOwnersGroup
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -566,6 +567,30 @@ testInviteToOwnersGroup ps =
       -- second group
       registerGroupId superUser bob "security" "Security" 3 2
       superUser <## "Owner is already a member of owners' group"
+
+testInviteOwnerAfterLeavingOwnersGroup :: HasCallStack => TestParams -> IO ()
+testInviteOwnerAfterLeavingOwnersGroup ps =
+  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser dsLink ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupId superUser bob "privacy" "Privacy" 2 1
+      bob <## "#owners: 'SimpleX Directory' invites you to join the group as member"
+      bob <## "use /j owners to accept"
+      superUser <## "Invited @bob, the owner of the group ID 2 (privacy) to owners' group owners"
+      bob ##> "/j owners"
+      bob <## "#owners: you joined the group"
+      bob <## "#owners: member alice (Alice) is connected"
+      superUser <## "#owners: 'SimpleX Directory' added bob (Bob) to the group (connecting...)"
+      superUser <## "#owners: new member bob is connected"
+      -- owner leaves owners' group; GroupMember row keeps status GSMemLeft
+      leaveGroup "owners" bob
+      superUser <## "#owners: bob left the group"
+      -- super-user re-invites via /invite — must send a fresh invitation, not "already a member"
+      superUser #> "@'SimpleX Directory' /invite 2:privacy"
+      superUser <# "'SimpleX Directory'> > /invite 2:privacy"
+      superUser <## "      you invited @bob, the owner of the group ID 2 (privacy) to owners' group owners"
+      bob <## "#owners: 'SimpleX Directory' invites you to join the group as member"
+      bob <## "use /j owners to accept"
 
 testDelistedOwnerLeaves :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerLeaves ps =
