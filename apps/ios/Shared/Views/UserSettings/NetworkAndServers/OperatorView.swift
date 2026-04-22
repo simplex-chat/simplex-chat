@@ -433,9 +433,7 @@ struct ConditionsTextView: View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Current conditions text couldn't be loaded, you can review conditions via this link:")
             Button {
-                if let url = URL(string: conditionsLink) {
-                    openExternalLink(url)
-                }
+                openExternalLink(URL(string: conditionsLink)!)
             } label: {
                 Text(conditionsLink)
                     .multilineTextAlignment(.leading)

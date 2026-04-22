@@ -23,9 +23,7 @@ struct DeveloperView: View {
             List {
                 Section {
                     Button {
-                        if let url = URL(string: "https://github.com/simplex-chat/simplex-chat") {
-                            openExternalLink(url)
-                        }
+                        openExternalLink(URL(string: "https://github.com/simplex-chat/simplex-chat")!)
                     } label: {
                         ZStack(alignment: .leading) {
                             Image(colorScheme == .dark ? "github_light" : "github")
