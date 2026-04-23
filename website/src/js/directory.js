@@ -263,6 +263,13 @@ function displayEntries(entries) {
         }, 0);
       }
 
+      if (entryType?.groupType) {
+        const noteElement = document.createElement('p');
+        noteElement.innerHTML = 'You need <a href="https://simplex.chat/downloads/">SimpleX Chat app v6.5</a> to join.';
+        noteElement.className = 'text-sm';
+        textContainer.appendChild(noteElement);
+      }
+
       const entryTimestamp = currentSortMode === 'new' && entry.createdAt
         ? showCreatedOn(entry.createdAt)
         : entry.activeAt
@@ -273,13 +280,6 @@ function displayEntries(entries) {
         timestampElement.textContent = entryTimestamp;
         timestampElement.className = 'text-sm';
         textContainer.appendChild(timestampElement);
-      }
-
-      if (entryType?.groupType) {
-        const noteElement = document.createElement('p');
-        noteElement.innerHTML = 'You need <a href="https://simplex.chat/downloads/">SimpleX Chat app v6.5</a> to join.';
-        noteElement.className = 'text-sm';
-        textContainer.appendChild(noteElement);
       }
 
       const memberCount = entryMemberCount(entry);
