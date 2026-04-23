@@ -82,8 +82,7 @@ fun SimpleXInfoLayout(
       val scale = if (isDark) 1.5f else 1.2f
       Box(
         Modifier
-          .fillMaxWidth()
-          .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
+          .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
           .aspectRatio(1f)
           .clip(RoundedCornerShape(24.dp))
           .drawBehind {
