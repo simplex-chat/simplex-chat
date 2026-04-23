@@ -1296,6 +1296,11 @@
   <string name="onboarding_first_network">The first network where you own your\ncontacts and groups.</string>
   <string name="get_started">Get started</string>
   <string name="why_simplex_is_built">Why SimpleX is built.</string>
+  <string name="onboarding_your_profile">Your profile</string>
+  <string name="onboarding_on_your_phone">On your phone, not on any server.</string>
+  <string name="onboarding_no_account">No account. No phone. No email. No ID.\nThe most secure encryption.</string>
+  <string name="enter_profile_name">Enter profile name…</string>
+  <string name="migrate">Migrate</string>
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">Why SimpleX is built</string>
