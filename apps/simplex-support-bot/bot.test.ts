@@ -1,6 +1,8 @@
 import {describe, test, expect, beforeEach, vi} from "vitest"
 import {SupportBot} from "./src/bot.js"
 import {CardManager} from "./src/cards.js"
+import {parseConfig} from "./src/config.js"
+import {GrokApiClient} from "./src/grok.js"
 import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage} from "./src/messages.js"
 
 // Silence console output during tests
@@ -147,12 +149,26 @@ class MockGrokApi {
   calls: {history: any[]; message: string}[] = []
   private _response = "Grok answer"
   private _willFail = false
+  private _gate: {promise: Promise<void>; release: () => void} | null = null
 
   willRespond(text: string) { this._response = text; this._willFail = false }
   willFail() { this._willFail = true }
 
+  // Block every subsequent chat() call until releaseChat() is invoked. Used to
+  // observe in-flight concurrency without relying on wall-clock timing.
+  blockChat() {
+    let release!: () => void
+    const promise = new Promise<void>(r => { release = r })
+    this._gate = {promise, release}
+  }
+  releaseChat() {
+    this._gate?.release()
+    this._gate = null
+  }
+
   async chat(history: any[], userMessage: string): Promise<string> {
     this.calls.push({history, message: userMessage})
+    if (this._gate) await this._gate.promise
     if (this._willFail) { this._willFail = false; throw new Error("Grok API error") }
     return this._response
   }
@@ -783,6 +799,36 @@ describe("Grok Conversation", () => {
     expect(grokApi.calls.length).toBe(1)
     expect(grokApi.calls[0].message).toBe("Customer question")
   })
+
+  test("batch: across groups → Grok calls overlap in-flight (parallel dispatch)", async () => {
+    const GROK_GROUP_A = 201
+    const GROK_GROUP_B = 202
+    chat.groups.set(GROK_GROUP_A, makeGroupInfo(GROK_GROUP_A))
+    chat.groups.set(GROK_GROUP_B, makeGroupInfo(GROK_GROUP_B))
+    addCustomerMessageToHistory("A", GROK_GROUP_A)
+    addCustomerMessageToHistory("B", GROK_GROUP_B)
+
+    const ciA = makeChatItem({dir: "groupRcv", text: "A", memberId: CUSTOMER_ID})
+    const ciB = makeChatItem({dir: "groupRcv", text: "B", memberId: CUSTOMER_ID})
+    const evt = {
+      type: "newChatItems" as const,
+      user: makeUser(GROK_USER_ID),
+      chatItems: [
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_GROUP_A)}, chatItem: ciA},
+        {chatInfo: {type: "group", groupInfo: makeGroupInfo(GROK_GROUP_B)}, chatItem: ciB},
+      ],
+    }
+
+    // Block both chat() calls until we release. If the handler serialized
+    // per-group work, only one call would enter chat() before release.
+    grokApi.blockChat()
+    const done = bot.onGrokNewChatItems(evt)
+    // Let both tasks run up to the gate.
+    await new Promise(r => setTimeout(r, 10))
+    expect(grokApi.calls.length).toBe(2)
+    grokApi.releaseChat()
+    await done
+  })
 })
 
 describe("/team Activation", () => {
@@ -993,6 +1039,22 @@ describe("Card Dashboard", () => {
     expect(typeof data.cardItemId).toBe("number")
   })
 
+  test("concurrent mergeCustomData on same group → both patches survive", async () => {
+    // Without per-group serialization, two overlapping mergeCustomData calls
+    // can both read the same snapshot and the second write clobbers the first
+    // patch. The mutex keeps them ordered so both patches land.
+    const GID = 500
+    chat.groups.set(GID, makeGroupInfo(GID))
+
+    const pA = cards.mergeCustomData(GID, {state: "QUEUE"})
+    const pB = cards.mergeCustomData(GID, {cardItemId: 123})
+    await Promise.all([pA, pB])
+
+    const final = chat.customData.get(GID)
+    expect(final.state).toBe("QUEUE")
+    expect(final.cardItemId).toBe(123)
+  })
+
   test("customer leaves → customData cleared", async () => {
     await bot.onNewChatItems(customerMessage("Hello"))
     chat.customData.set(CUSTOMER_GROUP_ID, {cardItemId: 999})
@@ -1040,6 +1102,19 @@ describe("Card Debouncing", () => {
     await cards.flush()
     expect(chat.deleted.length).toBe(0)
     expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(0)
+  })
+
+  test("flush on group with no cardItemId → createCard posts a new card (retries failed create)", async () => {
+    // customData without cardItemId simulates a prior createCard that failed
+    // mid-flight and re-queued itself. flushOne must dispatch to createCard,
+    // not updateCard (which would early-return).
+    const GID = 777
+    chat.groups.set(GID, makeGroupInfo(GID))
+    chat.customData.set(GID, {state: "QUEUE"})
+    cards.scheduleUpdate(GID)
+    await cards.flush()
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(1)
+    expect(typeof chat.customData.get(GID).cardItemId).toBe("number")
   })
 })
 
@@ -1113,6 +1188,12 @@ describe("/join Command (Team Group)", () => {
   test("customer sending /join in customer group → treated as normal message", async () => {
     await bot.onNewChatItems(customerMessage("/join 50:Test"))
     expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
+  })
+
+  test("/join with non-numeric params → error reply, no apiAddMember call", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/join abc"))
+    expectSentToGroup(TEAM_GROUP_ID, `Error: invalid group id "abc"`)
+    expect(chat.added.length).toBe(0)
   })
 })
 
@@ -1560,6 +1641,26 @@ describe("Grok Join Flow", () => {
 
     expect(grokApi.calls.length).toBe(callsAfterActivation + 1)
     expect(grokApi.calls[grokApi.calls.length - 1].message).toBe("Follow-up question")
+  })
+
+  test("activateGrok groupDuplicateMember path → gate cleared by outer finally", async () => {
+    // After reachGrok(), gate is cleared and reverseGrokMap is populated.
+    await reachGrok()
+    await bot.flush()
+    const callsBaseline = grokApi.calls.length
+
+    // Second /grok while Grok is already present → apiAddMember throws duplicate.
+    // The outer try/finally must clear the gate even though the handler returns
+    // silently from inside the try — otherwise per-message responses stay
+    // suppressed for this group forever.
+    chat.apiAddMemberWillFail({chatError: {errorType: {type: "groupDuplicateMember"}}})
+    await bot.onNewChatItems(customerMessage("/grok"))
+    await bot.flush()
+
+    // Gate must be clear: a subsequent per-message event triggers Grok.
+    addCustomerMessageToHistory("another question", GROK_LOCAL_GROUP_ID)
+    await bot.onGrokNewChatItems(grokViewCustomerMessage("another question"))
+    expect(grokApi.calls.length).toBe(callsBaseline + 1)
   })
 })
 
@@ -2112,5 +2213,57 @@ describe("joinedGroupMember Event Filtering", () => {
     const member = {memberId: "someone", groupMemberId: 9001, memberContactId: null, memberStatus: GroupMemberStatus.Connected, memberProfile: {displayName: "Someone"}}
     await bot.onJoinedGroupMember(joinedEvent(TEAM_GROUP_ID, member, GROK_USER_ID))
     expect(chat.rawCmds.length).toBe(0)
+  })
+})
+
+describe("parseConfig Validation", () => {
+  const baseArgs = ["--team-group", "Support"]
+
+  test("--complete-hours non-numeric → throws", () => {
+    expect(() => parseConfig([...baseArgs, "--complete-hours", "abc"]))
+      .toThrow(/--complete-hours must be a non-negative integer, got "abc"/)
+  })
+
+  test("--complete-hours negative → throws", () => {
+    expect(() => parseConfig([...baseArgs, "--complete-hours", "-1"]))
+      .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
+  })
+
+  test("--card-flush-seconds non-numeric → throws", () => {
+    expect(() => parseConfig([...baseArgs, "--card-flush-seconds", "xyz"]))
+      .toThrow(/--card-flush-seconds must be a non-negative integer, got "xyz"/)
+  })
+
+  test("--timezone invalid IANA → throws", () => {
+    expect(() => parseConfig([...baseArgs, "--timezone", "Not/AZone"]))
+      .toThrow(/--timezone "Not\/AZone" is not a valid IANA time zone/)
+  })
+
+  test("--complete-hours 0 → allowed (disables auto-complete)", () => {
+    const cfg = parseConfig([...baseArgs, "--complete-hours", "0"])
+    expect(cfg.completeHours).toBe(0)
+  })
+
+  test("valid IANA timezone → accepted", () => {
+    const cfg = parseConfig([...baseArgs, "--timezone", "America/New_York"])
+    expect(cfg.timezone).toBe("America/New_York")
+  })
+})
+
+describe("GrokApiClient HTTP timeout", () => {
+  test("chat() calls AbortSignal.timeout(60_000) and passes the signal to fetch", async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout")
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({choices: [{message: {content: "ok"}}]}), {status: 200}),
+    )
+
+    const client = new GrokApiClient("test-key", "system prompt")
+    await client.chat([], "hello")
+
+    expect(timeoutSpy).toHaveBeenCalledWith(60_000)
+    expect((fetchSpy.mock.calls[0][1] as RequestInit).signal).toBeInstanceOf(AbortSignal)
+
+    fetchSpy.mockRestore()
+    timeoutSpy.mockRestore()
   })
 })

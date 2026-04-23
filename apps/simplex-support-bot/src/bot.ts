@@ -315,13 +315,10 @@ export class SupportBot {
       if (chatItem.chatDir.groupMember.memberId !== bc.customerId) continue
       lastPerGroup.set(chatInfo.groupInfo.groupId, ci)
     }
-    for (const [, ci] of lastPerGroup) {
-      try {
-        await this.processGrokChatItem(ci)
-      } catch (err) {
-        logError("Error processing Grok chat item", err)
-      }
-    }
+    // Groups are independent — avoid serializing one group's xAI latency across the others.
+    await Promise.allSettled(
+      [...lastPerGroup.values()].map((ci) => this.processGrokChatItem(ci)),
+    )
   }
 
   // --- Main profile message routing ---
@@ -576,98 +573,101 @@ export class SupportBot {
       return
     }
 
-    await this.sendToGroup(groupId, grokInvitingMessage)
-
-    let member: T.GroupMember
-    try {
-      member = await this.withMainProfile(() =>
-        this.chat.apiAddMember(groupId, this.config.grokContactId!, T.GroupMemberRole.Member)
-      )
-    } catch (err: unknown) {
-      const chatErr = err as {chatError?: {errorType?: {type?: string}}}
-      if (chatErr?.chatError?.errorType?.type === "groupDuplicateMember") {
-        // Grok already in group (e.g. customer sent /grok again before join completed) —
-        // the in-flight activation will handle the outcome, just return silently
-        return
-      }
-      logError(`Failed to invite Grok to group ${groupId}`, err)
-      await revertStateOnFail()
-      await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
-      this.cards.scheduleUpdate(groupId)
-      return
-    }
-
-    this.pendingGrokJoins.set(member.memberId, groupId)
-
-    // Drain buffered invitation that arrived during the apiAddMember await
-    const buffered = this.bufferedGrokInvitations.get(member.memberId)
-    if (buffered) {
-      this.bufferedGrokInvitations.delete(member.memberId)
-      this.pendingGrokJoins.delete(member.memberId)
-      await this.processGrokInvitation(buffered, groupId)
-    }
-
+    // Gate MUST be up before apiAddMember / pendingGrokJoins / reverseGrokMap —
+    // any later and onGrokNewChatItems can fire a duplicate per-message reply.
     this.grokInitialResponsePending.add(groupId)
-    const joined = await this.waitForGrokJoin(groupId, 120_000)
-    if (!joined) {
-      this.grokInitialResponsePending.delete(groupId)
-      this.pendingGrokJoins.delete(member.memberId)
-      try {
-        await this.withMainProfile(() =>
-          this.chat.apiRemoveMembers(groupId, [member.groupMemberId])
-        )
-      } catch {}
-      this.cleanupGrokMaps(groupId)
-      await revertStateOnFail()
-      await this.sendToGroup(groupId, grokUnavailableMessage)
-      if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
-      this.cards.scheduleUpdate(groupId)
-      return
-    }
-
-    await this.sendToGroup(groupId, grokActivatedMessage)
-
-    // Grok joined — send initial response based on customer's accumulated messages
     try {
-      const grokLocalGId = this.grokGroupMap.get(groupId)
-      if (grokLocalGId === undefined) {
-        await this.sendToGroup(groupId, grokUnavailableMessage)
-        return
-      }
+      await this.sendToGroup(groupId, grokInvitingMessage)
 
-      // Read history from Grok's own view — only customer messages.
-      // The previous `grokBc && ...` short-circuit let bot and team
-      // messages through when Grok's view had no businessChat; require
-      // grokBc.customerId to be present and match strictly.
-      const chat = await this.withGrokProfile(() =>
-        this.chat.apiGetChat(T.ChatType.Group, grokLocalGId, 100)
-      )
-      const grokBc = chat.chatInfo.type === "group" ? chat.chatInfo.groupInfo.businessChat : null
-      const customerMessages: string[] = []
-      for (const ci of chat.chatItems) {
-        if (ci.chatDir.type !== "groupRcv") continue
-        if (!grokBc || ci.chatDir.groupMember.memberId !== grokBc.customerId) continue
-        const t = util.ciContentText(ci)?.trim()
-        if (t && !util.ciBotCommand(ci)) customerMessages.push(t)
-      }
-
-      if (customerMessages.length === 0) {
-        await this.withGrokProfile(() =>
-          this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], grokNoHistoryMessage)
+      let member: T.GroupMember
+      try {
+        member = await this.withMainProfile(() =>
+          this.chat.apiAddMember(groupId, this.config.grokContactId!, T.GroupMemberRole.Member)
         )
+      } catch (err: unknown) {
+        const chatErr = err as {chatError?: {errorType?: {type?: string}}}
+        if (chatErr?.chatError?.errorType?.type === "groupDuplicateMember") {
+          // Grok already in group (e.g. customer sent /grok again before join completed) —
+          // the in-flight activation will handle the outcome, just return silently
+          return
+        }
+        logError(`Failed to invite Grok to group ${groupId}`, err)
+        await revertStateOnFail()
+        await this.sendToGroup(groupId, grokUnavailableMessage)
+        if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+        this.cards.scheduleUpdate(groupId)
         return
       }
 
-      const initialMsg = customerMessages.join("\n")
-      const response = await grokApi.chat([], initialMsg)
+      this.pendingGrokJoins.set(member.memberId, groupId)
 
-      await this.withGrokProfile(() =>
-        this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], response)
-      )
-    } catch (err) {
-      logError(`Grok initial response failed for group ${groupId}`, err)
-      await this.sendToGroup(groupId, grokUnavailableMessage)
+      // Drain buffered invitation that arrived during the apiAddMember await
+      const buffered = this.bufferedGrokInvitations.get(member.memberId)
+      if (buffered) {
+        this.bufferedGrokInvitations.delete(member.memberId)
+        this.pendingGrokJoins.delete(member.memberId)
+        await this.processGrokInvitation(buffered, groupId)
+      }
+
+      const joined = await this.waitForGrokJoin(groupId, 120_000)
+      if (!joined) {
+        this.pendingGrokJoins.delete(member.memberId)
+        try {
+          await this.withMainProfile(() =>
+            this.chat.apiRemoveMembers(groupId, [member.groupMemberId])
+          )
+        } catch {}
+        this.cleanupGrokMaps(groupId)
+        await revertStateOnFail()
+        await this.sendToGroup(groupId, grokUnavailableMessage)
+        if (opts.sendQueueOnFail) await this.sendToGroup(groupId, queueMessage(this.config.timezone, this.grokEnabled))
+        this.cards.scheduleUpdate(groupId)
+        return
+      }
+
+      await this.sendToGroup(groupId, grokActivatedMessage)
+
+      // Grok joined — send initial response based on customer's accumulated messages
+      try {
+        const grokLocalGId = this.grokGroupMap.get(groupId)
+        if (grokLocalGId === undefined) {
+          await this.sendToGroup(groupId, grokUnavailableMessage)
+          return
+        }
+
+        // Read history from Grok's own view — only customer messages.
+        // The previous `grokBc && ...` short-circuit let bot and team
+        // messages through when Grok's view had no businessChat; require
+        // grokBc.customerId to be present and match strictly.
+        const chat = await this.withGrokProfile(() =>
+          this.chat.apiGetChat(T.ChatType.Group, grokLocalGId, 100)
+        )
+        const grokBc = chat.chatInfo.type === "group" ? chat.chatInfo.groupInfo.businessChat : null
+        const customerMessages: string[] = []
+        for (const ci of chat.chatItems) {
+          if (ci.chatDir.type !== "groupRcv") continue
+          if (!grokBc || ci.chatDir.groupMember.memberId !== grokBc.customerId) continue
+          const t = util.ciContentText(ci)?.trim()
+          if (t && !util.ciBotCommand(ci)) customerMessages.push(t)
+        }
+
+        if (customerMessages.length === 0) {
+          await this.withGrokProfile(() =>
+            this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], grokNoHistoryMessage)
+          )
+          return
+        }
+
+        const initialMsg = customerMessages.join("\n")
+        const response = await grokApi.chat([], initialMsg)
+
+        await this.withGrokProfile(() =>
+          this.chat.apiSendTextMessage([T.ChatType.Group, grokLocalGId], response)
+        )
+      } catch (err) {
+        logError(`Grok initial response failed for group ${groupId}`, err)
+        await this.sendToGroup(groupId, grokUnavailableMessage)
+      }
     } finally {
       this.grokInitialResponsePending.delete(groupId)
     }
@@ -721,16 +721,18 @@ export class SupportBot {
 
   private async processTeamGroupMessage(chatItem: T.ChatItem): Promise<void> {
     if (chatItem.chatDir.type !== "groupRcv") return
-    const text = util.ciContentText(chatItem)?.trim()
-    if (!text) return
     const senderContactId = chatItem.chatDir.groupMember.memberContactId
     if (!senderContactId) return
 
-    const joinMatch = text.match(/^\/join\s+(\d+)(?::.*)?\s*$/)
-    if (joinMatch) {
-      await this.handleJoinCommand(parseInt(joinMatch[1], 10), senderContactId)
+    const cmd = util.ciBotCommand(chatItem)
+    if (cmd?.keyword !== "join") return
+
+    const targetGroupId = Number.parseInt(cmd.params, 10)
+    if (Number.isNaN(targetGroupId) || targetGroupId <= 0) {
+      await this.sendToGroup(this.config.teamGroup.id, `Error: invalid group id "${cmd.params}"`)
       return
     }
+    await this.handleJoinCommand(targetGroupId, senderContactId)
   }
 
   private async handleJoinCommand(targetGroupId: number, senderContactId: number): Promise<void> {

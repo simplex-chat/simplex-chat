@@ -1,5 +1,6 @@
 import {T} from "@simplex-chat/types"
 import {api, util} from "simplex-chat"
+import {Mutex} from "async-mutex"
 import {Config} from "./config.js"
 import {profileMutex, log, logError} from "./util.js"
 
@@ -58,6 +59,8 @@ function contentTypeLabel(ci: T.ChatItem): string | null {
 export class CardManager {
   private pendingUpdates = new Set<number>()
   private flushInterval: NodeJS.Timeout
+  // Outer lock; profileMutex (via withMainProfile) is the inner lock.
+  private customDataMutexes = new Map<number, Mutex>()
 
   constructor(
     private chat: api.ChatApi,
@@ -74,6 +77,15 @@ export class CardManager {
       await this.chat.apiSetActiveUser(this.mainUserId)
       return fn()
     })
+  }
+
+  private getCustomDataMutex(groupId: number): Mutex {
+    let m = this.customDataMutexes.get(groupId)
+    if (!m) {
+      m = new Mutex()
+      this.customDataMutexes.set(groupId, m)
+    }
+    return m
   }
 
   scheduleUpdate(groupId: number): void {
@@ -96,10 +108,23 @@ export class CardManager {
     this.pendingUpdates.clear()
     for (const groupId of groups) {
       try {
-        await this.updateCard(groupId)
+        await this.flushOne(groupId)
       } catch (err) {
         logError(`Card flush failed for group ${groupId}`, err)
       }
+    }
+  }
+
+  // Dispatches to create-path when cardItemId is absent so a failed createCard retries.
+  private async flushOne(groupId: number): Promise<void> {
+    const groups = await this.withMainProfile(() => this.chat.apiListGroups(this.mainUserId))
+    const groupInfo = groups.find(g => g.groupId === groupId)
+    if (!groupInfo) return
+    const data = groupInfo.customData as Record<string, unknown> | undefined
+    if (typeof data?.cardItemId === "number") {
+      await this.updateCard(groupId)
+    } else {
+      await this.createCard(groupId, groupInfo)
     }
   }
 
@@ -197,16 +222,20 @@ export class CardManager {
   }
 
   async mergeCustomData(groupId: number, patch: Partial<CardData>): Promise<void> {
-    const current = (await this.getRawCustomData(groupId)) ?? {}
-    const merged: Partial<CardData> = {...current, ...patch}
-    for (const key of Object.keys(merged) as (keyof CardData)[]) {
-      if (merged[key] === undefined) delete merged[key]
-    }
-    await this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId, merged))
+    return this.getCustomDataMutex(groupId).runExclusive(async () => {
+      const current = (await this.getRawCustomData(groupId)) ?? {}
+      const merged: Partial<CardData> = {...current, ...patch}
+      for (const key of Object.keys(merged) as (keyof CardData)[]) {
+        if (merged[key] === undefined) delete merged[key]
+      }
+      await this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId, merged))
+    })
   }
 
   async clearCustomData(groupId: number): Promise<void> {
-    await this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId))
+    return this.getCustomDataMutex(groupId).runExclusive(() =>
+      this.withMainProfile(() => this.chat.apiSetGroupCustomData(groupId))
+    )
   }
 
   // --- Chat history access ---

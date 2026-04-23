@@ -158,9 +158,16 @@ async function main(): Promise<void> {
       })
       log("Grok connecting...")
 
-      const evt = await chat.wait("contactConnected", 60000)
+      const grokProfileName = grokUser!.profile.displayName
+      const evt = await chat.wait(
+        "contactConnected",
+        (e) =>
+          e.user.userId === mainUser.userId
+          && e.contact.profile.displayName === grokProfileName,
+        60_000,
+      )
       if (!evt) {
-        console.error("Timeout waiting for Grok contact (60s). Exiting.")
+        console.error(`Timeout waiting for Grok contact (60s, displayName="${grokProfileName}"). Exiting.`)
         process.exit(1)
       }
       config.grokContactId = evt.contact.contactId
@@ -190,7 +197,7 @@ async function main(): Promise<void> {
     directMessages: {enable: T.GroupFeatureEnabled.On},
     fullDelete: {enable: T.GroupFeatureEnabled.On},
     commands: [
-      {type: "command", keyword: "join", label: "Join customer chat", params: "groupId:name"},
+      {type: "command", keyword: "join", label: "Join customer chat", params: "groupId"},
     ],
   }
 

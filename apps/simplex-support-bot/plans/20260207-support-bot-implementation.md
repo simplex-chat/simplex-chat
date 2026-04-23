@@ -1216,7 +1216,7 @@ async function reachTeam(groupId?)        // reachTeamPending → add team membe
 
 Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); await p;`
 
-### 20.4 Test Catalog (130 tests, 28 suites)
+### 20.4 Test Catalog (141 tests, 30 suites)
 
 #### 1. Welcome & First Message (4 tests)
 - first message → queue reply + card created with /join command
@@ -1231,7 +1231,7 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - /grok when grokContactId is null → grokUnavailableMessage
 - /grok as first message + Grok join fails → queue message sent as fallback
 
-#### 3. Grok Conversation (10 tests)
+#### 3. Grok Conversation (11 tests)
 - Grok per-message: reads history, calls API, sends response
 - customer non-text → no Grok API call
 - Grok API error → grokErrorMessage sent
@@ -1241,6 +1241,7 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - batch: multiple customer messages in one event → only last triggers Grok API call
 - batch: messages from different groups → each group gets one response
 - batch: non-customer messages filtered, only customer messages trigger response
+- batch: across groups → Grok calls overlap in-flight (parallel `Promise.allSettled` dispatch, proven via gated `MockGrokApi.chat`)
 
 #### 4. /team Activation (4 tests)
 - /team from QUEUE → ALL team members added, teamAddedMessage sent
@@ -1267,19 +1268,21 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - /team after all members left (TEAM-PENDING, no msg sent) → re-adds members
 - /team after all members left (TEAM, msg was sent) → re-adds members
 
-#### 7. Card Dashboard (6 tests)
+#### 7. Card Dashboard (7 tests)
 - first message creates card with customer name + /join
 - card final line is `/'join <groupId>'` (single-quoted, numeric id only, no `:name` suffix)
 - card update deletes old, posts new
 - apiDeleteChatItems failure → ignored, new card posted
 - customData stores cardItemId through flush cycle
+- concurrent `mergeCustomData` on same group → both patches survive (per-group `customDataMutex` serializes read-modify-write; without the mutex the second write clobbers the first)
 - customer leaves → customData cleared
 
-#### 8. Card Debouncing (4 tests)
+#### 8. Card Debouncing (5 tests)
 - rapid schedules → single card update on flush
 - multiple groups pending → each reposted once
 - card create is immediate (not debounced)
 - flush with no pending → no-op
+- flush on group with no `cardItemId` → `createCard` posts a new card (proves `flushOne` dispatches to create-path so a failed `createCard` retries)
 
 #### 9. Card Format & State Derivation (6 tests)
 - QUEUE state derived (no Grok/team)
@@ -1289,8 +1292,9 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - TEAM derived (team present + message sent)
 - message count excludes bot's own
 
-#### 10. /join Command (5 tests)
+#### 10. /join Command (6 tests)
 - /join <groupId> (the only accepted form) → team member added; `params` from `ciBotCommand` is parsed via `Number.parseInt`, no regex
+- /join <groupId>:<name> (historic suffix) → still parses because `Number.parseInt("<groupId>:<name>", 10)` stops at the colon — handler does not strip the suffix deliberately; the suffix is never emitted by the card
 - /join with non-numeric `params` (e.g. `/join abc`) → error reply in team group, no `apiAddMember` call
 - /join non-business group → error
 - /join non-existent groupId → error
@@ -1338,12 +1342,13 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - own messages (groupSnd) → ignored
 - non-business group messages → ignored
 
-#### 19. Grok Join Flow (5 tests)
+#### 19. Grok Join Flow (6 tests)
 - receivedGroupInvitation → apiJoinGroup called (full async flow)
 - unmatched Grok invitation → buffered (not joined until activateGrok drains)
 - buffered invitation drained after pendingGrokJoins set → apiJoinGroup called
 - per-message responses suppressed during activateGrok initial response (grokInitialResponsePending gate)
 - per-message responses resume after activateGrok completes
+- activateGrok `groupDuplicateMember` path → gate cleared by outer `finally` (subsequent per-message event still triggers Grok; proves the outer `try/finally` covers every exit path from the entry-time `gate.add`, not just the initial-response section)
 
 #### 20. Grok No-History Fallback (1 test)
 - Grok joins but sees no customer messages → grokNoHistoryMessage
@@ -1400,6 +1405,17 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - joinedGroupMember in non-team group → ignored
 - joinedGroupMember from wrong user → ignored
 
+#### 28. parseConfig Validation (6 tests)
+- `--complete-hours` non-numeric → throws with message including the flag name and raw value
+- `--complete-hours` negative → throws
+- `--card-flush-seconds` non-numeric → throws
+- `--timezone` invalid IANA → throws (probe `Intl.DateTimeFormat` at parse time)
+- `--complete-hours 0` → accepted (disables auto-complete)
+- valid IANA timezone → accepted
+
+#### 29. GrokApiClient HTTP timeout (1 test)
+- `chat()` calls `AbortSignal.timeout(60_000)` and passes the signal to `fetch` (spies on `AbortSignal.timeout` and on `globalThis.fetch`; proves the timeout is wired through without waiting 60s of wall-clock)
+
 ### 20.5 Conventions
 
 - **File:** `bot.test.ts` (co-located with source, imports from `./src/*.js`)
@@ -1411,15 +1427,15 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - **Each test is self-contained** — `beforeEach(() => setup())` creates fresh mocks
 - **State helpers compose** — `reachTeam()` calls `reachTeamPending()` which calls `reachQueue()`
 - **Grok join simulation** — `simulateGrokJoinSuccess()` uses 10ms setTimeout to fire events during `waitForGrokJoin` await. Tests call `await bot.flush()` after simulation to await fire-and-forget `activateGrok` completion.
-- **No fake timers** — real timers everywhere; flush called explicitly via `cards.flush()` and `bot.flush()`
+- **No fake timers** — real timers everywhere; flush called explicitly via `cards.flush()` and `bot.flush()`. Suite 29 spies on `AbortSignal.timeout` rather than advancing a fake clock so it does not need fake timers either.
 
 ### 20.6 Test Coverage Notes
 
 **Covered vs plan catalog:**
-- §20.4 suites 1-13, 15, 17-27 plus 5b fully covered (130 tests across 28 suites)
+- §20.4 suites 1-13, 15, 17-29 plus 5b fully covered (141 tests across 30 suites)
 - Weekend detection (`util.isWeekend`) — not unit-tested; depends on `Intl.DateTimeFormat(new Date())`, would need clock mocking. Not present in the §20.4 catalog.
 - Profile Mutex serialization — not a standalone suite in §20.4; verified implicitly through all other tests (MockChatApi tracks activeUserId).
-- Startup & state persistence (`index.ts` path) — not unit-tested; requires native ChatApi. Integration-test only. Includes `deleteInviteLink` (profileMutex + `apiSetActiveUser` before `apiDeleteGroupLink`), the conditional `apiUpdateGroupProfile` (compare `fullGroupPreferences` before calling), and the best-effort `apiCreateGroupLink` (catch + log on SMP relay failure). Not in §20.4 catalog.
+- Startup & state persistence (`index.ts` path) — not unit-tested; requires native ChatApi. Integration-test only. Includes `deleteInviteLink` (profileMutex + `apiSetActiveUser` before `apiDeleteGroupLink`), the conditional `apiUpdateGroupProfile` (compare `fullGroupPreferences` before calling), the best-effort `apiCreateGroupLink` (catch + log on SMP relay failure), the predicate-filtered `chat.wait("contactConnected", ...)` used to identify the Grok contact (§4), and the team-group `/join` command registration with `params: "groupId"` (§11). Not in §20.4 catalog.
 
 **Known plan items NOT implemented (conscious gaps, not test gaps):**
 - Per-group Grok API call serialization (plan §10) — not implemented or tested

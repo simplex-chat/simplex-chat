@@ -35,6 +35,14 @@ function optionalArg(args: string[], flag: string, defaultValue: string): string
   return args[i + 1]
 }
 
+function parseNonNegativeInt(raw: string, flag: string): number {
+  const n = parseInt(raw, 10)
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`${flag} must be a non-negative integer, got "${raw}"`)
+  }
+  return n
+}
+
 export function parseConfig(args: string[]): Config {
   // Treat empty string as absent so `GROK_API_KEY=` behaves like unset
   const grokApiKey = process.env.GROK_API_KEY || null
@@ -49,8 +57,13 @@ export function parseConfig(args: string[]): Config {
     : []
 
   const timezone = optionalArg(args, "--timezone", "UTC")
-  const completeHours = parseInt(optionalArg(args, "--complete-hours", "3"), 10)
-  const cardFlushSeconds = parseInt(optionalArg(args, "--card-flush-seconds", "300"), 10)
+  try {
+    new Intl.DateTimeFormat("en-US", {timeZone: timezone, weekday: "short"})
+  } catch (err) {
+    throw new Error(`--timezone "${timezone}" is not a valid IANA time zone: ${(err as Error).message}`)
+  }
+  const completeHours = parseNonNegativeInt(optionalArg(args, "--complete-hours", "3"), "--complete-hours")
+  const cardFlushSeconds = parseNonNegativeInt(optionalArg(args, "--card-flush-seconds", "300"), "--card-flush-seconds")
   const contextFileRaw = optionalArg(args, "--context-file", "")
   const contextFile = contextFileRaw || null
 

@@ -27,6 +27,7 @@ export class GrokApiClient {
         temperature: 0.3,
         max_tokens: 1024,
       }),
+      signal: AbortSignal.timeout(60_000),
     })
 
     if (!response.ok) {
