@@ -564,6 +564,17 @@ fun ModalData.GroupChatInfoLayout(
             anyTopSectionRowShow = true
             ChannelMembersButton(chat.remoteHostId, groupInfo, showMemberInfo)
           }
+          if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+            anyTopSectionRowShow = true
+            MemberSupportButton(chat, openMemberSupport)
+          }
+          if (
+            groupInfo.membership.memberActive &&
+            (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
+          ) {
+            anyTopSectionRowShow = true
+            UserSupportChatButton(chat, groupInfo, scrollToItemId)
+          }
         }
         if (!groupInfo.isOwner && channelLink != null) {
           SectionTextFooter(stringResource(MR.strings.you_can_share_channel_link_anybody_will_be_able_to_connect))

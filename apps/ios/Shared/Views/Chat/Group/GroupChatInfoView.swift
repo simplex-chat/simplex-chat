@@ -124,6 +124,13 @@ struct GroupChatInfoView: View {
                             if groupInfo.isOwner || members.contains(where: { $0.wrapped.memberRole >= .owner }) {
                                 channelMembersButton()
                             }
+                            if groupInfo.membership.memberRole >= .moderator {
+                                memberSupportButton()
+                            }
+                            if groupInfo.membership.memberActive
+                                && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
+                                UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                            }
                         } footer: {
                             if !groupInfo.isOwner && groupInfo.groupProfile.publicGroup?.groupLink != nil {
                                 Text("You can share a link or a QR code - anybody will be able to join the channel.")
