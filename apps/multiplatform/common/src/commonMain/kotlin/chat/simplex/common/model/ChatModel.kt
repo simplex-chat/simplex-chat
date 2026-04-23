@@ -1688,12 +1688,14 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   val sendAsGroup: Boolean get() {
-    val gi = (this as? Group)?.groupInfo ?: return false
-    if (!gi.useRelays || gi.membership.memberRole < GroupMemberRole.Owner) return false
-    return when (groupChatScope()) {
-      null -> true
-      is GroupChatScope.MemberSupport -> false
-      is GroupChatScope.Reports -> false
+    val g = (this as? Group)?.groupInfo
+    return if (g != null && g.useRelays && g.membership.memberRole >= GroupMemberRole.Owner) {
+      when (groupChatScope()) {
+        null -> true
+        is GroupChatScope.MemberSupport -> false
+      }
+    } else {
+      false
     }
   }
 

@@ -1761,11 +1761,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var sendAsGroup: Bool {
-        guard let gi = groupInfo, gi.useRelays, gi.membership.memberRole >= .owner else { return false }
-        switch groupChatScope() {
-        case .none: return true
-        case .memberSupport: return false
-        case .reports: return false
+        if let g = groupInfo, g.useRelays && g.membership.memberRole >= .owner {
+            switch groupChatScope() {
+            case .none: true
+            case .memberSupport: false
+            case .reports: false
+            }
+        } else {
+            false
         }
     }
 
