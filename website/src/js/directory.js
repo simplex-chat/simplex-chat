@@ -299,6 +299,7 @@ function displayEntries(entries) {
       }
 
       const imgLinkElement = document.createElement('a');
+      imgLinkElement.className = 'img-link';
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {
         imgLinkElement.href = platformSimplexUri(groupLinkUri);
