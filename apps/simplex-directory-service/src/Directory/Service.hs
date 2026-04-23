@@ -19,6 +19,7 @@ module Directory.Service
 where
 
 import Control.Concurrent (forkIO)
+import Control.Concurrent.Async (race_)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
 import Control.Logger.Simple
@@ -31,7 +32,7 @@ import Data.Either (fromRight)
 import Data.List (find, intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing)
+import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -164,7 +165,7 @@ directoryServiceCLI st opts = do
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
       processEvents eventQ env
     ]
-      <> updateListingsThread_ opts env
+      <> maybeToList (updateListingsThread_ opts env)
   where
     processEvents eventQ env = forever $ do
       (cc, resp) <- atomically $ readTQueue eventQ
@@ -174,8 +175,8 @@ directoryServiceCLI st opts = do
 updateListingDelay :: Int
 updateListingDelay = 5 * 60 * 1000000 -- update every 5 minutes
 
-updateListingsThread_ :: DirectoryOpts -> ServiceState -> [IO ()]
-updateListingsThread_ opts env = maybe [] (\f -> [updateListingsThread f]) $ webFolder opts
+updateListingsThread_ :: DirectoryOpts -> ServiceState -> Maybe (IO ())
+updateListingsThread_ opts env = updateListingsThread <$> webFolder opts
   where
     updateListingsThread f = do
       cc <- atomically $ takeTMVar $ updateListingsJob env
@@ -234,12 +235,10 @@ directoryService st opts cfg = do
             acceptMember = Just $ acceptMemberHook opts env
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc ->
-    raceAny_ $
-      [ forever $ do
-          (_, resp) <- atomically . readTBQueue $ outputQ cc
-          directoryServiceEvent st opts env user cc resp
-      ]
-        <> updateListingsThread_ opts env
+    maybe id race_ (updateListingsThread_ opts env) $
+      forever $ do
+        (_, resp) <- atomically . readTBQueue $ outputQ cc
+        directoryServiceEvent st opts env user cc resp
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
 acceptMemberHook
@@ -326,15 +325,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let msg = "Error: " <> err <> ", group: " <> tshow groupId <> " " <> localDisplayName <> ", " <> T.pack e
           notifyAdminUsers msg
           logError msg
-    ifPublicGroup :: GroupInfo -> IO () -> IO () -> IO ()
-    ifPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} reject action =
-      if isJust publicGroup then reject else action
-    groupInfoText p@GroupProfile {description = d, publicGroup = pg_} =
-      groupNameDescr p
-        <> maybe "" ("\nWelcome message:\n" <>) d
-        <> case pg_ of
-          Just pg@PublicGroupProfile {groupLink = sLnk} ->
-            "\nLink to join " <> groupTypeStr' pg <> ": " <> strEncodeTxt sLnk
+    groupInfoText p@GroupProfile {description = d, publicGroup} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d <> linkToJoin
+      where
+        linkToJoin = case publicGroup of
+          Just pg@PublicGroupProfile {groupLink} ->
+            "\nLink to join " <> groupTypeStr' pg <> ": " <> strEncodeTxt groupLink
           Nothing -> ""
     knockingStr :: Maybe GroupMemberAdmission -> [Text]
     knockingStr = \case
@@ -352,6 +347,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     groupReference' groupId displayName = "ID " <> tshow groupId <> " (" <> displayName <> ")"
     groupAlreadyListed GroupInfo {groupProfile = p} =
       "The group " <> groupNameDescr p <> " is already listed in the directory, please choose another name."
+    ifPublicGroup :: GroupInfo -> IO () -> IO () -> IO ()
+    ifPublicGroup GroupInfo {groupProfile = GroupProfile {publicGroup}} reject action =
+      if isJust publicGroup then reject else action
 
     getDuplicateGroup :: GroupInfo -> IO (Either String DuplicateGroup)
     getDuplicateGroup GroupInfo {groupId, groupProfile = GroupProfile {displayName}} =
