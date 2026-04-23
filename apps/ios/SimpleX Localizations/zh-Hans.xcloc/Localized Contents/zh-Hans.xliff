@@ -185,9 +185,20 @@
         <target>%d 月</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d relays" xml:space="preserve">
-        <source>%d relays</source>
-        <note>channel relay bar</note>
+      <trans-unit id="%d relays failed" xml:space="preserve">
+        <source>%d relays failed</source>
+        <note>channel relay bar
+channel subscriber relay bar</note>
+      </trans-unit>
+      <trans-unit id="%d relays not active" xml:space="preserve">
+        <source>%d relays not active</source>
+        <note>channel relay bar
+channel subscriber relay bar</note>
+      </trans-unit>
+      <trans-unit id="%d relays removed" xml:space="preserve">
+        <source>%d relays removed</source>
+        <note>channel relay bar
+channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d sec" xml:space="preserve">
         <source>%d sec</source>
@@ -222,10 +233,18 @@
         <note>channel creation progress
 channel relay bar progress</note>
       </trans-unit>
+      <trans-unit id="%d/%d relays active, %d errors" xml:space="preserve">
+        <source>%1$d/%2$d relays active, %3$d errors</source>
+        <note>channel relay bar</note>
+      </trans-unit>
       <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d failed</source>
         <note>channel creation progress with errors
-channel relay bar progress with errors</note>
+channel relay bar</note>
+      </trans-unit>
+      <trans-unit id="%d/%d relays active, %d removed" xml:space="preserve">
+        <source>%1$d/%2$d relays active, %3$d removed</source>
+        <note>channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected" xml:space="preserve">
         <source>%1$d/%2$d relays connected</source>
@@ -233,7 +252,15 @@ channel relay bar progress with errors</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d errors</source>
-        <note>channel subscriber relay bar progress with errors</note>
+        <note>channel subscriber relay bar</note>
+      </trans-unit>
+      <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve">
+        <source>%1$d/%2$d relays connected, %3$d failed</source>
+        <note>channel subscriber relay bar</note>
+      </trans-unit>
+      <trans-unit id="%d/%d relays connected, %d removed" xml:space="preserve">
+        <source>%1$d/%2$d relays connected, %3$d removed</source>
+        <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
@@ -349,10 +376,18 @@ channel relay bar progress with errors</note>
         <target>已跳过 %u 条消息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="(from owner)" xml:space="preserve">
+        <source>(from owner)</source>
+        <note>chat link info line</note>
+      </trans-unit>
       <trans-unit id="(new)" xml:space="preserve">
         <source>(new)</source>
         <target>(新)</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="(signed)" xml:space="preserve">
+        <source>(signed)</source>
+        <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="(this device v%@)" xml:space="preserve">
         <source>(this device v%@)</source>
@@ -444,6 +479,12 @@ channel relay bar progress with errors</note>
         <target>- 更稳定的传输！
 - 更好的社群！
 - 以及更多！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="- opt-in to send link previews.&#10;- prevent hyperlink phishing.&#10;- remove link tracking." xml:space="preserve">
+        <source>- opt-in to send link previews.
+- prevent hyperlink phishing.
+- remove link tracking.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
@@ -542,6 +583,10 @@ time interval</note>
       <trans-unit id="A few more things" xml:space="preserve">
         <source>A few more things</source>
         <target>一些杂项</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="A link for one person to connect" xml:space="preserve">
+        <source>A link for one person to connect</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -670,9 +715,8 @@ swipe action</note>
         <target>活动连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
-        <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
-        <target>将地址添加到您的个人资料，以便您的联系人可以与其他人共享。个人资料更新将发送给您的联系人。</target>
+      <trans-unit id="Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts." xml:space="preserve">
+        <source>Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add friends" xml:space="preserve">
@@ -738,6 +782,10 @@ swipe action</note>
       <trans-unit id="Added message servers" xml:space="preserve">
         <source>Added message servers</source>
         <target>已添加消息服务器</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Adding relays will be supported later." xml:space="preserve">
+        <source>Adding relays will be supported later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional accent" xml:space="preserve">
@@ -859,6 +907,14 @@ swipe action</note>
         <source>All profiles</source>
         <target>所有配置文件</target>
         <note>profile dropdown</note>
+      </trans-unit>
+      <trans-unit id="All relays failed" xml:space="preserve">
+        <source>All relays failed</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All relays removed" xml:space="preserve">
+        <source>All relays removed</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All reports will be archived for you." xml:space="preserve">
         <source>All reports will be archived for you.</source>
@@ -1421,7 +1477,7 @@ swipe action</note>
       <trans-unit id="Business address" xml:space="preserve">
         <source>Business address</source>
         <target>企业地址</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="Business chats" xml:space="preserve">
         <source>Business chats</source>
@@ -1612,12 +1668,21 @@ set passcode view</note>
         <source>Channel full name (optional)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Channel has no active relays. Please try to join later." xml:space="preserve">
+        <source>Channel has no active relays. Please try to join later.</source>
+        <note>alert message
+alert subtitle</note>
+      </trans-unit>
       <trans-unit id="Channel image" xml:space="preserve">
         <source>Channel image</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel link" xml:space="preserve">
         <source>Channel link</source>
+        <note>chat link info line</note>
+      </trans-unit>
+      <trans-unit id="Channel preferences" xml:space="preserve">
+        <source>Channel preferences</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel profile" xml:space="preserve">
@@ -1632,6 +1697,10 @@ set passcode view</note>
         <source>Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers.</source>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Channel temporarily unavailable" xml:space="preserve">
+        <source>Channel temporarily unavailable</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Channel will be deleted for all subscribers - this cannot be undone!" xml:space="preserve">
         <source>Channel will be deleted for all subscribers - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
@@ -1643,6 +1712,10 @@ set passcode view</note>
       <trans-unit id="Channel will start working with %d of %d relays. Proceed?" xml:space="preserve">
         <source>Channel will start working with %1$d of %2$d relays. Proceed?</source>
         <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Channels" xml:space="preserve">
+        <source>Channels</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -2062,6 +2135,10 @@ This is your own one-time link!</source>
         <target>通过链接连接</target>
         <note>new chat sheet title</note>
       </trans-unit>
+      <trans-unit id="Connect via link or QR code" xml:space="preserve">
+        <source>Connect via link or QR code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
         <source>Connect via one-time link</source>
         <target>通过一次性链接连接</target>
@@ -2071,6 +2148,10 @@ This is your own one-time link!</source>
         <source>Connect with %@</source>
         <target>与 %@连接</target>
         <note>new chat action</note>
+      </trans-unit>
+      <trans-unit id="Connect with someone" xml:space="preserve">
+        <source>Connect with someone</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
@@ -2140,7 +2221,7 @@ This is your own one-time link!</source>
       <trans-unit id="Connection error (AUTH)" xml:space="preserve">
         <source>Connection error (AUTH)</source>
         <target>连接错误（AUTH）</target>
-        <note>No comment provided by engineer.</note>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Connection failed" xml:space="preserve">
         <source>Connection failed</source>
@@ -2196,6 +2277,10 @@ This is your own one-time link!</source>
         <source>Connections</source>
         <target>连接</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact address" xml:space="preserve">
+        <source>Contact address</source>
+        <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve">
         <source>Contact allows</source>
@@ -2297,11 +2382,6 @@ This is your own one-time link!</source>
         <target>将名称更正为 %@？</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Create" xml:space="preserve">
-        <source>Create</source>
-        <target>创建</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Create 1-time link" xml:space="preserve">
         <source>Create 1-time link</source>
         <target>创建一次性链接</target>
@@ -2373,6 +2453,10 @@ This is your own one-time link!</source>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
         <target>创建您的资料</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your public address" xml:space="preserve">
+        <source>Create your public address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created" xml:space="preserve">
@@ -2959,6 +3043,10 @@ alert button</note>
         <target>此群禁止成员间私信。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Disable" xml:space="preserve">
+        <source>Disable</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Disable (keep overrides)" xml:space="preserve">
         <source>Disable (keep overrides)</source>
         <target>禁用（保留覆盖）</target>
@@ -3165,6 +3253,10 @@ chat item action</note>
         <target>端到端加密的通知。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Easier to invite your friends 👋" xml:space="preserve">
+        <source>Easier to invite your friends 👋</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
         <source>Edit</source>
         <target>编辑</target>
@@ -3187,7 +3279,7 @@ chat item action</note>
       <trans-unit id="Enable" xml:space="preserve">
         <source>Enable</source>
         <target>启用</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Enable (keep overrides)" xml:space="preserve">
         <source>Enable (keep overrides)</source>
@@ -3242,6 +3334,10 @@ chat item action</note>
         <source>Enable instant notifications?</source>
         <target>启用即时通知？</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable link previews?" xml:space="preserve">
+        <source>Enable link previews?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
         <source>Enable lock</source>
@@ -3419,7 +3515,7 @@ chat item action</note>
       <trans-unit id="Error" xml:space="preserve">
         <source>Error</source>
         <target>错误</target>
-        <note>No comment provided by engineer.</note>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Error aborting address change" xml:space="preserve">
         <source>Error aborting address change</source>
@@ -3761,6 +3857,10 @@ chat item action</note>
         <source>Error setting delivery receipts!</source>
         <target>设置送达回执出错！</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error sharing channel" xml:space="preserve">
+        <source>Error sharing channel</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
         <source>Error starting chat</source>
@@ -4130,6 +4230,10 @@ server test error</note>
         <target>所有 moderators</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="For anyone to reach you" xml:space="preserve">
+        <source>For anyone to reach you</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">
         <source>For chat profile %@:</source>
         <target>为聊天资料 %@：</target>
@@ -4342,7 +4446,7 @@ Error: %2$@</source>
       <trans-unit id="Group link" xml:space="preserve">
         <source>Group link</source>
         <target>群组链接</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="Group links" xml:space="preserve">
         <source>Group links</source>
@@ -4760,7 +4864,7 @@ More improvements are coming soon!</source>
       <trans-unit id="Invalid connection link" xml:space="preserve">
         <source>Invalid connection link</source>
         <target>无效的连接链接</target>
-        <note>No comment provided by engineer.</note>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Invalid display name!" xml:space="preserve">
         <source>Invalid display name!</source>
@@ -4823,6 +4927,10 @@ More improvements are coming soon!</source>
       <trans-unit id="Invite members" xml:space="preserve">
         <source>Invite members</source>
         <target>邀请成员</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invite someone privately" xml:space="preserve">
+        <source>Invite someone privately</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to chat" xml:space="preserve">
@@ -5025,6 +5133,10 @@ This is your link for group %@!</source>
         <target>消耗更少的移动网络数据。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Let someone connect to you" xml:space="preserve">
+        <source>Let someone connect to you</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
         <source>Let's talk in SimpleX Chat</source>
         <target>让我们一起在 SimpleX Chat 里聊天</target>
@@ -5044,6 +5156,10 @@ This is your link for group %@!</source>
         <source>Link mobile and desktop apps! 🔗</source>
         <target>连接移动端和桌面端应用程序！🔗</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Link signature verified." xml:space="preserve">
+        <source>Link signature verified.</source>
+        <note>owner verification</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
         <source>Linked desktop options</source>
@@ -5563,6 +5679,10 @@ This is your link for group %@!</source>
         <target>网络去中心化</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Network error" xml:space="preserve">
+        <source>Network error</source>
+        <note>conn error description</note>
+      </trans-unit>
       <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve">
         <source>Network issues - message expired after many attempts to send it.</source>
         <target>网络问题 - 消息在多次尝试发送后过期。</target>
@@ -5592,6 +5712,10 @@ This is your link for group %@!</source>
         <source>New</source>
         <target>新</target>
         <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="New 1-time link" xml:space="preserve">
+        <source>New 1-time link</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
@@ -5690,6 +5814,10 @@ This is your link for group %@!</source>
       <trans-unit id="No" xml:space="preserve">
         <source>No</source>
         <target>否</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No active relays" xml:space="preserve">
+        <source>No active relays</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No app password" xml:space="preserve">
@@ -5855,6 +5983,10 @@ This is your link for group %@!</source>
         <target>没有用户标识符。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Non-profit governance" xml:space="preserve">
+        <source>Non-profit governance</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Not all relays connected" xml:space="preserve">
         <source>Not all relays connected</source>
         <note>alert title</note>
@@ -5916,7 +6048,7 @@ This is your link for group %@!</source>
       <trans-unit id="OK" xml:space="preserve">
         <source>OK</source>
         <target>好的</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Off" xml:space="preserve">
         <source>Off</source>
@@ -5940,6 +6072,10 @@ new chat action</note>
         <target>一次性邀请链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="One-time link" xml:space="preserve">
+        <source>One-time link</source>
+        <note>chat link info line</note>
+      </trans-unit>
       <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
         <source>Onion hosts will be **required** for connection.
 Requires compatible VPN.</source>
@@ -5957,6 +6093,10 @@ Requires compatible VPN.</source>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
         <source>Onion hosts will not be used.</source>
         <target>将不会使用 Onion 主机。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only channel owners can change channel preferences." xml:space="preserve">
+        <source>Only channel owners can change channel preferences.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
@@ -6187,6 +6327,10 @@ Requires compatible VPN.</source>
         <target>或安全地分享此文件链接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Or show QR in person or via video call." xml:space="preserve">
+        <source>Or show QR in person or via video call.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Or show this code" xml:space="preserve">
         <source>Or show this code</source>
         <target>或者显示此码</target>
@@ -6195,6 +6339,10 @@ Requires compatible VPN.</source>
       <trans-unit id="Or to share privately" xml:space="preserve">
         <source>Or to share privately</source>
         <target>或者私下分享</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Or use this QR - print or show online." xml:space="preserve">
+        <source>Or use this QR - print or show online.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Organize chats into lists" xml:space="preserve">
@@ -6220,6 +6368,10 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Owners" xml:space="preserve">
         <source>Owners</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Ownership: you can run your own relays." xml:space="preserve">
+        <source>Ownership: you can run your own relays.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -6275,6 +6427,10 @@ Requires compatible VPN.</source>
       <trans-unit id="Paste image" xml:space="preserve">
         <source>Paste image</source>
         <target>粘贴图片</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste link / Scan" xml:space="preserve">
+        <source>Paste link / Scan</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste link to connect!" xml:space="preserve">
@@ -6479,6 +6635,10 @@ Error: %@</source>
         <target>重新定义隐私</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve">
+        <source>Privacy: for owners and subscribers.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
         <source>Private chats, groups and your contacts are not accessible to server operators.</source>
         <target>服务器运营方无法访问私密聊天、群组和你的联系人。</target>
@@ -6553,9 +6713,8 @@ Error: %@</source>
         <target>个人资料主题</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve">
-        <source>Profile update will be sent to your contacts.</source>
-        <target>个人资料更新将被发送给您的联系人。</target>
+      <trans-unit id="Profile update will be sent to your SimpleX contacts." xml:space="preserve">
+        <source>Profile update will be sent to your SimpleX contacts.</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -6658,6 +6817,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Proxy requires password" xml:space="preserve">
         <source>Proxy requires password</source>
         <target>代理需要密码</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Public channels - speak freely 🚀" xml:space="preserve">
+        <source>Public channels - speak freely 🚀</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -6892,6 +7055,10 @@ swipe action</note>
         <source>Relay link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Relay results:" xml:space="preserve">
+        <source>Relay results:</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
         <target>中继服务器仅在必要时使用。其他人可能会观察到您的IP地址。</target>
@@ -6904,6 +7071,10 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Relay test failed!" xml:space="preserve">
         <source>Relay test failed!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Reliability: many relays per channel." xml:space="preserve">
+        <source>Reliability: many relays per channel.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -7188,6 +7359,10 @@ swipe action</note>
         <target>SOCKS代理</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Safe web links" xml:space="preserve">
+        <source>Safe web links</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
         <source>Safely receive files</source>
         <target>安全接收文件</target>
@@ -7231,6 +7406,10 @@ chat item action</note>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
         <target>保存并通知群组成员</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save and notify subscribers" xml:space="preserve">
+        <source>Save and notify subscribers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and reconnect" xml:space="preserve">
@@ -7431,6 +7610,10 @@ chat item action</note>
         <target>安全码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Security: owners hold channel keys." xml:space="preserve">
+        <source>Security: owners hold channel keys.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Select" xml:space="preserve">
         <source>Select</source>
         <target>选择</target>
@@ -7561,6 +7744,10 @@ chat item action</note>
         <target>发送无消息请求</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send the link via any messenger - it's secure. Ask to paste into SimpleX." xml:space="preserve">
+        <source>Send the link via any messenger - it's secure. Ask to paste into SimpleX.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
         <source>Send them from gallery or custom keyboards.</source>
         <target>发送它们来自图库或自定义键盘。</target>
@@ -7585,6 +7772,10 @@ chat item action</note>
         <source>Sender may have deleted the connection request.</source>
         <target>发送人可能已删除连接请求。</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
+        <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
         <source>Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</source>
@@ -7881,10 +8072,13 @@ chat item action</note>
         <target>公开分享地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share address with contacts?" xml:space="preserve">
-        <source>Share address with contacts?</source>
-        <target>与联系人分享地址？</target>
+      <trans-unit id="Share address with SimpleX contacts?" xml:space="preserve">
+        <source>Share address with SimpleX contacts?</source>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Share channel" xml:space="preserve">
+        <source>Share channel</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share from other apps." xml:space="preserve">
         <source>Share from other apps.</source>
@@ -7925,9 +8119,12 @@ chat item action</note>
         <target>分享到 SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share with contacts" xml:space="preserve">
-        <source>Share with contacts</source>
-        <target>与联系人分享</target>
+      <trans-unit id="Share via chat" xml:space="preserve">
+        <source>Share via chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share with SimpleX contacts" xml:space="preserve">
+        <source>Share with SimpleX contacts</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share your address" xml:space="preserve">
@@ -8373,6 +8570,10 @@ Relay address was used to set up this relay for the channel.</source>
         <target>拍照</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Talk to someone" xml:space="preserve">
+        <source>Talk to someone</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
         <source>Tap Connect to chat</source>
         <target>轻按连接进行聊天</target>
@@ -8386,11 +8587,6 @@ Relay address was used to set up this relay for the channel.</source>
       <trans-unit id="Tap Connect to use bot" xml:space="preserve">
         <source>Tap Connect to use bot</source>
         <target>轻按“连接”使用机器人</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
-        <source>Tap Create SimpleX address in the menu to create it later.</source>
-        <target>要稍后创建 SimpleX 地址，请在菜单中轻按“创建 SimpleX 地址”</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Join channel" xml:space="preserve">
@@ -8425,6 +8621,10 @@ Relay address was used to set up this relay for the channel.</source>
       <trans-unit id="Tap to join incognito" xml:space="preserve">
         <source>Tap to join incognito</source>
         <target>点击以加入隐身聊天</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap to open" xml:space="preserve">
+        <source>Tap to open</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to paste link" xml:space="preserve">
@@ -8527,6 +8727,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The code you scanned is not a SimpleX link QR code.</source>
         <target>您扫描的码不是 SimpleX 链接的二维码。</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The connection reached the limit of undelivered messages" xml:space="preserve">
+        <source>The connection reached the limit of undelivered messages</source>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages, your contact may be offline." xml:space="preserve">
         <source>The connection reached the limit of undelivered messages, your contact may be offline.</source>
@@ -8757,6 +8961,10 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="To hide unwanted messages." xml:space="preserve">
         <source>To hide unwanted messages.</source>
         <target>隐藏不需要的信息。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To make SimpleX Network last." xml:space="preserve">
+        <source>To make SimpleX Network last.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -9034,7 +9242,7 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
         <target>不支持的连接链接</target>
-        <note>No comment provided by engineer.</note>
+        <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
@@ -9254,6 +9462,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>用一只手使用应用程序。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use this address in your social media profile, website, or email signature." xml:space="preserve">
+        <source>Use this address in your social media profile, website, or email signature.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use web port" xml:space="preserve">
         <source>Use web port</source>
         <target>使用 web 端口</target>
@@ -9406,6 +9618,10 @@ To connect, please ask your contact to create another connection link and check 
         <source>Wait response</source>
         <note>relay test step</note>
       </trans-unit>
+      <trans-unit id="Waiting for channel owner to add relays." xml:space="preserve">
+        <source>Waiting for channel owner to add relays.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Waiting for desktop..." xml:space="preserve">
         <source>Waiting for desktop...</source>
         <target>正在等待桌面...</target>
@@ -9444,6 +9660,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Warning: you may lose some data!" xml:space="preserve">
         <source>Warning: you may lose some data!</source>
         <target>警告：您可能会丢失部分数据！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="We made connecting simpler for new users." xml:space="preserve">
+        <source>We made connecting simpler for new users.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WebRTC ICE servers" xml:space="preserve">
@@ -10033,6 +10253,10 @@ Relays can access channel messages.</source>
         <target>您的个人资料已修改。如果进行保存，更新后的个人资料将发送到所有联系人。</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Your public address" xml:space="preserve">
+        <source>Your public address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>
         <target>您的随机资料</target>
@@ -10228,6 +10452,10 @@ marked deleted chat item preview text</note>
         <source>calling…</source>
         <target>呼叫中……</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="can't broadcast" xml:space="preserve">
+        <source>can't broadcast</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="can't send messages" xml:space="preserve">
         <source>can't send messages</source>
@@ -10883,6 +11111,10 @@ time to disappear</note>
         <source>removed (%d attempts)</source>
         <note>receive error chat item</note>
       </trans-unit>
+      <trans-unit id="removed by operator" xml:space="preserve">
+        <source>removed by operator</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="removed contact address" xml:space="preserve">
         <source>removed contact address</source>
         <target>删除了联系地址</target>
@@ -11203,6 +11435,10 @@ last received msg: %2$@</source>
         <source>\~strike~</source>
         <target>\~删去~</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="⚠️ Signature verification failed: %@." xml:space="preserve">
+        <source>⚠️ Signature verification failed: %@.</source>
+        <note>owner verification</note>
       </trans-unit>
     </body>
   </file>

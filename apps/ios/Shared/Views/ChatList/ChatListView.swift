@@ -839,11 +839,11 @@ struct TagsView: View {
             nil
         }
         let active = tag == selectedPresetTag
-        let (icon, text) = presetTagLabel(tag: tag, active: active)
+        let (icon, menuIcon, text) = presetTagLabel(tag: tag, active: active)
         let color: Color = active ? .accentColor : .secondary
 
         HStack(spacing: 4) {
-            Image(systemName: icon)
+            Image(systemName: menuIcon ?? icon)
                 .foregroundColor(color)
             ZStack {
                 Text(text).fontWeight(.semibold).foregroundColor(.clear)
@@ -886,9 +886,9 @@ struct TagsView: View {
                     Button {
                         setActiveFilter(filter: .presetTag(tag))
                     } label: {
-                        let (systemName, text) = presetTagLabel(tag: tag, active: tag == selectedPresetTag)
+                        let (icon, _, text) = presetTagLabel(tag: tag, active: tag == selectedPresetTag)
                         HStack {
-                            Image(systemName: systemName)
+                            Image(systemName: icon)
                             Text(text)
                         }
                     }
@@ -896,8 +896,8 @@ struct TagsView: View {
             }
         } label: {
             if let tag = selectedPresetTag, tag.сollapse {
-                let (systemName, _) = presetTagLabel(tag: tag, active: true)
-                Image(systemName: systemName)
+                let (icon, menuIcon, _) = presetTagLabel(tag: tag, active: true)
+                Image(systemName: menuIcon ?? icon)
                     .foregroundColor(.accentColor)
             } else {
                 Image(systemName: "list.bullet")
@@ -907,15 +907,15 @@ struct TagsView: View {
         .frame(minWidth: 28)
     }
     
-    private func presetTagLabel(tag: PresetTag, active: Bool) -> (String, LocalizedStringKey) {
+    private func presetTagLabel(tag: PresetTag, active: Bool) -> (item: String, menu: String?, label: LocalizedStringKey) {
         switch tag {
-        case .groupReports: (active ? "flag.fill" : "flag", "Reports")
-        case .favorites: (active ? "star.fill" : "star", "Favorites")
-        case .contacts: (active ? "person.fill" : "person", "Contacts")
-        case .groups: (active ? "person.2.fill" : "person.2", "Groups")
-        case .channels: (active ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right.circle", "Channels")
-        case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
-        case .notes: (active ? "folder.fill" : "folder", "Notes")
+        case .groupReports: (item: active ? "flag.fill" : "flag", menu: nil, label: "Reports")
+        case .favorites: (item: active ? "star.fill" : "star", menu: nil, label: "Favorites")
+        case .contacts: (item: active ? "person.fill" : "person", menu: nil, label: "Contacts")
+        case .groups: (item: active ? "person.2.fill" : "person.2", menu: nil, label: "Groups")
+        case .channels: (item: active ? "antenna.radiowaves.left.and.right.circle.fill" : "antenna.radiowaves.left.and.right", menu: "antenna.radiowaves.left.and.right", label: "Channels")
+        case .business: (item: active ? "briefcase.fill" : "briefcase", menu: nil, label: "Businesses")
+        case .notes: (item: active ? "folder.fill" : "folder", menu: nil, label: "Notes")
         }
     }
 

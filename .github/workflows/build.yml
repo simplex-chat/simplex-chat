@@ -10,17 +10,25 @@ on:
       - "!*-fdroid"
       - "!*-armv7a"
   pull_request:
-    paths-ignore:
-      - "apps/ios"
-      - "apps/multiplatform"
-      - "blog"
-      - "docs"
-      - "fastlane"
-      - "images"
-      - "packages"
-      - "website"
-      - "README.md"
-      - "PRIVACY.md"
+    paths:
+      - "src/**"
+      - "apps/simplex-chat/**"
+      - "apps/simplex-bot/**"
+      - "apps/simplex-bot-advanced/**"
+      - "apps/simplex-broadcast-bot/**"
+      - "apps/simplex-directory-service/**"
+      - "tests/**"
+      - "bots/src/**"
+      - "simplex-chat.cabal"
+      - "cabal.project"
+      - "Dockerfile*"
+      - "scripts/ci/**"
+      - "scripts/desktop/**"
+      - ".github/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
 # 
