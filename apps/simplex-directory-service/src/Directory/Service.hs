@@ -332,6 +332,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             "\nLink to join " <> groupTypeStr' pg <> ": " <> strEncodeTxt groupLink
               <> "\nYou need SimpleX Chat app v6.5 to join."
           Nothing -> ""
+    memberCount GroupSummary {currentMembers, publicMemberCount} = fromMaybe currentMembers publicMemberCount
     knockingStr :: Maybe GroupMemberAdmission -> [Text]
     knockingStr = \case
       Just GroupMemberAdmission {review = Just MCAll} -> ["New members are reviewed by admins"]
@@ -747,7 +748,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image', publicGroup = pg_}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
       ct_ <- getContact' cc user dbContactId
       let gt = maybe "group" groupTypeStr' pg_
-          membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_\n"
+          membersStr = "_" <> tshow (memberCount groupSummary) <> " members_\n"
           text =
             either (\_ -> "The " <> gt <> " ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the " <> gt <> " ID " <> tshow groupId <> ": ") ct_
               <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
@@ -1190,8 +1191,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary = GroupSummary {currentMembers}}, _) =
-              let membersStr = "_" <> tshow currentMembers <> " members_"
+            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_, memberAdmission}, groupSummary}, _) =
+              let membersStr = "_" <> tshow (memberCount groupSummary) <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
                   text = T.unlines $ [showId <> groupInfoText p, membersStr] ++ knockingStr memberAdmission
                in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
@@ -1388,7 +1389,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               GroupReg {userGroupRegId, groupRegStatus} = gr
               useGroupId = if isAdmin then groupId else userGroupRegId
               statusStr = "Status: " <> groupRegStatusText groupRegStatus
-              membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
+              membersStr = "_" <> tshow (memberCount groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
               ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
               text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr] ++ knockingStr memberAdmission ++ [cmds]
