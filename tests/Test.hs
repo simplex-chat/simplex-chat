@@ -93,7 +93,7 @@ main = do
     testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
 #else
     testBracket chatQueryStats agentQueryStats test =
-      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = True}
+      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
 #endif
     tmpBracket test = do
       t <- getSystemTime
