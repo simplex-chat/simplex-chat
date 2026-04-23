@@ -894,8 +894,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           (Nothing, _) -> sendMessage cc ct $ "Error: no " <> gt <> " information available via the link."
           _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
-        GLPKnown {groupInfo = g, ownerVerification, groupSLinkData_} -> case ownerVerification of
-          Just OVVerified -> deReregistration ct g ownerSig groupSLinkData_
+        GLPKnown {groupInfo = g, groupUpdated, ownerVerification} -> case ownerVerification of
+          Just OVVerified -> deReregistration ct g groupUpdated ownerSig
           Just (OVFailed reason) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           Nothing -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership."
         GLPConnectingProhibit _ -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
@@ -924,8 +924,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             _ -> sendMessage cc ct $ "Error joining " <> gt <> " " <> displayName <> ", please re-send the link!"
         _ -> sendMessage cc ct $ "Error joining " <> gt <> " " <> displayName <> ", please re-send the link!"
 
-    deReregistration :: Contact -> GroupInfo -> LinkOwnerSig -> Maybe GroupShortLinkData -> IO ()
-    deReregistration ct g@GroupInfo {groupId, groupProfile = p@GroupProfile {publicGroup = pg_}} LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)} groupSLinkData_ = do
+    deReregistration :: Contact -> GroupInfo -> Bool -> LinkOwnerSig -> IO ()
+    deReregistration ct g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} profileChanged LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)} = do
       let mId = MemberId oIdBytes
           gt = maybe "group" groupTypeStr' pg_
       withDB "getGroupMemberByMemberId" cc (\db -> withExceptT show $ getGroupMemberByMemberId db (vr cc) user g mId) >>= \case
@@ -944,9 +944,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             | otherwise -> sendMessage cc ct $ "Waiting for the owner member to be connected to the " <> gt <> "."
         Left _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
       where
-        profileChanged = case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile = p'} -> not $ sameProfile p p'
-          Nothing -> False
         sameOwnerReregistration gr gt = case groupRegStatus gr of
           GRSProposed -> sendMessage cc ct $ "Registration is in progress, waiting for the owner member to be connected to the " <> gt <> "."
           GRSPendingConfirmation -> pendingApprovalTransition gr gt 1

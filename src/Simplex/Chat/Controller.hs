@@ -1037,7 +1037,7 @@ data GroupLinkPlan
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
-  | GLPKnown {groupInfo :: GroupInfo, ownerVerification :: Maybe OwnerVerification, groupSLinkData_ :: Maybe GroupShortLinkData}
+  | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: Bool, ownerVerification :: Maybe OwnerVerification}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
   deriving (Show)
 

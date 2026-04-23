@@ -4037,7 +4037,7 @@ processChatCommand vr nm = \case
         where
           l' = serverShortLink l
           con cReq = ACCL SCMContact $ CCLink cReq (Just l')
-          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g Nothing Nothing))
+          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g False Nothing))
           groupShortLinkPlan =
             knownLinkPlans >>= \case
               Just (_, CPGroupLink (GLPKnown g _ _))
@@ -4069,11 +4069,11 @@ processChatCommand vr nm = \case
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
-                g' <- case groupSLinkData_ of
-                  Just GroupShortLinkData {groupProfile = linkProfile}
-                    | p /= linkProfile -> withStore $ \db -> updateGroupProfile db user g linkProfile
-                  _ -> pure g
-                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' ov groupSLinkData_))
+                (g', updated) <- case groupSLinkData_ of
+                  Just GroupShortLinkData {groupProfile}
+                    | p /= groupProfile -> (,True) <$> withStore (\db -> updateGroupProfile db user g groupProfile)
+                  _ -> pure (g, False)
+                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' updated ov))
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
@@ -4153,10 +4153,10 @@ processChatCommand vr nm = \case
             (Just gInfo, _) -> groupPlan gInfo linkInfo gld ov
     groupPlan :: GroupInfo -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
     groupPlan gInfo@GroupInfo {membership} linkInfo gld ov
-      | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo ov gld)
+      | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo False ov)
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
-      | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo ov gld)
+      | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo False ov)
       | otherwise = pure $ CPGroupLink (GLPOk linkInfo gld ov)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
