@@ -377,6 +377,100 @@ jobs:
             exit 1
           fi
 
+# =================================
+#   Linux PostgreSQL Library Build
+# =================================
+
+  build-linux-postgres:
+    name: "ubuntu-22.04-x86_64 (Postgres lib), GHC: ${{ needs.variables.outputs.GHC_VER }}"
+    needs: [maybe-release, variables]
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Get UID and GID
+        id: ids
+        run: |
+          echo "uid=$(id -u)" >> $GITHUB_OUTPUT
+          echo "gid=$(id -g)" >> $GITHUB_OUTPUT
+
+      - name: Free disk space
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
+
+      - name: Restore cached build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ubuntu-22.04-x86_64-postgres-ghc${{ needs.variables.outputs.GHC_VER }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+
+      - name: Set up Docker Buildx
+        uses: simplex-chat/docker-setup-buildx-action@v3
+
+      - name: Build and cache Docker image
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/22.04:latest
+          build-args: |
+            TAG=22.04
+            HASH=sha256:5c8b2c0a6c745bc177669abfaa716b4bc57d58e2ea3882fb5da67f4d59e3dda5
+            GHC=${{ needs.variables.outputs.GHC_VER }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
+
+      - name: Start container
+        shell: bash
+        run: |
+          docker run -t -d \
+            --name builder \
+            -v ~/.cabal:/root/.cabal \
+            -v /home/runner/work/_temp:/home/runner/work/_temp \
+            -v ${{ github.workspace }}:/project \
+            build/22.04:latest
+
+      - name: Prepare cabal.project.local
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - name: Build postgres library
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          cabal clean
+          cabal update
+          scripts/desktop/build-lib-linux.sh postgres
+
+      - name: Copy libs from container
+        shell: bash
+        run: |
+          ARCH=x86_64
+          GHC_VER=${{ needs.variables.outputs.GHC_VER }}
+          BUILD_DIR=$(echo dist-newstyle/build/${ARCH}-linux/ghc-${GHC_VER}/simplex-chat-*)
+          mkdir -p postgres-libs
+          cp ${BUILD_DIR}/build/libsimplex.so postgres-libs/
+          cp ${BUILD_DIR}/build/deps/* postgres-libs/
+
+      - name: Upload postgres libs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simplex-libs-linux-postgres-x86_64
+          path: postgres-libs/
+
+      - name: Fix permissions for cache
+        shell: bash
+        run: |
+          sudo chmod -R 777 dist-newstyle ~/.cabal
+          sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
+
 # =========================
 #        MacOS Build
 # =========================
@@ -613,7 +707,7 @@ jobs:
 
   release-nodejs-libs:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-macos]
+    needs: [build-linux, build-linux-postgres, build-macos]
     if: startsWith(github.ref, 'refs/tags/v') && (!cancelled())
     steps:
       - name: Checkout current repository
@@ -621,6 +715,13 @@ jobs:
 
       - name: Install packages for archiving
         run: sudo apt install -y msitools gcc-mingw-w64
+
+      - name: Download postgres libs artifact
+        if: needs.build-linux-postgres.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: simplex-libs-linux-postgres-x86_64
+          path: ${{ runner.temp }}/postgres-libs
 
       - name: Build archives
         run: |
@@ -677,6 +778,17 @@ jobs:
           mkdir libs && cp *.dll *.lib libs/
           zip -r "${PREFIX}-windows-x86_64.zip" libs
           mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+          # Linux PostgreSQL (only if postgres build succeeded)
+          # -------------------------------------------------
+          POSTGRES_LIBS='${{ runner.temp }}/postgres-libs'
+          if [ -d "$POSTGRES_LIBS" ]; then
+            mkdir -p linux-postgres/libs
+            cp "${POSTGRES_LIBS}"/*.so linux-postgres/libs/
+            cd linux-postgres
+            zip -r "${PREFIX}-linux-x86_64-postgres.zip" libs
+            mv "${PREFIX}-linux-x86_64-postgres.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+          fi
 
       - name: Create release in libs repo and upload artifacts
         uses: softprops/action-gh-release@v2
