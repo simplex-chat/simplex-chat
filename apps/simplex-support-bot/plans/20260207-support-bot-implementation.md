@@ -700,7 +700,7 @@ Type signatures affected:
 **Main profile side (invite + failure detection):**
 0. Send `grokInvitingMessage` ("Inviting Grok, please wait...")
 1. **Set `grokInitialResponsePending.add(groupId)` FIRST** — the gate must be raised before any operation that could make Grok recognizable to `onGrokNewChatItems`. Specifically: before `apiAddMember`, before `pendingGrokJoins` is set, and before `bufferedGrokInvitations` is drained (which populates `reverseGrokMap`). Without this ordering, the sequence `apiAddMember → pendingGrokJoins.set → drain → reverseGrokMap.set → gate.add` contains a window where `reverseGrokMap` identifies the group as a Grok-active group but the gate is still DOWN. A customer message arriving in that window triggers a per-message response concurrent with the initial combined response — producing duplicate Grok replies. Every error path below MUST clear the gate.
-2. `apiAddMember(groupId, grokContactId, Member)` → get `member.memberId`. On `groupDuplicateMember` (customer sent `/grok` again before join completed), **clear the gate** and silent return — the in-flight activation handles the outcome. On any other error, clear the gate, revert state, send `grokUnavailableMessage`.
+2. **Pre-check via `apiListMembers`**: silent return if Grok is already in the group in any non-terminal status (covers `GSMemInvited`, which the SimpleX API would otherwise resend the invitation for without throwing). Then `apiAddMember(groupId, grokContactId, Member)` → get `member.memberId`. On `groupDuplicateMember` (race between pre-check and add — Grok joined as Connected meanwhile), **clear the gate** and silent return — the in-flight activation handles the outcome. On any other error, clear the gate, revert state, send `grokUnavailableMessage`.
 3. Store `pendingGrokJoins.set(memberId, mainGroupId)`
 4. Drain `bufferedGrokInvitations` — if the `receivedGroupInvitation` event arrived during step 2's await (race condition), process it now. (The gate is already up from step 1, so `onGrokNewChatItems` suppresses any per-message responses during drain and the subsequent join.)
 5. `waitForGrokJoin(120s)` — awaits resolver from Grok profile's `connectedToGroupMember` (step 8 below)
@@ -958,7 +958,7 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | Team member leaves (message sent) | State stays `TEAM` (`customData.state` persists). Customer's next `/team` re-adds silently. |
 | No `--auto-add-team-members` (`-a`) configured | `/team` → "no team members available yet" |
 | `grokContactId` unavailable | `/grok` → "temporarily unavailable" |
-| `groupDuplicateMember` | Catch, `apiListMembers` to find existing member |
+| Member already in group when `/team` re-runs | `addOrFindTeamMember` pre-checks via `apiListMembers` and skips `apiAddMember` entirely if the contact is present in any non-terminal status (so an `Invited`-but-not-yet-accepted member is never re-invited — the SimpleX API would otherwise resend the invitation for `GSMemInvited`) |
 
 ## 16. API Call Map
 
@@ -1084,7 +1084,7 @@ npx ts-node src/index.ts \
 23. DM handshake via `connectedToGroupMember` → verify contact ID message sent (dedup with #22)
 24. Restart → verify same team group + Grok contact from state file, cards resume via `customData`
 25. No `--auto-add-team-members` (`-a`) → `/team` → verify "no team members available"
-26. `groupDuplicateMember` → verify `apiListMembers` fallback
+26. Repeated `/team` while members are still in `Invited` status → verify `apiAddMember` is NOT called again (pre-check in `addOrFindTeamMember` returns the existing member)
 27. Team member leaves (no message sent) → verify revert to QUEUE
 28. Team member leaves (message sent), customer sends `/team` → verify re-adds team members
 29. Card preview sender prefixes → verify first message in each consecutive sender run gets `Name:` prefix, subsequent same-sender messages do not
@@ -1333,8 +1333,8 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 
 #### 17. Error Handling (3 tests)
 - apiAddMember fails (Grok) → grokUnavailableMessage
-- groupDuplicateMember on Grok invite → only inviting message, no result (in-flight activation handles outcome)
-- groupDuplicateMember on /team → apiListMembers fallback
+- /grok while Grok already present (any non-terminal status, including `Invited`) → pre-check silent-returns, no `apiAddMember` call. Plus race coverage: simulated `groupDuplicateMember` thrown by `apiAddMember` → silent return, no further state change
+- /team while team member already present (any non-terminal status, including `Invited`) → `apiAddMember` not called for that member
 
 #### 18. Profile / Event Filtering (4 tests)
 - newChatItems from Grok profile → ignored by main handler

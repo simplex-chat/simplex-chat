@@ -10,6 +10,23 @@ import {
 } from "./messages.js"
 import {profileMutex, log, logError} from "./util.js"
 
+// True for any non-terminal status — invited but not yet accepted, through
+// connected. Used to decide whether a contact is already in the group so we
+// don't trigger a re-invite (the SimpleX API resends the invitation for a
+// member in GSMemInvited).
+function isInGroup(m: T.GroupMember): boolean {
+  switch (m.memberStatus) {
+    case T.GroupMemberStatus.Rejected:
+    case T.GroupMemberStatus.Removed:
+    case T.GroupMemberStatus.Left:
+    case T.GroupMemberStatus.Deleted:
+    case T.GroupMemberStatus.Unknown:
+      return false
+    default:
+      return true
+  }
+}
+
 export class SupportBot {
   // Card manager
   cards: CardManager
@@ -573,6 +590,16 @@ export class SupportBot {
       return
     }
 
+    // Pre-check: silent return if Grok is already in the group in any
+    // non-terminal status. The apiAddMember/groupDuplicateMember catch below
+    // handles Connected/etc. but the SimpleX API resends the invitation for
+    // GSMemInvited (no error thrown), so without this check a /grok issued
+    // while a previous activation is still pending would re-trigger the invite.
+    const grokMembers = await this.withMainProfile(() => this.chat.apiListMembers(groupId))
+    if (grokMembers.some(m => m.memberContactId === this.config.grokContactId && isInGroup(m))) {
+      return
+    }
+
     // Gate MUST be up before apiAddMember / pendingGrokJoins / reverseGrokMap —
     // any later and onGrokNewChatItems can fire a duplicate per-message reply.
     this.grokInitialResponsePending.add(groupId)
@@ -767,19 +794,16 @@ export class SupportBot {
   // --- Helpers ---
 
   private async addOrFindTeamMember(groupId: number, teamContactId: number): Promise<T.GroupMember | null> {
-    try {
-      return await this.withMainProfile(() =>
-        this.chat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
-      )
-    } catch (err: unknown) {
-      const chatErr = err as {chatError?: {errorType?: {type?: string}}}
-      if (chatErr?.chatError?.errorType?.type === "groupDuplicateMember") {
-        log(`Team member already in group ${groupId}, looking up existing`)
-        const members = await this.withMainProfile(() => this.chat.apiListMembers(groupId))
-        return members.find(m => m.memberContactId === teamContactId) ?? null
-      }
-      throw err
-    }
+    // Pre-check membership: skip apiAddMember entirely if the contact is in
+    // the group in any non-terminal status. The SimpleX API resends the
+    // invitation for a member in GSMemInvited, so calling apiAddMember on a
+    // pending invitee would re-trigger an invite notification.
+    const members = await this.withMainProfile(() => this.chat.apiListMembers(groupId))
+    const existing = members.find(m => m.memberContactId === teamContactId && isInGroup(m))
+    if (existing) return existing
+    return await this.withMainProfile(() =>
+      this.chat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
+    )
   }
 
   async sendToGroup(groupId: number, text: string): Promise<void> {

@@ -1409,26 +1409,42 @@ describe("Error Handling", () => {
     expectNotSentToGroup(CUSTOMER_GROUP_ID, "temporarily unavailable")
   })
 
-  test("groupDuplicateMember on /team → apiListMembers fallback", async () => {
-    await reachQueue()
-    addBotMessage("The team will reply to your message")
+  test("/team while members are in Invited status → no second apiAddMember call", async () => {
+    await reachTeamPending()
+    addBotMessage("We will reply within 24 hours.")
 
-    // First team member add succeeds, second fails with groupDuplicateMember
-    let callCount = 0
-    const origAddMember = chat.apiAddMember.bind(chat)
-    chat.apiAddMember = async (groupId: number, contactId: number, role: string) => {
-      callCount++
-      if (callCount === 2) {
-        chat.members.set(groupId, [
-          {memberId: `team-${contactId}`, groupMemberId: 5000 + contactId, memberContactId: contactId, memberStatus: GroupMemberStatus.Connected, memberProfile: {displayName: `Contact${contactId}`}},
-        ])
-        throw {chatError: {errorType: {type: "groupDuplicateMember"}}}
-      }
-      return origAddMember(groupId, contactId, role)
-    }
+    // Simulate the realistic post-/team state: both members have been invited
+    // but have not yet accepted (memberStatus = "invited"). The SimpleX API
+    // would resend the invitation if apiAddMember is called for an Invited
+    // member — the pre-check in addOrFindTeamMember must skip them.
+    const invited = (contactId: number) => ({
+      memberId: `team-${contactId}`,
+      groupMemberId: 5000 + contactId,
+      memberContactId: contactId,
+      memberStatus: "invited",
+      memberProfile: {displayName: `Contact${contactId}`},
+    })
+    chat.members.set(CUSTOMER_GROUP_ID, [invited(TEAM_MEMBER_1_ID), invited(TEAM_MEMBER_2_ID)])
+    chat.added.length = 0
 
     await bot.onNewChatItems(customerMessage("/team"))
-    expectSentToGroup(CUSTOMER_GROUP_ID, "We will reply within")
+    expect(chat.added.filter(a => a.groupId === CUSTOMER_GROUP_ID)).toEqual([])
+  })
+
+  test("/grok in TEAM-PENDING while Grok is in Invited status → no second apiAddMember call", async () => {
+    await reachTeamPending()
+    addBotMessage("We will reply within 24 hours.")
+    chat.members.set(CUSTOMER_GROUP_ID, [
+      makeTeamMember(TEAM_MEMBER_1_ID, "Alice"),
+      {memberId: "grok-member", groupMemberId: 7777, memberContactId: GROK_CONTACT_ID, memberStatus: "invited", memberProfile: {displayName: "Grok"}},
+    ])
+    chat.added.length = 0
+
+    await bot.onNewChatItems(customerMessage("/grok"))
+    await bot.flush()
+
+    expect(chat.added.filter(a => a.contactId === GROK_CONTACT_ID)).toEqual([])
+    expectNotSentToGroup(CUSTOMER_GROUP_ID, "Inviting Grok")
   })
 })
 
