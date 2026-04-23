@@ -270,9 +270,9 @@ Card is a single message. The join command is the final line of the card text �
 
 **Message count:** All messages in chat history except the bot's own (`groupSnd` from main profile).
 
-**Message preview:** Last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat from spam. The customer's display name is sanitized (newlines → spaces) for the card header; the `/join` command no longer embeds the customer name (numeric id only). Newest messages are prioritized — when the total exceeds ~500 chars (`maxTotal = 500` in `composeCard`), the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. When truncation occurs, the first visible message is guaranteed to have a sender prefix even if it was a continuation in the original sequence. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender - subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok contact is detected by `grokContactId` and labeled "Grok"; the customer is identified by matching `memberId` to the group's `customerId` and labeled with their display name; all other members use their `memberProfile.displayName`. Bot's own messages (`groupSnd`) are excluded. Each message truncated to ~200 chars. Media-only messages show type labels: `[image]`, `[file]`, `[voice]`, `[video]`.
+**Message preview:** Last several messages, most recent last, separated by ` / `. Newlines in message text are replaced with spaces to prevent card layout bloat from spam. The customer's display name is sanitized (newlines → spaces) for the card header; the `/join` command embeds only the numeric group id. Newest messages are prioritized — when the total exceeds ~500 chars (`maxTotal = 500` in `composeCard`), the oldest messages are truncated (with `[truncated]` prepended) while the newest are always shown. When truncation occurs, the first visible message is guaranteed to have a sender prefix even if it was a continuation in the original sequence. Each message is prefixed with the sender's name (`Name: message`) on the first message in a consecutive run from that sender - subsequent messages from the same sender omit the prefix until a different sender's message appears. Sender identification: Grok contact is detected by `grokContactId` and labeled "Grok"; the customer is identified by matching `memberId` to the group's `customerId` and labeled with their display name; all other members use their `memberProfile.displayName`. Bot's own messages (`groupSnd`) are excluded. Each message truncated to ~200 chars. Media-only messages show type labels: `[image]`, `[file]`, `[voice]`, `[video]`.
 
-**Join command:** the final line of the card renders as `/'join <groupId>'` where `<groupId>` is the customer group's numeric ID. The outer single quotes around `join <groupId>` are rendered by SimpleX clients as a clickable quoted command; tapping it sends `/join <groupId>` back to the team group. The bot's `/join` handler accepts both forms: `/join <groupId>` (numeric only — what the card produces and what a tap sends) and the legacy `/join <groupId>:<name>` (still parsed for backward compatibility with operators who type the old syntax; the `:<name>` suffix is extracted but ignored — the groupId alone identifies the target group).
+**Join command:** the final line of the card renders as `/'join <groupId>'` where `<groupId>` is the customer group's numeric ID. The outer single quotes around `join <groupId>` are rendered by SimpleX clients as a clickable quoted command; tapping it sends `/join <groupId>` back to the team group. The handler does not pattern-match the message text — it uses the framework's structured command parser (`util.ciBotCommand`) which returns `{keyword: "join", params: "<groupId>"}` directly from the chat item. The handler then converts `params` to an integer via `Number.parseInt(params, 10)` and rejects anything that is not a positive integer. There is no legacy `/join <groupId>:<name>` form — the card never emits it, so the handler never needs to strip it.
 
 ### Card lifecycle
 
@@ -833,13 +833,14 @@ Ordering guarantees preserved:
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>` (legacy `/join <groupId>:<name>` also accepted) | Join specified customer group |
+| `/join <groupId>` | Join specified customer group |
 
 **`/join` handling:**
-1. Parse `groupId` from command. Regex: `/^\/join\s+(\d+)(?::.*)?\s*$/` — captures the numeric groupId; the optional `:<name>` tail (legacy) is matched but discarded. Cards emit `/'join <groupId>'`; when a team member taps that rendered token, the SimpleX client sends `/join <groupId>` (quotes stripped by the client as formatting) and this regex matches the numeric-only form. Operators who type the legacy `/join 42:Alice` still match and the `:Alice` suffix is ignored.
-2. Validate target is a business group (has `businessChat` property) — error in team group if not
-3. Add requesting team member to customer group via `apiAddMember`
-4. Member promoted to Owner on `connectedToGroupMember` (see §8)
+1. Extract `{keyword, params}` from the chat item with `util.ciBotCommand(chatItem)`. The framework already parses the leading `/keyword` and returns the trimmed remainder as `params` — the handler does not run its own regex over the message text. Cards emit `/'join <groupId>'`; a team-member tap delivers a chat item whose text is `/join <groupId>`, which `ciBotCommand` returns as `{keyword: "join", params: "<groupId>"}`.
+2. Convert `params` to a number with `const targetGroupId = Number.parseInt(params, 10)`. If `Number.isNaN(targetGroupId) || targetGroupId <= 0`, reply in the team group with `Error: invalid group id "${params}"` and return. No regex, no `split(":")`, no legacy fallback — operators must use the numeric form (which is what the card always emits).
+3. Validate target is a business group (has `businessChat` property) — error in team group if not.
+4. Add requesting team member to customer group via `apiAddMember`.
+5. Member promoted to Owner on `connectedToGroupMember` (see §8).
 
 **Team member promotion:** On every `connectedToGroupMember` in a customer group, promote to Owner unless customer or Grok. Idempotent.
 
@@ -1289,8 +1290,8 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 - message count excludes bot's own
 
 #### 10. /join Command (5 tests)
-- /join <groupId> (numeric only) → team member added
-- /join <groupId>:<name> (legacy form) → team member added, `:<name>` suffix ignored
+- /join <groupId> (the only accepted form) → team member added; `params` from `ciBotCommand` is parsed via `Number.parseInt`, no regex
+- /join with non-numeric `params` (e.g. `/join abc`) → error reply in team group, no `apiAddMember` call
 - /join non-business group → error
 - /join non-existent groupId → error
 - customer /join in customer group → treated as normal message

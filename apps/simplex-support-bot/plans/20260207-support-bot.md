@@ -188,7 +188,7 @@ Each card is **one** message with five parts (the join command is the final line
 
 **Markdown escaping in previews** — SimpleX markdown interprets `!N<space>` (where N is `1`–`6`, `r`, `g`, `b`, `y`, `c`, `m`, or `-`) as styled-text markup, closing at the next `!`. There is no escape mechanism in the parser. To prevent customer/agent message text from triggering false color formatting or interfering with the blue `/` separator, the bot inserts a zero-width space (U+200B) between `!` and any color-trigger character in preview text before joining with the separator. This is invisible to the user but breaks the parser trigger pattern.
 
-**Join command** — the final line of the card is `/'join <id>'`. The single quotes around `join <id>` make the whole token clickable in SimpleX clients; when tapped, the client sends `/join <id>` back to the team group. The bot's `/join` parser accepts two forms: `/join <id>` (numeric group id only; this is what the card emits and taps produce) and `/join <id>:<name>` (legacy form, retained so operators who typed the old syntax still work). The name, when present, is ignored by the handler — the groupId alone identifies the target group.
+**Join command** — the final line of the card is `/'join <id>'`. The single quotes around `join <id>` make the whole token clickable in SimpleX clients; when tapped, the client sends `/join <id>` back to the team group. The bot does not pattern-match the message text — it asks the framework for the structured command (`util.ciBotCommand` returns `{keyword: "join", params: "<id>"}`) and converts `params` to a number with `Number.parseInt`. The numeric form is the only accepted form: there is no `/join <id>:<name>` legacy syntax and no regex fallback.
 
 The icon in line 1 is the sole urgency indicator — no reactions are used.
 
@@ -312,7 +312,7 @@ Team members use these commands in the team group:
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>` (or legacy `/join <groupId>:<name>`) | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`. |
+| `/join <groupId>` | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`; the handler reads `groupId` from the framework's structured command (`util.ciBotCommand → {keyword, params}`), not from regex over the message text. |
 
 `/join` is **team-only** — it is registered as a bot command only in the team group. If a customer sends `/join` in a customer group, the bot treats it as an ordinary message (per the existing rule: unrecognized commands are treated as normal messages).
 
@@ -372,7 +372,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>` (or legacy `/join <groupId>:<name>`) | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`. |
+| `/join <groupId>` | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`; the handler reads `groupId` from the framework's structured command (`util.ciBotCommand → {keyword, params}`), not from regex over the message text. |
 
 ### 5.2 Bot Architecture
 
