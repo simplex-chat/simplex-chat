@@ -483,14 +483,14 @@ fun GroupMemberInfoLayout(
       SectionSpacer()
     }
 
+    val showMemberSupportChat = !openedFromSupportChat &&
+      groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
+      member.memberRole != GroupMemberRole.Relay &&
+      (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
+
     if (member.memberActive) {
       SectionView {
-        if (
-          !openedFromSupportChat &&
-          groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
-          member.memberRole != GroupMemberRole.Relay &&
-          (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
-        ) {
+        if (showMemberSupportChat) {
           SupportChatButton()
         }
         if (connectionCode != null && !(groupInfo.useRelays && member.memberRole == GroupMemberRole.Relay)) {
@@ -502,6 +502,11 @@ fun GroupMemberInfoLayout(
 //        } else if (developerTools) {
 //          SynchronizeConnectionButtonForce(syncMemberConnectionForce)
 //        }
+      }
+      SectionDividerSpaced()
+    } else if (groupInfo.useRelays && member.memberCurrent && showMemberSupportChat) {
+      SectionView {
+        SupportChatButton()
       }
       SectionDividerSpaced()
     }
