@@ -655,7 +655,7 @@ chat.on("connectedToGroupMember", (evt) => {
 
 The gate is event-driven and persists its transitions. The initial `/team` guard reads `customData.state` AND group composition: if state is already `TEAM-PENDING`/`TEAM` **and** team members are still present, the bot replies `teamAlreadyInvitedMessage` without re-adding. If state is `TEAM-PENDING`/`TEAM` but all team members have left, the bot re-adds them (state stays `TEAM-PENDING`). The first-team-message detection writes `state: 'TEAM'` into customData at the moment the bot observes the message, then removes Grok and disables `/grok`.
 
-1. User sends `/team` → ALL configured `--auto-add-team-members` (`-a`) added to group (promoted to Owner on connect) → Grok stays if present → TEAM-PENDING
+1. User sends `/team` → ALL configured `--auto-add-team-members` (`-a`) added to group (each promoted to Owner at invite time via `apiSetMembersRole`, re-asserted on connect as fallback) → Grok stays if present → TEAM-PENDING
 2. Repeat `/team` → detected via `customData.state ∈ {TEAM-PENDING, TEAM}` **and team members still present** → reply with `teamAlreadyInvitedMessage`. If team members have since left, re-add them silently (state stays `TEAM-PENDING`).
 3. `/grok` still works in TEAM-PENDING (if Grok not present, invite it; if present, ignore — Grok responds to customer messages)
 4. Any team member sends first text message in customer group → **gate triggers**:
@@ -839,10 +839,12 @@ Ordering guarantees preserved:
 1. Extract `{keyword, params}` from the chat item with `util.ciBotCommand(chatItem)`. The framework already parses the leading `/keyword` and returns the trimmed remainder as `params` — the handler does not run its own regex over the message text. Cards emit `/'join <groupId>'`; a team-member tap delivers a chat item whose text is `/join <groupId>`, which `ciBotCommand` returns as `{keyword: "join", params: "<groupId>"}`.
 2. Convert `params` to a number with `const targetGroupId = Number.parseInt(params, 10)`. If `Number.isNaN(targetGroupId) || targetGroupId <= 0`, reply in the team group with `Error: invalid group id "${params}"` and return. No regex, no `split(":")`, no legacy fallback — operators must use the numeric form (which is what the card always emits).
 3. Validate target is a business group (has `businessChat` property) — error in team group if not.
-4. Add requesting team member to customer group via `apiAddMember`.
-5. Member promoted to Owner on `connectedToGroupMember` (see §8).
+4. Add requesting team member to customer group via `addOrFindTeamMember` (which calls `apiAddMember` + immediately `apiSetMembersRole(Owner)`).
+5. On connect, `connectedToGroupMember` re-asserts Owner as an idempotent fallback (see §8).
 
-**Team member promotion:** On every `connectedToGroupMember` in a customer group, promote to Owner unless customer or Grok. Idempotent.
+**Team member promotion:** Promotion happens at two points, both idempotent:
+- **At invite time** — immediately after `apiAddMember`, `addOrFindTeamMember` calls `apiSetMembersRole(groupId, [memberId], Owner)`. The call is wrapped in try/catch: if the member is not yet connected and the API rejects, it's silently ignored (the connect-time promotion covers the fallback). SimpleX persists the role on `GSMemInvited` members so the role is active when they accept. This is only called for *newly invited* members — the pre-check in `addOrFindTeamMember` returns early for any member already in the group in a non-terminal status, so an already-invited member is not re-promoted.
+- **On connect** — every `connectedToGroupMember` event in a customer group promotes to Owner unless the member is the customer or Grok. Idempotent.
 
 **DM handshake:** When a team member joins or connects in the team group, the bot sends a DM with the member's contact ID. Four delivery paths, deduplicated via `sentTeamDMs` Set:
 
@@ -935,7 +937,7 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | Customer name | Group display name |
 | `pendingGrokJoins` | In-flight during 120s window only |
 | `grokInitialResponsePending` | In-flight during `activateGrok` initial response only |
-| Owner promotion | Idempotent on every `memberConnected` |
+| Owner promotion | Idempotent: fired at invite time in `addOrFindTeamMember` and again on every `memberConnected` |
 
 **Failure modes:**
 - State file deleted → new team group created, Grok contact re-established (60s delay)
@@ -958,7 +960,7 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | Team member leaves (message sent) | State stays `TEAM` (`customData.state` persists). Customer's next `/team` re-adds silently. |
 | No `--auto-add-team-members` (`-a`) configured | `/team` → "no team members available yet" |
 | `grokContactId` unavailable | `/grok` → "temporarily unavailable" |
-| Member already in group when `/team` re-runs | `addOrFindTeamMember` pre-checks via `apiListMembers` and skips `apiAddMember` entirely if the contact is present in any non-terminal status (so an `Invited`-but-not-yet-accepted member is never re-invited — the SimpleX API would otherwise resend the invitation for `GSMemInvited`) |
+| Member already in group when `/team` re-runs | `addOrFindTeamMember` pre-checks via `apiListMembers` and skips BOTH `apiAddMember` and the invite-time `apiSetMembersRole(Owner)` entirely if the contact is present in any non-terminal status (so an `Invited`-but-not-yet-accepted member is never re-invited — the SimpleX API would otherwise resend the invitation for `GSMemInvited` — and is never re-promoted) |
 
 ## 16. API Call Map
 
@@ -983,8 +985,8 @@ If a user contacts the bot via a regular direct-message address (not business ad
 | 17 | Grok joins | grok | `apiJoinGroup(gId)` | `receivedGroupInvitation` |
 | 18 | Grok reads history | grok | `apiGetChat([Group, gId], 100)` | After join + per message |
 | 19 | Grok sends response | grok | `apiSendTextMessage([Group, gId], text)` | After API call |
-| 20 | Add team member | main | `apiAddMember(gId, teamContactId, Member)` | `/team`, `/join` |
-| 21 | Promote to Owner | main | `apiSetMembersRole(gId, [memberId], Owner)` | `connectedToGroupMember` |
+| 20 | Add team member | main | `apiAddMember(gId, teamContactId, Member)` | `/team`, `/join` — only when not already in group |
+| 21 | Promote to Owner | main | `apiSetMembersRole(gId, [memberId], Owner)` | Immediately after #20 (invite-time) AND `connectedToGroupMember` (fallback) |
 | 22 | Remove Grok | main | `apiRemoveMembers(gId, [memberId])` | Gate trigger / timeout / leave |
 | 23 | List members | main | `apiListMembers(gId)` | State derivation, duplicate check |
 | 24 | Register team commands | main | `apiUpdateGroupProfile(teamGId, profile)` | Startup — register `/join` in team group |

@@ -948,6 +948,47 @@ describe("Team Member Lifecycle", () => {
     expect(chat.roleChanges.some(r => r.groupId === CUSTOMER_GROUP_ID && r.memberIds.includes(5000 + TEAM_MEMBER_1_ID) && r.role === GroupMemberRole.Owner)).toBe(true)
   })
 
+  test("/team invites team member → apiSetMembersRole(Owner) called at invite time", async () => {
+    await bot.onNewChatItems(customerMessage("/team"))
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+    expect(chat.roleChanges.some(r =>
+      r.groupId === CUSTOMER_GROUP_ID
+      && r.memberIds.includes(5000 + TEAM_MEMBER_1_ID)
+      && r.role === GroupMemberRole.Owner
+    )).toBe(true)
+  })
+
+  test("/join invites team member → apiSetMembersRole(Owner) called at invite time", async () => {
+    await bot.onNewChatItems(teamGroupMessage(`/join ${CUSTOMER_GROUP_ID}`))
+    expectMemberAdded(CUSTOMER_GROUP_ID, TEAM_MEMBER_1_ID)
+    expect(chat.roleChanges.some(r =>
+      r.groupId === CUSTOMER_GROUP_ID
+      && r.memberIds.includes(5000 + TEAM_MEMBER_1_ID)
+      && r.role === GroupMemberRole.Owner
+    )).toBe(true)
+  })
+
+  test("/team when team member already in group (any non-terminal status) → apiSetMembersRole NOT re-called", async () => {
+    chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
+    await cards.mergeCustomData(CUSTOMER_GROUP_ID, {state: "TEAM-PENDING"})
+    chat.added.length = 0
+    chat.roleChanges.length = 0
+
+    await bot.onNewChatItems(customerMessage("/team"))
+    expect(chat.added.length).toBe(0)
+    expect(chat.roleChanges.length).toBe(0)
+  })
+
+  test("/join when team member already in group → apiSetMembersRole NOT re-called", async () => {
+    chat.members.set(CUSTOMER_GROUP_ID, [makeTeamMember(TEAM_MEMBER_1_ID, "Alice")])
+    chat.added.length = 0
+    chat.roleChanges.length = 0
+
+    await bot.onNewChatItems(teamGroupMessage(`/join ${CUSTOMER_GROUP_ID}`))
+    expect(chat.added.length).toBe(0)
+    expect(chat.roleChanges.length).toBe(0)
+  })
+
   test("customer connected → NOT promoted to Owner", async () => {
     await bot.onMemberConnected(connectedEvent(CUSTOMER_GROUP_ID, makeCustomerMember()))
     expect(chat.roleChanges.length).toBe(0)

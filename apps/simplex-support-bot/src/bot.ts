@@ -776,13 +776,6 @@ export class SupportBot {
     try {
       const member = await this.addOrFindTeamMember(targetGroupId, senderContactId)
       if (member) {
-        try {
-          await this.withMainProfile(() =>
-            this.chat.apiSetMembersRole(targetGroupId, [member.groupMemberId], T.GroupMemberRole.Owner)
-          )
-        } catch {
-          // Not yet connected — will be promoted in onMemberConnected
-        }
         log(`Team member ${senderContactId} joined group ${targetGroupId} via /join`)
       }
     } catch (err) {
@@ -801,9 +794,17 @@ export class SupportBot {
     const members = await this.withMainProfile(() => this.chat.apiListMembers(groupId))
     const existing = members.find(m => m.memberContactId === teamContactId && isInGroup(m))
     if (existing) return existing
-    return await this.withMainProfile(() =>
+    const member = await this.withMainProfile(() =>
       this.chat.apiAddMember(groupId, teamContactId, T.GroupMemberRole.Member)
     )
+    try {
+      await this.withMainProfile(() =>
+        this.chat.apiSetMembersRole(groupId, [member.groupMemberId], T.GroupMemberRole.Owner)
+      )
+    } catch {
+      // Not yet connected — will be promoted in onMemberConnected
+    }
+    return member
   }
 
   async sendToGroup(groupId: number, text: string): Promise<void> {

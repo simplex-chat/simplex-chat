@@ -88,7 +88,7 @@ Grok is prompted as a privacy expert and support assistant who knows SimpleX Cha
 
 #### Step 4 — `/team` (Team mode, one-way gate)
 
-Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group (promoted to Owner once connected — the bot promotes every non-customer, non-Grok member to Owner on `memberConnected`; safe to repeat). If team was already activated (`customData.state` is already `TEAM-PENDING` or `TEAM` **and** team members are still present), sends the "already invited" message instead. If the team was previously activated but all team members have since left, the bot re-adds them silently; state remains `TEAM-PENDING`.
+Available in WELCOME, QUEUE, or GROK state. If `/team` is the customer's first message, the bot transitions directly from WELCOME → TEAM-PENDING — it creates the card with 👋 icon and does not send the queue message. Bot adds all configured `--auto-add-team-members` (`-a`) to the support group as Owners — immediately after `apiAddMember`, the bot calls `apiSetMembersRole(Owner)` so the role is set at invite time (SimpleX persists the role on pending invites), with a fallback re-promotion on `memberConnected` (every non-customer, non-Grok member gets promoted; safe to repeat). If team was already activated (`customData.state` is already `TEAM-PENDING` or `TEAM` **and** team members are still present), sends the "already invited" message instead. If the team was previously activated but all team members have since left, the bot re-adds them silently; state remains `TEAM-PENDING`.
 
 Bot replies:
 > We will reply within 24 hours.
@@ -312,13 +312,13 @@ Team members use these commands in the team group:
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>` | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`; the handler reads `groupId` from the framework's structured command (`util.ciBotCommand → {keyword, params}`), not from regex over the message text. |
+| `/join <groupId>` | Join the specified customer group as Owner. Card emits the clickable form `/'join <groupId>'`; the handler reads `groupId` from the framework's structured command (`util.ciBotCommand → {keyword, params}`), not from regex over the message text. |
 
 `/join` is **team-only** — it is registered as a bot command only in the team group. If a customer sends `/join` in a customer group, the bot treats it as an ordinary message (per the existing rule: unrecognized commands are treated as normal messages).
 
 #### Joining a customer group
 
-When a team member taps `/join`, the bot first verifies that the target `groupId` is a business group hosted by the main profile (i.e., has a `businessChat` property). If not, the bot replies with an error in the team group and does nothing. If valid, the bot adds the team member to the customer group (promoted to Owner once connected). From within the customer group, the team member chats directly with the customer. Their messages trigger card updates in the team group (icon change, wait time reset). The customer sees the team member as a real group participant.
+When a team member taps `/join`, the bot first verifies that the target `groupId` is a business group hosted by the main profile (i.e., has a `businessChat` property). If not, the bot replies with an error in the team group and does nothing. If valid, the bot adds the team member to the customer group (via the shared `addOrFindTeamMember` helper, which promotes to Owner at invite time via `apiSetMembersRole(Owner)`, with a fallback re-promotion on connect). From within the customer group, the team member chats directly with the customer. Their messages trigger card updates in the team group (icon change, wait time reset). The customer sees the team member as a real group participant.
 
 #### Edge cases
 
@@ -372,7 +372,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 | Command | Effect |
 |---------|--------|
-| `/join <groupId>` | Join the specified customer group (promoted to Owner once connected). Card emits the clickable form `/'join <groupId>'`; the handler reads `groupId` from the framework's structured command (`util.ciBotCommand → {keyword, params}`), not from regex over the message text. |
+| `/join <groupId>` | Join the specified customer group as Owner. Card emits the clickable form `/'join <groupId>'`; the handler reads `groupId` from the framework's structured command (`util.ciBotCommand → {keyword, params}`), not from regex over the message text. |
 
 ### 5.2 Bot Architecture
 
@@ -500,7 +500,7 @@ Per-group state (`state`, `cardItemId`, `complete`) lives in SimpleX's database 
 | Customer name | Always available from the group's display name |
 | Who sent last message | Derived from recent chat history |
 | `pendingGrokJoins` | In-flight during the 120-second join window only |
-| Owner role promotion | Not tracked — on every `memberConnected` in a customer group, the bot promotes the member to Owner unless it's the customer or Grok. Idempotent, survives restarts. |
+| Owner role promotion | Not tracked — the bot promotes team members to Owner at two idempotent points: (1) at invite time, immediately after `apiAddMember` in `addOrFindTeamMember` (skipped if the member is already in the group); (2) on every `memberConnected` in a customer group (unless the member is the customer or Grok). Survives restarts. |
 | `pendingTeamDMs` | Messages queued to greet team members — simply not sent if lost |
 | `grokJoinResolvers`, `grokFullyConnected` | Pure async synchronization primitives — always empty at startup |
 
