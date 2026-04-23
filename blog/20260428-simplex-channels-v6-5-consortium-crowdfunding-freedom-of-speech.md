@@ -18,7 +18,7 @@ Freedom of speech needs infrastructure that protects it by design &mdash; not on
 
 v6.5[1] release brings SimpleX Channels: a new model for online publishing built for participation privacy.
 
-Channel content is visible to chat relay operators &mdash; they can decide if they want to deliver it. And each channel uses multiple relays, so no single one one can block the channel[2].
+Channel content is visible to chat relay operators &mdash; they can decide if they want to deliver it. And each channel uses multiple relays, so no single one can block the channel[2].
 
 But the real identities of channel owners and subscribers are unknown to relay operators, to each other, and to the network. This is important for freedom of speech and for our ability to say the truth[3].
 
