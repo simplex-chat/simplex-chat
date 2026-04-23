@@ -266,6 +266,7 @@ chatGroupTests = do
       it "owner should update profile in channel (signed)" testChannelOwnerProfileUpdate
       it "subscriber should update profile in channel (signed)" testChannelSubscriberProfileUpdate
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
+      it "should deliver support scope messages via relay" testChannelSupportScope
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
@@ -9566,6 +9567,30 @@ testChannelCreateDeletedRelay ps =
         -- deleteInProgressGroup deletes relay connection alice joined on bob;
         -- bob's agent reports AUTH error when the queue is gone — drain it.
         void $ getTermLine bob
+
+testChannelSupportScope :: HasCallStack => TestParams -> IO ()
+testChannelSupportScope ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "relay" relayProfile $ \relay ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
+          memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
+          memberJoinChannel "team" [relay] [alice] shortLink fullLink dan
+
+          threadDelay 1000000
+
+          -- owner sends to cath's support scope, dan doesn't receive
+          alice #> "#team (support: cath) hello"
+          relay <# "#team (support: cath) alice> hello"
+          cath <# "#team (support) alice> hello [>>]"
+          (dan </)
+
+          -- cath replies in support scope, dan doesn't receive
+          cath #> "#team (support) hi"
+          relay <# "#team (support: cath) cath> hi"
+          alice <# "#team (support: cath) cath> hi [>>]"
+          (dan </)
 
 testChannelMessageUpdate :: HasCallStack => TestParams -> IO ()
 testChannelMessageUpdate ps =

@@ -2376,7 +2376,7 @@ processChatCommand vr nm = \case
             forM scope_ $ \(GSNMemberSupport mName_) ->
               GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
           (gInfo, cScope_,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo)
+        let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo cScope_)
         processChatCommand vr nm $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
       SNLocal -> do
         folderId <- withFastStore (`getUserNoteFolderId` user)
@@ -3129,7 +3129,7 @@ processChatCommand vr nm = \case
         qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
         (gInfo, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    processChatCommand vr nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo)) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
+    processChatCommand vr nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo Nothing)) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand vr nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
@@ -3405,7 +3405,7 @@ processChatCommand vr nm = \case
         _ -> throwCmdError "not supported"
       pure $ ChatRef cType chatId Nothing
     getSendAsGroup :: User -> ChatRef -> CM ShowGroupAsSender
-    getSendAsGroup user' (ChatRef CTGroup chatId _) = sendAsGroup' <$> withFastStore (\db -> getGroupInfo db vr user' chatId)
+    getSendAsGroup user' (ChatRef CTGroup chatId scope) = (`sendAsGroup'` scope) <$> withFastStore (\db -> getGroupInfo db vr user' chatId)
     getSendAsGroup _ _ = pure False
     getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, Map MemberName GroupMemberId)
     getChatRefAndMentions user cName msg = do
@@ -4491,7 +4491,7 @@ processChatCommand vr nm = \case
       ChatRef CTDirect cId _ -> a $ SRDirect cId
       ChatRef CTGroup gId scope -> do
         gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
-        a $ SRGroup gId scope (sendAsGroup' gInfo)
+        a $ SRGroup gId scope (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do

@@ -119,6 +119,9 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
 data GroupChatScope = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
+sendAsGroup' :: GroupInfo -> Maybe GroupChatScope -> Bool
+sendAsGroup' gInfo@GroupInfo {membership} scope = isNothing scope && useRelays' gInfo && memberRole' membership == GROwner
+
 data GroupChatScopeTag
   = GCSTMemberSupport_
   deriving (Eq, Show)
