@@ -58,7 +58,7 @@ data DirectoryEvent
   | DEServiceRemovedFromGroup GroupInfo
   | DEGroupDeleted GroupInfo
   | DEChatLinkReceived {contact :: Contact, chatItemId :: ChatItemId, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
-  | DEOwnerMemberAnnounced {groupInfo :: GroupInfo, unknownMember :: GroupMember, announcedMember :: GroupMember}
+  | DEMemberUpdated {groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | DEUnsupportedMessage Contact ChatItemId
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
@@ -93,15 +93,14 @@ crDirectoryEvent_ = \case
   CEvtLeftMember {groupInfo, member} -> (`DEContactLeftGroup` groupInfo) <$> memberContactId member
   CEvtDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
   CEvtGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
-  CEvtUnknownMemberAnnounced {groupInfo, unknownMember, announcedMember} -> Just $ DEOwnerMemberAnnounced {groupInfo, unknownMember, announcedMember}
-  CEvtJoinedGroupMemberConnecting {groupInfo, member} -> Just $ DEOwnerMemberAnnounced {groupInfo, unknownMember = member, announcedMember = member}
-  CEvtGroupMemberUpdated {groupInfo, fromMember, toMember} -> Just $ DEOwnerMemberAnnounced {groupInfo, unknownMember = fromMember, announcedMember = toMember}
+  CEvtUnknownMemberAnnounced {groupInfo, unknownMember, announcedMember} -> Just $ DEMemberUpdated {groupInfo, fromMember = unknownMember, toMember = announcedMember}
+  CEvtGroupMemberUpdated {groupInfo, fromMember, toMember} -> Just $ DEMemberUpdated {groupInfo, fromMember, toMember}
   CEvtChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
   CEvtChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
   CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, formattedText = ft, meta = CIMeta {itemLive}}) : _} ->
     Just $ case (mc, itemLive) of
-      (MCChat {chatLink, ownerSig}, Nothing) -> DEChatLinkReceived {contact = ct, chatItemId = ciId, chatLink, ownerSig}
       (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP ft <* A.endOfInput) $ T.dropWhileEnd isSpace t
+      (MCChat {chatLink, ownerSig}, Nothing) -> DEChatLinkReceived {contact = ct, chatItemId = ciId, chatLink, ownerSig}
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci

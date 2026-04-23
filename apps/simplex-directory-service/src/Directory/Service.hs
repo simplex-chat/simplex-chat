@@ -298,7 +298,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
     DEGroupDeleted g -> deGroupDeleted g
     DEChatLinkReceived {contact = ct, chatLink, ownerSig} -> deChatLinkReceived ct chatLink ownerSig
-    DEOwnerMemberAnnounced {groupInfo = g, unknownMember, announcedMember} -> deOwnerMemberAnnounced g unknownMember announcedMember
+    DEMemberUpdated {groupInfo = g, fromMember, toMember} -> deMemberUpdated g fromMember toMember
     DEUnsupportedMessage _ct _ciId -> pure ()
     DEItemEditIgnored _ct -> pure ()
     DEItemDeleteIgnored _ct -> pure ()
@@ -969,19 +969,19 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deReregistration ct _ _ _ =
       sendMessage cc ct "Error: could not verify ownership. Please report it to directory admins."
 
-    deOwnerMemberAnnounced :: GroupInfo -> GroupMember -> GroupMember -> IO ()
-    deOwnerMemberAnnounced g@GroupInfo {groupId, groupProfile = GroupProfile {displayName, publicGroup}} fromMember announcedMember =
+    deMemberUpdated :: GroupInfo -> GroupMember -> GroupMember -> IO ()
+    deMemberUpdated g@GroupInfo {groupId, groupProfile = GroupProfile {displayName, publicGroup}} fromMember toMember =
       withGroupReg g "owner member announced" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} ->
-        when (groupRegStatus == GRSProposed && (dbOwnerMemberId == Just (groupMemberId' fromMember) || dbOwnerMemberId == Just (groupMemberId' announcedMember))) $
-          let GroupMember {memberRole = role} = announcedMember
+        when (groupRegStatus == GRSProposed && (dbOwnerMemberId == Just (groupMemberId' fromMember) || dbOwnerMemberId == Just (groupMemberId' toMember))) $
+          let GroupMember {memberRole = role} = toMember
               gt = maybe "group" groupTypeStr' publicGroup
-          in if role >= GROwner
-            then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
-              notifyOwner gr' $ "Joined the " <> gt <> " " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
-              sendToApprove g gr' 1
-            else do
-              setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
-              sendMessage' cc (dbContactId gr) "The signing key does not belong to a current owner. Registration cancelled."
+           in if role >= GROwner
+                then setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
+                  notifyOwner gr' $ "Joined the " <> gt <> " " <> displayName <> ". Registration is pending approval — it may take up to 48 hours."
+                  sendToApprove g gr' 1
+                else do
+                  setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \_ -> pure ()
+                  sendMessage' cc (dbContactId gr) "The signing key does not belong to a current owner. Registration cancelled."
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case

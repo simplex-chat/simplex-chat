@@ -1978,8 +1978,8 @@ processChatCommand vr nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
-  APIConnectPlan userId (Just cLink) resolveKnown_ linkOwnerSig_ -> withUserId userId $ \user ->
-    uncurry (CRConnectionPlan user) <$> connectPlan user cLink resolveKnown_ linkOwnerSig_
+  APIConnectPlan userId (Just cLink) resolveKnown linkOwnerSig_ -> withUserId userId $ \user ->
+    uncurry (CRConnectionPlan user) <$> connectPlan user cLink resolveKnown linkOwnerSig_
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
@@ -4004,7 +4004,7 @@ processChatCommand vr nm = \case
         invitationReqAndPlan cReq sLnk_ cld ov = do
           plan <- invitationRequestPlan user cReq cld ov `catchAllErrors` (pure . CPError)
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
-    connectPlan user (ACL SCMContact cLink) resolveKnown_ sig_ = case cLink of
+    connectPlan user (ACL SCMContact cLink) resolveKnown sig_ = case cLink of
       CLFull cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
@@ -4040,9 +4040,8 @@ processChatCommand vr nm = \case
           gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g Nothing Nothing))
           groupShortLinkPlan =
             knownLinkPlans >>= \case
-              Just r@(_, CPGroupLink (GLPKnown g _ _))
-                | resolveKnown_ -> resolveKnownGroup g
-                | otherwise -> pure r
+              Just (_, CPGroupLink (GLPKnown g _ _))
+                | resolveKnown -> resolveKnownGroup g
               Just r -> pure r
               Nothing -> do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays})) <- getShortLinkConnReq' nm user l'
