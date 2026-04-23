@@ -176,6 +176,7 @@ data GroupFeature
   | GFSimplexLinks
   | GFReports
   | GFHistory
+  | GFSupport
   | GFSessions
   | GFComments
   deriving (Show)
@@ -190,6 +191,7 @@ data SGroupFeature (f :: GroupFeature) where
   SGFSimplexLinks :: SGroupFeature 'GFSimplexLinks
   SGFReports :: SGroupFeature 'GFReports
   SGFHistory :: SGroupFeature 'GFHistory
+  SGFSupport :: SGroupFeature 'GFSupport
   SGFSessions :: SGroupFeature 'GFSessions
   SGFComments :: SGroupFeature 'GFComments
 
@@ -218,6 +220,7 @@ groupFeatureNameText = \case
   GFSimplexLinks -> "SimpleX links"
   GFReports -> "Member reports"
   GFHistory -> "Recent history"
+  GFSupport -> "Chat with admins"
   GFSessions -> "Chat sessions"
   GFComments -> "Comments"
 
@@ -252,7 +255,7 @@ allGroupFeatures =
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, sessions, comments} = case f of
+groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments} = case f of
   SGFTimedMessages -> timedMessages
   SGFDirectMessages -> directMessages
   SGFFullDelete -> fullDelete
@@ -262,6 +265,7 @@ groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reac
   SGFSimplexLinks -> simplexLinks
   SGFReports -> reports
   SGFHistory -> history
+  SGFSupport -> support
   SGFSessions -> sessions
   SGFComments -> comments
 
@@ -276,6 +280,7 @@ toGroupFeature = \case
   SGFSimplexLinks -> GFSimplexLinks
   SGFReports -> GFReports
   SGFHistory -> GFHistory
+  SGFSupport -> GFSupport
   SGFSessions -> GFSessions
   SGFComments -> GFComments
 
@@ -289,7 +294,7 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, sessions, comments} = case f of
+  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, support, sessions, comments} = case f of
     SGFTimedMessages -> timedMessages
     SGFDirectMessages -> directMessages
     SGFFullDelete -> fullDelete
@@ -299,6 +304,7 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFSimplexLinks -> simplexLinks
     SGFReports -> reports
     SGFHistory -> history
+    SGFSupport -> support
     SGFSessions -> sessions
     SGFComments -> comments
   {-# INLINE getGroupPreference #-}
@@ -314,6 +320,7 @@ data GroupPreferences = GroupPreferences
     simplexLinks :: Maybe SimplexLinksGroupPreference,
     reports :: Maybe ReportsGroupPreference,
     history :: Maybe HistoryGroupPreference,
+    support :: Maybe SupportGroupPreference,
     sessions :: Maybe SessionsGroupPreference,
     comments :: Maybe CommentsGroupPreference,
     commands :: Maybe [ChatBotCommand]
@@ -365,6 +372,7 @@ setGroupPreference_ f pref prefs =
     SGFSimplexLinks -> prefs {simplexLinks = pref}
     SGFReports -> prefs {reports = pref}
     SGFHistory -> prefs {history = pref}
+    SGFSupport -> prefs {support = pref}
     SGFSessions -> prefs {sessions = pref}
     SGFComments -> prefs {comments = pref}
 
@@ -408,6 +416,7 @@ data FullGroupPreferences = FullGroupPreferences
     simplexLinks :: SimplexLinksGroupPreference,
     reports :: ReportsGroupPreference,
     history :: HistoryGroupPreference,
+    support :: SupportGroupPreference,
     sessions :: SessionsGroupPreference,
     comments :: CommentsGroupPreference,
     commands :: ListDef ChatBotCommand
@@ -478,13 +487,14 @@ defaultGroupPrefs =
       simplexLinks = SimplexLinksGroupPreference {enable = FEOn, role = Nothing},
       reports = ReportsGroupPreference {enable = FEOn},
       history = HistoryGroupPreference {enable = FEOff},
+      support = SupportGroupPreference {enable = FEOn},
       sessions = SessionsGroupPreference {enable = FEOff, role = Nothing},
       comments = CommentsGroupPreference {enable = FEOff, duration = Nothing},
       commands = ListDef []
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
@@ -515,6 +525,7 @@ defaultBusinessGroupPrefs =
       simplexLinks = Just $ SimplexLinksGroupPreference FEOn Nothing,
       reports = Just $ ReportsGroupPreference FEOff,
       history = Just $ HistoryGroupPreference FEOn,
+      support = Just $ SupportGroupPreference FEOn,
       sessions = Just $ SessionsGroupPreference FEOn Nothing,
       comments = Just $ CommentsGroupPreference FEOff Nothing,
       commands = Nothing
@@ -647,6 +658,10 @@ data HistoryGroupPreference = HistoryGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show)
 
+data SupportGroupPreference = SupportGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
 data SessionsGroupPreference = SessionsGroupPreference
   {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
@@ -698,6 +713,9 @@ instance HasField "enable" ReportsGroupPreference GroupFeatureEnabled where
 
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
   hasField p@HistoryGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" SupportGroupPreference GroupFeatureEnabled where
+  hasField p@SupportGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" SessionsGroupPreference GroupFeatureEnabled where
   hasField p@SessionsGroupPreference {enable} = (\e -> p {enable = e}, enable)
@@ -759,6 +777,12 @@ instance GroupFeatureI 'GFHistory where
   groupPrefParam _ = Nothing
   groupPrefRole _ = Nothing
 
+instance GroupFeatureI 'GFSupport where
+  type GroupFeaturePreference 'GFSupport = SupportGroupPreference
+  sGroupFeature = SGFSupport
+  groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
+
 instance GroupFeatureI 'GFSessions where
   type GroupFeaturePreference 'GFSessions = SessionsGroupPreference
   sGroupFeature = SGFSessions
@@ -780,6 +804,8 @@ instance GroupFeatureNoRoleI 'GFReactions
 instance GroupFeatureNoRoleI 'GFReports
 
 instance GroupFeatureNoRoleI 'GFHistory
+
+instance GroupFeatureNoRoleI 'GFSupport
 
 instance GroupFeatureNoRoleI 'GFComments
 
@@ -973,6 +999,7 @@ mergeGroupPreferences groupPreferences =
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
       history = pref SGFHistory,
+      support = pref SGFSupport,
       sessions = pref SGFSessions,
       comments = pref SGFComments,
       commands = ListDef $ fromMaybe [] $ groupPreferences >>= commands_
@@ -993,6 +1020,7 @@ toGroupPreferences groupPreferences@FullGroupPreferences {commands = ListDef cmd
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
       history = pref SGFHistory,
+      support = pref SGFSupport,
       sessions = pref SGFSessions,
       comments = pref SGFComments,
       commands = Just cmds
@@ -1122,6 +1150,8 @@ $(J.deriveJSON defaultJSON ''SimplexLinksGroupPreference)
 $(J.deriveJSON defaultJSON ''ReportsGroupPreference)
 
 $(J.deriveJSON defaultJSON ''HistoryGroupPreference)
+
+$(J.deriveJSON defaultJSON ''SupportGroupPreference)
 
 $(J.deriveToJSON defaultJSON ''SessionsGroupPreference)
 
