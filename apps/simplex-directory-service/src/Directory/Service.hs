@@ -820,20 +820,25 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             >>= mapM_ (\cm@GroupMember {memberRole} -> when (memberRole == GROwner && memberActive cm) action)
 
     deContactRemovedFromGroup :: ContactId -> GroupInfo -> IO ()
-    deContactRemovedFromGroup ctId g = deOwnerDeparture ctId g "removed from" "are removed from" "is removed"
-
-    deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
-    deContactLeftGroup ctId g = deOwnerDeparture ctId g "left" "left" "left"
-
-    deOwnerDeparture :: ContactId -> GroupInfo -> Text -> Text -> Text -> IO ()
-    deOwnerDeparture ctId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} logAction ownerAction adminAction = do
+    deContactRemovedFromGroup ctId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
       let gt = maybe "group" groupTypeStr' pg_
-      logInfo $ "contact ID " <> tshow ctId <> " " <> logAction <> " group " <> viewGroupName g
-      withGroupReg g ("contact " <> logAction) $ \gr ->
+      logInfo $ "contact ID " <> tshow ctId <> " removed from group " <> viewGroupName g
+      withGroupReg g "contact removed" $ \gr ->
         when (ctId `isOwner` gr) $
           setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr' -> do
-            notifyOwner gr' $ "You " <> ownerAction <> " the " <> gt <> " " <> userGroupReference gr' g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
-            notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " owner " <> adminAction <> ")."
+            notifyOwner gr' $ "You are removed from the " <> gt <> " " <> userGroupReference gr' g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
+            notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " owner is removed)."
+            when (isJust pg_) $ leavePublicGroup g
+
+    deContactLeftGroup :: ContactId -> GroupInfo -> IO ()
+    deContactLeftGroup ctId g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}} = do
+      let gt = maybe "group" groupTypeStr' pg_
+      logInfo $ "contact ID " <> tshow ctId <> " left group " <> viewGroupName g
+      withGroupReg g "contact left" $ \gr ->
+        when (ctId `isOwner` gr) $
+          setGroupStatus notifyAdminUsers st env cc groupId GRSRemoved $ \gr' -> do
+            notifyOwner gr' $ "You left the " <> gt <> " " <> userGroupReference gr' g <> ".\n\nThe " <> gt <> " is no longer listed in the directory."
+            notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " owner left)."
             when (isJust pg_) $ leavePublicGroup g
 
     deServiceRemovedFromGroup :: GroupInfo -> IO ()
