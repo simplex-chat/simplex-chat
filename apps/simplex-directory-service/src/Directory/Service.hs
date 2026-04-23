@@ -330,6 +330,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         linkToJoin = case publicGroup of
           Just pg@PublicGroupProfile {groupLink} ->
             "\nLink to join " <> groupTypeStr' pg <> ": " <> strEncodeTxt groupLink
+              <> "\nYou need SimpleX Chat app v6.5 to join."
           Nothing -> ""
     knockingStr :: Maybe GroupMemberAdmission -> [Text]
     knockingStr = \case
