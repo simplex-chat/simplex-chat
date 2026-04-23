@@ -503,12 +503,16 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       where
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
+        sameProfile
+          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma, publicGroup = pg}
+          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma', publicGroup = pg'} =
+            n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma' && pg == pg'
         publicGroupProfileChange gr byMember gt n' = do
           let userGroupRef = userGroupReference gr toGroup
               groupRef = groupReference toGroup
           case publicGroup p' of
-            Just PublicGroupProfile {groupLink = sLnk} -> do
-              let link = ACL SCMContact $ CLShort sLnk
+            Just PublicGroupProfile {groupLink} -> do
+              let link = ACL SCMContact $ CLShort groupLink
               sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
                 Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) -> do
                   -- Check owner is still valid
@@ -865,12 +869,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deChatLinkReceived ct _ _ =
       sendMessage cc ct "Only channels can be added to directory via link."
 
-    sameProfile :: GroupProfile -> GroupProfile -> Bool
-    sameProfile
-      GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma, publicGroup = pg}
-      GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma', publicGroup = pg'} =
-        n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma' && pg == pg'
-
     groupTypeStr :: GroupType -> Text
     groupTypeStr = \case
       GTChannel -> "channel"
@@ -1109,8 +1107,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PCNoImage -> "_enabled for profiles without image_"
       DCShowUpgradeGroupLink gId gName_ ->
         (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, localDisplayName = gName} _ -> case pg_ of
-          Just pg@PublicGroupProfile {groupLink = sLnk} ->
-            sendReply $ "The link to join the " <> groupTypeStr' pg <> " " <> groupReference' gId gName <> ":\n" <> strEncodeTxt sLnk
+          Just pg@PublicGroupProfile {groupLink} ->
+            sendReply $ "The link to join the " <> groupTypeStr' pg <> " " <> groupReference' gId gName <> ":\n" <> strEncodeTxt groupLink
           Nothing -> do
             let groupRef = groupReference' gId gName
             withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
