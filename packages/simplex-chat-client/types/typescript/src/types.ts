@@ -2610,8 +2610,8 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+    groupUpdated: boolean
     ownerVerification?: OwnerVerification
-    groupSLinkData_?: GroupShortLinkData
   }
 
   export interface NoRelays extends Interface {

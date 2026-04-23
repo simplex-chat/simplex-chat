@@ -2290,8 +2290,8 @@ ConnectingProhibit:
 Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
+- groupUpdated: bool
 - ownerVerification: [OwnerVerification](#ownerverification)?
-- groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 NoRelays:
 - type: "noRelays"
