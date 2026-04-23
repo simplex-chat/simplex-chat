@@ -275,6 +275,13 @@ function displayEntries(entries) {
         textContainer.appendChild(timestampElement);
       }
 
+      if (entryType?.groupType) {
+        const noteElement = document.createElement('p');
+        noteElement.innerHTML = 'You need <a href="https://simplex.chat/downloads/">SimpleX Chat app v6.5</a> to join.';
+        noteElement.className = 'text-sm';
+        textContainer.appendChild(noteElement);
+      }
+
       const memberCount = entryMemberCount(entry);
       if (typeof memberCount == 'number' && memberCount > 0) {
         const memberCountElement = document.createElement('p');
@@ -289,13 +296,6 @@ function displayEntries(entries) {
         knockingElement.textContent = 'New members are reviewed by admins';
         knockingElement.className = 'text-sm';
         textContainer.appendChild(knockingElement);
-      }
-
-      if (entryType?.groupType) {
-        const noteElement = document.createElement('p');
-        noteElement.innerHTML = 'You need <a href="https://simplex.chat/downloads/">SimpleX Chat app v6.5</a> to join.';
-        noteElement.className = 'text-sm';
-        textContainer.appendChild(noteElement);
       }
 
       const imgLinkElement = document.createElement('a');

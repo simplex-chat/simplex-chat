@@ -27,7 +27,7 @@ import Data.List (isPrefixOf)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Data.Time.Clock
 import Data.Time.Clock.System
 import Data.Time.Format.ISO8601 (iso8601Show)
@@ -101,6 +101,12 @@ groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission, publicGroup} = groupProfile
       gt = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
       entryType = DETGroup gt memberAdmission groupSummary
+      description' = case publicGroup of
+        Just PublicGroupProfile {groupType = gt', groupLink = sLnk} ->
+          let gtStr = case gt' of GTChannel -> "channel"; _ -> "group"
+              linkLine = "Link to join the " <> gtStr <> " " <> displayName <> ": " <> decodeUtf8 (strEncode sLnk)
+           in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
+        Nothing -> description
       entry groupLink =
         let de =
               DirectoryEntry
@@ -108,7 +114,7 @@ groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary
                   displayName,
                   groupLink,
                   shortDescr = toFormattedText <$> shortDescr,
-                  welcomeMessage = toFormattedText <$> description,
+                  welcomeMessage = toFormattedText <$> description',
                   imageFile = fst <$> imgData,
                   activeAt = recentRoundedTime 900 now $ fromMaybe createdAt chatTs,
                   createdAt = recentRoundedTime 86400 now createdAt
