@@ -2145,6 +2145,7 @@ data class GroupInfo (
       GroupFeature.SimplexLinks -> p.simplexLinks.on(membership)
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
+      GroupFeature.Support -> p.support.on
     }
   }
 

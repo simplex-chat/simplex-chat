@@ -14,7 +14,7 @@ struct AddChannelView: View {
     @EnvironmentObject var theme: AppTheme
     @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
     @StateObject private var ss = SaveableSettings()
-    @State private var profile = GroupProfile(displayName: "", fullName: "")
+    @State private var profile = GroupProfile(displayName: "", fullName: "", groupPreferences: GroupPreferences(support: GroupPreference(enable: .off)))
     @FocusState private var focusDisplayName: Bool
     @State private var showChooseSource = false
     @State private var showImagePicker = false

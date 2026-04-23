@@ -110,7 +110,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           fullName = "",
           shortDescr = null,
           image = profileImage.value,
-          groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
+          groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON), support = GroupPreference(GroupFeatureEnabled.OFF))
         )
         creationInProgress.value = true
         withBGApi {
