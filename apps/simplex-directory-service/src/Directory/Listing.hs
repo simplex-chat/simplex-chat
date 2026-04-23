@@ -53,16 +53,24 @@ listingImageFolder :: String
 listingImageFolder = "images"
 
 data DirectoryEntryType = DETGroup
-  { admission :: Maybe GroupMemberAdmission,
+  { groupType :: Maybe GroupType,
+    admission :: Maybe GroupMemberAdmission,
     summary :: GroupSummary
   }
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "DET") ''DirectoryEntryType)
 
+data PublicLink = PublicLink
+  { connFullLink :: Maybe ConnReqContact,
+    connShortLink :: Maybe ShortLinkContact
+  }
+
+$(JQ.deriveJSON defaultJSON ''PublicLink)
+
 data DirectoryEntry = DirectoryEntry
   { entryType :: DirectoryEntryType,
     displayName :: Text,
-    groupLink :: CreatedLinkContact,
+    groupLink :: PublicLink,
     shortDescr :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
     imageFile :: Maybe String,
@@ -90,8 +98,9 @@ recentRoundedTime roundTo now t
 
 groupDirectoryEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
 groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
-  let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
-      entryType = DETGroup memberAdmission groupSummary
+  let GroupProfile {displayName, shortDescr, description, image, memberAdmission, publicGroup} = groupProfile
+      gt = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
+      entryType = DETGroup gt memberAdmission groupSummary
       entry groupLink =
         let de =
               DirectoryEntry
@@ -106,15 +115,23 @@ groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary
                 }
             imgData = imgFileData groupLink =<< image
          in (de, imgData)
-   in (entry . connLinkContact) <$> gLink_
+   in case publicGroup of
+        Just PublicGroupProfile {groupLink = sLnk} ->
+          Just $ entry $ PublicLink Nothing (Just sLnk)
+        Nothing ->
+          entry . toPublicLink . connLinkContact <$> gLink_
   where
-    imgFileData :: CreatedConnLink 'CMContact -> ImageData -> Maybe (FilePath, ByteString)
-    imgFileData groupLink (ImageData img) =
+    toPublicLink (CCLink fullLink shortLink) = PublicLink (Just fullLink) shortLink
+    imgFileData :: PublicLink -> ImageData -> Maybe (FilePath, ByteString)
+    imgFileData PublicLink {connFullLink, connShortLink} (ImageData img) =
       let (img', imgExt) =
             fromMaybe (img, ".jpg") $
               (,".jpg") <$> T.stripPrefix "data:image/jpg;base64," img
                 <|> (,".png") <$> T.stripPrefix "data:image/png;base64," img
-          imgName = B.unpack $ B64URL.encodeUnpadded $ BA.convert $ (CH.hash :: ByteString -> Digest MD5) $ strEncode (connFullLink groupLink)
+          linkHash = case connFullLink of
+            Just fl -> strEncode fl
+            Nothing -> maybe "" strEncode connShortLink
+          imgName = B.unpack $ B64URL.encodeUnpadded $ BA.convert $ (CH.hash :: ByteString -> Digest MD5) linkHash
           imgFile = listingImageFolder </> imgName <> imgExt
        in case B64.decode $ encodeUtf8 img' of
             Right img'' -> Just (imgFile, img'')

@@ -850,8 +850,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         notifyAdminUsers $ "The " <> gt <> " " <> groupReference g <> " is de-listed (" <> gt <> " is deleted)."
 
     deChatLinkReceived :: Contact -> MsgChatLink -> Maybe LinkOwnerSig -> IO ()
-    deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just pg}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) =
-      case groupType (pg :: PublicGroupProfile) of
+    deChatLinkReceived ct (MCLGroup {connLink, groupProfile = GroupProfile {publicGroup = Just PublicGroupProfile {groupType}}}) (Just ownerSig@LinkOwnerSig {ownerId = Just (B64UrlByteString oIdBytes)}) =
+      case groupType of
         GTUnknown tag -> sendMessage cc ct $ "Unsupported group type: " <> T.pack (show tag)
         gt -> do
           let link = ACL SCMContact $ CLShort connLink
@@ -873,7 +873,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       GTUnknown _ -> "group"
 
     groupTypeStr' :: PublicGroupProfile -> Text
-    groupTypeStr' = groupTypeStr . groupType
+    groupTypeStr' PublicGroupProfile {groupType} = groupTypeStr groupType
 
     leavePublicGroup :: GroupInfo -> IO ()
     leavePublicGroup GroupInfo {groupId} =
