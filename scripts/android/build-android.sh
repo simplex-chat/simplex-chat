@@ -67,13 +67,13 @@ checks() {
         if ! command -v "$i" > /dev/null 2>&1; then
           commands_failed="$i $commands_failed"
         else
-          gradle_ver_local="$(gradle -v | grep Gradle | awk '{print $2}')"
-          gradle_ver_local_compare="$(printf ${gradle_ver_local:-0.0} | awk -F. '{print $1$2}')"
+          gradle_ver_local="$(gradle --version | sed -n 's/^Gradle //p')"
+          gradle_ver_local_compare="$(printf '%s' "$gradle_ver_local" | awk -F. '{print $1"."$2}')"
           gradle_ver_remote="$(grep distributionUrl ${folder}/apps/multiplatform/gradle/wrapper/gradle-wrapper.properties)"
           gradle_ver_remote="${gradle_ver_remote#*-}"
           gradle_ver_remote="${gradle_ver_remote%-*}"
-          gradle_ver_remote_compare="$(printf ${gradle_ver_remote} | awk -F. '{print $1$2}')"
-        
+          gradle_ver_remote_compare="$(printf '%s' "$gradle_ver_remote" | awk -F. '{print $1"."$2}')"
+
           if [ "$gradle_ver_local_compare" != "$gradle_ver_remote_compare" ]; then
             commands_failed="$i[installed=${gradle_ver_local},required=${gradle_ver_remote}] $commands_failed"
           fi
@@ -134,7 +134,7 @@ build() {
 
     # Build only one arch
     sed -i.bak "s/include(.*/include(\"${android_arch}\")/" "$folder/apps/multiplatform/android/build.gradle.kts"
-    gradle -p "$folder/apps/multiplatform/" clean :android:assembleRelease
+    gradle -p "$folder/apps/multiplatform/" -Psimplex.assets.dir=../../assets clean :android:assembleRelease
 
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"
