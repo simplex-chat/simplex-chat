@@ -8,6 +8,7 @@ function readlink() {
 
 OS=linux
 ARCH="$(uname -m)"
+DATABASE_BACKEND="${1:-sqlite}"
 GHC_VERSION=9.6.3
 
 if [ "$ARCH" == "aarch64" ]; then
@@ -25,7 +26,13 @@ for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
 
 #rm -rf $BUILD_DIR
-cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
+if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
+    echo "Building with postgres backend..."
+    cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
+else
+    echo "Building with sqlite backend..."
+    cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
+fi
 cd $BUILD_DIR/build
 mv libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so libsimplex.so 2> /dev/null || true
 #patchelf --add-needed libHSrts_thr-ghc${GHC_VERSION}.so libsimplex.so

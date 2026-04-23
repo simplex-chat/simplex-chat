@@ -5,6 +5,18 @@ const extract = require('extract-zip');
 
 const GITHUB_REPO = 'simplex-chat/simplex-chat-libs';
 const RELEASE_TAG = 'v6.5.0-beta.9';
+const BACKEND = (process.env.SIMPLEX_BACKEND || process.env.npm_config_simplex_backend || 'sqlite').toLowerCase();
+
+if (BACKEND !== 'sqlite' && BACKEND !== 'postgres') {
+  console.error(`✗ Invalid SIMPLEX_BACKEND: "${BACKEND}". Must be "sqlite" or "postgres".`);
+  process.exit(1);
+}
+
+if (BACKEND === 'postgres' && (process.platform !== 'linux' || process.arch !== 'x64')) {
+  console.error(`✗ SIMPLEX_BACKEND=postgres is only supported on Linux x86_64.`);
+  process.exit(1);
+}
+
 const ROOT_DIR = process.cwd(); // Root of the package being installed
 const LIBS_DIR = path.join(ROOT_DIR, 'libs')
 const INSTALLED_FILE = path.join(LIBS_DIR, 'installed.txt');
@@ -56,11 +68,12 @@ function isAlreadyInstalled() {
 
   try {
     const installedVersion = fs.readFileSync(INSTALLED_FILE, 'utf-8').trim();
-    if (installedVersion === RELEASE_TAG) {
-      console.log(`✓ Libraries version ${RELEASE_TAG} already installed`);
+    const expectedVersion = `${RELEASE_TAG}:${BACKEND}`;
+    if (installedVersion === expectedVersion) {
+      console.log(`✓ Libraries version ${RELEASE_TAG}:${BACKEND} already installed`);
       return true;
     } else {
-      console.log(`Version mismatch: installed ${installedVersion}, need ${RELEASE_TAG}`);
+      console.log(`Version mismatch: installed ${installedVersion}, need ${expectedVersion}`);
       cleanLibsDirectory();
       return false;
     }
@@ -79,12 +92,14 @@ async function install() {
 
     const { platformName, archName } = getPlatformInfo();
     const repoName = GITHUB_REPO.split('/')[1];
-    const zipFilename = `${repoName}-${platformName}-${archName}.zip`;
+    const backendSuffix = BACKEND === 'postgres' ? '-postgres' : '';
+    const zipFilename = `${repoName}-${platformName}-${archName}${backendSuffix}.zip`;
     const ZIP_URL = `https://github.com/${GITHUB_REPO}/releases/download/${RELEASE_TAG}/${zipFilename}`;
     const ZIP_PATH = path.join(ROOT_DIR, zipFilename);
     const TEMP_EXTRACT_DIR = path.join(ROOT_DIR, '.temp-extract');
 
     console.log(`Detected: ${platformName} ${archName}`);
+    console.log(`Backend: ${BACKEND}`);
     console.log(`Downloading: ${zipFilename}`);
 
     // Create libs directory
@@ -124,8 +139,8 @@ async function install() {
     }
 
     // Write installed.txt with version
-    fs.writeFileSync(INSTALLED_FILE, RELEASE_TAG, 'utf-8');
-    console.log(`✓ Wrote version ${RELEASE_TAG} to installed.txt`);
+    fs.writeFileSync(INSTALLED_FILE, `${RELEASE_TAG}:${BACKEND}`, 'utf-8');
+    console.log(`✓ Wrote version ${RELEASE_TAG}:${BACKEND} to installed.txt`);
 
     // Cleanup
     fs.rmSync(TEMP_EXTRACT_DIR, { recursive: true, force: true });
