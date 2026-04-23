@@ -469,14 +469,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               byMember = case memberContactId m of
                 Just ctId | ctId `isOwner` gr -> "" -- group registration owner, not any group owner.
                 _ -> " by " <> mName -- owner notification from directory will include the name.
-          let isPublicGroup_ = isJust $ publicGroup p'
-              gt = maybe "group" groupTypeStr' $ publicGroup p'
-          if isPublicGroup_
-            then case groupRegStatus of
-              GRSPendingApproval n -> publicGroupProfileChange gr byMember gt $ n + 1
-              GRSActive -> publicGroupProfileChange gr byMember gt 1
+          case publicGroup p' of
+            Just pg -> case groupRegStatus of
+              GRSPendingApproval n -> publicGroupProfileChange pg gr byMember $ n + 1
+              GRSActive -> publicGroupProfileChange pg gr byMember 1
               _ -> pure ()
-            else case groupRegStatus of
+            Nothing -> case groupRegStatus of
               GRSPendingConfirmation -> pure ()
               GRSProposed -> pure ()
               GRSPendingUpdate ->
@@ -507,39 +505,32 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d, memberAdmission = ma, publicGroup = pg}
           GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d', memberAdmission = ma', publicGroup = pg'} =
             n == n' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words <$> d') && ma == ma' && pg == pg'
-        publicGroupProfileChange gr byMember gt n' = do
-          let userGroupRef = userGroupReference gr toGroup
+        publicGroupProfileChange pg@PublicGroupProfile {groupLink} gr byMember n' = do
+          let gt = groupTypeStr' pg
+              userGroupRef = userGroupReference gr toGroup
               groupRef = groupReference toGroup
-          case publicGroup p' of
-            Just PublicGroupProfile {groupLink} -> do
-              let link = ACL SCMContact $ CLShort groupLink
-              sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
-                Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) -> do
-                  -- Check owner is still valid
-                  case dbOwnerMemberId gr of
-                    Just ownerGMId ->
-                      withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
-                        Right ownerMember
-                          | let GroupMember {memberRole = role} = ownerMember, role >= GROwner ->
-                              setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ \gr' -> do
-                                notifyOwner gr' $
-                                  ("The " <> gt <> " " <> userGroupRef <> " is updated" <> byMember)
-                                    <> ".\nIt is hidden from the directory until approved."
-                                notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
-                                sendToApprove g' gr' n'
-                          | otherwise -> do
-                              setGroupStatus notifyAdminUsers st env cc groupId GRSSuspendedBadRoles $ \_ -> pure ()
-                              notifyOwner gr $ "The registration owner is no longer an owner. Registration suspended."
-                        Left _ -> logError $ "could not find owner member for " <> groupRef
-                    Nothing -> logError $ "no owner member set for " <> groupRef
-                _ -> do
-                  setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ \gr' -> do
-                    notifyOwner gr' $
-                      ("The " <> gt <> " " <> userGroupRef <> " is updated" <> byMember)
-                        <> ".\nIt is hidden from the directory until approved."
-                    notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
-                    sendToApprove toGroup gr' n'
-            Nothing -> pure () -- should not happen for public groups
+              link = ACL SCMContact $ CLShort groupLink
+              updatedNotification gr' g' = do
+                notifyOwner gr' $
+                  ("The " <> gt <> " " <> userGroupRef <> " is updated" <> byMember)
+                    <> ".\nIt is hidden from the directory until approved."
+                notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
+                sendToApprove g' gr' n'
+          sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
+            Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g'}))) ->
+              case dbOwnerMemberId gr of
+                Just ownerGMId ->
+                  withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
+                    Right ownerMember
+                      | let GroupMember {memberRole = role} = ownerMember, role >= GROwner ->
+                          setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ updatedNotification `flip` g'
+                      | otherwise -> do
+                          setGroupStatus notifyAdminUsers st env cc groupId GRSSuspendedBadRoles $ \_ -> pure ()
+                          notifyOwner gr $ "The registration owner is no longer an owner. Registration suspended."
+                    Left _ -> logError $ "could not find owner member for " <> groupRef
+                Nothing -> logError $ "no owner member set for " <> groupRef
+            _ ->
+              setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ updatedNotification `flip` toGroup
         groupLinkAdded gr byMember =
           getDuplicateGroup toGroup >>= \case
             Left e -> notifyOwner gr $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
