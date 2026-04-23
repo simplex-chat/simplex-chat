@@ -523,14 +523,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   withDB "getGroupMember" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
                     Right ownerMember
                       | let GroupMember {memberRole = role} = ownerMember, role >= GROwner ->
-                          setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ updatedNotification `flip` g'
+                          setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') (`updatedNotification` g')
                       | otherwise -> do
                           setGroupStatus notifyAdminUsers st env cc groupId GRSSuspendedBadRoles $ \_ -> pure ()
                           notifyOwner gr $ "The registration owner is no longer an owner. Registration suspended."
                     Left _ -> logError $ "could not find owner member for " <> groupRef
                 Nothing -> logError $ "no owner member set for " <> groupRef
             _ ->
-              setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') $ updatedNotification `flip` toGroup
+              setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval n') (`updatedNotification` toGroup)
         groupLinkAdded gr byMember =
           getDuplicateGroup toGroup >>= \case
             Left e -> notifyOwner gr $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
