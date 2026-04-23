@@ -17,7 +17,7 @@ struct HowItWorks: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("How SimpleX works")
+            Text("Why SimpleX is built")
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
@@ -55,7 +55,7 @@ struct HowItWorks: View {
             dismiss()
             createProfileNavLinkActive = true
         } label: {
-            Text("Create your profile")
+            Text("Get started")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }

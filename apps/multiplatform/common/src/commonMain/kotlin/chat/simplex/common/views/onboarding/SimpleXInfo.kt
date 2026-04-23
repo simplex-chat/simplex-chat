@@ -11,6 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -27,6 +30,9 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.darkStops
+import chat.simplex.common.views.newchat.gradientPoints
+import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.migration.MigrateToDeviceView
 import chat.simplex.common.views.migration.MigrationToState
 import chat.simplex.res.MR
@@ -59,7 +65,7 @@ fun SimpleXInfoLayout(
   onboardingStage: SharedPreference<OnboardingStage>?
 ) {
   ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
-    Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp).padding(top = DEFAULT_PADDING + 8.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 185.dp else 160.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
 
@@ -68,15 +74,37 @@ fun SimpleXInfoLayout(
         painterResource(if (isInDarkTheme()) MR.images.intro_light else MR.images.intro),
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
       )
     } else {
-      Icon(
-        painterResource(MR.images.ic_forum),
-        contentDescription = null,
-        modifier = Modifier.padding(vertical = 40.dp).size(80.dp),
-        tint = MaterialTheme.colors.primary
-      )
+      val isDark = isInDarkTheme()
+      val stops = if (isDark) darkStops else lightStops
+      val scale = if (isDark) 1.5f else 1.2f
+      Box(
+        Modifier
+          .fillMaxWidth()
+          .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
+          .aspectRatio(1f)
+          .clip(RoundedCornerShape(24.dp))
+          .drawBehind {
+            val gp = gradientPoints(size.height / size.width, scale)
+            drawRect(
+              Brush.linearGradient(
+                colorStops = stops,
+                start = Offset(gp.startX * size.width, gp.startY * size.height),
+                end = Offset(gp.endX * size.width, gp.endY * size.height)
+              )
+            )
+          },
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          painterResource(MR.images.ic_forum),
+          contentDescription = null,
+          modifier = Modifier.size(80.dp),
+          tint = MaterialTheme.colors.primary
+        )
+      }
     }
 
     Text(
@@ -84,14 +112,19 @@ fun SimpleXInfoLayout(
       style = MaterialTheme.typography.h1,
       fontWeight = FontWeight.Bold,
       textAlign = TextAlign.Center,
-      modifier = Modifier.padding(top = DEFAULT_PADDING)
+      lineHeight = 42.sp,
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
     )
 
     Text(
       stringResource(MR.strings.onboarding_private_and_secure),
       style = MaterialTheme.typography.h3,
+      color = MaterialTheme.colors.secondary,
+      fontWeight = FontWeight.Medium,
+      fontSize = 20.sp,
+      lineHeight = 30.sp,
       textAlign = TextAlign.Center,
-      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+      modifier = Modifier.padding(top = 14.dp)
     )
 
     Text(
@@ -99,13 +132,16 @@ fun SimpleXInfoLayout(
       style = MaterialTheme.typography.body1,
       color = MaterialTheme.colors.secondary,
       textAlign = TextAlign.Center,
+      lineHeight = 24.sp,
       modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
     )
 
-    Spacer(Modifier.weight(1f))
+    if (!appPlatform.isAndroid) {
+      Spacer(Modifier.weight(1f))
+    }
 
     if (onboardingStage != null) {
-      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally,) {
+      Column(Modifier.widthIn(max = 450.dp).align(Alignment.CenterHorizontally).padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else 0.dp, bottom = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)) {
         OnboardingActionButton(user, onboardingStage)
         OnboardingInformationButton(
           stringResource(MR.strings.why_simplex_is_built),
@@ -128,7 +164,7 @@ fun SimpleXLogo() {
     contentDescription = stringResource(MR.strings.image_descr_simplex_logo),
     contentScale = ContentScale.FillWidth,
     modifier = Modifier
-      .padding(vertical = DEFAULT_PADDING)
+      .padding(bottom = 10.dp)
       .fillMaxWidth()
   )
 }
@@ -232,6 +268,7 @@ fun OnboardingInformationButton(
           textLayoutResult = it
         },
         style = MaterialTheme.typography.button,
+        fontWeight = FontWeight.Medium,
         color = MaterialTheme.colors.primary
       )
     }

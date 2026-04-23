@@ -1298,7 +1298,7 @@
   <string name="why_simplex_is_built">Why SimpleX is built.</string>
 
   <!-- How SimpleX Works -->
-  <string name="how_simplex_works">How SimpleX works</string>
+  <string name="how_simplex_works">Why SimpleX is built</string>
   <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
   <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>

@@ -14,7 +14,7 @@ struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showHowItWorks = false
+    @State private var showWhyBuilt = false
     @State private var createProfileNavLinkActive = false
     var onboarding: Bool
 
@@ -25,7 +25,7 @@ struct SimpleXInfo: View {
                     Image(colorScheme == .light ? "logo" : "logo-light")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: g.size.width * 0.67)
+                        .frame(width: (g.size.width - 50) * 0.55)
                         .padding(.leading, 4)
                         .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
@@ -35,11 +35,20 @@ struct SimpleXInfo: View {
                         .scaledToFit()
                         .frame(maxWidth: .infinity)
                     #else
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .font(.system(size: 80))
-                        .foregroundColor(theme.colors.primary)
-                        .padding(.vertical, 40)
-                        .frame(maxWidth: .infinity)
+                    ZStack {
+                        let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
+                        LinearGradient(
+                            stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
+                            startPoint: gp.start,
+                            endPoint: gp.end
+                        )
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .font(.system(size: 80))
+                            .foregroundColor(theme.colors.primary)
+                    }
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    .frame(maxWidth: .infinity)
                     #endif
 
                     Text("Be free\nin your network")
@@ -49,6 +58,8 @@ struct SimpleXInfo: View {
 
                     Text("Private and secure messaging.")
                         .font(.title2)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
 
                     Text("The first network where you own your\ncontacts and groups.")
@@ -56,24 +67,22 @@ struct SimpleXInfo: View {
                         .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
 
-                    Spacer()
-
                     if onboarding {
-                        VStack(spacing: 10) {
-                            createFirstProfileButton()
+                        createFirstProfileButton()
+                            .padding(.top, 10)
 
-                            Button {
-                                showHowItWorks = true
-                            } label: {
-                                Label("Why SimpleX is built.", systemImage: "info.circle")
-                                    .font(.headline)
-                            }
+                        Button {
+                            showWhyBuilt = true
+                        } label: {
+                            Label("Why SimpleX is built.", systemImage: "info.circle")
+                                .font(.headline)
                         }
+                        .padding(.top, 10)
                     }
                 }
                 .padding(.horizontal, 25)
-                .padding(.top, 75)
-                .padding(.bottom, 25)
+                .padding(.top, 28)
+                .padding(.bottom, 40)
                 .frame(minHeight: g.size.height)
             }
             .sheet(isPresented: Binding(
@@ -90,7 +99,7 @@ struct SimpleXInfo: View {
                     .modifier(ThemedBackground(grouped: true))
                 }
             }
-            .sheet(isPresented: $showHowItWorks) {
+            .sheet(isPresented: $showWhyBuilt) {
                 HowItWorks(
                     onboarding: onboarding,
                     createProfileNavLinkActive: $createProfileNavLinkActive
