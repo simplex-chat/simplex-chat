@@ -1760,6 +1760,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var sendAsGroup: Bool {
+        guard let gi = groupInfo, gi.useRelays, gi.membership.memberRole >= .owner else { return false }
+        switch groupChatScope() {
+        case .none: return true
+        case .memberSupport: return false
+        case .reports: return false
+        }
+    }
+
     public func ntfsEnabled(chatItem: ChatItem) -> Bool {
         ntfsEnabled(chatItem.meta.userMention)
     }

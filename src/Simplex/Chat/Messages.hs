@@ -120,7 +120,9 @@ data GroupChatScope = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -
   deriving (Eq, Show, Ord)
 
 sendAsGroup' :: GroupInfo -> Maybe GroupChatScope -> Bool
-sendAsGroup' gInfo@GroupInfo {membership} scope = isNothing scope && useRelays' gInfo && memberRole' membership == GROwner
+sendAsGroup' gInfo@GroupInfo {membership} scope = case scope of
+  Nothing -> useRelays' gInfo && memberRole' membership == GROwner
+  Just (GCSMemberSupport _) -> False
 
 data GroupChatScopeTag
   = GCSTMemberSupport_

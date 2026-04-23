@@ -625,7 +625,10 @@ processChatCommand vr nm = \case
       mapM_ assertNoMentions cms
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map composedMessageReq cms)
-    SRGroup chatId gsScope asGroup ->
+    SRGroup chatId gsScope asGroup -> do
+      case gsScope of
+        Just (GCSMemberSupport _) -> when asGroup $ throwCmdError "cannot send as group in support scope"
+        Nothing -> pure ()
       withGroupLock "sendMessage" chatId $ do
         (gInfo, cmrs) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user chatId

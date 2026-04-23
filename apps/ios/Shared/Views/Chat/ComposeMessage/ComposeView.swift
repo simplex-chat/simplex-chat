@@ -1659,7 +1659,7 @@ struct ComposeView: View {
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
                     scope: chat.chatInfo.groupChatScope(),
-                    sendAsGroup: chat.chatInfo.groupInfo.map { $0.useRelays && $0.membership.memberRole >= .owner } ?? false,
+                    sendAsGroup: chat.chatInfo.sendAsGroup,
                     live: live,
                     ttl: ttl,
                     composedMessages: msgs
