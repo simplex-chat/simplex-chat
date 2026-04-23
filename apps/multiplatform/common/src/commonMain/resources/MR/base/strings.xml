@@ -1291,6 +1291,11 @@
   <string name="make_private_connection">Make a private connection</string>
   <string name="migrate_from_another_device">Migrate from another device</string>
   <string name="how_it_works">How it works</string>
+  <string name="onboarding_be_free">Be free\nin your network</string>
+  <string name="onboarding_private_and_secure">Private and secure messaging.</string>
+  <string name="onboarding_first_network">The first network where you own your\ncontacts and groups.</string>
+  <string name="get_started">Get started</string>
+  <string name="why_simplex_is_built">Why SimpleX is built.</string>
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">How SimpleX works</string>

@@ -12,6 +12,7 @@ import SimpleXChat
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
     @State private var createProfileNavLinkActive = false
@@ -20,35 +21,40 @@ struct SimpleXInfo: View {
     var body: some View {
         GeometryReader { g in
             let v = ScrollView {
-                VStack(alignment: .leading) {
-                    VStack(alignment: .center, spacing: 10) {
-                        Image(colorScheme == .light ? "logo" : "logo-light")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: g.size.width * 0.67)
-                            .padding(.bottom, 8)
-                            .padding(.leading, 4)
-                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
-                        
-                        Button {
-                            showHowItWorks = true
-                        } label: {
-                            Label("The future of messaging", systemImage: "info.circle")
-                                .font(.headline)
-                        }
-                    }
+                VStack(alignment: .center, spacing: 10) {
+                    Image(colorScheme == .light ? "logo" : "logo-light")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: g.size.width * 0.67)
+                        .padding(.leading, 4)
+                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
-                    Spacer()
+                    #if SIMPLEX_ASSETS
+                    Image(colorScheme == .light ? "intro" : "intro-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                    #else
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 80))
+                        .foregroundColor(theme.colors.primary)
+                        .padding(.vertical, 40)
+                        .frame(maxWidth: .infinity)
+                    #endif
 
-                    VStack(alignment: .leading) {
-                        onboardingInfoRow("privacy", "Privacy redefined",
-                                "No user identifiers.", width: 48)
-                        onboardingInfoRow("shield", "Immune to spam",
-                                "You decide who can connect.", width: 46)
-                        onboardingInfoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                                "Anybody can host servers.", width: 46)
-                    }
-                    .padding(.leading, 16)
+                    Text("Be free\nin your network")
+                        .font(.largeTitle)
+                        .bold()
+                        .multilineTextAlignment(.center)
+
+                    Text("Private and secure messaging.")
+                        .font(.title2)
+                        .multilineTextAlignment(.center)
+
+                    Text("The first network where you own your\ncontacts and groups.")
+                        .font(.callout)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
 
                     Spacer()
 
@@ -57,13 +63,11 @@ struct SimpleXInfo: View {
                             createFirstProfileButton()
 
                             Button {
-                                m.migrationState = .pasteOrScanLink
+                                showHowItWorks = true
                             } label: {
-                                Label("Migrate from another device", systemImage: "tray.and.arrow.down")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .frame(minHeight: 40)
+                                Label("Why SimpleX is built.", systemImage: "info.circle")
+                                    .font(.headline)
                             }
-                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -105,32 +109,12 @@ struct SimpleXInfo: View {
         .navigationBarHidden(true) // necessary on iOS 15
     }
 
-    private func onboardingInfoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
-        HStack(alignment: .top) {
-            Image(image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: width, height: 54)
-                .frame(width: 54)
-                .padding(.trailing, 10)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline)
-                Text(text).frame(minHeight: 40, alignment: .top)
-                    .font(.callout)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 4)
-        }
-        .padding(.bottom, 12)
-    }
-
     private func createFirstProfileButton() -> some View {
         ZStack {
             Button {
                 createProfileNavLinkActive = true
             } label: {
-                Text("Create your profile")
+                Text("Get started")
             }
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
