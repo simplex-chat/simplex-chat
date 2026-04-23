@@ -165,6 +165,12 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
   }
+  @Composable fun SupportPreference() {
+    val enableSupport = remember(preferences) { mutableStateOf(preferences.support.enable) }
+    FeatureSection(GroupFeature.Support, enableSupport, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(support = GroupPreference(enable = enable)))
+    }
+  }
   ColumnWithScrollBar {
     val titleId = if (groupInfo.useRelays) MR.strings.channel_preferences
       else if (groupInfo.businessChat == null) MR.strings.group_preferences
@@ -192,6 +198,8 @@ private fun GroupPreferencesLayout(
       ReportsPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      SupportPreference()
     } else {
       TimedMessagesPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
@@ -200,6 +208,8 @@ private fun GroupPreferencesLayout(
       ReactionsPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
+      SectionDividerSpaced(true, maxBottomPadding = false)
+      SupportPreference()
     }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
@@ -245,7 +255,7 @@ private fun FeatureSection(
         feature.text,
         icon,
         iconTint,
-        disabled = feature == GroupFeature.Reports, // remove in 6.4
+        disabled = feature == GroupFeature.Reports || (feature == GroupFeature.Support && !groupInfo.useRelays), // enable reports in 7.0 once directory support added
         checked = enableFeature.value == GroupFeatureEnabled.ON,
       ) { checked ->
         onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
@@ -293,6 +303,9 @@ private fun FeatureSection(
     }
   }
   SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.isOwner))
+  if (feature == GroupFeature.Support && groupInfo.useRelays) {
+    SectionTextFooter(generalGetString(MR.strings.chat_with_admins_relay_note))
+  }
 }
 
 @Composable

@@ -48,11 +48,13 @@ struct GroupPreferencesView: View {
                     featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
                     featureSection(.reports, $preferences.reports.enable)
                     featureSection(.history, $preferences.history.enable)
+                    featureSection(.support, $preferences.support.enable)
                 } else {
                     featureSection(.timedMessages, $preferences.timedMessages.enable)
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.history, $preferences.history.enable)
+                    featureSection(.support, $preferences.support.enable)
                 }
 
                 if groupInfo.isOwner {
@@ -105,7 +107,7 @@ struct GroupPreferencesView: View {
                 settingsRow(icon, color: color) {
                     Toggle(feature.text, isOn: enable)
                 }
-                .disabled(feature == .reports) // remove in 6.4
+                .disabled(feature == .reports || (feature == .support && !groupInfo.useRelays)) // enable reports in 7.0 once directory support added
                 if timedOn {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
@@ -144,8 +146,13 @@ struct GroupPreferencesView: View {
                 }
             }
         } footer: {
-            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
-                .foregroundColor(theme.colors.secondary)
+            VStack(alignment: .leading) {
+                Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
+                if feature == .support && groupInfo.useRelays {
+                    Text("Chat relays can see messages in chats with admins — E2E encryption will be added later.")
+                }
+            }
+            .foregroundColor(theme.colors.secondary)
         }
         .onChange(of: enableFeature.wrappedValue) { enabled in
             if case .off = enabled {
