@@ -5154,6 +5154,7 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
+      "/set support #" *> (SetGroupFeature (AGFNR SGFSupport) <$> displayNameP <*> (A.space *> strP)),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberCriteriaP)),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,

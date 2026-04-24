@@ -230,6 +230,8 @@ chatGroupTests = do
     it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
     it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
     it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
+    it "should respect support preference in group" testSupportPreferenceGroup
+    it "should respect support preference in channel" testSupportPreferenceChannel
   -- TODO [relays] add tests for channels
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
@@ -8399,6 +8401,117 @@ testScopedSupportMemberLeaves =
       testOpts
         { markRead = False
         }
+
+testSupportPreferenceGroup :: HasCallStack => TestParams -> IO ()
+testSupportPreferenceGroup =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+
+    threadDelay 1000000
+
+    -- support enabled by default, bob sends to support
+    bob #> "#team (support) hello"
+    alice <# "#team (support: bob) bob> hello"
+
+    -- alice replies
+    alice #> "#team (support: bob) hi"
+    bob <# "#team (support) alice> hi"
+
+    -- alice disables support
+    alice ##> "/set support #team off"
+    alice <## "updated group preferences:"
+    alice <## "Chat with admins: off"
+    concurrentlyN_
+      [ do
+          bob <## "alice updated group #team:"
+          bob <## "updated group preferences:"
+          bob <## "Chat with admins: off",
+        do
+          cath <## "alice updated group #team:"
+          cath <## "updated group preferences:"
+          cath <## "Chat with admins: off"
+      ]
+
+    threadDelay 500000
+
+    -- cath can't send support (no existing chat)
+    cath ##> "#team (support) hey"
+    cath <## "bad chat command: feature not allowed Chat with admins"
+
+    -- alice can't send to cath's support (no existing chat)
+    alice ##> "#team (support: cath) hey"
+    alice <## "bad chat command: feature not allowed Chat with admins"
+
+    -- bob can still send (existing chat)
+    bob #> "#team (support) still here"
+    alice <# "#team (support: bob) bob> still here"
+
+    -- alice can still send to bob (existing chat)
+    alice #> "#team (support: bob) yes"
+    bob <# "#team (support) alice> yes"
+
+testSupportPreferenceChannel :: HasCallStack => TestParams -> IO ()
+testSupportPreferenceChannel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "relay" relayProfile $ \relay ->
+      withNewTestChat ps "bob" bobProfile $ \bob ->
+        withNewTestChat ps "cath" cathProfile $ \cath -> do
+          (shortLink, fullLink) <- prepareChannel1Relay "team" alice relay
+          memberJoinChannel "team" [relay] [alice] shortLink fullLink bob
+          memberJoinChannel "team" [relay] [alice] shortLink fullLink cath
+
+          threadDelay 1000000
+
+          -- support enabled by default, bob sends to support
+          bob #> "#team (support) hello"
+          relay <# "#team (support: bob) bob> hello"
+          alice <# "#team (support: bob) bob> hello [>>]"
+
+          -- alice replies
+          alice #> "#team (support: bob) hi"
+          relay <# "#team (support: bob) alice> hi"
+          bob <# "#team (support) alice> hi [>>]"
+
+          -- alice disables support
+
+          threadDelay 1000000
+
+          alice ##> "/set support #team off"
+          alice <## "updated group preferences:"
+          alice <## "Chat with admins: off"
+          relay <## "alice updated group #team: (signed)"
+          relay <## "updated group preferences:"
+          relay <## "Chat with admins: off"
+          concurrentlyN_
+            [ do
+                bob <## "alice updated group #team: (signed) [>>]"
+                bob <## "updated group preferences:"
+                bob <## "Chat with admins: off",
+              do
+                cath <## "alice updated group #team: (signed) [>>]"
+                cath <## "updated group preferences:"
+                cath <## "Chat with admins: off"
+            ]
+
+          threadDelay 500000
+
+          -- cath can't send support (no existing chat)
+          cath ##> "#team (support) hey"
+          cath <## "bad chat command: feature not allowed Chat with admins"
+
+          -- bob can still send (existing chat)
+          bob #> "#team (support) still here"
+          concurrentlyN_
+            [ relay <# "#team (support: bob) bob> still here",
+              alice <# "#team (support: bob) bob> still here [>>]"
+            ]
+
+          -- alice can still send to bob (existing chat)
+          alice #> "#team (support: bob) yes"
+          concurrentlyN_
+            [ relay <# "#team (support: bob) alice> yes",
+              bob <# "#team (support) alice> yes [>>]"
+            ]
 
 testChannels1RelayDeliver :: HasCallStack => TestParams -> IO ()
 testChannels1RelayDeliver ps =

@@ -251,7 +251,8 @@ allGroupFeatures =
     AGF SGFFiles,
     AGF SGFSimplexLinks,
     AGF SGFReports,
-    AGF SGFHistory
+    AGF SGFHistory,
+    AGF SGFSupport
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
