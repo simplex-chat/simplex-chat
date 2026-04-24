@@ -165,10 +165,14 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
   }
-  @Composable fun SupportPreference(disabled: Boolean = false, notice: String? = null) {
+  @Composable fun SupportPreference(disabled: Boolean = false, notice: String? = null, onEnable: ((() -> Unit) -> Unit)? = null) {
     val enableSupport = remember(preferences) { mutableStateOf(preferences.support.enable) }
     FeatureSection(GroupFeature.Support, enableSupport, null, groupInfo, preferences, onTTLUpdated, disabled = disabled, notice = notice) { enable, _ ->
       applyPrefs(preferences.copy(support = GroupPreference(enable = enable)))
+      if (enable == GroupFeatureEnabled.ON) onEnable?.invoke {
+        enableSupport.value = GroupFeatureEnabled.OFF
+        applyPrefs(preferences.copy(support = GroupPreference(enable = GroupFeatureEnabled.OFF)))
+      }
     }
   }
   ColumnWithScrollBar {
@@ -209,7 +213,15 @@ private fun GroupPreferencesLayout(
       SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note))
+      SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note), onEnable = { revert ->
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.enable_chats_with_admins_question),
+          text = generalGetString(MR.strings.chat_with_admins_relay_note),
+          confirmText = generalGetString(MR.strings.enable_chats_with_admins),
+          destructive = true,
+          onDismiss = revert,
+        )
+      })
     }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)

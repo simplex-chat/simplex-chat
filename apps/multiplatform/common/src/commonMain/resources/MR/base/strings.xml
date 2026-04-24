@@ -2340,7 +2340,9 @@
   <string name="prohibit_chat_with_admins">Prohibit chats with admins.</string>
   <string name="members_can_chat_with_admins">Members can chat with admins.</string>
   <string name="chat_with_admins_is_prohibited">Chats with admins are prohibited.</string>
-  <string name="chat_with_admins_relay_note">Chat relays can see messages in these chats - E2E encryption will be added later.</string>
+  <string name="chat_with_admins_relay_note">Chats with admins are experimental - there is no E2E encryption. Chat relays can see these messages, use only with trusted chat relays.</string>
+  <string name="enable_chats_with_admins_question">Enable chats with admins?</string>
+  <string name="enable_chats_with_admins">Enable</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>

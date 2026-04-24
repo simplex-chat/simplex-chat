@@ -54,7 +54,21 @@ struct GroupPreferencesView: View {
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.history, $preferences.history.enable)
-                    featureSection(.support, $preferences.support.enable, notice: "Chat relays can see messages in these chats - E2E encryption will be added later.")
+                    featureSection(.support, $preferences.support.enable, notice: "Chats with admins are experimental - there is no E2E encryption. Chat relays can see these messages, use only with trusted chat relays.")
+                        .onChange(of: preferences.support.enable) { enable in
+                            if enable == .on {
+                                showAlert(
+                                    NSLocalizedString("Enable chats with admins?", comment: "alert title"),
+                                    message: NSLocalizedString("Chats with admins are experimental - there is no E2E encryption. Chat relays can see these messages, use only with trusted chat relays.", comment: "alert message"),
+                                    actions: {[
+                                        UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .destructive) { _ in },
+                                        UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in
+                                            preferences.support.enable = .off
+                                        }
+                                    ]}
+                                )
+                            }
+                        }
                 }
 
                 if groupInfo.isOwner {
