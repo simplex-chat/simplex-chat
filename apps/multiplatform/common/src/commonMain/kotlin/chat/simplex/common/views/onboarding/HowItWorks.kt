@@ -26,12 +26,7 @@ import dev.icerock.moko.resources.StringResource
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
   ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
-    ReadableText(MR.strings.to_protect_privacy_simplex_has_ids_for_queues)
-    ReadableText(MR.strings.only_client_devices_store_contacts_groups_e2e_encrypted_messages)
-    ReadableText(MR.strings.all_message_and_files_e2e_encrypted)
-    if (onboardingStage == null) {
-      ReadableTextWithLink(MR.strings.read_more_in_github_with_link, "https://github.com/simplex-chat/simplex-chat#readme")
-    }
+    ReadableText(stringResource(MR.strings.why_simplex_is_built_text))
 
     Spacer(Modifier.fillMaxHeight().weight(1f))
 

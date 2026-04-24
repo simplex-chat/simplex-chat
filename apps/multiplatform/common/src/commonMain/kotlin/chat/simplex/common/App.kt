@@ -192,7 +192,12 @@ fun MainScreen() {
               ModalManager.fullscreen.showInView()
             }
           }
-          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+          OnboardingStage.Step2_CreateProfile -> {
+            CreateFirstProfile(chatModel) {}
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
           OnboardingStage.LinkAMobile -> LinkAMobile()
           OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
           OnboardingStage.Step3_ChooseServerOperators -> { // deprecated - map to new step 3
