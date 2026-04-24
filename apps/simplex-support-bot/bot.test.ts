@@ -228,7 +228,8 @@ function makeCustomerMember(status = GroupMemberStatus.Connected) {
 
 function makeConfig(overrides: Partial<any> = {}) {
   return {
-    dbPrefix: "./test-data/simplex",
+    stateFile: "./test-data/state.json",
+    db: {type: "sqlite", filePrefix: "./test-data/simplex"},
     teamGroup: {id: TEAM_GROUP_ID, name: "SupportTeam"},
     teamMembers: [
       {id: TEAM_MEMBER_1_ID, name: "Alice"},
@@ -2290,8 +2291,86 @@ describe("parseConfig Validation", () => {
       .toThrow(/--complete-hours must be a non-negative integer, got "abc"/)
   })
 
+  test("postgres backend without --pg-conn → throws", () => {
+    const prev = process.env.SIMPLEX_BACKEND
+    process.env.SIMPLEX_BACKEND = "postgres"
+    try {
+      expect(() => parseConfig(baseArgs))
+        .toThrow(/--pg-conn is required when backend is postgres/)
+    } finally {
+      if (prev === undefined) delete process.env.SIMPLEX_BACKEND
+      else process.env.SIMPLEX_BACKEND = prev
+    }
+  })
+
+  test("postgres backend with --pg-conn → db is postgres DbConfig", () => {
+    const prev = process.env.SIMPLEX_BACKEND
+    process.env.SIMPLEX_BACKEND = "postgres"
+    try {
+      const cfg = parseConfig([...baseArgs, "--pg-conn", "postgres://user:pass@localhost/db"])
+      expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://user:pass@localhost/db"})
+    } finally {
+      if (prev === undefined) delete process.env.SIMPLEX_BACKEND
+      else process.env.SIMPLEX_BACKEND = prev
+    }
+  })
+
+  test("postgres backend with --pg-schema → DbConfig carries schemaPrefix", () => {
+    const prev = process.env.SIMPLEX_BACKEND
+    process.env.SIMPLEX_BACKEND = "postgres"
+    try {
+      const cfg = parseConfig([...baseArgs, "--pg-conn", "postgres://localhost/db", "--pg-schema", "bot"])
+      expect(cfg.db).toEqual({type: "postgres", connectionString: "postgres://localhost/db", schemaPrefix: "bot"})
+    } finally {
+      if (prev === undefined) delete process.env.SIMPLEX_BACKEND
+      else process.env.SIMPLEX_BACKEND = prev
+    }
+  })
+
+  test("sqlite backend (default) → db is sqlite DbConfig with default filePrefix", () => {
+    const prevBackend = process.env.SIMPLEX_BACKEND
+    const prevNpm = process.env.npm_config_simplex_backend
+    delete process.env.SIMPLEX_BACKEND
+    delete process.env.npm_config_simplex_backend
+    try {
+      const cfg = parseConfig(baseArgs)
+      expect(cfg.db).toEqual({type: "sqlite", filePrefix: "./data/simplex"})
+    } finally {
+      if (prevBackend !== undefined) process.env.SIMPLEX_BACKEND = prevBackend
+      if (prevNpm !== undefined) process.env.npm_config_simplex_backend = prevNpm
+    }
+  })
+
+  test("sqlite backend with --sqlite-key → DbConfig carries encryptionKey", () => {
+    const cfg = parseConfig([...baseArgs, "--sqlite-key", "secret"])
+    expect(cfg.db).toEqual({type: "sqlite", filePrefix: "./data/simplex", encryptionKey: "secret"})
+  })
+
+  test("unknown flag → parseArgs throws", () => {
+    expect(() => parseConfig([...baseArgs, "--team-gropu", "typo"]))
+      .toThrow()
+  })
+
+  test("missing --team-group → throws", () => {
+    expect(() => parseConfig([]))
+      .toThrow(/Missing required argument: --team-group/)
+  })
+
+  test("invalid SIMPLEX_BACKEND → throws", () => {
+    const prev = process.env.SIMPLEX_BACKEND
+    process.env.SIMPLEX_BACKEND = "mysql"
+    try {
+      expect(() => parseConfig(baseArgs))
+        .toThrow(/Invalid SIMPLEX_BACKEND: "mysql"/)
+    } finally {
+      if (prev === undefined) delete process.env.SIMPLEX_BACKEND
+      else process.env.SIMPLEX_BACKEND = prev
+    }
+  })
+
   test("--complete-hours negative → throws", () => {
-    expect(() => parseConfig([...baseArgs, "--complete-hours", "-1"]))
+    // parseArgs refuses "-1" as a bare arg (ambiguous with a short flag), so use `=` form
+    expect(() => parseConfig([...baseArgs, "--complete-hours=-1"]))
       .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
   })
 

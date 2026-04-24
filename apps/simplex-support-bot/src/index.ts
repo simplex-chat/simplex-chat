@@ -24,8 +24,10 @@ function writeState(path: string, state: BotState): void {
 
 async function main(): Promise<void> {
   const config = parseConfig(process.argv.slice(2))
+  // Do not log config.db.connectionString — typically contains credentials.
   log("Config parsed", {
-    dbPrefix: config.dbPrefix,
+    stateFile: config.stateFile,
+    backend: config.db.type,
     teamGroup: config.teamGroup,
     teamMembers: config.teamMembers,
     timezone: config.timezone,
@@ -34,7 +36,7 @@ async function main(): Promise<void> {
   const grokEnabled = config.grokApiKey !== null
   if (!grokEnabled) log("No GROK_API_KEY provided, disabling Grok support")
 
-  const stateFilePath = `${config.dbPrefix}_state.json`
+  const stateFilePath = config.stateFile
   const state = readState(stateFilePath)
 
   // Forward-reference for event handlers during init
@@ -47,7 +49,7 @@ async function main(): Promise<void> {
   // userId persisted in state.json on first resolution — comparing by
   // profile name is fragile to renames.
   if (state.grokUserId !== undefined) {
-    const preChat = await api.ChatApi.init({type: "sqlite", filePrefix: config.dbPrefix})
+    const preChat = await api.ChatApi.init(config.db)
     try {
       const activeUser = await preChat.apiGetActiveUser()
       if (activeUser && activeUser.userId === state.grokUserId) {
@@ -88,7 +90,7 @@ async function main(): Promise<void> {
   log("Initializing main bot...")
   const [chat, mainUser, mainAddress] = await bot.run({
     profile: {displayName: "Ask SimpleX Team", fullName: "", image: supportImage},
-    dbOpts: {type: "sqlite", filePrefix: config.dbPrefix},
+    dbOpts: config.db,
     options: {
       addressSettings: {
         businessAddress: true,
