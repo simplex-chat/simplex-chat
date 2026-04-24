@@ -1151,13 +1151,13 @@ $(J.deriveJSON defaultJSON ''ReportsGroupPreference)
 
 $(J.deriveJSON defaultJSON ''HistoryGroupPreference)
 
-$(J.deriveJSON defaultJSON ''SupportGroupPreference)
+$(J.deriveToJSON defaultJSON ''SupportGroupPreference)
 
-$(J.deriveToJSON defaultJSON ''SessionsGroupPreference)
+instance FromJSON SupportGroupPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''SupportGroupPreference) v
+  omittedField = Just SupportGroupPreference {enable = FEOn}
 
-instance FromJSON SessionsGroupPreference where
-  parseJSON v = $(J.mkParseJSON defaultJSON ''SessionsGroupPreference) v
-  omittedField = Just SessionsGroupPreference {enable = FEOff, role = Nothing}
+$(J.deriveJSON defaultJSON ''SessionsGroupPreference)
 
 $(J.deriveToJSON defaultJSON ''CommentsGroupPreference)
 
