@@ -155,7 +155,7 @@ welcomeGetOpts = do
 directoryServiceCLI :: DirectoryLog -> DirectoryOpts -> IO ()
 directoryServiceCLI st opts = do
   env@ServiceState {eventQ} <- newServiceState opts
-  let eventHook _cc resp = atomically $ resp <$ forM_ (crDirectoryEvent resp) (writeTQueue eventQ)
+  let eventHook _cc resp = atomically $ resp <$ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -260,7 +260,7 @@ directoryService st opts cfg = do
     raceAny_ $
       [ forever $ do
           (_, resp) <- atomically . readTBQueue $ outputQ cc
-          forM_ (crDirectoryEvent resp) $ atomically . writeTQueue eventQ,
+          mapM_ (atomically . writeTQueue eventQ) $ crDirectoryEvent resp,
         forever $ do
           event <- atomically $ readTQueue eventQ
           directoryServiceEvent st opts env user cc event
