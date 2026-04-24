@@ -128,6 +128,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       runCLI = False,
       searchResults = 3,
       webFolder,
+      linkCheckInterval = 0,
       testing = True
     }
 
@@ -1976,7 +1977,7 @@ testRegisterChannelViaCard ps =
         superUser <## "news"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
+        superUser <## "1 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -1999,7 +2000,7 @@ testRegisterChannelViaCard ps =
         superUser <## "news (News and Updates)"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "3 subscribers"
+        superUser <## "2 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -2074,7 +2075,7 @@ testDeleteChannelRegistration ps =
         superUser <## "news"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
+        superUser <## "1 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -2118,7 +2119,7 @@ testReregistrationAlreadyListed ps =
         superUser <## "news"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
+        superUser <## "1 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -2135,7 +2136,7 @@ testReregistrationAlreadyListed ps =
         bob <# "'SimpleX Directory'> news"
         bob <##. "Link to join channel: "
         bob <## "You need SimpleX Chat app v6.5 to join."
-        bob <## "3 subscribers"
+        bob <## "1 subscribers"
         -- owner re-shares card while already listed
         bob ##> "/share chat #news @'SimpleX Directory'"
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"

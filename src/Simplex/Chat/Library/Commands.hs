@@ -1772,15 +1772,21 @@ processChatCommand vr nm = \case
   APIGroupInfo gId -> withUser $ \user ->
     CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db vr user gId)
   APIGetUpdatedGroupLinkData groupId -> withUser $ \user -> do
-    gInfo@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    case publicGroup of
-      Just PublicGroupProfile {groupLink = sLnk} | useRelays' gInfo -> do
+    gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    case p of
+      GroupProfile {publicGroup = Just PublicGroupProfile {groupLink = sLnk}} | useRelays' gInfo -> do
         (_, cData) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
-        let publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
-            publicMemberCount_ = (\PublicGroupData {publicMemberCount} -> publicMemberCount) <$> publicGroupData_
-        gInfo' <- fromMaybe gInfo
-          <$> forM publicMemberCount_ (\count -> withFastStore $ \db -> setPublicMemberCount db vr user gInfo count)
+        gInfo' <- case groupSLinkData_ of
+          Just GroupShortLinkData {groupProfile, publicGroupData} -> do
+            g <- if p /= groupProfile
+              then withStore $ \db -> updateGroupProfile db user gInfo groupProfile
+              else pure gInfo
+            case publicGroupData of
+              Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
+                withFastStore $ \db -> setPublicMemberCount db vr user g publicMemberCount
+              _ -> pure g
+          _ -> pure gInfo
         pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
@@ -4065,15 +4071,20 @@ processChatCommand vr nm = \case
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-              resolveKnownGroup g@GroupInfo {groupProfile = p} = do
+              resolveKnownGroup g@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} = do
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
+                    publicMemberCount_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
                 (g', updated) <- case groupSLinkData_ of
                   Just GroupShortLinkData {groupProfile}
                     | p /= groupProfile -> (,True) <$> withStore (\db -> updateGroupProfile db user g groupProfile)
                   _ -> pure (g, False)
-                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' updated ov))
+                g'' <- case publicMemberCount_ of
+                  Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
+                    withFastStore $ \db -> setPublicMemberCount db vr user g' publicMemberCount
+                  _ -> pure g'
+                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g'' updated ov))
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do

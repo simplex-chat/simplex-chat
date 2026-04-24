@@ -49,6 +49,7 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {member :: GroupMember, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEGroupLinkCheck GroupInfo
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
@@ -79,7 +80,9 @@ crDirectoryEvent_ = \case
   CEvtContactConnected {contact} -> Just $ DEContactConnected contact
   CEvtReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CEvtUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
-  CEvtGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
+  CEvtGroupUpdated {fromGroup, toGroup, member_} -> Just $ case member_ of
+    Just member -> DEGroupUpdated {member, fromGroup, toGroup}
+    Nothing -> DEGroupLinkCheck toGroup
   CEvtJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
