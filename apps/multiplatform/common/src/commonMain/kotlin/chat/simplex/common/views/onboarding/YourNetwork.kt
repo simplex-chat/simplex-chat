@@ -129,9 +129,8 @@ fun YourNetworkView(chatModel: ChatModel) {
           verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
           ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
-            ModalManager.fullscreen.showModalCloseable { close ->
-              val modalData = remember { ModalData() }
-              modalData.ChooseServerOperators(serverOperators, selectedOperatorIds, close)
+            ModalManager.fullscreen.showCustomModal { close ->
+              ChooseServerOperators(serverOperators, selectedOperatorIds, close)
             }
           }
 
