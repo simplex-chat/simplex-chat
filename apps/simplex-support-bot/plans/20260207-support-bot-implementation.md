@@ -13,7 +13,8 @@ SimpleX Chat support bot — standalone Node.js app using `simplex-chat-nodejs` 
 │  chat: ChatApi ← ChatApi.init("./data/simplex")  │
 │    Single database, two user profiles            │
 │                                                  │
-│  mainUserId  ← "Ask SimpleX Team" profile        │
+│  mainUserId  ← non-Grok user (default name:      │
+│                "Ask SimpleX Team")               │
 │    • Business address, event routing, state mgmt │
 │    • Controls group membership                   │
 │                                                  │
@@ -27,7 +28,7 @@ SimpleX Chat support bot — standalone Node.js app using `simplex-chat-nodejs` 
 ```
 
 - Single Node.js process, single `ChatApi` instance via native NAPI
-- Two user profiles in one database — resolved at startup via `apiListUsers()` by display name
+- Two user profiles in one database — resolved at startup via `apiListUsers()`: the Grok profile by its known display name (`"Grok"`/`"Grok AI"`), the main profile by exclusion (any non-Grok user). The main profile's displayName is set only on fresh-DB user creation (`"Ask SimpleX Team"`) and is never rewritten by bot code thereafter — `bot.run()` is invoked with `updateProfile: false`. Bot commands (`/grok`, `/team`) are the only profile field the bot pushes at runtime, and only when the desired list differs from what's already in the DB.
 - `profileMutex` serializes `apiSetActiveUser(userId)` + the subsequent SimpleX API call. Grok HTTP API calls run **outside** the mutex.
 - Events delivered for all profiles — routed by `event.user` field (main → main handler, Grok → Grok handler)
 - Business address auto-accept creates a group per customer
@@ -472,6 +473,7 @@ const [chat, mainUser, mainAddress] = await bot.run({
       {type: "command", keyword: "team", label: "Switch to team"},
     ],
     useBotProfile: true,
+    updateProfile: false,  // bot code never rewrites displayName/image/etc.
   },
   events: {
     acceptingBusinessRequest: (evt) => supportBot?.onBusinessRequest(evt),
@@ -488,7 +490,7 @@ const [chat, mainUser, mainAddress] = await bot.run({
 })
 ```
 
-Note: `/grok` and `/team` registered as customer commands via `bot.run()`. `/join` registered as a team group command separately — after team group is resolved, call `apiUpdateGroupProfile(teamGroupId, groupProfile)` with `groupPreferences` including the `/join` command definition. Customer sending `/join` in a customer group → treated as ordinary message (unrecognized command).
+Note: `/grok` and `/team` are passed in `options.commands` so `bot.run()` can build the desired `profile.preferences.commands`, but since `updateProfile: false` is set, `bot.run()` never writes the profile. Immediately after `bot.run()`, the bot compares `mainUser.profile.preferences.commands` against the desired list; if they differ, it calls `apiUpdateProfile(mainUser.userId, profile)` with `displayName` copied back from `mainUser.profile` (so core's fast path at `src/Simplex/Chat/Store/Profiles.hs:311` fires — `contact_profiles.preferences.commands` is updated, `contact_profiles.display_name` is rewritten to the same value it already had). `/join` is registered as a team group command separately — after team group is resolved, call `apiUpdateGroupProfile(teamGroupId, groupProfile)` with `groupPreferences` including the `/join` command definition. Customer sending `/join` in a customer group → treated as ordinary message (unrecognized command).
 
 **Grok profile** — resolved from same ChatApi instance:
 
@@ -577,7 +579,13 @@ Cleanup: entries in `customDataMutexes` are bounded by the number of customer gr
 **Profile images:** Both profiles have base64-encoded JPEG profile pictures (128x128, quality 85, under the 12,500-char data URI limit enforced by iOS/Android clients) set via the `image` field in `T.Profile`. The images are defined as `data:image/jpg;base64,...` string constants in `index.ts`. The main profile image is passed to `bot.run()` which handles update-on-change automatically. The Grok profile image is passed to `apiCreateActiveUser()` on first run; on subsequent runs, the bot compares the current profile against the desired one using `util.fromLocalProfile()` and calls `apiUpdateProfile()` if any field differs — this sends the update to all Grok contacts.
 
 **Startup sequence:**
-0. **Active user recovery:** On restart, the active user may be Grok (if the previous run was killed mid-profile-switch). `bot.run()` uses `apiGetActiveUser()` and would rename Grok → `duplicateName` error. Fix: pre-init the DB with a temporary `ChatApi`, check active user, if not "Ask SimpleX Team" then `startChat()` + find the main user via `apiListUsers()` + `apiSetActiveUser()`, then `close()`. This ensures `bot.run()` always finds the correct active user.
+0. **Active user recovery + name preservation:** Two related safeguards.
+
+    **(a) Active user recovery.** On restart, the active user may be Grok (if the previous run was killed mid-profile-switch). `bot.run()` uses `apiGetActiveUser()` and would then operate against Grok's `userId` as if it were the main user. Fix: pre-init the DB with a temporary `ChatApi`, and if the active user's `displayName` is `"Grok"` or `"Grok AI"`, `apiListUsers()` + `apiSetActiveUser()` to the first non-Grok user. Close the temporary `ChatApi` before `bot.run()` reopens it.
+
+    **(b) Never rewrite the main profile.** The core auto-creates a preset contact named `"Ask SimpleX Team"` in every user's DB (`src/Simplex/Chat/Library/Internal.hs:2749`, exact name from commit `362bdc328` 2025-07-12). That collides with the bot's preferred main-profile displayName within the user's `display_names` namespace (`UNIQUE (user_id, local_display_name)`), so any attempt to rename the main profile to `"Ask SimpleX Team"` fails with `duplicateName`. Worse, `bot.run`'s internal `updateBotUserProfile` (`packages/simplex-chat-nodejs/dist/bot.js:176`) re-syncs image, preferences, and `contactLink` on every startup, and on a DB where `users.local_display_name` has drifted from `contact_profiles.display_name`, the fast path (`src/Simplex/Chat/Store/Profiles.hs:311`) silently rewrites the customer-facing `contact_profiles.display_name`. Fix: pass `options.updateProfile: false` to `bot.run()` so the bot code never calls `apiUpdateProfile` on its own initiative. Whatever displayName the CLI saw is what stays.
+
+    **(c) Commands-only push.** The one profile field we *do* want to push from code is the bot's command list (`/grok`, `/team`). After `bot.run()` returns, compare `mainUser.profile.preferences.commands` (via `util.fromLocalProfile`) against the desired list (using `JSON.stringify` equality, same pattern as team-group-commands diff at `src/index.ts:227`). If equal, skip. If different, call `apiUpdateProfile(mainUser.userId, profile)` where `profile` is a shallow copy of `mainUser.profile` with only `preferences.commands` replaced. Because we pass the profile's own current `displayName` back verbatim, core's fast path writes only `contact_profiles` fields (including the new commands) without any rename attempt. All other profile fields (displayName, image, fullName, contactLink, other preference flags) are preserved byte-for-byte.
 1. `bot.run()` → init ChatApi, create/resolve main profile (with profile image), business address. Print business address link to stdout.
 2. Resolve Grok profile via `apiListUsers()` (create with profile image if missing; if existing, compare profile and update via `apiUpdateProfile()` if changed — pushes to contacts)
 3. Read `{dbPrefix}_state.json` for `teamGroupId` and `grokContactId`

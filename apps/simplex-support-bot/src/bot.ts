@@ -57,12 +57,15 @@ export class SupportBot {
   // Bot's business address link
   businessAddress: string | null = null
 
+  private commandsSynced = false
+
   constructor(
     private chat: api.ChatApi,
     private grokApi: GrokApiClient | null,
     private config: Config,
     private mainUserId: number,
     private grokUserId: number | null,
+    private desiredCommands: T.ChatBotCommand[],
   ) {
     this.cards = new CardManager(chat, config, mainUserId, config.cardFlushSeconds * 1000)
   }
@@ -93,8 +96,32 @@ export class SupportBot {
   private async withMainProfile<R>(fn: () => Promise<R>): Promise<R> {
     return profileMutex.runExclusive(async () => {
       await this.chat.apiSetActiveUser(this.mainUserId)
+      await this.syncCommands()
       return fn()
     })
+  }
+
+  // Push the bot's command list into the main profile if the DB's
+  // preferences.commands doesn't already match. Passing the profile's own
+  // current displayName back keeps core's updateUserProfile on the fast
+  // path (src/Simplex/Chat/Store/Profiles.hs:311) — no rename.
+  private async syncCommands(): Promise<void> {
+    if (this.commandsSynced) return
+    const user = await this.chat.apiGetActiveUser()
+    if (!user) return
+    const current = JSON.stringify(user.profile.preferences?.commands ?? [])
+    const desired = JSON.stringify(this.desiredCommands)
+    if (current === desired) {
+      this.commandsSynced = true
+      return
+    }
+    const profile = util.fromLocalProfile(user.profile)
+    await this.chat.apiUpdateProfile(user.userId, {
+      ...profile,
+      preferences: {...(profile.preferences ?? {}), commands: this.desiredCommands},
+    })
+    log(`Bot commands updated (displayName preserved: "${profile.displayName}")`)
+    this.commandsSynced = true
   }
 
   private async withGrokProfile<R>(fn: () => Promise<R>): Promise<R> {

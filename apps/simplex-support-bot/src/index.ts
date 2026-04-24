@@ -40,24 +40,24 @@ async function main(): Promise<void> {
   let supportBot: SupportBot | undefined
 
   // On restart, the active user may be Grok (if the previous run was killed
-  // mid-profile-switch). bot.run() uses apiGetActiveUser() and would then try
-  // to rename Grok to "Ask SimpleX Team" → duplicateName error.
-  // Fix: pre-init the DB, find the main user, set it active, then close.
+  // mid-profile-switch). bot.run() uses apiGetActiveUser() and would then
+  // operate against the Grok userId as if it were the main user. Restore the
+  // main user as active before bot.run(). Main user = any user NOT named
+  // "Grok"/"Grok AI".
   {
     const preChat = await api.ChatApi.init(config.dbPrefix)
     const activeUser = await preChat.apiGetActiveUser()
-    if (activeUser && activeUser.profile.displayName !== "Ask SimpleX Team") {
+    const isGrokName = (n: string) => n === "Grok" || n === "Grok AI"
+    if (activeUser && isGrokName(activeUser.profile.displayName)) {
       await preChat.startChat()
       const users = await preChat.apiListUsers()
-      const mainUserInfo = users.find(u => u.user.profile.displayName === "Ask SimpleX Team")
+      const mainUserInfo = users.find(u => !isGrokName(u.user.profile.displayName))
       if (mainUserInfo) {
         await preChat.apiSetActiveUser(mainUserInfo.user.userId)
-        log("Restored active user to Ask SimpleX Team")
+        log(`Restored active user to ${mainUserInfo.user.profile.displayName}`)
       }
-      await preChat.close()
-    } else {
-      await preChat.close()
     }
+    await preChat.close()
   }
 
   // Profile images (base64-encoded JPEG)
@@ -80,6 +80,7 @@ async function main(): Promise<void> {
         {type: "command", keyword: "team", label: "Switch to team"},
       ],
       useBotProfile: true,
+      updateProfile: false,
     },
     events: {
       acceptingBusinessRequest: (evt) => supportBot?.onBusinessRequest(evt),
@@ -95,6 +96,41 @@ async function main(): Promise<void> {
     },
   })
   log(`Main bot user: ${mainUser.profile.displayName} (userId=${mainUser.userId})`)
+
+  // Explicit commands-only profile update. bot.run() is configured with
+  // updateProfile: false, so it never rewrites the profile on startup —
+  // which in turn preserves displayName, image, etc. exactly as the CLI
+  // sees them. Here we push *only* the commands list, and only when it
+  // differs from what's already in contact_profiles.preferences.commands.
+  // Pass the current displayName back unchanged so core's updateUserProfile
+  // takes the fast path (src/Simplex/Chat/Store/Profiles.hs:311) — which
+  // does not rename.
+  {
+    const desiredCommands: T.ChatBotCommand[] = [
+      ...(grokEnabled ? [{type: "command" as const, keyword: "grok", label: "Ask Grok"}] : []),
+      {type: "command", keyword: "team", label: "Switch to team"},
+    ]
+    const currentProfile = util.fromLocalProfile(mainUser.profile)
+    const currentCommands = currentProfile.preferences?.commands ?? []
+    if (JSON.stringify(currentCommands) !== JSON.stringify(desiredCommands)) {
+      const newProfile: T.Profile = {
+        ...currentProfile,
+        preferences: {
+          ...(currentProfile.preferences ?? {}),
+          commands: desiredCommands,
+        },
+      }
+      log(`Bot commands changed, updating (displayName preserved: "${currentProfile.displayName}")...`)
+      const summary = await chat.apiUpdateProfile(mainUser.userId, newProfile)
+      if (summary) {
+        log(`Bot commands updated: ${summary.updateSuccesses} contact(s), ${summary.updateFailures} failed`)
+      } else {
+        log("Bot commands update: no change reported by core")
+      }
+    } else {
+      log("Bot commands unchanged — skipping profile update")
+    }
+  }
 
   // Step 2: Resolve Grok profile from same ChatApi instance
   let grokUser: T.User | null = null
