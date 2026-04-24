@@ -1778,14 +1778,18 @@ processChatCommand vr nm = \case
         (_, cData) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile, publicGroupData} -> withStore $ \db -> do
-            g <- if p /= groupProfile
-              then updateGroupProfile db user gInfo groupProfile
-              else pure gInfo
-            case publicGroupData of
-              Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
-                setPublicMemberCount db vr user g publicMemberCount
-              _ -> pure g
+          Just GroupShortLinkData {groupProfile, publicGroupData}
+            | profileChanged || countChanged -> withStore $ \db -> do
+                g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
+                if countChanged then setPublicMemberCount db vr user g count else pure g
+            where
+              profileChanged = p /= groupProfile
+              countChanged = case publicGroupData of
+                Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
+                _ -> False
+              count = case publicGroupData of
+                Just PublicGroupData {publicMemberCount} -> publicMemberCount
+                _ -> 0
           _ -> pure gInfo
         pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"

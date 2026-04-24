@@ -792,38 +792,44 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     deGroupLinkCheck :: GroupInfo -> IO ()
     deGroupLinkCheck gInfo@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, groupSummary = summary} =
-      withGroupReg gInfo "link check" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} -> do
-        forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
-          when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $
-            let link = ACL SCMContact $ CLShort groupLink
-             in sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
-                  Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated}))) -> do
-                    when groupUpdated $ do
-                      let gt = groupTypeStr' pg
-                          groupRef = groupReference gInfo
-                      notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " profile changed."
-                      case groupRegStatus of
-                        GRSActive ->
-                          setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
-                            notifyOwner gr' $ "The " <> gt <> " profile has changed.\nIt is hidden from the directory until approved."
-                            sendToApprove g' gr' 1
-                        GRSPendingApproval n ->
-                          sendToApprove g' gr (n + 1)
-                        _ -> pure ()
-                    when (summary /= groupSummary g') $
-                      listingsUpdated env
-                  _ -> pure ()
-        checkOwnerRole groupRegStatus dbOwnerMemberId
+      withGroupReg gInfo "link check" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} ->
+        case pg_ of
+          Just pg@PublicGroupProfile {groupLink}
+            | groupRegStatus == GRSActive || pendingApproval groupRegStatus ->
+                checkPublicGroupLink pg gr groupRegStatus dbOwnerMemberId groupLink
+          _ -> void $ checkOwner groupRegStatus dbOwnerMemberId
       where
-        checkOwnerRole grStatus = \case
+        checkPublicGroupLink pg gr groupRegStatus dbOwnerMemberId groupLink = do
+          let link = ACL SCMContact $ CLShort groupLink
+          sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
+            Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated}))) ->
+              checkOwner groupRegStatus dbOwnerMemberId >>= \ownerOk ->
+                when ownerOk $ do
+                  when groupUpdated $ do
+                    let gt = groupTypeStr' pg
+                        groupRef = groupReference gInfo
+                    notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " profile changed."
+                    case groupRegStatus of
+                      GRSActive ->
+                        setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
+                          notifyOwner gr' $ "The " <> gt <> " profile has changed.\nIt is hidden from the directory until approved."
+                          sendToApprove g' gr' 1
+                      GRSPendingApproval n ->
+                        sendToApprove g' gr (n + 1)
+                      _ -> pure ()
+                  when (summary /= groupSummary g') $
+                    listingsUpdated env
+            _ -> pure ()
+        checkOwner grStatus = \case
           Just ownerGMId ->
             withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
               Right GroupMember {memberRole}
-                | memberRole < GROwner && grStatus == GRSActive ->
+                | memberRole < GROwner && grStatus == GRSActive -> do
                     setGroupStatus logError st env cc groupId GRSSuspendedBadRoles $ \gr' ->
                       notifyOwner gr' "The registration owner is no longer a group owner.\nThe group is no longer listed in the directory."
-              _ -> pure ()
-          Nothing -> pure ()
+                    pure False
+              _ -> pure True
+          Nothing -> pure True
 
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {groupId, membership = GroupMember {memberRole = serviceRole}} ctId contactRole = do
