@@ -199,11 +199,16 @@ struct CreateFirstProfile: View {
                 .frame(minHeight: g.size.height)
             }
             .onTapGesture { focusDisplayName = false }
-            .sheet(isPresented: $showMigrateSheet) {
+            .sheet(isPresented: $showMigrateSheet, onDismiss: { m.migrationState = nil }) {
                 NavigationView {
                     MigrateToDevice(migrationState: $m.migrationState)
                         .navigationTitle("Migrate here")
                         .modifier(ThemedBackground(grouped: true))
+                }
+                .onAppear {
+                    if m.migrationState == nil {
+                        m.migrationState = .pasteOrScanLink
+                    }
                 }
             }
             if #available(iOS 16.4, *) {
@@ -215,9 +220,6 @@ struct CreateFirstProfile: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    if m.migrationState == nil {
-                        m.migrationState = .pasteOrScanLink
-                    }
                     showMigrateSheet = true
                 } label: {
                     HStack(spacing: 4) {

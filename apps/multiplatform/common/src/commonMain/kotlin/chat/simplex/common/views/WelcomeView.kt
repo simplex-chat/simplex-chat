@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -141,6 +142,8 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
 @Composable
 fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    val focusRequester = remember { FocusRequester() }
+    val refocusTrigger = remember { mutableStateOf(0) }
     ModalView(
       close = {
         if (chatModel.users.none { !it.user.hidden }) {
@@ -150,12 +153,19 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
         }
       },
       endButtons = {
+        val focusManager = LocalFocusManager.current
         TextButton(
           onClick = {
+            focusManager.clearFocus()
             if (chatModel.migrationState.value == null) {
               chatModel.migrationState.value = MigrationToState.PasteOrScanLink
             }
-            ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateToDeviceView(close) }
+            ModalManager.fullscreen.showCustomModal(animated = false) { close ->
+              MigrateToDeviceView {
+                close()
+                refocusTrigger.value++
+              }
+            }
           },
           modifier = Modifier.padding(end = DEFAULT_PADDING_HALF)
         ) {
@@ -166,7 +176,6 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       }
     ) {
       val displayName = rememberSaveable { mutableStateOf("") }
-      val focusRequester = remember { FocusRequester() }
       val keyboardState by getKeyboardState()
       val imageHeightModifier = if (appPlatform.isAndroid && keyboardState == KeyboardState.Opened) {
         Modifier.heightIn(max = 100.dp)
@@ -259,7 +268,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           TextButtonBelowOnboardingButton("", null)
         }
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(refocusTrigger.value) {
           delay(300)
           focusRequester.requestFocus()
         }
@@ -278,7 +287,7 @@ private fun OnboardingProfileNameField(displayName: MutableState<String>, focusR
   val showError = !valid && displayName.value.isNotEmpty()
   Box(
     Modifier
-      .padding(top = DEFAULT_PADDING)
+      .padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
       .then(if (!appPlatform.isAndroid) Modifier.widthIn(max = 450.dp) else Modifier)
       .fillMaxWidth()
       .clip(RoundedCornerShape(10.dp))
