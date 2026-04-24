@@ -654,7 +654,7 @@ export class ChatApi {
    * Network usage: interactive.
    */
   async apiConnectPlan(userId: number, connectionLink: string): Promise<[T.ConnectionPlan, T.CreatedConnLink]> {
-    const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectionLink}))
+    const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectionLink, resolveKnown: false}))
     if (r.type === "connectionPlan") return [r.connectionPlan, r.connLink]
     throw new ChatCommandError("error getting connect plan", r)
   }
