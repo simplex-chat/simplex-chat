@@ -205,11 +205,6 @@ struct CreateFirstProfile: View {
                         .navigationTitle("Migrate here")
                         .modifier(ThemedBackground(grouped: true))
                 }
-                .onAppear {
-                    if m.migrationState == nil {
-                        m.migrationState = .pasteOrScanLink
-                    }
-                }
             }
             if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
@@ -220,6 +215,9 @@ struct CreateFirstProfile: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
+                    if m.migrationState == nil {
+                        m.migrationState = .pasteOrScanLink
+                    }
                     showMigrateSheet = true
                 } label: {
                     HStack(spacing: 4) {

@@ -89,7 +89,7 @@ struct SimpleXInfo: View {
                 .frame(minHeight: g.size.height)
             }
             .sheet(isPresented: Binding(
-                get: { m.migrationState != nil },
+                get: { m.migrationState != nil && !createProfileNavLinkActive },
                 set: { _ in
                     m.migrationState = nil
                     MigrationToDeviceState.save(nil) }
