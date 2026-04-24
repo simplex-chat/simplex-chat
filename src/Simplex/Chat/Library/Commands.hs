@@ -1778,18 +1778,7 @@ processChatCommand vr nm = \case
         (_, cData) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile, publicGroupData}
-            | profileChanged || countChanged -> withStore $ \db -> do
-                g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
-                if countChanged then setPublicMemberCount db vr user g count else pure g
-            where
-              profileChanged = p /= groupProfile
-              countChanged = case publicGroupData of
-                Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
-                _ -> False
-              count = case publicGroupData of
-                Just PublicGroupData {publicMemberCount} -> publicMemberCount
-                _ -> 0
+          Just sLinkData -> fst <$> updateGroupFromLinkData user gInfo sLinkData
           _ -> pure gInfo
         pure $ CRGroupInfo user gInfo'
       _ -> throwCmdError "group link data not available"
@@ -4075,20 +4064,12 @@ processChatCommand vr nm = \case
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-              resolveKnownGroup g@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} = do
+              resolveKnownGroup g = do
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
                 (g', updated) <- case groupSLinkData_ of
-                  Just GroupShortLinkData {groupProfile, publicGroupData} -> withStore $ \db -> do
-                    (g1, upd) <- if p /= groupProfile
-                      then (,True) <$> updateGroupProfile db user g groupProfile
-                      else pure (g, False)
-                    g2 <- case publicGroupData of
-                      Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
-                        setPublicMemberCount db vr user g1 publicMemberCount
-                      _ -> pure g1
-                    pure (g2, upd)
+                  Just sLinkData -> updateGroupFromLinkData user g sLinkData
                   _ -> pure (g, False)
                 pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' updated ov))
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
