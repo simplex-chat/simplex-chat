@@ -4075,12 +4075,12 @@ processChatCommand vr nm = \case
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
-                    publicMemberCount_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
+                    publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
                 (g', updated) <- case groupSLinkData_ of
                   Just GroupShortLinkData {groupProfile}
                     | p /= groupProfile -> (,True) <$> withStore (\db -> updateGroupProfile db user g groupProfile)
                   _ -> pure (g, False)
-                g'' <- case publicMemberCount_ of
+                g'' <- case publicGroupData_ of
                   Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
                     withFastStore $ \db -> setPublicMemberCount db vr user g' publicMemberCount
                   _ -> pure g'

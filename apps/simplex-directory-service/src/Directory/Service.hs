@@ -101,7 +101,7 @@ data ServiceState = ServiceState
     pendingCaptchas :: TMap GroupMemberId PendingCaptcha,
     serviceCC :: TMVar ChatController,
     eventQ :: TQueue DirectoryEvent,
-    updateListingsSignal :: TMVar ()
+    updateListingsJob :: TMVar ()
   }
 
 data CaptchaMode = CMText | CMAudio
@@ -129,8 +129,8 @@ newServiceState opts = do
   pendingCaptchas <- TM.emptyIO
   serviceCC <- newEmptyTMVarIO
   eventQ <- newTQueueIO
-  updateListingsSignal <- newEmptyTMVarIO
-  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsSignal}
+  updateListingsJob <- newEmptyTMVarIO
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -190,10 +190,10 @@ updateListingsThread_ opts env = updateListingsThread <$> webFolder opts
         u <- readTVarIO $ currentUser cc
         forM_ u $ \user -> updateGroupListingFiles cc user f
         delay <- registerDelay updateListingDelay
-        atomically $ void (takeTMVar $ updateListingsSignal env) `orElse` unlessM (readTVar delay) retry
+        atomically $ void (takeTMVar $ updateListingsJob env) `orElse` unlessM (readTVar delay) retry
 
 listingsUpdated :: ServiceState -> IO ()
-listingsUpdated env = void $ atomically $ tryPutTMVar (updateListingsSignal env) ()
+listingsUpdated env = void $ atomically $ tryPutTMVar (updateListingsJob env) ()
 
 linkCheckThread_ :: DirectoryOpts -> ServiceState -> Maybe (IO ())
 linkCheckThread_ opts env@ServiceState {eventQ}
