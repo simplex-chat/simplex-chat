@@ -8484,11 +8484,11 @@ testSupportPreferenceChannel ps =
           relay <## "Chat with admins: off"
           concurrentlyN_
             [ do
-                bob <## "alice updated group #team: (signed) [>>]"
+                bob <## "alice updated group #team: (signed)"
                 bob <## "updated group preferences:"
                 bob <## "Chat with admins: off",
               do
-                cath <## "alice updated group #team: (signed) [>>]"
+                cath <## "alice updated group #team: (signed)"
                 cath <## "updated group preferences:"
                 cath <## "Chat with admins: off"
             ]
