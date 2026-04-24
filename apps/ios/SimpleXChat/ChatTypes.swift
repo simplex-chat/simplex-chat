@@ -919,7 +919,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return "link.circle"
         case .reports: return "flag"
         case .history: return "clock"
-        case .support: return "flag"
+        case .support: return "questionmark.circle"
         }
     }
 
@@ -934,7 +934,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return "link.circle.fill"
         case .reports: return "flag.fill"
         case .history: return "clock.fill"
-        case .support: return "flag.fill"
+        case .support: return "questionmark.circle.fill"
         }
     }
 

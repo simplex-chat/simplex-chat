@@ -54,12 +54,13 @@ struct GroupPreferencesView: View {
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.history, $preferences.history.enable)
-                    featureSection(.support, $preferences.support.enable, notice: "Chats with admins are experimental - there is no E2E encryption. Chat relays can see these messages, use only with trusted chat relays.")
+                    let supportNotice = NSLocalizedString("Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.", comment: "alert message")
+                    featureSection(.support, $preferences.support.enable, notice: supportNotice)
                         .onChange(of: preferences.support.enable) { enable in
                             if enable == .on {
                                 showAlert(
                                     NSLocalizedString("Enable chats with admins?", comment: "alert title"),
-                                    message: NSLocalizedString("Chats with admins are experimental - there is no E2E encryption. Chat relays can see these messages, use only with trusted chat relays.", comment: "alert message"),
+                                    message: supportNotice,
                                     actions: {[
                                         UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .destructive) { _ in },
                                         UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in
@@ -108,7 +109,7 @@ struct GroupPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil, disabled: Bool = false, notice: LocalizedStringKey? = nil) -> some View {
+    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil, disabled: Bool = false, notice: String? = nil) -> some View {
         Section {
             let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon

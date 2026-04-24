@@ -5740,7 +5740,7 @@ enum class GroupFeature: Feature {
       SimplexLinks -> painterResource(MR.images.ic_link)
       Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
-      Support -> painterResource(MR.images.ic_flag)
+      Support -> painterResource(MR.images.ic_help)
     }
 
   @Composable
@@ -5754,7 +5754,7 @@ enum class GroupFeature: Feature {
     SimplexLinks -> painterResource(MR.images.ic_link)
     Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
-    Support -> painterResource(MR.images.ic_flag_filled)
+    Support -> painterResource(MR.images.ic_help_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
