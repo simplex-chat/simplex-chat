@@ -459,7 +459,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
 
   -- All messages are unread for bob, should return area around unread
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Chat with admins: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
@@ -648,7 +648,7 @@ testGroup2 =
         ]
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 20"
+      alice ##> "/t #club 21"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
         <##?
           ( map (ConsoleString . ("#club " <> )) groupFeatureStrs
@@ -1669,6 +1669,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "SimpleX links: on"
       alice <## "Member reports: on"
       alice <## "Recent history: on"
+      alice <## "Chat with admins: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
@@ -8462,6 +8463,15 @@ testSupportPreferenceChannel ps =
 
           threadDelay 1000000
 
+          alice ##> "/set support #team on"
+          alice <## "updated group preferences:"
+          alice <## "Chat with admins: on"
+          toggledSupport relay "alice" "team" "on"
+          concurrentlyN_
+            [ toggledSupport bob "alice" "team" "on",
+              toggledSupport cath "alice" "team" "on"
+            ]
+
           -- support enabled by default, bob sends to support
           bob #> "#team (support) hello"
           relay <# "#team (support: bob) bob> hello"
@@ -8479,18 +8489,10 @@ testSupportPreferenceChannel ps =
           alice ##> "/set support #team off"
           alice <## "updated group preferences:"
           alice <## "Chat with admins: off"
-          relay <## "alice updated group #team: (signed)"
-          relay <## "updated group preferences:"
-          relay <## "Chat with admins: off"
+          toggledSupport relay "alice" "team" "off"
           concurrentlyN_
-            [ do
-                bob <## "alice updated group #team: (signed)"
-                bob <## "updated group preferences:"
-                bob <## "Chat with admins: off",
-              do
-                cath <## "alice updated group #team: (signed)"
-                cath <## "updated group preferences:"
-                cath <## "Chat with admins: off"
+            [ toggledSupport bob "alice" "team" "off",
+              toggledSupport cath "alice" "team" "off"
             ]
 
           threadDelay 500000
@@ -8498,6 +8500,8 @@ testSupportPreferenceChannel ps =
           -- cath can't send support (no existing chat)
           cath ##> "#team (support) hey"
           cath <## "bad chat command: feature not allowed Chat with admins"
+          alice ##> "#team (support: cath) hey too"
+          alice <## "bad chat command: feature not allowed Chat with admins"
 
           -- bob can still send (existing chat)
           bob #> "#team (support) still here"
@@ -8971,7 +8975,7 @@ testChannelLinkAfterWelcomeUpdate ps =
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "team" [bob] [alice] shortLink' fullLink' dan
-          dan #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
+          dan #$> ("/_get chat #1 count=100", chat, channelFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
 
           alice #> "#team hi"
           bob <# "#team> hi"
@@ -9693,6 +9697,15 @@ testChannelSupportScope ps =
 
           threadDelay 1000000
 
+          alice ##> "/set support #team on"
+          alice <## "updated group preferences:"
+          alice <## "Chat with admins: on"
+          toggledSupport relay "alice" "team" "on"
+          concurrentlyN_
+            [ toggledSupport cath "alice" "team" "on",
+              toggledSupport dan "alice" "team" "on"
+            ]
+
           -- owner sends to cath's support scope, dan doesn't receive
           alice #> "#team (support: cath) hello"
           relay <# "#team (support: cath) alice> hello"
@@ -9704,6 +9717,12 @@ testChannelSupportScope ps =
           relay <# "#team (support: cath) cath> hi"
           alice <# "#team (support: cath) cath> hi [>>]"
           (dan </)
+
+toggledSupport :: HasCallStack => TestCC -> String -> String -> String -> IO ()
+toggledSupport c owner channel onOff  = do
+  c <## (owner <> " updated group #" <> channel <> ": (signed)")
+  c <## "updated group preferences:"
+  c <## ("Chat with admins: " <> onOff)
 
 testChannelMessageUpdate :: HasCallStack => TestParams -> IO ()
 testChannelMessageUpdate ps =
