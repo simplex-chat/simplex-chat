@@ -149,7 +149,7 @@ struct GroupPreferencesView: View {
             VStack(alignment: .leading) {
                 Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
                 if feature == .support && groupInfo.useRelays {
-                    Text("Chat relays can see messages in chats with admins — E2E encryption will be added later.")
+                    Text("Chat relays can see messages in these chats - E2E encryption will be added later.")
                 }
             }
             .foregroundColor(theme.colors.secondary)
