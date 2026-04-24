@@ -791,41 +791,37 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         sendComposedMessages cc (SRDirect cId) [msg, approveCmd]
 
     deGroupLinkCheck :: GroupInfo -> IO ()
-    deGroupLinkCheck gInfo@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, groupSummary} =
+    deGroupLinkCheck gInfo@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, groupSummary = summary} =
       withGroupReg gInfo "link check" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} -> do
-        case pg_ of
-          Just pg@PublicGroupProfile {groupLink} | groupRegStatus == GRSActive || pendingApproval groupRegStatus -> do
+        forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
+          when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $
             let link = ACL SCMContact $ CLShort groupLink
-            sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
-              Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated}))) -> do
-                let gt = groupTypeStr' pg
-                    groupRef = groupReference gInfo
-                when groupUpdated $
-                  case groupRegStatus of
-                    GRSActive ->
-                      setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
-                        notifyOwner gr' $ "The " <> gt <> " profile has changed.\nIt is hidden from the directory until approved."
-                        notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " profile changed."
-                        sendToApprove g' gr' 1
-                    GRSPendingApproval n -> do
+             in sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
+                  Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated}))) -> do
+                    when groupUpdated $ do
+                      let gt = groupTypeStr' pg
+                          groupRef = groupReference gInfo
                       notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " profile changed."
-                      sendToApprove g' gr (n + 1)
-                    _ -> pure ()
-                let GroupInfo {groupSummary = groupSummary'} = g'
-                when (groupSummary /= groupSummary') $
-                  listingsUpdated env
-                checkOwnerRole groupRegStatus dbOwnerMemberId
-              _ -> checkOwnerRole groupRegStatus dbOwnerMemberId
-          _ -> checkOwnerRole groupRegStatus dbOwnerMemberId
+                      case groupRegStatus of
+                        GRSActive ->
+                          setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
+                            notifyOwner gr' $ "The " <> gt <> " profile has changed.\nIt is hidden from the directory until approved."
+                            sendToApprove g' gr' 1
+                        GRSPendingApproval n ->
+                          sendToApprove g' gr (n + 1)
+                        _ -> pure ()
+                    when (summary /= groupSummary g') $
+                      listingsUpdated env
+                  _ -> pure ()
+        checkOwnerRole groupRegStatus dbOwnerMemberId
       where
-        checkOwnerRole grStatus ownerMemberId_ = case ownerMemberId_ of
+        checkOwnerRole grStatus = \case
           Just ownerGMId ->
             withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
               Right GroupMember {memberRole}
                 | memberRole < GROwner && grStatus == GRSActive ->
                     setGroupStatus logError st env cc groupId GRSSuspendedBadRoles $ \gr' ->
-                      notifyOwner gr' $
-                        "The registration owner is no longer a group owner.\nThe group is no longer listed in the directory."
+                      notifyOwner gr' "The registration owner is no longer a group owner.\nThe group is no longer listed in the directory."
               _ -> pure ()
           Nothing -> pure ()
 
