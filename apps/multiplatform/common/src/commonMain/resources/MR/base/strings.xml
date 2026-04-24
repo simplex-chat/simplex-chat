@@ -2337,7 +2337,7 @@
   <string name="member_reports_are_prohibited">Reporting messages is prohibited in this group.</string>
   <string name="chat_with_admins">Chat with admins</string>
   <string name="allow_chat_with_admins">Allow members to chat with admins.</string>
-  <string name="prohibit_chat_with_admins">Prohibit members to chat with admins.</string>
+  <string name="prohibit_chat_with_admins">Prohibit chats with admins.</string>
   <string name="members_can_chat_with_admins">Members can chat with admins.</string>
   <string name="chat_with_admins_is_prohibited">Chats with admins are prohibited.</string>
   <string name="chat_with_admins_relay_note">Chat relays can see messages in these chats - E2E encryption will be added later.</string>
@@ -2377,6 +2377,7 @@
   <!-- MemberSupportView.kt -->
   <string name="member_support">Chats with members</string>
   <string name="no_support_chats">No chats with members</string>
+  <string name="support_chats_disabled">Chats with members are disabled</string>
   <string name="delete_member_support_chat_button">Delete chat</string>
   <string name="delete_member_support_chat_alert_title">Delete chat with member?</string>
 

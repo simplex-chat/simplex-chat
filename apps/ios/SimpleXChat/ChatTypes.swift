@@ -996,7 +996,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
             case .support:
                 switch enabled {
                 case .on: return "Allow members to chat with admins."
-                case .off: return "Prohibit members to chat with admins."
+                case .off: return "Prohibit chats with admins."
                 }
             }
         } else {

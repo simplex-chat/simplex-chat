@@ -124,7 +124,8 @@ struct GroupMemberInfoView: View {
                     let showMemberSupportChat = !openedFromSupportChat
                         && groupInfo.membership.memberRole >= .moderator
                         && member.memberRole != .relay
-                        && (member.memberRole < .moderator || member.supportChat != nil)
+                        && ((groupInfo.fullGroupPreferences.support.on && member.memberRole < .moderator)
+                            || member.supportChat != nil)
 
                     if member.memberActive {
                         Section {

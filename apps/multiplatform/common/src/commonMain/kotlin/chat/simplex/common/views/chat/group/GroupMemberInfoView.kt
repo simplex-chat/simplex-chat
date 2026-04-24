@@ -486,7 +486,8 @@ fun GroupMemberInfoLayout(
     val showMemberSupportChat = !openedFromSupportChat &&
       groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
       member.memberRole != GroupMemberRole.Relay &&
-      (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
+      ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
+        || member.supportChat != null)
 
     if (member.memberActive) {
       SectionView {

@@ -633,6 +633,17 @@ processChatCommand vr nm = \case
         (gInfo, cmrs) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user chatId
           (g,) <$> mapM (composedMessageReqMentions db user g) cms
+        case gsScope of
+          Just (GCSMemberSupport gmId_)
+            | not (groupFeatureAllowed SGFSupport gInfo) -> do
+                let GroupInfo {membership} = gInfo
+                allowed <- case gmId_ of
+                  -- member sending to admins
+                  Nothing -> pure $ isJust $ supportChat membership
+                  -- moderator sending to specific member
+                  Just gmId -> isJust . supportChat <$> withFastStore (\db -> getGroupMemberById db vr user gmId)
+                unless allowed $ throwCmdError "support chats are disabled"
+          _ -> pure ()
         sendGroupContentMessages user gInfo gsScope asGroup live itemTTL cmrs
   APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
     _ <- createChatTag db user emoji text
