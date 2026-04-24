@@ -200,7 +200,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           val scale = if (isDark) 1.5f else 1.2f
           Box(
             Modifier
-              .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier)
+              .then(if (appPlatform.isAndroid && keyboardState != KeyboardState.Opened) Modifier.fillMaxWidth() else Modifier)
               .then(imageHeightModifier)
               .aspectRatio(1f)
               .clip(RoundedCornerShape(24.dp))
@@ -294,6 +294,7 @@ private fun OnboardingProfileNameField(displayName: MutableState<String>, focusR
       .background(MaterialTheme.colors.onBackground.copy(alpha = if (isInDarkTheme()) 0.08f else 0.06f))
       .padding(horizontal = DEFAULT_PADDING, vertical = 12.dp)
   ) {
+    val textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground)
     BasicTextField(
       value = displayName.value,
       onValueChange = { displayName.value = it },
@@ -302,7 +303,7 @@ private fun OnboardingProfileNameField(displayName: MutableState<String>, focusR
         .padding(end = if (showError) 24.dp else 0.dp)
         .focusRequester(focusRequester)
         .onFocusChanged { focused = it.isFocused },
-      textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground),
+      textStyle = textStyle,
       singleLine = true,
       cursorBrush = SolidColor(MaterialTheme.colors.secondary),
       decorationBox = { innerTextField ->
@@ -310,7 +311,7 @@ private fun OnboardingProfileNameField(displayName: MutableState<String>, focusR
           if (displayName.value.isEmpty()) {
             Text(
               stringResource(MR.strings.enter_profile_name),
-              style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, fontSize = 18.sp)
+              style = textStyle.copy(color = MaterialTheme.colors.secondary)
             )
           }
           innerTextField()
