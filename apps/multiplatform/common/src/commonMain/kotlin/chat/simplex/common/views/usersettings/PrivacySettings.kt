@@ -65,7 +65,19 @@ fun PrivacySettingsView(
         painterResource(MR.images.ic_travel_explore),
         stringResource(MR.strings.send_link_previews),
         chatModel.controller.appPrefs.privacyLinkPreviews,
-        onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
+        onChange = { enabled ->
+          chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) // to avoid showing alert to current users, show alert in v6.5
+          if (enabled && chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
+            AlertManager.shared.showAlertDialogStacked(
+              title = generalGetString(MR.strings.socks_proxy_link_previews_warning),
+              text = generalGetString(MR.strings.socks_proxy_link_previews_warning_desc),
+              confirmText = generalGetString(MR.strings.socks_proxy_link_previews_keep_enabled),
+              dismissText = generalGetString(MR.strings.disable_link_previews),
+              onConfirm = {},
+              onDismiss = { chatModel.controller.appPrefs.privacyLinkPreviews.set(false) }
+            )
+          }
+        }
       )
       SettingsPreferenceItem(
         painterResource(MR.images.ic_link),
