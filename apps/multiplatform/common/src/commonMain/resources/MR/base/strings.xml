@@ -1067,7 +1067,12 @@
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
   <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
-  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
+  <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: calls use a direct connection and cannot be proxied. DNS lookups for link previews may still occur locally. In case of doubt, keep link previews disabled.]]></string>
+  <string name="socks_proxy_invalid_address">Invalid SOCKS proxy address. Please check your proxy settings.</string>
+  <string name="socks_proxy_link_previews_warning">Link previews are enabled</string>
+  <string name="socks_proxy_link_previews_warning_desc">DNS lookups for link previews may occur locally, revealing visited sites to your DNS resolver. In case of doubt, disable them.</string>
+  <string name="socks_proxy_link_previews_keep_enabled">Keep enabled</string>
+  <string name="disable_link_previews">Disable previews</string>
   <string name="network_smp_proxy_mode_private_routing">Private routing</string>
   <string name="network_smp_proxy_mode_always">Always</string>
   <string name="network_smp_proxy_mode_unknown">Unknown servers</string>
