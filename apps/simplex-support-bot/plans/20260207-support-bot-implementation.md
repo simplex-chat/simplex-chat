@@ -28,7 +28,7 @@ SimpleX Chat support bot — standalone Node.js app using `simplex-chat-nodejs` 
 ```
 
 - Single Node.js process, single `ChatApi` instance via native NAPI
-- Two user profiles in one database — resolved at startup via `apiListUsers()`: the Grok profile by its known display name (`"Grok"`/`"Grok AI"`), the main profile by exclusion (any non-Grok user). The main profile's displayName is set only on fresh-DB user creation (`"Ask SimpleX Team"`) and is never rewritten by bot code thereafter — `bot.run()` is invoked with `updateProfile: false`. Bot commands (`/grok`, `/team`) are never pushed via global `apiUpdateProfile`; instead they sync lazily per-group in `sendToGroup` — when an outgoing message references one of the command keywords, the group's `groupPreferences.commands` is verified against `desiredCommands` and updated via `apiUpdateGroupProfile` if different (scoped broadcast to that group's members only).
+- Two user profiles in one database. The main profile is returned directly from `bot.run()`. The Grok profile's `userId` is persisted to `state.json` as `grokUserId` on the first run (when the bot creates it); subsequent runs identify Grok strictly by that persisted ID (never by display name, which a rename would invalidate). The main profile's displayName is set only on fresh-DB user creation (`"Ask SimpleX Team"`) and is never rewritten by bot code thereafter — `bot.run()` is invoked with `updateProfile: false`. Bot commands (`/grok`, `/team`) are never pushed via global `apiUpdateProfile`; instead they sync lazily per-group in `sendToGroup` — the first send to each group triggers `syncGroupCommands(groupId)`, which verifies the group's `groupPreferences.commands` against `desiredCommands` and calls `apiUpdateGroupProfile` if different (scoped broadcast to that group's members only). Subsequent sends to the same group are cache hits.
 - `profileMutex` serializes `apiSetActiveUser(userId)` + the subsequent SimpleX API call. Grok HTTP API calls run **outside** the mutex.
 - Events delivered for all profiles — routed by `event.user` field (main → main handler, Grok → Grok handler)
 - Business address auto-accept creates a group per customer
@@ -151,7 +151,7 @@ The implementation (api.ts:234) keeps the subscriber attached when the predicate
 Identification accepts only a `contactConnected` event observed by the MAIN profile (the profile whose `apiCreateLink` issued the invite, and whose `contactId` we persist and later pass to `apiAddMember`) whose connecting contact's profile `displayName` equals the Grok profile's displayName:
 
 ```typescript
-const grokProfileName = grokUser.profile.displayName   // "Grok" or "Grok AI"
+const grokProfileName = grokUser.profile.displayName   // "Grok" (canonical)
 const evt = await chat.wait(
   "contactConnected",
   (e) =>
@@ -176,7 +176,7 @@ Filter rationale:
 
 `grokProfileName` is captured from `grokUser.profile.displayName` immediately before the wait, so whichever name the Grok profile was created/updated with earlier in startup is the exact string matched here.
 
-Single-tenant deployment caveat: if a human contact happens to set its SimpleX displayName to the literal `"Grok"` (or `"Grok AI"`) and completes a handshake with the main profile in the 60s window, the displayName filter alone cannot distinguish them. MVP is single-tenant and Grok's profile is created by the bot itself, so this is not expected in practice; deployments that need stronger guarantees can add a second filter (e.g. `e.contact.profile.image === grokImage` — the bot knows the exact image bytes it assigned to the Grok profile).
+Single-tenant deployment caveat: if a human contact happens to set its SimpleX displayName to the literal `"Grok"` and completes a handshake with the main profile in the 60s window, the displayName filter alone cannot distinguish them. MVP is single-tenant and Grok's profile is created by the bot itself, so this is not expected in practice; deployments that need stronger guarantees can add a second filter (e.g. `e.contact.profile.image === grokImage` — the bot knows the exact image bytes it assigned to the Grok profile).
 
 Persistence: `writeState` is atomic (tmp-file + `fs.renameSync`, see §13 "State persistence") so a crash between identification and persistence cannot corrupt the state file. `state.grokContactId` is flushed to disk BEFORE proceeding to bot event wiring — if the process dies after wiring but before persistence, the next startup would issue a second invite link and leave the first Grok contact orphaned in the database.
 
@@ -490,27 +490,37 @@ const [chat, mainUser, mainAddress] = await bot.run({
 })
 ```
 
-Note: `/grok` and `/team` are passed in `options.commands` so `bot.run()` has a profile to use when `apiCreateActiveUser` is needed on a fresh DB, but since `updateProfile: false` is set, `bot.run()` never writes the profile on subsequent runs. The user profile's `preferences.commands` is intentionally not pushed globally at startup — broadcasting `XInfo` to every contact is not wanted. Instead, the `SupportBot` takes `desiredCommands` as a constructor argument and syncs commands lazily per-group: `sendToGroup` (`src/bot.ts`) checks whether the outgoing text references any of the desired keywords (regex match on `/keyword`), and if so, calls `syncGroupCommands(groupId)` — which reads the group via `apiGetChat(Group, groupId, 0)` (local, no network), and if `groupPreferences.commands` differs from `desiredCommands`, issues `apiUpdateGroupProfile` with the merged profile. `apiUpdateGroupProfile` broadcasts `XGrpInfo`/`XGrpPrefs` to group members only (scoped to the chat audience). Already-synced groups are cached in `syncedGroups: Set<number>` so no redundant work on subsequent sends. `/join` is registered as a team group command separately — after team group is resolved, call `apiUpdateGroupProfile(teamGroupId, groupProfile)` with `groupPreferences` including the `/join` command definition. Customer sending `/join` in a customer group → treated as ordinary message (unrecognized command).
+Note: `/grok` and `/team` are passed in `options.commands` so `bot.run()` has a profile to use when `apiCreateActiveUser` is needed on a fresh DB, but since `updateProfile: false` is set, `bot.run()` never writes the profile on subsequent runs. The user profile's `preferences.commands` is intentionally not pushed globally at startup — broadcasting `XInfo` to every contact is not wanted. Instead, the `SupportBot` takes `desiredCommands` as a constructor argument and syncs commands lazily per-group: `sendToGroup` (`src/bot.ts`) always calls `syncGroupCommands(groupId)` before dispatching the message. That helper reads the group via `apiGetChat(Group, groupId, 0)` (local, no network), and if `groupPreferences.commands` differs from `desiredCommands`, issues `apiUpdateGroupProfile` with the merged profile. `apiUpdateGroupProfile` broadcasts `XGrpInfo`/`XGrpPrefs` to group members only (scoped to the chat audience). Already-synced groups are cached in `syncedGroups: Set<number>` so subsequent sends skip the read entirely — the first send per group costs one local read; every later send is a cache hit. Earlier drafts used a regex on the outgoing text to skip the sync when no command keyword appeared; that optimization was removed because the cache already makes repeated syncs free and the parser was a fragile source of correctness bugs. `/join` is registered as a team group command separately — after team group is resolved, call `apiUpdateGroupProfile(teamGroupId, groupProfile)` with `groupPreferences` including the `/join` command definition. Customer sending `/join` in a customer group → treated as ordinary message (unrecognized command).
 
-**Grok profile** — resolved from same ChatApi instance:
+**Grok profile** — resolved from same ChatApi instance. Grok is identified strictly by the `userId` persisted in `state.json`; there is no by-name fallback (a renamed profile would otherwise be silently mistaken):
 
 ```typescript
-const users = await chat.apiListUsers()
-// Accept the legacy "Grok AI" display name for profiles created before the rename.
-let grokUser = users.find(u => u.displayName === "Grok" || u.displayName === "Grok AI")
-if (!grokUser) {
+let grokUser: T.User | null = null
+if (state.grokUserId !== undefined) {
+  const users = await chat.apiListUsers()
+  grokUser = users.find(u => u.user.userId === state.grokUserId)?.user ?? null
+  if (!grokUser) {
+    throw new Error(
+      `Persisted Grok userId=${state.grokUserId} not found in DB. ` +
+      `Either restore the user or delete state.json to re-create Grok.`
+    )
+  }
+} else {
+  // First run: create Grok and persist its userId immediately.
   grokUser = await chat.apiCreateActiveUser({displayName: "Grok", fullName: "", image: grokImage})
   // apiCreateActiveUser sets Grok as active — switch back to main
   await chat.apiSetActiveUser(mainUser.userId)
-} else {
-  // If profile changed (e.g. new image or legacy "Grok AI" → "Grok"), update and push to contacts
-  const grokProfile = {displayName: "Grok", fullName: "", image: grokImage}
-  const current = util.fromLocalProfile(grokUser.profile)
-  if (current.image !== grokProfile.image || current.displayName !== grokProfile.displayName || current.fullName !== grokProfile.fullName) {
-    await chat.apiSetActiveUser(grokUser.userId)
-    await chat.apiUpdateProfile(grokUser.userId, grokProfile)
-    await chat.apiSetActiveUser(mainUser.userId)
-  }
+  state.grokUserId = grokUser.userId
+  writeState(stateFilePath, state)
+}
+
+// Refresh Grok's profile if it has drifted from the canonical values.
+const grokProfile = {displayName: "Grok", fullName: "", image: grokImage}
+const current = util.fromLocalProfile(grokUser.profile)
+if (current.image !== grokProfile.image || current.displayName !== grokProfile.displayName || current.fullName !== grokProfile.fullName) {
+  await chat.apiSetActiveUser(grokUser.userId)
+  await chat.apiUpdateProfile(grokUser.userId, grokProfile)
+  await chat.apiSetActiveUser(mainUser.userId)
 }
 ```
 
@@ -581,13 +591,13 @@ Cleanup: entries in `customDataMutexes` are bounded by the number of customer gr
 **Startup sequence:**
 0. **Active user recovery + name preservation:** Two related safeguards.
 
-    **(a) Active user recovery.** On restart, the active user may be Grok (if the previous run was killed mid-profile-switch). `bot.run()` uses `apiGetActiveUser()` and would then operate against Grok's `userId` as if it were the main user. Fix: pre-init the DB with a temporary `ChatApi`, and if the active user's `displayName` is `"Grok"` or `"Grok AI"`, `apiListUsers()` + `apiSetActiveUser()` to the first non-Grok user. Close the temporary `ChatApi` before `bot.run()` reopens it.
+    **(a) Active user recovery.** On restart, the active user may be Grok (if the previous run was killed mid-profile-switch). `bot.run()` uses `apiGetActiveUser()` and would then operate against Grok's `userId` as if it were the main user. Fix: when `state.grokUserId` is set (i.e. this is not the very first run), pre-init the DB with a temporary `ChatApi` and compare the active user's `userId` against `state.grokUserId`. If they match, `apiListUsers()` + `apiSetActiveUser()` to the single non-Grok user — throw loudly if zero or multiple candidates exist, rather than silently picking. Close the temporary `ChatApi` before `bot.run()` reopens it. Identification is by userId, never by display name; a renamed Grok profile would defeat name matching.
 
     **(b) Never rewrite the main profile.** The core auto-creates a preset contact named `"Ask SimpleX Team"` in every user's DB (`src/Simplex/Chat/Library/Internal.hs:2749`, exact name from commit `362bdc328` 2025-07-12). That collides with the bot's preferred main-profile displayName within the user's `display_names` namespace (`UNIQUE (user_id, local_display_name)`), so any attempt to rename the main profile to `"Ask SimpleX Team"` fails with `duplicateName`. Worse, `bot.run`'s internal `updateBotUserProfile` (`packages/simplex-chat-nodejs/dist/bot.js:176`) re-syncs image, preferences, and `contactLink` on every startup, and on a DB where `users.local_display_name` has drifted from `contact_profiles.display_name`, the fast path (`src/Simplex/Chat/Store/Profiles.hs:311`) silently rewrites the customer-facing `contact_profiles.display_name`. Fix: pass `options.updateProfile: false` to `bot.run()` so the bot code never calls `apiUpdateProfile` on its own initiative. Whatever displayName the CLI saw is what stays.
 
-    **(c) Lazy per-group command sync.** The bot's command list (`/grok`, `/team`) is synced lazily and per-group, not globally. Whenever `sendToGroup` (in `src/bot.ts`) is about to send text that references a keyword (regex check against `desiredCommands`), it first calls `syncGroupCommands(groupId)`. That helper uses `apiGetChat(Group, groupId, 0)` (local DB read, no network) to read the current `groupProfile.groupPreferences.commands`, and if it doesn't match `desiredCommands`, issues `apiUpdateGroupProfile` with the commands merged in. `apiUpdateGroupProfile` broadcasts `XGrpInfo`/`XGrpPrefs` to group members only — scoped to the chat audience, never the whole contact list. Groups confirmed in-sync are cached in `syncedGroups: Set<number>` so subsequent sends skip the check. No `apiUpdateProfile` (global XInfo broadcast) is ever invoked by bot code.
+    **(c) Lazy per-group command sync.** The bot's command list (`/grok`, `/team`) is synced lazily and per-group, not globally. `sendToGroup` (in `src/bot.ts`) unconditionally calls `syncGroupCommands(groupId)` before dispatching the message. That helper uses `apiGetChat(Group, groupId, 0)` (local DB read, no network) to read the current `groupProfile.groupPreferences.commands`, and if it doesn't match `desiredCommands`, issues `apiUpdateGroupProfile` with the commands merged in. `apiUpdateGroupProfile` broadcasts `XGrpInfo`/`XGrpPrefs` to group members only — scoped to the chat audience, never the whole contact list. Groups confirmed in-sync are cached in `syncedGroups: Set<number>` so the first send per group costs one local read; every later send is a cache hit. No `apiUpdateProfile` (global XInfo broadcast) is ever invoked by bot code. Earlier drafts gated the sync behind a regex match on the outgoing text (to skip the read when no `/keyword` appeared); that optimization was removed because the cache already made repeated syncs free and the parser was a fragile source of correctness bugs.
 1. `bot.run()` → init ChatApi, create/resolve main profile (with profile image), business address. Print business address link to stdout.
-2. Resolve Grok profile via `apiListUsers()` (create with profile image if missing; if existing, compare profile and update via `apiUpdateProfile()` if changed — pushes to contacts)
+2. Resolve Grok profile: if `state.grokUserId` is set, look it up by ID via `apiListUsers()` (throw if missing); otherwise create via `apiCreateActiveUser()` and persist the new `userId`. Then compare the resolved profile against the canonical `{displayName, fullName, image}` and call `apiUpdateProfile()` if anything changed — pushes to Grok's contacts.
 3. Read `{dbPrefix}_state.json` for `teamGroupId` and `grokContactId`
 4. Enable auto-accept DM contacts: `apiSetAutoAcceptMemberContacts(mainUser.userId, true)`
 5. List contacts, resolve Grok contact (from state or auto-establish)
@@ -928,19 +938,20 @@ If a user contacts the bot via a regular direct-message address (not business ad
 
 ## 14. Persistent State
 
-**State file:** `{dbPrefix}_state.json` — only two keys:
+**State file:** `{dbPrefix}_state.json` — three keys:
 
 | Key | Type | Why persisted |
 |-----|------|---------------|
 | `teamGroupId` | number | Team group created once on first run |
 | `grokContactId` | number | Bot↔Grok contact takes 60s to establish |
+| `grokUserId` | number | Identifies the Grok user by ID across restarts; prevents silent mis-matching if the Grok profile is ever renamed |
 
 **Not persisted:**
 
 | State | Where it lives |
 |-------|---------------|
 | `state`, `cardItemId`, `complete` | Customer group's `customData` |
-| User profile IDs | Resolved via `apiListUsers()` by display name |
+| `mainUserId` | Returned by `bot.run()` on startup; created fresh per DB |
 | Message counts, timestamps | Derived from chat history |
 | Customer name | Group display name |
 | `pendingGrokJoins` | In-flight during 120s window only |
@@ -1426,14 +1437,11 @@ Called as: `const p = simulateGrokJoinSuccess(); await bot.onNewChatItems(...); 
 #### 29. GrokApiClient HTTP timeout (1 test)
 - `chat()` calls `AbortSignal.timeout(60_000)` and passes the signal to `fetch` (spies on `AbortSignal.timeout` and on `globalThis.fetch`; proves the timeout is wired through without waiting 60s of wall-clock)
 
-#### 30. Command sync in sendToGroup (8 tests)
-Covers the lazy per-group commands sync introduced with `updateProfile: false`. `sendToGroup` detects outgoing text that references one of the bot's command keywords (word-boundary regex built from `desiredCommands`) and, before sending, calls `syncGroupCommands(groupId)`. That helper reads the group via `apiGetChat` (local-only) and issues `apiUpdateGroupProfile` with the merged `groupPreferences.commands` only if the current list doesn't match `desiredCommands`. Groups are cached in `syncedGroups: Set<number>` per process.
-- plain-text send → no `apiUpdateGroupProfile` call; message still delivered
-- command-referencing send → one `apiUpdateGroupProfile` call with `groupPreferences.commands = desiredCommands`; existing `groupProfile.displayName` / `fullName` preserved in the payload
-- `/team` reference triggers the same sync path
-- match is keyword-prefix-safe: `/grokfoo` does not trigger sync (word-boundary enforced in regex)
+#### 30. Command sync in sendToGroup (5 tests)
+Covers the lazy per-group commands sync introduced with `updateProfile: false`. `sendToGroup` unconditionally calls `syncGroupCommands(groupId)` before dispatching. That helper reads the group via `apiGetChat` (local-only) and issues `apiUpdateGroupProfile` with the merged `groupPreferences.commands` only if the current list doesn't match `desiredCommands`. Groups are cached in `syncedGroups: Set<number>` per process, so later sends skip the read entirely.
+- first send → one `apiUpdateGroupProfile` call with `groupPreferences.commands = desiredCommands`; existing `groupProfile.displayName` / `fullName` preserved in the payload; message still delivered (text content is irrelevant — sync always runs)
 - group already has desired commands in DB → no `apiUpdateGroupProfile` call, but `syncedGroups` is still populated (next send with different DB state still skips — cache honored)
-- cache: two command-referencing sends to same group → sync fires only once
+- cache: two sends to same group → sync fires only once; both messages delivered
 - different groups → each synced independently
 - existing `groupPreferences` fields (e.g. `files`, `reactions`) are preserved in the update payload; only `commands` changes
 

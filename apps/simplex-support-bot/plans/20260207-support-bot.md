@@ -379,7 +379,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 The bot process runs a single `ChatApi` instance with **two user profiles**:
 
 - **Main profile** — the support bot's account ("Ask SimpleX Team"). Owns the business address, hosts all business groups, communicates with customers, communicates with the team group, and controls group membership. On startup the bot checks the main profile for an existing business address via `apiGetUserAddress`; if none exists (first run), it creates one via `apiCreateBusinessAddress`. The address is stored in the SimpleX database as part of the profile — it survives restarts and state file loss without re-creation. The business address link is printed to stdout on every startup.
-- **Grok profile** — the Grok agent's account (display name "Grok"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok identity. On startup, if the Grok profile already exists, the bot compares its current profile (display name, image) against the desired values and calls `apiUpdateProfile()` if anything changed — this pushes the update to all Grok contacts so profile picture changes take effect immediately. Legacy profiles created under the previous "Grok AI" name are picked up by the same `apiListUsers()` lookup (matching either name) and renamed to "Grok" on first run after the upgrade.
+- **Grok profile** — the Grok agent's account (display name "Grok"). Is invited into customer groups as a Member. Sends Grok's responses so they appear to come from the Grok identity. The Grok user is created by the bot on first run via `apiCreateActiveUser` and its `userId` is persisted to `state.json` as `grokUserId`; subsequent runs look it up by ID (never by name — a renamed profile would silently break name-based matching). On startup, if the profile already exists, the bot compares its current profile (display name, image) against the desired values and calls `apiUpdateProfile()` if anything changed — this pushes the update to all Grok contacts so profile picture changes take effect immediately.
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -485,8 +485,9 @@ SimpleX Chat's own database stores the full message history and group membership
 |-----|------|---------------|------------------------|
 | `teamGroupId` | number | The bot creates the team group on first run; subsequent runs must find the same group | Bot creates a new empty team group on every restart; all team members lose their dashboard |
 | `grokContactId` | number | Establishing a bot↔Grok contact takes up to 60 seconds and is a one-time setup | Every restart requires a 60-second re-connection; if it fails the bot exits |
+| `grokUserId` | number | The bot creates the Grok user on first run; subsequent runs identify it by ID so a renamed profile cannot be silently mistaken for the main user | Startup restore (active-user recovery) and Grok profile resolution would fall back to display-name matching — fragile to any rename of the Grok profile |
 
-User profile IDs (`mainUserId`, `grokUserId`) are **not** persisted — they are resolved at startup by calling `apiListUsers()` and matching by display name (the bot creates both profiles with known names).
+The `mainUserId` is **not** persisted — it is resolved at startup from `bot.run()`, which creates the main profile on a fresh DB and returns the user object.
 
 #### What is NOT persisted and why
 

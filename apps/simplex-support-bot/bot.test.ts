@@ -188,8 +188,8 @@ const CUSTOMER_ID = "customer-1"
 
 // Commands passed into SupportBot; matches what index.ts constructs when
 // Grok is enabled. Tests that disable grokApi still pass the full list
-// because the ctor doesn't care, and the content is observable via
-// textReferencesCommand.
+// because the ctor doesn't care; the value is pushed to a group's
+// groupPreferences on the first sendToGroup() call.
 const DESIRED_COMMANDS = [
   {type: "command" as const, keyword: "grok", label: "Ask Grok"},
   {type: "command" as const, keyword: "team", label: "Switch to team"},
@@ -2334,22 +2334,16 @@ describe("GrokApiClient HTTP timeout", () => {
   })
 })
 
-// Lazy per-group command sync. sendToGroup must call apiUpdateGroupProfile
-// only when (a) the outgoing text references one of desiredCommands'
-// keywords AND (b) the group's stored groupPreferences.commands don't
-// already match desiredCommands. Each group is synced at most once per
-// process (cache hit on subsequent sends).
+// Lazy per-group command sync. sendToGroup always calls
+// apiUpdateGroupProfile on the first send per group when the group's
+// stored groupPreferences.commands don't match desiredCommands. Each
+// group is synced at most once per process (cache hit on subsequent
+// sends).
 describe("Command sync in sendToGroup", () => {
   beforeEach(() => setup())
 
-  test("plain-text send → no group-profile update (text has no command keyword)", async () => {
+  test("first send → apiUpdateGroupProfile called once with merged commands", async () => {
     await bot.sendToGroup(CUSTOMER_GROUP_ID, "Hello, just a greeting.")
-    expect(chat.profileUpdates).toHaveLength(0)
-    expect(chat.lastSentTo(CUSTOMER_GROUP_ID)).toBe("Hello, just a greeting.")
-  })
-
-  test("command-referencing send → apiUpdateGroupProfile called once with merged commands", async () => {
-    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok for an instant answer.")
     expect(chat.profileUpdates).toHaveLength(1)
     const {groupId, profile} = chat.profileUpdates[0]
     expect(groupId).toBe(CUSTOMER_GROUP_ID)
@@ -2358,18 +2352,7 @@ describe("Command sync in sendToGroup", () => {
     expect(profile.displayName).toBe(`Group${CUSTOMER_GROUP_ID}`)
     expect(profile.fullName).toBe("")
     // The actual message still goes out after the sync.
-    expect(chat.lastSentTo(CUSTOMER_GROUP_ID)).toBe("Click /grok for an instant answer.")
-  })
-
-  test("/team reference also triggers sync", async () => {
-    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Send /team to switch back.")
-    expect(chat.profileUpdates).toHaveLength(1)
-    expect(chat.profileUpdates[0].profile.groupPreferences.commands).toEqual(DESIRED_COMMANDS)
-  })
-
-  test("match is keyword-prefix-safe: /grokfoo does not trigger sync", async () => {
-    await bot.sendToGroup(CUSTOMER_GROUP_ID, "See /grokfoo for details.")
-    expect(chat.profileUpdates).toHaveLength(0)
+    expect(chat.lastSentTo(CUSTOMER_GROUP_ID)).toBe("Hello, just a greeting.")
   })
 
   test("group already has desired commands → no apiUpdateGroupProfile, but still cached", async () => {
@@ -2386,7 +2369,7 @@ describe("Command sync in sendToGroup", () => {
     expect(chat.profileUpdates).toHaveLength(0)
   })
 
-  test("cache: two command-referencing sends to same group → sync only once", async () => {
+  test("cache: two sends to same group → sync only once", async () => {
     await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok first.")
     await bot.sendToGroup(CUSTOMER_GROUP_ID, "Or send /team.")
     expect(chat.profileUpdates).toHaveLength(1)

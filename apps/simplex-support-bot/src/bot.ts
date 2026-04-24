@@ -58,8 +58,8 @@ export class SupportBot {
   businessAddress: string | null = null
 
   // Groups whose groupPreferences.commands we've already verified/synced
-  // in this process. Populated lazily by syncGroupCommands(), only when a
-  // command-referencing message is about to be sent to the group.
+  // in this process. Populated lazily by syncGroupCommands() on the first
+  // send to each group.
   private syncedGroups = new Set<number>()
 
   constructor(
@@ -101,15 +101,6 @@ export class SupportBot {
       await this.chat.apiSetActiveUser(this.mainUserId)
       return fn()
     })
-  }
-
-  // Matches "/word" where word is one of desiredCommands' keywords.
-  private textReferencesCommand(text: string): boolean {
-    const keywords = this.desiredCommands
-      .map(c => (c as {keyword?: string}).keyword)
-      .filter((k): k is string => !!k)
-    if (keywords.length === 0) return false
-    return new RegExp(`/(?:${keywords.join("|")})\\b`).test(text)
   }
 
   // Ensure this group's groupPreferences.commands match desiredCommands,
@@ -850,9 +841,7 @@ export class SupportBot {
   async sendToGroup(groupId: number, text: string): Promise<void> {
     try {
       await this.withMainProfile(async () => {
-        if (this.textReferencesCommand(text)) {
-          await this.syncGroupCommands(groupId)
-        }
+        await this.syncGroupCommands(groupId)
         await this.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
       })
     } catch (err) {

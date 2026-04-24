@@ -10,6 +10,7 @@ import {profileMutex, log, logError} from "./util.js"
 interface BotState {
   teamGroupId?: number
   grokContactId?: number
+  grokUserId?: number
 }
 
 function readState(path: string): BotState {
@@ -41,23 +42,37 @@ async function main(): Promise<void> {
 
   // On restart, the active user may be Grok (if the previous run was killed
   // mid-profile-switch). bot.run() uses apiGetActiveUser() and would then
-  // operate against the Grok userId as if it were the main user. Restore the
-  // main user as active before bot.run(). Main user = any user NOT named
-  // "Grok"/"Grok AI".
-  {
-    const preChat = await api.ChatApi.init(config.dbPrefix)
-    const activeUser = await preChat.apiGetActiveUser()
-    const isGrokName = (n: string) => n === "Grok" || n === "Grok AI"
-    if (activeUser && isGrokName(activeUser.profile.displayName)) {
-      await preChat.startChat()
-      const users = await preChat.apiListUsers()
-      const mainUserInfo = users.find(u => !isGrokName(u.user.profile.displayName))
-      if (mainUserInfo) {
+  // operate against the Grok userId as if it were the main user. Restore
+  // the main user as active before bot.run(). Grok is identified by the
+  // userId persisted in state.json on first resolution — comparing by
+  // profile name is fragile to renames.
+  if (state.grokUserId !== undefined) {
+    const preChat = await api.ChatApi.init({type: "sqlite", filePrefix: config.dbPrefix})
+    try {
+      const activeUser = await preChat.apiGetActiveUser()
+      if (activeUser && activeUser.userId === state.grokUserId) {
+        const users = await preChat.apiListUsers()
+        const mainCandidates = users.filter(u => u.user.userId !== state.grokUserId)
+        if (mainCandidates.length === 0) {
+          throw new Error(
+            `DB has only the Grok user (userId=${state.grokUserId}); no main user to restore. ` +
+            `Likely a corrupted migration or partial restore.`
+          )
+        }
+        if (mainCandidates.length > 1) {
+          const names = mainCandidates.map(u => `${u.user.userId}:${u.user.profile.displayName}`).join(", ")
+          throw new Error(
+            `Ambiguous DB state: multiple non-Grok users [${names}]. ` +
+            `Refusing to guess which is main — remove extras manually.`
+          )
+        }
+        const mainUserInfo = mainCandidates[0]
         await preChat.apiSetActiveUser(mainUserInfo.user.userId)
-        log(`Restored active user to ${mainUserInfo.user.profile.displayName}`)
+        log(`Restored active user to ${mainUserInfo.user.profile.displayName} (userId=${mainUserInfo.user.userId})`)
       }
+    } finally {
+      await preChat.close()
     }
-    await preChat.close()
   }
 
   // Profile images (base64-encoded JPEG)
@@ -73,7 +88,7 @@ async function main(): Promise<void> {
   log("Initializing main bot...")
   const [chat, mainUser, mainAddress] = await bot.run({
     profile: {displayName: "Ask SimpleX Team", fullName: "", image: supportImage},
-    dbOpts: {dbFilePrefix: config.dbPrefix},
+    dbOpts: {type: "sqlite", filePrefix: config.dbPrefix},
     options: {
       addressSettings: {
         businessAddress: true,
@@ -99,30 +114,43 @@ async function main(): Promise<void> {
   })
   log(`Main bot user: ${mainUser.profile.displayName} (userId=${mainUser.userId})`)
 
-  // Step 2: Resolve Grok profile from same ChatApi instance
+  // Step 2: Resolve Grok profile from same ChatApi instance.
+  // Identify Grok strictly by the persisted userId in state.json. If no ID
+  // is persisted, this is a first-time run — create the user and persist.
   let grokUser: T.User | null = null
   if (grokEnabled) {
     log("Resolving Grok profile...")
-    const users = await chat.apiListUsers()
-    grokUser = users.find(u => u.user.profile.displayName === "Grok" || u.user.profile.displayName === "Grok AI")?.user ?? null
-    if (!grokUser) {
+    if (state.grokUserId !== undefined) {
+      const users = await chat.apiListUsers()
+      grokUser = users.find(u => u.user.userId === state.grokUserId)?.user ?? null
+      if (!grokUser) {
+        throw new Error(
+          `Persisted Grok userId=${state.grokUserId} not found in DB. ` +
+          `Either restore the user or delete state.json to re-create Grok.`
+        )
+      }
+    } else {
       log("Creating Grok profile...")
       grokUser = await chat.apiCreateActiveUser({displayName: "Grok", fullName: "", image: grokImage})
       // apiCreateActiveUser sets Grok as active — switch back to main
       await chat.apiSetActiveUser(mainUser.userId)
-    } else {
-      const grokProfile: T.Profile = {displayName: "Grok", fullName: "", image: grokImage}
-      const currentProfile = util.fromLocalProfile(grokUser.profile)
-      if (currentProfile.image !== grokProfile.image || currentProfile.displayName !== grokProfile.displayName || currentProfile.fullName !== grokProfile.fullName) {
-        log("Grok profile changed, updating...")
-        await chat.apiSetActiveUser(grokUser.userId)
-        const summary = await chat.apiUpdateProfile(grokUser.userId, grokProfile)
-        await chat.apiSetActiveUser(mainUser.userId)
-        if (summary) {
-          log(`Grok profile updated: ${summary.updateSuccesses} contact(s) updated, ${summary.updateFailures} failed`)
-        } else {
-          log("Unexpected: Grok profile did not change")
-        }
+      state.grokUserId = grokUser.userId
+      writeState(stateFilePath, state)
+      log(`Persisted Grok userId=${grokUser.userId}`)
+    }
+
+    // Refresh Grok's profile if it has drifted from the canonical values.
+    const grokProfile: T.Profile = {displayName: "Grok", fullName: "", image: grokImage}
+    const currentProfile = util.fromLocalProfile(grokUser.profile)
+    if (currentProfile.image !== grokProfile.image || currentProfile.displayName !== grokProfile.displayName || currentProfile.fullName !== grokProfile.fullName) {
+      log("Grok profile changed, updating...")
+      await chat.apiSetActiveUser(grokUser.userId)
+      const summary = await chat.apiUpdateProfile(grokUser.userId, grokProfile)
+      await chat.apiSetActiveUser(mainUser.userId)
+      if (summary) {
+        log(`Grok profile updated: ${summary.updateSuccesses} contact(s) updated, ${summary.updateFailures} failed`)
+      } else {
+        log("Unexpected: Grok profile did not change")
       }
     }
     log(`Grok profile: ${grokUser.profile.displayName} (userId=${grokUser.userId})`)
