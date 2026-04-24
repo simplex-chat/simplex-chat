@@ -1693,7 +1693,7 @@ fun ComposeView(
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           AttachmentAndCommandsButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
-            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner) generalGetString(MR.strings.compose_view_broadcast)
+            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null
           }
           SendMsgView_(disableSendButton = disableSendButton, placeholder = broadcastPlaceholder)

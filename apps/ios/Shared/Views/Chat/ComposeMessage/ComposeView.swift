@@ -515,7 +515,7 @@ struct ComposeView: View {
                         sendMessageView(
                             disableSendButton,
                             placeholder: chat.chatInfo.groupInfo.map { gi in
-                                gi.useRelays && gi.membership.memberRole >= .owner
+                                gi.useRelays && gi.membership.memberRole >= .owner && chat.chatInfo.groupChatScope() == nil
                                 ? NSLocalizedString("Broadcast", comment: "compose placeholder for channel owner")
                                 : nil
                             } ?? nil
