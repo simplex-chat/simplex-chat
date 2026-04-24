@@ -6,7 +6,7 @@
 
 # Type Alias: DbConfig
 
-> **DbConfig** = \{ `encryptionKey?`: `string`; `filePrefix`: `string`; `kind`: `"sqlite"`; \} \| \{ `connectionString`: `string`; `kind`: `"postgres"`; `schemaPrefix?`: `string`; \}
+> **DbConfig** = \{ `encryptionKey?`: `string`; `filePrefix`: `string`; `type`: `"sqlite"`; \} \| \{ `connectionString`: `string`; `schemaPrefix?`: `string`; `type`: `"postgres"`; \}
 
 Defined in: [src/api.ts:65](../src/api.ts#L65)
 
@@ -19,7 +19,7 @@ can't lie about their meaning.
 
 ### Type Literal
 
-\{ `encryptionKey?`: `string`; `filePrefix`: `string`; `kind`: `"sqlite"`; \}
+\{ `encryptionKey?`: `string`; `filePrefix`: `string`; `type`: `"sqlite"`; \}
 
 #### encryptionKey?
 
@@ -33,9 +33,9 @@ Optional SQLCipher encryption key. Empty/omitted = unencrypted.
 
 File prefix — two schema files are named `<prefix>_chat.db` and `<prefix>_agent.db`.
 
-#### kind
+#### type
 
-> **kind**: `"sqlite"`
+> **type**: `"sqlite"`
 
 SQLite backend (default).
 
@@ -43,7 +43,7 @@ SQLite backend (default).
 
 ### Type Literal
 
-\{ `connectionString`: `string`; `kind`: `"postgres"`; `schemaPrefix?`: `string`; \}
+\{ `connectionString`: `string`; `schemaPrefix?`: `string`; `type`: `"postgres"`; \}
 
 #### connectionString
 
@@ -51,14 +51,14 @@ SQLite backend (default).
 
 PostgreSQL connection string (e.g. `postgres://user:pass@host/db`).
 
-#### kind
-
-> **kind**: `"postgres"`
-
-PostgreSQL backend (Linux x86_64 only, libpq5 required).
-
 #### schemaPrefix?
 
 > `optional` **schemaPrefix?**: `string`
 
 Schema prefix used to namespace tables. Defaults to `"simplex_v1"` when omitted.
+
+#### type
+
+> **type**: `"postgres"`
+
+PostgreSQL backend (Linux x86_64 only, libpq5 required).

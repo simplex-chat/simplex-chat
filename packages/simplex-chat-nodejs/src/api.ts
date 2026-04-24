@@ -65,7 +65,7 @@ interface EventSubscriber<K extends CEvt.Tag> {
 export type DbConfig =
   | {
       /** SQLite backend (default). */
-      kind: "sqlite"
+      type: "sqlite"
       /** File prefix — two schema files are named `<prefix>_chat.db` and `<prefix>_agent.db`. */
       filePrefix: string
       /** Optional SQLCipher encryption key. Empty/omitted = unencrypted. */
@@ -73,7 +73,7 @@ export type DbConfig =
     }
   | {
       /** PostgreSQL backend (Linux x86_64 only, libpq5 required). */
-      kind: "postgres"
+      type: "postgres"
       /** Schema prefix used to namespace tables. Defaults to `"simplex_v1"` when omitted. */
       schemaPrefix?: string
       /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
@@ -81,7 +81,7 @@ export type DbConfig =
     }
 
 function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
-  switch (db.kind) {
+  switch (db.type) {
     case "sqlite":
       return [db.filePrefix, db.encryptionKey ?? ""]
     case "postgres":

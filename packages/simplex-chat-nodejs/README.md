@@ -26,7 +26,7 @@ Simple bot that replies with squares of numbers you send to it:
   // const {bot} = await import("../dist/index.js")
   const [chat, _user, _address] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
-    dbOpts: {kind: "sqlite", filePrefix: "./squaring_bot"},
+    dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {welcomeMessage: "Send a number, I will square it.",
     },
@@ -89,12 +89,12 @@ the backend you installed:
 
 ```ts
 // SQLite (default)
-dbOpts: {kind: "sqlite", filePrefix: "./data/bot"}
+dbOpts: {type: "sqlite", filePrefix: "./data/bot"}
 // optional: encryptionKey: "<sqlcipher-key>"
 
 // PostgreSQL
 dbOpts: {
-  kind: "postgres",
+  type: "postgres",
   connectionString: "postgres://user:pass@host/db",
   // schemaPrefix: "bot",  // optional — defaults to "simplex_v1"
 }

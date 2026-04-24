@@ -5,7 +5,7 @@ import {bot, util} from "../dist"
   const welcomeMessage = "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."
   const [chat, _user, _address] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
-    dbOpts: {kind: "sqlite", filePrefix: "./squaring_bot"},
+    dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {autoAccept: true, welcomeMessage, businessAddress: false},
       commands: [ // commands to show in client UI

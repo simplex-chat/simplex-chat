@@ -18,7 +18,7 @@ describe("Bot tests (use preset servers)", () => {
     // run bot
     const [chat, botUser, botAddress] = await bot.run({
       profile: {displayName: "Squaring bot", fullName: ""},
-      dbOpts: {kind: "sqlite", filePrefix: botPath},
+      dbOpts: {type: "sqlite", filePrefix: botPath},
       options: {
         addressSettings: {welcomeMessage: "If you send me a number, I will calculate its square."},
       },
@@ -30,7 +30,7 @@ describe("Bot tests (use preset servers)", () => {
     })
     assert(typeof botAddress === "object")
     // create user
-    const alice = await api.ChatApi.init({kind: "sqlite", filePrefix: alicePath})
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
     const aliceUser = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
     await alice.startChat()
     // connect to bot
