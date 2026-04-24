@@ -155,7 +155,7 @@ private fun GroupPreferencesLayout(
   }
   @Composable fun ReportsPreference() {
     val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
-    FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+    FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated, disabled = true) { enable, _ -> // enable reports in 7.0 once directory support added
       applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
     }
   }
@@ -165,9 +165,9 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
   }
-  @Composable fun SupportPreference() {
+  @Composable fun SupportPreference(disabled: Boolean = false, notice: String? = null) {
     val enableSupport = remember(preferences) { mutableStateOf(preferences.support.enable) }
-    FeatureSection(GroupFeature.Support, enableSupport, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+    FeatureSection(GroupFeature.Support, enableSupport, null, groupInfo, preferences, onTTLUpdated, disabled = disabled, notice = notice) { enable, _ ->
       applyPrefs(preferences.copy(support = GroupPreference(enable = enable)))
     }
   }
@@ -199,7 +199,7 @@ private fun GroupPreferencesLayout(
       SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      SupportPreference()
+      SupportPreference(disabled = true)
     } else {
       TimedMessagesPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
@@ -209,7 +209,7 @@ private fun GroupPreferencesLayout(
       SectionDividerSpaced(true, maxBottomPadding = false)
       HistoryPreference()
       SectionDividerSpaced(true, maxBottomPadding = false)
-      SupportPreference()
+      SupportPreference(notice = generalGetString(MR.strings.chat_with_admins_relay_note))
     }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
@@ -243,6 +243,8 @@ private fun FeatureSection(
   groupInfo: GroupInfo,
   preferences: FullGroupPreferences,
   onTTLUpdated: (Int?) -> Unit,
+  disabled: Boolean = false,
+  notice: String? = null,
   onSelected: (GroupFeatureEnabled, GroupMemberRole?) -> Unit
 ) {
   SectionView {
@@ -255,7 +257,7 @@ private fun FeatureSection(
         feature.text,
         icon,
         iconTint,
-        disabled = feature == GroupFeature.Reports || (feature == GroupFeature.Support && !groupInfo.useRelays), // enable reports in 7.0 once directory support added
+        disabled = disabled,
         checked = enableFeature.value == GroupFeatureEnabled.ON,
       ) { checked ->
         onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
@@ -303,8 +305,8 @@ private fun FeatureSection(
     }
   }
   SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.isOwner))
-  if (feature == GroupFeature.Support && groupInfo.useRelays) {
-    SectionTextFooter(generalGetString(MR.strings.chat_with_admins_relay_note))
+  if (notice != null) {
+    SectionTextFooter(notice)
   }
 }
 
