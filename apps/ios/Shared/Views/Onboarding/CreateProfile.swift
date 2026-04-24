@@ -114,8 +114,8 @@ struct CreateProfile: View {
             if m.users.isEmpty || m.users.allSatisfy({ $0.user.hidden }) {
                 try startChat()
                 withAnimation {
-                    onboardingStageDefault.set(.step3_ChooseServerOperators)
-                    m.onboardingStage = .step3_ChooseServerOperators
+                    onboardingStageDefault.set(.step3_YourNetwork)
+                    m.onboardingStage = .step3_YourNetwork
                 }
             } else {
                 onboardingStageDefault.set(.onboardingComplete)
@@ -144,8 +144,6 @@ struct CreateFirstProfile: View {
             let v = ScrollView {
                 VStack(alignment: .center, spacing: 10) {
                     let imageMaxHeight = max(g.size.height - 400, 80)
-
-                    Spacer(minLength: 0)
 
                     #if SIMPLEX_ASSETS
                     Image(colorScheme == .light ? "your-profile" : "your-profile-light")
@@ -176,6 +174,7 @@ struct CreateFirstProfile: View {
 
                     Text("On your phone, not on any server.")
                         .font(.title2)
+                        .fontWeight(.medium)
                         .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
 
@@ -295,7 +294,7 @@ struct CreateFirstProfile: View {
     }
 
     private func nextStepDestinationView() -> some View {
-        OnboardingConditionsView()
+        YourNetworkView()
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }
@@ -311,7 +310,7 @@ struct CreateFirstProfile: View {
             AppChatState.shared.set(.active)
             m.currentUser = try apiCreateActiveUser(profile)
             try startChat(onboarding: true)
-            onboardingStageDefault.set(.step3_ChooseServerOperators)
+            onboardingStageDefault.set(.step3_YourNetwork)
             nextStepNavLinkActive = true
         } catch let error {
             showCreateProfileAlert(showAlert: showAlert, error)

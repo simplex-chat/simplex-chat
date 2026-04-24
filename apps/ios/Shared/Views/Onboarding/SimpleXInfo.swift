@@ -68,6 +68,8 @@ struct SimpleXInfo: View {
                         .multilineTextAlignment(.center)
 
                     if onboarding {
+                        Spacer(minLength: 0)
+
                         createFirstProfileButton()
                             .padding(.top, 10)
 

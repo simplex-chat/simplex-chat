@@ -1351,6 +1351,17 @@
   <string name="onboarding_network_operators_update">Update</string>
   <string name="onboarding_network_operators_continue">Continue</string>
 
+  <!-- Onboarding Step 3: Your Network -->
+  <string name="onboarding_your_network">Your network</string>
+  <string name="onboarding_network_routers_cannot_know">Network routers cannot know\nwho talks to whom</string>
+  <string name="onboarding_configure_routers">Configure routers</string>
+  <string name="onboarding_configure_notifications">Configure notifications</string>
+
+  <!-- Onboarding Step 4: Network Commitments -->
+  <string name="onboarding_network_commitments">Network\ncommitments</string>
+  <string name="onboarding_network_commitments_operators">Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code</string>
+  <string name="onboarding_network_commitments_you">You commit to:\n- Send only legal content in public groups\n- Respect other users — no spam</string>
+
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
   <string name="incoming_audio_call">Incoming audio call</string>
