@@ -14,9 +14,12 @@ struct ChatItemForwardingView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
 
-    var chatItems: [ChatItem]
-    var fromChatInfo: ChatInfo
-    @Binding var composeState: ComposeState
+    var title: LocalizedStringKey = "Forward"
+    var chatItems: [ChatItem] = []
+    var fromChatInfo: ChatInfo? = nil
+    var composeState: Binding<ComposeState>? = nil
+    var isProhibited: ((Chat) -> Bool)? = nil
+    var onSelectChat: ((Chat) -> Void)? = nil
 
     @State private var searchText: String = ""
     @State private var alert: SomeAlert?
@@ -32,7 +35,7 @@ struct ChatItemForwardingView: View {
                         }
                     }
                     ToolbarItem(placement: .principal) {
-                        Text("Forward")
+                        Text(title)
                             .bold()
                     }
                 }
@@ -71,7 +74,7 @@ struct ChatItemForwardingView: View {
     }
 
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
-        let prohibited = chatItems.map { ci in
+        let prohibited = isProhibited?(chat) ?? chatItems.map { ci in
             chat.prohibitedByPref(
                 hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
                 isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
@@ -88,16 +91,19 @@ struct ChatItemForwardingView: View {
                     ),
                     id: "forward prohibited by preferences"
                 )
-            } else {
+            } else if let onSelectChat {
+                dismiss()
+                onSelectChat(chat)
+            } else if let fromChatInfo, let composeState {
                 dismiss()
                 if chat.id == fromChatInfo.id {
-                    composeState = ComposeState(
-                        message: composeState.message,
-                        preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
+                    composeState.wrappedValue = ComposeState(
+                        message: composeState.wrappedValue.message,
+                        preview: composeState.wrappedValue.linkPreview != nil ? composeState.wrappedValue.preview : .noPreview,
                         contextItem: .forwardingItems(chatItems: chatItems, fromChatInfo: fromChatInfo)
                     )
                 } else {
-                    composeState = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
+                    composeState.wrappedValue = ComposeState.init(forwardingItems: chatItems, fromChatInfo: fromChatInfo)
                     ItemsModel.shared.loadOpenChat(chat.id)
                 }
             }

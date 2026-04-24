@@ -2565,7 +2565,6 @@
     <string name="relay_bar_active_with_failures">%1$d/%2$d relay attivo/i, %3$d fallito/i</string>
     <string name="relay_bar_connected">%1$d/%2$d relay connesso/i</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d relay connesso/i, %3$d errori</string>
-    <string name="relay_bar_count">%1$d relay</string>
     <string name="channel_subscriber_count_singular">%1$d iscritto</string>
     <string name="channel_subscriber_count_plural">%1$d iscritti</string>
     <string name="relay_status_accepted">accettato</string>

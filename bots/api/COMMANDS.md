@@ -983,6 +983,11 @@ PublicGroupCreated: Public group created.
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 - groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 
+PublicGroupCreationFailed: Public group creation failed.
+- type: "publicGroupCreationFailed"
+- user: [User](./TYPES.md#user)
+- addRelayResults: [[AddRelayResult](./TYPES.md#addrelayresult)]
+
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
@@ -1280,6 +1285,8 @@ Determine SimpleX link type and if the bot is already connected via this link.
 **Parameters**:
 - userId: int64
 - connectionLink: string?
+- resolveKnown: bool
+- linkOwnerSig: [LinkOwnerSig](./TYPES.md#linkownersig)?
 
 **Syntax**:
 

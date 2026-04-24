@@ -195,7 +195,7 @@ fun SendMsgView(
                   )
                 }
               }
-              if (timedMessageAllowed) {
+              if (timedMessageAllowed && !cs.editing) {
                 menuItems.add {
                   ItemAction(
                     generalGetString(MR.strings.disappearing_message),

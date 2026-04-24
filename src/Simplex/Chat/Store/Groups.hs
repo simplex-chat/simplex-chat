@@ -687,6 +687,14 @@ updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMem
               WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)
             |]
             (newUserId, currentTs, groupId)
+          DB.execute
+            db
+            [sql|
+              UPDATE chat_items
+              SET user_id = ?, updated_at = ?
+              WHERE group_id = ?
+            |]
+            (newUserId, currentTs, groupId)
           safeDeleteLDN db user oldGroupLDN
     updateMembership GroupMember {groupMemberId = membershipId} currentTs =
       DB.execute
@@ -2958,8 +2966,8 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   where
     VersionRange minV maxV = vr
 
-createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
-createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} memberId ownerKey = do
+createLinkOwnerMember :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe ContactId -> MemberId -> C.PublicKeyEd25519 -> ExceptT StoreError IO GroupMember
+createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId} contactId_ memberId ownerKey = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName $ nameFromMemberId memberId
   (localDisplayName, profileId) <- createNewMemberProfile_ db user memberProfile currentTs
@@ -2975,7 +2983,7 @@ createLinkOwnerMember db vr user@User {userId, userContactId} GroupInfo {groupId
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (groupId, indexInGroup, memberId, GROwner, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
-          :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, ownerKey, currentTs, currentTs)
+          :. (userId, localDisplayName, contactId_, profileId, ownerKey, currentTs, currentTs)
           :. (minV, maxV)
       )
   groupMemberId <- liftIO $ insertedRowId db

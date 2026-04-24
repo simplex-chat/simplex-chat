@@ -51,7 +51,7 @@ revision: 13.08.2025
 
 ### How do I connect to people?
 
-Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link to the app's search bar. The link will can also be opened via the browser, once the app is installed.
+Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link to the app's search bar. The link can also be opened via the browser, once the app is installed.
 
 Alternatively, you can show the QR code when meeting in person or in a video call.
 
@@ -103,7 +103,7 @@ Also see: [I do not see the second tick on the messages I sent](#i-do-not-see-th
 
 ### I want to see when my contacts read my messages
 
-To know when your contact read your messages, your contact's app has to send you a confirmation message. And vice versa, for your contact to know when you read the message, your app has to send a confirmation message.
+To know when your contact reads your messages, your contact's app has to send you a confirmation message. And vice versa, for your contact to know when you read the message, your app has to send a confirmation message.
 
 The important questions for this feature:
 - do you always want that your contacts can see when you read all their messages? Probably, even with your close friends, sometimes you would prefer to have time before you answer their message, and also have a plausible deniability that you have not seen the message. And this should be ok - in the end, this is your device, and it should be for you to decide whether this confirmation message is sent or not, and when it is sent.
@@ -111,7 +111,7 @@ The important questions for this feature:
 
 Overall, it seems that this feature is more damaging to your communications with your contacts than it is helpful. It keeps senders longer in the app, nervously waiting for read receipts, exploiting addictive patterns - having you spend more time in the app is the reason why it is usually present in most messaging apps. It also creates a pressure on the recipients to reply sooner, and if read receipts are opt-in, it creates a pressure to enable it, that can be particularly damaging in any relationships with power imbalance.
 
-We think that delivery receipts are important and equally benefit both sides as the conversation, as they confirm that communication network functions properly. But we strongly believe that read receipts is an anti-feature that only benefits the app developers, and hurts the relations between the app users. So we are not planning to add it even as opt-in. In case you want your contact to know you've read the message put a reaction to it. And if you don't want them to know it - it is also ok, what your device sends should be under your control.
+We think that delivery receipts are important and equally benefit both sides as the conversation, as they confirm that communication network functions properly. But we strongly believe that read receipts are an anti-feature that only benefits the app developers, and hurts the relations between the app users. So we are not planning to add it even as opt-in. In case you want your contact to know you've read the message put a reaction to it. And if you don't want them to know it - it is also ok, what your device sends should be under your control.
 
 ### Can I use the same profile on desktop? Do messages sync cross-platform?
 
@@ -130,7 +130,7 @@ We believe that allowing deleting information from your device to your contacts 
 2) it may be a business communication, and either your organization policy or a compliance requirement is that every message you receive must be preserved for some time.
 3) the message can contain a legally binding promise, effectively a contract between you and your contact, in which case you both need to keep it.
 4) the messages may contain threat or abuse and you may want to keep them as a proof.
-5) you may have paid for the the message (e.g., it can be a design project or consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
+5) you may have paid for the message (e.g., it can be a design project or consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
 
 It is also important to remember, that even if your contact enabled "Delete for everyone", you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.
 
@@ -232,7 +232,7 @@ You may not have the second tick on your sent messages for these reasons:
 ### I see image preview but cannot open the image
 
 It can be for these reasons:
-- your contact did not finish uploading the image file, possibly closing the app too quickly. When the image file is fully uploaded there will be a tick in the _top right corner_ or the image
+- your contact did not finish uploading the image file, possibly closing the app too quickly. When the image file is fully uploaded there will be a tick in the _top right corner_ of the image.
 - your device fails to receive it. Please check server connectivity and run server tests, and also try increasing network timeouts in Advanced network settings. File reception was substantially improved in v5.7 - please make sure you are using the latest version.
 - file expired and can no longer be received. Files can be received only for 2 days after they were sent, after that they won't be available and will show X in the top right corner.
 
@@ -298,7 +298,7 @@ You can resolve it by deleting the app's database: (WARNING: this results in del
 ### My mobile app does not connect to desktop app
 
 1. Check that both devices are connected to the same network (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).
-2. If you use VPN on mobile, allow connections to local network in you VPN settings, or disable VPN.
+2. If you use VPN on mobile, allow connections to local network in your VPN settings, or disable VPN.
 3. Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port in desktop app to accept connections, by default it uses a random port every time.
 4. Check that your WiFi router allows connections between devices (e.g., it may have an option for "device isolation", or similar).
 5. If you see an error "certificate expired", please check that your device clocks are synchronized within a few seconds.
@@ -312,7 +312,7 @@ If none of the suggestions work for you, you can create a separate profile on ea
 
 ### Does SimpleX support post quantum cryptography?
 
-Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](../blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
+Yes! Please read more about how quantum-resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](../blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
 
 ### Why can't I use the same profile on different devices?
 
@@ -355,7 +355,7 @@ If the servers didn't upgrade, the messages would temporarily fail to deliver. Y
 
 With private routing enabled, instead of connecting to your contact's server directly, your client would "instruct" one of the known servers to forward the message, preventing the destination server from observing your IP address.
 
-Your messages are additionally end-to-end encrypted between your client and the destination server, so that the forwarding server cannot observe the destination addresses and server responses – similarly to how onion routing work. Private message routing is, effectively, a two-hop onion packet routing.
+Your messages are additionally end-to-end encrypted between your client and the destination server, so that the forwarding server cannot observe the destination addresses and server responses – similarly to how onion routing works. Private message routing is, effectively, a two-hop onion packet routing.
 
 Also, this connection is protected from man-in-the-middle attack by the forwarding server, as your client will validate destination server certificate using its fingerprint in the server address.
 
@@ -375,7 +375,7 @@ Private message routing routes packets (each message is one 16kb packet), not so
 
 As each message uses its own random encryption key and random (non-sequential) identifier, the destination server cannot link multiple message queue addresses to the same client. At the same time, the forwarding server cannot observe which (and how many) addresses on the destination server your client sends messages to, thanks to e2e encryption between the client and destination server. In that regard, this design is similar to onion routing, but with per-packet anonymity, not per-circuit.
 
-This design is similar to mixnets (e.g. [Nym network](https://nymtech.net)), and it is tailored to the needs of message routing, providing better transport anonymity that general purpose networks, like Tor or VPN. You still can use Tor or VPN to connect to known servers, to protect your IP address from them.
+This design is similar to mixnets (e.g. [Nym network](https://nymtech.net)), and it is tailored to the needs of message routing, providing better transport anonymity than general-purpose networks, like Tor or VPN. You still can use Tor or VPN to connect to known servers, to protect your IP address from them.
 
 ### Why don't you embed Tor in SimpleX Chat app?
 

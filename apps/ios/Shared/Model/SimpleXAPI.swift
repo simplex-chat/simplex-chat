@@ -458,7 +458,7 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
 
 func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope? = nil) async throws -> [MsgContentTag] {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetChatContentTypes(chatId: chatId, scope: scope))
-    if case let .chatContentTypes(types) = r { return types }
+    if case let .chatContentTypes(types) = r { return types.filter { if case .unknown = $0 { return false }; return true } }
     throw r.unexpected
 }
 
@@ -500,6 +500,12 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemI
 func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws -> ([Int64], ForwardConfirmation?) {
     let r: ChatResponse1 = try await chatSendCmd(.apiPlanForwardChatItems(fromChatType: type, fromChatId: id, fromScope: scope, itemIds: itemIds))
     if case let .forwardPlan(_, chatItemIds, forwardConfimation) = r { return (chatItemIds, forwardConfimation) }
+    throw r.unexpected
+}
+
+func apiShareChatMsgContent(shareChatType: ChatType, shareChatId: Int64, toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, sendAsGroup: Bool) async throws -> MsgContent {
+    let r: ChatResponse1 = try await chatSendCmd(.apiShareChatMsgContent(shareChatType: shareChatType, shareChatId: shareChatId, toChatType: toChatType, toChatId: toChatId, toScope: toScope, sendAsGroup: sendAsGroup))
+    if case let .chatMsgContent(_, mc) = r { return mc }
     throw r.unexpected
 }
 
@@ -1020,12 +1026,12 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, inProgress: BoxedValue<Bool>) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
+func apiConnectPlan(connLink: String, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink), inProgress: inProgress)
+    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink, linkOwnerSig: linkOwnerSig), inProgress: inProgress)
     if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return ((connLink, connPlan), nil) }
     let alert: Alert? = if let r { apiConnectResponseAlert(r) } else { nil }
     return (nil, alert)
@@ -1108,6 +1114,27 @@ private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
             connectionErrorAlert(r)
         }
     default: connectionErrorAlert(r)
+    }
+}
+
+func connErrorText(_ e: ChatError) -> String {
+    switch e {
+    case .error(.invalidConnReq):
+        NSLocalizedString("Invalid connection link", comment: "conn error description")
+    case .error(.unsupportedConnReq):
+        NSLocalizedString("Unsupported connection link", comment: "conn error description")
+    case .errorAgent(.SMP(_, .AUTH)):
+        NSLocalizedString("Connection error (AUTH)", comment: "conn error description")
+    case let .errorAgent(.SMP(_, .BLOCKED(info))):
+        NSLocalizedString("Connection blocked: \(info.reason.text)", comment: "conn error description")
+    case .errorAgent(.SMP(_, .QUOTA)):
+        NSLocalizedString("The connection reached the limit of undelivered messages", comment: "conn error description")
+    default:
+        if getNetworkErrorAlert(e) != nil {
+            NSLocalizedString("Network error", comment: "conn error description")
+        } else {
+            "\(NSLocalizedString("Error", comment: "conn error description")): \(responseError(e))"
+        }
     }
 }
 
@@ -1841,12 +1868,19 @@ func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInf
     throw r.unexpected
 }
 
-func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> (GroupInfo, GroupLink, [GroupRelay])? {
+enum PublicGroupCreationResult {
+    case created(GroupInfo, GroupLink, [GroupRelay])
+    case creationFailed([AddRelayResult])
+}
+
+func apiNewPublicGroup(incognito: Bool, relayIds: [Int64], groupProfile: GroupProfile) async throws -> PublicGroupCreationResult? {
     let userId = try currentUserId("apiNewPublicGroup")
     let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiNewPublicGroup(userId: userId, incognito: incognito, relayIds: relayIds, groupProfile: groupProfile))
     switch r {
     case let .result(.publicGroupCreated(_, groupInfo, groupLink, groupRelays)):
-        return (groupInfo, groupLink, groupRelays)
+        return .created(groupInfo, groupLink, groupRelays)
+    case let .result(.publicGroupCreationFailed(_, addRelayResults)):
+        return .creationFailed(addRelayResults)
     default: if let r { throw r.unexpected } else { return nil }
     }
 }
