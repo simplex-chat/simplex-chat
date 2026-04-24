@@ -46,15 +46,15 @@ struct GroupPreferencesView: View {
                     featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
                     featureSection(.files, $preferences.files.enable, $preferences.files.role)
                     featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
-                    featureSection(.reports, $preferences.reports.enable)
+                    featureSection(.reports, $preferences.reports.enable, disabled: true) // enable reports in 7.0 once directory support added
                     featureSection(.history, $preferences.history.enable)
-                    featureSection(.support, $preferences.support.enable)
+                    featureSection(.support, $preferences.support.enable, disabled: true)
                 } else {
                     featureSection(.timedMessages, $preferences.timedMessages.enable)
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.history, $preferences.history.enable)
-                    featureSection(.support, $preferences.support.enable)
+                    featureSection(.support, $preferences.support.enable, notice: "Chat relays can see messages in these chats - E2E encryption will be added later.")
                 }
 
                 if groupInfo.isOwner {
@@ -94,7 +94,7 @@ struct GroupPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil) -> some View {
+    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil, disabled: Bool = false, notice: LocalizedStringKey? = nil) -> some View {
         Section {
             let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
@@ -107,7 +107,7 @@ struct GroupPreferencesView: View {
                 settingsRow(icon, color: color) {
                     Toggle(feature.text, isOn: enable)
                 }
-                .disabled(feature == .reports || (feature == .support && !groupInfo.useRelays)) // enable reports in 7.0 once directory support added
+                .disabled(disabled)
                 if timedOn {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
@@ -148,9 +148,7 @@ struct GroupPreferencesView: View {
         } footer: {
             VStack(alignment: .leading) {
                 Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
-                if feature == .support && groupInfo.useRelays {
-                    Text("Chat relays can see messages in these chats - E2E encryption will be added later.")
-                }
+                if let notice { Text(notice) }
             }
             .foregroundColor(theme.colors.secondary)
         }

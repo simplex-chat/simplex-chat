@@ -14,7 +14,7 @@ struct AddChannelView: View {
     @EnvironmentObject var theme: AppTheme
     @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
     @StateObject private var ss = SaveableSettings()
-    @State private var profile = GroupProfile(displayName: "", fullName: "", groupPreferences: GroupPreferences(support: GroupPreference(enable: .off)))
+    @State private var profile = GroupProfile(displayName: "", fullName: "")
     @FocusState private var focusDisplayName: Bool
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -161,7 +161,10 @@ struct AddChannelView: View {
     private func createChannel() {
         focusDisplayName = false
         profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
-        profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
+        profile.groupPreferences = GroupPreferences(
+            history: GroupPreference(enable: .on),
+            support: GroupPreference(enable: .off)
+        )
         creationInProgress = true
         Task {
             do {
