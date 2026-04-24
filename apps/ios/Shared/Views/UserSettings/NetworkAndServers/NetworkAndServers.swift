@@ -58,7 +58,7 @@ struct NetworkAndServers: View {
                         conditionsButton(conditionsAction)
                     }
                 } header: {
-                    Text("Preset servers")
+                    Text("Preset routers")
                         .foregroundColor(theme.colors.secondary)
                 } footer: {
                     switch conditionsAction {
@@ -81,11 +81,11 @@ struct NetworkAndServers: View {
                                 serverWarnings: $ss.servers.serverWarnings,
                                 operatorIndex: idx
                             )
-                            .navigationTitle("Your servers")
+                            .navigationTitle("Your routers")
                             .modifier(ThemedBackground(grouped: true))
                         } label: {
                             HStack {
-                                Text("Your servers")
+                                Text("Your routers")
                                 
                                 if ss.servers.userServers[idx] != ss.servers.currUserServers[idx] {
                                     Spacer()
@@ -108,13 +108,13 @@ struct NetworkAndServers: View {
                 }
 
                 Section {
-                    Button("Save servers", action: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) })
+                    Button("Save routers", action: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) })
                         .disabled(!serversCanBeSaved(ss.servers.currUserServers, ss.servers.userServers, ss.servers.serverErrors))
                 } footer: {
                     if let errStr = globalServersError(ss.servers.serverErrors) {
                         ServersErrorView(errStr: errStr)
                     } else if !ss.servers.serverErrors.isEmpty {
-                        ServersErrorView(errStr: NSLocalizedString("Errors in servers configuration.", comment: "servers error"))
+                        ServersErrorView(errStr: NSLocalizedString("Errors in routers configuration.", comment: "servers error"))
                     }
                     if let warnStr = globalServersWarning(ss.servers.serverWarnings) {
                         ServersWarningView(warnStr: warnStr)
@@ -152,7 +152,7 @@ struct NetworkAndServers: View {
                 } catch let error {
                     await MainActor.run {
                         showAlert(
-                            NSLocalizedString("Error loading servers", comment: "alert title"),
+                            NSLocalizedString("Error loading routers", comment: "alert title"),
                             message: responseError(error)
                         )
                     }
@@ -167,7 +167,7 @@ struct NetworkAndServers: View {
                 dismiss()
             }
         })
-        .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
+        .confirmationDialog("Save routers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save") {
                 saveServers($ss.servers.currUserServers, $ss.servers.userServers)
                 dismiss()
@@ -196,7 +196,7 @@ struct NetworkAndServers: View {
                 operatorIndex: operatorIndex,
                 useOperator: serverOperator.enabled
             )
-            .navigationBarTitle("\(serverOperator.tradeName) servers")
+            .navigationBarTitle("\(serverOperator.tradeName) routers")
             .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
@@ -515,7 +515,7 @@ func saveServers(_ currUserServers: Binding<[UserOperatorServers]>, _ userServer
             logger.error("saveServers setUserServers error: \(responseError(error))")
             await MainActor.run {
                 showAlert(
-                    NSLocalizedString("Error saving servers", comment: "alert title"),
+                    NSLocalizedString("Error saving routers", comment: "alert title"),
                     message: responseError(error)
                 )
             }

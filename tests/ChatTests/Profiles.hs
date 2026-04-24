@@ -319,27 +319,27 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
       cLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         getContactLink alice True
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
       _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> cLink)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
         _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> cLink)
         alice <#? bob
-      alice <## "disconnected 1 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
       alice ##> "/ac bob"
       alice <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
-        bob <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
+        bob <## "subscribed 1 connections on packet router localhost"
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
         concurrently_
@@ -349,8 +349,8 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
         bob <# "alice> message 1"
         bob #> "@alice message 2"
         alice <# "bob> message 2"
-      alice <## "disconnected 2 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 2 connections on packet router localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
@@ -1084,7 +1084,7 @@ testPlanAddressConnecting ps = do
 
     threadDelay 100000
   withTestChat ps "alice" $ \alice -> do
-    alice <## "subscribed 1 connections on server localhost"
+    alice <## "subscribed 1 connections on packet router localhost"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1092,7 +1092,7 @@ testPlanAddressConnecting ps = do
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
-    bob <## "subscribed 1 connections on server localhost"
+    bob <## "subscribed 1 connections on packet router localhost"
     bob <## "alice (Alice): contact is connected"
     bob @@@ [("@alice", "Audio/video calls: enabled")]
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -1506,12 +1506,12 @@ testSetConnectionIncognitoProhibitedDuringNegotiation ps = do
     bob <## "confirmation sent!"
   withTestChat ps "alice" $ \alice -> do
     threadDelay 250000
-    alice <## "subscribed 1 connections on server localhost"
+    alice <## "subscribed 1 connections on packet router localhost"
     alice <## "bob (Bob): contact is connected"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       bob <## "alice (Alice): contact is connected"
       alice <##> bob
       alice `hasContactProfiles` ["alice", "bob"]
@@ -2089,13 +2089,13 @@ testChangePCCUserDiffSrv ps = do
         alice ##> "/create user alisa"
         showActiveUser alice "alisa"
         alice ##> "/smp"
-        alice <## "Your servers"
-        alice <## "  SMP servers"
+        alice <## "Your routers"
+        alice <## "  packet routers"
         alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
         alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
         alice ##> "/smp"
-        alice <## "Your servers"
-        alice <## "  SMP servers"
+        alice <## "Your routers"
+        alice <## "  packet routers"
         alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
         alice ##> "/user alice"
         showActiveUser alice "alice (Alice)"
@@ -2984,11 +2984,11 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
       bob ##> "/_connect contact @2 text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "invitation link: known prepared contact alice"
@@ -3002,8 +3002,8 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
         alice <##> bob
-      alice <## "disconnected 1 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
@@ -3149,11 +3149,11 @@ testShortLinkAddressConnectRetry ps =
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
       bob ##> "/_connect contact @2 text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "contact address: known prepared contact alice"
@@ -3174,8 +3174,8 @@ testShortLinkAddressConnectRetry ps =
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
         alice <##> bob
-      alice <## "disconnected 2 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 2 connections on packet router localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
   where
     tmp = tmpPath ps
     serverCfg' =
@@ -3204,11 +3204,11 @@ testShortLinkAddressConnectRetryIncognito ps =
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
       bob ##> "/_connect contact @2 incognito=on text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "contact address: known prepared contact alice"
@@ -3237,8 +3237,8 @@ testShortLinkAddressConnectRetryIncognito ps =
         bob ?<# "alice> hi"
         bob ?#> "@alice hey"
         alice <# (bobIncognito <> "> hey")
-      alice <## "disconnected 2 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 2 connections on packet router localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
   where
     tmp = tmpPath ps
     serverCfg' =
@@ -3493,15 +3493,15 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
         bob <## "#team: group is prepared"
         pure shortLink
-      alice <## "disconnected 2 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 2 connections on packet router localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
       bob ##> "/_connect group #1"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "group link: known prepared group #team"
-        alice <## "subscribed 2 connections on server localhost"
-        bob <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 2 connections on packet router localhost"
+        bob <## "subscribed 1 connections on packet router localhost"
         threadDelay 250000
         bob ##> "/_connect group #1"
         bob <## "#team: connection started"
@@ -3520,8 +3520,8 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         bob <# "#team alice> 1"
         bob #> "#team 2"
         alice <# "#team bob> 2"
-      alice <## "disconnected 3 connections on server localhost"
-      bob <## "disconnected 2 connections on server localhost"
+      alice <## "disconnected 3 connections on packet router localhost"
+      bob <## "disconnected 2 connections on packet router localhost"
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg

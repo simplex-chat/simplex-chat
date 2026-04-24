@@ -125,10 +125,10 @@
 "%@ is verified" = "%@ è verificato/a";
 
 /* No comment provided by engineer. */
-"%@ server" = "%@ server";
+"%@ router" = "%@ router";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ server";
+"%@ routers" = "%@ router";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ caricati";
@@ -414,10 +414,10 @@ swipe action */
 "Add profile" = "Aggiungi profilo";
 
 /* No comment provided by engineer. */
-"Add server" = "Aggiungi server";
+"Add router" = "Aggiungi router";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Aggiungi server scansionando codici QR.";
+"Add routers by scanning QR codes." = "Aggiungi router scansionando codici QR.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Aggiungi membri del team";
@@ -435,10 +435,10 @@ swipe action */
 "Add your team members to the conversations." = "Aggiungi i membri del tuo team alle conversazioni.";
 
 /* No comment provided by engineer. */
-"Added media & file servers" = "Server di multimediali e file aggiunti";
+"Added data routers" = "Router di multimediali e file aggiunti";
 
 /* No comment provided by engineer. */
-"Added message servers" = "Server dei messaggi aggiunti";
+"Added packet routers" = "Router dei messaggi aggiunti";
 
 /* No comment provided by engineer. */
 "Additional accent" = "Principale aggiuntivo";
@@ -534,7 +534,7 @@ swipe action */
 "All reports will be archived for you." = "Tutte le segnalazioni verranno archiviate per te.";
 
 /* No comment provided by engineer. */
-"All servers" = "Tutti i server";
+"All routers" = "Tutti i router";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Tutti i tuoi contatti resteranno connessi.";
@@ -651,7 +651,7 @@ swipe action */
 "Answer call" = "Rispondi alla chiamata";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Chiunque può installare i server.";
+"Anybody can host routers." = "Chiunque può installare i router.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Build dell'app: %@";
@@ -1120,7 +1120,7 @@ set passcode view */
 "Check messages when allowed." = "Controlla i messaggi quando consentito.";
 
 /* alert title */
-"Check server address and try again." = "Controlla l'indirizzo del server e riprova.";
+"Check router address and try again." = "Controlla l'indirizzo del router e riprova.";
 
 /* No comment provided by engineer. */
 "Chinese and Spanish interface" = "Interfaccia cinese e spagnola";
@@ -1213,7 +1213,7 @@ set passcode view */
 "Configure ICE servers" = "Configura server ICE";
 
 /* No comment provided by engineer. */
-"Configure server operators" = "Configura gli operatori dei server";
+"Configure router operators" = "Configura gli operatori dei router";
 
 /* No comment provided by engineer. */
 "Confirm" = "Conferma";
@@ -1225,7 +1225,7 @@ set passcode view */
 "Confirm database upgrades" = "Conferma aggiornamenti database";
 
 /* No comment provided by engineer. */
-"Confirm files from unknown servers." = "Conferma i file da server sconosciuti.";
+"Confirm files from unknown routers." = "Conferma i file da router sconosciuti.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Conferma le impostazioni di rete";
@@ -1295,7 +1295,7 @@ server test step */
 "Connected desktop" = "Desktop connesso";
 
 /* No comment provided by engineer. */
-"Connected servers" = "Server connessi";
+"Connected routers" = "Router connessi";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Connesso al desktop";
@@ -1322,10 +1322,10 @@ server test step */
 "connecting call" = "connessione chiamata…";
 
 /* No comment provided by engineer. */
-"Connecting server…" = "Connessione al server…";
+"Connecting router…" = "Connessione al router…";
 
 /* No comment provided by engineer. */
-"Connecting server… (error: %@)" = "Connessione al server… (errore: %@)";
+"Connecting router… (error: %@)" = "Connessione al router… (errore: %@)";
 
 /* No comment provided by engineer. */
 "Connecting to contact, please wait or check later!" = "In collegamento con il contatto, attendi o controlla più tardi!";
@@ -1340,7 +1340,7 @@ server test step */
 "Connection" = "Connessione";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Stato della connessione e dei server.";
+"Connection and routers status." = "Stato della connessione e dei router.";
 
 /* No comment provided by engineer. */
 "Connection blocked" = "Connessione bloccata";
@@ -1358,7 +1358,7 @@ server test step */
 "Connection failed" = "Connessione fallita";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "La connessione è bloccata dall'operatore del server:\n%@";
+"Connection is blocked by router operator:\n%@" = "La connessione è bloccata dall'operatore del router:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Connessione non pronta.";
@@ -1838,13 +1838,13 @@ alert button */
 "Desktop devices" = "Dispositivi desktop";
 
 /* No comment provided by engineer. */
-"Destination server address of %@ is incompatible with forwarding server %@ settings." = "L'indirizzo del server di destinazione di %@ è incompatibile con le impostazioni del server di inoltro %@.";
+"Destination router address of %@ is incompatible with forwarding router %@ settings." = "L'indirizzo del router di destinazione di %@ è incompatibile con le impostazioni del router di inoltro %@.";
 
 /* snd error text */
-"Destination server error: %@" = "Errore del server di destinazione: %@";
+"Destination router error: %@" = "Errore del router di destinazione: %@";
 
 /* No comment provided by engineer. */
-"Destination server version of %@ is incompatible with forwarding server %@." = "La versione del server di destinazione di %@ è incompatibile con il server di inoltro %@.";
+"Destination router version of %@ is incompatible with forwarding router %@." = "La versione del router di destinazione di %@ è incompatibile con il router di inoltro %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Statistiche dettagliate";
@@ -1946,7 +1946,7 @@ alert button */
 "Do not send history to new members." = "Non inviare la cronologia ai nuovi membri.";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "NON inviare messaggi direttamente, anche se il tuo server o quello di destinazione non supporta l'instradamento privato.";
+"Do NOT send messages directly, even if your or destination router does not support private routing." = "NON inviare messaggi direttamente, anche se il tuo router o quello di destinazione non supporta l'instradamento privato.";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "Non usare credenziali con proxy.";
@@ -2049,7 +2049,7 @@ chat item action */
 "Enable disappearing messages by default." = "Attiva i messaggi a tempo in modo predefinito.";
 
 /* No comment provided by engineer. */
-"Enable Flux in Network & servers settings for better metadata privacy." = "Attiva Flux nelle impostazioni \"Rete e server\" per una migliore privacy dei metadati.";
+"Enable Flux in Network & routers settings for better metadata privacy." = "Attiva Flux nelle impostazioni \"Rete e router\" per una migliore privacy dei metadati.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Attiva per tutti";
@@ -2190,7 +2190,7 @@ chat item action */
 "Enter password above to show!" = "Inserisci la password sopra per mostrare!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Inserisci il server a mano";
+"Enter router manually" = "Inserisci il router a mano";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Inserisci il nome di questo dispositivo…";
@@ -2226,7 +2226,7 @@ chat item action */
 "Error adding member(s)" = "Errore di aggiunta membro/i";
 
 /* alert title */
-"Error adding server" = "Errore di aggiunta del server";
+"Error adding router" = "Errore di aggiunta del router";
 
 /* No comment provided by engineer. */
 "Error adding short link" = "Errore di aggiunta link breve";
@@ -2253,10 +2253,10 @@ chat item action */
 "Error checking token status" = "Errore di controllo dello stato del token";
 
 /* alert message */
-"Error connecting to forwarding server %@. Please try later." = "Errore di connessione al server di inoltro %@. Riprova più tardi.";
+"Error connecting to forwarding router %@. Please try later." = "Errore di connessione al router di inoltro %@. Riprova più tardi.";
 
 /* subscription status explanation */
-"Error connecting to the server used to receive messages from this connection: %@" = "Errore di connessione al server usato per ricevere messaggi da questa connessione: %@";
+"Error connecting to the router used to receive messages from this connection: %@" = "Errore di connessione al router usato per ricevere messaggi da questa connessione: %@";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Errore nella creazione dell'indirizzo";
@@ -2334,7 +2334,7 @@ chat item action */
 "Error joining group" = "Errore di ingresso nel gruppo";
 
 /* alert title */
-"Error loading servers" = "Errore nel caricamento dei server";
+"Error loading routers" = "Errore nel caricamento dei router";
 
 /* No comment provided by engineer. */
 "Error migrating settings" = "Errore nella migrazione delle impostazioni";
@@ -2346,10 +2346,10 @@ chat item action */
 "Error receiving file" = "Errore nella ricezione del file";
 
 /* No comment provided by engineer. */
-"Error reconnecting server" = "Errore di riconnessione al server";
+"Error reconnecting router" = "Errore di riconnessione al router";
 
 /* No comment provided by engineer. */
-"Error reconnecting servers" = "Errore di riconnessione ai server";
+"Error reconnecting routers" = "Errore di riconnessione ai router";
 
 /* alert title */
 "Error registering for notifications" = "Errore di registrazione per le notifiche";
@@ -2382,7 +2382,7 @@ chat item action */
 "Error saving passphrase to keychain" = "Errore nel salvataggio della password nel portachiavi";
 
 /* alert title */
-"Error saving servers" = "Errore di salvataggio dei server";
+"Error saving routers" = "Errore di salvataggio dei router";
 
 /* when migrating */
 "Error saving settings" = "Errore di salvataggio delle impostazioni";
@@ -2424,7 +2424,7 @@ chat item action */
 "Error synchronizing connection" = "Errore nella sincronizzazione della connessione";
 
 /* No comment provided by engineer. */
-"Error testing server connection" = "Errore provando la connessione al server";
+"Error testing router connection" = "Errore provando la connessione al router";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "Errore nell'aggiornamento del link del gruppo";
@@ -2433,7 +2433,7 @@ chat item action */
 "Error updating message" = "Errore nell'aggiornamento del messaggio";
 
 /* alert title */
-"Error updating server" = "Errore di aggiornamento del server";
+"Error updating router" = "Errore di aggiornamento del router";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Errore nell'aggiornamento delle impostazioni";
@@ -2469,7 +2469,7 @@ server test error */
 "Errors" = "Errori";
 
 /* servers error */
-"Errors in servers configuration." = "Errori nella configurazione dei server.";
+"Errors in routers configuration." = "Errori nella configurazione dei router.";
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Anche quando disattivato nella conversazione.";
@@ -2535,13 +2535,13 @@ server test error */
 "File errors:\n%@" = "Errori di file:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "Il file è bloccato dall'operatore del server:\n%@.";
+"File is blocked by router operator:\n%@." = "Il file è bloccato dall'operatore del router:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "File non trovato - probabilmente è stato eliminato o annullato.";
 
 /* file error text */
-"File server error: %@" = "Errore del server dei file: %@";
+"Data router error: %@" = "Errore del router dei file: %@";
 
 /* No comment provided by engineer. */
 "File status" = "Stato del file";
@@ -2550,7 +2550,7 @@ server test error */
 "File status: %@" = "Stato del file: %@";
 
 /* No comment provided by engineer. */
-"File will be deleted from servers." = "Il file verrà eliminato dai server.";
+"File will be deleted from routers." = "Il file verrà eliminato dai router.";
 
 /* No comment provided by engineer. */
 "File will be received when your contact completes uploading it." = "Il file verrà ricevuto quando il tuo contatto completerà l'invio.";
@@ -2601,17 +2601,17 @@ server test error */
 "Find chats faster" = "Trova le chat più velocemente";
 
 /* No comment provided by engineer. */
-"Fingerprint in destination server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server di destinazione non corrisponde al certificato: %@.";
+"Fingerprint in destination router address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del router di destinazione non corrisponde al certificato: %@.";
 
 /* No comment provided by engineer. */
-"Fingerprint in forwarding server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server di inoltro non corrisponde al certificato: %@.";
+"Fingerprint in forwarding router address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del router di inoltro non corrisponde al certificato: %@.";
 
 /* No comment provided by engineer. */
-"Fingerprint in server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato: %@.";
+"Fingerprint in router address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del router non corrisponde al certificato: %@.";
 
 /* relay test error
 server test error */
-"Fingerprint in server address does not match certificate." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato.";
+"Fingerprint in router address does not match certificate." = "L'impronta digitale nell'indirizzo del router non corrisponde al certificato.";
 
 /* No comment provided by engineer. */
 "Fix" = "Correggi";
@@ -2642,7 +2642,7 @@ servers warning */
 "For console" = "Per console";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Ad esempio, se il tuo contatto riceve messaggi tramite un server di SimpleX Chat, la tua app li consegnerà tramite un server Flux.";
+"For example, if your contact receives messages via a SimpleX Chat router, your app will deliver them via a Flux router." = "Ad esempio, se il tuo contatto riceve messaggi tramite un router di SimpleX Chat, la tua app li consegnerà tramite un router Flux.";
 
 /* No comment provided by engineer. */
 "For me" = "Per me";
@@ -2684,19 +2684,19 @@ servers warning */
 "Forwarding %lld messages" = "Inoltro di %lld messaggi";
 
 /* alert message */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %1$@ non è riuscito a connettersi al server di destinazione %2$@. Riprova più tardi.";
+"Forwarding router %@ failed to connect to destination router %@. Please try later." = "Il router di inoltro %1$@ non è riuscito a connettersi al router di destinazione %2$@. Riprova più tardi.";
 
 /* No comment provided by engineer. */
-"Forwarding server address is incompatible with network settings: %@." = "L'indirizzo del server di inoltro è incompatibile con le impostazioni di rete: %@.";
+"Forwarding router address is incompatible with network settings: %@." = "L'indirizzo del router di inoltro è incompatibile con le impostazioni di rete: %@.";
 
 /* No comment provided by engineer. */
-"Forwarding server version is incompatible with network settings: %@." = "La versione del server di inoltro è incompatibile con le impostazioni di rete: %@.";
+"Forwarding router version is incompatible with network settings: %@." = "La versione del router di inoltro è incompatibile con le impostazioni di rete: %@.";
 
 /* snd error text */
-"Forwarding server: %@\nDestination server error: %@" = "Server di inoltro: %1$@\nErrore del server di destinazione: %2$@";
+"Forwarding router: %@\nDestination router error: %@" = "Router di inoltro: %1$@\nErrore del router di destinazione: %2$@";
 
 /* snd error text */
-"Forwarding server: %@\nError: %@" = "Server di inoltro: %1$@\nErrore: %2$@";
+"Forwarding router: %@\nError: %@" = "Router di inoltro: %1$@\nErrore: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Desktop trovato";
@@ -2786,7 +2786,7 @@ servers warning */
 "Group profile" = "Profilo del gruppo";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Il profilo del gruppo è memorizzato sui dispositivi dei membri, non sui server.";
+"Group profile is stored on members' devices, not on the routers." = "Il profilo del gruppo è memorizzato sui dispositivi dei membri, non sui router.";
 
 /* snd group event chat item */
 "group profile updated" = "profilo del gruppo aggiornato";
@@ -2861,7 +2861,7 @@ servers warning */
 "How to use it" = "Come si usa";
 
 /* No comment provided by engineer. */
-"How to use your servers" = "Come usare i tuoi server";
+"How to use your routers" = "Come usare i tuoi router";
 
 /* No comment provided by engineer. */
 "Hungarian interface" = "Interfaccia in ungherese";
@@ -2930,7 +2930,7 @@ servers warning */
 "Improved privacy and security" = "Privacy e sicurezza migliorate";
 
 /* No comment provided by engineer. */
-"Improved server configuration" = "Configurazione del server migliorata";
+"Improved router configuration" = "Configurazione del router migliorata";
 
 /* No comment provided by engineer. */
 "In order to continue, chat should be stopped." = "Per continuare, la chat deve essere fermata.";
@@ -3062,7 +3062,7 @@ servers warning */
 "Invalid response" = "Risposta non valida";
 
 /* alert title */
-"Invalid server address!" = "Indirizzo del server non valido!";
+"Invalid router address!" = "Indirizzo del router non valido!";
 
 /* item status text */
 "Invalid status" = "Stato non valido";
@@ -3128,7 +3128,7 @@ servers warning */
 "It can happen when you or your connection used the old database backup." = "Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Può accadere quando:\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.\n3. La connessione è stata compromessa.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the router after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Può accadere quando:\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul router dopo 30 giorni.\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.\n3. La connessione è stata compromessa.";
 
 /* No comment provided by engineer. */
 "It protects your IP address and connections." = "Protegge il tuo indirizzo IP e le connessioni.";
@@ -3299,7 +3299,7 @@ servers warning */
 "Max 30 seconds, received instantly." = "Max 30 secondi, ricevuto istantaneamente.";
 
 /* No comment provided by engineer. */
-"Media & file servers" = "Server di multimediali e file";
+"Data routers" = "Router di multimediali e file";
 
 /* blur media */
 "Medium" = "Media";
@@ -3428,7 +3428,7 @@ servers warning */
 "Message reception" = "Ricezione messaggi";
 
 /* No comment provided by engineer. */
-"Message servers" = "Server dei messaggi";
+"Packet routers" = "Router dei messaggi";
 
 /* No comment provided by engineer. */
 "Message shape" = "Forma del messaggio";
@@ -3572,7 +3572,7 @@ servers warning */
 "Name" = "Nome";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Rete e server";
+"Network & routers" = "Rete e router";
 
 /* No comment provided by engineer. */
 "Network connection" = "Connessione di rete";
@@ -3650,13 +3650,13 @@ servers warning */
 "New passphrase…" = "Nuova password…";
 
 /* No comment provided by engineer. */
-"New server" = "Nuovo server";
+"New router" = "Nuovo router";
 
 /* No comment provided by engineer. */
 "New SOCKS credentials will be used every time you start the app." = "Le nuove credenziali SOCKS verranno usate ogni volta che avvii l'app.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Le nuove credenziali SOCKS verranno usate per ogni server.";
+"New SOCKS credentials will be used for each router." = "Le nuove credenziali SOCKS verranno usate per ogni server.";
 
 /* pref value */
 "no" = "no";
@@ -3710,13 +3710,13 @@ servers warning */
 "No info, try to reload" = "Nessuna informazione, prova a ricaricare";
 
 /* servers error */
-"No media & file servers." = "Nessun server di multimediali e file.";
+"No data routers." = "Nessun router di multimediali e file.";
 
 /* No comment provided by engineer. */
 "No message" = "Nessun messaggio";
 
 /* servers error */
-"No message servers." = "Nessun server dei messaggi.";
+"No packet routers." = "Nessun router dei messaggi.";
 
 /* No comment provided by engineer. */
 "No network connection" = "Nessuna connessione di rete";
@@ -3740,16 +3740,16 @@ servers warning */
 "No received or sent files" = "Nessun file ricevuto o inviato";
 
 /* servers error */
-"No servers for private message routing." = "Nessun server per l'instradamento dei messaggi privati.";
+"No routers for private message routing." = "Nessun router per l'instradamento dei messaggi privati.";
 
 /* servers error */
-"No servers to receive files." = "Nessun server per ricevere file.";
+"No routers to receive files." = "Nessun router per ricevere file.";
 
 /* servers error */
-"No servers to receive messages." = "Nessun server per ricevere messaggi.";
+"No routers to receive messages." = "Nessun router per ricevere messaggi.";
 
 /* servers error */
-"No servers to send files." = "Nessun server per inviare file.";
+"No routers to send files." = "Nessun router per inviare file.";
 
 /* No comment provided by engineer. */
 "no subscription" = "nessuna iscrizione";
@@ -3961,7 +3961,7 @@ new chat action */
 "Operator" = "Operatore";
 
 /* alert title */
-"Operator server" = "Server dell'operatore";
+"Operator router" = "Router dell'operatore";
 
 /* No comment provided by engineer. */
 "Or import archive file" = "O importa file archivio";
@@ -4138,16 +4138,16 @@ new chat action */
 "Preserve the last message draft, with attachments." = "Conserva la bozza dell'ultimo messaggio, con gli allegati.";
 
 /* No comment provided by engineer. */
-"Preset server address" = "Indirizzo server preimpostato";
+"Preset router address" = "Indirizzo router preimpostato";
 
 /* No comment provided by engineer. */
-"Preset servers" = "Server preimpostati";
+"Preset routers" = "Router preimpostati";
 
 /* No comment provided by engineer. */
 "Preview" = "Anteprima";
 
 /* No comment provided by engineer. */
-"Previously connected servers" = "Server precedentemente connessi";
+"Previously connected routers" = "Router precedentemente connessi";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Privacy e sicurezza";
@@ -4162,7 +4162,7 @@ new chat action */
 "Privacy redefined" = "Privacy ridefinita";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Le chat private, i gruppi e i tuoi contatti non sono accessibili agli operatori dei server.";
+"Private chats, groups and your contacts are not accessible to router operators." = "Le chat private, i gruppi e i tuoi contatti non sono accessibili agli operatori dei router.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Nomi di file privati";
@@ -4189,7 +4189,7 @@ new chat action */
 "Private routing timeout" = "Scadenza dell'instradamento privato";
 
 /* No comment provided by engineer. */
-"Profile and server connections" = "Profilo e connessioni al server";
+"Profile and router connections" = "Profilo e connessioni al router";
 
 /* No comment provided by engineer. */
 "Profile image" = "Immagine del profilo";
@@ -4246,7 +4246,7 @@ new chat action */
 "Protect your chat profiles with a password!" = "Proteggi i tuoi profili di chat con una password!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti.\nAttivalo nelle impostazioni *Rete e server*.";
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & routers* settings." = "Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti.\nAttivalo nelle impostazioni *Rete e router*.";
 
 /* No comment provided by engineer. */
 "Protocol background timeout" = "Scadenza del protocollo in sec. piano";
@@ -4261,7 +4261,7 @@ new chat action */
 "Proxied" = "Via proxy";
 
 /* No comment provided by engineer. */
-"Proxied servers" = "Server via proxy";
+"Proxied routers" = "Router via proxy";
 
 /* No comment provided by engineer. */
 "Proxy requires password" = "Il proxy richiede una password";
@@ -4336,7 +4336,7 @@ new chat action */
 "Received total" = "Totale ricevuto";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "L'indirizzo di ricezione verrà cambiato in un server diverso. La modifica dell'indirizzo verrà completata dopo che il mittente sarà in linea.";
+"Receiving address will be changed to a different router. Address change will complete after sender comes online." = "L'indirizzo di ricezione verrà cambiato in un router diverso. La modifica dell'indirizzo verrà completata dopo che il mittente sarà in linea.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "La ricezione del file verrà interrotta.";
@@ -4357,22 +4357,22 @@ new chat action */
 "Reconnect" = "Riconnetti";
 
 /* No comment provided by engineer. */
-"Reconnect all connected servers to force message delivery. It uses additional traffic." = "Riconnetti tutti i server connessi per imporre il recapito dei messaggi. Utilizza traffico aggiuntivo.";
+"Reconnect all connected routers to force message delivery. It uses additional traffic." = "Riconnetti tutti i router connessi per imporre il recapito dei messaggi. Utilizza traffico aggiuntivo.";
 
 /* No comment provided by engineer. */
-"Reconnect all servers" = "Riconnetti tutti i server";
+"Reconnect all routers" = "Riconnetti tutti i router";
 
 /* No comment provided by engineer. */
-"Reconnect all servers?" = "Riconnettere tutti i server?";
+"Reconnect all routers?" = "Riconnettere tutti i router?";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "Riconnetti il server per forzare la consegna dei messaggi. Usa traffico aggiuntivo.";
+"Reconnect router to force message delivery. It uses additional traffic." = "Riconnetti il router per forzare la consegna dei messaggi. Usa traffico aggiuntivo.";
 
 /* No comment provided by engineer. */
-"Reconnect server?" = "Riconnettere il server?";
+"Reconnect router?" = "Riconnettere il router?";
 
 /* No comment provided by engineer. */
-"Reconnect servers?" = "Riconnettere i server?";
+"Reconnect routers?" = "Riconnettere i router?";
 
 /* No comment provided by engineer. */
 "Record updated at" = "Registro aggiornato il";
@@ -4669,10 +4669,10 @@ chat item action */
 "Save profile password" = "Salva la password del profilo";
 
 /* No comment provided by engineer. */
-"Save servers" = "Salva i server";
+"Save routers" = "Salva i router";
 
 /* alert title */
-"Save servers?" = "Salvare i server?";
+"Save routers?" = "Salvare i router?";
 
 /* No comment provided by engineer. */
 "Save welcome message?" = "Salvare il messaggio di benvenuto?";
@@ -4720,7 +4720,7 @@ chat item action */
 "Scan security code from your contact's app." = "Scansiona il codice di sicurezza dall'app del tuo contatto.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Scansiona codice QR del server";
+"Scan router QR code" = "Scansiona codice QR del router";
 
 /* No comment provided by engineer. */
 "search" = "cerca";
@@ -4831,10 +4831,10 @@ chat item action */
 "Send message to enable calls." = "Invia un messaggio per attivare le chiamate.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Invia messaggi direttamente quando l'indirizzo IP è protetto e il tuo server o quello di destinazione non supporta l'instradamento privato.";
+"Send messages directly when IP address is protected and your or destination router does not support private routing." = "Invia messaggi direttamente quando l'indirizzo IP è protetto e il tuo router o quello di destinazione non supporta l'instradamento privato.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Invia messaggi direttamente quando il tuo server o quello di destinazione non supporta l'instradamento privato.";
+"Send messages directly when your or destination router does not support private routing." = "Invia messaggi direttamente quando il tuo router o quello di destinazione non supporta l'instradamento privato.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Invia notifiche";
@@ -4921,58 +4921,58 @@ chat item action */
 "Sent via proxy" = "Inviato via proxy";
 
 /* No comment provided by engineer. */
-"Server" = "Server";
+"Router" = "Router";
 
 /* alert message */
-"Server added to operator %@." = "Server aggiunto all'operatore %@.";
+"Router added to operator %@." = "Router aggiunto all'operatore %@.";
 
 /* No comment provided by engineer. */
-"Server address" = "Indirizzo server";
+"Router address" = "Indirizzo router";
 
 /* No comment provided by engineer. */
-"Server address is incompatible with network settings: %@." = "L'indirizzo del server è incompatibile con le impostazioni di rete: %@.";
+"Router address is incompatible with network settings: %@." = "L'indirizzo del router è incompatibile con le impostazioni di rete: %@.";
 
 /* srv error text. */
-"Server address is incompatible with network settings." = "L'indirizzo del server non è compatibile con le impostazioni di rete.";
+"Router address is incompatible with network settings." = "L'indirizzo del router non è compatibile con le impostazioni di rete.";
 
 /* alert title */
-"Server operator changed." = "L'operatore del server è cambiato.";
+"Router operator changed." = "L'operatore del router è cambiato.";
 
 /* No comment provided by engineer. */
-"Server operators" = "Operatori server";
+"Router operators" = "Operatori router";
 
 /* alert title */
-"Server protocol changed." = "Il protocollo del server è cambiato.";
+"Router protocol changed." = "Il protocollo del router è cambiato.";
 
 /* queue info */
-"server queue info: %@\n\nlast received msg: %@" = "info coda server: %1$@\n\nultimo msg ricevuto: %2$@";
+"router queue info: %@\n\nlast received msg: %@" = "info coda router: %1$@\n\nultimo msg ricevuto: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Il server richiede l'autorizzazione di creare code, controlla la password.";
+"Router requires authorization to create queues, check password." = "Il router richiede l'autorizzazione di creare code, controlla la password.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Il server richiede l'autorizzazione per l'invio, controlla la password.";
+"Router requires authorization to upload, check password." = "Il router richiede l'autorizzazione per l'invio, controlla la password.";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Test del server fallito!";
+"Router test failed!" = "Test del router fallito!";
 
 /* No comment provided by engineer. */
-"Server type" = "Tipo server";
+"Router type" = "Tipo router";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "La versione del server non è compatibile con le impostazioni di rete.";
+"Router version is incompatible with network settings." = "La versione del router non è compatibile con le impostazioni di rete.";
 
 /* No comment provided by engineer. */
-"Server version is incompatible with your app: %@." = "La versione del server è incompatibile con la tua app: %@.";
+"Router version is incompatible with your app: %@." = "La versione del router è incompatibile con la tua app: %@.";
 
 /* No comment provided by engineer. */
-"Servers" = "Server";
+"Routers" = "Router";
 
 /* No comment provided by engineer. */
-"Servers info" = "Info dei server";
+"Routers info" = "Info dei router";
 
 /* No comment provided by engineer. */
-"Servers statistics will be reset - this cannot be undone!" = "Le statistiche dei server verranno azzerate - è irreversibile!";
+"Routers statistics will be reset - this cannot be undone!" = "Le statistiche dei router verranno azzerate - è irreversibile!";
 
 /* No comment provided by engineer. */
 "Session code" = "Codice di sessione";
@@ -5141,7 +5141,7 @@ chat item action */
 "SimpleX channel link" = "Link del canale SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell'app.";
+"SimpleX Chat and Flux made an agreement to include Flux-operated routers into the app." = "SimpleX Chat e Flux hanno concluso un accordo per includere router gestiti da Flux nell'app.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "La sicurezza di SimpleX Chat è stata verificata da Trail of Bits.";
@@ -5198,7 +5198,7 @@ chat item action */
 "Small groups (max 20)" = "Piccoli gruppi (max 20)";
 
 /* No comment provided by engineer. */
-"SMP server" = "Server SMP";
+"Packet router" = "Router SMP";
 
 /* No comment provided by engineer. */
 "SOCKS proxy" = "Proxy SOCKS";
@@ -5219,7 +5219,7 @@ chat item action */
 "Some non-fatal errors occurred during import:" = "Si sono verificati alcuni errori non fatali durante l'importazione:";
 
 /* alert message */
-"Some servers failed the test:\n%@" = "Alcuni server hanno fallito il test:\n%@";
+"Some routers failed the test:\n%@" = "Alcuni router hanno fallito il test:\n%@";
 
 /* notification title */
 "Somebody" = "Qualcuno";
@@ -5395,10 +5395,10 @@ server test failure */
 "Test notifications" = "Prova le notifiche";
 
 /* No comment provided by engineer. */
-"Test server" = "Prova server";
+"Test router" = "Prova router";
 
 /* No comment provided by engineer. */
-"Test servers" = "Prova i server";
+"Test routers" = "Prova i router";
 
 /* alert title */
 "Tests failed!" = "Test falliti!";
@@ -5422,7 +5422,7 @@ server test failure */
 "The app protects your privacy by using different operators in each conversation." = "L'app protegge la tua privacy usando diversi operatori in ogni conversazione.";
 
 /* No comment provided by engineer. */
-"The app will ask to confirm downloads from unknown file servers (except .onion)." = "L'app chiederà di confermare i download da server di file sconosciuti (eccetto .onion).";
+"The app will ask to confirm downloads from unknown data routers (except .onion)." = "L'app chiederà di confermare i download da router di file sconosciuti (eccetto .onion).";
 
 /* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "Il tentativo di cambiare la password del database non è stato completato.";
@@ -5485,16 +5485,16 @@ server test failure */
 "The sender will NOT be notified" = "Il mittente NON verrà avvisato";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "I server per le nuove connessioni del profilo di chat attuale **%@**.";
+"The routers for new connections of your current chat profile **%@**." = "I router per le nuove connessioni del profilo di chat attuale **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "I server per nuovi file del tuo profilo di chat attuale **%@**.";
+"The routers for new files of your current chat profile **%@**." = "I router per nuovi file del tuo profilo di chat attuale **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Il testo che hai incollato non è un link SimpleX.";
 
 /* No comment provided by engineer. */
-"The uploaded database archive will be permanently removed from the servers." = "L'archivio del database caricato verrà rimosso definitivamente dai server.";
+"The uploaded database archive will be permanently removed from the routers." = "L'archivio del database caricato verrà rimosso definitivamente dai router.";
 
 /* No comment provided by engineer. */
 "Themes" = "Temi";
@@ -5584,7 +5584,7 @@ server test failure */
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Per proteggere le tue informazioni, attiva SimpleX Lock.\nTi verrà chiesto di completare l'autenticazione prima di attivare questa funzionalità.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Per proteggere il tuo indirizzo IP, l'instradamento privato usa i tuoi server SMP per consegnare i messaggi.";
+"To protect your IP address, private routing uses your packet routers to deliver messages." = "Per proteggere il tuo indirizzo IP, l'instradamento privato usa i tuoi router SMP per consegnare i messaggi.";
 
 /* No comment provided by engineer. */
 "To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Per proteggere la privacy, invece degli ID utente utilizzati da tutte le altre piattaforme, SimpleX ha identificatori per le code di messaggi, separati per ciascuno dei tuoi contatti.";
@@ -5617,7 +5617,7 @@ server test failure */
 "To use another profile after connection attempt, delete the chat and use the link again." = "Per usare un altro profilo dopo il tentativo di connessione, elimina la chat e usa di nuovo il link.";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "Per usare i server di **%@**, accetta le condizioni d'uso.";
+"To use the routers of **%@**, accept conditions of use." = "Per usare i router di **%@**, accetta le condizioni d'uso.";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.";
@@ -5644,7 +5644,7 @@ server test failure */
 "Transport sessions" = "Sessioni di trasporto";
 
 /* subscription status explanation */
-"Trying to connect to the server used to receive messages from this connection." = "Tentativo di connessione al server usato per ricevere messaggi da questa connessione.";
+"Trying to connect to the router used to receive messages from this connection." = "Tentativo di connessione al router usato per ricevere messaggi da questa connessione.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Interfaccia in turco";
@@ -5710,10 +5710,10 @@ server test failure */
 "Unknown error" = "Errore sconosciuto";
 
 /* No comment provided by engineer. */
-"unknown servers" = "relay sconosciuti";
+"unknown routers" = "relay sconosciuti";
 
 /* alert title */
-"Unknown servers!" = "Server sconosciuti!";
+"Unknown routers!" = "Router sconosciuti!";
 
 /* No comment provided by engineer. */
 "unknown status" = "stato sconosciuto";
@@ -5773,7 +5773,7 @@ server test failure */
 "updated profile" = "profilo aggiornato";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "L'aggiornamento delle impostazioni riconnetterà il client a tutti i server.";
+"Updating settings will re-connect the client to all routers." = "L'aggiornamento delle impostazioni riconnetterà il client a tutti i router.";
 
 /* alert button */
 "Upgrade" = "Aggiorna";
@@ -5851,19 +5851,19 @@ server test failure */
 "Use only local notifications?" = "Usare solo notifiche locali?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Usa l'instradamento privato con server sconosciuti quando l'indirizzo IP non è protetto.";
+"Use private routing with unknown routers when IP address is not protected." = "Usa l'instradamento privato con router sconosciuti quando l'indirizzo IP non è protetto.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Usa l'instradamento privato con server sconosciuti.";
+"Use private routing with unknown routers." = "Usa l'instradamento privato con router sconosciuti.";
 
 /* No comment provided by engineer. */
-"Use server" = "Usa il server";
+"Use router" = "Usa il router";
 
 /* No comment provided by engineer. */
-"Use servers" = "Usa i server";
+"Use routers" = "Usa i router";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "Usare i server di SimpleX Chat?";
+"Use SimpleX Chat servers?" = "Usare i router di SimpleX Chat?";
 
 /* No comment provided by engineer. */
 "Use SOCKS proxy" = "Usa proxy SOCKS";
@@ -5872,7 +5872,7 @@ server test failure */
 "Use TCP port %@ when no port is specified." = "Usa la porta TCP %@ quando non è specificata alcuna porta.";
 
 /* No comment provided by engineer. */
-"Use TCP port 443 for preset servers only." = "Usa la porta TCP 443 solo per i server preimpostati.";
+"Use TCP port 443 for preset routers only." = "Usa la porta TCP 443 solo per i router preimpostati.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
@@ -5890,7 +5890,7 @@ server test failure */
 "Username" = "Nome utente";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "Utilizzo dei server SimpleX Chat.";
+"Using SimpleX Chat servers." = "Utilizzo dei router SimpleX Chat.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -6076,7 +6076,7 @@ server test failure */
 "With reduced battery usage." = "Con consumo di batteria ridotto.";
 
 /* No comment provided by engineer. */
-"Without Tor or VPN, your IP address will be visible to file servers." = "Senza Tor o VPN, il tuo indirizzo IP sarà visibile ai server di file.";
+"Without Tor or VPN, your IP address will be visible to data routers." = "Senza Tor o VPN, il tuo indirizzo IP sarà visibile ai router di file.";
 
 /* alert message */
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Senza Tor o VPN, il tuo indirizzo IP sarà visibile a questi relay XFTP: %@.";
@@ -6094,7 +6094,7 @@ server test failure */
 "Wrong passphrase!" = "Password sbagliata!";
 
 /* No comment provided by engineer. */
-"XFTP server" = "Server XFTP";
+"Data router" = "Router XFTP";
 
 /* pref value */
 "yes" = "sì";
@@ -6142,16 +6142,16 @@ server test failure */
 "You are already joining the group!\nRepeat join request?" = "Stai già entrando nel gruppo!\nRipetere la richiesta di ingresso?";
 
 /* subscription status explanation */
-"You are connected to the server used to receive messages from this connection." = "Sei connesso/a al server usato per ricevere messaggi da questa connessione.";
+"You are connected to the router used to receive messages from this connection." = "Sei connesso/a al router usato per ricevere messaggi da questa connessione.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sei stato/a invitato/a al gruppo";
 
 /* subscription status explanation */
-"You are not connected to the server used to receive messages from this connection (no subscription)." = "Non sei connesso/a al server usato per ricevere messaggi da questa connessione (nessuna iscrizione).";
+"You are not connected to the router used to receive messages from this connection (no subscription)." = "Non sei connesso/a al router usato per ricevere messaggi da questa connessione (nessuna iscrizione).";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "Non sei connesso/a a questi server. L'instradamento privato è usato per consegnare loro i messaggi.";
+"You are not connected to these routers. Private routing is used to deliver messages to them." = "Non sei connesso/a a questi router. L'instradamento privato è usato per consegnare loro i messaggi.";
 
 /* No comment provided by engineer. */
 "you are observer" = "sei un osservatore";
@@ -6166,7 +6166,7 @@ server test failure */
 "You can change it in Appearance settings." = "Puoi cambiarlo nelle impostazioni dell'aspetto.";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "Puoi configurare i server nelle impostazioni.";
+"You can configure routers via settings." = "Puoi configurare i router nelle impostazioni.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Puoi crearlo più tardi";
@@ -6403,7 +6403,7 @@ server test failure */
 "Your profile is stored on your device and only shared with your contacts." = "Il profilo è condiviso solo con i tuoi contatti.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti. I server di SimpleX non possono vedere il tuo profilo.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX routers cannot see your profile." = "Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti. I router di SimpleX non possono vedere il tuo profilo.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Il tuo profilo è stato cambiato. Se lo salvi, il profilo aggiornato verrà inviato a tutti i tuoi contatti.";
@@ -6412,10 +6412,10 @@ server test failure */
 "Your random profile" = "Il tuo profilo casuale";
 
 /* No comment provided by engineer. */
-"Your server address" = "L'indirizzo del tuo server";
+"Your router address" = "L'indirizzo del tuo router";
 
 /* No comment provided by engineer. */
-"Your servers" = "I tuoi server";
+"Your routers" = "I tuoi router";
 
 /* No comment provided by engineer. */
 "Your settings" = "Le tue impostazioni";

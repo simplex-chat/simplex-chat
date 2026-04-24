@@ -46,7 +46,7 @@ struct SimpleXInfo: View {
                         onboardingInfoRow("shield", "Immune to spam",
                                 "You decide who can connect.", width: 46)
                         onboardingInfoRow(colorScheme == .light ? "decentralized" : "decentralized-light", "Decentralized",
-                                "Anybody can host servers.", width: 46)
+                                "Anybody can host routers.", width: 46)
                     }
                     .padding(.leading, 16)
 

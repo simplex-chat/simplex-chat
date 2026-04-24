@@ -109,7 +109,7 @@
     <string name="back">തിരികെ</string>
     <string name="mute_chat">നിശബ്ദമാക്കുക</string>
     <string name="icon_descr_help">സഹായം</string>
-    <string name="smp_servers_add">സെർവർ ചേർക്കുക</string>
+    <string name="smp_servers_add">റൂട്ടർ ചേർക്കുക</string>
     <string name="smp_servers_add_to_another_device">മറ്റൊരു ഉപകരണത്തിലേക്ക് ചേർക്കുക</string>
     <string name="auto_accept_contact">സ്വയമേവ സ്വീകരിക്കുക</string>
     <string name="callstate_waiting_for_confirmation">സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു…</string>
@@ -213,8 +213,8 @@
     <string name="clear_chat_menu_action">വൃത്തിയാക്കുക</string>
     <string name="learn_more">കൂടുതലറിയുക</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.]]></string>
-    <string name="smp_servers_check_address">സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
-    <string name="your_SMP_servers">നിങ്ങളുടെ SMP സെർവറുകൾ</string>
+    <string name="smp_servers_check_address">റൂട്ടർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
+    <string name="your_SMP_servers">നിങ്ങളുടെ പാക്കറ്റ് റൂട്ടറുകൾ</string>
     <string name="network_session_mode_entity">ബന്ധം</string>
     <string name="stop_sharing_address">വിലാസം പങ്കിടുന്നത് നിർത്തണോ\?</string>
     <string name="continue_to_next_step">തുടരുക</string>
@@ -268,11 +268,11 @@
     <string name="callstatus_calling">വിളിക്കുന്നു…</string>
     <string name="live_message">തത്സമയ സന്ദേശം!</string>
     <string name="send_us_an_email">ഞങ്ങൾക്ക് ഇമെയിൽ അയയ്ക്കുക</string>
-    <string name="smp_servers_your_server">നിങ്ങളുടെ സെർവർ</string>
+    <string name="smp_servers_your_server">നിങ്ങളുടെ റൂട്ടർ</string>
     <string name="icon_descr_sent_msg_status_sent">അയച്ചു</string>
-    <string name="smp_servers_your_server_address">നിങ്ങളുടെ സെർവർ വിലാസം</string>
+    <string name="smp_servers_your_server_address">നിങ്ങളുടെ റൂട്ടർ വിലാസം</string>
     <string name="info_row_sent_at">എന്ന വിലാസത്തിൽ അയച്ചു</string>
-    <string name="your_XFTP_servers">നിങ്ങളുടെ XFTP സെർവറുകൾ</string>
+    <string name="your_XFTP_servers">നിങ്ങളുടെ ഡാറ്റ റൂട്ടറുകൾ</string>
     <string name="about_simplex_chat">കുറിച്ച് SimpleX Chat</string>
     <string name="users_delete_all_chats_deleted">എല്ലാ സംഭാഷണങ്ങളും സന്ദേശങ്ങളും ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
     <string name="all_group_members_will_remain_connected">സംഘത്തിലെ എല്ലാ അംഗങ്ങളുടെ ബന്ധം നിലനിർത്തും.</string>
@@ -318,7 +318,7 @@
     <string name="info_row_received_at">എന്ന സ്ഥലത്ത് ലഭിച്ചു</string>
     <string name="share_text_received_at">ലഭിച്ചത്: %s</string>
     <string name="switch_receiving_address">സ്വീകരിക്കുന്ന വിലാസം മാറുക</string>
-    <string name="conn_stats_section_title_servers">സെർവറുകൾ</string>
+    <string name="conn_stats_section_title_servers">റൂട്ടറുകൾ</string>
     <string name="network_options_save">സംരക്ഷിക്കുക</string>
     <string name="theme_system">സംവിധാനം</string>
     <string name="language_system">സംവിധാനം</string>
@@ -348,8 +348,8 @@
     <string name="for_everybody">എല്ലാവർക്കും</string>
     <string name="abort_switch_receiving_address_confirm">നിഷ്‌ഫലമാക്കുക</string>
     <string name="disappearing_message">അപ്രത്യക്ഷമാകുന്ന സന്ദേശം</string>
-    <string name="smp_servers_delete_server">സെർവർ ഇല്ലാതാക്കുക</string>
-    <string name="how_to_use_your_servers">നിങ്ങളുടെ സെർവറുകൾ എങ്ങനെ ഉപയോഗിക്കാം</string>
+    <string name="smp_servers_delete_server">റൂട്ടർ ഇല്ലാതാക്കുക</string>
+    <string name="how_to_use_your_servers">നിങ്ങളുടെ റൂട്ടറുകൾ എങ്ങനെ ഉപയോഗിക്കാം</string>
     <string name="enter_welcome_message_optional">സ്വാഗത സന്ദേശം നൽകുക... (ഇച്ഛാനുസൃതമായ)</string>
     <string name="exit_without_saving">സംരക്ഷിക്കാതെ പുറത്ത് പോവുക</string>
     <string name="how_it_works">ഇത് എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>

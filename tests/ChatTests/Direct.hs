@@ -85,12 +85,12 @@ chatDirectTests = do
     it "invitation link ok to connect" testPlanInvitationLinkOk
     it "own invitation link" testPlanInvitationLinkOwn
     it "connecting via invitation link" testPlanInvitationLinkConnecting
-  describe "SMP servers" $ do
-    it "get and set SMP servers" testGetSetSMPServers
-    it "test SMP server connection" testTestSMPServerConnection
-  describe "XFTP servers" $ do
-    it "get and set XFTP servers" testGetSetXFTPServers
-    it "test XFTP server connection" testTestXFTPServer
+  describe "packet routers" $ do
+    it "get and set packet routers" testGetSetSMPServers
+    it "test packet router connection" testTestSMPServerConnection
+  describe "data routers" $ do
+    it "get and set data routers" testGetSetXFTPServers
+    it "test data router connection" testTestXFTPServer
   describe "operators and usage conditions" $ do
     it "get and enable operators, accept conditions" testOperators
   describe "async connection handshake" $ do
@@ -236,14 +236,14 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       inv <- withSmpServer' serverCfg' $ do
         alice ##> "/_connect 1"
         getInvitation alice
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
       _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> inv)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
@@ -257,8 +257,8 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         bob <# "alice> message 1"
         bob #> "@alice message 2"
         alice <# "bob> message 2"
-      bob <## "disconnected 1 connections on server localhost"
-      alice <## "disconnected 1 connections on server localhost"
+      bob <## "disconnected 1 connections on packet router localhost"
+      alice <## "disconnected 1 connections on packet router localhost"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
@@ -305,7 +305,7 @@ testRetryConnectingClientTimeout ps = do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
         threadDelay 250000
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         -- bob <## "1 subscription errors (run with -c option to show each error)"
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
@@ -1120,26 +1120,26 @@ testGetSetSMPServers =
   testChat aliceProfile $
     \alice -> do
       alice ##> "/_servers 1"
-      alice <## "Your servers"
-      alice <## "  SMP servers"
+      alice <## "Your routers"
+      alice <## "  packet routers"
       alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
-      alice <## "  XFTP servers"
+      alice <## "  data routers"
       alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
       alice ##> "/smp"
-      alice <## "Your servers"
-      alice <## "  SMP servers"
+      alice <## "Your routers"
+      alice <## "  packet routers"
       alice <## "    smp://1234-w==@smp1.example.im"
       alice #$> ("/smp smp://1234-w==:password@smp1.example.im", id, "ok")
       -- alice #$> ("/smp", id, "smp://1234-w==:password@smp1.example.im")
       alice ##> "/smp"
-      alice <## "Your servers"
-      alice <## "  SMP servers"
+      alice <## "Your routers"
+      alice <## "  packet routers"
       alice <## "    smp://1234-w==:password@smp1.example.im"
       alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice ##> "/smp"
-      alice <## "Your servers"
-      alice <## "  SMP servers"
+      alice <## "Your routers"
+      alice <## "  packet routers"
       alice <## "    smp://2345-w==@smp2.example.im"
       alice <## "    smp://3456-w==@smp3.example.im:5224"
 
@@ -1148,40 +1148,40 @@ testTestSMPServerConnection =
   testChat aliceProfile $
     \alice -> do
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
-      alice <## "SMP server test passed"
+      alice <## "packet router test passed"
       -- to test with password:
-      -- alice <## "SMP server test failed at CreateQueue, error: SMP AUTH"
-      -- alice <## "Server requires authorization to create queues, check password"
+      -- alice <## "packet router test failed at CreateQueue, error: SMP AUTH"
+      -- alice <## "packet router requires authorization to create queues, check password"
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
-      alice <## "SMP server test passed"
+      alice <## "packet router test passed"
       alice ##> "/smp test smp://LcJU@localhost:7001"
-      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
-      alice <## "Certificate fingerprint in SMP server address does not match server certificate"
+      alice <## "packet router test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice <## "Certificate fingerprint in packet router address does not match router certificate"
 
 testGetSetXFTPServers :: HasCallStack => TestParams -> IO ()
 testGetSetXFTPServers =
   testChat aliceProfile $
     \alice -> withXFTPServer $ do
       alice ##> "/_servers 1"
-      alice <## "Your servers"
-      alice <## "  SMP servers"
+      alice <## "Your routers"
+      alice <## "  packet routers"
       alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
-      alice <## "  XFTP servers"
+      alice <## "  data routers"
       alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
       alice ##> "/xftp"
-      alice <## "Your servers"
-      alice <## "  XFTP servers"
+      alice <## "Your routers"
+      alice <## "  data routers"
       alice <## "    xftp://1234-w==@xftp1.example.im"
       alice #$> ("/xftp xftp://1234-w==:password@xftp1.example.im", id, "ok")
       alice ##> "/xftp"
-      alice <## "Your servers"
-      alice <## "  XFTP servers"
+      alice <## "Your routers"
+      alice <## "  data routers"
       alice <## "    xftp://1234-w==:password@xftp1.example.im"
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
       alice ##> "/xftp"
-      alice <## "Your servers"
-      alice <## "  XFTP servers"
+      alice <## "Your routers"
+      alice <## "  data routers"
       alice <## "    xftp://2345-w==@xftp2.example.im"
       alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
@@ -1190,15 +1190,15 @@ testTestXFTPServer =
   testChat aliceProfile $
     \alice -> withXFTPServer $ do
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7002"
-      alice <## "XFTP server test passed"
+      alice <## "data router test passed"
       -- to test with password:
-      -- alice <## "XFTP server test failed at CreateFile, error: XFTP AUTH"
-      -- alice <## "Server requires authorization to upload files, check password"
+      -- alice <## "data router test failed at CreateFile, error: XFTP AUTH"
+      -- alice <## "data router requires authorization to upload files, check password"
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
-      alice <## "XFTP server test passed"
+      alice <## "data router test passed"
       alice ##> "/xftp test xftp://LcJU@localhost:7002"
-      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
-      alice <## "Certificate fingerprint in XFTP server address does not match server certificate"
+      alice <## "data router test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice <## "Certificate fingerprint in data router address does not match router certificate"
 
 testOperators  :: HasCallStack => TestParams -> IO ()
 testOperators =
@@ -1208,25 +1208,25 @@ testOperators =
       alice ##> "/_conditions"
       alice <##. "Current conditions: 2."
       alice ##> "/_operators"
-      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, routers: enabled, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, routers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
       alice <##. "The new conditions will be accepted for SimpleX Chat Ltd, InFlux Technologies Limited at "
       -- set conditions notified
       alice ##> "/_conditions_notified 2"
       alice <## "ok"
       alice ##> "/_operators"
-      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, routers: enabled, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, routers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
       alice ##> "/_conditions"
       alice <##. "Current conditions: 2 (notified)."
       -- accept conditions
       alice ##> "/_accept_conditions 2 1,2"
-      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: accepted ("
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, routers: enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, routers: SMP enabled proxy, XFTP enabled proxy, conditions: accepted ("
       -- update operators
       alice ##> "/operators 2:on:smp=proxy:xftp=off"
-      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP disabled (servers known), conditions: accepted ("
+      alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, routers: enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, routers: SMP enabled proxy, XFTP disabled (routers known), conditions: accepted ("
   where
     opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
@@ -1241,7 +1241,7 @@ testAsyncInitiatingOffline withShortLink ps = do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     withTestChat ps "alice" $ \alice -> do
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1257,8 +1257,8 @@ testAsyncAcceptingOffline withShortLink ps = do
     bob <## "confirmation sent!"
   withTestChat ps "alice" $ \alice -> do
     withTestChat ps "bob" $ \bob -> do
-      alice <## "subscribed 1 connections on server localhost"
-      bob <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1275,10 +1275,10 @@ testFullAsyncFast ps = do
     bob <## "confirmation sent!"
     threadDelay 250000
   withTestChat ps "alice" $ \alice -> do
-    alice <## "subscribed 1 connections on server localhost"
+    alice <## "subscribed 1 connections on packet router localhost"
     alice <## "bob (Bob): contact is connected"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "subscribed 1 connections on server localhost"
+    bob <## "subscribed 1 connections on packet router localhost"
     bob <## "alice (Alice): contact is connected"
 
 testCallType :: CallType
@@ -1369,7 +1369,7 @@ testMaintenanceMode ps = do
       alice ##> "/_start"
       alice <## "chat started"
       -- chat works after start
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
       alice #> "@bob hi again"
       bob <# "alice> hi again"
       bob #> "@alice hello"
@@ -1390,7 +1390,7 @@ testMaintenanceMode ps = do
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
-  alice <## "subscribed 1 connections on server localhost"
+  alice <## "subscribed 1 connections on packet router localhost"
   alice #> "@bob hello again"
   bob <# "alice> hello again"
   bob #> "@alice hello too"
@@ -1523,7 +1523,7 @@ testConnSyncMissingAgentUsers ps = do
       alice <## "connections difference summary:"
       alice <## "number of missing users in agent: 1"
 
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       alice <##> bob
 
@@ -1558,7 +1558,7 @@ testConnSyncExtraAgentUsers ps = do
       alice <## "number of extra users in agent: 1"
       alice <## "removed extra users in agent"
 
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       threadDelay 100000
       agentUserCount <- withCCAgentTransaction alice $ \db ->
@@ -1605,7 +1605,7 @@ testConnSyncMissingAgentConns ps = do
         alice <## "connections difference summary:"
         alice <## "number of missing connections in agent: 1"
 
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         -- alice <## "[user: alisa] 1 subscription errors (run with -c option to show each error)"
 
         alice <##> bob
@@ -1644,7 +1644,7 @@ testConnSyncExtraAgentConns ps = do
         alice <## "number of extra connections in agent: 1"
         alice <## "removed extra connections in agent"
 
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
 
         threadDelay 100000
         agentConnCount <- withCCAgentTransaction alice $ \db ->
@@ -1671,7 +1671,7 @@ testSubscribeAppNSE ps =
         (nseAlice </)
         alice ##> "/_app activate"
         alice <## "ok"
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed 1 connections on packet router localhost"
         alice <## "bob (Bob) wants to connect to you!"
         alice <## "to accept: /ac bob"
         alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1882,8 +1882,8 @@ testUsersSubscribeAfterRestart ps = do
 
     withTestChat ps "alice" $ \alice -> do
       -- second user is active
-      alice <## "subscribed 1 connections on server localhost"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       -- second user receives message
       alice <##> bob
@@ -1979,13 +1979,13 @@ testCreateUserSameServers =
   where
     checkCustomServers alice = do
       alice ##> "/smp"
-      alice <## "Your servers"
-      alice <## "  SMP servers"
+      alice <## "Your routers"
+      alice <## "  packet routers"
       alice <## "    smp://2345-w==@smp2.example.im"
       alice <## "    smp://3456-w==@smp3.example.im:5224"
       alice ##> "/xftp"
-      alice <## "Your servers"
-      alice <## "  XFTP servers"
+      alice <## "Your routers"
+      alice <## "  data routers"
       alice <## "    xftp://2345-w==@xftp2.example.im"
       alice <## "    xftp://3456-w==@xftp3.example.im:5224"
 
@@ -2208,8 +2208,8 @@ testUsersRestartCIExpiration ps = do
       showActiveUser alice "alice (Alice)"
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "subscribed 1 connections on server localhost"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       -- first user messages
       alice ##> "/user alice"
@@ -2307,8 +2307,8 @@ testEnableCIExpirationOnlyForOneUser ps = do
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "subscribed 1 connections on server localhost"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       -- messages are not deleted for second user after restart
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
@@ -2363,8 +2363,8 @@ testDisableCIExpirationOnlyForOneUser ps = do
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "subscribed 1 connections on server localhost"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       -- second user still has ttl configured after restart
       alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
@@ -2466,8 +2466,8 @@ testUsersTimedMessages ps' = do
       alice <# "bob> alisa 4"
 
     withTestChat ps "alice" $ \alice -> do
-      alice <## "subscribed 1 connections on server localhost"
-      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
+      alice <## "subscribed 1 connections on packet router localhost"
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2814,7 +2814,7 @@ testAbortSwitchContact ps = do
     alice ##> "/abort switch bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       bob <## "alice started changing address for you"
       -- alice changes address again
       alice #$> ("/switch bob", id, "switch started")
@@ -2861,7 +2861,7 @@ testAbortSwitchGroupMember ps = do
     alice ##> "/abort switch #team bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 2 connections on server localhost"
+      bob <## "subscribed 2 connections on packet router localhost"
       bob <## "#team: alice started changing address for you"
       -- alice changes address again
       alice #$> ("/switch #team bob", id, "switch started")
@@ -2960,7 +2960,7 @@ testMsgDecryptError ps =
       alice <# "bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       alice #> "@bob hello again"
       bob <# "alice> skipped message ID 9..11"
       bob <# "alice> hello again"
@@ -2971,7 +2971,7 @@ setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "subscribed 1 connections on server localhost"
+    bob <## "subscribed 1 connections on packet router localhost"
     alice #> "@bob 1"
     bob <# "alice> 1"
     bob #> "@alice 2"
@@ -2982,7 +2982,7 @@ setupDesynchronizedRatchet ps alice = do
     alice <# "bob> 4"
     threadDelay 500000
   withTestChat ps "bob_old" $ \bob -> do
-    bob <## "subscribed 1 connections on server localhost"
+    bob <## "subscribed 1 connections on packet router localhost"
     bob ##> "/sync alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "@bob 1"
@@ -3013,7 +3013,7 @@ testSyncRatchet ps =
       alice <# "bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       bob ##> "/sync alice"
       bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
@@ -3052,7 +3052,7 @@ testSyncRatchetCodeReset ps =
       aliceInfo bob True
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
       bob ##> "/sync alice"
       bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
@@ -3276,7 +3276,7 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
 
     withTestChat ps "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
 
       bob #> "@alice hello 1"
       alice <# "bob> hello 1"
@@ -3288,7 +3288,7 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
 
     withTestChatCfg ps cfg11 "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on packet router localhost"
 
       bob #> "@alice hello 2"
       alice <# "bob> hello 2"

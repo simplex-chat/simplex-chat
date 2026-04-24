@@ -236,7 +236,7 @@ struct ChatInfoView: View {
                     }
 
                     if contact.ready && contact.active {
-                        Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
+                        Section(header: Text("Routers").foregroundColor(theme.colors.secondary)) {
                             if let chatSubStatus = chatModel.chatSubStatus {
                                 SubStatusRow(status: chatSubStatus)
                                     .onTapGesture {
@@ -1090,7 +1090,7 @@ struct ChatWallpaperEditorSheet: View {
 func switchAddressAlert(_ switchAddress: @escaping () -> Void) -> Alert {
     Alert(
         title: Text("Change receiving address?"),
-        message: Text("Receiving address will be changed to a different server. Address change will complete after sender comes online."),
+        message: Text("Receiving address will be changed to a different router. Address change will complete after sender comes online."),
         primaryButton: .default(Text("Change"), action: switchAddress),
         secondaryButton: .cancel()
     )
@@ -1118,7 +1118,7 @@ func queueInfoText(_ info: (RcvMsgInfo?, ServerQueueInfo)) -> String {
     let (rcvMsgInfo, qInfo) = info
     var msgInfo: String
     if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
-    return String.localizedStringWithFormat(NSLocalizedString("server queue info: %@\n\nlast received msg: %@", comment: "queue info"), encodeJSON(qInfo), msgInfo)
+    return String.localizedStringWithFormat(NSLocalizedString("router queue info: %@\n\nlast received msg: %@", comment: "queue info"), encodeJSON(qInfo), msgInfo)
 }
 
 func queueInfoAlert(_ info: String) -> Alert {

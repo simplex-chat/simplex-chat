@@ -21,14 +21,14 @@
     <string name="accept_contact_button">গ্রহণ করুন</string>
     <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি\?</string>
     <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>
-    <string name="smp_servers_preset_add">পূর্বনির্ধারিত সার্ভারগুলি যুক্ত করুন</string>
+    <string name="smp_servers_preset_add">পূর্বনির্ধারিত রাউটারগুলি যুক্ত করুন</string>
     <string name="group_member_role_admin">অ্যাডমিন</string>
     <string name="button_add_welcome_message">স্বাগত বার্তা যুক্ত করুন</string>
     <string name="users_add">প্রোফাইল যুক্ত করুন</string>
     <string name="color_secondary_variant">আনুষঙ্গিক রং</string>
     <string name="v4_2_group_links_desc">অ্যাডমিনরা গ্রুপে যোগদানের সংযোগ-সূত্র তৈরি করতে পারবেন।</string>
-    <string name="v4_3_improved_server_configuration_desc">QR কোড স্ক্যান করে সার্ভার যুক্ত করুন।</string>
-    <string name="smp_servers_add">সার্ভার যুক্ত করুন</string>
+    <string name="v4_3_improved_server_configuration_desc">QR কোড স্ক্যান করে রাউটার যুক্ত করুন।</string>
+    <string name="smp_servers_add">রাউটার যুক্ত করুন</string>
     <string name="address_section_title">ঠিকানা</string>
     <string name="abort_switch_receiving_address_desc">ঠিকানা পরিবর্তন বাতিল করা হবে। বার্তা গ্রহণের পুরনো ঠিকানা ব্যবহার করা হবে।</string>
     <string name="all_app_data_will_be_cleared">অ্যাপের সকল তথ্য মুছে ফেলা হয়েছে।</string>
