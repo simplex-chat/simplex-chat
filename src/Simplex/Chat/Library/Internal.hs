@@ -347,9 +347,7 @@ prohibitedGroupContent gInfo@GroupInfo {membership = mem@GroupMember {memberRole
   where
     supportAllowed = case scopeInfo of
       Just (GCSIMemberSupport scopeMem_) ->
-        let sm = fromMaybe mem scopeMem_
-         in (sameMemberId (memberId' sm) m || memberRole' m >= GRModerator)
-              && (groupFeatureAllowed SGFSupport gInfo || isJust (supportChat sm))
+        groupFeatureAllowed SGFSupport gInfo || isJust (supportChat $ fromMaybe mem scopeMem_)
       Nothing -> True
     hostApprovalVoice
       | sent = userRole >= GRAdmin && sendApprovalPhase

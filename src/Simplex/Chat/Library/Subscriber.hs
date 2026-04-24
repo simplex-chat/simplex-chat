@@ -1535,7 +1535,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     memberCanSend :: Maybe GroupMember -> Maybe MsgScope -> CM (Maybe DeliveryTaskContext) -> CM (Maybe DeliveryTaskContext)
     memberCanSend Nothing _ a = a -- channel message - was previously checked and allowed by relay
     memberCanSend (Just m@GroupMember {memberRole}) msgScope a = case msgScope of
-      Just MSMember {} -> a
+      Just (MSMember mId)
+        | sameMemberId mId m || memberRole >= GRModerator -> a
+        | otherwise -> messageError "member is not allowed to send to this support chat" $> Nothing
       Nothing
         | memberRole > GRObserver || memberPending m -> a
         | otherwise -> messageError "member is not allowed to send messages" $> Nothing
@@ -1837,13 +1839,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- This patches initial sharedMsgId into chat item when locally deleted chat item
         -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
         -- Chat item and update message which created it will have different sharedMsgId in this case...
-        let timed_ = rcvContactCITimed ct ttl
-            ts = ciContentTexts content
-        (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live M.empty
-        ci' <- withStore' $ \db -> do
-          createChatItemVersion db (chatItemId' ci) brokerTs mc
-          updateDirectChatItem' db user contactId ci content True live Nothing Nothing
-        toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci')
+        if isVoice mc && not (featureAllowed SCFVoice forContact ct)
+          then do
+            let ciContent = ciContentNoParse $ CIRcvChatFeatureRejected CFVoice
+            (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs ciContent Nothing Nothing False M.empty
+            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci)
+          else do
+            let timed_ = rcvContactCITimed ct ttl
+                ts = ciContentTexts content
+            (ci, cInfo) <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live M.empty
+            ci' <- withStore' $ \db -> do
+              createChatItemVersion db (chatItemId' ci) brokerTs mc
+              updateDirectChatItem' db user contactId ci content True live Nothing Nothing
+            toView $ CEvtChatItemUpdated user (AChatItem SCTDirect SMDRcv cInfo ci')
       where
         brokerTs = metaBrokerTs msgMeta
         content = CIRcvMsgContent mc
@@ -2073,15 +2081,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m mc msgScope_
                         pure (gInfo', CDGroupRcv gInfo' scopeInfo m', mentions', scopeInfo)
                       Nothing -> pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
-                (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
-                ci' <- withStore' $ \db -> do
-                  createChatItemVersion db (chatItemId' ci) brokerTs mc
-                  updateGroupChatItem db user groupId ci content True live Nothing
-                ci'' <- case chatDir of
-                  CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
-                  CDChannelRcv {} -> pure ci'
-                toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
-                pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
+                case m_ >>= \m -> prohibitedGroupContent gInfo' m scopeInfo mc ft_ (Nothing :: Maybe String) False of
+                  Just f -> do
+                    let ciContent = ciContentNoParse $ CIRcvGroupFeatureRejected f
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs ciContent Nothing timed_ False M.empty
+                    groupMsgToView cInfo ci
+                    pure Nothing
+                  Nothing -> do
+                    (ci, cInfo) <- saveRcvChatItem' user chatDir msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
+                    ci' <- withStore' $ \db -> do
+                      createChatItemVersion db (chatItemId' ci) brokerTs mc
+                      updateGroupChatItem db user groupId ci content True live Nothing
+                    ci'' <- case chatDir of
+                      CDGroupRcv gi' _ m' -> blockedMemberCI gi' m' ci'
+                      CDChannelRcv {} -> pure ci'
+                    toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
+                    pure $ Just $ infoToDeliveryContext gInfo' scopeInfo showGroupAsSender
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc
