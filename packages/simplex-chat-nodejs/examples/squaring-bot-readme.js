@@ -2,7 +2,7 @@
   const {bot} = await import("../dist/index.js")
   const [chat, _user, _address] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
-    dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
+    dbOpts: {kind: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {welcomeMessage: "Send a number, I will square it."},
     },

@@ -57,6 +57,41 @@ interface EventSubscriber<K extends CEvt.Tag> {
 }
 
 /**
+ * Database configuration. The native library is built against exactly one
+ * backend (see `simplex_backend` / `SIMPLEX_BACKEND` at install time); this
+ * type makes the caller state which one they are targeting so field names
+ * can't lie about their meaning.
+ */
+export type DbConfig =
+  | {
+      /** SQLite backend (default). */
+      kind: "sqlite"
+      /** File prefix — two schema files are named `<prefix>_chat.db` and `<prefix>_agent.db`. */
+      filePrefix: string
+      /** Optional SQLCipher encryption key. Empty/omitted = unencrypted. */
+      encryptionKey?: string
+    }
+  | {
+      /** PostgreSQL backend (Linux x86_64 only, libpq5 required). */
+      kind: "postgres"
+      /** Schema prefix used to namespace tables. Defaults to `"simplex_v1"` when omitted. */
+      schemaPrefix?: string
+      /** PostgreSQL connection string (e.g. `postgres://user:pass@host/db`). */
+      connectionString: string
+    }
+
+function dbConfigToMigrateArgs(db: DbConfig): [string, string] {
+  switch (db.kind) {
+    case "sqlite":
+      return [db.filePrefix, db.encryptionKey ?? ""]
+    case "postgres":
+      return [db.schemaPrefix ?? "", db.connectionString]
+    default:
+      throw new Error(`Invalid DbConfig: ${JSON.stringify(db satisfies never)}`)
+  }
+}
+
+/**
  * Main API class for interacting with the chat core library.
  */
 export class ChatApi {
@@ -64,21 +99,20 @@ export class ChatApi {
   private eventsLoop: Promise<void> | undefined = undefined
   private subscribers: {[K in CEvt.Tag]?: EventSubscriber<K>[]} = {}
   private receivers: EventSubscriberFunc<CEvt.Tag>[] = []
-  
+
   private constructor(protected ctrl_: bigint | undefined) {}
 
   /**
    * Initializes the ChatApi.
-   * @param {string} dbFilePrefix - File prefix for the database files.
-   * @param {string} [dbKey=""] - Database encryption key.
+   * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
    */
   static async init(
-    dbFilePrefix: string,
-    dbKey: string = "",
+    db: DbConfig,
     confirm = core.MigrationConfirmation.YesUp
   ): Promise<ChatApi> {
-    const ctrl = await core.chatMigrateInit(dbFilePrefix, dbKey, confirm)
+    const [path, key] = dbConfigToMigrateArgs(db)
+    const ctrl = await core.chatMigrateInit(path, key, confirm)
     return new ChatApi(ctrl)
   }
 
