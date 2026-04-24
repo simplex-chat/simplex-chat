@@ -1,8 +1,7 @@
 package chat.simplex.common.views.onboarding
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -15,7 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
@@ -24,16 +23,17 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+  Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
-    ReadableText(stringResource(MR.strings.why_simplex_is_built_text))
-
-    Spacer(Modifier.fillMaxHeight().weight(1f))
-
+    Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
+      ReadableText(stringResource(MR.strings.why_simplex_is_built_text))
+    }
     if (onboardingStage != null) {
-      Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+      Column(
+        Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
-        // Reserve space
         TextButtonBelowOnboardingButton("", null)
       }
     }
