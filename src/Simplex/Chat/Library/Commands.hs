@@ -1778,13 +1778,13 @@ processChatCommand vr nm = \case
         (_, cData) <- getShortLinkConnReq nm user sLnk
         groupSLinkData_ <- liftIO $ decodeLinkUserData cData
         gInfo' <- case groupSLinkData_ of
-          Just GroupShortLinkData {groupProfile, publicGroupData} -> do
+          Just GroupShortLinkData {groupProfile, publicGroupData} -> withStore $ \db -> do
             g <- if p /= groupProfile
-              then withStore $ \db -> updateGroupProfile db user gInfo groupProfile
+              then updateGroupProfile db user gInfo groupProfile
               else pure gInfo
             case publicGroupData of
               Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
-                withFastStore $ \db -> setPublicMemberCount db vr user g publicMemberCount
+                setPublicMemberCount db vr user g publicMemberCount
               _ -> pure g
           _ -> pure gInfo
         pure $ CRGroupInfo user gInfo'
@@ -4075,16 +4075,18 @@ processChatCommand vr nm = \case
                 (fd@FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners})) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
-                    publicGroupData_ = groupSLinkData_ >>= \GroupShortLinkData {publicGroupData} -> publicGroupData
                 (g', updated) <- case groupSLinkData_ of
-                  Just GroupShortLinkData {groupProfile}
-                    | p /= groupProfile -> (,True) <$> withStore (\db -> updateGroupProfile db user g groupProfile)
+                  Just GroupShortLinkData {groupProfile, publicGroupData} -> withStore $ \db -> do
+                    (g1, upd) <- if p /= groupProfile
+                      then (,True) <$> updateGroupProfile db user g groupProfile
+                      else pure (g, False)
+                    g2 <- case publicGroupData of
+                      Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
+                        setPublicMemberCount db vr user g1 publicMemberCount
+                      _ -> pure g1
+                    pure (g2, upd)
                   _ -> pure (g, False)
-                g'' <- case publicGroupData_ of
-                  Just PublicGroupData {publicMemberCount} | Just publicMemberCount /= localCount ->
-                    withFastStore $ \db -> setPublicMemberCount db vr user g' publicMemberCount
-                  _ -> pure g'
-                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g'' updated ov))
+                pure (con (linkConnReq fd), CPGroupLink (GLPKnown g' updated ov))
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
