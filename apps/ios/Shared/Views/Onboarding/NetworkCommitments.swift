@@ -54,18 +54,14 @@ struct NetworkCommitmentsView: View {
 
                     Spacer(minLength: 0)
 
-                    acceptButton()
-                        .padding(.top, 10)
-
-                    // Invisible placeholder to align button with Step 1's "Get started"
-                    Label("Why SimpleX is built.", systemImage: "info.circle")
-                        .font(.headline)
-                        .padding(.top, 10)
-                        .hidden()
+                    VStack(spacing: 10) {
+                        acceptButton()
+                        onboardingButtonPlaceholder()
+                    }
                 }
                 .padding(.horizontal, 25)
                 .padding(.top, 25)
-                .padding(.bottom, 40)
+                .padding(.bottom, 25)
                 .frame(minHeight: g.size.height)
             }
             if #available(iOS 16.4, *) {

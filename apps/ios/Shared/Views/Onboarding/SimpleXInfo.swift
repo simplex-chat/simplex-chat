@@ -70,21 +70,22 @@ struct SimpleXInfo: View {
                     if onboarding {
                         Spacer(minLength: 0)
 
-                        createFirstProfileButton()
-                            .padding(.top, 10)
+                        VStack(spacing: 10) {
+                            createFirstProfileButton()
 
-                        Button {
-                            showWhyBuilt = true
-                        } label: {
-                            Label("Why SimpleX is built.", systemImage: "info.circle")
-                                .font(.headline)
+                            Button {
+                                showWhyBuilt = true
+                            } label: {
+                                Label("Why SimpleX is built.", systemImage: "info.circle")
+                                    .font(.headline)
+                            }
+                            .frame(minHeight: 40)
                         }
-                        .padding(.top, 10)
                     }
                 }
                 .padding(.horizontal, 25)
                 .padding(.top, 28)
-                .padding(.bottom, 40)
+                .padding(.bottom, 25)
                 .frame(minHeight: g.size.height)
             }
             .sheet(isPresented: Binding(
