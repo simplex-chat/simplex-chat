@@ -799,7 +799,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             let link = ACL SCMContact $ CLShort groupLink
             sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
               Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated = BoolDef updated, linkOwners = ListDef owners}))) ->
-                withValidOwner dbOwnerMemberId owners $ do
+                checkValidOwner dbOwnerMemberId owners $ do
                   when updated $ reapprove pg gr groupRegStatus g'
                   when (updated || summary /= groupSummary g') $ listingsUpdated env
               Left (ChatErrorAgent {agentError = SMP _ err}) | linkDeleted err ->
@@ -811,7 +811,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           AUTH -> True
           BLOCKED {} -> True
           _ -> False
-        withValidOwner dbOwnerMemberId owners onValid = case dbOwnerMemberId of
+        checkValidOwner dbOwnerMemberId owners onValid = case dbOwnerMemberId of
           Just ownerGMId ->
             withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
               Right GroupMember {memberId, memberPubKey}
