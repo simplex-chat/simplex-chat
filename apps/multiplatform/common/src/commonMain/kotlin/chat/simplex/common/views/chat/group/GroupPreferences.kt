@@ -220,6 +220,7 @@ private fun GroupPreferencesLayout(
           confirmText = generalGetString(MR.strings.enable_chats_with_admins),
           destructive = true,
           onDismiss = revert,
+          onDismissRequest = revert,
         )
       })
     }
