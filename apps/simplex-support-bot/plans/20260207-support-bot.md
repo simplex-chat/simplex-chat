@@ -359,7 +359,7 @@ GROK_API_KEY=... node dist/index.js --team-group "Support Team" [options]
 
 **Why `--auto-add-team-members` (`-a`) uses `ID:name`:** Contact IDs are local to the bot's database — not discoverable externally. The bot DMs each team member their ID when they join the team group. The name is validated at startup to catch stale IDs pointing to the wrong contact.
 
-**Customer commands** (registered in customer groups via `bot.run`):
+**Customer commands** (available as tappable buttons in customer business chats; see implementation plan §7 for the per-group lazy sync):
 
 | Command | Available | Effect |
 |---------|-----------|--------|

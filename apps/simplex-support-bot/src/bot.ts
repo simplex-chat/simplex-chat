@@ -57,7 +57,10 @@ export class SupportBot {
   // Bot's business address link
   businessAddress: string | null = null
 
-  private commandsSynced = false
+  // Groups whose groupPreferences.commands we've already verified/synced
+  // in this process. Populated lazily by syncGroupCommands(), only when a
+  // command-referencing message is about to be sent to the group.
+  private syncedGroups = new Set<number>()
 
   constructor(
     private chat: api.ChatApi,
@@ -96,32 +99,42 @@ export class SupportBot {
   private async withMainProfile<R>(fn: () => Promise<R>): Promise<R> {
     return profileMutex.runExclusive(async () => {
       await this.chat.apiSetActiveUser(this.mainUserId)
-      await this.syncCommands()
       return fn()
     })
   }
 
-  // Push the bot's command list into the main profile if the DB's
-  // preferences.commands doesn't already match. Passing the profile's own
-  // current displayName back keeps core's updateUserProfile on the fast
-  // path (src/Simplex/Chat/Store/Profiles.hs:311) — no rename.
-  private async syncCommands(): Promise<void> {
-    if (this.commandsSynced) return
-    const user = await this.chat.apiGetActiveUser()
-    if (!user) return
-    const current = JSON.stringify(user.profile.preferences?.commands ?? [])
-    const desired = JSON.stringify(this.desiredCommands)
-    if (current === desired) {
-      this.commandsSynced = true
-      return
+  // Matches "/word" where word is one of desiredCommands' keywords.
+  private textReferencesCommand(text: string): boolean {
+    const keywords = this.desiredCommands
+      .map(c => (c as {keyword?: string}).keyword)
+      .filter((k): k is string => !!k)
+    if (keywords.length === 0) return false
+    return new RegExp(`/(?:${keywords.join("|")})\\b`).test(text)
+  }
+
+  // Ensure this group's groupPreferences.commands match desiredCommands,
+  // so commands in outgoing messages render as clickable for members of
+  // this group. Scoped to the group (apiUpdateGroupProfile broadcasts
+  // XGrpInfo/XGrpPrefs to group members only), and cached so we don't
+  // re-check on every send. Pre-checks local state via apiGetChat so we
+  // don't issue a no-op broadcast when the group already has the
+  // commands.
+  private async syncGroupCommands(groupId: number): Promise<void> {
+    if (this.syncedGroups.has(groupId)) return
+    const desiredJSON = JSON.stringify(this.desiredCommands)
+    const chat = await this.chat.apiGetChat(T.ChatType.Group, groupId, 0)
+    const info = chat.chatInfo
+    if (info.type !== "group") return
+    const gp = info.groupInfo.groupProfile
+    const currentPrefs = gp.groupPreferences ?? {}
+    if (JSON.stringify(currentPrefs.commands ?? []) !== desiredJSON) {
+      await this.chat.apiUpdateGroupProfile(groupId, {
+        ...gp,
+        groupPreferences: {...currentPrefs, commands: this.desiredCommands},
+      })
+      log(`Pushed commands to group ${groupId}`)
     }
-    const profile = util.fromLocalProfile(user.profile)
-    await this.chat.apiUpdateProfile(user.userId, {
-      ...profile,
-      preferences: {...(profile.preferences ?? {}), commands: this.desiredCommands},
-    })
-    log(`Bot commands updated (displayName preserved: "${profile.displayName}")`)
-    this.commandsSynced = true
+    this.syncedGroups.add(groupId)
   }
 
   private async withGrokProfile<R>(fn: () => Promise<R>): Promise<R> {
@@ -836,9 +849,12 @@ export class SupportBot {
 
   async sendToGroup(groupId: number, text: string): Promise<void> {
     try {
-      await this.withMainProfile(() =>
-        this.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
-      )
+      await this.withMainProfile(async () => {
+        if (this.textReferencesCommand(text)) {
+          await this.syncGroupCommands(groupId)
+        }
+        await this.chat.apiSendTextMessage([T.ChatType.Group, groupId], text)
+      })
     } catch (err) {
       logError(`Failed to send message to group ${groupId}`, err)
     }

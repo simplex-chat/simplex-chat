@@ -186,6 +186,15 @@ const TEAM_MEMBER_2_ID = 21
 const GROK_LOCAL_GROUP_ID = 200
 const CUSTOMER_ID = "customer-1"
 
+// Commands passed into SupportBot; matches what index.ts constructs when
+// Grok is enabled. Tests that disable grokApi still pass the full list
+// because the ctor doesn't care, and the content is observable via
+// textReferencesCommand.
+const DESIRED_COMMANDS = [
+  {type: "command" as const, keyword: "grok", label: "Ask Grok"},
+  {type: "command" as const, keyword: "team", label: "Switch to team"},
+]
+
 // ─── Member factories ───
 
 function makeTeamMember(contactId: number, name = `Contact${contactId}`, groupMemberId?: number) {
@@ -341,7 +350,7 @@ function setup(configOverrides: Partial<any> = {}) {
   chat.groups.set(CUSTOMER_GROUP_ID, makeGroupInfo(CUSTOMER_GROUP_ID))
 
   cards = new CardManager(chat as any, config as any, MAIN_USER_ID, 999999999)
-  bot = new SupportBot(chat as any, grokApi as any, config as any, MAIN_USER_ID, GROK_USER_ID)
+  bot = new SupportBot(chat as any, grokApi as any, config as any, MAIN_USER_ID, GROK_USER_ID, DESIRED_COMMANDS)
   // Replace cards with our constructed one that has a long flush interval
   bot.cards = cards
 }
@@ -915,7 +924,7 @@ describe("One-Way Gate with Grok Disabled", () => {
   test("team text removes Grok even when grokApi is null", async () => {
     setup()
     // Recreate bot without grokApi but with grokContactId still set (simulates disabled Grok with persisted contact)
-    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null)
+    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null, DESIRED_COMMANDS)
     bot.cards = cards
     // Reach QUEUE state with Grok + team member already present
     addBotMessage("The team will reply to your message")
@@ -928,7 +937,7 @@ describe("One-Way Gate with Grok Disabled", () => {
 
   test("Grok does not respond when disabled even if grokContactId is set", async () => {
     setup()
-    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null)
+    bot = new SupportBot(chat as any, null, config as any, MAIN_USER_ID, null, DESIRED_COMMANDS)
     bot.cards = cards
     // Set up group with Grok member present
     chat.members.set(CUSTOMER_GROUP_ID, [makeGrokMember()])
@@ -2322,5 +2331,89 @@ describe("GrokApiClient HTTP timeout", () => {
 
     fetchSpy.mockRestore()
     timeoutSpy.mockRestore()
+  })
+})
+
+// Lazy per-group command sync. sendToGroup must call apiUpdateGroupProfile
+// only when (a) the outgoing text references one of desiredCommands'
+// keywords AND (b) the group's stored groupPreferences.commands don't
+// already match desiredCommands. Each group is synced at most once per
+// process (cache hit on subsequent sends).
+describe("Command sync in sendToGroup", () => {
+  beforeEach(() => setup())
+
+  test("plain-text send → no group-profile update (text has no command keyword)", async () => {
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Hello, just a greeting.")
+    expect(chat.profileUpdates).toHaveLength(0)
+    expect(chat.lastSentTo(CUSTOMER_GROUP_ID)).toBe("Hello, just a greeting.")
+  })
+
+  test("command-referencing send → apiUpdateGroupProfile called once with merged commands", async () => {
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok for an instant answer.")
+    expect(chat.profileUpdates).toHaveLength(1)
+    const {groupId, profile} = chat.profileUpdates[0]
+    expect(groupId).toBe(CUSTOMER_GROUP_ID)
+    expect(profile.groupPreferences.commands).toEqual(DESIRED_COMMANDS)
+    // Existing groupProfile fields (displayName, fullName) are preserved.
+    expect(profile.displayName).toBe(`Group${CUSTOMER_GROUP_ID}`)
+    expect(profile.fullName).toBe("")
+    // The actual message still goes out after the sync.
+    expect(chat.lastSentTo(CUSTOMER_GROUP_ID)).toBe("Click /grok for an instant answer.")
+  })
+
+  test("/team reference also triggers sync", async () => {
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Send /team to switch back.")
+    expect(chat.profileUpdates).toHaveLength(1)
+    expect(chat.profileUpdates[0].profile.groupPreferences.commands).toEqual(DESIRED_COMMANDS)
+  })
+
+  test("match is keyword-prefix-safe: /grokfoo does not trigger sync", async () => {
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "See /grokfoo for details.")
+    expect(chat.profileUpdates).toHaveLength(0)
+  })
+
+  test("group already has desired commands → no apiUpdateGroupProfile, but still cached", async () => {
+    const gi = makeGroupInfo(CUSTOMER_GROUP_ID)
+    gi.groupProfile.groupPreferences = {commands: DESIRED_COMMANDS}
+    chat.groups.set(CUSTOMER_GROUP_ID, gi)
+
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok for help.")
+    expect(chat.profileUpdates).toHaveLength(0)
+    // Cache was populated — a subsequent send even against a divergent DB
+    // won't re-check.
+    gi.groupProfile.groupPreferences = {commands: []}
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Send /team for a human.")
+    expect(chat.profileUpdates).toHaveLength(0)
+  })
+
+  test("cache: two command-referencing sends to same group → sync only once", async () => {
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok first.")
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Or send /team.")
+    expect(chat.profileUpdates).toHaveLength(1)
+    expect(chat.sentTo(CUSTOMER_GROUP_ID)).toHaveLength(2)
+  })
+
+  test("independent per group: different groups each sync separately", async () => {
+    const gId2 = 101
+    chat.groups.set(gId2, makeGroupInfo(gId2))
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok.")
+    await bot.sendToGroup(gId2, "Send /team.")
+    expect(chat.profileUpdates.map(p => p.groupId).sort()).toEqual([CUSTOMER_GROUP_ID, gId2].sort())
+  })
+
+  test("merge preserves existing group preference fields (files, etc.)", async () => {
+    const gi = makeGroupInfo(CUSTOMER_GROUP_ID)
+    gi.groupProfile.groupPreferences = {
+      files: {enable: "on"},
+      reactions: {enable: "on"},
+    }
+    chat.groups.set(CUSTOMER_GROUP_ID, gi)
+
+    await bot.sendToGroup(CUSTOMER_GROUP_ID, "Click /grok.")
+    expect(chat.profileUpdates).toHaveLength(1)
+    const prefs = chat.profileUpdates[0].profile.groupPreferences
+    expect(prefs.commands).toEqual(DESIRED_COMMANDS)
+    expect(prefs.files).toEqual({enable: "on"})
+    expect(prefs.reactions).toEqual({enable: "on"})
   })
 })
