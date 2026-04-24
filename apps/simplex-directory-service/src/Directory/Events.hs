@@ -80,9 +80,7 @@ crDirectoryEvent_ = \case
   CEvtContactConnected {contact} -> Just $ DEContactConnected contact
   CEvtReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CEvtUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
-  CEvtGroupUpdated {fromGroup, toGroup, member_} -> Just $ case member_ of
-    Just member -> DEGroupUpdated {member, fromGroup, toGroup}
-    Nothing -> DEGroupLinkCheck toGroup
+  CEvtGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
   CEvtJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing

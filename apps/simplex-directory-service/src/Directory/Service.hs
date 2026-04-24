@@ -19,7 +19,6 @@ module Directory.Service
 where
 
 import Control.Concurrent (forkIO, threadDelay)
-import Control.Concurrent.Async (race_)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
 import Control.Logger.Simple
@@ -101,6 +100,7 @@ data ServiceState = ServiceState
     blockedWordsCfg :: BlockedWordsConfig,
     pendingCaptchas :: TMap GroupMemberId PendingCaptcha,
     serviceCC :: TMVar ChatController,
+    eventQ :: TQueue DirectoryEvent,
     updateListingsSignal :: TMVar ()
   }
 
@@ -128,8 +128,9 @@ newServiceState opts = do
   blockedWordsCfg <- readBlockedWordsConfig opts
   pendingCaptchas <- TM.emptyIO
   serviceCC <- newEmptyTMVarIO
+  eventQ <- newTQueueIO
   updateListingsSignal <- newEmptyTMVarIO
-  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, updateListingsSignal}
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsSignal}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -153,9 +154,8 @@ welcomeGetOpts = do
 
 directoryServiceCLI :: DirectoryLog -> DirectoryOpts -> IO ()
 directoryServiceCLI st opts = do
-  env <- newServiceState opts
-  eventQ <- newTQueueIO
-  let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
+  env@ServiceState {eventQ} <- newServiceState opts
+  let eventHook _cc resp = atomically $ resp <$ forM_ (crDirectoryEvent resp) (writeTQueue eventQ)
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -165,15 +165,18 @@ directoryServiceCLI st opts = do
           }
   raceAny_ $
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
-      processEvents eventQ env
+      processEvents env
     ]
       <> maybeToList (updateListingsThread_ opts env)
-      <> maybeToList (linkCheckThread_ st opts env)
+      <> maybeToList (linkCheckThread_ opts env)
   where
-    processEvents eventQ env = forever $ do
-      (cc, resp) <- atomically $ readTQueue eventQ
+    processEvents env@ServiceState {eventQ} = do
+      cc <- atomically $ readTMVar $ serviceCC env
       u_ <- readTVarIO (currentUser cc)
-      forM_ u_ $ \user -> directoryServiceEvent st opts env user cc resp
+      forM_ u_ $ \user ->
+        forever $ do
+          event <- atomically $ readTQueue eventQ
+          directoryServiceEvent st opts env user cc event
 
 updateListingDelay :: Int
 updateListingDelay = 5 * 60 * 1000000 -- update every 5 minutes
@@ -190,10 +193,10 @@ updateListingsThread_ opts env = updateListingsThread <$> webFolder opts
         atomically $ void (takeTMVar $ updateListingsSignal env) `orElse` unlessM (readTVar delay) retry
 
 listingsUpdated :: ServiceState -> IO ()
-listingsUpdated env = void . atomically . tryPutTMVar (updateListingsSignal env) $ ()
+listingsUpdated env = void $ atomically $ tryPutTMVar (updateListingsSignal env) ()
 
-linkCheckThread_ :: DirectoryLog -> DirectoryOpts -> ServiceState -> Maybe (IO ())
-linkCheckThread_ st opts env
+linkCheckThread_ :: DirectoryOpts -> ServiceState -> Maybe (IO ())
+linkCheckThread_ opts env@ServiceState {eventQ}
   | linkCheckInterval opts > 0 = Just $ do
       cc <- atomically $ readTMVar $ serviceCC env
       forever $ do
@@ -204,8 +207,7 @@ linkCheckThread_ st opts env
             Left e -> logError $ "linkCheckThread error: " <> T.pack e
             Right grs -> forM_ grs $ \(gInfo, gr) ->
               unless (groupRemoved $ groupRegStatus gr) $
-                directoryServiceEvent st opts env user cc $
-                  Right $ CEvtGroupUpdated user gInfo gInfo Nothing Nothing
+                atomically $ writeTQueue eventQ $ DEGroupLinkCheck gInfo
   | otherwise = Nothing
 
 directoryPreStartHook :: DirectoryOpts -> ChatController -> IO ()
@@ -247,7 +249,7 @@ directoryCommands =
 
 directoryService :: DirectoryLog -> DirectoryOpts -> ChatConfig -> IO ()
 directoryService st opts cfg = do
-  env <- newServiceState opts
+  env@ServiceState {eventQ} <- newServiceState opts
   let chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -255,11 +257,16 @@ directoryService st opts cfg = do
             acceptMember = Just $ acceptMemberHook opts env
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc ->
-    maybe id race_ (linkCheckThread_ st opts env) $
-      maybe id race_ (updateListingsThread_ opts env) $
-        forever $ do
+    raceAny_ $
+      [ forever $ do
           (_, resp) <- atomically . readTBQueue $ outputQ cc
-          directoryServiceEvent st opts env user cc resp
+          forM_ (crDirectoryEvent resp) $ atomically . writeTQueue eventQ,
+        forever $ do
+          event <- atomically $ readTQueue eventQ
+          directoryServiceEvent st opts env user cc event
+      ]
+        <> maybeToList (updateListingsThread_ opts env)
+        <> maybeToList (linkCheckThread_ opts env)
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
 acceptMemberHook
@@ -302,9 +309,8 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
-directoryServiceEvent :: DirectoryLog -> DirectoryOpts -> ServiceState -> User -> ChatController -> Either ChatError ChatEvent -> IO ()
-directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc event =
-  forM_ (crDirectoryEvent event) $ \case
+directoryServiceEvent :: DirectoryLog -> DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
+directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
