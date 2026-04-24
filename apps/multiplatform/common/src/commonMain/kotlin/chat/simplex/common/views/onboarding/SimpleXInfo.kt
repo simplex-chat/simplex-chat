@@ -64,7 +64,7 @@ fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: SharedPreference<OnboardingStage>?
 ) {
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally, maxIntrinsicSize = true) {
     Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 185.dp else 160.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
@@ -135,9 +135,7 @@ fun SimpleXInfoLayout(
       modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
     )
 
-    if (!appPlatform.isAndroid) {
-      Spacer(Modifier.weight(1f))
-    }
+    Spacer(Modifier.weight(1f))
 
     if (onboardingStage != null) {
       Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {

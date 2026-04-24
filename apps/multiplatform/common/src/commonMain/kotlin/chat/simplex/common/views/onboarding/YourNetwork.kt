@@ -69,7 +69,7 @@ fun YourNetworkView(chatModel: ChatModel) {
             painterResource(if (isInDarkTheme()) MR.images.your_network_light else MR.images.your_network),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2)
               .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
           )
         } else {
@@ -78,7 +78,7 @@ fun YourNetworkView(chatModel: ChatModel) {
           val scale = if (isDark) 1.5f else 1.2f
           Box(
             Modifier
-              .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+              .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2)
               .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
               .aspectRatio(1f)
               .clip(RoundedCornerShape(24.dp))
@@ -143,9 +143,7 @@ fun YourNetworkView(chatModel: ChatModel) {
           }
         }
 
-        if (!appPlatform.isAndroid) {
-          Spacer(Modifier.weight(1f))
-        }
+        Spacer(Modifier.weight(1f))
 
         Column(
           Modifier
