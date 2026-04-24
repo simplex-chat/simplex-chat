@@ -140,12 +140,11 @@ fun SimpleXInfoLayout(
     }
 
     if (onboardingStage != null) {
-      Column(Modifier.widthIn(max = 450.dp).align(Alignment.CenterHorizontally).padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else 0.dp, bottom = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)) {
+      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
         OnboardingActionButton(user, onboardingStage)
-        OnboardingInformationButton(
-          stringResource(MR.strings.why_simplex_is_built),
-          onClick = { ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) } },
-        )
+        TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built)) {
+          ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
+        }
       }
     }
   }

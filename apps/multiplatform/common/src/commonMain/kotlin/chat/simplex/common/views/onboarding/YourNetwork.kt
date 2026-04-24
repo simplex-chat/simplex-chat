@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -121,17 +123,23 @@ fun YourNetworkView(chatModel: ChatModel) {
           modifier = Modifier.padding(top = 14.dp)
         )
 
-        ConfigureRoutersButton(serverOperators) {
-          ModalManager.fullscreen.showModalCloseable { close ->
-            val modalData = remember { ModalData() }
-            modalData.ChooseServerOperators(serverOperators, selectedOperatorIds, close)
-          }
-        }
-
-        if (appPlatform.isAndroid) {
-          ConfigureNotificationsButton {
+        Column(
+          Modifier.padding(top = DEFAULT_PADDING_HALF),
+          horizontalAlignment = Alignment.Start,
+          verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+          ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
             ModalManager.fullscreen.showModalCloseable { close ->
-              NotificationModeSheet(notificationMode, close)
+              val modalData = remember { ModalData() }
+              modalData.ChooseServerOperators(serverOperators, selectedOperatorIds, close)
+            }
+          }
+
+          if (appPlatform.isAndroid) {
+            ConfigureNotificationsButton(notificationMode) {
+              ModalManager.fullscreen.showModalCloseable { close ->
+                NotificationModeSheet(notificationMode, close)
+              }
             }
           }
         }
@@ -143,8 +151,7 @@ fun YourNetworkView(chatModel: ChatModel) {
         Column(
           Modifier
             .widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp)
-            .align(Alignment.CenterHorizontally)
-            .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else 0.dp),
+            .align(Alignment.CenterHorizontally),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           OnboardingActionButton(
@@ -166,12 +173,11 @@ fun YourNetworkView(chatModel: ChatModel) {
 }
 
 @Composable
-private fun ConfigureRoutersButton(serverOperators: State<List<ServerOperator>>, onClick: () -> Unit) {
+private fun ConfigureRoutersButton(serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, onClick: () -> Unit) {
   Box(
     modifier = Modifier
       .clip(CircleShape)
       .clickable { onClick() }
-      .padding(top = DEFAULT_PADDING_HALF)
   ) {
     Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
       Text(
@@ -184,7 +190,10 @@ private fun ConfigureRoutersButton(serverOperators: State<List<ServerOperator>>,
         Image(
           painterResource(op.logo),
           contentDescription = null,
-          modifier = Modifier.size(22.dp)
+          modifier = Modifier.size(22.dp),
+          colorFilter = if (selectedOperatorIds.value.contains(op.operatorId)) null else ColorFilter.colorMatrix(ColorMatrix().apply {
+            setToSaturation(0f)
+          })
         )
       }
     }
@@ -192,7 +201,12 @@ private fun ConfigureRoutersButton(serverOperators: State<List<ServerOperator>>,
 }
 
 @Composable
-private fun ConfigureNotificationsButton(onClick: () -> Unit) {
+private fun ConfigureNotificationsButton(notificationMode: State<NotificationsMode>, onClick: () -> Unit) {
+  val icon = when (notificationMode.value) {
+    NotificationsMode.SERVICE -> MR.images.ic_bolt
+    NotificationsMode.PERIODIC -> MR.images.ic_timer
+    NotificationsMode.OFF -> MR.images.ic_bolt_off
+  }
   Box(
     modifier = Modifier
       .clip(CircleShape)
@@ -206,7 +220,7 @@ private fun ConfigureNotificationsButton(onClick: () -> Unit) {
         color = MaterialTheme.colors.primary
       )
       Icon(
-        painterResource(MR.images.ic_bolt),
+        painterResource(icon),
         contentDescription = null,
         tint = MaterialTheme.colors.primary
       )
@@ -221,6 +235,12 @@ private fun NotificationModeSheet(currentMode: MutableState<NotificationsMode>, 
       ColumnWithScrollBar(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
           AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title), bottomPadding = DEFAULT_PADDING)
+        }
+        Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingInformationButton(
+            stringResource(MR.strings.onboarding_notifications_mode_subtitle),
+            onClick = { ModalManager.fullscreen.showModalCloseable { NotificationBatteryUsageInfo() } }
+          )
         }
         Spacer(Modifier.weight(1f))
         Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)) {

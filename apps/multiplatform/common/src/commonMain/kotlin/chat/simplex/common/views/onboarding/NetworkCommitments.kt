@@ -106,7 +106,7 @@ fun NetworkCommitmentsView(chatModel: ChatModel) {
         Column(
           (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
             .fillMaxWidth()
-            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING + DEFAULT_PADDING_HALF)
             .padding(top = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
@@ -123,6 +123,7 @@ fun NetworkCommitmentsView(chatModel: ChatModel) {
           Text(
             stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
             style = TextStyle(fontSize = 17.sp),
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colors.primary,
             modifier = Modifier
               .clickable(
