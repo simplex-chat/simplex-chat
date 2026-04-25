@@ -110,6 +110,11 @@ struct ExternalLink<Label: View>: View {
         self.label = Text(titleKey)
     }
 
+    init<S: StringProtocol>(_ title: S, destination: URL) where Label == Text {
+        self.destination = destination
+        self.label = Text(title)
+    }
+
     var body: some View {
         Button { openExternalLink(destination) } label: { label }
     }
