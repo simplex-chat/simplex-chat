@@ -138,18 +138,22 @@ struct CreateFirstProfile: View {
     @FocusState private var focusDisplayName
     @State private var nextStepNavLinkActive = false
     @State private var showMigrateSheet = false
+    @State private var fixedContentHeight: CGFloat = 300
 
     var body: some View {
+        let spacing: CGFloat = 10
+        let minImageHeight: CGFloat = 80
+        let topPadding: CGFloat = 8
+        let padding: CGFloat = 25
         GeometryReader { g in
             let v = ScrollView {
-                VStack(alignment: .center, spacing: 10) {
-                    let imageMaxHeight = max(g.size.height - 400, 80)
-
+                VStack(alignment: .center, spacing: spacing) {
                     #if SIMPLEX_ASSETS
                     Image(colorScheme == .light ? "your-profile" : "your-profile-light")
                         .resizable()
                         .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: imageMaxHeight)
+                        .frame(maxWidth: .infinity, minHeight: minImageHeight)
+                        .layoutPriority(1)
                     #else
                     ZStack {
                         let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
@@ -159,44 +163,55 @@ struct CreateFirstProfile: View {
                             endPoint: gp.end
                         )
                         Image(systemName: "person.crop.rectangle")
-                            .font(.system(size: 80))
+                            .font(.system(size: 72))
                             .foregroundColor(theme.colors.primary)
                     }
                     .aspectRatio(1.0, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .frame(maxWidth: .infinity, maxHeight: imageMaxHeight)
+                    .padding(.horizontal, 25)
+                    .frame(maxWidth: .infinity, minHeight: minImageHeight)
+                    .layoutPriority(1)
                     #endif
 
-                    Text("Your profile")
-                        .font(.largeTitle)
-                        .bold()
-                        .multilineTextAlignment(.center)
+                    VStack(alignment: .center, spacing: spacing) {
+                        Text("Your profile")
+                            .font(.largeTitle)
+                            .bold()
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    Text("On your phone, not on any server.")
-                        .font(.title2)
-                        .fontWeight(.medium)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
+                        Text("On your phone, not on any server.")
+                            .font(.title3)
+                            .fontWeight(.medium)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    Text("No account. No phone. No email. No ID.\nThe most secure encryption.")
-                        .font(.callout)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
+                        Text("No account. No phone. No email. No ID.\nThe most secure encryption.")
+                            .font(.footnote)
+                            .foregroundColor(theme.colors.secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    profileNameField()
-                        .padding(.top)
+                        profileNameField()
+                            .padding(.top)
+                            .padding(.bottom, 5)
 
-                    Spacer(minLength: 0)
+                        Spacer(minLength: 0)
 
-                    VStack(spacing: 10) {
                         createProfileButton()
-                        onboardingButtonPlaceholder()
+                            .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                     }
+                    .overlay(DetermineHeight())
+                    .onPreferenceChange(DetermineHeight.Key.self) { fixedContentHeight = $0 }
                 }
-                .padding(.horizontal, 25)
-                .padding(.top, 8)
-                .padding(.bottom, 25)
-                .frame(minHeight: g.size.height)
+                .padding(.horizontal, padding)
+                .padding(.top, topPadding)
+                .padding(.bottom, padding)
+                .frame(
+                    minHeight: g.size.height,
+                    idealHeight: max(g.size.height, fixedContentHeight + minImageHeight + spacing + topPadding + padding)
+                )
             }
             .onTapGesture { focusDisplayName = false }
             .sheet(isPresented: $showMigrateSheet, onDismiss: { m.migrationState = nil }) {
@@ -206,8 +221,10 @@ struct CreateFirstProfile: View {
                         .modifier(ThemedBackground(grouped: true))
                 }
             }
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
+            if #available(iOS 17, *) {
+                v
+                    .scrollBounceBehavior(.basedOnSize)
+                    .defaultScrollAnchor(.bottom)
             } else {
                 v
             }

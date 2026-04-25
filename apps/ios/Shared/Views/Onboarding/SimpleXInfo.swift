@@ -20,74 +20,74 @@ struct SimpleXInfo: View {
 
     var body: some View {
         GeometryReader { g in
-            let v = ScrollView {
-                VStack(alignment: .center, spacing: 10) {
-                    Image(colorScheme == .light ? "logo" : "logo-light")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: (g.size.width - 50) * 0.55)
-                        .padding(.leading, 4)
-                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
+            VStack(alignment: .center, spacing: 10) {
+                Image(colorScheme == .light ? "logo" : "logo-light")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: (g.size.width - 50) * 0.55)
+                    .padding(.leading, 4)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .top)
 
-                    #if SIMPLEX_ASSETS
-                    Image(colorScheme == .light ? "intro" : "intro-light")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity)
-                    #else
-                    ZStack {
-                        let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
-                        LinearGradient(
-                            stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
-                            startPoint: gp.start,
-                            endPoint: gp.end
-                        )
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .font(.system(size: 80))
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .aspectRatio(1.0, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                #if SIMPLEX_ASSETS
+                Image(colorScheme == .light ? "intro" : "intro-light")
+                    .resizable()
+                    .scaledToFit()
                     .frame(maxWidth: .infinity)
-                    #endif
+                #else
+                ZStack {
+                    let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
+                    LinearGradient(
+                        stops: colorScheme == .light ? OnboardingCardView.lightStops : OnboardingCardView.darkStops,
+                        startPoint: gp.start,
+                        endPoint: gp.end
+                    )
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 72))
+                        .foregroundColor(theme.colors.primary)
+                }
+                .aspectRatio(1.0, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .padding(.horizontal, 25)
+                .frame(maxWidth: .infinity)
+                #endif
 
-                    Text("Be free\nin your network")
-                        .font(.largeTitle)
-                        .bold()
-                        .multilineTextAlignment(.center)
+                Text("Be free\nin your network")
+                    .font(.largeTitle)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Private and secure messaging.")
-                        .font(.title2)
-                        .fontWeight(.medium)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
+                Text("Private and secure messaging.")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("The first network where you own your\ncontacts and groups.")
-                        .font(.callout)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
+                Text("The first network where you own\nyour contacts and groups.")
+                    .font(.footnote)
+                    .foregroundColor(theme.colors.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    if onboarding {
-                        Spacer(minLength: 0)
+                if onboarding {
+                    Spacer(minLength: 0)
 
-                        VStack(spacing: 10) {
-                            createFirstProfileButton()
+                    createFirstProfileButton()
+                        .padding(.vertical, 10)
 
-                            Button {
-                                showWhyBuilt = true
-                            } label: {
-                                Label("Why SimpleX is built.", systemImage: "info.circle")
-                                    .font(.headline)
-                            }
-                            .frame(minHeight: 40)
-                        }
+                    Button {
+                        showWhyBuilt = true
+                    } label: {
+                        Label("Why SimpleX is built.", systemImage: "info.circle")
+                            .font(.headline)
                     }
                 }
-                .padding(.horizontal, 25)
-                .padding(.top, 28)
-                .padding(.bottom, 25)
-                .frame(minHeight: g.size.height)
             }
+            .padding(.horizontal, 25)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
+            .frame(minHeight: g.size.height)
             .sheet(isPresented: Binding(
                 get: { m.migrationState != nil && !createProfileNavLinkActive },
                 set: { _ in
@@ -107,11 +107,6 @@ struct SimpleXInfo: View {
                     onboarding: onboarding,
                     createProfileNavLinkActive: $createProfileNavLinkActive
                 )
-            }
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
-            } else {
-                v
             }
         }
         .onAppear() {

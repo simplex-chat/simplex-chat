@@ -17,58 +17,55 @@ struct NetworkCommitmentsView: View {
 
     var body: some View {
         GeometryReader { g in
-            let v = ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 10) {
+                Spacer(minLength: 0)
 
-                    heroImage()
-                        .frame(maxWidth: .infinity)
+                heroImage().frame(maxWidth: .infinity, minHeight: 80)
 
-                    Text("Network\ncommitments")
-                        .font(.largeTitle)
-                        .bold()
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                Text("Network\ncommitments")
+                    .font(.largeTitle)
+                    .bold()
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code")
-                        .lineSpacing(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 10)
-                        .padding(.top, 10)
-
-                    Text("You commit to:\n- Send only legal content in public groups\n- Respect other users \u{2014} no spam")
-                        .lineSpacing(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 10)
-                        .padding(.top, 10)
-
-                    Button {
-                        showConditionsSheet = true
-                    } label: {
-                        Text("Privacy policy and conditions of use.")
-                            .fontWeight(.medium)
-                    }
+                Text("Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code")
+                    .font(.callout)
+                    .lineSpacing(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 10)
+                    .padding(.leading, 4)
                     .padding(.top, 10)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    Spacer(minLength: 0)
+                Text("You commit to:\n- Only legal content in public groups\n- Respect other users - no spam")
+                    .font(.callout)
+                    .lineSpacing(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 4)
+                    .padding(.top, 10)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                    VStack(spacing: 10) {
-                        acceptButton()
-                        onboardingButtonPlaceholder()
-                    }
+                Button {
+                    showConditionsSheet = true
+                } label: {
+                    Text("Privacy policy and conditions of use.")
+                        .fontWeight(.medium)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal, 25)
-                .padding(.top, 25)
-                .padding(.bottom, 25)
-                .frame(minHeight: g.size.height)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 4)
+                .padding(.top, 10)
+                .padding(.bottom, 15)
+
+                Spacer(minLength: 0)
+
+                acceptButton()
+                    .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
-            if #available(iOS 16.4, *) {
-                v.scrollBounceBehavior(.basedOnSize)
-            } else {
-                v
-            }
+            .padding(.horizontal, 25)
+            .padding(.top, 25)
+            .padding(.bottom, 25)
+            .frame(minHeight: g.size.height)
         }
         .frame(maxHeight: .infinity)
         .navigationBarHidden(true)
@@ -99,11 +96,12 @@ struct NetworkCommitmentsView: View {
                 endPoint: gp.end
             )
             Image(systemName: "checkmark.shield")
-                .font(.system(size: 80))
+                .font(.system(size: 72))
                 .foregroundColor(theme.colors.primary)
         }
         .aspectRatio(1.5, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 24))
+        .padding(.horizontal, 25)
         #endif
     }
 
