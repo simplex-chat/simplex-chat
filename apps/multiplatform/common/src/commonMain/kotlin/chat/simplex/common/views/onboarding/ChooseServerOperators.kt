@@ -104,7 +104,7 @@ fun ModalData.ChooseServerOperators(
     prepareChatBeforeFinishingOnboarding()
   }
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false) {
+    ModalView(close, enableClose = selectedOperatorIds.value.isNotEmpty()) {
       ColumnWithScrollBar(
         Modifier
           .themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),

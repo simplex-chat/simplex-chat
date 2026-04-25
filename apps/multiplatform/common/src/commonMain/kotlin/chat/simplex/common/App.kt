@@ -192,19 +192,44 @@ fun MainScreen() {
               ModalManager.fullscreen.showInView()
             }
           }
-          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-          OnboardingStage.LinkAMobile -> LinkAMobile()
-          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-          OnboardingStage.Step3_ChooseServerOperators -> {
-            val modalData = remember { ModalData() }
-            modalData.OnboardingConditionsView()
+          OnboardingStage.Step2_CreateProfile -> {
+            CreateFirstProfile(chatModel) {}
             if (appPlatform.isDesktop) {
               ModalManager.fullscreen.showInView()
             }
           }
-          // Ensure backwards compatibility with old onboarding stage for address creation, otherwise notification setup would be skipped
-          OnboardingStage.Step3_CreateSimpleXAddress -> SetNotificationsMode(chatModel)
-          OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
+          OnboardingStage.LinkAMobile -> LinkAMobile()
+          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+          OnboardingStage.Step3_ChooseServerOperators -> { // deprecated - map to new step 3
+            YourNetworkView(chatModel)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step3_CreateSimpleXAddress -> { // deprecated - map to new step 3
+            YourNetworkView(chatModel)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step4_SetNotificationsMode -> { // deprecated - map to new step 3
+            YourNetworkView(chatModel)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step3_YourNetwork -> {
+            YourNetworkView(chatModel)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step4_NetworkCommitments -> {
+            NetworkCommitmentsView(chatModel)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
         }
       }
     }

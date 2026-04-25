@@ -4,6 +4,7 @@ import SectionTextFooter
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -11,22 +12,35 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.migration.MigrateToDeviceView
+import chat.simplex.common.views.migration.MigrationToState
+import chat.simplex.common.views.newchat.darkStops
+import chat.simplex.common.views.newchat.gradientPoints
+import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
@@ -127,45 +141,134 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
 
 @Composable
 fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
-  val scope = rememberCoroutineScope()
-  val scrollState = rememberScrollState()
-  val keyboardState by getKeyboardState()
-  var savedKeyboardState by remember { mutableStateOf(keyboardState) }
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({
-      if (chatModel.users.none { !it.user.hidden }) {
-        appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-      } else {
-        close()
-      }
-    }) {
-      ColumnWithScrollBar {
-        val displayName = rememberSaveable { mutableStateOf("") }
-        val focusRequester = remember { FocusRequester() }
-        Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(start = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, end = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, bottom = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          Box(Modifier.align(Alignment.CenterHorizontally)) {
-            AppBarTitle(stringResource(MR.strings.create_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
-          }
-          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
+    val focusRequester = remember { FocusRequester() }
+    val refocusTrigger = remember { mutableStateOf(0) }
+    ModalView(
+      close = {
+        if (chatModel.users.none { !it.user.hidden }) {
+          appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+        } else {
+          close()
         }
-        Spacer(Modifier.fillMaxHeight().weight(1f))
+      },
+      endButtons = {
+        val focusManager = LocalFocusManager.current
+        TextButton(
+          onClick = {
+            focusManager.clearFocus()
+            if (chatModel.migrationState.value == null) {
+              chatModel.migrationState.value = MigrationToState.PasteOrScanLink
+            }
+            ModalManager.fullscreen.showCustomModal(animated = false) { close ->
+              MigrateToDeviceView {
+                close()
+                refocusTrigger.value++
+              }
+            }
+          },
+          modifier = Modifier.padding(end = DEFAULT_PADDING_HALF)
+        ) {
+          Icon(painterResource(MR.images.ic_download), null, Modifier.size(22.dp), tint = MaterialTheme.colors.primary)
+          Spacer(Modifier.width(4.dp))
+          Text(stringResource(MR.strings.migrate), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)
+        }
+      }
+    ) {
+      val displayName = rememberSaveable { mutableStateOf("") }
+      val keyboardState by getKeyboardState()
+      val imageHeightModifier = if (appPlatform.isAndroid && keyboardState == KeyboardState.Opened) {
+        Modifier.heightIn(max = 100.dp)
+      } else if (!appPlatform.isAndroid) {
+        Modifier.heightIn(max = 220.dp)
+      } else {
+        Modifier
+      }
+      ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally, maxIntrinsicSize = true) {
+        Spacer(Modifier.weight(1f))
+
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth().then(imageHeightModifier)
+          )
+        } else {
+          val isDark = isInDarkTheme()
+          val stops = if (isDark) darkStops else lightStops
+          val scale = if (isDark) 1.5f else 1.2f
+          Box(
+            Modifier
+              .then(if (appPlatform.isAndroid && keyboardState != KeyboardState.Opened) Modifier.fillMaxWidth() else Modifier)
+              .then(imageHeightModifier)
+              .aspectRatio(1f)
+              .clip(RoundedCornerShape(24.dp))
+              .drawBehind {
+                val gp = gradientPoints(size.height / size.width, scale)
+                drawRect(
+                  Brush.linearGradient(
+                    colorStops = stops,
+                    start = Offset(gp.startX * size.width, gp.startY * size.height),
+                    end = Offset(gp.endX * size.width, gp.endY * size.height)
+                  )
+                )
+              },
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              painterResource(MR.images.ic_person),
+              contentDescription = null,
+              modifier = Modifier.size(80.dp),
+              tint = MaterialTheme.colors.primary
+            )
+          }
+        }
+
+        Text(
+          stringResource(MR.strings.onboarding_your_profile),
+          style = MaterialTheme.typography.h1,
+          fontWeight = FontWeight.Bold,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+        )
+
+        Text(
+          stringResource(MR.strings.onboarding_on_your_phone),
+          style = MaterialTheme.typography.h3,
+          fontWeight = FontWeight.Medium,
+          color = MaterialTheme.colors.secondary,
+          fontSize = 20.sp,
+          lineHeight = 30.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(top = 14.dp)
+        )
+
+        Text(
+          stringResource(MR.strings.onboarding_no_account),
+          style = MaterialTheme.typography.body1,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center,
+          lineHeight = 24.sp,
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+        )
+
+        OnboardingProfileNameField(displayName, focusRequester)
+
+        Spacer(Modifier.weight(1f))
+
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-            labelId = MR.strings.create_profile_button,
+            if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.create_profile,
             onboarding = null,
             enabled = canCreateProfile(displayName.value),
             onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
           )
-          // Reserve space
           TextButtonBelowOnboardingButton("", null)
         }
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(refocusTrigger.value) {
           delay(300)
           focusRequester.requestFocus()
         }
@@ -173,15 +276,63 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       LaunchedEffect(Unit) {
         setLastVersionDefault(chatModel)
       }
-      if (savedKeyboardState != keyboardState) {
-        LaunchedEffect(keyboardState) {
-          scope.launch {
-            savedKeyboardState = keyboardState
-            scrollState.animateScrollTo(scrollState.maxValue)
+    }
+  }
+}
+
+@Composable
+private fun OnboardingProfileNameField(displayName: MutableState<String>, focusRequester: FocusRequester) {
+  var valid by rememberSaveable { mutableStateOf(true) }
+  var focused by rememberSaveable { mutableStateOf(false) }
+  val showError = !valid && displayName.value.isNotEmpty()
+  Box(
+    Modifier
+      .padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
+      .then(if (!appPlatform.isAndroid) Modifier.widthIn(max = 450.dp) else Modifier)
+      .fillMaxWidth()
+      .clip(RoundedCornerShape(10.dp))
+      .background(MaterialTheme.colors.onBackground.copy(alpha = if (isInDarkTheme()) 0.08f else 0.06f))
+      .padding(horizontal = DEFAULT_PADDING, vertical = 12.dp)
+  ) {
+    val textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground)
+    BasicTextField(
+      value = displayName.value,
+      onValueChange = { displayName.value = it },
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(end = if (showError) 24.dp else 0.dp)
+        .focusRequester(focusRequester)
+        .onFocusChanged { focused = it.isFocused },
+      textStyle = textStyle,
+      singleLine = true,
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+      decorationBox = { innerTextField ->
+        Box(contentAlignment = Alignment.CenterStart) {
+          if (displayName.value.isEmpty()) {
+            Text(
+              stringResource(MR.strings.enter_profile_name),
+              style = textStyle.copy(color = MaterialTheme.colors.secondary)
+            )
           }
+          innerTextField()
         }
       }
+    )
+    if (showError) {
+      IconButton(
+        onClick = { showInvalidNameAlert(mkValidName(displayName.value), displayName) },
+        modifier = Modifier.align(Alignment.CenterEnd).size(20.dp)
+      ) {
+        Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+      }
     }
+  }
+  LaunchedEffect(Unit) {
+    snapshotFlow { displayName.value }
+      .distinctUntilChanged()
+      .collect {
+        valid = it.trim() == mkValidName(it)
+      }
   }
 }
 
@@ -191,7 +342,7 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
-    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
+    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_YourNetwork)
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
     close()
@@ -207,7 +358,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDesc
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
-      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_NetworkCommitments)
     } else {
       val users = chatModel.controller.listUsers(rhId)
       chatModel.users.clear()
@@ -230,7 +381,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
-        OnboardingStage.Step3_ChooseServerOperators
+        OnboardingStage.Step3_YourNetwork
       })
     } else {
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,

@@ -24,12 +24,20 @@ struct OnboardingView: View {
                     .modifier(ThemedBackground())
             case .step3_CreateSimpleXAddress: // deprecated
                 CreateSimpleXAddress()
-            case .step3_ChooseServerOperators:
-                OnboardingConditionsView()
+            case .step3_ChooseServerOperators: // deprecated - map to new step 3
+                YourNetworkView()
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
-            case .step4_SetNotificationsMode:
-                SetNotificationsMode()
+            case .step4_SetNotificationsMode: // deprecated - map to new step 3
+                YourNetworkView()
+                    .navigationBarBackButtonHidden(true)
+                    .modifier(ThemedBackground())
+            case .step3_YourNetwork:
+                YourNetworkView()
+                    .navigationBarBackButtonHidden(true)
+                    .modifier(ThemedBackground())
+            case .step4_NetworkCommitments:
+                NetworkCommitmentsView(selectedOperatorIds: Set(ChatModel.shared.conditions.serverOperators.filter { $0.enabled }.map { $0.operatorId }))
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
             case .onboardingComplete: EmptyView()
@@ -47,8 +55,10 @@ enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
     case step2_CreateProfile // deprecated
     case step3_CreateSimpleXAddress // deprecated
-    case step3_ChooseServerOperators // changed to simplified conditions
-    case step4_SetNotificationsMode
+    case step3_ChooseServerOperators // deprecated
+    case step4_SetNotificationsMode // deprecated
+    case step3_YourNetwork
+    case step4_NetworkCommitments
     case onboardingComplete
 
     public var id: Self { self }

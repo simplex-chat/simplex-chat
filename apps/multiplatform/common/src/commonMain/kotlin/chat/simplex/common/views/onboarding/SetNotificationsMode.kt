@@ -105,7 +105,7 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
 }
 
 @Composable
-private fun NotificationBatteryUsageInfo() {
+fun NotificationBatteryUsageInfo() {
   ColumnWithScrollBar(Modifier.padding(DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_battery), withPadding = false)
     Text(stringResource(MR.strings.onboarding_notifications_mode_service), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
