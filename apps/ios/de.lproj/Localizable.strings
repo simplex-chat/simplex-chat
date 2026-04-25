@@ -202,7 +202,7 @@ channel relay bar progress */
 
 /* channel creation progress with errors
 channel relay bar */
-"%d/%d relays active, %d failed" = "%1$d/%2$d Relais aktiv, %3$d Fehlgeschlagen";
+"%d/%d relays active, %d failed" = "%1$d/%2$d Relais aktiv, %3$d fehlgeschlagen";
 
 /* channel subscriber relay bar progress */
 "%d/%d relays connected" = "%1$d/%2$d Relais verbunden";
@@ -6696,7 +6696,7 @@ server test failure */
 "Your profile" = "Mein Profil";
 
 /* No comment provided by engineer. */
-"Your profile **%@** will be shared with channel relays and subscribers.\nRelays can access channel messages." = "Ihr Profil %@ wird mit Kanal‑Relais und Abonnenten geteilt.\nRelais können auf Kanalnachrichten zugreifen.";
+"Your profile **%@** will be shared with channel relays and subscribers.\nRelays can access channel messages." = "Ihr Profil **%@** wird mit Kanal‑Relais und Abonnenten geteilt.\nRelais können auf Kanalnachrichten zugreifen.";
 
 /* No comment provided by engineer. */
 "Your profile **%@** will be shared." = "Ihr Profil **%@** wird geteilt.";

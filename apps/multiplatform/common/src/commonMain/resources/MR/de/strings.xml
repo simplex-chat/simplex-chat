@@ -176,7 +176,7 @@
     <string name="group_preview_you_are_invited">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_preview_join_as">Beitreten als %s</string>
     <string name="group_connection_pending">verbinde …</string>
-    <string name="tap_to_start_new_chat">Tippen, um einen neuen Chats zu starten</string>
+    <string name="tap_to_start_new_chat">Tippen, um einen neuen Chat zu starten</string>
     <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
     <string name="you_have_no_chats">Sie haben keine Chats</string>
     <!-- ShareListView.kt -->
@@ -2633,7 +2633,7 @@
     <string name="member_info_member_failed">Fehlgeschlagen</string>
     <string name="down_migration_warning_chat_relays">Kanäle, welche Sie erstellt haben oder denen Sie beigetreten sind, werden dauerhaft deaktiviert.</string>
     <string name="relay_bar_active">%1$d/%2$d Relais aktiv</string>
-    <string name="relay_bar_active_with_failures">%1$d/%2$d Relais aktiv, %3$d Fehlgeschlagen</string>
+    <string name="relay_bar_active_with_failures">%1$d/%2$d Relais aktiv, %3$d fehlgeschlagen</string>
     <string name="relay_bar_connected">%1$d/%2$d Relais verbunden</string>
     <string name="relay_bar_connected_with_errors">%1$d/%2$d Relais verbunden, %3$d Fehler</string>
     <string name="channel_subscriber_count_singular">%1$d Abonnent</string>
@@ -2798,12 +2798,12 @@
     <string name="a_link_for_one_person">Ein Link für eine einzelne Person zum Verbinden.</string>
     <string name="chat_list_channels">Kanäle</string>
     <string name="connect_via_link_or_qr_code">Über einen Link oder QR-Code verbinden</string>
-    <string name="connect_with_someone">Mit Jemandem verbinden</string>
+    <string name="connect_with_someone">Mit jemandem verbinden</string>
     <string name="create_your_public_address">Erstellen Sie Ihre öffentliche Adresse</string>
     <string name="v6_5_invite_friends">Freunde einladen – jetzt noch einfacher 👋</string>
     <string name="for_anyone_to_reach_you">Damit Sie jeder erreichen kann</string>
     <string name="invite_someone_privately">Jemanden privat einladen</string>
-    <string name="let_someone_connect_to_you">Damit sich Jemand mit Ihnen verbinden kann</string>
+    <string name="let_someone_connect_to_you">Damit sich jemand mit Ihnen verbinden kann</string>
     <string name="new_1_time_link">Neuer Einmal-Link</string>
     <string name="v6_5_non_profit_governance">Non‑Profit‑Governance</string>
     <string name="v6_5_safe_web_links_descr">- Opt‑in zum Senden von Linkvorschauen.\n- Hyperlink‑Phishing verhindern.\n- Link‑Tracking entfernen.</string>
@@ -2811,12 +2811,12 @@
     <string name="onboarding_or_use_qr_code">Oder diesen QR‑Code verwenden – ausgedruckt oder online.</string>
     <string name="v6_5_ownership">Volle Kontrolle: Sie können Ihre eigenen Relais betreiben.</string>
     <string name="v6_5_privacy">Privatsphäre: für Besitzer und Abonnenten.</string>
-    <string name="v6_5_public_channels">Öffentliche Kanäle – freies kommunizieren 🚀</string>
+    <string name="v6_5_public_channels">Öffentliche Kanäle – freies Kommunizieren 🚀</string>
     <string name="v6_5_reliability">Zuverlässigkeit: mehrere Relais pro Kanal.</string>
     <string name="v6_5_safe_web_links">Sichere Web-Links</string>
     <string name="v6_5_security">Sicherheit: Eigentümer besitzen die Kanalschlüssel.</string>
     <string name="onboarding_send_1_time_link">Den Link über einen beliebigen Messenger versenden – es ist sicher. Bitte in SimpleX einfügen.</string>
-    <string name="talk_to_someone">Mit Jemandem sprechen</string>
+    <string name="talk_to_someone">Mit jemandem sprechen</string>
     <string name="v6_5_non_profit_governance_descr">Für ein dauerhaftes SimpleX-Netzwerk.</string>
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>

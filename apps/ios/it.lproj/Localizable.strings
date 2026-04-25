@@ -2159,7 +2159,7 @@ chat item action */
 "Enable (keep overrides)" = "Attiva (mantieni sostituzioni)";
 
 /* channel creation warning */
-"Enable at least one chat relay in Network & Servers." = "Attiva almeno un relayvdi chat in \"Rete e server\".";
+"Enable at least one chat relay in Network & Servers." = "Attiva almeno un relay di chat in \"Rete e server\".";
 
 /* alert title */
 "Enable automatic message deletion?" = "Attivare l'eliminazione automatica dei messaggi?";

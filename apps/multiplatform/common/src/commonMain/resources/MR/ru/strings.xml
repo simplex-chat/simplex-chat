@@ -2645,7 +2645,7 @@
     <string name="snd_channel_event_channel_profile_updated">профиль канала обновлён</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Канал будет удалён для всех подписчиков — это действие нельзя отменить!</string>
     <string name="delete_channel_for_self_cannot_undo_warning">Канал будет удалён для вас — это действие нельзя отменить!</string>
-    <string name="configure_relays">Настроить ретранстляторы</string>
+    <string name="configure_relays">Настроить ретрансляторы</string>
     <string name="relay_test_step_connect">Соединиться</string>
     <string name="relay_conn_status_connected">соединено</string>
     <string name="relay_conn_status_connecting">соединяется</string>
@@ -2676,7 +2676,7 @@
     <string name="relay_bar_connected_with_errors">%1$d/%2$d ретрансляторов соединено, %3$d ошибок</string>
     <string name="relay_status_accepted">принят</string>
     <string name="relay_status_active">активен</string>
-    <string name="block_subscriber_for_all_question">Заблокировать подписчкика для всех?</string>
+    <string name="block_subscriber_for_all_question">Заблокировать подписчика для всех?</string>
     <string name="compose_view_broadcast">Вещание</string>
     <string name="cancel_creating_channel_confirm">Отмена</string>
     <string name="channel_will_start_with_relays">Канал начнёт работу с %1$d из %2$d ретрансляторов. Продолжить?</string>
