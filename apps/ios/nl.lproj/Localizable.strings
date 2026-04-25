@@ -396,9 +396,6 @@ swipe action */
 "Active connections" = "Actieve verbindingen";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Voeg een adres toe aan uw profiel, zodat uw contacten het met andere mensen kunnen delen. Profiel update wordt naar uw contacten verzonden.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Vrienden toevoegen";
 
 /* No comment provided by engineer. */
@@ -867,7 +864,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgaars, Fins, Thais en Oekraïens - dankzij de gebruikers en [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Zakelijk adres";
 
 /* No comment provided by engineer. */
@@ -1306,7 +1303,7 @@ server test step */
 /* alert title */
 "Connection error" = "Verbindingsfout";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Verbindingsfout (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1419,9 +1416,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Juiste naam voor %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Maak";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Eenmalige link maken";
@@ -1964,7 +1958,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Edit group profile" = "Groep profiel bewerken";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Inschakelen";
 
 /* No comment provided by engineer. */
@@ -2135,7 +2129,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "fout";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Fout";
 
 /* No comment provided by engineer. */
@@ -2655,7 +2649,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "groep is verwijderd";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Groep link";
 
 /* No comment provided by engineer. */
@@ -2916,7 +2910,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "ongeldige gesprek gegevens";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Ongeldige verbinding link";
 
 /* invalid chat item */
@@ -3662,7 +3656,7 @@ alert button
 new chat action */
 "Ok" = "OK";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "OK";
 
 /* No comment provided by engineer. */
@@ -4009,9 +4003,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Profiel thema";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Profiel update wordt naar uw contacten verzonden.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Audio/video gesprekken verbieden.";
@@ -4797,9 +4788,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Adres openbaar delen";
 
-/* alert title */
-"Share address with contacts?" = "Adres delen met contacten?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Delen vanuit andere apps.";
 
@@ -4817,9 +4805,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Delen op SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Delen met contacten";
 
 /* No comment provided by engineer. */
 "Short link" = "Korte link";
@@ -5061,9 +5046,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap button " = "Tik op de knop ";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Tik op SimpleX-adres maken in het menu om het later te maken.";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Tik hier om profiel te activeren.";
@@ -5441,7 +5423,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Ongelezen";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Niet-ondersteunde verbindingslink";
 
 /* No comment provided by engineer. */

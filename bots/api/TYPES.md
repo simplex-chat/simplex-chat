@@ -95,6 +95,7 @@ This file is generated automatically.
 - [GroupInfo](#groupinfo)
 - [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
+- [GroupLinkOwner](#grouplinkowner)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
 - [GroupMemberAdmission](#groupmemberadmission)
@@ -2266,6 +2267,15 @@ MemberSupport:
 
 ---
 
+## GroupLinkOwner
+
+**Record type**:
+- memberId: string
+- memberKey: string
+
+
+---
+
 ## GroupLinkPlan
 
 **Discriminated union type**:
@@ -2290,6 +2300,9 @@ ConnectingProhibit:
 Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
+- groupUpdated: bool
+- ownerVerification: [OwnerVerification](#ownerverification)?
+- linkOwners: [[GroupLinkOwner](#grouplinkowner)]
 
 NoRelays:
 - type: "noRelays"
@@ -2513,6 +2526,7 @@ Public:
 
 **Enum type**:
 - "channel"
+- "group"
 
 
 ---

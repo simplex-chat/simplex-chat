@@ -33,10 +33,10 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
 import Simplex.Chat.Controller
-import Simplex.Chat.Markdown (displayNameTextP)
+import Simplex.Chat.Markdown (MarkdownList, displayNameTextP)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
-import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink, MsgContent (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..))
@@ -49,6 +49,7 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {member :: GroupMember, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEGroupLinkCheck GroupInfo
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
@@ -57,6 +58,8 @@ data DirectoryEvent
   | DEContactLeftGroup ContactId GroupInfo
   | DEServiceRemovedFromGroup GroupInfo
   | DEGroupDeleted GroupInfo
+  | DEChatLinkReceived {contact :: Contact, chatItemId :: ChatItemId, chatLink :: MsgChatLink, ownerSig :: Maybe LinkOwnerSig}
+  | DEMemberUpdated {groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | DEUnsupportedMessage Contact ChatItemId
   | DEItemEditIgnored Contact
   | DEItemDeleteIgnored Contact
@@ -91,11 +94,14 @@ crDirectoryEvent_ = \case
   CEvtLeftMember {groupInfo, member} -> (`DEContactLeftGroup` groupInfo) <$> memberContactId member
   CEvtDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
   CEvtGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
+  CEvtUnknownMemberAnnounced {groupInfo, unknownMember, announcedMember} -> Just $ DEMemberUpdated {groupInfo, fromMember = unknownMember, toMember = announcedMember}
+  CEvtGroupMemberUpdated {groupInfo, fromMember, toMember} -> Just $ DEMemberUpdated {groupInfo, fromMember, toMember}
   CEvtChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
   CEvtChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
-  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->
+  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, formattedText = ft, meta = CIMeta {itemLive}}) : _} ->
     Just $ case (mc, itemLive) of
-      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
+      (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP ft <* A.endOfInput) $ T.dropWhileEnd isSpace t
+      (MCChat {chatLink, ownerSig}, Nothing) -> DEChatLinkReceived {contact = ct, chatItemId = ciId, chatLink, ownerSig}
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci
@@ -149,7 +155,7 @@ data DirectoryHelpSection = DHSRegistration | DHSCommands
 
 data DirectoryCmd (r :: DirectoryRole) where
   DCHelp :: DirectoryHelpSection -> DirectoryCmd 'DRUser
-  DCSearchGroup :: Text -> DirectoryCmd 'DRUser
+  DCSearchGroup :: Text -> Maybe MarkdownList -> DirectoryCmd 'DRUser
   DCSearchNext :: DirectoryCmd 'DRUser
   DCAllGroups :: DirectoryCmd 'DRUser
   DCRecentGroups :: DirectoryCmd 'DRUser
@@ -181,11 +187,11 @@ data ADirectoryCmd = forall r. ADC (SDirectoryRole r) (DirectoryCmd r)
 
 deriving instance Show ADirectoryCmd
 
-directoryCmdP :: Parser ADirectoryCmd
-directoryCmdP =
+directoryCmdP :: Maybe MarkdownList -> Parser ADirectoryCmd
+directoryCmdP ft =
   (A.char '/' *> cmdStrP)
     <|> (A.char '.' $> ADC SDRUser DCSearchNext)
-    <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
+    <|> (ADC SDRUser . (`DCSearchGroup` ft) <$> A.takeText)
   where
     cmdStrP =
       (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
@@ -304,7 +310,7 @@ directoryCmdP =
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
   DCHelp _ -> "help"
-  DCSearchGroup _ -> "search"
+  DCSearchGroup {} -> "search"
   DCSearchNext -> "next"
   DCAllGroups -> "all"
   DCRecentGroups -> "new"

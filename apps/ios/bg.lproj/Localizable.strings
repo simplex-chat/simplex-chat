@@ -390,9 +390,6 @@ swipe action */
 "Active connections" = "Активни връзки";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Добави приятели";
 
 /* No comment provided by engineer. */
@@ -873,7 +870,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Български, финландски, тайландски и украински - благодарение на потребителите и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Бизнес адрес";
 
 /* No comment provided by engineer. */
@@ -1318,7 +1315,7 @@ server test step */
 /* alert title */
 "Connection error" = "Грешка при свързване";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Грешка при свързване (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1392,9 +1389,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Поправи име на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Създаване";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Създаване на еднократна препратка";
@@ -1802,7 +1796,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Edit group profile" = "Редактирай групов профил";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Активирай";
 
 /* No comment provided by engineer. */
@@ -1964,7 +1958,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2306,7 +2300,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Груповата покана вече е невалидна, премахната е от подателя.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Групов линк";
 
 /* No comment provided by engineer. */
@@ -2519,7 +2513,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "невалидни данни за чат";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Невалиден линк за връзка";
 
 /* invalid chat item */
@@ -3040,7 +3034,7 @@ alert button
 new chat action */
 "Ok" = "Ок";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "ОК";
 
 /* No comment provided by engineer. */
@@ -3270,9 +3264,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile password" = "Профилна парола";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Актуализацията на профила ще бъде изпратена до вашите контакти.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Забрани аудио/видео разговорите.";
@@ -3782,17 +3773,11 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Сподели адрес";
 
-/* alert title */
-"Share address with contacts?" = "Сподели адреса с контактите?";
-
 /* No comment provided by engineer. */
 "Share link" = "Сподели линк";
 
 /* No comment provided by engineer. */
 "Share this 1-time invite link" = "Сподели този еднократен линк за връзка";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Сподели с контактите";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Показване на обажданията в хронологията на телефона";

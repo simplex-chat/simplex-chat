@@ -26,7 +26,7 @@ Simple bot that replies with squares of numbers you send to it:
   // const {bot} = await import("../dist/index.js")
   const [chat, _user, _address] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
-    dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
+    dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {welcomeMessage: "Send a number, I will square it.",
     },
@@ -61,6 +61,44 @@ node ./examples/squaring-bot-readme.js
 There is an example with more options in [./examples/squaring-bot.ts](./examples/squaring-bot.ts).
 
 You can run it with: `npx ts-node ./examples/squaring-bot.ts`
+
+## PostgreSQL backend
+
+By default, the package uses SQLite. To use PostgreSQL instead:
+
+```bash
+npm install simplex-chat --simplex_backend=postgres
+```
+
+Or persist the setting in `.npmrc`:
+
+```ini
+simplex_backend=postgres
+```
+
+### Prerequisites (PostgreSQL)
+
+- `libpq5` must be installed on the host system (`apt install libpq5` on Debian/Ubuntu)
+- PostgreSQL backend is only available for Linux x86_64
+- A PostgreSQL server accessible via connection string
+
+### Passing PostgreSQL connection
+
+The `DbConfig` type is a discriminated union — pick the variant that matches
+the backend you installed:
+
+```ts
+// SQLite (default)
+dbOpts: {type: "sqlite", filePrefix: "./data/bot"}
+// optional: encryptionKey: "<sqlcipher-key>"
+
+// PostgreSQL
+dbOpts: {
+  type: "postgres",
+  connectionString: "postgres://user:pass@host/db",
+  // schemaPrefix: "bot",  // optional — defaults to "simplex_v1"
+}
+```
 
 ## Documentation
 

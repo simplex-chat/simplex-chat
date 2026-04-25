@@ -1038,7 +1038,7 @@
     <string name="image_descr_simplex_logo">SimpleX Лого</string>
     <string name="icon_descr_simplex_team">SimpleX Екип</string>
     <string name="smp_servers">SMP сървъри</string>
-    <string name="share_address_with_contacts_question">Сподели адреса с контактите\?</string>
+    <string name="share_address_with_contacts_question">Сподели адреса с контактите?</string>
     <string name="share_link">Сподели линк</string>
     <string name="share_with_contacts">Сподели с контактите</string>
     <string name="stop_sharing">Спри споделянето</string>
