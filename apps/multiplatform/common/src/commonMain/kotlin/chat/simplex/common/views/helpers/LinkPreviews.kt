@@ -16,8 +16,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.LinkPreview
+import chat.simplex.common.model.NetworkProxyAuth
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
@@ -27,7 +27,9 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
+import java.net.Authenticator
 import java.net.InetSocketAddress
+import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URL
 
@@ -40,20 +42,26 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
     try {
       val title: String?
       val u = kotlin.runCatching { URL(url) }.getOrNull() ?: return@withContext null
-      val netCfg = getNetCfg()
-      val proxy: Proxy? = if (netCfg.useSocksProxy && netCfg.socksProxy != null) {
-        val hostname = netCfg.socksProxy.substringBefore(":").ifEmpty { "localhost" }
-        val port = netCfg.socksProxy.substringAfter(":").toIntOrNull()
-        if (port != null) {
-          Proxy(Proxy.Type.SOCKS, InetSocketAddress(hostname, port))
+      val useSocksProxy = appPrefs.networkUseSocksProxy.get()
+      val proxy: Proxy?
+      if (useSocksProxy) {
+        val networkProxy = appPrefs.networkProxy.get()
+        proxy = Proxy(Proxy.Type.SOCKS, InetSocketAddress(networkProxy.host, networkProxy.port))
+        if (networkProxy.auth == NetworkProxyAuth.USERNAME) {
+          Authenticator.setDefault(object : Authenticator() {
+            override fun getPasswordAuthentication(): PasswordAuthentication? =
+              // Java 21 SocksSocketImpl passes SERVER, not PROXY, for SOCKS5 auth
+              if (requestorType == RequestorType.PROXY || requestorType == RequestorType.SERVER)
+                PasswordAuthentication(networkProxy.username, networkProxy.password.toCharArray())
+              else null
+          })
         } else {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.network_socks_proxy),
-            text = generalGetString(MR.strings.socks_proxy_invalid_address)
-          )
-          return@withContext null
+          Authenticator.setDefault(null)
         }
-      } else null
+      } else {
+        proxy = null
+        Authenticator.setDefault(null)
+      }
       var imageUri = when {
         IMAGE_SUFFIXES.any { u.path.lowercase().endsWith(it) } -> {
           title = u.path.substringAfterLast("/")
