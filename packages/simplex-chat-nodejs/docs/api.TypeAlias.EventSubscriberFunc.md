@@ -4,7 +4,7 @@
 
 [simplex-chat](README.md) / [api](Namespace.api.md) / EventSubscriberFunc
 
-# Type Alias: EventSubscriberFunc()\<K\>
+# Type Alias: EventSubscriberFunc\<K\>
 
 > **EventSubscriberFunc**\<`K`\> = (`event`) => `void` \| `Promise`\<`void`\>
 
@@ -20,7 +20,7 @@ Defined in: [src/api.ts:50](../src/api.ts#L50)
 
 ### event
 
-`ChatEvent` & \{ `type`: `K`; \}
+`ChatEvent` & `object`
 
 ## Returns
 

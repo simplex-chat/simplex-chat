@@ -93,6 +93,7 @@ directoryServiceTests = do
     it "should reject card shared by non-owner" testNonOwnerSharesCard
     it "should delete channel registration and leave" testDeleteChannelRegistration
     it "should handle re-registration when already listed" testReregistrationAlreadyListed
+    it "should update subscriber count periodically" testLinkCheckUpdatesCount
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
@@ -128,6 +129,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       runCLI = False,
       searchResults = 3,
       webFolder,
+      linkCheckInterval = 0,
       testing = True
     }
 
@@ -1976,7 +1978,7 @@ testRegisterChannelViaCard ps =
         superUser <## "news"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
+        superUser <## "1 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -1999,7 +2001,7 @@ testRegisterChannelViaCard ps =
         superUser <## "news (News and Updates)"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "3 subscribers"
+        superUser <## "2 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -2074,7 +2076,7 @@ testDeleteChannelRegistration ps =
         superUser <## "news"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
+        superUser <## "1 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -2118,7 +2120,7 @@ testReregistrationAlreadyListed ps =
         superUser <## "news"
         superUser <##. "Link to join channel: "
         superUser <## "You need SimpleX Chat app v6.5 to join."
-        superUser <## "2 subscribers"
+        superUser <## "1 subscribers"
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
@@ -2135,13 +2137,86 @@ testReregistrationAlreadyListed ps =
         bob <# "'SimpleX Directory'> news"
         bob <##. "Link to join channel: "
         bob <## "You need SimpleX Chat app v6.5 to join."
-        bob <## "3 subscribers"
+        bob <## "1 subscribers"
         -- owner re-shares card while already listed
         bob ##> "/share chat #news @'SimpleX Directory'"
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link
         _ <- getTermLine bob -- ownerSig JSON
         bob <# "'SimpleX Directory'> Channel is already listed in the directory."
+
+testLinkCheckUpdatesCount :: HasCallStack => TestParams -> IO ()
+testLinkCheckUpdatesCount ps = do
+  dsLink <-
+    withNewTestChatCfg ps testCfg serviceDbPrefix directoryProfile $ \ds ->
+      withNewTestChatCfg ps testCfg "super_user" aliceProfile $ \superUser -> do
+        connectUsers ds superUser
+        ds ##> "/ad"
+        getContactLink ds True
+  let opts = (mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing) {linkCheckInterval = 1}
+  runDirectory testCfg opts $
+    withTestChatCfg ps testCfg "super_user" $ \superUser -> do
+      superUser <## "subscribed 1 connections on server localhost"
+      withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+        withRelay ps $ \relay ->
+          withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+            bob `connectVia` dsLink
+            (shortLink, fullLink) <- prepareChannel1Relay "news" bob relay
+            -- register and approve
+            bob ##> "/share chat #news @'SimpleX Directory'"
+            bob <# "@'SimpleX Directory' link to join channel #news (signed):"
+            _ <- getTermLine bob -- short link
+            _ <- getTermLine bob -- ownerSig JSON
+            bob <# "'SimpleX Directory'> Joining the channel news…"
+            concurrentlyN_
+              [ do
+                  relay <## "'SimpleX Directory': accepting request to join group #news..."
+                  relay <## "#news: 'SimpleX Directory' joined the group",
+                bob <## "#news: relay added 'SimpleX Directory_1' to the group"
+              ]
+            bob <# "'SimpleX Directory'> Joined the channel news. Registration is pending approval — it may take up to 48 hours."
+            superUser <# "'SimpleX Directory'> bob submitted the channel ID 1:"
+            superUser <## "news"
+            superUser <##. "Link to join channel: "
+            superUser <## "You need SimpleX Chat app v6.5 to join."
+            superUser <## "1 subscribers"
+            superUser <## ""
+            superUser <## "To approve send:"
+            superUser <# "'SimpleX Directory'> /approve 1:news 1"
+            let approve = "/approve 1:news 1"
+            superUser #> ("@'SimpleX Directory' " <> approve)
+            superUser <# ("'SimpleX Directory'> > " <> approve)
+            superUser <## "      Channel approved!"
+            bob <# ("'SimpleX Directory'> The channel ID 1 (news) is approved and listed in directory - please moderate it!")
+            bob <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+            -- search shows initial count
+            bob #> "@'SimpleX Directory' news"
+            bob <# "'SimpleX Directory'> > news"
+            bob <## "      Found 1 group(s)."
+            bob <# "'SimpleX Directory'> news"
+            bob <##. "Link to join channel: "
+            bob <## "You need SimpleX Chat app v6.5 to join."
+            bob <## "1 subscribers"
+            -- link check updates count (bot joined)
+            threadDelay 1000000
+            bob #> "@'SimpleX Directory' news"
+            bob <# "'SimpleX Directory'> > news"
+            bob <## "      Found 1 group(s)."
+            bob <# "'SimpleX Directory'> news"
+            bob <##. "Link to join channel: "
+            bob <## "You need SimpleX Chat app v6.5 to join."
+            bob <## "2 subscribers"
+            -- second subscriber joins
+            memberJoinChannel "news" [relay] [bob] shortLink fullLink cath
+            -- link check updates count again
+            threadDelay 1000000
+            bob #> "@'SimpleX Directory' news"
+            bob <# "'SimpleX Directory'> > news"
+            bob <## "      Found 1 group(s)."
+            bob <# "'SimpleX Directory'> news"
+            bob <##. "Link to join channel: "
+            bob <## "You need SimpleX Chat app v6.5 to join."
+            bob <## "3 subscribers"
 
 testGetCaptchaStr :: HasCallStack => TestParams -> IO ()
 testGetCaptchaStr _ps = do

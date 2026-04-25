@@ -49,6 +49,7 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {member :: GroupMember, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEGroupLinkCheck GroupInfo
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed

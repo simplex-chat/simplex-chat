@@ -18,8 +18,7 @@ module Directory.Service
   )
 where
 
-import Control.Concurrent (forkIO)
-import Control.Concurrent.Async (race_)
+import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
 import Control.Exception (SomeException, try)
 import Control.Logger.Simple
@@ -66,9 +65,10 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), AgentErrorType (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Protocol (ErrorType (..))
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (eitherToMaybe, raceAny_, safeDecodeUtf8, tshow, unlessM, (<$$>))
@@ -100,7 +100,9 @@ data ServiceState = ServiceState
   { searchRequests :: TMap ContactId SearchRequest,
     blockedWordsCfg :: BlockedWordsConfig,
     pendingCaptchas :: TMap GroupMemberId PendingCaptcha,
-    updateListingsJob :: TMVar ChatController
+    serviceCC :: TMVar ChatController,
+    eventQ :: TQueue DirectoryEvent,
+    updateListingsJob :: TMVar ()
   }
 
 data CaptchaMode = CMText | CMAudio
@@ -126,8 +128,10 @@ newServiceState opts = do
   searchRequests <- TM.emptyIO
   blockedWordsCfg <- readBlockedWordsConfig opts
   pendingCaptchas <- TM.emptyIO
+  serviceCC <- newEmptyTMVarIO
+  eventQ <- newTQueueIO
   updateListingsJob <- newEmptyTMVarIO
-  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, updateListingsJob}
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -151,9 +155,8 @@ welcomeGetOpts = do
 
 directoryServiceCLI :: DirectoryLog -> DirectoryOpts -> IO ()
 directoryServiceCLI st opts = do
-  env <- newServiceState opts
-  eventQ <- newTQueueIO
-  let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
+  env@ServiceState {eventQ} <- newServiceState opts
+  let eventHook _cc resp = atomically $ resp <$ mapM_ (writeTQueue eventQ) (crDirectoryEvent resp)
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -163,14 +166,18 @@ directoryServiceCLI st opts = do
           }
   raceAny_ $
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
-      processEvents eventQ env
+      processEvents env
     ]
       <> maybeToList (updateListingsThread_ opts env)
+      <> maybeToList (linkCheckThread_ opts env)
   where
-    processEvents eventQ env = forever $ do
-      (cc, resp) <- atomically $ readTQueue eventQ
+    processEvents env@ServiceState {eventQ} = do
+      cc <- atomically $ readTMVar $ serviceCC env
       u_ <- readTVarIO (currentUser cc)
-      forM_ u_ $ \user -> directoryServiceEvent st opts env user cc resp
+      forM_ u_ $ \user ->
+        forever $ do
+          event <- atomically $ readTQueue eventQ
+          directoryServiceEvent st opts env user cc event
 
 updateListingDelay :: Int
 updateListingDelay = 5 * 60 * 1000000 -- update every 5 minutes
@@ -179,15 +186,30 @@ updateListingsThread_ :: DirectoryOpts -> ServiceState -> Maybe (IO ())
 updateListingsThread_ opts env = updateListingsThread <$> webFolder opts
   where
     updateListingsThread f = do
-      cc <- atomically $ takeTMVar $ updateListingsJob env
+      cc <- atomically $ readTMVar $ serviceCC env
       forever $ do
         u <- readTVarIO $ currentUser cc
         forM_ u $ \user -> updateGroupListingFiles cc user f
         delay <- registerDelay updateListingDelay
         atomically $ void (takeTMVar $ updateListingsJob env) `orElse` unlessM (readTVar delay) retry
 
-listingsUpdated :: ServiceState -> ChatController -> IO ()
-listingsUpdated env = void . atomically . tryPutTMVar (updateListingsJob env)
+listingsUpdated :: ServiceState -> IO ()
+listingsUpdated env = void $ atomically $ tryPutTMVar (updateListingsJob env) ()
+
+linkCheckThread_ :: DirectoryOpts -> ServiceState -> Maybe (IO ())
+linkCheckThread_ opts env@ServiceState {eventQ}
+  | linkCheckInterval opts > 0 = Just $ do
+      cc <- atomically $ readTMVar $ serviceCC env
+      forever $ do
+        threadDelay $ linkCheckInterval opts * 1000000
+        u <- readTVarIO $ currentUser cc
+        forM_ u $ \user ->
+          withDB' "linkCheckThread" cc (\db -> getAllGroupRegs_ db user) >>= \case
+            Left e -> logError $ "linkCheckThread error: " <> T.pack e
+            Right grs -> forM_ grs $ \(gInfo, gr) ->
+              unless (groupRemoved $ groupRegStatus gr) $
+                atomically $ writeTQueue eventQ $ DEGroupLinkCheck gInfo
+  | otherwise = Nothing
 
 directoryPreStartHook :: DirectoryOpts -> ChatController -> IO ()
 directoryPreStartHook opts ChatController {config, chatStore} = runDirectoryMigrations opts config chatStore
@@ -198,7 +220,8 @@ directoryPostStartHook opts@DirectoryOpts {noAddress, testing} env cc =
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId, profile = p@LocalProfile {preferences}} -> do
       unless noAddress $ initializeBotAddress' (not testing) cc
-      listingsUpdated env cc
+      void $ atomically $ tryPutTMVar (serviceCC env) cc
+      listingsUpdated env
       let cmds = fromMaybe [] $ preferences >>= commands_
       unless (cmds == directoryCommands) $ do
         let prefs = (fromMaybe emptyChatPrefs preferences) {files = Just FilesPreference {allow = FANo}, commands = Just directoryCommands} :: Preferences
@@ -227,7 +250,7 @@ directoryCommands =
 
 directoryService :: DirectoryLog -> DirectoryOpts -> ChatConfig -> IO ()
 directoryService st opts cfg = do
-  env <- newServiceState opts
+  env@ServiceState {eventQ} <- newServiceState opts
   let chatHooks =
         defaultChatHooks
           { preStartHook = Just $ directoryPreStartHook opts,
@@ -235,10 +258,16 @@ directoryService st opts cfg = do
             acceptMember = Just $ acceptMemberHook opts env
           }
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc ->
-    maybe id race_ (updateListingsThread_ opts env) $
-      forever $ do
-        (_, resp) <- atomically . readTBQueue $ outputQ cc
-        directoryServiceEvent st opts env user cc resp
+    raceAny_ $
+      [ forever $ do
+          (_, resp) <- atomically . readTBQueue $ outputQ cc
+          mapM_ (atomically . writeTQueue eventQ) $ crDirectoryEvent resp,
+        forever $ do
+          event <- atomically $ readTQueue eventQ
+          directoryServiceEvent st opts env user cc event
+      ]
+        <> maybeToList (updateListingsThread_ opts env)
+        <> maybeToList (linkCheckThread_ opts env)
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
 acceptMemberHook
@@ -281,13 +310,13 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
-directoryServiceEvent :: DirectoryLog -> DirectoryOpts -> ServiceState -> User -> ChatController -> Either ChatError ChatEvent -> IO ()
-directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc event =
-  forM_ (crDirectoryEvent event) $ \case
+directoryServiceEvent :: DirectoryLog -> DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
+directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
     DEGroupUpdated {member, fromGroup, toGroup} -> deGroupUpdated member fromGroup toGroup
+    DEGroupLinkCheck g -> deGroupLinkCheck g
     DEPendingMember g m -> dePendingMember g m
     DEPendingMemberMsg g m ciId t -> dePendingMemberMsg g m ciId t
     DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
@@ -762,6 +791,47 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         let approveCmd = MCText $ "/approve " <> tshow groupId <> ":" <> viewName displayName <> " " <> tshow gaId <> if promoted then " promote=on" else ""
         sendComposedMessages cc (SRDirect cId) [msg, approveCmd]
 
+    deGroupLinkCheck :: GroupInfo -> IO ()
+    deGroupLinkCheck gInfo@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup = pg_}, groupSummary = summary} =
+      withGroupReg gInfo "link check" $ \gr@GroupReg {groupRegStatus, dbOwnerMemberId} ->
+        forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
+          when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
+            let link = ACL SCMContact $ CLShort groupLink
+            sendChatCmd cc (APIConnectPlan userId (Just link) True Nothing) >>= \case
+              Right (CRConnectionPlan _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated = BoolDef updated, linkOwners = ListDef owners}))) ->
+                checkValidOwner dbOwnerMemberId owners $ do
+                  when updated $ reapprove pg gr groupRegStatus g'
+                  when (updated || summary /= groupSummary g') $ listingsUpdated env
+              Left (ChatErrorAgent {agentError = SMP _ err}) | linkDeleted err ->
+                setGroupStatus logError st env cc groupId GRSRemoved $ \gr' ->
+                  notifyOwner gr' "The channel link is no longer valid.\nThe channel is removed from the directory."
+              _ -> pure ()
+      where
+        linkDeleted = \case
+          AUTH -> True
+          BLOCKED {} -> True
+          _ -> False
+        checkValidOwner dbOwnerMemberId owners onValid = case dbOwnerMemberId of
+          Just ownerGMId ->
+            withDB "checkGroupLink" cc (\db -> withExceptT show $ getGroupMember db (vr cc) user groupId ownerGMId) >>= \case
+              Right GroupMember {memberId, memberPubKey}
+                | any (\GroupLinkOwner {memberId = mId, memberKey} -> memberId == mId && memberPubKey == Just memberKey) owners -> onValid
+              _ -> setGroupStatus logError st env cc groupId GRSSuspendedBadRoles $ \gr' ->
+                notifyOwner gr' "The registration owner is no longer a channel owner.\nThe channel is no longer listed in the directory."
+          Nothing -> onValid
+        reapprove pg gr groupRegStatus g' = do
+          let gt = groupTypeStr' pg
+              groupRef = groupReference gInfo
+          notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " profile changed."
+          case groupRegStatus of
+            GRSActive ->
+              setGroupStatus notifyAdminUsers st env cc groupId (GRSPendingApproval 1) $ \gr' -> do
+                notifyOwner gr' $ "The " <> gt <> " profile has changed.\nIt is hidden from the directory until approved."
+                sendToApprove g' gr' 1
+            GRSPendingApproval n ->
+              sendToApprove g' gr (n + 1)
+            _ -> pure ()
+
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {groupId, membership = GroupMember {memberRole = serviceRole}} ctId contactRole = do
       logInfo $ "contact ID " <> tshow ctId <> " role changed in group " <> viewGroupName g <> " to " <> tshow contactRole
@@ -893,8 +963,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           (Nothing, _) -> sendMessage cc ct $ "Error: no " <> gt <> " information available via the link."
           _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
-        GLPKnown {groupInfo = g, groupUpdated, ownerVerification} -> case ownerVerification of
-          Just OVVerified -> deReregistration ct g groupUpdated ownerSig
+        GLPKnown {groupInfo = g, groupUpdated = BoolDef updated, ownerVerification} -> case ownerVerification of
+          Just OVVerified -> deReregistration ct g updated ownerSig
           Just (OVFailed reason) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           Nothing -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership."
         GLPConnectingProhibit _ -> sendMessage cc ct $ "Already connecting to this " <> gt <> "."
@@ -1408,7 +1478,7 @@ setGroupStatusPromo sendReply st env cc GroupReg {dbGroupId = gId} grStatus' grP
     Left e -> sendReply $ "Error updating group " <> tshow gId <> " status: " <> T.pack e
     Right (status, grPromoted) -> do
       when ((status == DSListed || status' == DSListed) && (status /= status' || grPromoted /= grPromoted')) $
-        listingsUpdated env cc
+        listingsUpdated env
       logGUpdateStatus st gId grStatus'
       logGUpdatePromotion st gId grPromoted'
       continue
@@ -1428,7 +1498,7 @@ setGroupStatus sendMsg st env cc gId grStatus' continue = do
     Left e -> sendMsg $ "Error updating group " <> tshow gId <> " status: " <> T.pack e
     Right (grStatus, gr) -> do
       let status = grDirectoryStatus grStatus
-      when ((status == DSListed || status' == DSListed) && status /= status') $ listingsUpdated env cc
+      when ((status == DSListed || status' == DSListed) && status /= status') $ listingsUpdated env
       logGUpdateStatus st gId grStatus'
       continue gr
 
@@ -1437,7 +1507,7 @@ setGroupPromoted sendReply st env cc GroupReg {dbGroupId = gId} grPromoted' cont
   setGroupPromotedStore cc gId grPromoted' >>= \case
     Left e -> sendReply $ "Error updating group " <> tshow gId <> " status: " <> T.pack e
     Right (status, grPromoted) -> do
-      when (status == DSListed && grPromoted' /= grPromoted) $ listingsUpdated env cc
+      when (status == DSListed && grPromoted' /= grPromoted) $ listingsUpdated env
       logGUpdatePromotion st gId grPromoted'
       continue
 
