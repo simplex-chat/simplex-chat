@@ -68,7 +68,7 @@
     "simplex-private-card-9-point-1": "Jede Nachrichten-Warteschlange leitet Nachrichten mit unterschiedlichen Sende- und Empfängeradressen jeweils nur in einer Richtung weiter.",
     "simplex-private-card-9-point-2": "Verglichen mit traditionellen Nachrichten-Brokern, werden mögliche Angriffs-Vektoren und vorhandene Metadaten reduziert.",
     "simplex-private-card-10-point-1": "SimpleX nutzt für jeden Nutzer-Kontakt oder jedes Gruppenmitglied eigene temporäre, anonyme und paarweise Adressen und Berechtigungsnachweise.",
-    "simplex-private-card-10-point-2": "SimpleX ermöglicht die Zustellung von Nachrichten ohne Nutzerprofil-Kennungen zu versenden und bietet dabei bessere Metadaten-Privatsphäre an als andere Alternativen.",
+    "simplex-private-card-10-point-2": "SimpleX ermöglicht die Zustellung von Nachrichten ohne Nutzerprofil-Kennungen und bietet dabei bessere Metadaten-Privatsphäre als andere Alternativen.",
     "simplex-unique-4-title": "Sie besitzen das SimpleX-Netzwerk",
     "privacy-matters-1-title": "Werbung und Preisdiskriminierung",
     "privacy-matters-1-overlay-1-title": "Privatsphäre spart Ihnen Geld",

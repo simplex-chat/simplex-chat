@@ -225,7 +225,7 @@
     "simplex-private-card-8-point-1": "SimpleX サーバーは、低遅延の混合ノードとして機能します &mdash; 受信メッセージと送信メッセージの順序が異なります。",
     "simplex-unique-overlay-card-2-p-1": "SimpleXネットワークには識別子がないため、ワンタイムまたは一時的なユーザー アドレスを QR コードまたはリンクとして共有しない限り、誰もあなたに連絡することはできません。",
     "sign-up-to-receive-our-updates": "最新情報を受け取る",
-    "simplex-private-section-header": "SimpleX を<span class='gradient-text'>安全</span>にするもの",
+    "simplex-private-section-header": "SimpleX を<span class='gradient-text'>プライベート</span>にするもの",
     "we-invite-you-to-join-the-conversation": "ぜひ会話にご参加ください",
     "feature-2-title": "E2E暗号化された<br>画像とファイル",
     "simplex-private-9-title": "単方向<br>メッセージキュー",
