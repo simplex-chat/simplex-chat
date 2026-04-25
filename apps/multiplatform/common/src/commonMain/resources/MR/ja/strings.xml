@@ -1097,7 +1097,7 @@
     <string name="v5_0_app_passcode_descr">システム認証の代わりに設定します。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
     <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。</string>
-    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
+    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか?</string>
     <string name="icon_descr_call_pending_sent">保留中の通話</string>
     <string name="invalid_migration_confirmation">データ移行の確認が正しくない</string>
     <string name="feature_offered_item">%s を提供しました</string>

@@ -378,9 +378,6 @@ swipe action */
 "Active connections" = "アクティブな接続";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。";
-
-/* No comment provided by engineer. */
 "Add friends" = "友達を追加";
 
 /* No comment provided by engineer. */
@@ -969,7 +966,7 @@ server test step */
 /* alert title */
 "Connection error" = "接続エラー";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "接続エラー (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1025,9 +1022,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "コアのバージョン: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "作成";
 
 /* server test step */
 "Create file" = "ファイルを作成";
@@ -1386,7 +1380,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "グループのプロフィールを編集";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "有効";
 
 /* No comment provided by engineer. */
@@ -1518,7 +1512,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "エラー";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "エラー";
 
 /* No comment provided by engineer. */
@@ -1788,7 +1782,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "グループ招待が無効となり、送信元によって取り消されました。";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "グループのリンク";
 
 /* No comment provided by engineer. */
@@ -1974,7 +1968,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "無効なチャットデータ";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "無効な接続リンク";
 
 /* invalid chat item */
@@ -2579,9 +2573,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "プロフィールのパスワード";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "連絡先にプロフィール更新のお知らせが届きます。";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "音声/ビデオ通話を禁止する 。";
 
@@ -2979,14 +2970,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "アドレスを共有する";
 
-/* alert title */
-"Share address with contacts?" = "アドレスを連絡先と共有しますか?";
-
 /* No comment provided by engineer. */
 "Share link" = "リンクを送る";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "連絡先と共有する";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "通話履歴を表示";

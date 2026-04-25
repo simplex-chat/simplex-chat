@@ -399,9 +399,6 @@ swipe action */
 "Active connections" = "Активні з'єднання";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Додайте адресу до свого профілю, щоб ваші контакти могли поділитися нею з іншими людьми. Повідомлення про оновлення профілю буде надіслано вашим контактам.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Додайте друзів";
 
 /* No comment provided by engineer. */
@@ -879,7 +876,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарською, фінською, тайською та українською мовами - завдяки користувачам та [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Адреса підприємства";
 
 /* No comment provided by engineer. */
@@ -1330,7 +1327,7 @@ server test step */
 /* alert title */
 "Connection error" = "Помилка підключення";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Помилка підключення (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1446,9 +1443,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Виправити ім'я на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Створити";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Створити одноразове посилання";
@@ -2000,7 +1994,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Порожнє повідомлення!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Увімкнути";
 
 /* No comment provided by engineer. */
@@ -2174,7 +2168,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "помилка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Помилка";
 
 /* No comment provided by engineer. */
@@ -2706,7 +2700,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "групу видалено";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Посилання на групу";
 
 /* No comment provided by engineer. */
@@ -2970,7 +2964,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "невірні дані чату";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Неправильне посилання для підключення";
 
 /* invalid chat item */
@@ -3737,7 +3731,7 @@ alert button
 new chat action */
 "Ok" = "Гаразд";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "ОК";
 
 /* No comment provided by engineer. */
@@ -4102,9 +4096,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Тема профілю";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Оновлення профілю буде надіслано вашим контактам.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Заборонити аудіо/відеодзвінки.";
@@ -4923,9 +4914,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Поділіться адресою публічно";
 
-/* alert title */
-"Share address with contacts?" = "Поділіться адресою з контактами?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Діліться з інших програм.";
 
@@ -4949,9 +4937,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Поділіться з SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Поділіться з контактами";
 
 /* No comment provided by engineer. */
 "Share your address" = "Поділіться своєю адресою";
@@ -5208,9 +5193,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to send request" = "Натисніть Підключитися, щоб відправити запит";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Натисніть «Створити адресу SimpleX» у меню, щоб створити її пізніше.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Натисніть Приєднатися до групи";
@@ -5606,7 +5588,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Непрочитане";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Несумісне посилання для підключення";
 
 /* No comment provided by engineer. */
