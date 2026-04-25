@@ -1,4 +1,4 @@
-import {parseArgs} from "node:util"
+import {Command} from "commander"
 import {api} from "simplex-chat"
 
 export interface IdName {
@@ -41,88 +41,103 @@ export function parseIdName(s: string): IdName {
   return {id, name: s.slice(i + 1)}
 }
 
-function parseNonNegativeInt(raw: string, flag: string): number {
-  const n = parseInt(raw, 10)
-  if (!Number.isFinite(n) || n < 0) {
-    throw new Error(`${flag} must be a non-negative integer, got "${raw}"`)
+function parseNonNegativeInt(flag: string) {
+  return (raw: string): number => {
+    const n = parseInt(raw, 10)
+    if (!Number.isFinite(n) || n < 0) {
+      throw new Error(`${flag} must be a non-negative integer, got "${raw}"`)
+    }
+    return n
   }
-  return n
+}
+
+function buildCommand(): Command {
+  return new Command()
+    .name("simplex-chat-support-bot")
+    .description("business-address triage bot")
+    .requiredOption("--team-group <name>", "team group display name")
+    .option("--state-file <path>", "state JSON path", "./data/state.json")
+    .option("--sqlite-file-prefix <path>", "SQLite DB file prefix", "./data/simplex")
+    .option("--sqlite-key <key>", "SQLCipher encryption key (default: unencrypted)")
+    .option("--pg-conn <conn>", "PostgreSQL connection string (required for postgres)")
+    .option("--pg-schema <prefix>", "PostgreSQL schema prefix (default: simplex_v1)")
+    .option("-a, --auto-add-team-members <list>", "comma-separated ID:name pairs (e.g. 1:Alice,2:Bob)")
+    .option("--timezone <iana>", "IANA timezone for weekend detection", "UTC")
+    .option("--complete-hours <n>", "auto-complete chats after N hours idle (0 disables)", parseNonNegativeInt("--complete-hours"), 3)
+    .option("--card-flush-seconds <n>", "debounce card state writes", parseNonNegativeInt("--card-flush-seconds"), 300)
+    .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
+    .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY     xAI API key — enables Grok replies\n  SIMPLEX_BACKEND  sqlite | postgres — alternative to .npmrc for backend selection\n")
+}
+
+interface RawOpts {
+  teamGroup: string
+  stateFile: string
+  sqliteFilePrefix: string
+  sqliteKey?: string
+  pgConn?: string
+  pgSchema?: string
+  autoAddTeamMembers?: string
+  timezone: string
+  completeHours: number
+  cardFlushSeconds: number
+  contextFile?: string
 }
 
 export function parseConfig(args: string[]): Config {
-  const {values} = parseArgs({
-    args,
-    strict: true,
-    options: {
-      "team-group":            {type: "string"},
-      "state-file":            {type: "string", default: "./data/state.json"},
-      "sqlite-file-prefix":    {type: "string", default: "./data/simplex"},
-      "sqlite-key":            {type: "string"},
-      "pg-conn":               {type: "string"},
-      "pg-schema":             {type: "string"},
-      "auto-add-team-members": {type: "string", short: "a"},
-      "timezone":              {type: "string", default: "UTC"},
-      "complete-hours":        {type: "string", default: "3"},
-      "card-flush-seconds":    {type: "string", default: "300"},
-      "context-file":          {type: "string"},
-    },
-  })
+  const cmd = buildCommand().exitOverride()
+  try {
+    cmd.parse(args, {from: "user"})
+  } catch (err) {
+    const code = (err as {code?: string}).code
+    if (code === "commander.helpDisplayed" || code === "commander.version") process.exit(0)
+    throw err
+  }
+  const opts = cmd.opts<RawOpts>()
 
-  // Treat empty string as absent so `GROK_API_KEY=` behaves like unset
   const grokApiKey = process.env.GROK_API_KEY || null
 
   const backend = detectBackend()
   let db: api.DbConfig
   if (backend === "sqlite") {
-    // default guarantees non-undefined
-    const filePrefix = values["sqlite-file-prefix"]!
-    const encryptionKey = values["sqlite-key"]
-    db = encryptionKey
-      ? {type: "sqlite", filePrefix, encryptionKey}
-      : {type: "sqlite", filePrefix}
+    db = opts.sqliteKey
+      ? {type: "sqlite", filePrefix: opts.sqliteFilePrefix, encryptionKey: opts.sqliteKey}
+      : {type: "sqlite", filePrefix: opts.sqliteFilePrefix}
   } else {
-    const connectionString = values["pg-conn"]
-    if (!connectionString) {
+    if (!opts.pgConn) {
       throw new Error("--pg-conn is required when backend is postgres (PostgreSQL connection string)")
     }
-    const schemaPrefix = values["pg-schema"]
-    db = schemaPrefix
-      ? {type: "postgres", connectionString, schemaPrefix}
-      : {type: "postgres", connectionString}
+    db = opts.pgSchema
+      ? {type: "postgres", connectionString: opts.pgConn, schemaPrefix: opts.pgSchema}
+      : {type: "postgres", connectionString: opts.pgConn}
   }
 
-  const teamGroupName = values["team-group"]
-  if (!teamGroupName) throw new Error("Missing required argument: --team-group")
-  const teamGroup: IdName = {id: 0, name: teamGroupName}
+  const teamGroup: IdName = {id: 0, name: opts.teamGroup}
 
-  const teamMembersRaw = values["auto-add-team-members"] ?? ""
+  const teamMembersRaw = opts.autoAddTeamMembers ?? ""
   const teamMembers = teamMembersRaw
     ? teamMembersRaw.split(",").map(parseIdName)
     : []
 
-  const timezone = values["timezone"]!
   try {
-    new Intl.DateTimeFormat("en-US", {timeZone: timezone, weekday: "short"})
+    new Intl.DateTimeFormat("en-US", {timeZone: opts.timezone, weekday: "short"})
   } catch (err) {
-    throw new Error(`--timezone "${timezone}" is not a valid IANA time zone: ${(err as Error).message}`)
+    throw new Error(`--timezone "${opts.timezone}" is not a valid IANA time zone: ${(err as Error).message}`)
   }
-  const completeHours = parseNonNegativeInt(values["complete-hours"]!, "--complete-hours")
-  const cardFlushSeconds = parseNonNegativeInt(values["card-flush-seconds"]!, "--card-flush-seconds")
-  const contextFile = values["context-file"] || null
 
+  const contextFile = opts.contextFile ?? null
   if (grokApiKey && !contextFile) {
     throw new Error("GROK_API_KEY is set but --context-file is not provided. Grok requires a context file.")
   }
 
   return {
-    stateFile: values["state-file"]!,
+    stateFile: opts.stateFile,
     db,
     teamGroup,
     teamMembers,
     grokContactId: null,
-    timezone,
-    completeHours,
-    cardFlushSeconds,
+    timezone: opts.timezone,
+    completeHours: opts.completeHours,
+    cardFlushSeconds: opts.cardFlushSeconds,
     contextFile,
     grokApiKey,
   }

@@ -2353,7 +2353,7 @@ describe("parseConfig Validation", () => {
 
   test("missing --team-group → throws", () => {
     expect(() => parseConfig([]))
-      .toThrow(/Missing required argument: --team-group/)
+      .toThrow(/required option '--team-group/)
   })
 
   test("invalid SIMPLEX_BACKEND → throws", () => {
@@ -2370,7 +2370,7 @@ describe("parseConfig Validation", () => {
 
   test("--complete-hours negative → throws", () => {
     // parseArgs refuses "-1" as a bare arg (ambiguous with a short flag), so use `=` form
-    expect(() => parseConfig([...baseArgs, "--complete-hours=-1"]))
+    expect(() => parseConfig([...baseArgs, "--complete-hours", "-1"]))
       .toThrow(/--complete-hours must be a non-negative integer, got "-1"/)
   })
 
