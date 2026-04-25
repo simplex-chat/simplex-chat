@@ -945,7 +945,7 @@
     <string name="show_QR_code">הצג קוד QR</string>
     <string name="chat_lock">נעילת SimpleX</string>
     <string name="star_on_github">כוכב ב־GitHub</string>
-    <string name="share_address_with_contacts_question">לשתף כתובת עם אנשי קשר\?</string>
+    <string name="share_address_with_contacts_question">לשתף כתובת עם אנשי קשר?</string>
     <string name="stop_sharing">עצור שיתוף</string>
     <string name="set_passcode">הגדרת קוד גישה</string>
     <string name="la_notice_title_simplex_lock">נעילת SimpleX</string>
