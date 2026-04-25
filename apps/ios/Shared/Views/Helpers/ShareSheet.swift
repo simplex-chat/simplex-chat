@@ -87,13 +87,18 @@ func showSheet(
 }
 
 func openExternalLink(_ url: URL) {
-    showAlert(
-        title: NSLocalizedString("Open external link?", comment: "alert title"),
-        message: url.absoluteString,
-        buttonTitle: NSLocalizedString("Open", comment: "alert button"),
-        buttonAction: { UIApplication.shared.open(url) },
-        cancelButton: true
-    )
+    let s = url.absoluteString
+    if s.starts(with: "https://simplex.chat/contact#") || (s.starts(with: "https://smp") && s.contains(".simplex.im/a#")) {
+        ChatModel.shared.appOpenUrl = url
+    } else {
+        showAlert(
+            title: NSLocalizedString("Open external link?", comment: "alert title"),
+            message: s,
+            buttonTitle: NSLocalizedString("Open", comment: "alert button"),
+            buttonAction: { UIApplication.shared.open(url) },
+            cancelButton: true
+        )
+    }
 }
 
 struct ExternalLink<Label: View>: View {

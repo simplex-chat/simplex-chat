@@ -71,11 +71,7 @@ struct ConditionsWebView: UIViewRepresentable {
             switch navigationAction.navigationType {
             case .linkActivated:
                 decisionHandler(.cancel)
-                if url.absoluteString.starts(with: "https://simplex.chat/contact#") {
-                    ChatModel.shared.appOpenUrl = url
-                } else {
-                    openExternalLink(url)
-                }
+                openExternalLink(url)
             default:
                 decisionHandler(.allow)
             }
