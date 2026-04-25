@@ -838,11 +838,7 @@ fun ConditionsLinkButton() {
 
 private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
   override fun openUri(uri: String) {
-    if (uri.startsWith("https://simplex.chat/contact#")) {
-      openVerifiedSimplexUri(uri)
-    } else {
-      parentUriHandler.openExternalLink(uri)
-    }
+    parentUriHandler.openExternalLink(uri)
   }
 }
 
