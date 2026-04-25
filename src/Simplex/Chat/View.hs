@@ -180,6 +180,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
+  CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
   CRGroupRelays u g relays -> ttyUser u $ viewGroupRelays g relays
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
@@ -1238,6 +1239,14 @@ viewGroupCreated g testView =
   where
     relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
 
+viewPublicGroupCreationFailed :: [AddRelayResult] -> [StyledString]
+viewPublicGroupCreationFailed results =
+  ["channel not created, results:"]
+    <> map showRelayResult results
+  where
+    showRelayResult (AddRelayResult UserChatRelay {chatRelayId = DBEntityId i} err_) =
+      "  relay " <> sShow i <> ": " <> maybe "ok" (plain . tshow) err_
+
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
   [ ttyContact c <> " is already invited to group " <> ttyGroup' g,
@@ -2094,7 +2103,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup, membership = m} -> case preparedGroup of
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} _ _ -> case preparedGroup of
       Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
         GSMemUnknown
           | connLinkStartedConnection -> connecting g

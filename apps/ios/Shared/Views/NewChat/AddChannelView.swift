@@ -47,7 +47,7 @@ struct AddChannelView: View {
             Group {
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128)
+                        ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
                         if profile.image != nil {
                             Button {
                                 profile.image = nil
@@ -174,20 +174,32 @@ struct AddChannelView: View {
                     }
                     return
                 }
-                guard let (gInfo, gLink, gRelays) = try await apiNewPublicGroup(
+                guard let result = try await apiNewPublicGroup(
                     incognito: false, relayIds: relayIds, groupProfile: profile
                 ) else {
                     await MainActor.run { creationInProgress = false }
                     return
                 }
-                await MainActor.run {
-                    m.updateGroup(gInfo)
-                    m.creatingChannelId = gInfo.id
-                    groupInfo = gInfo
-                    groupLink = gLink
-                    groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
-                    channelRelaysModel.set(groupId: gInfo.groupId, groupRelays: gRelays)
-                    creationInProgress = false
+                switch result {
+                case let .created(gInfo, gLink, gRelays):
+                    await MainActor.run {
+                        m.updateGroup(gInfo)
+                        m.creatingChannelId = gInfo.id
+                        groupInfo = gInfo
+                        groupLink = gLink
+                        groupRelays = gRelays.sorted { relayDisplayName($0) < relayDisplayName($1) }
+                        channelRelaysModel.set(groupId: gInfo.groupId, groupRelays: gRelays)
+                        creationInProgress = false
+                    }
+                case let .creationFailed(relayResults):
+                    await MainActor.run {
+                        creationInProgress = false
+                        showAlert(
+                            NSLocalizedString("Error creating channel", comment: "alert title"),
+                            message: NSLocalizedString("Relay results:", comment: "alert message") + "\n" +
+                                relayResults.map { "\(chatRelayDisplayName($0.relay)): \($0.relayError.map { connErrorText($0) } ?? "ok")" }.joined(separator: "\n")
+                        )
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -210,6 +222,7 @@ struct AddChannelView: View {
         var operatorGroups: [[UserChatRelay]] = []
         var customRelays: [UserChatRelay] = []
         for op in servers {
+            guard op.operator?.enabled ?? true else { continue }
             let relays = op.chatRelays.filter { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
             guard !relays.isEmpty else { continue }
             if op.operator != nil {
@@ -244,6 +257,7 @@ struct AddChannelView: View {
     private func checkHasRelays() async -> Bool {
         guard let servers = try? await getUserServers() else { return false }
         return servers.contains { op in
+            (op.operator?.enabled ?? true) &&
             op.chatRelays.contains { $0.enabled && !$0.deleted && $0.chatRelayId != nil }
         }
     }
@@ -256,7 +270,7 @@ struct AddChannelView: View {
         let total = groupRelays.count
         return List {
             Group {
-                ProfileImage(imageStr: gInfo.groupProfile.image, size: 128)
+                ProfileImage(imageStr: gInfo.groupProfile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
                     .frame(maxWidth: .infinity, alignment: .center)
 
                 Text(gInfo.groupProfile.displayName)
@@ -427,6 +441,11 @@ func relayDisplayName(_ relay: GroupRelay) -> String {
     if let domain = relay.userChatRelay.domains.first { return domain }
     if let link = relay.relayLink { return hostFromRelayLink(link) }
     return "relay \(relay.groupRelayId)"
+}
+
+private func chatRelayDisplayName(_ relay: UserChatRelay) -> String {
+    if !relay.displayName.isEmpty { return relay.displayName }
+    return relay.address
 }
 
 func relayStatusIndicator(_ status: RelayStatus, connFailed: Bool = false, memberStatus: GroupMemberStatus? = nil) -> some View {

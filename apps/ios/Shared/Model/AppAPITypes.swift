@@ -942,6 +942,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     // group responses
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
     case publicGroupCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink, groupRelays: [GroupRelay])
+    case publicGroupCreationFailed(user: UserRef, addRelayResults: [AddRelayResult])
     case groupRelays(user: UserRef, groupInfo: GroupInfo, groupRelays: [GroupRelay])
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
@@ -994,6 +995,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         switch self {
         case .groupCreated: "groupCreated"
         case .publicGroupCreated: "publicGroupCreated"
+        case .publicGroupCreationFailed: "publicGroupCreationFailed"
         case .groupRelays: "groupRelays"
         case .sentGroupInvitation: "sentGroupInvitation"
         case .userAcceptedGroupSent: "userAcceptedGroupSent"
@@ -1042,6 +1044,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         switch self {
         case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
         case let .publicGroupCreated(u, groupInfo, groupLink, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)\ngroupRelays: \(groupRelays)")
+        case let .publicGroupCreationFailed(u, addRelayResults): return withUser(u, "addRelayResults: \(addRelayResults)")
         case let .groupRelays(u, groupInfo, groupRelays): return withUser(u, "groupInfo: \(groupInfo)\ngroupRelays: \(groupRelays)")
         case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
         case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
@@ -1978,6 +1981,11 @@ struct UserServer: Identifiable, Equatable, Codable, Hashable {
 
 struct RelayConnectionResult: Decodable {
     var relayMember: GroupMember
+    var relayError: ChatError?
+}
+
+struct AddRelayResult: Decodable {
+    var relay: UserChatRelay
     var relayError: ChatError?
 }
 

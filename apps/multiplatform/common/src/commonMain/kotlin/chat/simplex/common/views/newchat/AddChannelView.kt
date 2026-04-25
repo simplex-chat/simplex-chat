@@ -65,7 +65,7 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
           withBGApi {
             openGroupChat(null, gInfo.groupId)
             ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, close = close)
+              GroupLinkView(chatModel, rhId = null, groupInfo = gInfo, groupLink = groupLink.value, onGroupLinkUpdated = null, creatingGroup = true, isChannel = true, shareGroupInfo = gInfo, close = close)
             }
           }
         }
@@ -130,19 +130,31 @@ fun AddChannelView(chatModel: ChatModel, close: () -> Unit, closeAll: () -> Unit
               relayIds = relayIds,
               groupProfile = profile
             )
-            if (result != null) {
-              val (gI, gL, gR) = result
-              withContext(Dispatchers.Main) {
-                chatModel.chatsContext.updateGroup(rhId = null, gI)
-                chatModel.creatingChannelId.value = gI.id
-                groupInfo.value = gI
-                groupLink.value = gL
-                groupRelays.value = gR.sortedBy { relayDisplayName(it) }
-                ChannelRelaysModel.set(gI.groupId, gR)
-                creationInProgress.value = false
+            when (result) {
+              is ChatController.PublicGroupCreationResult.Created -> {
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.updateGroup(rhId = null, result.groupInfo)
+                  chatModel.creatingChannelId.value = result.groupInfo.id
+                  groupInfo.value = result.groupInfo
+                  groupLink.value = result.groupLink
+                  groupRelays.value = result.groupRelays.sortedBy { relayDisplayName(it) }
+                  ChannelRelaysModel.set(result.groupInfo.groupId, result.groupRelays)
+                  creationInProgress.value = false
+                }
               }
-            } else {
-              withContext(Dispatchers.Main) { creationInProgress.value = false }
+              is ChatController.PublicGroupCreationResult.CreationFailed -> {
+                withContext(Dispatchers.Main) {
+                  creationInProgress.value = false
+                  AlertManager.shared.showAlertMsg(
+                    title = generalGetString(MR.strings.error_creating_channel),
+                    text = generalGetString(MR.strings.relay_results) + "\n" +
+                      result.addRelayResults.joinToString("\n") { "${chatRelayDisplayName(it.relay)}: ${it.relayError?.let { e -> ChatController.connErrorText(e) } ?: "ok"}" }
+                  )
+                }
+              }
+              null -> {
+                withContext(Dispatchers.Main) { creationInProgress.value = false }
+              }
             }
           } catch (e: Exception) {
             withContext(Dispatchers.Main) {
@@ -168,6 +180,7 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
   val operatorGroups = mutableListOf<List<UserChatRelay>>()
   var customRelays = mutableListOf<UserChatRelay>()
   for (op in servers) {
+    if (op.operator?.enabled == false) continue
     val relays = op.chatRelays.filter { it.enabled && !it.deleted && it.chatRelayId != null }
     if (relays.isEmpty()) continue
     if (op.operator != null) {
@@ -200,6 +213,7 @@ private suspend fun chooseRandomRelays(): List<UserChatRelay> {
 private suspend fun checkHasRelays(): Boolean {
   val servers = try { getUserServers(rh = null) } catch (_: Exception) { null } ?: return false
   return servers.any { op ->
+    (op.operator?.enabled ?: true) &&
     op.chatRelays.any { it.enabled && !it.deleted && it.chatRelayId != null }
   }
 }
@@ -249,7 +263,7 @@ private fun ProfileStepView(
         ) {
           Box(contentAlignment = Alignment.TopEnd) {
             Box(contentAlignment = Alignment.Center) {
-              ProfileImage(108.dp, image = profileImage.value)
+              ProfileImage(108.dp, image = profileImage.value, icon = MR.images.ic_bigtop_updates_circle_filled)
               EditImageButton { scope.launch { bottomSheetModalState.show() } }
             }
             if (profileImage.value != null) {
@@ -376,7 +390,7 @@ private fun ProgressStepView(
         Modifier.fillMaxWidth().padding(bottom = 8.dp),
         contentAlignment = Alignment.Center
       ) {
-        ProfileImage(108.dp, image = gInfo.groupProfile.image)
+        ProfileImage(108.dp, image = gInfo.groupProfile.image, icon = MR.images.ic_bigtop_updates_circle_filled)
       }
       Text(
         gInfo.groupProfile.displayName,
@@ -545,6 +559,10 @@ fun relayDisplayName(relay: GroupRelay): String {
   return "relay ${relay.groupRelayId}"
 }
 
+private fun chatRelayDisplayName(relay: UserChatRelay): String {
+  if (relay.displayName.isNotEmpty()) return relay.displayName
+  return relay.address
+}
 
 @Composable
 fun RelayStatusIndicator(status: RelayStatus, connFailed: Boolean = false, memberStatus: GroupMemberStatus? = null) {

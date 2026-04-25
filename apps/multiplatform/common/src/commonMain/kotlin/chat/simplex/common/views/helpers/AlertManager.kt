@@ -273,6 +273,7 @@ class AlertManager {
     profileFullName: String,
     profileImage: @Composable () -> Unit,
     subtitle: String? = null,
+    information: String? = null,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
@@ -325,6 +326,16 @@ class AlertManager {
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2,
                     color = MaterialTheme.colors.secondary,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
+                if (information != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    information,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                   )

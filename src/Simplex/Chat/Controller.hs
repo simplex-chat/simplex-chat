@@ -470,13 +470,13 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
+  | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink, resolveKnown :: Bool, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectionLink is used to report link parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId CreatedLinkContact DirectLink GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
-  | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
+  | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
@@ -651,6 +651,12 @@ data RelayConnectionResult = RelayConnectionResult
   }
   deriving (Show)
 
+data AddRelayResult = AddRelayResult
+  { relay :: UserChatRelay,
+    relayError :: Maybe ChatError
+  }
+  deriving (Show)
+
 data RelayTestStep
   = RTSGetLink
   | RTSDecodeLink
@@ -721,6 +727,7 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
+  | CRPublicGroupCreationFailed {user :: User, addRelayResults :: [AddRelayResult]}
   | CRGroupRelays {user :: User, groupInfo :: GroupInfo, groupRelays :: [GroupRelay]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
@@ -1030,13 +1037,19 @@ data GroupLinkPlan
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
-  | GLPKnown {groupInfo :: GroupInfo}
+  | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: Bool, ownerVerification :: Maybe OwnerVerification}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
   deriving (Show)
 
 data OwnerVerification
   = OVVerified
   | OVFailed {reason :: Text}
+  deriving (Show)
+
+data GroupOwnerContact = GroupOwnerContact
+  { contactId :: ContactId,
+    memberId :: MemberId
+  }
   deriving (Show)
 
 type DirectLink = Bool
@@ -1712,6 +1725,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
 
 $(JQ.deriveJSON defaultJSON ''RelayConnectionResult)
+
+$(JQ.deriveJSON defaultJSON ''AddRelayResult)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "RTS") ''RelayTestStep)
 

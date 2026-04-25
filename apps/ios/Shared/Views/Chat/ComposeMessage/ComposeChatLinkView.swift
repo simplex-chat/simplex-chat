@@ -34,10 +34,9 @@ struct ComposeChatLinkView: View {
                 }
             }
         }
-        .padding(.vertical, 1)
+        .padding(.vertical, 8)
         .padding(.trailing, 12)
         .background(theme.appColors.sentMessage)
-        .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
     }
 }

@@ -1,6 +1,7 @@
 @file:UseSerializers(UriSerializer::class, ComposeMessageSerializer::class)
 package chat.simplex.common.views.chat
 
+import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -57,6 +60,7 @@ const val MAX_NUMBER_OF_MENTIONS = 3
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
+  @Serializable class ChatLinkPreview(val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): ComposePreview()
   @Serializable class MediaPreview(val images: List<String>, val content: List<UploadContent>): ComposePreview()
   @Serializable data class VoicePreview(val voice: String, val durationMs: Int, val finished: Boolean): ComposePreview()
   @Serializable class FilePreview(val fileName: String, val uri: URI): ComposePreview()
@@ -112,7 +116,12 @@ data class ComposeState(
   val mentions: MentionedMembers = emptyMap()
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
-    ComposeMessage(editingItem.content.text),
+    ComposeMessage(
+      when (val mc = editingItem.content.msgContent) {
+        is MsgContent.MCChat -> stripTextLink(mc.text, mc.chatLink.connLinkStr)
+        else -> editingItem.content.text
+      }
+    ),
     editingItem.formattedText ?: FormattedText.plain(editingItem.content.text),
     liveMessage,
     chatItemPreview(editingItem),
@@ -163,6 +172,7 @@ data class ComposeState(
       val hasContent = when (preview) {
         is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
+        is ComposePreview.ChatLinkPreview -> true
         is ComposePreview.FilePreview -> true
         else -> !whitespaceOnly || forwarding || liveMessage != null || submittingValidReport
       }
@@ -174,6 +184,7 @@ data class ComposeState(
   val linkPreviewAllowed: Boolean
     get() =
       when (preview) {
+        is ComposePreview.ChatLinkPreview -> false
         is ComposePreview.MediaPreview -> false
         is ComposePreview.VoicePreview -> false
         is ComposePreview.FilePreview -> false
@@ -200,6 +211,7 @@ data class ComposeState(
     get() = when (preview) {
       ComposePreview.NoPreview -> false
       is ComposePreview.CLinkPreview -> false
+      is ComposePreview.ChatLinkPreview -> false
       is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
       is ComposePreview.VoicePreview -> false
       is ComposePreview.FilePreview -> true
@@ -390,20 +402,46 @@ fun ComposeView(
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
+  suspend fun fetchAndUpdateLinkPreview(url: String) {
+    composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
+    val lp = getLinkPreview(url)
+    if (lp != null && pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
+      pendingLinkUrl.value = null
+    } else if (pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+      pendingLinkUrl.value = null
+    }
+  }
+
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
       withLongRunningApi(slow = 60_000) {
         if (wait != null) delay(wait)
-        val lp = getLinkPreview(url)
-        if (lp != null && pendingLinkUrl.value == url) {
-          chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) // to avoid showing alert to current users, show alert in v6.5
-          composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
-          pendingLinkUrl.value = null
-        } else if (pendingLinkUrl.value == url) {
-          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
-          pendingLinkUrl.value = null
+        if (pendingLinkUrl.value != url) return@withLongRunningApi
+        if (chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.get()
+            && !chatModel.controller.appPrefs.networkUseSocksProxy.get()) {
+          showLinkPreviewsConfirmAlert { enable ->
+            if (enable != null) {
+              chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false)
+              chatModel.controller.appPrefs.privacyLinkPreviews.set(enable)
+              if (enable) {
+                withLongRunningApi(slow = 60_000) { fetchAndUpdateLinkPreview(url) }
+              } else if (pendingLinkUrl.value == url) {
+                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+                pendingLinkUrl.value = null
+              }
+            } else {
+              cancelledLinks.add(url)
+              if (pendingLinkUrl.value == url) {
+                composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+                pendingLinkUrl.value = null
+              }
+            }
+          }
+          return@withLongRunningApi
         }
+        fetchAndUpdateLinkPreview(url)
       }
     }
   }
@@ -468,6 +506,7 @@ fun ComposeView(
         is SharedContent.File -> listOf(shared.uri.toString())
         is SharedContent.Text -> emptyList()
         is SharedContent.Forward -> emptyList()
+        is SharedContent.ChatLink -> emptyList()
       }
       // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
       chatModel.filesToDelete.removeAll { file ->
@@ -672,8 +711,11 @@ fun ComposeView(
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
-        // TODO [short links] update chat link
-        is MsgContent.MCChat -> MsgContent.MCChat(msgText, chatLink = msgContent.chatLink)
+        is MsgContent.MCChat -> {
+          val linkStr = msgContent.chatLink.connLinkStr
+          val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
+          MsgContent.MCChat(text, chatLink = msgContent.chatLink, ownerSig = msgContent.ownerSig)
+        }
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }
@@ -760,6 +802,11 @@ fun ComposeView(
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
+        is ComposePreview.ChatLinkPreview -> {
+          val linkStr = preview.chatLink.connLinkStr
+          val text = if (msgText.isEmpty()) linkStr else "$msgText\n$linkStr"
+          msgs.add(MsgContent.MCChat(text, preview.chatLink, preview.ownerSig))
+        }
         is ComposePreview.MediaPreview -> {
           // TODO batch send: batch media previews
           preview.content.forEachIndexed { index, it ->
@@ -1060,6 +1107,11 @@ fun ComposeView(
         ::cancelLinkPreview,
         cancelEnabled = !composeState.value.inProgress
       )
+      is ComposePreview.ChatLinkPreview -> ComposeChatLinkView(
+        chatLink = preview.chatLink,
+        cancelEnabled = !composeState.value.inProgress,
+        cancelPreview = { composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview) }
+      )
       is ComposePreview.MediaPreview -> ComposeImageView(
         preview,
         ::cancelImages,
@@ -1252,6 +1304,8 @@ fun ComposeView(
       composeState.value = cs.copy(inProgress = false, progressByTimeout = false)
     } else if (!cs.empty) {
       if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+        recState.value = RecordingState.NotStarted
+        RecorderInterface.stopRecording?.invoke()
         composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
       }
       if (saveLastDraft) {
@@ -1440,6 +1494,22 @@ fun ComposeView(
         contextItem = ComposeContextItem.ForwardingItems(shared.chatItems, shared.fromChatInfo),
         preview = if (composeState.value.preview is ComposePreview.CLinkPreview) composeState.value.preview else ComposePreview.NoPreview
       )
+      is SharedContent.ChatLink -> {
+        val cInfo = chat.chatInfo
+        val sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false
+        withBGApi {
+          val mc = chatModel.controller.apiShareChatMsgContent(
+            chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
+            cInfo.chatType, cInfo.apiId,
+            cInfo.groupChatScope(), sendAsGroup
+          )
+          if (mc is MsgContent.MCChat) {
+            composeState.value = composeState.value.copy(
+              preview = ComposePreview.ChatLinkPreview(mc.chatLink, mc.ownerSig)
+            )
+          }
+        }
+      }
       null -> {}
     }
     chatModel.sharedContent.value = null
@@ -1631,6 +1701,36 @@ fun ComposeView(
       }
     }
   }
+}
+
+private fun showLinkPreviewsConfirmAlert(onChoice: (Boolean?) -> Unit) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.link_previews_alert_title),
+    text = AnnotatedString(generalGetString(MR.strings.link_previews_alert_desc)),
+    onDismissRequest = { onChoice(null) },
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(false)
+        }) {
+          Text(stringResource(MR.strings.link_previews_alert_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onChoice(true)
+        }) {
+          Text(stringResource(MR.strings.link_previews_alert_enable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+//        SectionItemView({
+//          AlertManager.shared.hideAlert()
+//          onChoice(null)
+//        }) {
+//          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.onBackground)
+//        }
+      }
+    }
+  )
 }
 
 @Composable

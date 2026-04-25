@@ -2339,7 +2339,7 @@ fun BoxScope.ChatItemsList(
   }
 
   val manager = LocalSelectionManager.current
-  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, linkMode) else Modifier
+  val modifier = if (appPlatform.isDesktop && manager != null) SelectionHandler(manager, listState, mergedItems, revealedItems, linkMode) else Modifier
 
   LazyColumnWithScrollBar(
     modifier.align(Alignment.BottomCenter),
@@ -3204,7 +3204,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
     ModalManager.end.showModalCloseable(true) {
-      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays)
+      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null, isChannel = groupInfo.useRelays, shareGroupInfo = groupInfo)
     }
   }
 }

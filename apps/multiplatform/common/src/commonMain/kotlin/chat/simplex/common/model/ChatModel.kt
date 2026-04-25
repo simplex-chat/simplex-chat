@@ -1157,10 +1157,10 @@ object ChatModel {
           showingInvitation.value = null
           chatsContext.chatItems.clearAndNotify()
           chatModel.chatId.value = withId
+          ModalManager.start.closeModals()
+          ModalManager.end.closeModals()
         }
       }
-      ModalManager.start.closeModals()
-      ModalManager.end.closeModals()
     }
   }
 
@@ -2094,6 +2094,7 @@ data class GroupInfo (
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
+  val isChannel: Boolean get() = groupProfile.isChannel
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val shortDescr get() = groupProfile.shortDescr
@@ -2113,7 +2114,7 @@ data class GroupInfo (
 
   val chatIconName: ImageResource
     get() = if (useRelays) {
-      MR.images.ic_bigtop_updates_padded
+      MR.images.ic_bigtop_updates_circle_filled
     } else when (businessChat?.chatType) {
       null -> MR.images.ic_supervised_user_circle_filled
       BusinessChatType.Business -> MR.images.ic_work_filled_padded
@@ -2213,6 +2214,8 @@ data class GroupProfile (
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null
 ): NamedChat {
+  val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
+
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
@@ -4307,7 +4310,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
-  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink, val ownerSig: LinkOwnerSig? = null): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -4428,7 +4431,8 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           }
           "chat" -> {
             val chatLink = decoder.json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
-            MsgContent.MCChat(text, chatLink)
+            val ownerSig = json["ownerSig"]?.let { decoder.json.decodeFromJsonElement<LinkOwnerSig>(it) }
+            MsgContent.MCChat(text, chatLink, ownerSig)
           }
           else -> MsgContent.MCUnknown(t, text, json)
         }
@@ -4489,6 +4493,7 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "chat")
           put("text", value.text)
           put("chatLink", json.encodeToJsonElement(value.chatLink))
+          value.ownerSig?.let { put("ownerSig", json.encodeToJsonElement(it)) }
         }
       is MsgContent.MCUnknown -> value.json
     }
@@ -4548,7 +4553,81 @@ sealed class MsgChatLink {
   @Serializable @SerialName("contact") data class Contact(val connLink: String, val profile: Profile, val business: Boolean) : MsgChatLink()
   @Serializable @SerialName("invitation") data class Invitation(val invLink: String, val profile: Profile) : MsgChatLink()
   @Serializable @SerialName("group") data class Group(val connLink: String, val groupProfile: GroupProfile) : MsgChatLink()
+
+  val isPublicGroup: Boolean
+    get() = (this as? Group)?.groupProfile?.publicGroup != null
+
+  val connLinkStr: String
+    get() = when (this) {
+      is Group -> connLink
+      is Contact -> connLink
+      is Invitation -> invLink
+    }
+
+  val image: String?
+    get() = when (this) {
+      is Group -> groupProfile.image
+      is Contact -> profile.image
+      is Invitation -> profile.image
+    }
+
+  val displayName: String
+    get() = when (this) {
+      is Group -> groupProfile.displayName
+      is Contact -> profile.displayName
+      is Invitation -> profile.displayName
+    }
+
+  val fullName: String
+    get() = when (this) {
+      is Group -> groupProfile.fullName
+      is Contact -> profile.fullName
+      is Invitation -> profile.fullName
+    }
+
+  val shortDescription: String?
+    get() {
+      val s = when (this) {
+        is Group -> groupProfile.shortDescr
+        is Contact -> profile.shortDescr
+        is Invitation -> profile.shortDescr
+      }
+      return s?.trim()?.ifEmpty { null }
+    }
+
+  val iconRes: ImageResource
+    get() = when (this) {
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
+      is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+      is Invitation -> MR.images.ic_account_circle_filled
+    }
+
+  val smallIconRes: ImageResource
+    get() = when (this) {
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group
+      is Contact -> if (business) MR.images.ic_work else MR.images.ic_person
+      is Invitation -> MR.images.ic_person
+    }
+
+  fun infoLine(signed: Boolean): String {
+    var s = when (this) {
+      is Group -> if (groupProfile.isChannel) generalGetString(MR.strings.chat_link_channel) else generalGetString(MR.strings.chat_link_group)
+      is Contact -> if (business) generalGetString(MR.strings.chat_link_business_address) else generalGetString(MR.strings.chat_link_contact_address)
+      is Invitation -> generalGetString(MR.strings.chat_link_one_time)
+    }
+    if (signed) {
+      s += " " + if (isPublicGroup) generalGetString(MR.strings.chat_link_from_owner) else generalGetString(MR.strings.chat_link_signed)
+    }
+    return s
+  }
 }
+
+@Serializable
+data class LinkOwnerSig(
+  val ownerId: String? = null,
+  val chatBinding: String,
+  val ownerSig: String
+)
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
