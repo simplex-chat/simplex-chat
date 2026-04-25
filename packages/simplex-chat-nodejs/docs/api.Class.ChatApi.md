@@ -6,7 +6,7 @@
 
 # Class: ChatApi
 
-Defined in: [src/api.ts:62](../src/api.ts#L62)
+Defined in: [src/api.ts:97](../src/api.ts#L97)
 
 Main API class for interacting with the chat core library.
 
@@ -16,7 +16,7 @@ Main API class for interacting with the chat core library.
 
 > `protected` **ctrl\_**: `bigint` \| `undefined`
 
-Defined in: [src/api.ts:68](../src/api.ts#L68)
+Defined in: [src/api.ts:103](../src/api.ts#L103)
 
 ## Accessors
 
@@ -26,7 +26,7 @@ Defined in: [src/api.ts:68](../src/api.ts#L68)
 
 > **get** **ctrl**(): `bigint`
 
-Defined in: [src/api.ts:295](../src/api.ts#L295)
+Defined in: [src/api.ts:329](../src/api.ts#L329)
 
 Chat controller reference
 
@@ -42,7 +42,7 @@ Chat controller reference
 
 > **get** **initialized**(): `boolean`
 
-Defined in: [src/api.ts:281](../src/api.ts#L281)
+Defined in: [src/api.ts:315](../src/api.ts#L315)
 
 Chat controller is initialized
 
@@ -58,7 +58,7 @@ Chat controller is initialized
 
 > **get** **started**(): `boolean`
 
-Defined in: [src/api.ts:288](../src/api.ts#L288)
+Defined in: [src/api.ts:322](../src/api.ts#L322)
 
 Chat controller is started
 
@@ -72,7 +72,7 @@ Chat controller is started
 
 > **apiAcceptContactRequest**(`contactReqId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:697](../src/api.ts#L697)
+Defined in: [src/api.ts:731](../src/api.ts#L731)
 
 Accept contact request.
 Network usage: interactive.
@@ -93,7 +93,7 @@ Network usage: interactive.
 
 > **apiAcceptMember**(`groupId`, `groupMemberId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:517](../src/api.ts#L517)
+Defined in: [src/api.ts:551](../src/api.ts#L551)
 
 Accept group member. Requires Admin role.
 Network usage: background.
@@ -122,7 +122,7 @@ Network usage: background.
 
 > **apiAddMember**(`groupId`, `contactId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:497](../src/api.ts#L497)
+Defined in: [src/api.ts:531](../src/api.ts#L531)
 
 Add contact to group. Requires bot to have Admin role.
 Network usage: interactive.
@@ -151,7 +151,7 @@ Network usage: interactive.
 
 > **apiBlockMembersForAll**(`groupId`, `groupMemberIds`, `blocked`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:537](../src/api.ts#L537)
+Defined in: [src/api.ts:571](../src/api.ts#L571)
 
 Block members. Requires Moderator role.
 Network usage: background.
@@ -180,7 +180,7 @@ Network usage: background.
 
 > **apiCancelFile**(`fileId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:487](../src/api.ts#L487)
+Defined in: [src/api.ts:521](../src/api.ts#L521)
 
 Cancel file.
 Network usage: background.
@@ -201,7 +201,7 @@ Network usage: background.
 
 > **apiChatItemReaction**(`chatType`, `chatId`, `chatItemId`, `add`, `reaction`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:461](../src/api.ts#L461)
+Defined in: [src/api.ts:495](../src/api.ts#L495)
 
 Add/remove message reaction.
 Network usage: background.
@@ -238,7 +238,7 @@ Network usage: background.
 
 > **apiConnect**(`userId`, `incognito`, `preparedLink?`): `Promise`\<[`ConnReqType`](api.Enumeration.ConnReqType.md)\>
 
-Defined in: [src/api.ts:666](../src/api.ts#L666)
+Defined in: [src/api.ts:700](../src/api.ts#L700)
 
 Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
 Network usage: interactive.
@@ -267,7 +267,7 @@ Network usage: interactive.
 
 > **apiConnectActiveUser**(`connLink`): `Promise`\<[`ConnReqType`](api.Enumeration.ConnReqType.md)\>
 
-Defined in: [src/api.ts:675](../src/api.ts#L675)
+Defined in: [src/api.ts:709](../src/api.ts#L709)
 
 Connect via SimpleX link as string in the active user profile.
 Network usage: interactive.
@@ -288,7 +288,7 @@ Network usage: interactive.
 
 > **apiConnectPlan**(`userId`, `connectionLink`): `Promise`\<\[`ConnectionPlan`, `CreatedConnLink`\]\>
 
-Defined in: [src/api.ts:656](../src/api.ts#L656)
+Defined in: [src/api.ts:690](../src/api.ts#L690)
 
 Determine SimpleX link type and if the bot is already connected via this link.
 Network usage: interactive.
@@ -313,7 +313,7 @@ Network usage: interactive.
 
 > **apiCreateActiveUser**(`profile?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:774](../src/api.ts#L774)
+Defined in: [src/api.ts:849](../src/api.ts#L849)
 
 Create new user profile
 Network usage: no.
@@ -334,7 +334,7 @@ Network usage: no.
 
 > **apiCreateGroupLink**(`groupId`, `memberRole`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:597](../src/api.ts#L597)
+Defined in: [src/api.ts:631](../src/api.ts#L631)
 
 Create group link.
 Network usage: interactive.
@@ -359,7 +359,7 @@ Network usage: interactive.
 
 > **apiCreateLink**(`userId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:643](../src/api.ts#L643)
+Defined in: [src/api.ts:677](../src/api.ts#L677)
 
 Create 1-time invitation link.
 Network usage: interactive.
@@ -376,11 +376,37 @@ Network usage: interactive.
 
 ***
 
+### apiCreateMemberContact()
+
+> **apiCreateMemberContact**(`groupId`, `groupMemberId`): `Promise`\<`Contact`\>
+
+Defined in: [src/api.ts:915](../src/api.ts#L915)
+
+Create a direct message contact with a group member.
+Returns the created contact.
+Network usage: interactive.
+
+#### Parameters
+
+##### groupId
+
+`number`
+
+##### groupMemberId
+
+`number`
+
+#### Returns
+
+`Promise`\<`Contact`\>
+
+***
+
 ### apiCreateUserAddress()
 
 > **apiCreateUserAddress**(`userId`): `Promise`\<`CreatedConnLink`\>
 
-Defined in: [src/api.ts:312](../src/api.ts#L312)
+Defined in: [src/api.ts:346](../src/api.ts#L346)
 
 Create bot address.
 Network usage: interactive.
@@ -399,9 +425,9 @@ Network usage: interactive.
 
 ### apiDeleteChat()
 
-> **apiDeleteChat**(`chatType`, `chatId`, `deleteMode`): `Promise`\<`void`\>
+> **apiDeleteChat**(`chatType`, `chatId`, `deleteMode?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:737](../src/api.ts#L737)
+Defined in: [src/api.ts:771](../src/api.ts#L771)
 
 Delete chat.
 Network usage: background.
@@ -416,7 +442,7 @@ Network usage: background.
 
 `number`
 
-##### deleteMode
+##### deleteMode?
 
 `ChatDeleteMode` = `...`
 
@@ -430,7 +456,7 @@ Network usage: background.
 
 > **apiDeleteChatItems**(`chatType`, `chatId`, `chatItemIds`, `deleteMode`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:436](../src/api.ts#L436)
+Defined in: [src/api.ts:470](../src/api.ts#L470)
 
 Delete message.
 Network usage: background.
@@ -463,7 +489,7 @@ Network usage: background.
 
 > **apiDeleteGroupLink**(`groupId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:619](../src/api.ts#L619)
+Defined in: [src/api.ts:653](../src/api.ts#L653)
 
 Delete group link.
 Network usage: background.
@@ -484,7 +510,7 @@ Network usage: background.
 
 > **apiDeleteMemberChatItem**(`groupId`, `chatItemIds`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:451](../src/api.ts#L451)
+Defined in: [src/api.ts:485](../src/api.ts#L485)
 
 Moderate message. Requires Moderator role (and higher than message author's).
 Network usage: background.
@@ -509,7 +535,7 @@ Network usage: background.
 
 > **apiDeleteUser**(`userId`, `delSMPQueues`, `viewPwd?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:804](../src/api.ts#L804)
+Defined in: [src/api.ts:879](../src/api.ts#L879)
 
 Delete user profile.
 Network usage: background.
@@ -538,7 +564,7 @@ Network usage: background.
 
 > **apiDeleteUserAddress**(`userId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:322](../src/api.ts#L322)
+Defined in: [src/api.ts:356](../src/api.ts#L356)
 
 Deletes a user address.
 Network usage: background.
@@ -559,7 +585,7 @@ Network usage: background.
 
 > **apiGetActiveUser**(): `Promise`\<`User` \| `undefined`\>
 
-Defined in: [src/api.ts:754](../src/api.ts#L754)
+Defined in: [src/api.ts:829](../src/api.ts#L829)
 
 Get active user profile
 Network usage: no.
@@ -570,11 +596,40 @@ Network usage: no.
 
 ***
 
+### apiGetChat()
+
+> **apiGetChat**(`chatType`, `chatId`, `count`): `Promise`\<`any`\>
+
+Defined in: [src/api.ts:819](../src/api.ts#L819)
+
+Get chat items.
+Network usage: no.
+
+#### Parameters
+
+##### chatType
+
+`ChatType`
+
+##### chatId
+
+`number`
+
+##### count
+
+`number`
+
+#### Returns
+
+`Promise`\<`any`\>
+
+***
+
 ### apiGetGroupLink()
 
 > **apiGetGroupLink**(`groupId`): `Promise`\<`GroupLink`\>
 
-Defined in: [src/api.ts:628](../src/api.ts#L628)
+Defined in: [src/api.ts:662](../src/api.ts#L662)
 
 Get group link.
 Network usage: no.
@@ -595,7 +650,7 @@ Network usage: no.
 
 > **apiGetGroupLinkStr**(`groupId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:634](../src/api.ts#L634)
+Defined in: [src/api.ts:668](../src/api.ts#L668)
 
 #### Parameters
 
@@ -613,7 +668,7 @@ Defined in: [src/api.ts:634](../src/api.ts#L634)
 
 > **apiGetUserAddress**(`userId`): `Promise`\<`UserContactLink` \| `undefined`\>
 
-Defined in: [src/api.ts:332](../src/api.ts#L332)
+Defined in: [src/api.ts:366](../src/api.ts#L366)
 
 Get bot address and settings.
 Network usage: no.
@@ -634,7 +689,7 @@ Network usage: no.
 
 > **apiJoinGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:507](../src/api.ts#L507)
+Defined in: [src/api.ts:541](../src/api.ts#L541)
 
 Join group.
 Network usage: interactive.
@@ -655,7 +710,7 @@ Network usage: interactive.
 
 > **apiLeaveGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:557](../src/api.ts#L557)
+Defined in: [src/api.ts:591](../src/api.ts#L591)
 
 Leave group.
 Network usage: background.
@@ -676,7 +731,7 @@ Network usage: background.
 
 > **apiListContacts**(`userId`): `Promise`\<`Contact`[]\>
 
-Defined in: [src/api.ts:717](../src/api.ts#L717)
+Defined in: [src/api.ts:751](../src/api.ts#L751)
 
 Get contacts.
 Network usage: no.
@@ -697,7 +752,7 @@ Network usage: no.
 
 > **apiListGroups**(`userId`, `contactId?`, `search?`): `Promise`\<`GroupInfo`[]\>
 
-Defined in: [src/api.ts:727](../src/api.ts#L727)
+Defined in: [src/api.ts:761](../src/api.ts#L761)
 
 Get groups.
 Network usage: no.
@@ -726,7 +781,7 @@ Network usage: no.
 
 > **apiListMembers**(`groupId`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:567](../src/api.ts#L567)
+Defined in: [src/api.ts:601](../src/api.ts#L601)
 
 Get group members.
 Network usage: no.
@@ -747,7 +802,7 @@ Network usage: no.
 
 > **apiListUsers**(): `Promise`\<`UserInfo`[]\>
 
-Defined in: [src/api.ts:784](../src/api.ts#L784)
+Defined in: [src/api.ts:859](../src/api.ts#L859)
 
 Get all user profiles
 Network usage: no.
@@ -762,7 +817,7 @@ Network usage: no.
 
 > **apiNewGroup**(`userId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:577](../src/api.ts#L577)
+Defined in: [src/api.ts:611](../src/api.ts#L611)
 
 Create group.
 Network usage: no.
@@ -787,7 +842,7 @@ Network usage: no.
 
 > **apiReceiveFile**(`fileId`): `Promise`\<`AChatItem`\>
 
-Defined in: [src/api.ts:477](../src/api.ts#L477)
+Defined in: [src/api.ts:511](../src/api.ts#L511)
 
 Receive file.
 Network usage: no.
@@ -808,7 +863,7 @@ Network usage: no.
 
 > **apiRejectContactRequest**(`contactReqId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:707](../src/api.ts#L707)
+Defined in: [src/api.ts:741](../src/api.ts#L741)
 
 Reject contact request. The user who sent the request is **not notified**.
 Network usage: no.
@@ -827,9 +882,9 @@ Network usage: no.
 
 ### apiRemoveMembers()
 
-> **apiRemoveMembers**(`groupId`, `memberIds`, `withMessages`): `Promise`\<`GroupMember`[]\>
+> **apiRemoveMembers**(`groupId`, `memberIds`, `withMessages?`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:547](../src/api.ts#L547)
+Defined in: [src/api.ts:581](../src/api.ts#L581)
 
 Remove members. Requires Admin role.
 Network usage: background.
@@ -844,7 +899,7 @@ Network usage: background.
 
 `number`[]
 
-##### withMessages
+##### withMessages?
 
 `boolean` = `false`
 
@@ -854,11 +909,37 @@ Network usage: background.
 
 ***
 
+### apiSendMemberContactInvitation()
+
+> **apiSendMemberContactInvitation**(`contactId`, `message?`): `Promise`\<`Contact`\>
+
+Defined in: [src/api.ts:926](../src/api.ts#L926)
+
+Send a direct message invitation to a group member contact.
+The contact must have been created with [apiCreateMemberContact](#apicreatemembercontact).
+Network usage: interactive.
+
+#### Parameters
+
+##### contactId
+
+`number`
+
+##### message?
+
+`string` \| `MsgContent`
+
+#### Returns
+
+`Promise`\<`Contact`\>
+
+***
+
 ### apiSendMessages()
 
-> **apiSendMessages**(`chat`, `messages`, `liveMessage`): `Promise`\<`AChatItem`[]\>
+> **apiSendMessages**(`chat`, `messages`, `liveMessage?`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:381](../src/api.ts#L381)
+Defined in: [src/api.ts:415](../src/api.ts#L415)
 
 Send messages.
 Network usage: background.
@@ -867,13 +948,13 @@ Network usage: background.
 
 ##### chat
 
-`ChatInfo` | `ChatRef` | \[`ChatType`, `number`\]
+`ChatInfo` \| `ChatRef` \| \[`ChatType`, `number`\]
 
 ##### messages
 
 `ComposedMessage`[]
 
-##### liveMessage
+##### liveMessage?
 
 `boolean` = `false`
 
@@ -887,7 +968,7 @@ Network usage: background.
 
 > **apiSendTextMessage**(`chat`, `text`, `inReplyTo?`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:403](../src/api.ts#L403)
+Defined in: [src/api.ts:437](../src/api.ts#L437)
 
 Send text message.
 Network usage: background.
@@ -896,7 +977,7 @@ Network usage: background.
 
 ##### chat
 
-`ChatInfo` | `ChatRef` | \[`ChatType`, `number`\]
+`ChatInfo` \| `ChatRef` \| \[`ChatType`, `number`\]
 
 ##### text
 
@@ -916,7 +997,7 @@ Network usage: background.
 
 > **apiSendTextReply**(`chatItem`, `text`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:411](../src/api.ts#L411)
+Defined in: [src/api.ts:445](../src/api.ts#L445)
 
 Send text message in reply to received message.
 Network usage: background.
@@ -941,7 +1022,7 @@ Network usage: background.
 
 > **apiSetActiveUser**(`userId`, `viewPwd?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:794](../src/api.ts#L794)
+Defined in: [src/api.ts:869](../src/api.ts#L869)
 
 Set active user profile
 Network usage: no.
@@ -966,7 +1047,7 @@ Network usage: no.
 
 > **apiSetAddressSettings**(`userId`, `__namedParameters`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:364](../src/api.ts#L364)
+Defined in: [src/api.ts:398](../src/api.ts#L398)
 
 Set bot address settings.
 Network usage: interactive.
@@ -987,11 +1068,61 @@ Network usage: interactive.
 
 ***
 
+### apiSetAutoAcceptMemberContacts()
+
+> **apiSetAutoAcceptMemberContacts**(`userId`, `onOff`): `Promise`\<`void`\>
+
+Defined in: [src/api.ts:808](../src/api.ts#L808)
+
+Set auto-accept member contacts.
+Network usage: no.
+
+#### Parameters
+
+##### userId
+
+`number`
+
+##### onOff
+
+`boolean`
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### apiSetContactCustomData()
+
+> **apiSetContactCustomData**(`contactId`, `customData?`): `Promise`\<`void`\>
+
+Defined in: [src/api.ts:798](../src/api.ts#L798)
+
+Set contact custom data.
+Network usage: no.
+
+#### Parameters
+
+##### contactId
+
+`number`
+
+##### customData?
+
+`object`
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
 ### apiSetContactPrefs()
 
 > **apiSetContactPrefs**(`contactId`, `preferences`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:830](../src/api.ts#L830)
+Defined in: [src/api.ts:905](../src/api.ts#L905)
 
 Configure chat preference overrides for the contact.
 Network usage: background.
@@ -1012,11 +1143,36 @@ Network usage: background.
 
 ***
 
+### apiSetGroupCustomData()
+
+> **apiSetGroupCustomData**(`groupId`, `customData?`): `Promise`\<`void`\>
+
+Defined in: [src/api.ts:788](../src/api.ts#L788)
+
+Set group custom data.
+Network usage: no.
+
+#### Parameters
+
+##### groupId
+
+`number`
+
+##### customData?
+
+`object`
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
 ### apiSetGroupLinkMemberRole()
 
 > **apiSetGroupLinkMemberRole**(`groupId`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:610](../src/api.ts#L610)
+Defined in: [src/api.ts:644](../src/api.ts#L644)
 
 Set member role for group link.
 Network usage: no.
@@ -1041,7 +1197,7 @@ Network usage: no.
 
 > **apiSetMembersRole**(`groupId`, `groupMemberIds`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:527](../src/api.ts#L527)
+Defined in: [src/api.ts:561](../src/api.ts#L561)
 
 Set members role. Requires Admin role.
 Network usage: background.
@@ -1070,7 +1226,7 @@ Network usage: background.
 
 > **apiSetProfileAddress**(`userId`, `enable`): `Promise`\<`UserProfileUpdateSummary`\>
 
-Defined in: [src/api.ts:350](../src/api.ts#L350)
+Defined in: [src/api.ts:384](../src/api.ts#L384)
 
 Add address to bot profile.
 Network usage: interactive.
@@ -1095,7 +1251,7 @@ Network usage: interactive.
 
 > **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage`): `Promise`\<`ChatItem`\>
 
-Defined in: [src/api.ts:419](../src/api.ts#L419)
+Defined in: [src/api.ts:453](../src/api.ts#L453)
 
 Update message.
 Network usage: background.
@@ -1132,7 +1288,7 @@ Network usage: background.
 
 > **apiUpdateGroupProfile**(`groupId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:587](../src/api.ts#L587)
+Defined in: [src/api.ts:621](../src/api.ts#L621)
 
 Update group profile.
 Network usage: background.
@@ -1157,7 +1313,7 @@ Network usage: background.
 
 > **apiUpdateProfile**(`userId`, `profile`): `Promise`\<`UserProfileUpdateSummary` \| `undefined`\>
 
-Defined in: [src/api.ts:814](../src/api.ts#L814)
+Defined in: [src/api.ts:889](../src/api.ts#L889)
 
 Update user profile.
 Network usage: background.
@@ -1182,7 +1338,7 @@ Network usage: background.
 
 > **close**(): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:114](../src/api.ts#L114)
+Defined in: [src/api.ts:148](../src/api.ts#L148)
 
 Close chat database.
 Usually doesn't need to be called in chat bots.
@@ -1195,9 +1351,9 @@ Usually doesn't need to be called in chat bots.
 
 ### off()
 
-> **off**\<`K`\>(`event`, `subscriber`): `void`
+> **off**\<`K`\>(`event`, `subscriber?`): `void`
 
-Defined in: [src/api.ts:253](../src/api.ts#L253)
+Defined in: [src/api.ts:287](../src/api.ts#L287)
 
 Unsubscribe all or a specific handler from a specific event.
 
@@ -1215,11 +1371,11 @@ Unsubscribe all or a specific handler from a specific event.
 
 The event type to unsubscribe from.
 
-##### subscriber
+##### subscriber?
+
+[`EventSubscriberFunc`](api.TypeAlias.EventSubscriberFunc.md)\<`K`\> \| `undefined`
 
 An optional subscriber function for the event.
-
-[`EventSubscriberFunc`](api.TypeAlias.EventSubscriberFunc.md)\<`K`\> | `undefined`
 
 #### Returns
 
@@ -1229,19 +1385,19 @@ An optional subscriber function for the event.
 
 ### offAny()
 
-> **offAny**(`receiver`): `void`
+> **offAny**(`receiver?`): `void`
 
-Defined in: [src/api.ts:269](../src/api.ts#L269)
+Defined in: [src/api.ts:303](../src/api.ts#L303)
 
 Unsubscribe all or a specific handler from any events.
 
 #### Parameters
 
-##### receiver
+##### receiver?
+
+[`EventSubscriberFunc`](api.TypeAlias.EventSubscriberFunc.md)\<`Tag`\> \| `undefined`
 
 An optional subscriber function for the event.
-
-[`EventSubscriberFunc`](api.TypeAlias.EventSubscriberFunc.md)\<`Tag`\> | `undefined`
 
 #### Returns
 
@@ -1255,7 +1411,7 @@ An optional subscriber function for the event.
 
 > **on**\<`K`\>(`subscribers`): `void`
 
-Defined in: [src/api.ts:163](../src/api.ts#L163)
+Defined in: [src/api.ts:197](../src/api.ts#L197)
 
 Subscribe multiple event handlers at once.
 
@@ -1285,7 +1441,7 @@ If the same function is subscribed to event.
 
 > **on**\<`K`\>(`event`, `subscriber`): `void`
 
-Defined in: [src/api.ts:171](../src/api.ts#L171)
+Defined in: [src/api.ts:205](../src/api.ts#L205)
 
 Subscribe a handler to a specific event.
 
@@ -1323,7 +1479,7 @@ If the same function is subscribed to event.
 
 > **onAny**(`receiver`): `void`
 
-Defined in: [src/api.ts:194](../src/api.ts#L194)
+Defined in: [src/api.ts:228](../src/api.ts#L228)
 
 Subscribe a handler to any event.
 
@@ -1349,7 +1505,7 @@ If the same function is subscribed to event.
 
 > **once**\<`K`\>(`event`, `subscriber`): `void`
 
-Defined in: [src/api.ts:205](../src/api.ts#L205)
+Defined in: [src/api.ts:239](../src/api.ts#L239)
 
 Subscribe a handler to a specific event to be delivered one time.
 
@@ -1385,13 +1541,13 @@ If the same function is subscribed to event.
 
 ### recvChatEvent()
 
-> **recvChatEvent**(`wait`): `Promise`\<`ChatEvent` \| `undefined`\>
+> **recvChatEvent**(`wait?`): `Promise`\<`ChatEvent` \| `undefined`\>
 
-Defined in: [src/api.ts:304](../src/api.ts#L304)
+Defined in: [src/api.ts:338](../src/api.ts#L338)
 
 #### Parameters
 
-##### wait
+##### wait?
 
 `number` = `5_000_000`
 
@@ -1405,7 +1561,7 @@ Defined in: [src/api.ts:304](../src/api.ts#L304)
 
 > **sendChatCmd**(`cmd`): `Promise`\<`ChatResponse`\>
 
-Defined in: [src/api.ts:300](../src/api.ts#L300)
+Defined in: [src/api.ts:334](../src/api.ts#L334)
 
 #### Parameters
 
@@ -1423,7 +1579,7 @@ Defined in: [src/api.ts:300](../src/api.ts#L300)
 
 > **startChat**(): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:88](../src/api.ts#L88)
+Defined in: [src/api.ts:122](../src/api.ts#L122)
 
 Start chat controller. Must be called with the existing user profile.
 
@@ -1437,7 +1593,7 @@ Start chat controller. Must be called with the existing user profile.
 
 > **stopChat**(): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:102](../src/api.ts#L102)
+Defined in: [src/api.ts:136](../src/api.ts#L136)
 
 Stop chat controller.
 Must be called before closing the database.
@@ -1453,9 +1609,9 @@ Usually doesn't need to be called in chat bots.
 
 #### Call Signature
 
-> **wait**\<`K`\>(`event`): `Promise`\<`ChatEvent` & \{ `type`: `K`; \}\>
+> **wait**\<`K`\>(`event`): `Promise`\<`ChatEvent` & `object`\>
 
-Defined in: [src/api.ts:213](../src/api.ts#L213)
+Defined in: [src/api.ts:247](../src/api.ts#L247)
 
 Waits for specific event, with an optional predicate.
 Returns `undefined` on timeout if specified.
@@ -1474,13 +1630,13 @@ Returns `undefined` on timeout if specified.
 
 ##### Returns
 
-`Promise`\<`ChatEvent` & \{ `type`: `K`; \}\>
+`Promise`\<`ChatEvent` & `object`\>
 
 #### Call Signature
 
-> **wait**\<`K`\>(`event`, `predicate`): `Promise`\<`ChatEvent` & \{ `type`: `K`; \}\>
+> **wait**\<`K`\>(`event`, `predicate`): `Promise`\<`ChatEvent` & `object`\>
 
-Defined in: [src/api.ts:214](../src/api.ts#L214)
+Defined in: [src/api.ts:248](../src/api.ts#L248)
 
 Waits for specific event, with an optional predicate.
 Returns `undefined` on timeout if specified.
@@ -1499,17 +1655,17 @@ Returns `undefined` on timeout if specified.
 
 ###### predicate
 
-(`event`) => `boolean` | `undefined`
+((`event`) => `boolean`) \| `undefined`
 
 ##### Returns
 
-`Promise`\<`ChatEvent` & \{ `type`: `K`; \}\>
+`Promise`\<`ChatEvent` & `object`\>
 
 #### Call Signature
 
 > **wait**\<`K`\>(`event`, `timeout`): `Promise`\<ChatEvent & \{ type: K; \} \| `undefined`\>
 
-Defined in: [src/api.ts:215](../src/api.ts#L215)
+Defined in: [src/api.ts:249](../src/api.ts#L249)
 
 Waits for specific event, with an optional predicate.
 Returns `undefined` on timeout if specified.
@@ -1538,7 +1694,7 @@ Returns `undefined` on timeout if specified.
 
 > **wait**\<`K`\>(`event`, `predicate`, `timeout`): `Promise`\<ChatEvent & \{ type: K; \} \| `undefined`\>
 
-Defined in: [src/api.ts:216](../src/api.ts#L216)
+Defined in: [src/api.ts:250](../src/api.ts#L250)
 
 Waits for specific event, with an optional predicate.
 Returns `undefined` on timeout if specified.
@@ -1557,7 +1713,7 @@ Returns `undefined` on timeout if specified.
 
 ###### predicate
 
-(`event`) => `boolean` | `undefined`
+((`event`) => `boolean`) \| `undefined`
 
 ###### timeout
 
@@ -1571,25 +1727,19 @@ Returns `undefined` on timeout if specified.
 
 ### init()
 
-> `static` **init**(`dbFilePrefix`, `dbKey?`, `confirm?`): `Promise`\<`ChatApi`\>
+> `static` **init**(`db`, `confirm?`): `Promise`\<`ChatApi`\>
 
-Defined in: [src/api.ts:76](../src/api.ts#L76)
+Defined in: [src/api.ts:110](../src/api.ts#L110)
 
 Initializes the ChatApi.
 
 #### Parameters
 
-##### dbFilePrefix
+##### db
 
-`string`
+[`DbConfig`](api.TypeAlias.DbConfig.md)
 
-File prefix for the database files.
-
-##### dbKey?
-
-`string` = `""`
-
-Database encryption key.
+Database configuration (sqlite or postgres).
 
 ##### confirm?
 

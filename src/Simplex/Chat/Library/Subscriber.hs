@@ -2917,8 +2917,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right existingMember
-              | useRelays' gInfo ->
-                  void $ withStore $ \db -> updatePreparedChannelMember db vr user existingMember memInfo
+              | useRelays' gInfo -> do
+                  updatedMember <- withStore $ \db -> updatePreparedChannelMember db vr user existingMember memInfo
+                  toView $ CEvtGroupMemberUpdated user gInfo existingMember updatedMember
               | otherwise ->
                   messageError "x.grp.mem.intro ignored: member already exists"
             Left _

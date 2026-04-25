@@ -2290,6 +2290,8 @@ ConnectingProhibit:
 Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
+- groupUpdated: bool
+- ownerVerification: [OwnerVerification](#ownerverification)?
 
 NoRelays:
 - type: "noRelays"
@@ -2513,6 +2515,7 @@ Public:
 
 **Enum type**:
 - "channel"
+- "group"
 
 
 ---
