@@ -2008,7 +2008,7 @@ processChatCommand vr nm = \case
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
             cInfo = DirectChat ct
-        void $ createItem Nothing $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
+        void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
         aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
         let chat = case aci of
@@ -3858,7 +3858,7 @@ processChatCommand vr nm = \case
     createNewGroupItems user gInfo = do
       let cd = CDGroupSnd gInfo Nothing
       createInternalChatItem user cd CIChatBanner (Just epochStart)
-      createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+      createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
       createGroupFeatureItems user cd CISndGroupFeature gInfo
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
     sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do

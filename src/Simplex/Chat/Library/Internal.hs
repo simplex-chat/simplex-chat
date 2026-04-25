@@ -1029,7 +1029,7 @@ acceptBusinessJoinRequestAsync
       createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+    createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
@@ -1485,7 +1485,7 @@ createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (C
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
   flip catchAllErrors (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Just b, b') | b' /= b -> createPQItem $ CISndConnEvent (SCEPqEnabled pqSndEnabled')
-    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo $ Just pqSndEnabled')
+    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (e2eInfoEncrypted $ Just pqSndEnabled')
     _ -> pure (ct, conn)
   where
     createPQItem ciContent = do
@@ -1500,7 +1500,7 @@ updateContactPQRcv :: User -> Contact -> Connection -> PQEncryption -> CM (Conta
 updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' =
   flip catchAllErrors (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
     (Just b, b') | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPqEnabled pqRcvEnabled')
-    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo $ Just pqRcvEnabled')
+    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (e2eInfoEncrypted $ Just pqRcvEnabled')
     _ -> pure (ct, conn)
   where
     updatePQ ciContent = do

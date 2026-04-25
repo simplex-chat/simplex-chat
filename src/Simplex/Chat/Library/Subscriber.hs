@@ -590,7 +590,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [incognito] print incognito profile used for this contact
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
           toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
+          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just pqEnc) Nothing
           -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
           when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
             (Nothing, Nothing) -> do
@@ -842,7 +842,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               firstConnectedHost
               ( do
                   let cd = CDGroupRcv gInfo'' scopeInfo m''
-                  createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+                  createInternalChatItem user cd (CIRcvGroupE2EEInfo $ e2eInfoGroup gInfo'') Nothing
                   let prepared = preparedGroup gInfo''
                   unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
                   memberConnectedChatItem gInfo'' scopeInfo m''
@@ -1356,7 +1356,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
                         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
-                        let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
+                        let e2eContent = CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \mc -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
@@ -2546,7 +2546,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo $ e2eInfoGroup gInfo') Nothing
             let prepared = preparedGroup gInfo'
             unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'
