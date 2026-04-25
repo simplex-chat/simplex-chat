@@ -842,7 +842,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               firstConnectedHost
               ( do
                   let cd = CDGroupRcv gInfo'' scopeInfo m''
-                  createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+                  createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff, public = if useRelays' gInfo'' then Just True else Nothing}) Nothing
                   let prepared = preparedGroup gInfo''
                   unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
                   memberConnectedChatItem gInfo'' scopeInfo m''
@@ -2546,7 +2546,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff, public = if useRelays' gInfo' then Just True else Nothing}) Nothing
             let prepared = preparedGroup gInfo'
             unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'

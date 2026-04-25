@@ -4092,8 +4092,8 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         case .rcvBlocked: return NSLocalizedString("blocked by admin", comment: "blocked chat item")
         case let .sndDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
         case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
-        case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
-        case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
+        case let .sndGroupE2EEInfo(e2eeInfo): return groupE2EEInfoStr(e2eeInfo)
+        case let .rcvGroupE2EEInfo(e2eeInfo): return groupE2EEInfoStr(e2eeInfo)
         case .chatBanner: return ""
         case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
         }
@@ -4102,6 +4102,12 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
         e2eeInfo.pqEnabled == true
         ? NSLocalizedString("This chat is protected by quantum resistant end-to-end encryption.", comment: "E2EE info chat item")
+        : e2eeInfoNoPQStr
+    }
+
+    private func groupE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
+        e2eeInfo.public == true
+        ? NSLocalizedString("Messages in this channel are not end-to-end encrypted. Chat relays can see these messages.", comment: "E2EE info chat item")
         : e2eeInfoNoPQStr
     }
 
@@ -5319,6 +5325,7 @@ public enum CIGroupInvitationStatus: String, Decodable, Hashable {
 
 public struct E2EEInfo: Decodable, Hashable {
     public var pqEnabled: Bool?
+    public var `public`: Bool?
 }
 
 public enum RcvDirectEvent: Decodable, Hashable {

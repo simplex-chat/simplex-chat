@@ -1029,7 +1029,7 @@ acceptBusinessJoinRequestAsync
       createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
     let cd = CDGroupSnd gInfo Nothing
     -- TODO [short links] move to profileContactRequest?
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff, public = if useRelays' gInfo then Just True else Nothing}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)

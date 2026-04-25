@@ -177,7 +177,7 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-data E2EInfo = E2EInfo {pqEnabled :: Maybe PQEncryption}
+data E2EInfo = E2EInfo {pqEnabled :: Maybe PQEncryption, public :: Maybe Bool}
   deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
@@ -315,9 +315,15 @@ directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
   Nothing -> simpleE2EText
 
 groupE2EInfoToText :: E2EInfo -> Text
-groupE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
-  Just _ -> e2eInfoNoPQText
-  Nothing -> simpleE2EText
+groupE2EInfoToText E2EInfo {pqEnabled, public} = case public of
+  Just True -> publicGroupE2EInfoText
+  _ -> case pqEnabled of
+    Just _ -> e2eInfoNoPQText
+    Nothing -> simpleE2EText
+
+publicGroupE2EInfoText :: Text
+publicGroupE2EInfoText =
+  "Messages in this channel are not end-to-end encrypted. Chat relays can see these messages."
 
 simpleE2EText :: Text
 simpleE2EText = "This conversation is protected by end-to-end encryption"
