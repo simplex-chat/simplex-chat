@@ -258,9 +258,6 @@ swipe action */
 "accepted call" = "hyväksytty puhelu";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.";
-
-/* No comment provided by engineer. */
 "Add profile" = "Lisää profiili";
 
 /* No comment provided by engineer. */
@@ -699,7 +696,7 @@ server test step */
 /* alert title */
 "Connection error" = "Yhteysvirhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Yhteysvirhe (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -752,9 +749,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Ydinversio: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Luo";
 
 /* server test step */
 "Create file" = "Luo tiedosto";
@@ -1098,7 +1092,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "Muokkaa ryhmäprofiilia";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Salli";
 
 /* No comment provided by engineer. */
@@ -1227,7 +1221,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1497,7 +1491,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Ryhmäkutsu ei ole enää voimassa, lähettäjä poisti sen.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Ryhmälinkki";
 
 /* No comment provided by engineer. */
@@ -1683,7 +1677,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "virheelliset keskustelu-tiedot";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Virheellinen yhteyslinkki";
 
 /* invalid chat item */
@@ -2273,9 +2267,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "Profiilin salasana";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Profiilipäivitys lähetetään kontakteillesi.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Estä ääni- ja videopuhelut.";
 
@@ -2697,14 +2688,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Jaa osoite";
 
-/* alert title */
-"Share address with contacts?" = "Jaa osoite kontakteille?";
-
 /* No comment provided by engineer. */
 "Share link" = "Jaa linkki";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Jaa kontaktien kanssa";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Näytä puhelut puhelinhistoriassa";

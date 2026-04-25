@@ -1105,7 +1105,7 @@
     <string name="you_can_accept_or_reject_connection">Vous pouvez accepter ou refuser les demandes de contacts.</string>
     <string name="theme_colors_section_title">COULEURS DE L\'INTERFACE</string>
     <string name="your_contacts_will_remain_connected">Vos contacts resteront connectés.</string>
-    <string name="share_address_with_contacts_question">Partager l\'adresse avec vos contacts \?</string>
+    <string name="share_address_with_contacts_question">Partager l\'adresse avec vos contacts ?</string>
     <string name="share_with_contacts">Partager avec vos contacts</string>
     <string name="enter_welcome_message_optional">Entrez un message de bienvenue… (facultatif)</string>
     <string name="stop_sharing">Cesser le partage</string>

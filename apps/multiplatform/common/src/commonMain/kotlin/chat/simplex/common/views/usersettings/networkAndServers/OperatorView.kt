@@ -500,7 +500,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
             Text(d)
           }
           val website = serverOperator.info.website
-          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(website) })
+          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(website) })
         }
       }
     }
@@ -511,7 +511,7 @@ fun OperatorInfoView(serverOperator: ServerOperator) {
       SectionView {
         SectionItemView {
           val (text, link) = selfhost
-          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(link) })
+          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(link) })
         }
       }
     }
@@ -787,7 +787,7 @@ private fun ConditionsLinkView(conditionsLink: String) {
   SectionItemView {
     val uriHandler = LocalUriHandler.current
     Text(stringResource(MR.strings.operator_conditions_failed_to_load), color = MaterialTheme.colors.onBackground)
-    Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(conditionsLink) })
+    Text(conditionsLink, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openExternalLink(conditionsLink) })
   }
 }
 
@@ -821,13 +821,13 @@ fun ConditionsLinkButton() {
       val commit = chatModel.conditions.value.currentConditions.conditionsCommit
       ItemAction(stringResource(MR.strings.operator_open_conditions), painterResource(MR.images.ic_draft), onClick = {
         val mdUrl = "https://github.com/simplex-chat/simplex-chat/blob/$commit/PRIVACY.md"
-        uriHandler.openUriCatching(mdUrl)
         showMenu.value = false
+        uriHandler.openExternalLink(mdUrl)
       })
       ItemAction(stringResource(MR.strings.operator_open_changes), painterResource(MR.images.ic_more_horiz), onClick = {
         val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
-        uriHandler.openUriCatching(commitUrl)
         showMenu.value = false
+        uriHandler.openExternalLink(commitUrl)
       })
     }
     IconButton({ showMenu.value = true }) {
@@ -838,11 +838,7 @@ fun ConditionsLinkButton() {
 
 private fun internalUriHandler(parentUriHandler: UriHandler): UriHandler = object: UriHandler {
   override fun openUri(uri: String) {
-    if (uri.startsWith("https://simplex.chat/contact#")) {
-      openVerifiedSimplexUri(uri)
-    } else {
-      parentUriHandler.openUriCatching(uri)
-    }
+    parentUriHandler.openExternalLink(uri)
   }
 }
 

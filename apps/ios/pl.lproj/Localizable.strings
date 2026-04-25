@@ -399,9 +399,6 @@ swipe action */
 "Active connections" = "Aktywne połączenia";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Dodaj adres do swojego profilu, aby Twoje kontakty mogły go udostępnić innym osobom. Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Dodaj znajomych";
 
 /* No comment provided by engineer. */
@@ -897,7 +894,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bułgarski, fiński, tajski i ukraiński – dzięki użytkownikom i [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Adres firmowy";
 
 /* No comment provided by engineer. */
@@ -1348,7 +1345,7 @@ server test step */
 /* alert title */
 "Connection error" = "Błąd połączenia";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Błąd połączenia (UWIERZYTELNIANIE)";
 
 /* chat list item title (it should not be shown */
@@ -1470,9 +1467,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Poprawić imię na %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Utwórz";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Utwórz jednorazowy link";
@@ -2033,7 +2027,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Pusta wiadomość!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Włącz";
 
 /* No comment provided by engineer. */
@@ -2207,7 +2201,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "błąd";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
@@ -2767,7 +2761,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "grupa została usunięta";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Link do grupy";
 
 /* No comment provided by engineer. */
@@ -3037,7 +3031,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "nieprawidłowe dane czatu";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Nieprawidłowy link połączenia";
 
 /* invalid chat item */
@@ -3822,7 +3816,7 @@ alert button
 new chat action */
 "Ok" = "Ok";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "OK";
 
 /* No comment provided by engineer. */
@@ -4202,9 +4196,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Motyw profilu";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Zabroń połączeń audio/wideo.";
@@ -5050,9 +5041,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Udostępnij adres publicznie";
 
-/* alert title */
-"Share address with contacts?" = "Udostępnić adres kontaktom?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Udostępnij z innych aplikacji.";
 
@@ -5076,9 +5064,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Udostępnij do SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Udostępnij kontaktom";
 
 /* No comment provided by engineer. */
 "Share your address" = "Udostępnij swój adres";
@@ -5338,9 +5323,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to use bot" = "Dotknij Połącz aby użyć bota";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Dotknij Stwórz adres SimpleX w menu aby utworzyć go później.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Dotknij Dołącz do grupy";
@@ -5745,7 +5727,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Nieprzeczytane";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Nieobsługiwane łącze połączenia";
 
 /* No comment provided by engineer. */

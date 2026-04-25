@@ -234,9 +234,6 @@ swipe action */
 "accepted call" = "รับสายแล้ว";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ";
-
-/* No comment provided by engineer. */
 "Add profile" = "เพิ่มโปรไฟล์";
 
 /* No comment provided by engineer. */
@@ -672,7 +669,7 @@ server test step */
 /* alert title */
 "Connection error" = "การเชื่อมต่อผิดพลาด";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "การเชื่อมต่อผิดพลาด (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -725,9 +722,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "รุ่นหลัก: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "สร้าง";
 
 /* server test step */
 "Create file" = "สร้างไฟล์";
@@ -1056,7 +1050,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "แก้ไขโปรไฟล์กลุ่ม";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "เปิดใช้งาน";
 
 /* No comment provided by engineer. */
@@ -1182,7 +1176,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "ผิดพลาด";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "ผิดพลาด";
 
 /* No comment provided by engineer. */
@@ -1449,7 +1443,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "คำเชิญเข้าร่วมกลุ่มใช้ไม่ถูกต้องอีกต่อไป คำเชิญถูกลบโดยผู้ส่ง";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "ลิงค์กลุ่ม";
 
 /* No comment provided by engineer. */
@@ -1632,7 +1626,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "ข้อมูลแชทไม่ถูกต้อง";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "ลิงค์เชื่อมต่อไม่ถูกต้อง";
 
 /* invalid chat item */
@@ -2213,9 +2207,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "รหัสผ่านโปรไฟล์";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "ห้ามการโทรด้วยเสียง/วิดีโอ";
 
@@ -2625,14 +2616,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "แชร์ที่อยู่";
 
-/* alert title */
-"Share address with contacts?" = "แชร์ที่อยู่กับผู้ติดต่อ?";
-
 /* No comment provided by engineer. */
 "Share link" = "แชร์ลิงก์";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "แชร์กับผู้ติดต่อ";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "แสดงการโทรในประวัติการโทร";
