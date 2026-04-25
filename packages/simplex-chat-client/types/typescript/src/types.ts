@@ -2565,6 +2565,11 @@ export interface GroupLink {
   acceptMemberRole: GroupMemberRole
 }
 
+export interface GroupLinkOwner {
+  memberId: string
+  memberKey: string
+}
+
 export type GroupLinkPlan = 
   | GroupLinkPlan.Ok
   | GroupLinkPlan.OwnLink
@@ -2610,6 +2615,9 @@ export namespace GroupLinkPlan {
   export interface Known extends Interface {
     type: "known"
     groupInfo: GroupInfo
+    groupUpdated: boolean
+    ownerVerification?: OwnerVerification
+    linkOwners: GroupLinkOwner[]
   }
 
   export interface NoRelays extends Interface {
@@ -2776,6 +2784,7 @@ export interface GroupSupportChat {
 
 export enum GroupType {
   Channel = "channel",
+  Group = "group",
 }
 
 export enum HandshakeError {

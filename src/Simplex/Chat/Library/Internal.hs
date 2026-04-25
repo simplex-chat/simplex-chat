@@ -1328,6 +1328,24 @@ updatePublicGroupData user gInfo
       pure gInfo'
   | otherwise = pure gInfo
 
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData}
+  | profileChanged || countChanged = do
+      vr <- chatVersionRange
+      withStore $ \db -> do
+        g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
+        g' <- case publicGroupData of
+          Just PublicGroupData {publicMemberCount} | countChanged ->
+            setPublicMemberCount db vr user g publicMemberCount
+          _ -> pure g
+        pure (g', profileChanged)
+  | otherwise = pure (gInfo, False)
+  where
+    profileChanged = p /= groupProfile
+    countChanged = case publicGroupData of
+      Just PublicGroupData {publicMemberCount} -> Just publicMemberCount /= localCount
+      _ -> False
+
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
 groupLinkData gInfo@GroupInfo {groupProfile, groupSummary = GroupSummary {publicMemberCount}, membership = GroupMember {memberId}, groupKeys} GroupLink {groupLinkId} groupRelays =

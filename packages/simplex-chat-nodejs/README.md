@@ -14,7 +14,7 @@ Please share your use cases and implementations.
 ## Quick start: a simple bot
 
 ```
-npm i simplex-chat@6.5.0-beta.4.4
+npm i simplex-chat@6.5.0-beta.10
 ```
 
 Simple bot that replies with squares of numbers you send to it:
@@ -26,7 +26,7 @@ Simple bot that replies with squares of numbers you send to it:
   // const {bot} = await import("../dist/index.js")
   const [chat, _user, _address] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
-    dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
+    dbOpts: {type: "sqlite", filePrefix: "./squaring_bot"},
     options: {
       addressSettings: {welcomeMessage: "Send a number, I will square it.",
     },
@@ -82,11 +82,23 @@ simplex_backend=postgres
 - PostgreSQL backend is only available for Linux x86_64
 - A PostgreSQL server accessible via connection string
 
-### API difference
+### Passing PostgreSQL connection
 
-With the PostgreSQL backend, `chatMigrateInit` arguments change meaning:
-- First argument: schema prefix (instead of DB file prefix)
-- Second argument: connection string (instead of encryption key)
+The `DbConfig` type is a discriminated union — pick the variant that matches
+the backend you installed:
+
+```ts
+// SQLite (default)
+dbOpts: {type: "sqlite", filePrefix: "./data/bot"}
+// optional: encryptionKey: "<sqlcipher-key>"
+
+// PostgreSQL
+dbOpts: {
+  type: "postgres",
+  connectionString: "postgres://user:pass@host/db",
+  // schemaPrefix: "bot",  // optional — defaults to "simplex_v1"
+}
+```
 
 ## Documentation
 

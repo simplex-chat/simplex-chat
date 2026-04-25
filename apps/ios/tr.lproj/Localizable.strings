@@ -399,9 +399,6 @@ swipe action */
 "Active connections" = "Aktif bağlantılar";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Kişilerinizin başkalarıyla paylaşabilmesi için profilinize adres ekleyin. Profil güncellemesi kişilerinize gönderilecek.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Arkadaş ekle";
 
 /* No comment provided by engineer. */
@@ -891,7 +888,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgarca, Fince, Tayca ve Ukraynaca - kullanıcılara ve [Weblate] e teşekkürler! (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "İş adresi";
 
 /* No comment provided by engineer. */
@@ -1342,7 +1339,7 @@ server test step */
 /* alert title */
 "Connection error" = "Bağlantı hatası";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Bağlantı hatası (DOĞRULAMA)";
 
 /* chat list item title (it should not be shown */
@@ -1461,9 +1458,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "İsim %@ olarak düzeltilsin mi?";
-
-/* No comment provided by engineer. */
-"Create" = "Oluştur";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Tek kullanımlık bağlantı oluştur";
@@ -2018,7 +2012,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Boş mesaj!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Etkinleştir";
 
 /* No comment provided by engineer. */
@@ -2192,7 +2186,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "hata";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Hata";
 
 /* No comment provided by engineer. */
@@ -2730,7 +2724,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "grup silindi";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Grup bağlantısı";
 
 /* No comment provided by engineer. */
@@ -2994,7 +2988,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "geçersi̇z sohbet verisi";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Geçersiz bağlanma bağlantısı";
 
 /* invalid chat item */
@@ -3767,7 +3761,7 @@ alert button
 new chat action */
 "Ok" = "Tamam";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "TAMAM";
 
 /* No comment provided by engineer. */
@@ -4147,9 +4141,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Profil teması";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Profil güncellemesi kişilerinize gönderilecektir.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Sesli/görüntülü aramaları yasakla.";
@@ -4977,9 +4968,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Adresinizi herkese açık olarak paylaşın";
 
-/* alert title */
-"Share address with contacts?" = "Kişilerle adres paylaşılsın mı?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Diğer uygulamalardan paylaşın.";
 
@@ -5003,9 +4991,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "SimpleX ile paylaş";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Kişilerle paylaş";
 
 /* No comment provided by engineer. */
 "Share your address" = "Adresini paylaş";
@@ -5265,9 +5250,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to use bot" = "Botu kullanmak için Bağlan tuşuna bas";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Daha sonra oluşturmak için menüden BasitX adresi oluştur'a dokunun.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Gruba katıl'a dokunun";
@@ -5669,7 +5651,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Okunmamış";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Desteklenmeyen bağlantı bağlantısı";
 
 /* No comment provided by engineer. */
