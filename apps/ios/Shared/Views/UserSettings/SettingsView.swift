@@ -400,9 +400,7 @@ struct SettingsView: View {
 
             Section(header: Text("Support SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                 settingsRow("keyboard", color: theme.colors.secondary) {
-                    Button("Contribute") {
-                        openExternalLink(URL(string: "https://github.com/simplex-chat/simplex-chat#contribute")!)
-                    }
+                    ExternalLink("Contribute", destination: URL(string: "https://github.com/simplex-chat/simplex-chat#contribute")!)
                 }
                 settingsRow("star", color: theme.colors.secondary) {
                     Button("Rate the app") {
@@ -411,9 +409,7 @@ struct SettingsView: View {
                         }
                     }
                 }
-                Button {
-                    openExternalLink(URL(string: "https://github.com/simplex-chat/simplex-chat")!)
-                } label: {
+                ExternalLink(destination: URL(string: "https://github.com/simplex-chat/simplex-chat")!) {
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()

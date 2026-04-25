@@ -26,11 +26,7 @@ struct AddContactLearnMore: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text("To connect, your contact can scan QR code or use the link in the app.")
                 Text("If you can't meet in person, show QR code in a video call, or share the link.")
-                Button {
-                    openExternalLink(URL(string: "https://simplex.chat/docs/guide/readme.html#connect-to-friends")!)
-                } label: {
-                    Text("Read more in User Guide.")
-                }
+                ExternalLink("Read more in User Guide.", destination: URL(string: "https://simplex.chat/docs/guide/readme.html#connect-to-friends")!)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .listRowBackground(Color.clear)

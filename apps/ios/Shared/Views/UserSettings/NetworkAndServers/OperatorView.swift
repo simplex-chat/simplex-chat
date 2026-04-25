@@ -364,19 +364,11 @@ struct OperatorInfoView: View {
                             Text(d)
                         }
                     }
-                    Button {
-                        openExternalLink(serverOperator.info.website)
-                    } label: {
-                        Text(serverOperator.info.website.absoluteString)
-                    }
+                    ExternalLink(serverOperator.info.website.absoluteString, destination: serverOperator.info.website)
                 }
                 if let selfhost = serverOperator.info.selfhost {
                     Section {
-                        Button {
-                            openExternalLink(selfhost.link)
-                        } label: {
-                            Text(selfhost.text)
-                        }
+                        ExternalLink(selfhost.text, destination: selfhost.link)
                     }
                 }
             }
@@ -440,9 +432,7 @@ struct ConditionsTextView: View {
     private func conditionsLinkView(_ conditionsLink: String) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Current conditions text couldn't be loaded, you can review conditions via this link:")
-            Button {
-                openExternalLink(URL(string: conditionsLink)!)
-            } label: {
+            ExternalLink(destination: URL(string: conditionsLink)!) {
                 Text(conditionsLink)
                     .multilineTextAlignment(.leading)
             }
@@ -601,15 +591,11 @@ func conditionsLinkButton() -> some View {
     let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
     let mdUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/blob/\(commit)/PRIVACY.md") ?? conditionsURL
     return Menu {
-        Button {
-            openExternalLink(mdUrl)
-        } label: {
+        ExternalLink(destination: mdUrl) {
             Label("Open conditions", systemImage: "doc")
         }
         if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
-            Button {
-                openExternalLink(commitUrl)
-            } label: {
+            ExternalLink(destination: commitUrl) {
                 Label("Open changes", systemImage: "ellipsis")
             }
         }

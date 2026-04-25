@@ -28,11 +28,7 @@ struct HowItWorks: View {
                         Text("Only client devices store user profiles, contacts, groups, and messages.")
                         Text("All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.")
                         if !onboarding {
-                            Button {
-                                openExternalLink(URL(string: "https://github.com/simplex-chat/simplex-chat#readme")!)
-                            } label: {
-                                Text("Read more in our GitHub repository.")
-                            }
+                            ExternalLink("Read more in our GitHub repository.", destination: URL(string: "https://github.com/simplex-chat/simplex-chat#readme")!)
                         }
                     }
                     .padding(.bottom)

@@ -96,6 +96,25 @@ func openExternalLink(_ url: URL) {
     )
 }
 
+struct ExternalLink<Label: View>: View {
+    let destination: URL
+    let label: Label
+
+    init(destination: URL, @ViewBuilder label: () -> Label) {
+        self.destination = destination
+        self.label = label()
+    }
+
+    init(_ titleKey: LocalizedStringKey, destination: URL) where Label == Text {
+        self.destination = destination
+        self.label = Text(titleKey)
+    }
+
+    var body: some View {
+        Button { openExternalLink(destination) } label: { label }
+    }
+}
+
 let okAlertAction = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert button"), style: .default)
 
 let cancelAlertAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel)

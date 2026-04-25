@@ -791,9 +791,7 @@ struct WhatsNewView: View {
                                 }
                             }
                             if let post = v.post {
-                                Button {
-                                    openExternalLink(post)
-                                } label: {
+                                ExternalLink(destination: post) {
                                     HStack {
                                         Text("Read more")
                                         Image(systemName: "arrow.up.right.circle")

@@ -22,9 +22,7 @@ struct DeveloperView: View {
         VStack {
             List {
                 Section {
-                    Button {
-                        openExternalLink(URL(string: "https://github.com/simplex-chat/simplex-chat")!)
-                    } label: {
+                    ExternalLink(destination: URL(string: "https://github.com/simplex-chat/simplex-chat")!) {
                         ZStack(alignment: .leading) {
                             Image(colorScheme == .dark ? "github_light" : "github")
                                 .resizable()
