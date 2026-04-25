@@ -89,6 +89,7 @@ func showSheet(
 func openExternalLink(_ url: URL) {
     showAlert(
         title: NSLocalizedString("Open external link?", comment: "alert title"),
+        message: url.absoluteString,
         buttonTitle: NSLocalizedString("Open", comment: "alert button"),
         buttonAction: { UIApplication.shared.open(url) },
         cancelButton: true
