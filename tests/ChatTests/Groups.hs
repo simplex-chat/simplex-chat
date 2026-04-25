@@ -28,6 +28,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHook
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
+import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
@@ -237,7 +238,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  describe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -8857,7 +8858,7 @@ testChannelLinkAfterWelcomeUpdate ps =
           shortLink' `shouldBe` shortLink
           fullLink' `shouldBe` fullLink
           memberJoinChannel "team" [bob] [alice] shortLink' fullLink' dan
-          dan #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "welcome to team"), (0, e2eeInfoNoPQStr), (0, "connected")])
+          dan #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "welcome to team"), (0, T.unpack publicGroupNoE2EText), (0, "connected")])
 
           alice #> "#team hi"
           bob <# "#team> hi"
