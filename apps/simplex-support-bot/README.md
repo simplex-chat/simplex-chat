@@ -4,85 +4,98 @@ A business-address bot that triages incoming support chats, optionally runs them
 
 ## Prerequisites
 
-- Node.js (v18+; v24 tested)
-- For PostgreSQL backend only: `libpq5` on the host (`apt install libpq5` on Debian/Ubuntu) and Linux x86_64
-- `GROK_API_KEY` env var (xAI key) — only required when you want Grok replies; the bot runs without it
+- Node.js v18 or newer (v24 tested)
+- `GROK_API_KEY` env var (xAI) — optional; the bot runs without it
+- For the PostgreSQL backend: Linux x86_64, `libpq5` installed on the host, and a reachable PostgreSQL server
 
-## 1. Build
+## Install & build
 
 ```bash
 cd apps/simplex-support-bot
-./build.sh
+npm install      # downloads native libs + transitive deps
+npm run build    # tsc
 ```
 
-This builds `@simplex-chat/types`, `simplex-chat` (native lib), and the bot. SQLite is the default.
+By default this installs the **SQLite** backend.
 
-To build with **PostgreSQL** instead, set the env var before running `./build.sh`:
+To use **PostgreSQL** instead, drop a `.npmrc` next to `package.json` *before* `npm install`:
 
 ```bash
-SIMPLEX_BACKEND=postgres ./build.sh
+echo 'simplex_backend=postgres' > .npmrc
+npm install      # now pulls postgres-flavored native libs
+npm run build
 ```
 
-Or put `simplex_backend=postgres` in `.npmrc` at the repo root (picked up by all nested `npm install`s).
+`.npmrc` lives next to the package — npm reads it natively, no extra setup.
 
-## 2. Run — SQLite (default)
+### Switching backends
+
+`npm install` is a no-op for already-installed deps, so editing `.npmrc` and re-running `npm install` will *not* re-trigger `simplex-chat`'s preinstall. To switch backends, force a clean install:
 
 ```bash
-export GROK_API_KEY=xai-...        # optional, only if you want Grok
-./start.sh --team-group "Support Team"
+rm -rf node_modules
+npm install      # download-libs.js re-runs and pulls the right native lib
 ```
 
-Default locations:
-- DB files: `./data/simplex_chat.db`, `./data/simplex_agent.db`
-- State JSON: `./data/state.json`
-
-Override any of those with flags — see [Flags](#flags).
-
-## 3. Run — PostgreSQL
+## Run
 
 ```bash
-export GROK_API_KEY=xai-...        # optional
-./start.sh \
-  --team-group "Support Team" \
-  --pg-conn "postgres://simplex:pass@localhost/simplex_bot"
+mkdir -p data    # state file lives here by default
+
+# SQLite (default)
+npm start -- --team-group "Support Team"
+
+# PostgreSQL
+npm start -- --team-group "Support Team" \
+             --pg-conn "postgres://user:pass@host/db"
 ```
 
-The bot must have been built with `SIMPLEX_BACKEND=postgres` (step 1). Schema prefix defaults to `simplex_v1` — pass `--pg-schema <name>` to namespace a different prefix.
+The bot runs via `npm start` so npm can expose `.npmrc` settings to the process — `detectBackend()` reads `npm_config_simplex_backend` to know which backend was installed.
 
 ## Flags
 
-All flags are parsed via `node:util.parseArgs` (strict mode — unknown flags are rejected).
+Run `npm start -- --help` for the auto-generated reference. Summary:
 
 | Flag | Backend | Required | Default | Description |
 |---|---|---|---|---|
-| `--team-group` | | yes | — | team group display name |
+| `--team-group` | both | yes | — | team group display name |
 | `--state-file` | both | no | `./data/state.json` | path to bot state JSON |
 | `--sqlite-file-prefix` | sqlite | no | `./data/simplex` | DB file prefix (creates `<prefix>_chat.db`, `<prefix>_agent.db`) |
 | `--sqlite-key` | sqlite | no | (unencrypted) | SQLCipher encryption key |
 | `--pg-conn` | postgres | yes | — | PostgreSQL connection string |
 | `--pg-schema` | postgres | no | `simplex_v1` | schema prefix used for bot tables |
-| `-a` / `--auto-add-team-members` | | no | | comma-separated `ID:name` pairs (e.g. `1:Alice,2:Bob`) |
-| `--timezone` | | no | `UTC` | IANA zone for weekend detection |
-| `--complete-hours` | | no | `3` | auto-complete chats after N hours idle (`0` disables) |
-| `--card-flush-seconds` | | no | `300` | debounce card state writes |
-| `--context-file` | | required with `GROK_API_KEY` | | text file with Grok system context |
-
-Flag values containing leading dashes must use `--flag=value` form (e.g. `--sqlite-key=-abc`).
+| `-a` / `--auto-add-team-members` | both | no | | comma-separated `ID:name` pairs (e.g. `1:Alice,2:Bob`) |
+| `--timezone` | both | no | `UTC` | IANA zone for weekend detection |
+| `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
+| `--card-flush-seconds` | both | no | `300` | debounce card state writes |
+| `--context-file` | both | required with `GROK_API_KEY` | | text file with Grok system context |
+| `-h` / `--help` | both | no | | show usage and exit |
 
 ## Environment variables
 
 | Var | Purpose |
 |---|---|
 | `GROK_API_KEY` | xAI API key; enables Grok replies |
-| `SIMPLEX_BACKEND` | install-time selector for the native lib backend (`sqlite` or `postgres`); `npm_config_simplex_backend` from `.npmrc` works the same way |
+| `SIMPLEX_BACKEND` | alternative to `.npmrc` for selecting the install backend (`sqlite` or `postgres`) |
 
-## State file
+## Local development against unreleased lib changes
 
-`--state-file` holds persisted IDs between runs (team group, Grok contact). It's a local JSON regardless of DB backend. Parent directory must exist.
+This package depends on `simplex-chat` from npm. To test against an in-tree version:
+
+```bash
+# In packages/simplex-chat-nodejs
+npm link
+
+# In apps/simplex-support-bot
+npm link simplex-chat
+```
+
+`npm unlink simplex-chat && npm install` reverts to the registry version.
 
 ## Troubleshooting
 
-- **"Option '--X' argument is ambiguous"** — use `--X=value` form when the value starts with `-`.
-- **Postgres: connect errors** — check that `libpq5` is installed and the connection string is correct. The native lib errors will surface at `ChatApi.init(...)` on startup.
-- **Sqlite: DB files missing** — check the directory pointed to by `--sqlite-file-prefix` exists.
-- **"--pg-conn is required when backend is postgres"** — you built with the postgres backend (see `installed.txt` in `packages/simplex-chat-nodejs/libs/`) but didn't pass `--pg-conn`.
+- **`--pg-conn is required when backend is postgres`** — the postgres backend is installed but you didn't pass a connection string.
+- **`libpq5` errors at startup** — install `libpq5` on the host (`apt install libpq5` on Debian/Ubuntu).
+- **`ENOENT: no such file or directory, open './data/state.json'`** — the parent directory of `--state-file` must exist; `mkdir -p data` before starting.
+- **Wrong backend installed** — check `node_modules/simplex-chat/libs/installed.txt`. Edit `.npmrc`, then `rm -rf node_modules && npm install` to switch (`npm install` alone won't re-run the dep's preinstall).
+- **`libpq` connection error** at startup with sqlite-flavored config (or vice versa) — `.npmrc` was changed but libs weren't reinstalled. See "Switching backends" above.
