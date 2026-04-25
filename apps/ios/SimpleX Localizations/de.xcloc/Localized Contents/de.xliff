@@ -242,7 +242,7 @@ channel relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d failed</source>
-        <target>%1$d/%2$d Relais aktiv, %3$d Fehlgeschlagen</target>
+        <target>%1$d/%2$d Relais aktiv, %3$d fehlgeschlagen</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
@@ -10339,7 +10339,7 @@ Verbindungsanfrage wiederholen?</target>
       <trans-unit id="Your profile **%@** will be shared with channel relays and subscribers.&#10;Relays can access channel messages." xml:space="preserve">
         <source>Your profile **%@** will be shared with channel relays and subscribers.
 Relays can access channel messages.</source>
-        <target>Ihr Profil %@ wird mit Kanal‑Relais und Abonnenten geteilt.
+        <target>Ihr Profil **%@** wird mit Kanal‑Relais und Abonnenten geteilt.
 Relais können auf Kanalnachrichten zugreifen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

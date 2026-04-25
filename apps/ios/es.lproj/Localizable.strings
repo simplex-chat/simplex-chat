@@ -198,17 +198,17 @@
 
 /* channel creation progress
 channel relay bar progress */
-"%d/%d relays active" = "%1$d%2$d servidores activos";
+"%d/%d relays active" = "%1$d/%2$d servidores activos";
 
 /* channel creation progress with errors
 channel relay bar */
-"%d/%d relays active, %d failed" = "%1$d%2$d servidores activos, %3$d han fallado";
+"%d/%d relays active, %d failed" = "%1$d/%2$d servidores activos, %3$d han fallado";
 
 /* channel subscriber relay bar progress */
-"%d/%d relays connected" = "%1$d%2$d servidores conectados";
+"%d/%d relays connected" = "%1$d/%2$d servidores conectados";
 
 /* channel subscriber relay bar */
-"%d/%d relays connected, %d errors" = "%1$d%2$d servidores conectados, %3$d errores";
+"%d/%d relays connected, %d errors" = "%1$d/%2$d servidores conectados, %3$d errores";
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
@@ -1095,7 +1095,7 @@ set passcode view */
 "Channel profile" = "Perfil del canal";
 
 /* No comment provided by engineer. */
-"Channel profile is stored on subscribers' devices and on the chat relays." = "El perfil del canal se almacena en los dispositivos de los suscroptores y en los servidores de chat.";
+"Channel profile is stored on subscribers' devices and on the chat relays." = "El perfil del canal se almacena en los dispositivos de los suscriptores y en los servidores de chat.";
 
 /* snd group event chat item */
 "channel profile updated" = "perfil del canal actualizado";
@@ -5181,7 +5181,7 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "información cola del servidor: %1$@\n\núltimo mensaje recibido: %2$@";
 
 /* relay test error */
-"Server requires authorization to connect to relay, check password." = "El servidor requere autorización para conectar con el servidor, comprueba la contraseña.";
+"Server requires authorization to connect to relay, check password." = "El servidor requiere autorización para conectar con el servidor, comprueba la contraseña.";
 
 /* server test error */
 "Server requires authorization to create queues, check password." = "El servidor requiere autorización para crear colas, comprueba la contraseña.";

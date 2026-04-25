@@ -3342,7 +3342,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable at least one chat relay in Network &amp; Servers." xml:space="preserve">
         <source>Enable at least one chat relay in Network &amp; Servers.</source>
-        <target>Attiva almeno un relayvdi chat in "Rete e server".</target>
+        <target>Attiva almeno un relay di chat in "Rete e server".</target>
         <note>channel creation warning</note>
       </trans-unit>
       <trans-unit id="Enable automatic message deletion?" xml:space="preserve">

@@ -232,7 +232,7 @@ channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active" xml:space="preserve">
         <source>%1$d/%2$d relays active</source>
-        <target>%1$d%2$d servidores activos</target>
+        <target>%1$d/%2$d servidores activos</target>
         <note>channel creation progress
 channel relay bar progress</note>
       </trans-unit>
@@ -242,7 +242,7 @@ channel relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays active, %d failed" xml:space="preserve">
         <source>%1$d/%2$d relays active, %3$d failed</source>
-        <target>%1$d%2$d servidores activos, %3$d han fallado</target>
+        <target>%1$d/%2$d servidores activos, %3$d han fallado</target>
         <note>channel creation progress with errors
 channel relay bar</note>
       </trans-unit>
@@ -252,12 +252,12 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected" xml:space="preserve">
         <source>%1$d/%2$d relays connected</source>
-        <target>%1$d%2$d servidores conectados</target>
+        <target>%1$d/%2$d servidores conectados</target>
         <note>channel subscriber relay bar progress</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d errors" xml:space="preserve">
         <source>%1$d/%2$d relays connected, %3$d errors</source>
-        <target>%1$d%2$d servidores conectados, %3$d errores</target>
+        <target>%1$d/%2$d servidores conectados, %3$d errores</target>
         <note>channel subscriber relay bar</note>
       </trans-unit>
       <trans-unit id="%d/%d relays connected, %d failed" xml:space="preserve">
@@ -1707,7 +1707,7 @@ alert subtitle</note>
       </trans-unit>
       <trans-unit id="Channel profile is stored on subscribers' devices and on the chat relays." xml:space="preserve">
         <source>Channel profile is stored on subscribers' devices and on the chat relays.</source>
-        <target>El perfil del canal se almacena en los dispositivos de los suscroptores y en los servidores de chat.</target>
+        <target>El perfil del canal se almacena en los dispositivos de los suscriptores y en los servidores de chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Channel profile was changed. If you save it, the updated profile will be sent to channel subscribers." xml:space="preserve">
@@ -7982,7 +7982,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to connect to relay, check password." xml:space="preserve">
         <source>Server requires authorization to connect to relay, check password.</source>
-        <target>El servidor requere autorización para conectar con el servidor, comprueba la contraseña.</target>
+        <target>El servidor requiere autorización para conectar con el servidor, comprueba la contraseña.</target>
         <note>relay test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
