@@ -769,7 +769,7 @@ fun UsageConditionsView(
           .clip(shape = CircleShape)
           .clickable {
             val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
-            uriHandler.openUriCatching(commitUrl)
+            uriHandler.openExternalLink(commitUrl)
           }
           .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

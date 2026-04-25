@@ -86,6 +86,45 @@ func showSheet(
     }
 }
 
+func openExternalLink(_ url: URL) {
+    let s = url.absoluteString
+    if s.starts(with: "https://simplex.chat/contact#") || (s.starts(with: "https://smp") && s.contains(".simplex.im/a#")) {
+        ChatModel.shared.appOpenUrl = url
+    } else {
+        showAlert(
+            title: NSLocalizedString("Open external link?", comment: "alert title"),
+            message: s,
+            buttonTitle: NSLocalizedString("Open", comment: "alert button"),
+            buttonAction: { UIApplication.shared.open(url) },
+            cancelButton: true
+        )
+    }
+}
+
+struct ExternalLink<Label: View>: View {
+    let destination: URL
+    let label: Label
+
+    init(destination: URL, @ViewBuilder label: () -> Label) {
+        self.destination = destination
+        self.label = label()
+    }
+
+    init(_ titleKey: LocalizedStringKey, destination: URL) where Label == Text {
+        self.destination = destination
+        self.label = Text(titleKey)
+    }
+
+    init<S: StringProtocol>(_ title: S, destination: URL) where Label == Text {
+        self.destination = destination
+        self.label = Text(title)
+    }
+
+    var body: some View {
+        Button { openExternalLink(destination) } label: { label }
+    }
+}
+
 let okAlertAction = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert button"), style: .default)
 
 let cancelAlertAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel)
