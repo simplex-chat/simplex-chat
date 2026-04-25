@@ -604,6 +604,7 @@ fun showPrepareContactAlert(
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
+      ModalManager.closeAllModalsEverywhere()
       withBGApi {
         val chat = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData)
         if (chat != null) {
