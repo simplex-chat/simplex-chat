@@ -399,9 +399,6 @@ swipe action */
 "Active connections" = "Активные соединения";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Добавить друзей";
 
 /* No comment provided by engineer. */
@@ -891,7 +888,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарский, финский, тайский и украинский - благодаря пользователям и [Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Бизнес адрес";
 
 /* No comment provided by engineer. */
@@ -1342,7 +1339,7 @@ server test step */
 /* alert title */
 "Connection error" = "Ошибка соединения";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Ошибка соединения (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1461,9 +1458,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Исправить имя на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Создать";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Создать одноразовую ссылку";
@@ -2018,7 +2012,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Пустое сообщение!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Включить";
 
 /* No comment provided by engineer. */
@@ -2192,7 +2186,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "ошибка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Ошибка";
 
 /* No comment provided by engineer. */
@@ -2746,7 +2740,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "группа удалена";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Ссылка группы";
 
 /* No comment provided by engineer. */
@@ -3010,7 +3004,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "ошибка данных чата";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Ошибка в ссылке контакта";
 
 /* invalid chat item */
@@ -3786,7 +3780,7 @@ alert button
 new chat action */
 "Ok" = "Ок";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "OK";
 
 /* No comment provided by engineer. */
@@ -4166,9 +4160,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Тема профиля";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Обновлённый профиль будет отправлен Вашим контактам.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Запретить аудио/видео звонки.";
@@ -4996,9 +4987,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Поделитесь адресом";
 
-/* alert title */
-"Share address with contacts?" = "Поделиться адресом с контактами?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Поделитесь из других приложений.";
 
@@ -5022,9 +5010,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Поделиться в SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Поделиться с контактами";
 
 /* No comment provided by engineer. */
 "Share your address" = "Поделитесь Вашим адресом";
@@ -5284,9 +5269,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Нажмите Вступить в группу";
@@ -5691,7 +5673,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Не прочитано";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Ссылка не поддерживается";
 
 /* No comment provided by engineer. */
