@@ -32,7 +32,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
     ReadableText(MR.strings.why_built_p5)
     ReadableText(MR.strings.why_built_p6)
     ReadableText(MR.strings.why_built_p7)
-    ReadableText(MR.strings.why_built_tagline)
+    ReadableText(MR.strings.why_built_tagline, padding = PaddingValues(bottom = DEFAULT_PADDING))
     if (onboardingStage != null) {
       Spacer(Modifier.weight(1f))
       Column(
