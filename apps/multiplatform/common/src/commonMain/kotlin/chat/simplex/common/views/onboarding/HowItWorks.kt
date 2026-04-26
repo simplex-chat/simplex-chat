@@ -23,20 +23,18 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
-      Spacer(Modifier.height(56.dp))
-      Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
-      ReadableText(MR.strings.why_built_p1)
-      ReadableText(MR.strings.why_built_p2)
-      ReadableText(MR.strings.why_built_p3)
-      ReadableText(MR.strings.why_built_p4)
-      ReadableText(MR.strings.why_built_p5)
-      ReadableText(MR.strings.why_built_p6)
-      ReadableText(MR.strings.why_built_p7)
-      ReadableText(MR.strings.why_built_tagline)
-    }
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+    Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
+    ReadableText(MR.strings.why_built_p1)
+    ReadableText(MR.strings.why_built_p2)
+    ReadableText(MR.strings.why_built_p3)
+    ReadableText(MR.strings.why_built_p4)
+    ReadableText(MR.strings.why_built_p5)
+    ReadableText(MR.strings.why_built_p6)
+    ReadableText(MR.strings.why_built_p7)
+    ReadableText(MR.strings.why_built_tagline)
     if (onboardingStage != null) {
+      Spacer(Modifier.weight(1f))
       Column(
         Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally),
         horizontalAlignment = Alignment.CenterHorizontally
