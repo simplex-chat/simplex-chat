@@ -19,20 +19,13 @@ struct OnboardingView: View {
             case .step1_SimpleXInfo:
                 SimpleXInfo(onboarding: true)
                     .modifier(ThemedBackground())
-            case .step2_CreateProfile: // deprecated
+            case .step2_CreateProfile:
                 CreateFirstProfile()
                     .modifier(ThemedBackground())
             case .step3_CreateSimpleXAddress: // deprecated
                 CreateSimpleXAddress()
-            case .step3_ChooseServerOperators: // deprecated - map to new step 3
-                YourNetworkView()
-                    .navigationBarBackButtonHidden(true)
-                    .modifier(ThemedBackground())
-            case .step4_SetNotificationsMode: // deprecated - map to new step 3
-                YourNetworkView()
-                    .navigationBarBackButtonHidden(true)
-                    .modifier(ThemedBackground())
-            case .step3_YourNetwork:
+            case .step3_ChooseServerOperators,
+                .step4_SetNotificationsMode: // deprecated
                 YourNetworkView()
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
@@ -53,11 +46,10 @@ func onboardingButtonPlaceholder() -> some View {
 // Spec: spec/client/navigation.md#onboardingStage
 enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
-    case step2_CreateProfile // deprecated
+    case step2_CreateProfile
     case step3_CreateSimpleXAddress // deprecated
-    case step3_ChooseServerOperators // deprecated
+    case step3_ChooseServerOperators
     case step4_SetNotificationsMode // deprecated
-    case step3_YourNetwork
     case step4_NetworkCommitments
     case onboardingComplete
 

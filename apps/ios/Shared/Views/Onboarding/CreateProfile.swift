@@ -114,8 +114,8 @@ struct CreateProfile: View {
             if m.users.isEmpty || m.users.allSatisfy({ $0.user.hidden }) {
                 try startChat()
                 withAnimation {
-                    onboardingStageDefault.set(.step3_YourNetwork)
-                    m.onboardingStage = .step3_YourNetwork
+                    onboardingStageDefault.set(.step3_ChooseServerOperators)
+                    m.onboardingStage = .step3_ChooseServerOperators
                 }
             } else {
                 onboardingStageDefault.set(.onboardingComplete)
@@ -323,7 +323,7 @@ struct CreateFirstProfile: View {
             AppChatState.shared.set(.active)
             m.currentUser = try apiCreateActiveUser(profile)
             try startChat(onboarding: true)
-            onboardingStageDefault.set(.step3_YourNetwork)
+            onboardingStageDefault.set(.step3_ChooseServerOperators)
             nextStepNavLinkActive = true
         } catch let error {
             showCreateProfileAlert(showAlert: showAlert, error)
