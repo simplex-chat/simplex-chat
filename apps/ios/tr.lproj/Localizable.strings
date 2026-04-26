@@ -6320,3 +6320,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Terminal için SimpleX Chat'i indir";
+"Read more in User Guide." = "Kullanıcı Rehberinde daha fazlasını okuyun.";
+"Read more in our GitHub repository." = "GitHub deposunda daha fazlasını okuyun.";
+"Contribute" = "Katkıda bulun";
+"Star on GitHub" = "Bize GitHub'da yıldız verin";
+

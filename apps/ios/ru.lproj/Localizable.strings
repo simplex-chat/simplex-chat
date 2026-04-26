@@ -6348,3 +6348,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "SimpleX Chat для терминала";
+"Read more in User Guide." = "Дополнительная информация в Руководстве пользователя.";
+"Read more in our GitHub repository." = "Узнайте больше из нашего GitHub репозитория.";
+"Contribute" = "Внести свой вклад";
+"Star on GitHub" = "Поставить звездочку в GitHub";
+

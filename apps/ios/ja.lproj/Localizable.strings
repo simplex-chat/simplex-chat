@@ -3661,3 +3661,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "あなたのSimpleXアドレス";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "インストール ターミナル用SimpleX Chat";
+"Read more in User Guide." = "詳しくはユーザーガイドをご覧ください。";
+"Read more in our GitHub repository." = "詳しくはGitHubリポジトリをご覧ください。";
+"Contribute" = "貢献する";
+"Star on GitHub" = "GitHub でスターを付ける";
+

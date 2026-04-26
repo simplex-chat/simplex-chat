@@ -6748,3 +6748,19 @@ server test failure */
 "Subscribers can report messsages to moderators." = "Abonnenten können Nachrichten an Moderatoren melden.";
 "Up to 100 last messages are sent to new subscribers." = "Bis zu 100 der letzten Nachrichten werden an neue Abonnenten gesendet.";
 "History is not sent to new subscribers." = "Der Nachrichtenverlauf wird nicht an neue Abonnenten gesendet.";
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Installieren Sie SimpleX Chat als Terminalanwendung";
+"Read more in User Guide." = "Lesen Sie mehr dazu im Benutzerhandbuch.";
+"Read more in our GitHub repository." = "Erfahren Sie in unserem GitHub-Repository mehr dazu.";
+"Contribute" = "Unterstützen Sie uns";
+"Star on GitHub" = "Stern auf GitHub vergeben";
+
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Installieren Sie SimpleX Chat als Terminalanwendung";
+"Read more in User Guide." = "Lesen Sie mehr dazu im Benutzerhandbuch.";
+"Read more in our GitHub repository." = "Erfahren Sie in unserem GitHub-Repository mehr dazu.";
+"Contribute" = "Unterstützen Sie uns";
+"Star on GitHub" = "Stern auf GitHub vergeben";
+

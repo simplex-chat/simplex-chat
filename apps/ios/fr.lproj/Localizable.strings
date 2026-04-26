@@ -5716,3 +5716,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Installer SimpleX Chat pour terminal";
+"Read more in User Guide." = "Pour en savoir plus, consultez le Guide de l'utilisateur.";
+"Read more in our GitHub repository." = "Pour en savoir plus, consultez notre dépôt GitHub.";
+"Contribute" = "Contribuer";
+"Star on GitHub" = "Star sur GitHub";
+

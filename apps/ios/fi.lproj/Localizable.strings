@@ -3376,3 +3376,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Asenna SimpleX Chat terminaalille";
+"Read more in User Guide." = "Lue lisää Käyttöoppaasta.";
+"Read more in our GitHub repository." = "Lue lisää GitHub-arkistosta.";
+"Contribute" = "Osallistu";
+"Star on GitHub" = "Tähti GitHubissa";
+

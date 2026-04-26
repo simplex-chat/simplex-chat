@@ -3280,3 +3280,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "ที่อยู่ SimpleX ของคุณ";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล";
+"Read more in User Guide." = "อ่านเพิ่มเติมในคู่มือผู้ใช้";
+"Read more in our GitHub repository." = "อ่านเพิ่มเติมในพื้นที่เก็บข้อมูล GitHub";
+"Contribute" = "มีส่วนร่วม";
+"Star on GitHub" = "ติดดาวบน GitHub";
+

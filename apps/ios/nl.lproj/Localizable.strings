@@ -6053,3 +6053,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Uw SimpleX adres";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Installeer SimpleX Chat voor terminal";
+"Read more in User Guide." = "Lees meer in de Gebruikershandleiding.";
+"Read more in our GitHub repository." = "Lees meer in onze GitHub-repository.";
+"Contribute" = "Bijdragen";
+"Star on GitHub" = "Star on GitHub";
+

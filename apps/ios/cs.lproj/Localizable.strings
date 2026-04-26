@@ -3721,3 +3721,11 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
 
+
+/* restored translations */
+"Install SimpleX Chat for terminal" = "Nainstalujte SimpleX Chat pro terminál";
+"Read more in User Guide." = "Více informací v průvodci uživatele.";
+"Read more in our GitHub repository." = "Přečtěte si více v našem GitHub repozitáři.";
+"Contribute" = "Přispějte";
+"Star on GitHub" = "Hvězda na GitHubu";
+
