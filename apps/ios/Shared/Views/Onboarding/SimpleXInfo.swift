@@ -103,7 +103,7 @@ struct SimpleXInfo: View {
                 }
             }
             .sheet(isPresented: $showWhyBuilt) {
-                HowItWorks(
+                WhySimpleX(
                     onboarding: onboarding,
                     createProfileNavLinkActive: $createProfileNavLinkActive
                 )
