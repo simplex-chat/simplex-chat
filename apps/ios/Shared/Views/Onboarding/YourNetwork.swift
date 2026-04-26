@@ -199,48 +199,46 @@ private struct NotificationModeSelector: View {
     @State private var showInfo = false
 
     var body: some View {
-        NavigationView {
-            GeometryReader { g in
-                ScrollView {
-                    VStack(alignment: .center, spacing: 20) {
-                        Text("Push notifications")
-                            .font(.largeTitle)
-                            .bold()
-                            .padding(.top, 25)
+        GeometryReader { g in
+            ScrollView {
+                VStack(alignment: .center, spacing: 20) {
+                    Text("Push notifications")
+                        .font(.largeTitle)
+                        .bold()
+                        .padding(.top, 25)
 
-                        Button {
-                            showInfo = true
-                        } label: {
-                            Label("How it affects privacy", systemImage: "info.circle")
-                                .font(.headline)
-                        }
-
-                        Spacer()
-
-                        ForEach(NotificationsMode.values) { mode in
-                            NtfModeSelector(mode: mode, selection: $notificationMode)
-                        }
-
-                        Spacer()
-
-                        VStack(spacing: 10) {
-                            Button {
-                                dismiss()
-                            } label: {
-                                Text("OK")
-                            }
-                            .buttonStyle(OnboardingButtonStyle())
-                            onboardingButtonPlaceholder()
-                        }
+                    Button {
+                        showInfo = true
+                    } label: {
+                        Label("How it affects privacy", systemImage: "info.circle")
+                            .font(.headline)
                     }
-                    .padding(25)
-                    .frame(minHeight: g.size.height)
+
+                    Spacer()
+
+                    ForEach(NotificationsMode.values) { mode in
+                        NtfModeSelector(mode: mode, selection: $notificationMode)
+                    }
+
+                    Spacer()
+
+                    VStack(spacing: 10) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("OK")
+                        }
+                        .buttonStyle(OnboardingButtonStyle())
+                        onboardingButtonPlaceholder()
+                    }
                 }
+                .padding(25)
+                .frame(minHeight: g.size.height)
             }
-            .frame(maxHeight: .infinity)
-            .sheet(isPresented: $showInfo) {
-                NotificationsInfoView()
-            }
+        }
+        .frame(maxHeight: .infinity)
+        .sheet(isPresented: $showInfo) {
+            NotificationsInfoView()
         }
     }
 }
