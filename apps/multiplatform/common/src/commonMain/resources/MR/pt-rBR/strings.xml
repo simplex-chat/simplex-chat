@@ -2376,7 +2376,6 @@
     <string name="xftp_servers_per_user">Os servidores para novos arquivos do seu perfil de chat atual</string>
     <string name="connection_error_quota_desc">A conexão atingiu o limite de mensagens não entregues, seu contato pode estar offline.</string>
     <string name="connection_error_quota">Mensagens não entregues</string>
-    <string name="onboarding_conditions_configure_server_operators">Configurar operadores de servidor</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Chats privados, grupos e seus contatos não são acessíveis aos operadores de servidor.</string>
     <string name="onboarding_conditions_accept">Aceitar</string>
     <string name="onboarding_conditions_by_using_you_agree">Ao usar o SimpleX Chat, você concorda em:\n- enviar apenas conteúdo legal em grupos públicos.\n- respeitar outros usuários – sem spam.</string>

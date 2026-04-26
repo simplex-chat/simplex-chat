@@ -2380,7 +2380,6 @@
     <string name="full_link_button_text">Volledige link</string>
     <string name="unsupported_connection_link">Niet-ondersteunde verbindingslink</string>
     <string name="short_link_button_text">Korte link</string>
-    <string name="onboarding_conditions_configure_server_operators">Serveroperators configureren</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacybeleid en gebruiksvoorwaarden.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</string>
     <string name="cant_send_message_contact_deleted">contact verwijderd</string>

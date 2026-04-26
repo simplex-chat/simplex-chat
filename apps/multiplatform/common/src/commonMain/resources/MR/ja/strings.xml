@@ -2014,7 +2014,6 @@
     <string name="v6_3_better_privacy_and_security">プライバシーとセキュリティの向上</string>
     <string name="accept_pending_member_button">承諾</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">プライバシーポリシーと利用条件</string>
-    <string name="onboarding_conditions_configure_server_operators">サーバオペレータの設定</string>
     <string name="onboarding_conditions_accept">承諾</string>
     <string name="onboarding_conditions_private_chats_not_accessible">サーバオペレータは、プライベートチャット・グループ・連絡先にはアクセスできません。</string>
     <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat を利用することで、以下の事項に同意したものと見なされます：\n- パブリックグループでは合法なコンテンツのみを送信すること。\n- 他のユーザを尊重すること、またスパムメッセージを送信しないこと。</string>

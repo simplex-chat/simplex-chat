@@ -549,7 +549,6 @@
     <string name="smp_servers_configured">Διαμορφωμένοι SMP διακομιστές</string>
     <string name="xftp_servers_configured">Διαμορφωμένοι XFTP διακομιστές</string>
     <string name="configure_ICE_servers">Διαμορφωμένοι ICE διακομιστές</string>
-    <string name="onboarding_conditions_configure_server_operators">Διαμόρφωση χειριστών διακομιστή</string>
     <string name="confirm_verb">Επιβεβαίωσε</string>
     <string name="confirm_delete_contact_question">Επιβεβαίωση διαγραφής επαφής;</string>
     <string name="confirm_database_upgrades">Επιβεβαίωση αναβαθμίσεων βάσης δεδομένων</string>

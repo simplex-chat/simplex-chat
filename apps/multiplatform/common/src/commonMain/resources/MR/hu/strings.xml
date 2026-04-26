@@ -2343,7 +2343,6 @@
     <string name="onboarding_conditions_by_using_you_agree">A SimpleX Chat használatával Ön elfogadja, hogy:\n- csak elfogadott tartalmakat tesz közzé a nyilvános csoportokban.\n- tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Adatvédelmi szabályzat és felhasználási feltételek.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">A privát csevegések, a csoportok és a partnerek nem érhetők el a kiszolgálók üzemeltetői számára.</string>
-    <string name="onboarding_conditions_configure_server_operators">Kiszolgálóüzemeltetők beállítása</string>
     <string name="unsupported_connection_link">Nem támogatott kapcsolattartási hivatkozás</string>
     <string name="short_link_button_text">Rövid hivatkozás</string>
     <string name="full_link_button_text">Teljes hivatkozás</string>

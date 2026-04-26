@@ -2230,7 +2230,6 @@
     <string name="v6_4_support_chat">Czat z administratorami</string>
     <string name="button_support_chat_member">Czat z członkiem</string>
     <string name="v6_4_review_members_descr">Czatuj z członkami, zanim dołączą.</string>
-    <string name="onboarding_conditions_configure_server_operators">Konfigurowanie operatorów serwerów</string>
     <string name="compose_view_connect">Połącz</string>
     <string name="v6_4_connect_faster">Połącz się szybciej! 🚀</string>
     <string name="cant_send_message_contact_deleted">kontakt usunięty</string>

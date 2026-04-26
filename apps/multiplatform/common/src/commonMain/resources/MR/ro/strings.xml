@@ -2283,7 +2283,6 @@
     <string name="non_content_uri_alert_text">Ai partajat o cale de fișier nevalidă. Raportează problema dezvoltatorilor aplicației.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: atinge <b>Deschide în aplicația mobilă</b>, apoi atinge <b>Conectare</b> în aplicație.]]></string>
     <string name="add_short_link">Actualizează adresa</string>
-    <string name="onboarding_conditions_configure_server_operators">Configurați operatorii serverului</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Condițiile vor fi acceptate pentru operatorii activați după 30 de zile.</string>
     <string name="call_desktop_permission_denied_chrome">Apasă pe butonul de informații de lângă bara de adrese pentru a permite accesul la microfon.</string>
     <string name="settings_message_shape_corner">Colţ</string>

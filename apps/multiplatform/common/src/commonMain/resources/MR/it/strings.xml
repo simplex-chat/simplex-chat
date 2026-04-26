@@ -2379,7 +2379,6 @@
     <string name="onboarding_conditions_by_using_you_agree">Usando SimpleX Chat accetti di:\n- inviare solo contenuto legale nei gruppi pubblici.\n- rispettare gli altri utenti - niente spam.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Le chat private, i gruppi e i tuoi contatti non sono accessibili agli operatori dei server.</string>
     <string name="onboarding_conditions_accept">Accetta</string>
-    <string name="onboarding_conditions_configure_server_operators">Configura gli operatori dei server</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Informativa sulla privacy e condizioni d\'uso.</string>
     <string name="link_requires_newer_app_version_please_upgrade">Questo link richiede una versione più recente dell\'app. Aggiornala o chiedi al tuo contatto di inviare un link compatibile.</string>
     <string name="full_link_button_text">Link completo</string>

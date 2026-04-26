@@ -2183,7 +2183,6 @@
     <string name="operator_conditions_accepted_for_enabled_operators_on">شرایط به‌طور خودکار برای اپراتورهای فعال در: %s پذیرفته خواهد شد.</string>
     <string name="smp_servers_configured">سرورهای SMP پیکربندی‌شده</string>
     <string name="xftp_servers_configured">سرورهای XFTP پیکربندی‌شده</string>
-    <string name="onboarding_conditions_configure_server_operators">پیکربندی اپراتورهای سرور</string>
     <string name="servers_info_connected_servers_section_header">سرورهای متصل شده</string>
     <string name="sync_connection_desc">اتصال نیاز به تجدید مذاکره رمزنگاری دارد.</string>
     <string name="connections">اتصالات</string>

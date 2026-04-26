@@ -2366,7 +2366,6 @@
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Členové budou odstraněny z chatu - toto nelze zvrátit!</string>
     <string name="onboarding_conditions_by_using_you_agree">Použitím SimpleX chatu souhlasíte že:\n- ve veřejných skupinách budete zasílat pouze legální obsah.\n- budete respektovat ostatní uživatele – žádný spam.</string>
     <string name="onboarding_conditions_accept">Přijmout</string>
-    <string name="onboarding_conditions_configure_server_operators">Nastavit operátora serveru</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Zásady ochrany soukromí a podmínky používání.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Soukromé konverzace, skupiny a kontakty nejsou přístupné provozovatelům serverů.</string>
     <string name="unsupported_connection_link">Nepodporovaný odkaz k připojení</string>

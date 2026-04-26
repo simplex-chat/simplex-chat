@@ -2376,7 +2376,6 @@
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privacidad y condiciones de uso.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.</string>
     <string name="onboarding_conditions_by_using_you_agree">Al usar SimpleX Chat, aceptas:\n- enviar únicamente contenido legal en los grupos públicos.\n- respetar a los demás usuarios - spam prohibido.</string>
-    <string name="onboarding_conditions_configure_server_operators">Configurar operadores de servidores</string>
     <string name="simplex_link_channel">Enlace de canal SimpleX</string>
     <string name="full_link_button_text">Enlace completo</string>
     <string name="short_link_button_text">Enlace corto</string>

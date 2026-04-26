@@ -2351,7 +2351,6 @@
     <string name="onboarding_conditions_by_using_you_agree">Bằng việc sử dụng SimpleX Chat, bạn đồng ý:\n- chỉ gửi nội dung hợp pháp trong các nhóm công khai.\n- tôn trọng những người dùng khác - không gửi tin rác.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Các cuộc trò chuyện riêng tư, nhóm và liên hệ của bạn không thể truy cập được đối với các bên vận hành máy chủ.</string>
     <string name="onboarding_conditions_accept">Chấp nhận</string>
-    <string name="onboarding_conditions_configure_server_operators">Định cấu hình các bên vận hành máy chủ</string>
     <string name="link_requires_newer_app_version_please_upgrade">Đường dẫn này yêu cầu một phiên bản ứng dụng mới hơn. Vui lòng nâng cấp ứng dụng hoặc yêu cầu liên hệ của một gửi cho một đường dẫn tương thích.</string>
     <string name="simplex_link_channel">Đường dẫn kênh SimpleX</string>
     <string name="unsupported_connection_link">Đường dẫn kết nối không được hỗ trợ</string>

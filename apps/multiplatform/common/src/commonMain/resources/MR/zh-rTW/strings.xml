@@ -2061,7 +2061,6 @@
     <string name="disable_automatic_deletion_question">停用自動刪除訊息？</string>
     <string name="v6_1_delete_many_messages_descr">刪除或審查最多 200 條訊息。</string>
     <string name="v6_2_network_decentralization_enable_flux">於網路和伺服器設定中啟用 Flux 以獲得更好的元資料隱私。</string>
-    <string name="onboarding_conditions_configure_server_operators">配置伺服器營運者</string>
     <string name="operator_conditions_of_use">使用條款</string>
     <string name="v6_3_better_privacy_and_security">更好的隱私和安全性</string>
     <string name="migrate_from_device_try_again">你可以再試一次。</string>

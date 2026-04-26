@@ -2459,7 +2459,6 @@
     <string name="onboarding_conditions_accept">Принять</string>
     <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей — не отправлять спам.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
-    <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
     <string name="member_criteria_all">всех</string>
     <string name="accept_pending_member_button">Принять</string>
