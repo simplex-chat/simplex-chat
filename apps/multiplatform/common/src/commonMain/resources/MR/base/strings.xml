@@ -1361,8 +1361,8 @@
   <!-- Onboarding Step 3: Your Network -->
   <string name="onboarding_your_network">Your network</string>
   <string name="onboarding_network_routers_cannot_know">Network routers cannot know\nwho talks to whom</string>
-  <string name="onboarding_configure_routers">Configure routers</string>
-  <string name="onboarding_configure_notifications">Configure notifications</string>
+  <string name="onboarding_configure_routers">Setup routers</string>
+  <string name="onboarding_configure_notifications">Setup notifications</string>
 
   <!-- Onboarding Step 4: Network Commitments -->
   <string name="onboarding_network_commitments">Network\ncommitments</string>

@@ -116,7 +116,7 @@ struct YourNetworkView: View {
             sheetItem = .configureOperators
         } label: {
             HStack(spacing: 6) {
-                Text("Configure routers")
+                Text("Setup routers")
                     .fontWeight(.medium)
                 ForEach(serverOperators.reversed()) { op in
                     Image(op.logo(colorScheme))
@@ -134,7 +134,7 @@ struct YourNetworkView: View {
             sheetItem = .configureNotifications
         } label: {
             HStack(spacing: 4) {
-                Text("Configure notifications")
+                Text("Setup notifications")
                     .fontWeight(.medium)
                 Image(systemName: notificationMode.icon)
             }
