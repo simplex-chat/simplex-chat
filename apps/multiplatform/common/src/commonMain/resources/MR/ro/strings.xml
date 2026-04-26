@@ -1504,7 +1504,6 @@
     <string name="exit_without_saving">Ieșire fără salvare</string>
     <string name="hidden_profile_password">Parolă profil ascuns</string>
     <string name="italic_text">italic</string>
-    <string name="how_simplex_works">Cum funcționează SimpleX</string>
     <string name="first_platform_without_user_ids">Fără identificatori de utilizator.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Acest lucru se poate întâmpla atunci când:\n1. Mesajele au expirat în aplicația de trimitere după 2 zile sau pe server după 30 de zile.\n2. Decriptarea mesajului a eșuat, deoarece tu sau contactul tău ați folosit un backup vechi al bazei de date.\n3. Conexiunea a fost compromisă.</string>
     <string name="error_exporting_chat_database">Eroare la exportarea bazei de date a conversației</string>

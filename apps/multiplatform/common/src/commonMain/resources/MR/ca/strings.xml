@@ -1216,7 +1216,6 @@
     <string name="first_platform_without_user_ids">Sense identificadors d\'usuari.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Per protegir la vostra privadesa SimpleX utilitza identificadors separats per a cadascun dels vostres contactes..</string>
     <string name="use_chat">Obrir SimpleX</string>
-    <string name="how_simplex_works">Com funciona SimpleX</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Només els dispositius client emmagatzemen perfils d\'usuari, contactes, grups i missatges.</string>
     <string name="onboarding_notifications_mode_title">Notificacions privades</string>
     <string name="onboarding_notifications_mode_subtitle">Com afecta la bateria</string>

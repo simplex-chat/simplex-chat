@@ -473,7 +473,6 @@
     <string name="v5_0_large_files_support_descr">سريع ولا تنتظر حتى يصبح المرسل متصلاً بالإنترنت!</string>
     <string name="hide_verb">أخفِ</string>
     <string name="how_to_use_simplex_chat">كيفية الاستخدام</string>
-    <string name="how_simplex_works">كيف يعمل SimpleX</string>
     <string name="description_via_contact_address_link_incognito">التخفي عبر رابط عنوان جهة الاتصال</string>
     <string name="incorrect_code">رمز الأمان غير صحيحة!</string>
     <string name="service_notifications_disabled">الإشعارات الفورية مُعطَّلة</string>

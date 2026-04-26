@@ -424,7 +424,6 @@
     <string name="italic_text">cursief</string>
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
-    <string name="how_simplex_works">Hoe SimpleX werkt</string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>

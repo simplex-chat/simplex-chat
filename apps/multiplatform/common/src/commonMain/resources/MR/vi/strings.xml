@@ -880,7 +880,6 @@
     <string name="v4_6_hidden_chat_profiles">Hồ sơ trò chuyện ẩn</string>
     <string name="how_to_use_simplex_chat">Cách sử dụng</string>
     <string name="how_it_works">Cách thức hoạt động</string>
-    <string name="how_simplex_works">Cách thức SimpleX hoạt động</string>
     <string name="how_to">Cách làm</string>
     <string name="error_initializing_web_view_wrong_arch">Lỗi khởi động WebView. Hãy đảm bảo bạn đã cài đặt WebView và kiến trúc hỗ trợ của nó là arm64.\nLỗi: %s</string>
     <string name="custom_time_unit_hours">giờ</string>

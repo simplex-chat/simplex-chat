@@ -153,7 +153,6 @@
     <string name="icon_descr_instant_notifications">通知の常時受信</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
-    <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信してすぐに通知が出ます）。]]></string>
     <string name="callstatus_calling">発信中</string>

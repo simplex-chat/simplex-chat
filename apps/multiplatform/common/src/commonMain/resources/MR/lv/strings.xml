@@ -1566,7 +1566,6 @@
     <string name="make_private_connection">Izveidot privātu savienojumu</string>
     <string name="migrate_from_another_device">Migrēt no citas ierīces</string>
     <string name="how_it_works">Kā tas darbojas</string>
-    <string name="how_simplex_works">Kā darbojas SimpleX</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Lai aizsargātu privātumu, SimpleX izmanto ID rindām</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Tikai klientu ierīces glabā kontaktu grupas un e2e šifrētas ziņas</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Visas ziņas un faili ir e2e šifrēti]]></string>

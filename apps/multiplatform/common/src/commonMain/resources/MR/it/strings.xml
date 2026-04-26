@@ -358,7 +358,6 @@
     <string name="encrypted_video_call">Videochiamata crittografata e2e</string>
     <string name="callstate_ended">terminata</string>
     <string name="how_it_works">Come funziona</string>
-    <string name="how_simplex_works">Come funziona SimpleX</string>
     <string name="answer_call">Rispondi alla chiamata</string>
     <string name="icon_descr_audio_off">Audio spento</string>
     <string name="icon_descr_audio_on">Audio acceso</string>

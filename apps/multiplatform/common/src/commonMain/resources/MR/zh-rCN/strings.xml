@@ -618,7 +618,6 @@
     <string name="ttl_hours">%d 小时</string>
     <string name="ttl_month">%d 月</string>
     <string name="ttl_sec">%d 秒</string>
-    <string name="how_simplex_works">SimpleX 是如何工作的</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">确保 SMP 服务器地址格式正确、每行分开且不重复。</string>
     <string name="markdown_help">Markdown 帮助</string>

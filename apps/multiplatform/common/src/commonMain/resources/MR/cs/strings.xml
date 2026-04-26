@@ -242,7 +242,6 @@
     <string name="callstatus_in_progress">probíhající hovor</string>
     <string name="decentralized">Decentralizovaná</string>
     <string name="how_it_works">Jak to funguje</string>
-    <string name="how_simplex_works">Jak funguje SimpleX</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy.</string>
     <string name="onboarding_notifications_mode_title">Soukromé oznámení</string>
     <string name="onboarding_notifications_mode_periodic">Pravidelné</string>

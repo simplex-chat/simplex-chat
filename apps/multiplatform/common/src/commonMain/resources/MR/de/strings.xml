@@ -473,7 +473,6 @@
     <string name="make_private_connection">Stellen Sie eine private Verbindung her</string>
     <string name="how_it_works">Wie es funktioniert</string>
     <!-- How SimpleX Works -->
-    <string name="how_simplex_works">Wie SimpleX funktioniert</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">SimpleX nutzt individuelle Kennungen für jeden Ihrer Kontakte, um Ihre Privatsphäre zu schützen.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern Benutzerprofile, Kontakte, Gruppen und Nachrichten.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.]]></string>

@@ -624,7 +624,6 @@
     <string name="import_theme_error">Hiba történt a téma importálásakor</string>
     <string name="notification_display_mode_hidden_desc">Partner nevének és az üzenet tartalmának elrejtése</string>
     <string name="incompatible_database_version">Nem kompatibilis adatbázis-verzió</string>
-    <string name="how_simplex_works">Hogyan működik a SimpleX</string>
     <string name="desktop_incompatible_version">Nem kompatibilis verzió</string>
     <string name="user_hide">Elrejtés</string>
     <string name="incoming_video_call">Bejövő videóhívás</string>

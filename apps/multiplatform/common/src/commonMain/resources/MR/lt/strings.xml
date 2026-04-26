@@ -214,7 +214,6 @@
     <string name="delete_link">Ištrinti nuorodą</string>
     <string name="delete_link_question">Ištrinti nuorodą\?</string>
     <string name="error_creating_link_for_group">Klaida kuriant grupės nuorodą</string>
-    <string name="how_simplex_works">Kaip SimpleX veikia</string>
     <string name="database_encrypted">Duomenų bazė šifruota!</string>
     <string name="group_member_status_creator">kūrėjas</string>
     <string name="delete_group_question">Ištrinti grupę\?</string>
