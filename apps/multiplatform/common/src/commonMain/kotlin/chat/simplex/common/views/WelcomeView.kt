@@ -253,7 +253,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
 
-        OnboardingProfileNameField(displayName, focusRequester)
+        ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
 
         Spacer(Modifier.weight(1f))
 
@@ -276,62 +276,6 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
         setLastVersionDefault(chatModel)
       }
     }
-  }
-}
-
-@Composable
-private fun OnboardingProfileNameField(displayName: MutableState<String>, focusRequester: FocusRequester) {
-  var valid by rememberSaveable { mutableStateOf(true) }
-  var focused by rememberSaveable { mutableStateOf(false) }
-  val showError = !valid && displayName.value.isNotEmpty()
-  Box(
-    Modifier
-      .padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
-      .then(if (!appPlatform.isAndroid) Modifier.widthIn(max = 450.dp) else Modifier)
-      .fillMaxWidth()
-      .clip(RoundedCornerShape(10.dp))
-      .background(MaterialTheme.colors.onBackground.copy(alpha = if (isInDarkTheme()) 0.08f else 0.06f))
-      .padding(horizontal = DEFAULT_PADDING, vertical = 12.dp)
-  ) {
-    val textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground)
-    BasicTextField(
-      value = displayName.value,
-      onValueChange = { displayName.value = it },
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(end = if (showError) 24.dp else 0.dp)
-        .focusRequester(focusRequester)
-        .onFocusChanged { focused = it.isFocused },
-      textStyle = textStyle,
-      singleLine = true,
-      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
-      decorationBox = { innerTextField ->
-        Box(contentAlignment = Alignment.CenterStart) {
-          if (displayName.value.isEmpty()) {
-            Text(
-              stringResource(MR.strings.enter_profile_name),
-              style = textStyle.copy(color = MaterialTheme.colors.secondary)
-            )
-          }
-          innerTextField()
-        }
-      }
-    )
-    if (showError) {
-      IconButton(
-        onClick = { showInvalidNameAlert(mkValidName(displayName.value), displayName) },
-        modifier = Modifier.align(Alignment.CenterEnd).size(20.dp)
-      ) {
-        Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
-      }
-    }
-  }
-  LaunchedEffect(Unit) {
-    snapshotFlow { displayName.value }
-      .distinctUntilChanged()
-      .collect {
-        valid = it.trim() == mkValidName(it)
-      }
   }
 }
 
