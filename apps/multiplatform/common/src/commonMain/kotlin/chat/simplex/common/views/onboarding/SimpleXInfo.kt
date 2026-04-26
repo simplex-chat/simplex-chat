@@ -126,7 +126,7 @@ fun SimpleXInfoLayout(
           color = MaterialTheme.colors.secondary,
           fontWeight = FontWeight.Medium,
           fontSize = 20.sp,
-          lineHeight = 30.sp,
+          lineHeight = 27.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 14.dp)
         )
@@ -135,7 +135,7 @@ fun SimpleXInfoLayout(
           style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,
           textAlign = TextAlign.Center,
-          lineHeight = 19.sp,
+          lineHeight = 20.sp,
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
       }

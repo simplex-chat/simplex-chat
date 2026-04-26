@@ -59,7 +59,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
         topPadding = DEFAULT_PADDING,
         image = {
-          Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(Modifier.padding(vertical = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
             if (BuildConfigCommon.SIMPLEX_ASSETS) {
               Image(
                 painterResource(if (isInDarkTheme()) MR.images.network_commitments_light else MR.images.network_commitments),
@@ -119,13 +119,13 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
               Text(
                 stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
                 style = MaterialTheme.typography.body1,
-                lineHeight = 21.sp
+                lineHeight = 22.sp
               )
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
                 stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
                 style = MaterialTheme.typography.body1,
-                lineHeight = 21.sp
+                lineHeight = 22.sp
               )
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
@@ -147,7 +147,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
           }
         },
         button = {
-          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
             AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
           }
         }

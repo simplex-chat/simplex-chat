@@ -120,7 +120,7 @@ fun YourNetworkView(chatModel: ChatModel) {
               fontWeight = FontWeight.Medium,
               color = MaterialTheme.colors.secondary,
               fontSize = 20.sp,
-              lineHeight = 30.sp,
+              lineHeight = 27.sp,
               textAlign = TextAlign.Center,
               modifier = Modifier.padding(top = 14.dp)
             )
@@ -146,7 +146,7 @@ fun YourNetworkView(chatModel: ChatModel) {
         },
         button = {
           Column(
-            Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING),
+            Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             OnboardingActionButton(
