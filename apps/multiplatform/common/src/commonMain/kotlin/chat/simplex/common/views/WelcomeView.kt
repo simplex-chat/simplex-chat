@@ -299,13 +299,13 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   val displayName = rememberSaveable { mutableStateOf("") }
   Row(Modifier.fillMaxSize()) {
     // Left: image
-    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+    Box(Modifier.weight(1f).fillMaxHeight().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       if (BuildConfigCommon.SIMPLEX_ASSETS) {
         Image(
           painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
           contentDescription = null,
           contentScale = ContentScale.Fit,
-          modifier = Modifier.fillMaxWidth(0.618f)
+          modifier = Modifier.fillMaxWidth()
         )
       } else {
         val isDark = isInDarkTheme()
@@ -313,7 +313,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
         val scale = if (isDark) 1.5f else 1.2f
         Box(
           Modifier
-            .fillMaxWidth(0.618f)
+            .fillMaxWidth()
             .aspectRatio(1f)
             .clip(RoundedCornerShape(24.dp))
             .drawBehind {
@@ -337,11 +337,13 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
         }
       }
     }
+    Divider(Modifier.fillMaxHeight().width(1.dp))
     // Right: old layout with bar
     Box(Modifier.weight(1f).fillMaxHeight()) {
       CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
         ModalView(
           close = { onboardingBackAction(chatModel, close) },
+          background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f),
           endButtons = { MigrateButton(refocusTrigger) }
         ) {
           ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
