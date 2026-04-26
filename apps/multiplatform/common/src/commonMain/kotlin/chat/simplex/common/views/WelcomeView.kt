@@ -299,8 +299,9 @@ private fun CreateFirstProfileDesktop(
   refocusTrigger: MutableState<Int>,
   close: () -> Unit
 ) {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
   Row(
-    Modifier.widthIn(max = 700.dp).fillMaxHeight().align(Alignment.Center),
+    Modifier.widthIn(max = 700.dp).fillMaxHeight(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     // Left: image
@@ -383,6 +384,7 @@ private fun CreateFirstProfileDesktop(
         onclick = { createProfileOnboarding(chatModel, displayName.value, close) }
       )
     }
+  }
   }
   LaunchedEffect(refocusTrigger.value) {
     delay(300)
