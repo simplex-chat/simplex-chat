@@ -270,7 +270,7 @@ private fun CreateFirstProfileMobile(
       lineHeight = 20.sp,
       modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
     )
-    Spacer(Modifier.height(DEFAULT_PADDING))
+    Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
 
     Spacer(Modifier.weight(1f))
