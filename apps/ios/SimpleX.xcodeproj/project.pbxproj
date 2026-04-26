@@ -144,7 +144,6 @@
 		640417CD2B29B8C200CCB412 /* NewChatMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */; };
 		640417CE2B29B8C200CCB412 /* NewChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640417CC2B29B8C200CCB412 /* NewChatView.swift */; };
 		640743612CD360E600158442 /* ChooseServerOperators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640743602CD360E600158442 /* ChooseServerOperators.swift */; };
-		E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A0B0022F960000AAAA0001 /* YourNetwork.swift */; };
 		6407BA83295DA85D0082BA18 /* CIInvalidJSONView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */; };
 		6419EC582AB97507004A607A /* CIMemberCreatedContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6419EC572AB97507004A607A /* CIMemberCreatedContactView.swift */; };
 		642BA82D2CE50495005E9412 /* NewServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642BA82C2CE50495005E9412 /* NewServerView.swift */; };
@@ -250,6 +249,7 @@
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
 		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
 		E559A0A12E3F77EE00B26F74 /* CommandsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */; };
+		E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A0B0022F960000AAAA0001 /* YourNetwork.swift */; };
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
@@ -520,7 +520,6 @@
 		640417CB2B29B8C200CCB412 /* NewChatMenuButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewChatMenuButton.swift; sourceTree = "<group>"; };
 		640417CC2B29B8C200CCB412 /* NewChatView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NewChatView.swift; sourceTree = "<group>"; };
 		640743602CD360E600158442 /* ChooseServerOperators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseServerOperators.swift; sourceTree = "<group>"; };
-		E5A0B0022F960000AAAA0001 /* YourNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNetwork.swift; sourceTree = "<group>"; };
 		6407BA82295DA85D0082BA18 /* CIInvalidJSONView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIInvalidJSONView.swift; sourceTree = "<group>"; };
 		6419EC572AB97507004A607A /* CIMemberCreatedContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMemberCreatedContactView.swift; sourceTree = "<group>"; };
 		642BA82C2CE50495005E9412 /* NewServerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewServerView.swift; sourceTree = "<group>"; };
@@ -623,6 +622,7 @@
 		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
 		E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuView.swift; sourceTree = "<group>"; };
+		E5A0B0022F960000AAAA0001 /* YourNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNetwork.swift; sourceTree = "<group>"; };
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
 		E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeChatLinkView.swift; sourceTree = "<group>"; };
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };

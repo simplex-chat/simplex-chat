@@ -677,9 +677,6 @@ swipe action */
 "Answer call" = "Anruf annehmen";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Jeder kann seine eigenen Server aufsetzen.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "App Build: %@";
 
 /* No comment provided by engineer. */
@@ -821,6 +818,12 @@ swipe action */
 "Bad message ID" = "Falsche Nachrichten-ID";
 
 /* No comment provided by engineer. */
+"Be free in your network." = "Genießen Sie die Freiheit in Ihrem Netzwerk.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.";
+
+/* No comment provided by engineer. */
 "Better calls" = "Verbesserte Anrufe";
 
 /* No comment provided by engineer. */
@@ -943,9 +946,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per Chat-Profil (Voreinstellung) oder [per Verbindung](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.";
 
 /* No comment provided by engineer. */
 "call" = "Anrufen";
@@ -1181,7 +1181,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Der Chat wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Chat mit Administratoren";
 
 /* No comment provided by engineer. */
@@ -1303,9 +1304,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure relays" = "Relais konfigurieren";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Server-Betreiber konfigurieren";
 
 /* No comment provided by engineer. */
 "Confirm" = "Bestätigen";
@@ -1727,9 +1725,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Debugging-Zustellung";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Dezentral";
 
 /* relay test step */
 "Decode link" = "Link dekodieren";
@@ -3052,9 +3047,6 @@ servers warning */
 "Immediately" = "Sofort";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Immun gegen Spam und Missbrauch";
-
-/* No comment provided by engineer. */
 "Import" = "Importieren";
 
 /* No comment provided by engineer. */
@@ -3655,9 +3647,6 @@ servers warning */
 "Migrate device" = "Gerät migrieren";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Von einem anderen Gerät migrieren";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Hierher migrieren";
 
 /* No comment provided by engineer. */
@@ -3949,7 +3938,10 @@ servers warning */
 "No unread chats" = "Keine ungelesenen Chats";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Keine Benutzerkennungen.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.";
 
 /* alert title */
 "Not all relays connected" = "Es sind nicht alle Relais verbunden";
@@ -4364,12 +4356,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Datenschutz- und Nutzungsbedingungen.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Datenschutz neu definiert";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Neutrale Dateinamen";
@@ -5740,9 +5726,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Die Verschlüsselung funktioniert und ein neues Verschlüsselungsabkommen ist nicht erforderlich. Es kann zu Verbindungsfehlern kommen!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Die nächste Generation von privatem Messaging";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Der Hash der vorherigen Nachricht unterscheidet sich.";
 
 /* No comment provided by engineer. */
@@ -5765,6 +5748,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Die alte Datenbank wurde während der Migration nicht entfernt. Sie kann gelöscht werden.";
+
+/* No comment provided by engineer. */
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.";
@@ -5792,6 +5778,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Themes" = "Design";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.";
 
 /* No comment provided by engineer. */
 "These conditions will also apply for: **%@**." = "Diese Nutzungsbedingungen gelten auch für: **%@**.";
@@ -6576,9 +6568,6 @@ server test failure */
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Sie konnten nicht überprüft werden; bitte versuchen Sie es erneut.";
 
-/* No comment provided by engineer. */
-"You decide who can connect." = "Sie entscheiden, wer sich mit Ihnen verbinden kann.";
-
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Sie haben bereits ein Verbindungsanfrage beantragt!\nVerbindungsanfrage wiederholen?";
 
@@ -6632,6 +6621,9 @@ server test failure */
 
 /* snd group event chat item */
 "you unblocked %@" = "Sie haben %@ freigegeben";
+
+/* No comment provided by engineer. */
+"You were born without an account" = "Sie wurden ohne eine Benutzerkennung geboren.";
 
 /* No comment provided by engineer. */
 "You will be able to send messages **only after your request is accepted**." = "Sie können erst dann Nachrichten versenden, **sobald Ihre Anfrage angenommen wurde**.";
@@ -6715,6 +6707,9 @@ server test failure */
 "Your contacts will remain connected." = "Ihre Kontakte bleiben weiterhin verbunden.";
 
 /* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Ihre Kommunikation gehört Ihnen, so wie es immer war, bevor es das Internet gab. Das Netzwerk ist kein Ort, den Sie besuchen. Es ist ein Ort, den Sie erschaffen und besitzen und Niemand kann es Ihnen nehmen, egal ob Sie es privat oder öffentlich machen.";
+
+/* No comment provided by engineer. */
 "Your credentials may be sent unencrypted." = "Ihre Anmeldeinformationen können unverschlüsselt versendet werden.";
 
 /* No comment provided by engineer. */
@@ -6774,13 +6769,3 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ihre SimpleX-Adresse";
 
-
-"You were born without an account" = "Sie wurden ohne eine Benutzerkennung geboren.";
-"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.";
-"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.";
-"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.";
-"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.";
-"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Ihre Kommunikation gehört Ihnen, so wie es immer war, bevor es das Internet gab. Das Netzwerk ist kein Ort, den Sie besuchen. Es ist ein Ort, den Sie erschaffen und besitzen und Niemand kann es Ihnen nehmen, egal ob Sie es privat oder öffentlich machen.";
-"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.";
-"Because we destroyed the power to know who you are. So that your power can never be taken." = "Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.";
-"Be free in your network." = "Genießen Sie die Freiheit in Ihrem Netzwerk.";

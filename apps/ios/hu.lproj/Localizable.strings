@@ -677,9 +677,6 @@ swipe action */
 "Answer call" = "Hívás fogadása";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Bárki üzemeltethet kiszolgálókat.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Alkalmazás összeállítási száma: %@";
 
 /* No comment provided by engineer. */
@@ -821,6 +818,12 @@ swipe action */
 "Bad message ID" = "Hibás az üzenet azonosítója";
 
 /* No comment provided by engineer. */
+"Be free in your network." = "Legyen szabad a saját hálózatában.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így az önrendelkezése soha nem kerülhet idegen kezekbe.";
+
+/* No comment provided by engineer. */
 "Better calls" = "Továbbfejlesztett hívásélmény";
 
 /* No comment provided by engineer. */
@@ -943,9 +946,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "A csevegési profillal (alapértelmezett), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÉTA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "A SimpleX Chat használatával Ön elfogadja, hogy:\n- csak elfogadott tartalmakat tesz közzé a nyilvános csoportokban.\n- tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.";
 
 /* No comment provided by engineer. */
 "call" = "hívás";
@@ -1181,7 +1181,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "A csevegés törölve lesz az Ön számára – ez a művelet nem vonható vissza!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Csevegés az adminisztrátorokkal";
 
 /* No comment provided by engineer. */
@@ -1303,9 +1304,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure relays" = "Átjátszók konfigurálása";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Kiszolgálóüzemeltetők beállítása";
 
 /* No comment provided by engineer. */
 "Confirm" = "Megerősítés";
@@ -1727,9 +1725,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Kézbesítési hibák felderítése";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Decentralizált";
 
 /* relay test step */
 "Decode link" = "Hivatkozás dekódolása";
@@ -3052,9 +3047,6 @@ servers warning */
 "Immediately" = "Azonnal";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Védett a kéretlen tartalmakkal szemben";
-
-/* No comment provided by engineer. */
 "Import" = "Importálás";
 
 /* No comment provided by engineer. */
@@ -3655,9 +3647,6 @@ servers warning */
 "Migrate device" = "Eszköz átköltöztetése";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Átköltöztetés egy másik eszközről";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Átköltöztetés ide";
 
 /* No comment provided by engineer. */
@@ -3949,7 +3938,10 @@ servers warning */
 "No unread chats" = "Nincsenek olvasatlan csevegések";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Nincsenek felhasználói azonosítók.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Senki sem követte nyomon a beszélgetéseinket. Senki sem készített térképet arról, hogy merre jártunk. A magánéletünk nem csak egy funkció volt, hanem az életmódunk.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nem egy jobb zár mások ajtaján. Nem egy kedvesebb házmester, aki tiszteletben tartja az Ön magánéletét, de mégis nyilvántartást vezet minden látogatójáról. Ön itt nem csak egy vendég. Ön itt otthon van. Nincs az a hatalom, amely beléphetne ide - Ön itt szuverén.";
 
 /* alert title */
 "Not all relays connected" = "Nem minden átjátszó kapcsolódott";
@@ -4364,12 +4356,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Adatvédelmi szabályzat és felhasználási feltételek.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Újraértelmezett adatvédelem";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "A privát csevegések, a csoportok és a partnerek nem érhetők el a kiszolgálók üzemeltetői számára.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privát fájlnevek";
@@ -5740,9 +5726,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Az üzenetváltás jövője";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Az előző üzenet kivonata különbözik.";
 
 /* No comment provided by engineer. */
@@ -5765,6 +5748,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "A régi adatbázis nem lett eltávolítva az átköltöztetéskor, ezért törölhető.";
+
+/* No comment provided by engineer. */
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "A legrégebbi emberi szabadság - beszélgetni az emberekkel, anélkül, hogy mások megfigyelnének - olyan infrastruktúrán alapul, amely nem tudja elárulni.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára is: **%@**.";
@@ -5792,6 +5778,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Themes" = "Témák";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Aztán felléptünk az internetre, és minden platform kért belőlünk egy darabot - nevet, telefonszámot, baráti kapcsolatokat. Elfogadtuk, hogy a kommunikáció ára az, hogy mások megtudják, hogy kivel beszélünk. Minden generáció, az emberek és a technológia is eddig így működött - telefon, e-mail, üzenetküldő programok, közösségi média. Úgy tűnt, ez az egyetlen lehetséges mód.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "De van egy másik lehetőség is. Egy hálózat, amelyben nincsenek telefonszámok. Nincsenek felhasználónevek. Nincsenek fiókok. Nincsenek semmiféle felhasználói azonosítók. Egy hálózat, amely összeköti az embereket és titkosított üzeneteket továbbít, anélkül, hogy tudná, ki csatlakozik hozzá.";
 
 /* No comment provided by engineer. */
 "These conditions will also apply for: **%@**." = "Ezek a feltételek lesznek elfogadva a következő számára is: **%@**.";
@@ -6576,9 +6568,6 @@ server test failure */
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Nem sikerült ellenőrizni; próbálja meg újra.";
 
-/* No comment provided by engineer. */
-"You decide who can connect." = "Ön dönti el, hogy kivel beszélget.";
-
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Ön már küldött egy kapcsolódási kérést!\nMegismétli a kapcsolódási kérést?";
 
@@ -6632,6 +6621,9 @@ server test failure */
 
 /* snd group event chat item */
 "you unblocked %@" = "Ön feloldotta %@ letiltását";
+
+/* No comment provided by engineer. */
+"You were born without an account" = "Fiók nélkül születtünk.";
 
 /* No comment provided by engineer. */
 "You will be able to send messages **only after your request is accepted**." = "Csak azután tud üzeneteket küldeni, **miután a kérését elfogadták**.";
@@ -6715,6 +6707,9 @@ server test failure */
 "Your contacts will remain connected." = "A partnereivel továbbra is kapcsolatban marad.";
 
 /* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "A beszélgetései Önhöz tartoznak, ahogy az internet megjelenése előtt is mindig így volt. A hálózat nem egy hely, amelyet meglátogat. Ez egy olyan hely, amelyet Ön hoz létre saját magának. És senki sem veheti el Öntől, függetlenül attól, hogy privát vagy nyilvános.";
+
+/* No comment provided by engineer. */
 "Your credentials may be sent unencrypted." = "A hitelesítési adatai titkosítatlanul is elküldhetők.";
 
 /* No comment provided by engineer. */
@@ -6774,13 +6769,3 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
 
-
-"You were born without an account" = "Fiók nélkül születtünk.";
-"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Senki sem követte nyomon a beszélgetéseinket. Senki sem készített térképet arról, hogy merre jártunk. A magánéletünk nem csak egy funkció volt, hanem az életmódunk.";
-"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Aztán felléptünk az internetre, és minden platform kért belőlünk egy darabot - nevet, telefonszámot, baráti kapcsolatokat. Elfogadtuk, hogy a kommunikáció ára az, hogy mások megtudják, hogy kivel beszélünk. Minden generáció, az emberek és a technológia is eddig így működött - telefon, e-mail, üzenetküldő programok, közösségi média. Úgy tűnt, ez az egyetlen lehetséges mód.";
-"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "De van egy másik lehetőség is. Egy hálózat, amelyben nincsenek telefonszámok. Nincsenek felhasználónevek. Nincsenek fiókok. Nincsenek semmiféle felhasználói azonosítók. Egy hálózat, amely összeköti az embereket és titkosított üzeneteket továbbít, anélkül, hogy tudná, ki csatlakozik hozzá.";
-"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nem egy jobb zár mások ajtaján. Nem egy kedvesebb házmester, aki tiszteletben tartja az Ön magánéletét, de mégis nyilvántartást vezet minden látogatójáról. Ön itt nem csak egy vendég. Ön itt otthon van. Nincs az a hatalom, amely beléphetne ide - Ön itt szuverén.";
-"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "A beszélgetései Önhöz tartoznak, ahogy az internet megjelenése előtt is mindig így volt. A hálózat nem egy hely, amelyet meglátogat. Ez egy olyan hely, amelyet Ön hoz létre saját magának. És senki sem veheti el Öntől, függetlenül attól, hogy privát vagy nyilvános.";
-"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "A legrégebbi emberi szabadság - beszélgetni az emberekkel, anélkül, hogy mások megfigyelnének - olyan infrastruktúrán alapul, amely nem tudja elárulni.";
-"Because we destroyed the power to know who you are. So that your power can never be taken." = "Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így az önrendelkezése soha nem kerülhet idegen kezekbe.";
-"Be free in your network." = "Legyen szabad a saját hálózatában.";

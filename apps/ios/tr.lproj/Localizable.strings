@@ -639,9 +639,6 @@ swipe action */
 "Answer call" = "Aramayı cevapla";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Açık kaynak protokolü ve kodu - herhangi biri sunucuları çalıştırabilir.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Uygulama sürümü: %@";
 
 /* No comment provided by engineer. */
@@ -898,9 +895,6 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Sohbet profiline göre (varsayılan) veya [bağlantıya göre](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "SimpleX Chat'i kullanarak şunları kabul etmiş olursunuz:\n- herkese açık gruplarda yalnızca yasal içerik göndermek.\n- diğer kullanıcılara saygı göstermek – spam yapmamak.";
-
-/* No comment provided by engineer. */
 "call" = "Ara";
 
 /* No comment provided by engineer. */
@@ -1083,7 +1077,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Sohbet senden silinecek - bu geri alınamaz!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Yöneticilerle sohbet et";
 
 /* No comment provided by engineer. */
@@ -1196,9 +1191,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE sunucularını ayarla";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Sunucu operatörlerini yapılandır";
 
 /* No comment provided by engineer. */
 "Confirm" = "Onayla";
@@ -1608,9 +1600,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Hata ayıklama teslimatı";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Merkezi Olmayan";
 
 /* message decrypt error item */
 "Decryption error" = "Şifre çözme hatası";
@@ -2848,9 +2837,6 @@ servers warning */
 "Immediately" = "Hemen";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Spam ve kötüye kullanıma karşı bağışıklı";
-
-/* No comment provided by engineer. */
 "Import" = "İçe aktar";
 
 /* No comment provided by engineer. */
@@ -3421,9 +3407,6 @@ servers warning */
 "Migrate device" = "Cihazı taşıma";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Başka bir cihazdan geçiş yapın";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Buraya göç edin";
 
 /* No comment provided by engineer. */
@@ -3698,9 +3681,6 @@ servers warning */
 
 /* No comment provided by engineer. */
 "No unread chats" = "Okunmamış sohbet yok";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Herhangi bir kullanıcı tanımlayıcısı yok.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Uyumlu değil!";
@@ -4094,12 +4074,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Gizlilik politikası ve kullanım koşulları.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Gizlilik yeniden tanımlandı";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Özel sohbetler, gruplar ve kişilerinize sunucu operatörleri tarafından erişilemez.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Gizli dosya adları";
@@ -5350,9 +5324,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Şifreleme çalışıyor ve yeni şifreleme anlaşması gerekli değil. Bağlantı hatalarına neden olabilir!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Gizli mesajlaşmanın yeni nesli";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Önceki mesajın hash'i farklı.";
 
 /* No comment provided by engineer. */
@@ -6131,9 +6102,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Doğrulanamadınız; lütfen tekrar deneyin.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Zaten bağlantı isteğinde bulundunuz!\nBağlantı isteği tekrarlansın mı?";

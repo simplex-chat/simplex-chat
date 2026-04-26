@@ -354,9 +354,6 @@ swipe action */
 "Answer call" = "รับสาย";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
-
-/* No comment provided by engineer. */
 "App build: %@" = "รุ่นแอป: %@";
 
 /* No comment provided by engineer. */
@@ -818,9 +815,6 @@ server test step */
 
 /* time unit */
 "days" = "วัน";
-
-/* No comment provided by engineer. */
-"Decentralized" = "กระจายอำนาจแล้ว";
 
 /* message decrypt error item */
 "Decryption error" = "ข้อผิดพลาดในการ decrypt";
@@ -1543,9 +1537,6 @@ server test error */
 "Immediately" = "โดยทันที";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "มีภูมิคุ้มกันต่อสแปมและการละเมิด";
-
-/* No comment provided by engineer. */
 "Import" = "นำเข้า";
 
 /* No comment provided by engineer. */
@@ -1996,9 +1987,6 @@ server test error */
 "no text" = "ไม่มีข้อความ";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "แพลตฟอร์มแรกที่ไม่มีตัวระบุผู้ใช้ - ถูกออกแบบให้เป็นส่วนตัว";
-
-/* No comment provided by engineer. */
 "Notifications" = "การแจ้งเตือน";
 
 /* No comment provided by engineer. */
@@ -2188,9 +2176,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Privacy & security" = "ความเป็นส่วนตัวและความปลอดภัย";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "นิยามความเป็นส่วนตัวใหม่";
 
 /* No comment provided by engineer. */
 "Private filenames" = "ชื่อไฟล์ส่วนตัว";
@@ -2795,9 +2780,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "encryption กำลังทำงานและไม่จำเป็นต้องใช้ข้อตกลง encryption ใหม่ อาจทำให้การเชื่อมต่อผิดพลาดได้!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "การส่งข้อความส่วนตัวรุ่นต่อไป";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "แฮชของข้อความก่อนหน้านี้แตกต่างกัน";
 
 /* No comment provided by engineer. */
@@ -3156,9 +3138,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "เราไม่สามารถตรวจสอบคุณได้ กรุณาลองอีกครั้ง.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "คุณต้องใส่รหัสผ่านทุกครั้งที่เริ่มแอป - รหัสผ่านไม่ได้จัดเก็บไว้ในอุปกรณ์";

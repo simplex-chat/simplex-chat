@@ -573,9 +573,6 @@ swipe action */
 "Answer call" = "Přijmout hovor";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Servery může provozovat kdokoli.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Sestavení aplikace: %@";
 
 /* No comment provided by engineer. */
@@ -673,6 +670,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Bad message ID" = "Špatné ID zprávy";
+
+/* No comment provided by engineer. */
+"Be free in your network." = "Buďte svobodní ve své síti.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Protože jsme zničili sílu vědět, kdo jste. Aby vám vaši moc nikdo nemohl vzít.";
 
 /* No comment provided by engineer. */
 "Better calls" = "Lepší volání";
@@ -1169,9 +1172,6 @@ server test step */
 
 /* time unit */
 "days" = "dní";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Decentralizované";
 
 /* message decrypt error item */
 "Decryption error" = "Chyba dešifrování";
@@ -1918,9 +1918,6 @@ server test error */
 "Immediately" = "Ihned";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Odolná vůči spamu a zneužití";
-
-/* No comment provided by engineer. */
 "Import" = "Import";
 
 /* No comment provided by engineer. */
@@ -2386,7 +2383,10 @@ server test error */
 "no text" = "žádný text";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Bez uživatelských identifikátorů.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Nikdo nesledoval vaše konverzace. Nikdo nevytvořil mapu, kde jste byli. Soukromí nikdy nebylo funkcí - byl to způsob života.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nejde o to mít lepší zámek na dveřích někoho jiného. Ani o to mít nájemce, který respektuje vaše soukromí, ale vede evidenci všech vašich návštěvníků. Nejste host. Jste doma. Ani král k vám nemůže vstoupit - jste suverén.";
 
 /* No comment provided by engineer. */
 "Notifications" = "Oznámení";
@@ -2582,9 +2582,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Ochrana osobních údajů a zabezpečení";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Nové vymezení soukromí";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Soukromé názvy souborů";
@@ -3213,9 +3210,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Šifrování funguje a nové povolení šifrování není vyžadováno. To může vyvolat chybu v připojení!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Nová generace soukromých zpráv";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Hash předchozí zprávy se liší.";
 
 /* No comment provided by engineer. */
@@ -3231,6 +3225,9 @@ server test failure */
 "The old database was not removed during the migration, it can be deleted." = "Stará databáze nebyla během přenášení odstraněna, lze ji smazat.";
 
 /* No comment provided by engineer. */
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Nejstarší lidská svoboda - mluvit s druhým člověkem, aniž by byl sledován - postavena na infrastruktuře, která ji nemůže zradit.";
+
+/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Druhé zaškrtnutí jsme přehlédli! ✅";
 
 /* alert message */
@@ -3238,6 +3235,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The servers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního profilu chatu **%@**.";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Pak jsme se přesunuli na internet a každá platforma chtěla o vás něco vědět - vaše jméno, vaše číslo, vaše přátele. Smířili jsme se s tím, že cenou za komunikaci s ostatními je dát někomu vědět, s kým mluvíme. Každá generace, lidská i technická, to tak měla - telefon, e-mail, komunikátory, sociální sítě. Zdálo se, že je to jediný možný způsob.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Existuje i jiný způsob. Síť bez telefonních čísel. Bez uživatelských jmen. Bez účtů. Bez jakékoli uživatelské identity. Síť, která spojuje lidi a přenáší šifrované zprávy, aniž by bylo známo, kdo je připojen.";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
@@ -3591,9 +3594,6 @@ server test failure */
 "You could not be verified; please try again." = "Nemohli jste být ověřeni; Zkuste to prosím znovu.";
 
 /* No comment provided by engineer. */
-"You decide who can connect." = "Lidé se s vámi mohou spojit pouze prostřednictvím odkazu, který sdílíte.";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Musíte zadat přístupovou frázi při každém spuštění aplikace - není uložena v zařízení.";
 
 /* No comment provided by engineer. */
@@ -3628,6 +3628,9 @@ server test failure */
 
 /* chat list item description */
 "you shared one-time link incognito" = "sdíleli jste jednorázový odkaz inkognito";
+
+/* No comment provided by engineer. */
+"You were born without an account" = "Narodili jste se bez účtu.";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Ke skupině budete připojeni, až bude zařízení hostitele skupiny online, vyčkejte prosím nebo se podívejte později!";
@@ -3681,6 +3684,9 @@ server test failure */
 "Your contacts will remain connected." = "Vaše kontakty zůstanou připojeny.";
 
 /* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.";
+
+/* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Vaše aktuální chat databáze bude ODSTRANĚNA a NAHRAZENA importovanou.";
 
 /* No comment provided by engineer. */
@@ -3716,13 +3722,3 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
 
-
-"You were born without an account" = "Narodili jste se bez účtu.";
-"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Nikdo nesledoval vaše konverzace. Nikdo nevytvořil mapu, kde jste byli. Soukromí nikdy nebylo funkcí - byl to způsob života.";
-"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Pak jsme se přesunuli na internet a každá platforma chtěla o vás něco vědět - vaše jméno, vaše číslo, vaše přátele. Smířili jsme se s tím, že cenou za komunikaci s ostatními je dát někomu vědět, s kým mluvíme. Každá generace, lidská i technická, to tak měla - telefon, e-mail, komunikátory, sociální sítě. Zdálo se, že je to jediný možný způsob.";
-"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Existuje i jiný způsob. Síť bez telefonních čísel. Bez uživatelských jmen. Bez účtů. Bez jakékoli uživatelské identity. Síť, která spojuje lidi a přenáší šifrované zprávy, aniž by bylo známo, kdo je připojen.";
-"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nejde o to mít lepší zámek na dveřích někoho jiného. Ani o to mít nájemce, který respektuje vaše soukromí, ale vede evidenci všech vašich návštěvníků. Nejste host. Jste doma. Ani král k vám nemůže vstoupit - jste suverén.";
-"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Vaše konverzace patří vám, jako tomu bylo vždy před internetem. Síť není místo, které navštěvujete. Je to místo, které vytváříte a vlastníte. A nikdo vám ho nemůže vzít, ať už je soukromé, nebo veřejné.";
-"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Nejstarší lidská svoboda - mluvit s druhým člověkem, aniž by byl sledován - postavena na infrastruktuře, která ji nemůže zradit.";
-"Because we destroyed the power to know who you are. So that your power can never be taken." = "Protože jsme zničili sílu vědět, kdo jste. Aby vám vaši moc nikdo nemohl vzít.";
-"Be free in your network." = "Buďte svobodní ve své síti.";
