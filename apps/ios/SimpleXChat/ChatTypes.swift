@@ -988,12 +988,8 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 }
             case .reports:
                 switch enabled {
-                case .on: return isChannel
-                    ? "Allow to report messsages to moderators."
-                    : "Allow to report messsages to moderators."
-                case .off: return isChannel
-                    ? "Prohibit reporting messages to moderators."
-                    : "Prohibit reporting messages to moderators."
+                case .on: return "Allow to report messsages to moderators."
+                case .off: return "Prohibit reporting messages to moderators."
                 }
             case .history:
                 switch enabled {
