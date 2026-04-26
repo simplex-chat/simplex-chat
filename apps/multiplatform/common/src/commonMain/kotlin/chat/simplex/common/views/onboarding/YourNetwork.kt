@@ -57,114 +57,111 @@ fun YourNetworkView(chatModel: ChatModel) {
 
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false, showAppBar = false) {
-      ColumnWithScrollBar(
-        Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        maxIntrinsicSize = true
-      ) {
-        Spacer(Modifier.weight(1f))
-
-        if (BuildConfigCommon.SIMPLEX_ASSETS) {
-          Image(
-            painterResource(if (isInDarkTheme()) MR.images.your_network_light else MR.images.your_network),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2)
-              .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
-          )
-        } else {
-          val isDark = isInDarkTheme()
-          val stops = if (isDark) darkStops else lightStops
-          val scale = if (isDark) 1.5f else 1.2f
-          Box(
-            Modifier
-              .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2)
-              .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
-              .aspectRatio(1f)
-              .clip(RoundedCornerShape(24.dp))
-              .drawBehind {
-                val gp = gradientPoints(size.height / size.width, scale)
-                drawRect(
-                  Brush.linearGradient(
-                    colorStops = stops,
-                    start = Offset(gp.startX * size.width, gp.startY * size.height),
-                    end = Offset(gp.endX * size.width, gp.endY * size.height)
-                  )
+      OnboardingShrinkingLayout(
+        modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
+          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+        image = {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (BuildConfigCommon.SIMPLEX_ASSETS) {
+              Image(
+                painterResource(if (isInDarkTheme()) MR.images.your_network_light else MR.images.your_network),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+                  .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
+              )
+            } else {
+              val isDark = isInDarkTheme()
+              val stops = if (isDark) darkStops else lightStops
+              val scale = if (isDark) 1.5f else 1.2f
+              Box(
+                Modifier
+                  .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+                  .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
+                  .aspectRatio(1f)
+                  .clip(RoundedCornerShape(24.dp))
+                  .drawBehind {
+                    val gp = gradientPoints(size.height / size.width, scale)
+                    drawRect(
+                      Brush.linearGradient(
+                        colorStops = stops,
+                        start = Offset(gp.startX * size.width, gp.startY * size.height),
+                        end = Offset(gp.endX * size.width, gp.endY * size.height)
+                      )
+                    )
+                  },
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  painterResource(MR.images.ic_dns),
+                  contentDescription = null,
+                  modifier = Modifier.size(80.dp),
+                  tint = MaterialTheme.colors.primary
                 )
-              },
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              painterResource(MR.images.ic_dns),
-              contentDescription = null,
-              modifier = Modifier.size(80.dp),
-              tint = MaterialTheme.colors.primary
+              }
+            }
+          }
+        },
+        content = {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+              stringResource(MR.strings.onboarding_your_network),
+              style = MaterialTheme.typography.h1,
+              fontWeight = FontWeight.Bold,
+              textAlign = TextAlign.Center,
+              lineHeight = 42.sp,
+              modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
             )
-          }
-        }
-
-        Text(
-          stringResource(MR.strings.onboarding_your_network),
-          style = MaterialTheme.typography.h1,
-          fontWeight = FontWeight.Bold,
-          textAlign = TextAlign.Center,
-          lineHeight = 42.sp,
-          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
-        )
-
-        Text(
-          stringResource(MR.strings.onboarding_network_routers_cannot_know),
-          style = MaterialTheme.typography.h3,
-          fontWeight = FontWeight.Medium,
-          color = MaterialTheme.colors.secondary,
-          fontSize = 20.sp,
-          lineHeight = 30.sp,
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(top = 14.dp)
-        )
-
-        Column(
-          Modifier.padding(top = DEFAULT_PADDING_HALF),
-          horizontalAlignment = Alignment.Start,
-          verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-          ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
-            ModalManager.fullscreen.showCustomModal { close ->
-              ChooseServerOperators(serverOperators, selectedOperatorIds, close)
-            }
-          }
-
-          if (appPlatform.isAndroid) {
-            ConfigureNotificationsButton(notificationMode) {
-              ModalManager.fullscreen.showModalCloseable { close ->
-                NotificationModeSheet(notificationMode, close)
+            Text(
+              stringResource(MR.strings.onboarding_network_routers_cannot_know),
+              style = MaterialTheme.typography.h3,
+              fontWeight = FontWeight.Medium,
+              color = MaterialTheme.colors.secondary,
+              fontSize = 20.sp,
+              lineHeight = 30.sp,
+              textAlign = TextAlign.Center,
+              modifier = Modifier.padding(top = 14.dp)
+            )
+            Column(
+              Modifier.padding(top = DEFAULT_PADDING_HALF),
+              horizontalAlignment = Alignment.Start,
+              verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+              ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
+                ModalManager.fullscreen.showCustomModal { close ->
+                  ChooseServerOperators(serverOperators, selectedOperatorIds, close)
+                }
               }
-            }
-          }
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        Column(
-          Modifier
-            .widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp)
-            .align(Alignment.CenterHorizontally),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          OnboardingActionButton(
-            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-            labelId = MR.strings.onboarding_network_operators_continue,
-            onboarding = null,
-            onclick = {
               if (appPlatform.isAndroid) {
-                changeNotificationsMode(notificationMode.value, chatModel)
+                ConfigureNotificationsButton(notificationMode) {
+                  ModalManager.fullscreen.showModalCloseable { close ->
+                    NotificationModeSheet(notificationMode, close)
+                  }
+                }
               }
-              appPrefs.onboardingStage.set(OnboardingStage.Step4_NetworkCommitments)
             }
-          )
-          TextButtonBelowOnboardingButton("", null)
+          }
+        },
+        button = {
+          Column(
+            Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            OnboardingActionButton(
+              modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+              labelId = MR.strings.onboarding_network_operators_continue,
+              onboarding = null,
+              onclick = {
+                if (appPlatform.isAndroid) {
+                  changeNotificationsMode(notificationMode.value, chatModel)
+                }
+                appPrefs.onboardingStage.set(OnboardingStage.Step4_NetworkCommitments)
+              }
+            )
+            TextButtonBelowOnboardingButton("", null)
+          }
         }
-      }
+      )
     }
   }
 }

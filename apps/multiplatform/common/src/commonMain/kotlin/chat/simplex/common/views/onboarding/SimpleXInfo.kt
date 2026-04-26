@@ -64,87 +64,93 @@ fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: SharedPreference<OnboardingStage>?
 ) {
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally, maxIntrinsicSize = true) {
+  Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
     Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 185.dp else 160.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
-
-    if (BuildConfigCommon.SIMPLEX_ASSETS) {
-      Image(
-        painterResource(if (isInDarkTheme()) MR.images.intro_light else MR.images.intro),
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.fillMaxWidth().then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
-      )
-    } else {
-      val isDark = isInDarkTheme()
-      val stops = if (isDark) darkStops else lightStops
-      val scale = if (isDark) 1.5f else 1.2f
-      Box(
-        Modifier
-          .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
-          .aspectRatio(1f)
-          .clip(RoundedCornerShape(24.dp))
-          .drawBehind {
-            val gp = gradientPoints(size.height / size.width, scale)
-            drawRect(
-              Brush.linearGradient(
-                colorStops = stops,
-                start = Offset(gp.startX * size.width, gp.startY * size.height),
-                end = Offset(gp.endX * size.width, gp.endY * size.height)
-              )
+    OnboardingShrinkingLayout(
+      modifier = Modifier.fillMaxSize(),
+      image = {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isInDarkTheme()) MR.images.intro_light else MR.images.intro),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth().then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
+          )
+        } else {
+          val isDark = isInDarkTheme()
+          val stops = if (isDark) darkStops else lightStops
+          val scale = if (isDark) 1.5f else 1.2f
+          Box(
+            Modifier
+              .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
+              .aspectRatio(1f)
+              .clip(RoundedCornerShape(24.dp))
+              .drawBehind {
+                val gp = gradientPoints(size.height / size.width, scale)
+                drawRect(
+                  Brush.linearGradient(
+                    colorStops = stops,
+                    start = Offset(gp.startX * size.width, gp.startY * size.height),
+                    end = Offset(gp.endX * size.width, gp.endY * size.height)
+                  )
+                )
+              },
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              painterResource(MR.images.ic_forum),
+              contentDescription = null,
+              modifier = Modifier.size(80.dp),
+              tint = MaterialTheme.colors.primary
             )
-          },
-        contentAlignment = Alignment.Center
-      ) {
-        Icon(
-          painterResource(MR.images.ic_forum),
-          contentDescription = null,
-          modifier = Modifier.size(80.dp),
-          tint = MaterialTheme.colors.primary
+          }
+        }
+      }
+    },
+    content = {
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+          stringResource(MR.strings.onboarding_be_free),
+          style = MaterialTheme.typography.h1,
+          fontWeight = FontWeight.Bold,
+          textAlign = TextAlign.Center,
+          lineHeight = 42.sp,
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+        )
+        Text(
+          stringResource(MR.strings.onboarding_private_and_secure),
+          style = MaterialTheme.typography.h3,
+          color = MaterialTheme.colors.secondary,
+          fontWeight = FontWeight.Medium,
+          fontSize = 20.sp,
+          lineHeight = 30.sp,
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(top = 14.dp)
+        )
+        Text(
+          stringResource(MR.strings.onboarding_first_network),
+          style = MaterialTheme.typography.body1,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center,
+          lineHeight = 24.sp,
+          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
       }
-    }
-
-    Text(
-      stringResource(MR.strings.onboarding_be_free),
-      style = MaterialTheme.typography.h1,
-      fontWeight = FontWeight.Bold,
-      textAlign = TextAlign.Center,
-      lineHeight = 42.sp,
-      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
-    )
-
-    Text(
-      stringResource(MR.strings.onboarding_private_and_secure),
-      style = MaterialTheme.typography.h3,
-      color = MaterialTheme.colors.secondary,
-      fontWeight = FontWeight.Medium,
-      fontSize = 20.sp,
-      lineHeight = 30.sp,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.padding(top = 14.dp)
-    )
-
-    Text(
-      stringResource(MR.strings.onboarding_first_network),
-      style = MaterialTheme.typography.body1,
-      color = MaterialTheme.colors.secondary,
-      textAlign = TextAlign.Center,
-      lineHeight = 24.sp,
-      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
-    )
-
-    Spacer(Modifier.weight(1f))
-
-    if (onboardingStage != null) {
-      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-        OnboardingActionButton(user, onboardingStage)
-        TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built)) {
-          ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
+    },
+    button = {
+      if (onboardingStage != null) {
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(user, onboardingStage)
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built)) {
+            ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
+          }
         }
       }
     }
+  )
   }
   LaunchedEffect(Unit) {
     if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {

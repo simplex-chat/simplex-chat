@@ -53,102 +53,102 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
 
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false, showAppBar = false) {
-      ColumnWithScrollBar(
-        Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        maxIntrinsicSize = true
-      ) {
-        Spacer(Modifier.weight(1f))
-
-        if (BuildConfigCommon.SIMPLEX_ASSETS) {
-          Image(
-            painterResource(if (isInDarkTheme()) MR.images.network_commitments_light else MR.images.network_commitments),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
-              .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 220.dp) else Modifier)
-          )
-        } else {
-          val isDark = isInDarkTheme()
-          val stops = if (isDark) darkStops else lightStops
-          val scale = if (isDark) 1.5f else 1.2f
-          Box(
-            Modifier
-              .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
-              .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 220.dp))
-              .aspectRatio(1.5f)
-              .clip(RoundedCornerShape(24.dp))
-              .drawBehind {
-                val gp = gradientPoints(size.height / size.width, scale)
-                drawRect(
-                  Brush.linearGradient(
-                    colorStops = stops,
-                    start = Offset(gp.startX * size.width, gp.startY * size.height),
-                    end = Offset(gp.endX * size.width, gp.endY * size.height)
-                  )
+      OnboardingShrinkingLayout(
+        modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
+          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+        image = {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (BuildConfigCommon.SIMPLEX_ASSETS) {
+              Image(
+                painterResource(if (isInDarkTheme()) MR.images.network_commitments_light else MR.images.network_commitments),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth()
+                  .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 220.dp) else Modifier)
+              )
+            } else {
+              val isDark = isInDarkTheme()
+              val stops = if (isDark) darkStops else lightStops
+              val scale = if (isDark) 1.5f else 1.2f
+              Box(
+                Modifier
+                  .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 220.dp))
+                  .aspectRatio(1.5f)
+                  .clip(RoundedCornerShape(24.dp))
+                  .drawBehind {
+                    val gp = gradientPoints(size.height / size.width, scale)
+                    drawRect(
+                      Brush.linearGradient(
+                        colorStops = stops,
+                        start = Offset(gp.startX * size.width, gp.startY * size.height),
+                        end = Offset(gp.endX * size.width, gp.endY * size.height)
+                      )
+                    )
+                  },
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  painterResource(MR.images.ic_shield),
+                  contentDescription = null,
+                  modifier = Modifier.size(80.dp),
+                  tint = MaterialTheme.colors.primary
                 )
-              },
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              painterResource(MR.images.ic_shield),
-              contentDescription = null,
-              modifier = Modifier.size(80.dp),
-              tint = MaterialTheme.colors.primary
+              }
+            }
+          }
+        },
+        content = {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+              stringResource(MR.strings.onboarding_network_commitments),
+              style = MaterialTheme.typography.h1,
+              fontWeight = FontWeight.Bold,
+              textAlign = TextAlign.Center,
+              lineHeight = 42.sp,
+              modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
             )
+            Column(
+              (if (appPlatform.isDesktop) Modifier.width(450.dp) else Modifier)
+                .fillMaxWidth()
+                .padding(horizontal = DEFAULT_PADDING_HALF)
+                .padding(top = DEFAULT_PADDING),
+              horizontalAlignment = Alignment.Start
+            ) {
+              Text(
+                stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
+                style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+              )
+              Spacer(Modifier.height(DEFAULT_PADDING))
+              Text(
+                stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
+                style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+              )
+              Spacer(Modifier.height(DEFAULT_PADDING))
+              Text(
+                stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+                style = TextStyle(fontSize = 17.sp),
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colors.primary,
+                modifier = Modifier
+                  .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                  ) {
+                    ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                      SimpleConditionsView(rhId = null)
+                    }
+                  }
+              )
+            }
+          }
+        },
+        button = {
+          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
+            TextButtonBelowOnboardingButton("", null)
           }
         }
-
-        Text(
-          stringResource(MR.strings.onboarding_network_commitments),
-          style = MaterialTheme.typography.h1,
-          fontWeight = FontWeight.Bold,
-          textAlign = TextAlign.Center,
-          lineHeight = 42.sp,
-          modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
-        )
-
-        Column(
-          (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
-            .fillMaxWidth()
-            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING + DEFAULT_PADDING_HALF)
-            .padding(top = DEFAULT_PADDING),
-          horizontalAlignment = Alignment.Start
-        ) {
-          Text(
-            stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
-            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
-          )
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Text(
-            stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
-            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
-          )
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Text(
-            stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-            style = TextStyle(fontSize = 17.sp),
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colors.primary,
-            modifier = Modifier
-              .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-              ) {
-                ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-                  SimpleConditionsView(rhId = null)
-                }
-              }
-          )
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
-          TextButtonBelowOnboardingButton("", null)
-        }
-      }
+      )
     }
   }
 }
