@@ -222,9 +222,9 @@ struct CreateFirstProfile: View {
                 }
             }
             if #available(iOS 17, *) {
-                v
-                    .scrollBounceBehavior(.basedOnSize)
-                    .defaultScrollAnchor(.bottom)
+                v.scrollBounceBehavior(.basedOnSize).defaultScrollAnchor(.bottom)
+            } else if #available(iOS 16.4.0, *) {
+                v.scrollBounceBehavior(.basedOnSize)
             } else {
                 v
             }
