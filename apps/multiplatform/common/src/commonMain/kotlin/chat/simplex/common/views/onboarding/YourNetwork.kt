@@ -64,44 +64,11 @@ fun YourNetworkView(chatModel: ChatModel) {
         topPadding = DEFAULT_PADDING,
         image = {
           Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
-            if (BuildConfigCommon.SIMPLEX_ASSETS) {
-              Image(
-                painterResource(if (isInDarkTheme()) MR.images.your_network_light else MR.images.your_network),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
-                  .then(if (!appPlatform.isAndroid) Modifier.heightIn(max = 280.dp) else Modifier)
-              )
-            } else {
-              val isDark = isInDarkTheme()
-              val stops = if (isDark) darkStops else lightStops
-              val scale = if (isDark) 1.5f else 1.2f
-              Box(
-                Modifier
-                  .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
-                  .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
-                  .aspectRatio(1f)
-                  .clip(RoundedCornerShape(24.dp))
-                  .drawBehind {
-                    val gp = gradientPoints(size.height / size.width, scale)
-                    drawRect(
-                      Brush.linearGradient(
-                        colorStops = stops,
-                        start = Offset(gp.startX * size.width, gp.startY * size.height),
-                        end = Offset(gp.endX * size.width, gp.endY * size.height)
-                      )
-                    )
-                  },
-                contentAlignment = Alignment.Center
-              ) {
-                Icon(
-                  painterResource(MR.images.ic_dns),
-                  contentDescription = null,
-                  modifier = Modifier.size(80.dp),
-                  tint = MaterialTheme.colors.primary
-                )
-              }
-            }
+            OnboardingImage(
+              MR.images.your_network, MR.images.your_network_light, MR.images.ic_dns,
+              modifier = Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)
+                .then(if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 280.dp))
+            )
           }
         },
         content = {

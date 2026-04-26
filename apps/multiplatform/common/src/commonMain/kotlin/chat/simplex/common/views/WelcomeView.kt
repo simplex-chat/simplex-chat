@@ -202,43 +202,12 @@ private fun CreateFirstProfileMobile(chatModel: ChatModel, close: () -> Unit) {
       ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally, maxIntrinsicSize = true) {
         Spacer(Modifier.weight(1f))
 
-        if (BuildConfigCommon.SIMPLEX_ASSETS) {
-          Image(
-            painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth().then(imageHeightModifier)
-          )
-        } else {
-          val isDark = isInDarkTheme()
-          val stops = if (isDark) darkStops else lightStops
-          val scale = if (isDark) 1.5f else 1.2f
-          Box(
-            Modifier
-              .then(if (keyboardState != KeyboardState.Opened) Modifier.fillMaxWidth() else Modifier)
-              .then(imageHeightModifier)
-              .aspectRatio(1f)
-              .clip(RoundedCornerShape(24.dp))
-              .drawBehind {
-                val gp = gradientPoints(size.height / size.width, scale)
-                drawRect(
-                  Brush.linearGradient(
-                    colorStops = stops,
-                    start = Offset(gp.startX * size.width, gp.startY * size.height),
-                    end = Offset(gp.endX * size.width, gp.endY * size.height)
-                  )
-                )
-              },
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              painterResource(MR.images.ic_person),
-              contentDescription = null,
-              modifier = Modifier.size(80.dp),
-              tint = MaterialTheme.colors.primary
-            )
-          }
-        }
+        OnboardingImage(
+          MR.images.your_profile, MR.images.your_profile_light, MR.images.ic_person,
+          modifier = Modifier
+            .then(if (keyboardState != KeyboardState.Opened) Modifier.fillMaxWidth() else Modifier)
+            .then(imageHeightModifier)
+        )
 
         Text(
           stringResource(MR.strings.onboarding_your_profile),
@@ -300,42 +269,10 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   Row(Modifier.fillMaxSize()) {
     // Left: image
     Box(Modifier.weight(0.382f).fillMaxHeight().background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f)).padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-      if (BuildConfigCommon.SIMPLEX_ASSETS) {
-        Image(
-          painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
-          contentDescription = null,
-          contentScale = ContentScale.Fit,
-          modifier = Modifier.fillMaxWidth()
-        )
-      } else {
-        val isDark = isInDarkTheme()
-        val stops = if (isDark) darkStops else lightStops
-        val scale = if (isDark) 1.5f else 1.2f
-        Box(
-          Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(24.dp))
-            .drawBehind {
-              val gp = gradientPoints(size.height / size.width, scale)
-              drawRect(
-                Brush.linearGradient(
-                  colorStops = stops,
-                  start = Offset(gp.startX * size.width, gp.startY * size.height),
-                  end = Offset(gp.endX * size.width, gp.endY * size.height)
-                )
-              )
-            },
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            painterResource(MR.images.ic_person),
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colors.primary
-          )
-        }
-      }
+      OnboardingImage(
+        MR.images.your_profile, MR.images.your_profile_light, MR.images.ic_person,
+        modifier = Modifier.fillMaxWidth()
+      )
     }
     Divider(Modifier.fillMaxHeight().width(1.dp))
     // Right: old layout with bar
