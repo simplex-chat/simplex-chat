@@ -2750,4 +2750,22 @@
     <string name="v6_5_safe_web_links">Link web sicuri</string>
     <string name="v6_5_security">Sicurezza: solo i proprietari hanno le chiavi del canale.</string>
     <string name="v6_5_invite_friends_descr">Abbiamo semplificato la connessione per i nuovi utenti.</string>
+
+    <!-- channel preferences (subscribers) -->
+    <string name="group_reports_subscriber_reports">Segnalazioni degli iscritti</string>
+    <string name="allow_direct_messages_channel">Permetti l\'invio di messaggi diretti agli iscritti.</string>
+    <string name="prohibit_direct_messages_channel">Proibisci l\'invio di messaggi diretti agli iscritti.</string>
+    <string name="enable_sending_recent_history_channel">Invia fino a 100 ultimi messaggi ai nuovi iscritti.</string>
+    <string name="disable_sending_recent_history_channel">Non inviare la cronologia ai nuovi iscritti.</string>
+    <string name="group_members_can_send_disappearing_channel">Gli iscritti al canale possono inviare messaggi a tempo.</string>
+    <string name="group_members_can_send_dms_channel">Gli iscritti al canale possono inviare messaggi diretti.</string>
+    <string name="direct_messages_are_prohibited_channel">I messaggi diretti tra gli iscritti sono vietati.</string>
+    <string name="group_members_can_delete_channel">Gli iscritti al canale possono eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
+    <string name="group_members_can_add_message_reactions_channel">Gli iscritti al canale possono aggiungere reazioni ai messaggi.</string>
+    <string name="group_members_can_send_voice_channel">Gli iscritti al canale possono inviare messaggi vocali.</string>
+    <string name="group_members_can_send_files_channel">Gli iscritti al canale possono inviare file e contenuti multimediali.</string>
+    <string name="group_members_can_send_simplex_links_channel">Gli iscritti al canale possono inviare link di Simplex.</string>
+    <string name="group_members_can_send_reports_channel">Gli iscritti possono segnalare messaggi ai moderatori.</string>
+    <string name="recent_history_is_sent_to_new_members_channel">Vengono inviati ai nuovi iscritti fino a 100 ultimi messaggi.</string>
+    <string name="recent_history_is_not_sent_to_new_members_channel">La cronologia non viene inviata ai nuovi iscritti.</string>
 </resources>
