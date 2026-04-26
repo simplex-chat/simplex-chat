@@ -891,7 +891,9 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         }
     }
 
-    public var text: String {
+    public var text: String { text(isChannel: false) }
+
+    public func text(isChannel: Bool) -> String {
         switch self {
         case .timedMessages: return NSLocalizedString("Disappearing messages", comment: "chat feature")
         case .directMessages: return NSLocalizedString("Direct messages", comment: "chat feature")
@@ -900,7 +902,9 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         case .files: return NSLocalizedString("Files and media", comment: "chat feature")
         case .simplexLinks: return NSLocalizedString("SimpleX links", comment: "chat feature")
-        case .reports: return NSLocalizedString("Member reports", comment: "chat feature")
+        case .reports: return isChannel
+            ? NSLocalizedString("Subscriber reports", comment: "chat feature")
+            : NSLocalizedString("Member reports", comment: "chat feature")
         case .history: return NSLocalizedString("Visible history", comment: "chat feature")
         }
     }
@@ -940,7 +944,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         }
     }
 
-    public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool) -> LocalizedStringKey {
+    public func enableDescription(_ enabled: GroupFeatureEnabled, _ canEdit: Bool, isChannel: Bool = false) -> LocalizedStringKey {
         if canEdit {
             switch self {
             case .timedMessages:
@@ -950,8 +954,12 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 }
             case .directMessages:
                 switch enabled {
-                case .on: return "Allow sending direct messages to members."
-                case .off: return "Prohibit sending direct messages to members."
+                case .on: return isChannel
+                    ? "Allow sending direct messages to subscribers."
+                    : "Allow sending direct messages to members."
+                case .off: return isChannel
+                    ? "Prohibit sending direct messages to subscribers."
+                    : "Prohibit sending direct messages to members."
                 }
             case .fullDelete:
                 switch enabled {
@@ -980,61 +988,91 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 }
             case .reports:
                 switch enabled {
-                case .on: return "Allow to report messsages to moderators."
-                case .off: return "Prohibit reporting messages to moderators."
+                case .on: return isChannel
+                    ? "Allow to report messsages to moderators."
+                    : "Allow to report messsages to moderators."
+                case .off: return isChannel
+                    ? "Prohibit reporting messages to moderators."
+                    : "Prohibit reporting messages to moderators."
                 }
             case .history:
                 switch enabled {
-                case .on: return "Send up to 100 last messages to new members."
-                case .off: return "Do not send history to new members."
+                case .on: return isChannel
+                    ? "Send up to 100 last messages to new subscribers."
+                    : "Send up to 100 last messages to new members."
+                case .off: return isChannel
+                    ? "Do not send history to new subscribers."
+                    : "Do not send history to new members."
                 }
             }
         } else {
             switch self {
             case .timedMessages:
                 switch enabled {
-                case .on: return "Members can send disappearing messages."
+                case .on: return isChannel
+                    ? "Subscribers can send disappearing messages."
+                    : "Members can send disappearing messages."
                 case .off: return "Disappearing messages are prohibited."
                 }
             case .directMessages:
                 switch enabled {
-                case .on: return "Members can send direct messages."
-                case .off: return "Direct messages between members are prohibited."
+                case .on: return isChannel
+                    ? "Subscribers can send direct messages."
+                    : "Members can send direct messages."
+                case .off: return isChannel
+                    ? "Direct messages between subscribers are prohibited."
+                    : "Direct messages between members are prohibited."
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Members can irreversibly delete sent messages. (24 hours)"
+                case .on: return isChannel
+                    ? "Subscribers can irreversibly delete sent messages. (24 hours)"
+                    : "Members can irreversibly delete sent messages. (24 hours)"
                 case .off: return "Irreversible message deletion is prohibited."
                 }
             case .reactions:
                 switch enabled {
-                case .on: return "Members can add message reactions."
+                case .on: return isChannel
+                    ? "Subscribers can add message reactions."
+                    : "Members can add message reactions."
                 case .off: return "Message reactions are prohibited."
                 }
             case .voice:
                 switch enabled {
-                case .on: return "Members can send voice messages."
+                case .on: return isChannel
+                    ? "Subscribers can send voice messages."
+                    : "Members can send voice messages."
                 case .off: return "Voice messages are prohibited."
                 }
             case .files:
                 switch enabled {
-                case .on: return "Members can send files and media."
+                case .on: return isChannel
+                    ? "Subscribers can send files and media."
+                    : "Members can send files and media."
                 case .off: return "Files and media are prohibited."
                 }
             case .simplexLinks:
                 switch enabled {
-                case .on: return "Members can send SimpleX links."
+                case .on: return isChannel
+                    ? "Subscribers can send SimpleX links."
+                    : "Members can send SimpleX links."
                 case .off: return "SimpleX links are prohibited."
                 }
             case .reports:
                 switch enabled {
-                case .on: return "Members can report messsages to moderators."
+                case .on: return isChannel
+                    ? "Subscribers can report messsages to moderators."
+                    : "Members can report messsages to moderators."
                 case .off: return "Reporting messages to moderators is prohibited."
                 }
             case .history:
                 switch enabled {
-                case .on: return "Up to 100 last messages are sent to new members."
-                case .off: return "History is not sent to new members."
+                case .on: return isChannel
+                    ? "Up to 100 last messages are sent to new subscribers."
+                    : "Up to 100 last messages are sent to new members."
+                case .off: return isChannel
+                    ? "History is not sent to new subscribers."
+                    : "History is not sent to new members."
                 }
             }
         }
