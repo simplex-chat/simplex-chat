@@ -300,91 +300,84 @@ private fun CreateFirstProfileDesktop(
   close: () -> Unit
 ) {
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-  Row(
-    Modifier.widthIn(max = 700.dp).fillMaxHeight(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    // Left: image
-    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-      if (BuildConfigCommon.SIMPLEX_ASSETS) {
-        Image(
-          painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
-          contentDescription = null,
-          contentScale = ContentScale.Fit,
-          modifier = Modifier.fillMaxWidth(0.618f)
-        )
-      } else {
-        val isDark = isInDarkTheme()
-        val stops = if (isDark) darkStops else lightStops
-        val scale = if (isDark) 1.5f else 1.2f
-        Box(
-          Modifier
-            .fillMaxWidth(0.618f)
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(24.dp))
-            .drawBehind {
-              val gp = gradientPoints(size.height / size.width, scale)
-              drawRect(
-                Brush.linearGradient(
-                  colorStops = stops,
-                  start = Offset(gp.startX * size.width, gp.startY * size.height),
-                  end = Offset(gp.endX * size.width, gp.endY * size.height)
-                )
-              )
-            },
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            painterResource(MR.images.ic_person),
+    Row(Modifier.widthIn(max = 800.dp).fillMaxHeight()) {
+      // Left: image
+      Box(Modifier.width(400.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+        if (BuildConfigCommon.SIMPLEX_ASSETS) {
+          Image(
+            painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colors.primary
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxWidth(0.8f)
           )
+        } else {
+          val isDark = isInDarkTheme()
+          val stops = if (isDark) darkStops else lightStops
+          val scale = if (isDark) 1.5f else 1.2f
+          Box(
+            Modifier
+              .fillMaxWidth(0.8f)
+              .aspectRatio(1f)
+              .clip(RoundedCornerShape(24.dp))
+              .drawBehind {
+                val gp = gradientPoints(size.height / size.width, scale)
+                drawRect(
+                  Brush.linearGradient(
+                    colorStops = stops,
+                    start = Offset(gp.startX * size.width, gp.startY * size.height),
+                    end = Offset(gp.endX * size.width, gp.endY * size.height)
+                  )
+                )
+              },
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              painterResource(MR.images.ic_person),
+              contentDescription = null,
+              modifier = Modifier.size(80.dp),
+              tint = MaterialTheme.colors.primary
+            )
+          }
+        }
+      }
+      // Right: same vertical structure as master — title top, spacer, button bottom
+      Column(
+        Modifier.width(400.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
+        Text(
+          stringResource(MR.strings.onboarding_on_your_phone),
+          style = MaterialTheme.typography.body1,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center,
+          lineHeight = 24.sp
+        )
+        Spacer(Modifier.height(DEFAULT_PADDING))
+        Text(
+          stringResource(MR.strings.onboarding_no_account),
+          style = MaterialTheme.typography.body2,
+          color = MaterialTheme.colors.secondary,
+          textAlign = TextAlign.Center,
+          lineHeight = 20.sp
+        )
+        Spacer(Modifier.height(DEFAULT_PADDING))
+        ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
+
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+
+        Column(Modifier.widthIn(max = 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.create_profile,
+            onboarding = null,
+            enabled = canCreateProfile(displayName.value),
+            onclick = { createProfileOnboarding(chatModel, displayName.value, close) }
+          )
+          TextButtonBelowOnboardingButton("", null)
         }
       }
     }
-    // Right: content
-    Column(
-      Modifier.weight(1f).fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Text(
-        stringResource(MR.strings.onboarding_your_profile),
-        style = MaterialTheme.typography.h1,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center
-      )
-      Text(
-        stringResource(MR.strings.onboarding_on_your_phone),
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colors.secondary,
-        fontSize = 20.sp,
-        lineHeight = 27.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(top = 14.dp)
-      )
-      Text(
-        stringResource(MR.strings.onboarding_no_account),
-        style = MaterialTheme.typography.body2,
-        color = MaterialTheme.colors.secondary,
-        textAlign = TextAlign.Center,
-        lineHeight = 20.sp,
-        modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
-      )
-      Spacer(Modifier.height(DEFAULT_PADDING))
-      ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
-      Spacer(Modifier.height(DEFAULT_PADDING * 2))
-      OnboardingActionButton(
-        Modifier.widthIn(min = 300.dp),
-        labelId = MR.strings.create_profile,
-        onboarding = null,
-        enabled = canCreateProfile(displayName.value),
-        onclick = { createProfileOnboarding(chatModel, displayName.value, close) }
-      )
-    }
-  }
   }
   LaunchedEffect(refocusTrigger.value) {
     delay(300)
