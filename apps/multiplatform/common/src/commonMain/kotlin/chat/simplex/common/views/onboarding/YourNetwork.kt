@@ -61,8 +61,9 @@ fun YourNetworkView(chatModel: ChatModel) {
         modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
           .systemBarsPadding()
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+        topPadding = DEFAULT_PADDING,
         image = {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(Modifier.padding(bottom = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
             if (BuildConfigCommon.SIMPLEX_ASSETS) {
               Image(
                 painterResource(if (isInDarkTheme()) MR.images.your_network_light else MR.images.your_network),
@@ -159,7 +160,6 @@ fun YourNetworkView(chatModel: ChatModel) {
                 appPrefs.onboardingStage.set(OnboardingStage.Step4_NetworkCommitments)
               }
             )
-            TextButtonBelowOnboardingButton("", null)
           }
         }
       )

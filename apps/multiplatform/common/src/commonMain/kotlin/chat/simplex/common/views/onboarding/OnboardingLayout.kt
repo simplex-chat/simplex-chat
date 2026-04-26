@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun OnboardingShrinkingLayout(
     modifier: Modifier = Modifier,
+    topPadding: Dp = 0.dp,
     minSpacerHeight: Dp = 20.dp,
     image: @Composable () -> Unit,
     content: @Composable () -> Unit,
@@ -33,20 +34,21 @@ fun OnboardingShrinkingLayout(
         val buttonPlaceable = buttonMeasurables.first().measure(childConstraints)
         val minSpacer = minSpacerHeight.roundToPx()
 
-        // 2. Image gets remaining after content + button + minimum spacer
-        val reservedHeight = contentPlaceable.height + buttonPlaceable.height + minSpacer
+        // 2. Image gets remaining after top padding + content + button + minimum spacer
+        val topPad = topPadding.roundToPx()
+        val reservedHeight = topPad + contentPlaceable.height + buttonPlaceable.height + minSpacer
         val imageMaxHeight = (height - reservedHeight).coerceAtLeast(0)
         val imagePlaceable = imageMeasurables.first().measure(
             childConstraints.copy(maxWidth = width, maxHeight = imageMaxHeight)
         )
 
         // 3. Spacer fills whatever is left between content and button
-        val usedHeight = imagePlaceable.height + contentPlaceable.height + buttonPlaceable.height
+        val usedHeight = topPad + imagePlaceable.height + contentPlaceable.height + buttonPlaceable.height
         val spacerHeight = (height - usedHeight).coerceAtLeast(minSpacer)
 
         // 4. Place: image centered horizontally, rest below
         layout(width, height) {
-            var y = 0
+            var y = topPad
             imagePlaceable.placeRelative((width - imagePlaceable.width) / 2, y)
             y += imagePlaceable.height
             contentPlaceable.placeRelative((width - contentPlaceable.width) / 2, y)

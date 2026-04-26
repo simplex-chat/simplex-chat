@@ -57,8 +57,9 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
         modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
           .systemBarsPadding()
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+        topPadding = DEFAULT_PADDING,
         image = {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(Modifier.padding(bottom = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
             if (BuildConfigCommon.SIMPLEX_ASSETS) {
               Image(
                 painterResource(if (isInDarkTheme()) MR.images.network_commitments_light else MR.images.network_commitments),
@@ -146,7 +147,6 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
         button = {
           Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
-            TextButtonBelowOnboardingButton("", null)
           }
         }
       )

@@ -71,7 +71,7 @@ fun SimpleXInfoLayout(
     OnboardingShrinkingLayout(
       modifier = Modifier.fillMaxSize(),
       image = {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
           if (BuildConfigCommon.SIMPLEX_ASSETS) {
           Image(
             painterResource(if (isInDarkTheme()) MR.images.intro_light else MR.images.intro),
