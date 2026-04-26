@@ -51,50 +51,109 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
     })
   }
 
-  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-    ModalView({}, showClose = false, showAppBar = false) {
-      OnboardingShrinkingLayout(
-        modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
-          .systemBarsPadding()
-          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
-        topPadding = DEFAULT_PADDING,
-        image = {
-          Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
-            OnboardingImage(
-              MR.images.network_commitments, MR.images.network_commitments_light, MR.images.ic_shield,
-              modifier = if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.heightIn(max = 220.dp),
-              aspectRatio = 1.5f
-            )
+  if (appPlatform.isDesktop) {
+    OnboardingConditionsDesktop(selectedOperatorIds)
+  } else {
+    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+      ModalView({}, showClose = false, showAppBar = false) {
+        OnboardingShrinkingLayout(
+          modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
+            .systemBarsPadding()
+            .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+          topPadding = DEFAULT_PADDING,
+          image = {
+            Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
+              OnboardingImage(
+                MR.images.network_commitments, MR.images.network_commitments_light, MR.images.ic_shield,
+                modifier = Modifier.fillMaxWidth(),
+                aspectRatio = 1.5f
+              )
+            }
+          },
+          content = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              Text(
+                stringResource(MR.strings.onboarding_network_commitments),
+                style = MaterialTheme.typography.h1,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                lineHeight = 42.sp,
+                modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
+              )
+              Column(
+                Modifier.fillMaxWidth()
+                  .padding(horizontal = DEFAULT_PADDING_HALF)
+                  .padding(top = DEFAULT_PADDING),
+                horizontalAlignment = Alignment.Start
+              ) {
+                Text(
+                  stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
+                  style = MaterialTheme.typography.body1,
+                  lineHeight = 22.sp
+                )
+                Spacer(Modifier.height(DEFAULT_PADDING))
+                Text(
+                  stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
+                  style = MaterialTheme.typography.body1,
+                  lineHeight = 22.sp
+                )
+                Spacer(Modifier.height(DEFAULT_PADDING))
+                Text(
+                  stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+                  style = MaterialTheme.typography.body2,
+                  fontWeight = FontWeight.Medium,
+                  color = MaterialTheme.colors.primary,
+                  modifier = Modifier
+                    .clickable(
+                      interactionSource = remember { MutableInteractionSource() },
+                      indication = null
+                    ) {
+                      ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                        SimpleConditionsView(rhId = null)
+                      }
+                    }
+                )
+              }
+            }
+          },
+          button = {
+            Column(Modifier.widthIn(max = 450.dp).padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
+              AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
+            }
           }
-        },
-        content = {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-              stringResource(MR.strings.onboarding_network_commitments),
-              style = MaterialTheme.typography.h1,
-              fontWeight = FontWeight.Bold,
-              textAlign = TextAlign.Center,
-              lineHeight = 42.sp,
-              modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
-            )
-            Column(
-              (if (appPlatform.isDesktop) Modifier.width(450.dp) else Modifier)
-                .fillMaxWidth()
-                .padding(horizontal = DEFAULT_PADDING_HALF)
-                .padding(top = DEFAULT_PADDING),
-              horizontalAlignment = Alignment.Start
-            ) {
-              Text(
-                stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
-                style = MaterialTheme.typography.body1,
-                lineHeight = 22.sp
-              )
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Long>>) {
+  Row(Modifier.fillMaxSize()) {
+    Box(
+      Modifier.weight(0.438f).fillMaxHeight()
+        .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f))
+        .padding(horizontal = DEFAULT_PADDING),
+      contentAlignment = Alignment.Center
+    ) {
+      OnboardingImage(
+        MR.images.network_commitments, MR.images.network_commitments_light, MR.images.ic_shield,
+        modifier = Modifier.fillMaxWidth(),
+        aspectRatio = 1.5f
+      )
+    }
+    Divider(Modifier.fillMaxHeight().width(1.dp))
+    Box(Modifier.weight(0.562f).fillMaxHeight()) {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ModalView({}, showClose = false) {
+          ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+              Box(Modifier.align(Alignment.CenterHorizontally)) {
+                AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false)
+              }
+              ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
               Spacer(Modifier.height(DEFAULT_PADDING))
-              Text(
-                stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
-                style = MaterialTheme.typography.body1,
-                lineHeight = 22.sp
-              )
+              ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
                 stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
@@ -112,14 +171,14 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
                   }
               )
             }
-          }
-        },
-        button = {
-          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2), horizontalAlignment = Alignment.CenterHorizontally) {
-            AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
+            Spacer(Modifier.fillMaxHeight().weight(1f))
+            Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+              AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
+              TextButtonBelowOnboardingButton("", null)
+            }
           }
         }
-      )
+      }
     }
   }
 }

@@ -268,7 +268,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   val displayName = rememberSaveable { mutableStateOf("") }
   Row(Modifier.fillMaxSize()) {
     // Left: image
-    Box(Modifier.weight(0.382f).fillMaxHeight().background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f)).padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+    Box(Modifier.weight(0.438f).fillMaxHeight().background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f)).padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       OnboardingImage(
         MR.images.your_profile, MR.images.your_profile_light, MR.images.ic_person,
         modifier = Modifier.fillMaxWidth()
@@ -276,7 +276,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
     }
     Divider(Modifier.fillMaxHeight().width(1.dp))
     // Right: old layout with bar
-    Box(Modifier.weight(0.618f).fillMaxHeight()) {
+    Box(Modifier.weight(0.562f).fillMaxHeight()) {
       CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
         ModalView(
           close = { onboardingBackAction(chatModel, close) },
