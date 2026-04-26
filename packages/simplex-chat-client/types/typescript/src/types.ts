@@ -2094,6 +2094,7 @@ export interface DroppedMsg {
 }
 
 export interface E2EInfo {
+  public?: boolean
   pqEnabled?: boolean
 }
 

@@ -680,21 +680,17 @@ fun ChatItemView(
             }
 
             @Composable
-            fun E2EEInfoNoPQText() {
-              e2eeInfoText(MR.strings.e2ee_info_no_pq)
+            fun DirectE2EEInfoText(e2EEInfo: E2EEInfo) {
+              e2eeInfoText(when (e2EEInfo.pqEnabled) {
+                true -> MR.strings.e2ee_info_pq
+                false -> MR.strings.e2ee_info_no_pq
+                null -> MR.strings.e2ee_info_e2ee
+              })
             }
 
             @Composable
-            fun DirectE2EEInfoText(e2EEInfo: E2EEInfo) {
-              if (e2EEInfo.pqEnabled != null) {
-                if (e2EEInfo.pqEnabled) {
-                  e2eeInfoText(MR.strings.e2ee_info_pq)
-                } else {
-                  E2EEInfoNoPQText()
-                }
-              } else {
-                e2eeInfoText(MR.strings.e2ee_info_e2ee)
-              }
+            fun GroupE2EEInfoText(e2EEInfo: E2EEInfo) {
+              e2eeInfoText(if (e2EEInfo.public == true) MR.strings.e2ee_info_no_e2ee else MR.strings.e2ee_info_no_pq)
             }
 
             if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
@@ -794,8 +790,8 @@ fun ChatItemView(
                 is CIContent.RcvBlocked -> DeletedItem()
                 is CIContent.SndDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
                 is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
-                is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
-                is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
+                is CIContent.SndGroupE2EEInfo -> GroupE2EEInfoText(c.e2eeInfo)
+                is CIContent.RcvGroupE2EEInfo -> GroupE2EEInfoText(c.e2eeInfo)
                 is CIContent.ChatBanner -> Spacer(modifier = Modifier.size(0.dp))
                 is CIContent.InvalidJSON -> {
                   CIInvalidJSONView(c.json)
