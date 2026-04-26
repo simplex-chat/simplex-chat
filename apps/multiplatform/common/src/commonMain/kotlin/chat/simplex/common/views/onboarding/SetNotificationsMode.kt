@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
@@ -14,27 +13,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.changeNotificationsMode
 import chat.simplex.res.MR
 
 @Composable
-fun SetNotificationsMode(m: ChatModel) {
-  LaunchedEffect(Unit) {
-    prepareChatBeforeFinishingOnboarding()
-  }
-
+fun SetNotificationsMode(currentMode: MutableState<NotificationsMode>, onDone: () -> Unit) {
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         Box(Modifier.align(Alignment.CenterHorizontally)) {
           AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title), bottomPadding = DEFAULT_PADDING)
         }
-        val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
         Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingInformationButton(
             stringResource(MR.strings.onboarding_notifications_mode_subtitle),
@@ -57,20 +49,15 @@ fun SetNotificationsMode(m: ChatModel) {
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
             modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier,
-            labelId = MR.strings.use_chat,
-            onboarding = OnboardingStage.OnboardingComplete,
-            onclick = {
-              changeNotificationsMode(currentMode.value, m)
-              ModalManager.fullscreen.closeModals()
-            }
+            labelId = MR.strings.ok,
+            onboarding = null,
+            onclick = onDone
           )
-          // Reserve space
           TextButtonBelowOnboardingButton("", null)
         }
       }
     }
   }
-  SetNotificationsModeAdditions()
 }
 
 @Composable
