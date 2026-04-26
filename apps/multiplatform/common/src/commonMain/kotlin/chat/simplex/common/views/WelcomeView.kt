@@ -299,7 +299,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   val displayName = rememberSaveable { mutableStateOf("") }
   Row(Modifier.fillMaxSize()) {
     // Left: image
-    Box(Modifier.weight(0.382f).fillMaxHeight().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+    Box(Modifier.weight(0.382f).fillMaxHeight().background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f)).padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       if (BuildConfigCommon.SIMPLEX_ASSETS) {
         Image(
           painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
@@ -343,7 +343,6 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
       CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
         ModalView(
           close = { onboardingBackAction(chatModel, close) },
-          background = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f),
           endButtons = { MigrateButton(refocusTrigger) }
         ) {
           ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
