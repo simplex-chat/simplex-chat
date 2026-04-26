@@ -161,7 +161,10 @@ struct AddChannelView: View {
     private func createChannel() {
         focusDisplayName = false
         profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
-        profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
+        profile.groupPreferences = GroupPreferences(
+            history: GroupPreference(enable: .on),
+            support: GroupPreference(enable: .off)
+        )
         creationInProgress = true
         Task {
             do {

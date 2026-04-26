@@ -5693,7 +5693,8 @@ enum class GroupFeature: Feature {
   @SerialName("files") Files,
   @SerialName("simplexLinks") SimplexLinks,
   @SerialName("reports") Reports,
-  @SerialName("history") History;
+  @SerialName("history") History,
+  @SerialName("support") Support;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -5711,6 +5712,7 @@ enum class GroupFeature: Feature {
       SimplexLinks -> true
       Reports -> false
       History -> false
+      Support -> false
     }
 
   override val text: String get() = text(isChannel = false)
@@ -5725,6 +5727,7 @@ enum class GroupFeature: Feature {
       SimplexLinks -> generalGetString(MR.strings.simplex_links)
       Reports -> generalGetString(if (isChannel) MR.strings.group_reports_subscriber_reports else MR.strings.group_reports_member_reports)
       History -> generalGetString(MR.strings.recent_history)
+      Support -> generalGetString(MR.strings.chat_with_admins)
     }
 
   val icon: Painter
@@ -5738,6 +5741,7 @@ enum class GroupFeature: Feature {
       SimplexLinks -> painterResource(MR.images.ic_link)
       Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
+      Support -> painterResource(MR.images.ic_help)
     }
 
   @Composable
@@ -5751,6 +5755,7 @@ enum class GroupFeature: Feature {
     SimplexLinks -> painterResource(MR.images.ic_link)
     Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
+    Support -> painterResource(MR.images.ic_help_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean, isChannel: Boolean = false): String =
@@ -5792,6 +5797,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.enable_sending_recent_history_channel else MR.strings.enable_sending_recent_history)
           GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.disable_sending_recent_history_channel else MR.strings.disable_sending_recent_history)
         }
+        Support -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_chat_with_admins)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_chat_with_admins)
+        }
       }
     } else {
       when(this) {
@@ -5830,6 +5839,10 @@ enum class GroupFeature: Feature {
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.recent_history_is_sent_to_new_members_channel else MR.strings.recent_history_is_sent_to_new_members)
           GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.recent_history_is_not_sent_to_new_members_channel else MR.strings.recent_history_is_not_sent_to_new_members)
+        }
+        Support -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.members_can_chat_with_admins)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.chat_with_admins_is_prohibited)
         }
       }
     }
@@ -5956,6 +5969,7 @@ data class FullGroupPreferences(
   val simplexLinks: RoleGroupPreference,
   val reports: GroupPreference,
   val history: GroupPreference,
+  val support: GroupPreference,
   val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -5969,6 +5983,7 @@ data class FullGroupPreferences(
       simplexLinks = simplexLinks,
       reports = reports,
       history = history,
+      support = support,
       commands = commands,
     )
 
@@ -5983,6 +5998,7 @@ data class FullGroupPreferences(
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
+      support = GroupPreference(GroupFeatureEnabled.ON),
       commands = listOf()
     )
   }
@@ -5999,6 +6015,7 @@ data class GroupPreferences(
   val simplexLinks: RoleGroupPreference? = null,
   val reports: GroupPreference? = null,
   val history: GroupPreference? = null,
+  val support: GroupPreference? = null,
   val commands: List<ChatBotCommand>? = null
 ) {
   companion object {

@@ -2443,6 +2443,7 @@ export interface FullGroupPreferences {
   simplexLinks: RoleGroupPreference
   reports: GroupPreference
   history: GroupPreference
+  support: SupportGroupPreference
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
   commands: ChatBotCommand[]
@@ -2516,6 +2517,7 @@ export enum GroupFeature {
   SimplexLinks = "simplexLinks",
   Reports = "reports",
   History = "history",
+  Support = "support",
   Sessions = "sessions",
   Comments = "comments",
 }
@@ -2715,6 +2717,7 @@ export interface GroupPreferences {
   simplexLinks?: RoleGroupPreference
   reports?: GroupPreference
   history?: GroupPreference
+  support?: SupportGroupPreference
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
   commands?: ChatBotCommand[]
@@ -4635,6 +4638,10 @@ export namespace SubscriptionStatus {
   export interface NoSub extends Interface {
     type: "noSub"
   }
+}
+
+export interface SupportGroupPreference {
+  enable: GroupFeatureEnabled
 }
 
 export enum SwitchPhase {

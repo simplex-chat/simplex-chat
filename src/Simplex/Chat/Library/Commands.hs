@@ -625,7 +625,10 @@ processChatCommand vr nm = \case
       mapM_ assertNoMentions cms
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map composedMessageReq cms)
-    SRGroup chatId gsScope asGroup ->
+    SRGroup chatId gsScope asGroup -> do
+      case gsScope of
+        Just (GCSMemberSupport _) -> when asGroup $ throwCmdError "cannot send as group in support scope"
+        Nothing -> pure ()
       withGroupLock "sendMessage" chatId $ do
         (gInfo, cmrs) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user chatId
@@ -2375,7 +2378,7 @@ processChatCommand vr nm = \case
             forM scope_ $ \(GSNMemberSupport mName_) ->
               GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
           (gInfo, cScope_,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo)
+        let sendRef = SRGroup (groupId' gInfo) cScope_ (sendAsGroup' gInfo cScope_)
         processChatCommand vr nm $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
       SNLocal -> do
         folderId <- withFastStore (`getUserNoteFolderId` user)
@@ -3128,7 +3131,7 @@ processChatCommand vr nm = \case
         qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
         (gInfo, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    processChatCommand vr nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo)) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
+    processChatCommand vr nm $ APISendMessages (SRGroup (groupId' gInfo) Nothing (sendAsGroup' gInfo Nothing)) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand vr nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
@@ -3404,7 +3407,7 @@ processChatCommand vr nm = \case
         _ -> throwCmdError "not supported"
       pure $ ChatRef cType chatId Nothing
     getSendAsGroup :: User -> ChatRef -> CM ShowGroupAsSender
-    getSendAsGroup user' (ChatRef CTGroup chatId _) = sendAsGroup' <$> withFastStore (\db -> getGroupInfo db vr user' chatId)
+    getSendAsGroup user' (ChatRef CTGroup chatId scope) = (`sendAsGroup'` scope) <$> withFastStore (\db -> getGroupInfo db vr user' chatId)
     getSendAsGroup _ _ = pure False
     getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, Map MemberName GroupMemberId)
     getChatRefAndMentions user cName msg = do
@@ -4490,7 +4493,7 @@ processChatCommand vr nm = \case
       ChatRef CTDirect cId _ -> a $ SRDirect cId
       ChatRef CTGroup gId scope -> do
         gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
-        a $ SRGroup gId scope (sendAsGroup' gInfo)
+        a $ SRGroup gId scope (sendAsGroup' gInfo scope)
       _ -> throwCmdError "not supported"
     getSharedMsgId :: CM SharedMsgId
     getSharedMsgId = do
@@ -5020,7 +5023,7 @@ chatCommandP =
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
-      ("/public group" <|> "/pg") *> (NewPublicGroup <$> incognitoP <* " relays=" <*> strP <* A.space <* char_ '#' <*> groupProfile),
+      ("/public group" <|> "/pg") *> (NewPublicGroup <$> incognitoP <* " relays=" <*> strP <* A.space <* char_ '#' <*> channelProfile),
       "/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP),
       "/_get relays #" *> (APIGetGroupRelays <$> A.decimal),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
@@ -5150,6 +5153,7 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
+      "/set support #" *> (SetGroupFeature (AGFNR SGFSupport) <$> displayNameP <*> (A.space *> strP)),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberCriteriaP)),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
@@ -5287,6 +5291,10 @@ chatCommandP =
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
       pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences, memberAdmission = Nothing}
+    channelProfile = do
+      p@GroupProfile {groupPreferences = prefs_} <- groupProfile
+      let prefs = (fromMaybe emptyGroupPrefs prefs_) {support  = Just SupportGroupPreference {enable = FEOff}} :: GroupPreferences
+      pure p {groupPreferences = Just prefs}
     memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
     shortDescrP = do
       descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""

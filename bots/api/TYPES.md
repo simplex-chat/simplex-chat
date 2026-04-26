@@ -171,6 +171,7 @@ This file is generated automatically.
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
 - [SubscriptionStatus](#subscriptionstatus)
+- [SupportGroupPreference](#supportgrouppreference)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -2109,6 +2110,7 @@ Phone:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
+- support: [SupportGroupPreference](#supportgrouppreference)
 - sessions: [RoleGroupPreference](#rolegrouppreference)
 - comments: [CommentsGroupPreference](#commentsgrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
@@ -2200,6 +2202,7 @@ MemberSupport:
 - "simplexLinks"
 - "reports"
 - "history"
+- "support"
 - "sessions"
 - "comments"
 
@@ -2434,6 +2437,7 @@ NoRelays:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)?
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
+- support: [SupportGroupPreference](#supportgrouppreference)?
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
 - comments: [CommentsGroupPreference](#commentsgrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
@@ -3897,6 +3901,14 @@ Removed:
 
 NoSub:
 - type: "noSub"
+
+
+---
+
+## SupportGroupPreference
+
+**Record type**:
+- enable: [GroupFeatureEnabled](#groupfeatureenabled)
 
 
 ---
