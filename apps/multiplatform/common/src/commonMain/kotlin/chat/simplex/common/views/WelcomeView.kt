@@ -302,13 +302,13 @@ private fun CreateFirstProfileDesktop(
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     Row(Modifier.widthIn(max = 800.dp).fillMaxHeight()) {
       // Left: image
-      Box(Modifier.width(400.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+      Box(Modifier.width(400.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
         if (BuildConfigCommon.SIMPLEX_ASSETS) {
           Image(
             painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxWidth(0.8f)
+            modifier = Modifier.fillMaxWidth()
           )
         } else {
           val isDark = isInDarkTheme()
@@ -316,7 +316,7 @@ private fun CreateFirstProfileDesktop(
           val scale = if (isDark) 1.5f else 1.2f
           Box(
             Modifier
-              .fillMaxWidth(0.8f)
+              .fillMaxWidth()
               .aspectRatio(1f)
               .clip(RoundedCornerShape(24.dp))
               .drawBehind {
@@ -340,33 +340,20 @@ private fun CreateFirstProfileDesktop(
           }
         }
       }
-      // Right: same vertical structure as master — title top, spacer, button bottom
-      Column(
-        Modifier.width(400.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
-        Text(
-          stringResource(MR.strings.onboarding_on_your_phone),
-          style = MaterialTheme.typography.body1,
-          color = MaterialTheme.colors.secondary,
-          textAlign = TextAlign.Center,
-          lineHeight = 24.sp
-        )
+      // Right: same structure as master
+      ColumnWithScrollBar(Modifier.width(400.dp).padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.align(Alignment.CenterHorizontally)) {
+          AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
+        }
+        ReadableText(MR.strings.onboarding_on_your_phone, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
         Spacer(Modifier.height(DEFAULT_PADDING))
-        Text(
-          stringResource(MR.strings.onboarding_no_account),
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.secondary,
-          textAlign = TextAlign.Center,
-          lineHeight = 20.sp
-        )
+        ReadableText(MR.strings.onboarding_no_account, TextAlign.Center, style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
         Spacer(Modifier.height(DEFAULT_PADDING))
         ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
 
         Spacer(Modifier.fillMaxHeight().weight(1f))
 
-        Column(Modifier.widthIn(max = 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
             Modifier.widthIn(min = 300.dp),
             labelId = MR.strings.create_profile,
