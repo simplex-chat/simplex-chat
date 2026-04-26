@@ -26,13 +26,7 @@
 "(this device v%@)" = "(ez az eszköz: v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Közreműködés](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Küldjön nekünk e-mailt](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Csillagozás a GitHubon](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Partner hozzáadása:** új meghívási hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.";
@@ -603,6 +597,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow sending direct messages to members." = "A közvetlen üzenetek küldése a tagok között engedélyezve van.";
+
+/* No comment provided by engineer. */
+"Allow sending direct messages to subscribers." = "A közvetlen üzenetek küldése a feliratkozók között engedélyezve van.";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Az eltűnő üzenetek küldése engedélyezve van.";
@@ -1549,6 +1546,9 @@ server test step */
 "Continue" = "Folytatás";
 
 /* No comment provided by engineer. */
+"Contribute" = "Közreműködés";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "Beszélgetés törölve!";
 
 /* No comment provided by engineer. */
@@ -2005,6 +2005,9 @@ alert button */
 "Direct messages between members are prohibited." = "A tagok közötti közvetlen üzenetek le vannak tiltva.";
 
 /* No comment provided by engineer. */
+"Direct messages between subscribers are prohibited." = "A feliratkozók közötti közvetlen üzenetek le vannak tiltva.";
+
+/* No comment provided by engineer. */
 "Disable (keep overrides)" = "Letiltás (egyéni beállítások megtartása)";
 
 /* alert title */
@@ -2060,6 +2063,9 @@ alert button */
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "Az előzmények ne legyenek elküldve az új tagok számára.";
+
+/* No comment provided by engineer. */
+"Do not send history to new subscribers." = "Az előzmények ne legyenek elküldve az új feliratkozók számára.";
 
 /* No comment provided by engineer. */
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "NE küldjön üzeneteket közvetlenül, még akkor sem, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
@@ -2982,6 +2988,9 @@ servers warning */
 /* No comment provided by engineer. */
 "History is not sent to new members." = "Az előzmények nem lesznek elküldve az új tagok számára.";
 
+/* No comment provided by engineer. */
+"History is not sent to new subscribers." = "Az előzmények nem lesznek elküldve az új feliratkozók számára.";
+
 /* time unit */
 "hours" = "óra";
 
@@ -3145,7 +3154,7 @@ servers warning */
 "Initial role" = "Kezdeti szerepkör";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "A [SimpleX Chat terminálhoz] telepítése (https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "A SimpleX Chat terminálhoz telepítése";
 
 /* No comment provided by engineer. */
 "Instant" = "Azonnali";
@@ -4082,7 +4091,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Csak a partnere küldhet hangüzeneteket.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Megnyitás";
 
 /* No comment provided by engineer. */
@@ -4422,6 +4432,9 @@ new chat action */
 "Prohibit sending direct messages to members." = "A közvetlen üzenetek küldése a tagok között le van tiltva.";
 
 /* No comment provided by engineer. */
+"Prohibit sending direct messages to subscribers." = "A közvetlen üzenetek küldése a feliratkozók között le van tiltva.";
+
+/* No comment provided by engineer. */
 "Prohibit sending disappearing messages." = "Az eltűnő üzenetek küldése le van tiltva.";
 
 /* No comment provided by engineer. */
@@ -4491,16 +4504,10 @@ new chat action */
 "Read more" = "Tudjon meg többet";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "További információ a GitHub-tárolónkban.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "További információ a [GitHub-tárolónkban](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "További információ a Használati útmutatóban.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "A kézbesítési jelentések le vannak tiltva";
@@ -5094,6 +5101,9 @@ chat item action */
 "Send up to 100 last messages to new members." = "Legfeljebb az utolsó 100 üzenet elküldése az új tagok számára.";
 
 /* No comment provided by engineer. */
+"Send up to 100 last messages to new subscribers." = "Legfeljebb az utolsó 100 üzenet elküldése az új feliratkozók számára.";
+
+/* No comment provided by engineer. */
 "Send your private feedback to groups." = "Küldjön privát visszajelzést a csoportoknak.";
 
 /* alert message */
@@ -5471,6 +5481,9 @@ report reason */
 "standard end-to-end encryption" = "szabványos végpontok közötti titkosítás";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Csillagozás a GitHubon";
+
+/* No comment provided by engineer. */
 "Start chat" = "Csevegés elindítása";
 
 /* No comment provided by engineer. */
@@ -5539,11 +5552,38 @@ report reason */
 /* No comment provided by engineer. */
 "Subscriber" = "Feliratkozó";
 
+/* chat feature */
+"Subscriber reports" = "Feliratkozók jelentései";
+
 /* alert message */
 "Subscriber will be removed from channel - this cannot be undone!" = "A feliratkozó el lesz távolítva a csatornából – ez a művelet nem vonható vissza!";
 
 /* No comment provided by engineer. */
 "Subscribers" = "Feliratkozók";
+
+/* No comment provided by engineer. */
+"Subscribers can add message reactions." = "A feliratkozók reakciókat adhatnak hozzá az üzenetekhez.";
+
+/* No comment provided by engineer. */
+"Subscribers can irreversibly delete sent messages. (24 hours)" = "A feliratkozók véglegesen törölhetik az elküldött üzeneteiket. (24 óra)";
+
+/* No comment provided by engineer. */
+"Subscribers can report messsages to moderators." = "A feliratkozók jelenthetik az üzeneteket a moderátorok felé.";
+
+/* No comment provided by engineer. */
+"Subscribers can send direct messages." = "A feliratkozók küldhetnek egymásnak közvetlen üzeneteket.";
+
+/* No comment provided by engineer. */
+"Subscribers can send disappearing messages." = "A feliratkozók küldhetnek eltűnő üzeneteket.";
+
+/* No comment provided by engineer. */
+"Subscribers can send files and media." = "A feliratkozók küldhetnek fájlokat és médiatartalmakat.";
+
+/* No comment provided by engineer. */
+"Subscribers can send SimpleX links." = "A feliratkozók küldhetnek SimpleX-hivatkozásokat.";
+
+/* No comment provided by engineer. */
+"Subscribers can send voice messages." = "A feliratkozók küldhetnek hangüzeneteket.";
 
 /* No comment provided by engineer. */
 "Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel." = "A feliratkozók az átjátszó hivatkozását használják a csatornához való kapcsolódáshoz.\nAz átjátszó címe ennek az átjátszónak a beállítására szolgált a csatornához.";
@@ -6013,6 +6053,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Legfeljebb az utolsó 100 üzenet lesz elküldve az új tagok számára.";
+
+/* No comment provided by engineer. */
+"Up to 100 last messages are sent to new subscribers." = "Legfeljebb az utolsó 100 üzenet lesz elküldve az új feliratkozók számára.";
 
 /* No comment provided by engineer. */
 "Update" = "Frissítés";

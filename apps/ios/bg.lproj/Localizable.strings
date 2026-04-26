@@ -26,13 +26,7 @@
 "(this device v%@)" = "(това устройство v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Допринеси](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Изпратете ни имейл](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Звезда в GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Добави контакт**: за създаване на нов линк.";
@@ -1382,6 +1376,9 @@ server test step */
 "Continue" = "Продължи";
 
 /* No comment provided by engineer. */
+"Contribute" = "Допринеси";
+
+/* No comment provided by engineer. */
 "Copy" = "Копирай";
 
 /* No comment provided by engineer. */
@@ -2496,7 +2493,7 @@ server test error */
 "Initial role" = "Първоначална роля";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Инсталирайте [SimpleX Chat за терминал](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Инсталирайте SimpleX Chat за терминал";
 
 /* No comment provided by engineer. */
 "Instant" = "Мигновено";
@@ -3097,7 +3094,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Само вашият контакт може да изпраща гласови съобщения.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Отвори";
 
 /* new chat action */
@@ -3329,16 +3327,10 @@ new chat action */
 "Read more" = "Прочетете още";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Прочетете повече в нашето GitHub хранилище.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Прочетете повече в [Ръководство на потребителя](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Прочетете повече в нашето [GitHub хранилище](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Прочетете повече в Ръководство за потребителя.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Потвърждениeто за доставка е деактивирано";
@@ -3865,6 +3857,9 @@ chat item action */
 
 /* chat item text */
 "standard end-to-end encryption" = "стандартно криптиране от край до край";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Звезда в GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "Започни чат";

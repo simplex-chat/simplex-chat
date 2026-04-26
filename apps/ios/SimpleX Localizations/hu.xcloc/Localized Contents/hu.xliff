@@ -984,6 +984,10 @@ swipe action</note>
         <target>Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi. (24 óra)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow members to chat with admins." xml:space="preserve">
+        <source>Allow members to chat with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
         <source>Allow message reactions only if your contact allows them.</source>
         <target>A reakciók hozzáadása az üzenetekhez csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</target>
@@ -999,6 +1003,11 @@ swipe action</note>
         <target>A közvetlen üzenetek küldése a tagok között engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow sending direct messages to subscribers." xml:space="preserve">
+        <source>Allow sending direct messages to subscribers.</source>
+        <target>A közvetlen üzenetek küldése a feliratkozók között engedélyezve van.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
         <source>Allow sending disappearing messages.</source>
         <target>Az eltűnő üzenetek küldése engedélyezve van.</target>
@@ -1007,6 +1016,10 @@ swipe action</note>
       <trans-unit id="Allow sharing" xml:space="preserve">
         <source>Allow sharing</source>
         <target>Megosztás engedélyezése</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve">
+        <source>Allow subscribers to chat with admins.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -1861,7 +1874,8 @@ alert subtitle</note>
       <trans-unit id="Chat with admins" xml:space="preserve">
         <source>Chat with admins</source>
         <target>Csevegés az adminisztrátorokkal</target>
-        <note>chat toolbar</note>
+        <note>chat feature
+chat toolbar</note>
       </trans-unit>
       <trans-unit id="Chat with member" xml:space="preserve">
         <source>Chat with member</source>
@@ -1878,9 +1892,21 @@ alert subtitle</note>
         <target>Csevegések</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chats with admins are prohibited." xml:space="preserve">
+        <source>Chats with admins are prohibited.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chats with admins in public channels have no E2E encryption - use only with trusted chat relays." xml:space="preserve">
+        <source>Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Chats with members" xml:space="preserve">
         <source>Chats with members</source>
         <target>Csevegés a tagokkal</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chats with members are disabled" xml:space="preserve">
+        <source>Chats with members are disabled</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages every 20 min." xml:space="preserve">
@@ -2380,6 +2406,11 @@ Ez a saját egyszer használható meghívója!</target>
       <trans-unit id="Continue" xml:space="preserve">
         <source>Continue</source>
         <target>Folytatás</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contribute" xml:space="preserve">
+        <source>Contribute</source>
+        <target>Közreműködés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
@@ -3081,6 +3112,11 @@ alert button</note>
         <target>A tagok közötti közvetlen üzenetek le vannak tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Direct messages between subscribers are prohibited." xml:space="preserve">
+        <source>Direct messages between subscribers are prohibited.</source>
+        <target>A feliratkozók közötti közvetlen üzenetek le vannak tiltva.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Disable" xml:space="preserve">
         <source>Disable</source>
         <note>alert button</note>
@@ -3188,6 +3224,11 @@ alert button</note>
       <trans-unit id="Do not send history to new members." xml:space="preserve">
         <source>Do not send history to new members.</source>
         <target>Az előzmények ne legyenek elküldve az új tagok számára.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Do not send history to new subscribers." xml:space="preserve">
+        <source>Do not send history to new subscribers.</source>
+        <target>Az előzmények ne legyenek elküldve az új feliratkozók számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
@@ -3354,6 +3395,10 @@ chat item action</note>
         <source>Enable camera access</source>
         <target>Kamera-hozzáférés engedélyezése</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable chats with admins?" xml:space="preserve">
+        <source>Enable chats with admins?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
         <source>Enable disappearing messages by default.</source>
@@ -4605,6 +4650,11 @@ Hiba: %2$@</target>
         <target>Az előzmények nem lesznek elküldve az új tagok számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="History is not sent to new subscribers." xml:space="preserve">
+        <source>History is not sent to new subscribers.</source>
+        <target>Az előzmények nem lesznek elküldve az új feliratkozók számára.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <target>Hogyan működik a SimpleX</target>
@@ -4852,9 +4902,9 @@ További fejlesztések hamarosan!</target>
         <target>Kezdeti szerepkör</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
-        <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
-        <target>A [SimpleX Chat terminálhoz] telepítése (https://github.com/simplex-chat/simplex-chat)</target>
+      <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
+        <source>Install SimpleX Chat for terminal</source>
+        <target>A SimpleX Chat terminálhoz telepítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -5399,6 +5449,10 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>A tagok reakciókat adhatnak hozzá az üzenetekhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Members can chat with admins." xml:space="preserve">
+        <source>Members can chat with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Members can irreversibly delete sent messages. (24 hours)</source>
         <target>A tagok véglegesen törölhetik az elküldött üzeneteiket. (24 óra)</target>
@@ -5563,6 +5617,14 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <source>Messages from %@ will be shown!</source>
         <target>%@ összes üzenete meg fog jelenni!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve">
+        <source>Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve">
+        <source>Messages in this channel are not end-to-end encrypted. Chat relays can see these messages.</source>
+        <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
         <source>Messages in this chat will never be deleted.</source>
@@ -6261,7 +6323,8 @@ VPN engedélyezése szükséges.</target>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Megnyitás</target>
-        <note>alert action</note>
+        <note>alert action
+alert button</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -6297,6 +6360,10 @@ VPN engedélyezése szükséges.</target>
         <source>Open conditions</source>
         <target>Feltételek megnyitása</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open external link?" xml:space="preserve">
+        <source>Open external link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open full link" xml:space="preserve">
         <source>Open full link</source>
@@ -6788,6 +6855,10 @@ Hiba: %@</target>
         <target>A hívások kezdeményezése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prohibit chats with admins." xml:space="preserve">
+        <source>Prohibit chats with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
         <target>Az elküldött üzenetek végleges törlése le van tiltva.</target>
@@ -6816,6 +6887,11 @@ Hiba: %@</target>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
         <target>A közvetlen üzenetek küldése a tagok között le van tiltva.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending direct messages to subscribers." xml:space="preserve">
+        <source>Prohibit sending direct messages to subscribers.</source>
+        <target>A közvetlen üzenetek küldése a feliratkozók között le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
@@ -6929,24 +7005,14 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Tudjon meg többet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</source>
-        <target>További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</target>
+      <trans-unit id="Read more in User Guide." xml:space="preserve">
+        <source>Read more in User Guide.</source>
+        <target>További információ a Használati útmutatóban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).</source>
-        <target>További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
-        <target>További információ a [Használati útmutatóban](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
-        <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
-        <target>További információ a [GitHub-tárolónkban](https://github.com/simplex-chat/simplex-chat#readme).</target>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>További információ a GitHub-tárolónkban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
@@ -7836,6 +7902,11 @@ chat item action</note>
         <target>Legfeljebb az utolsó 100 üzenet elküldése az új tagok számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send up to 100 last messages to new subscribers." xml:space="preserve">
+        <source>Send up to 100 last messages to new subscribers.</source>
+        <target>Legfeljebb az utolsó 100 üzenet elküldése az új feliratkozók számára.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">
         <source>Send your private feedback to groups.</source>
         <target>Küldjön privát visszajelzést a csoportoknak.</target>
@@ -8455,6 +8526,11 @@ report reason</note>
         <target>Négyzet, kör vagy bármi a kettő között.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Star on GitHub" xml:space="preserve">
+        <source>Star on GitHub</source>
+        <target>Csillagozás a GitHubon</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
         <target>Csevegés elindítása</target>
@@ -8560,6 +8636,11 @@ report reason</note>
         <target>Feliratkozó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Subscriber reports" xml:space="preserve">
+        <source>Subscriber reports</source>
+        <target>Feliratkozók jelentései</target>
+        <note>chat feature</note>
+      </trans-unit>
       <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve">
         <source>Subscriber will be removed from channel - this cannot be undone!</source>
         <target>A feliratkozó el lesz távolítva a csatornából – ez a művelet nem vonható vissza!</target>
@@ -8568,6 +8649,50 @@ report reason</note>
       <trans-unit id="Subscribers" xml:space="preserve">
         <source>Subscribers</source>
         <target>Feliratkozók</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can add message reactions." xml:space="preserve">
+        <source>Subscribers can add message reactions.</source>
+        <target>A feliratkozók reakciókat adhatnak hozzá az üzenetekhez.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can chat with admins." xml:space="preserve">
+        <source>Subscribers can chat with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Subscribers can irreversibly delete sent messages. (24 hours)</source>
+        <target>A feliratkozók véglegesen törölhetik az elküldött üzeneteiket. (24 óra)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve">
+        <source>Subscribers can report messsages to moderators.</source>
+        <target>A feliratkozók jelenthetik az üzeneteket a moderátorok felé.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve">
+        <source>Subscribers can send SimpleX links.</source>
+        <target>A feliratkozók küldhetnek SimpleX-hivatkozásokat.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send direct messages." xml:space="preserve">
+        <source>Subscribers can send direct messages.</source>
+        <target>A feliratkozók küldhetnek egymásnak közvetlen üzeneteket.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send disappearing messages." xml:space="preserve">
+        <source>Subscribers can send disappearing messages.</source>
+        <target>A feliratkozók küldhetnek eltűnő üzeneteket.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send files and media." xml:space="preserve">
+        <source>Subscribers can send files and media.</source>
+        <target>A feliratkozók küldhetnek fájlokat és médiatartalmakat.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send voice messages." xml:space="preserve">
+        <source>Subscribers can send voice messages.</source>
+        <target>A feliratkozók küldhetnek hangüzeneteket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribers use relay link to connect to the channel.&#10;Relay address was used to set up this relay for the channel." xml:space="preserve">
@@ -9343,6 +9468,11 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
         <target>Legfeljebb az utolsó 100 üzenet lesz elküldve az új tagok számára.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Up to 100 last messages are sent to new subscribers." xml:space="preserve">
+        <source>Up to 100 last messages are sent to new subscribers.</source>
+        <target>Legfeljebb az utolsó 100 üzenet lesz elküldve az új feliratkozók számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
@@ -10397,19 +10527,9 @@ Az átjátszók hozzáférhetnek a csatornaüzenetekhez.</target>
         <target>Beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
-        <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
-        <target>[Közreműködés](https://github.com/simplex-chat/simplex-chat#contribute)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
         <target>[Küldjön nekünk e-mailt](mailto:chat@simplex.chat)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
-        <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target>[Csillagozás a GitHubon](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">

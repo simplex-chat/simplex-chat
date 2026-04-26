@@ -1555,6 +1555,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
         (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
+          VersionRange minV maxV = reqChatVRange
       (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
@@ -1563,11 +1564,13 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
           [sql|
             INSERT INTO group_members
               ( group_id, index_in_group, member_id, member_role, member_category, member_status,
-                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+                peer_chat_min_version, peer_chat_max_version)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+              :. (minV, maxV)
           )
         insertedRowId db
 

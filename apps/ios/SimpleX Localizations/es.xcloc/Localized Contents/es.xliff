@@ -984,6 +984,10 @@ swipe action</note>
         <target>Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también lo permite. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow members to chat with admins." xml:space="preserve">
+        <source>Allow members to chat with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
         <source>Allow message reactions only if your contact allows them.</source>
         <target>Se permiten las reacciones a los mensajes pero sólo si tu contacto también las permite.</target>
@@ -999,6 +1003,11 @@ swipe action</note>
         <target>Se permiten mensajes directos entre miembros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow sending direct messages to subscribers." xml:space="preserve">
+        <source>Allow sending direct messages to subscribers.</source>
+        <target>Se permiten mensajes directos entre suscriptores.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
         <source>Allow sending disappearing messages.</source>
         <target>Permites el envío de mensajes temporales.</target>
@@ -1007,6 +1016,10 @@ swipe action</note>
       <trans-unit id="Allow sharing" xml:space="preserve">
         <source>Allow sharing</source>
         <target>Permitir compartir</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow subscribers to chat with admins." xml:space="preserve">
+        <source>Allow subscribers to chat with admins.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -1861,7 +1874,8 @@ alert subtitle</note>
       <trans-unit id="Chat with admins" xml:space="preserve">
         <source>Chat with admins</source>
         <target>Chatea con administradores</target>
-        <note>chat toolbar</note>
+        <note>chat feature
+chat toolbar</note>
       </trans-unit>
       <trans-unit id="Chat with member" xml:space="preserve">
         <source>Chat with member</source>
@@ -1878,9 +1892,21 @@ alert subtitle</note>
         <target>Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chats with admins are prohibited." xml:space="preserve">
+        <source>Chats with admins are prohibited.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chats with admins in public channels have no E2E encryption - use only with trusted chat relays." xml:space="preserve">
+        <source>Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Chats with members" xml:space="preserve">
         <source>Chats with members</source>
         <target>Chat con miembros</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chats with members are disabled" xml:space="preserve">
+        <source>Chats with members are disabled</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages every 20 min." xml:space="preserve">
@@ -2380,6 +2406,11 @@ This is your own one-time link!</source>
       <trans-unit id="Continue" xml:space="preserve">
         <source>Continue</source>
         <target>Continuar</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contribute" xml:space="preserve">
+        <source>Contribute</source>
+        <target>Contribuye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
@@ -3081,6 +3112,11 @@ alert button</note>
         <target>Los mensajes directos entre miembros del grupo no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Direct messages between subscribers are prohibited." xml:space="preserve">
+        <source>Direct messages between subscribers are prohibited.</source>
+        <target>Los mensajes directos entre suscriptores del canal no están permitidos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Disable" xml:space="preserve">
         <source>Disable</source>
         <note>alert button</note>
@@ -3188,6 +3224,11 @@ alert button</note>
       <trans-unit id="Do not send history to new members." xml:space="preserve">
         <source>Do not send history to new members.</source>
         <target>No se envía el historial a los miembros nuevos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Do not send history to new subscribers." xml:space="preserve">
+        <source>Do not send history to new subscribers.</source>
+        <target>No se envía el historial a los suscriptores nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
@@ -3354,6 +3395,10 @@ chat item action</note>
         <source>Enable camera access</source>
         <target>Permitir acceso a la cámara</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable chats with admins?" xml:space="preserve">
+        <source>Enable chats with admins?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
         <source>Enable disappearing messages by default.</source>
@@ -4605,6 +4650,11 @@ Error: %2$@</target>
         <target>El historial no se envía a miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="History is not sent to new subscribers." xml:space="preserve">
+        <source>History is not sent to new subscribers.</source>
+        <target>El historial no se envía a suscriptores nuevos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
         <source>How SimpleX works</source>
         <target>Cómo funciona SimpleX</target>
@@ -4852,9 +4902,9 @@ More improvements are coming soon!</source>
         <target>Rol inicial</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
-        <source>Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)</source>
-        <target>Instalar terminal para [SimpleX Chat](https://github.com/simplex-chat/simplex-chat)</target>
+      <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
+        <source>Install SimpleX Chat for terminal</source>
+        <target>Instalar terminal para SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -5399,6 +5449,10 @@ This is your link for group %@!</source>
         <target>Los miembros pueden añadir reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Members can chat with admins." xml:space="preserve">
+        <source>Members can chat with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Members can irreversibly delete sent messages. (24 hours)</source>
         <target>Los miembros del grupo pueden eliminar mensajes de forma irreversible. (24 horas)</target>
@@ -5563,6 +5617,14 @@ This is your link for group %@!</source>
         <source>Messages from %@ will be shown!</source>
         <target>¡Los mensajes nuevos de %@ serán mostrados!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve">
+        <source>Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve">
+        <source>Messages in this channel are not end-to-end encrypted. Chat relays can see these messages.</source>
+        <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
         <source>Messages in this chat will never be deleted.</source>
@@ -6261,7 +6323,8 @@ Requiere activación de la VPN.</target>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Abrir</target>
-        <note>alert action</note>
+        <note>alert action
+alert button</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -6297,6 +6360,10 @@ Requiere activación de la VPN.</target>
         <source>Open conditions</source>
         <target>Abrir condiciones</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open external link?" xml:space="preserve">
+        <source>Open external link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open full link" xml:space="preserve">
         <source>Open full link</source>
@@ -6788,6 +6855,10 @@ Error: %@</target>
         <target>No se permiten llamadas y videollamadas.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prohibit chats with admins." xml:space="preserve">
+        <source>Prohibit chats with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
         <source>Prohibit irreversible message deletion.</source>
         <target>No se permite la eliminación irreversible de mensajes.</target>
@@ -6816,6 +6887,11 @@ Error: %@</target>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
         <target>No se permiten mensajes directos entre miembros.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Prohibit sending direct messages to subscribers." xml:space="preserve">
+        <source>Prohibit sending direct messages to subscribers.</source>
+        <target>No se permiten mensajes directos entre suscriptores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
@@ -6929,24 +7005,14 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Saber más</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</source>
-        <target>Conoce más en la [Guía del Usuario](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</target>
+      <trans-unit id="Read more in User Guide." xml:space="preserve">
+        <source>Read more in User Guide.</source>
+        <target>Conoce más en la Guía del Usuario.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).</source>
-        <target>Conoce más en el [Manual del Usuario](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
-        <target>Conoce más en el [Manual del Usuario](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
-        <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
-        <target>Conoce más en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).</target>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>Conoce más en nuestro repositorio GitHub.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
@@ -7836,6 +7902,11 @@ chat item action</note>
         <target>Se envían hasta 100 mensajes más recientes a los miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send up to 100 last messages to new subscribers." xml:space="preserve">
+        <source>Send up to 100 last messages to new subscribers.</source>
+        <target>Se envían hasta 100 mensajes más recientes a los suscriptores nuevos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">
         <source>Send your private feedback to groups.</source>
         <target>Envía tu comentario privado a los grupos.</target>
@@ -8455,6 +8526,11 @@ report reason</note>
         <target>Cuadrada, circular o cualquier forma intermedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Star on GitHub" xml:space="preserve">
+        <source>Star on GitHub</source>
+        <target>Estrella en GitHub</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
         <target>Iniciar chat</target>
@@ -8560,6 +8636,11 @@ report reason</note>
         <target>Suscriptor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Subscriber reports" xml:space="preserve">
+        <source>Subscriber reports</source>
+        <target>Informes de suscriptores</target>
+        <note>chat feature</note>
+      </trans-unit>
       <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve">
         <source>Subscriber will be removed from channel - this cannot be undone!</source>
         <target>El suscriptor será eliminado del canal. ¡No puede deshacerse!</target>
@@ -8568,6 +8649,50 @@ report reason</note>
       <trans-unit id="Subscribers" xml:space="preserve">
         <source>Subscribers</source>
         <target>Suscriptores</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can add message reactions." xml:space="preserve">
+        <source>Subscribers can add message reactions.</source>
+        <target>Los suscriptores pueden añadir reacciones a los mensajes.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can chat with admins." xml:space="preserve">
+        <source>Subscribers can chat with admins.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Subscribers can irreversibly delete sent messages. (24 hours)</source>
+        <target>Los suscriptores del canal pueden eliminar mensajes de forma irreversible. (24 horas)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can report messsages to moderators." xml:space="preserve">
+        <source>Subscribers can report messsages to moderators.</source>
+        <target>Los suscriptores pueden informar de mensajes a los moderadores.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send SimpleX links." xml:space="preserve">
+        <source>Subscribers can send SimpleX links.</source>
+        <target>Los suscriptores del canal pueden enviar enlaces SimpleX.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send direct messages." xml:space="preserve">
+        <source>Subscribers can send direct messages.</source>
+        <target>Los suscriptores del canal pueden enviar mensajes directos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send disappearing messages." xml:space="preserve">
+        <source>Subscribers can send disappearing messages.</source>
+        <target>Los suscriptores del canal pueden enviar mensajes temporales.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send files and media." xml:space="preserve">
+        <source>Subscribers can send files and media.</source>
+        <target>Los suscriptores del canal pueden enviar archivos y multimedia.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Subscribers can send voice messages." xml:space="preserve">
+        <source>Subscribers can send voice messages.</source>
+        <target>Los suscriptores del canal pueden enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribers use relay link to connect to the channel.&#10;Relay address was used to set up this relay for the channel." xml:space="preserve">
@@ -9343,6 +9468,11 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
         <target>Hasta 100 últimos mensajes son enviados a los miembros nuevos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Up to 100 last messages are sent to new subscribers." xml:space="preserve">
+        <source>Up to 100 last messages are sent to new subscribers.</source>
+        <target>Hasta 100 últimos mensajes son enviados a los suscriptores nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
@@ -10397,19 +10527,9 @@ Los servidores tienen acceso a los mensajes del canal.</target>
         <target>Configuración</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
-        <source>[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)</source>
-        <target>[Contribuye](https://github.com/simplex-chat/simplex-chat#contribute)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
         <target>[Contacta vía email](mailto:chat@simplex.chat)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
-        <source>[Star on GitHub](https://github.com/simplex-chat/simplex-chat)</source>
-        <target>[Estrella en GitHub](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">

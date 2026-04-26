@@ -2819,13 +2819,31 @@
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>
     <string name="your_public_address">Ihre öffentliche Adresse</string>
-  <string name="why_built_heading">Sie wurden ohne eine Benutzerkennung geboren.</string>
-  <string name="why_built_p1">Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.</string>
-  <string name="why_built_p2">Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.</string>
-  <string name="why_built_p3">Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</string>
-  <string name="why_built_p4">Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.</string>
-  <string name="why_built_p5">Ihre Kommunikation gehört Ihnen, so wie es immer war, bevor es das Internet gab. Das Netzwerk ist kein Ort, den Sie besuchen. Es ist ein Ort, den Sie erschaffen und besitzen und Niemand kann es Ihnen nehmen, egal ob Sie es privat oder öffentlich machen.</string>
-  <string name="why_built_p6">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</string>
-  <string name="why_built_p7">Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.</string>
-  <string name="why_built_tagline">Genießen Sie die Freiheit in Ihrem Netzwerk.</string>
+    <string name="why_built_heading">Sie wurden ohne eine Benutzerkennung geboren.</string>
+    <string name="why_built_p1">Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.</string>
+    <string name="why_built_p2">Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.</string>
+    <string name="why_built_p3">Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.</string>
+    <string name="why_built_p4">Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.</string>
+    <string name="why_built_p5">Ihre Kommunikation gehört Ihnen, so wie es immer war, bevor es das Internet gab. Das Netzwerk ist kein Ort, den Sie besuchen. Es ist ein Ort, den Sie erschaffen und besitzen und Niemand kann es Ihnen nehmen, egal ob Sie es privat oder öffentlich machen.</string>
+    <string name="why_built_p6">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</string>
+    <string name="why_built_p7">Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.</string>
+    <string name="why_built_tagline">Genießen Sie die Freiheit in Ihrem Netzwerk.</string>
+
+    <!-- channel preferences (subscribers) -->
+    <string name="group_reports_subscriber_reports">Abonnenten-Meldungen</string>
+    <string name="allow_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten erlauben.</string>
+    <string name="prohibit_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten nicht erlauben.</string>
+    <string name="enable_sending_recent_history_channel">Bis zu 100 der letzten Nachrichten an neue Abonnenten senden.</string>
+    <string name="disable_sending_recent_history_channel">Den Nachrichtenverlauf nicht an neue Abonnenten senden.</string>
+    <string name="group_members_can_send_disappearing_channel">Abonnenten können verschwindende Nachrichten versenden.</string>
+    <string name="group_members_can_send_dms_channel">Abonnenten können Direktnachrichten versenden.</string>
+    <string name="direct_messages_are_prohibited_channel">Direktnachrichten zwischen Abonnenten sind nicht erlaubt.</string>
+    <string name="group_members_can_delete_channel">Abonnenten können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)</string>
+    <string name="group_members_can_add_message_reactions_channel">Abonnenten können eine Reaktion auf Nachrichten geben.</string>
+    <string name="group_members_can_send_voice_channel">Abonnenten können Sprachnachrichten versenden.</string>
+    <string name="group_members_can_send_files_channel">Abonnenten können Dateien und Medien versenden.</string>
+    <string name="group_members_can_send_simplex_links_channel">Abonnenten können SimpleX-Links versenden.</string>
+    <string name="group_members_can_send_reports_channel">Abonnenten können Nachrichten an Moderatoren melden.</string>
+    <string name="recent_history_is_sent_to_new_members_channel">Bis zu 100 der letzten Nachrichten werden an neue Abonnenten gesendet.</string>
+    <string name="recent_history_is_not_sent_to_new_members_channel">Der Nachrichtenverlauf wird nicht an neue Abonnenten gesendet.</string>
 </resources>

@@ -1687,6 +1687,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> null
   }
 
+  val sendAsGroup: Boolean get() {
+    val g = (this as? Group)?.groupInfo
+    return if (g != null && g.useRelays && g.membership.memberRole >= GroupMemberRole.Owner) {
+      when (groupChatScope()) {
+        null -> true
+        is GroupChatScope.MemberSupport -> false
+      }
+    } else {
+      false
+    }
+  }
+
   fun ntfsEnabled(ci: ChatItem): Boolean =
     ntfsEnabled(ci.meta.userMention)
 
@@ -2133,6 +2145,7 @@ data class GroupInfo (
       GroupFeature.SimplexLinks -> p.simplexLinks.on(membership)
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
+      GroupFeature.Support -> p.support.on
     }
   }
 
