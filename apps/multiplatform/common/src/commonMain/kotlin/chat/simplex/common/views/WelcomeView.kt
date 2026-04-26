@@ -253,6 +253,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
 
+        Spacer(Modifier.height(DEFAULT_PADDING))
         ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
 
         Spacer(Modifier.weight(1f))
