@@ -55,6 +55,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
     ModalView({}, showClose = false, showAppBar = false) {
       OnboardingShrinkingLayout(
         modifier = Modifier.fillMaxSize().themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)
+          .systemBarsPadding()
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
         image = {
           Column(horizontalAlignment = Alignment.CenterHorizontally) {

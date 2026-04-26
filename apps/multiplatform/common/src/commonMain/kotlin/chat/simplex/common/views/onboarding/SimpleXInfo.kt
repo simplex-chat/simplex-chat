@@ -64,7 +64,7 @@ fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: SharedPreference<OnboardingStage>?
 ) {
-  Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
     Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 185.dp else 160.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
