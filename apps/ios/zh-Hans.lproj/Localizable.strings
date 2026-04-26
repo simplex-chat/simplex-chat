@@ -26,13 +26,7 @@
 "(this device v%@)" = "(此设备 v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[贡献](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[给我们发电邮](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[在 GitHub 上加星](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**添加联系人**: 创建新的邀请链接，或通过您收到的链接进行连接.";
@@ -1443,6 +1437,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Continue" = "继续";
+
+/* No comment provided by engineer. */
+"Contribute" = "贡献";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "对话已删除！";
@@ -2978,7 +2975,7 @@ servers warning */
 "Initial role" = "初始角色";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "安装[用于终端的 SimpleX Chat](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "安装用于终端的 SimpleX Chat";
 
 /* No comment provided by engineer. */
 "Instant" = "即时";
@@ -3876,7 +3873,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "只有您的联系人可以发送语音消息。";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "打开";
 
 /* No comment provided by engineer. */
@@ -4261,16 +4259,10 @@ new chat action */
 "Read more" = "阅读更多";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "阅读更多[User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)。";
+"Read more in our GitHub repository." = "在我们的 GitHub 仓库 中阅读更多信息。";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "在 [用户指南](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses) 中阅读更多内容。";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "在 [用户指南](https://simplex.chat/docs/guide/readme.html#connect-to-friends) 中阅读更多内容。";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "在我们的 [GitHub 仓库](https://github.com/simplex-chat/simplex-chat#readme) 中阅读更多信息。";
+"Read more in User Guide." = "阅读更多User Guide。";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "回执已禁用";
@@ -5188,6 +5180,9 @@ report reason */
 
 /* chat item text */
 "standard end-to-end encryption" = "标准端到端加密";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "在 GitHub 上加星";
 
 /* No comment provided by engineer. */
 "Start chat" = "开始聊天";

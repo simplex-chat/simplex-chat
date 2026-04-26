@@ -5715,8 +5715,9 @@ enum class GroupFeature: Feature {
       Support -> false
     }
 
-  override val text: String
-    get() = when(this) {
+  override val text: String get() = text(isChannel = false)
+
+  fun text(isChannel: Boolean): String = when(this) {
       TimedMessages -> generalGetString(MR.strings.timed_messages)
       DirectMessages -> generalGetString(MR.strings.direct_messages)
       FullDelete -> generalGetString(MR.strings.full_deletion)
@@ -5724,7 +5725,7 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
       SimplexLinks -> generalGetString(MR.strings.simplex_links)
-      Reports -> generalGetString(MR.strings.group_reports_member_reports)
+      Reports -> generalGetString(if (isChannel) MR.strings.group_reports_subscriber_reports else MR.strings.group_reports_member_reports)
       History -> generalGetString(MR.strings.recent_history)
       Support -> generalGetString(MR.strings.chat_with_admins)
     }
@@ -5757,7 +5758,7 @@ enum class GroupFeature: Feature {
     Support -> painterResource(MR.images.ic_help_filled)
   }
 
-  fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
+  fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean, isChannel: Boolean = false): String =
     if (canEdit) {
       when(this) {
         TimedMessages -> when(enabled) {
@@ -5765,8 +5766,8 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_disappearing)
         }
         DirectMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_direct_messages)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_direct_messages)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_direct_messages_channel else MR.strings.allow_direct_messages)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.prohibit_direct_messages_channel else MR.strings.prohibit_direct_messages)
         }
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_delete_messages)
@@ -5793,54 +5794,54 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_member_reports)
         }
         History -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.enable_sending_recent_history_channel else MR.strings.enable_sending_recent_history)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.disable_sending_recent_history_channel else MR.strings.disable_sending_recent_history)
         }
         Support -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_chat_with_admins)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_chat_with_admins_channel else MR.strings.allow_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_chat_with_admins)
         }
       }
     } else {
       when(this) {
         TimedMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_disappearing)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_disappearing_channel else MR.strings.group_members_can_send_disappearing)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disappearing_messages_are_prohibited)
         }
         DirectMessages -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_dms)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_dms_channel else MR.strings.group_members_can_send_dms)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.direct_messages_are_prohibited_channel else MR.strings.direct_messages_are_prohibited)
         }
         FullDelete -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_delete)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_delete_channel else MR.strings.group_members_can_delete)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_deletion_prohibited_in_chat)
         }
         Reactions -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_add_message_reactions)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_add_message_reactions_channel else MR.strings.group_members_can_add_message_reactions)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.message_reactions_are_prohibited)
         }
         Voice -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_voice)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_voice_channel else MR.strings.group_members_can_send_voice)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.voice_messages_are_prohibited)
         }
         Files -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_files_channel else MR.strings.group_members_can_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
         }
         SimplexLinks -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_simplex_links)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_simplex_links_channel else MR.strings.group_members_can_send_simplex_links)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.simplex_links_are_prohibited_in_group)
         }
         Reports -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_reports)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.group_members_can_send_reports_channel else MR.strings.group_members_can_send_reports)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.member_reports_are_prohibited)
         }
         History -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.recent_history_is_sent_to_new_members_channel else MR.strings.recent_history_is_sent_to_new_members)
+          GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.recent_history_is_not_sent_to_new_members_channel else MR.strings.recent_history_is_not_sent_to_new_members)
         }
         Support -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.members_can_chat_with_admins)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.members_can_chat_with_admins_channel else MR.strings.members_can_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.chat_with_admins_is_prohibited)
         }
       }

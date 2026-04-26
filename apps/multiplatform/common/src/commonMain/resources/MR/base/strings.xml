@@ -2345,6 +2345,27 @@
   <string name="chat_with_admins_relay_note">Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.</string>
   <string name="enable_chats_with_admins_question">Enable chats with admins?</string>
   <string name="enable_chats_with_admins">Enable</string>
+
+  <!-- channel preference descriptions (subscribers) -->
+  <string name="group_reports_subscriber_reports">Subscriber reports</string>
+  <string name="allow_direct_messages_channel">Allow sending direct messages to subscribers.</string>
+  <string name="prohibit_direct_messages_channel">Prohibit sending direct messages to subscribers.</string>
+  <string name="enable_sending_recent_history_channel">Send up to 100 last messages to new subscribers.</string>
+  <string name="disable_sending_recent_history_channel">Do not send history to new subscribers.</string>
+  <string name="group_members_can_send_disappearing_channel">Subscribers can send disappearing messages.</string>
+  <string name="group_members_can_send_dms_channel">Subscribers can send direct messages.</string>
+  <string name="direct_messages_are_prohibited_channel">Direct messages between subscribers are prohibited.</string>
+  <string name="group_members_can_delete_channel">Subscribers can irreversibly delete sent messages. (24 hours)</string>
+  <string name="group_members_can_add_message_reactions_channel">Subscribers can add message reactions.</string>
+  <string name="group_members_can_send_voice_channel">Subscribers can send voice messages.</string>
+  <string name="group_members_can_send_files_channel">Subscribers can send files and media.</string>
+  <string name="group_members_can_send_simplex_links_channel">Subscribers can send SimpleX links.</string>
+  <string name="group_members_can_send_reports_channel">Subscribers can report messsages to moderators.</string>
+  <string name="recent_history_is_sent_to_new_members_channel">Up to 100 last messages are sent to new subscribers.</string>
+  <string name="recent_history_is_not_sent_to_new_members_channel">History is not sent to new subscribers.</string>
+  <string name="allow_chat_with_admins_channel">Allow subscribers to chat with admins.</string>
+  <string name="members_can_chat_with_admins_channel">Subscribers can chat with admins.</string>
+
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>

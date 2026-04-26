@@ -267,7 +267,7 @@ private fun FeatureSection(
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
     if (groupInfo.isOwner) {
       PreferenceToggleWithIcon(
-        feature.text,
+        feature.text(groupInfo.isChannel),
         icon,
         iconTint,
         disabled = disabled,
@@ -299,7 +299,7 @@ private fun FeatureSection(
       }
     } else {
       InfoRow(
-        feature.text,
+        feature.text(groupInfo.isChannel),
         enableFeature.value.text,
         icon = icon,
         iconTint = iconTint,
@@ -317,7 +317,7 @@ private fun FeatureSection(
       onSelected(enableFeature.value, null)
     }
   }
-  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.isOwner))
+  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.isOwner, groupInfo.isChannel))
   if (notice != null) {
     SectionTextFooter(notice)
   }

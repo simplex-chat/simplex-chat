@@ -26,13 +26,7 @@
 "(this device v%@)" = "(dit apparaat v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Bijdragen](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Stuur ons een e-mail](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Contact toevoegen**: om een nieuwe uitnodigingslink aan te maken, of verbinding te maken via een link die u heeft ontvangen.";
@@ -1398,6 +1392,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Continue" = "Doorgaan";
+
+/* No comment provided by engineer. */
+"Contribute" = "Bijdragen";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Gesprek verwijderd!";
@@ -2875,7 +2872,7 @@ servers warning */
 "Initial role" = "Initiële rol";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Installeer [SimpleX Chat voor terminal](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Installeer SimpleX Chat voor terminal";
 
 /* No comment provided by engineer. */
 "Instant" = "Direct";
@@ -3731,7 +3728,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Alleen uw contact kan spraak berichten verzenden.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Open";
 
 /* No comment provided by engineer. */
@@ -4089,16 +4087,10 @@ new chat action */
 "Read more" = "Lees meer";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Lees meer in onze GitHub-repository.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/app-settings.html#uw-simplex-contactadres).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Lees meer in de [Gebruikershandleiding](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Lees meer in onze [GitHub-repository](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Lees meer in de Gebruikershandleiding.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Bevestigingen zijn uitgeschakeld";
@@ -4950,6 +4942,9 @@ report reason */
 
 /* chat item text */
 "standard end-to-end encryption" = "standaard end-to-end encryptie";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Star on GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "Begin gesprek";

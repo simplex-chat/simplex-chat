@@ -2821,4 +2821,22 @@
     <string name="onboarding_post_address">Diese Adresse in Ihrem Social‑Media‑Profil, auf Ihrer Webseite oder in Ihrer E‑Mail‑Signatur verwenden.</string>
     <string name="v6_5_invite_friends_descr">Wir haben das Verbinden für neue Nutzer vereinfacht.</string>
     <string name="your_public_address">Ihre öffentliche Adresse</string>
+
+    <!-- channel preferences (subscribers) -->
+    <string name="group_reports_subscriber_reports">Abonnenten-Meldungen</string>
+    <string name="allow_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten erlauben.</string>
+    <string name="prohibit_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten nicht erlauben.</string>
+    <string name="enable_sending_recent_history_channel">Bis zu 100 der letzten Nachrichten an neue Abonnenten senden.</string>
+    <string name="disable_sending_recent_history_channel">Den Nachrichtenverlauf nicht an neue Abonnenten senden.</string>
+    <string name="group_members_can_send_disappearing_channel">Abonnenten können verschwindende Nachrichten versenden.</string>
+    <string name="group_members_can_send_dms_channel">Abonnenten können Direktnachrichten versenden.</string>
+    <string name="direct_messages_are_prohibited_channel">Direktnachrichten zwischen Abonnenten sind nicht erlaubt.</string>
+    <string name="group_members_can_delete_channel">Abonnenten können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)</string>
+    <string name="group_members_can_add_message_reactions_channel">Abonnenten können eine Reaktion auf Nachrichten geben.</string>
+    <string name="group_members_can_send_voice_channel">Abonnenten können Sprachnachrichten versenden.</string>
+    <string name="group_members_can_send_files_channel">Abonnenten können Dateien und Medien versenden.</string>
+    <string name="group_members_can_send_simplex_links_channel">Abonnenten können SimpleX-Links versenden.</string>
+    <string name="group_members_can_send_reports_channel">Abonnenten können Nachrichten an Moderatoren melden.</string>
+    <string name="recent_history_is_sent_to_new_members_channel">Bis zu 100 der letzten Nachrichten werden an neue Abonnenten gesendet.</string>
+    <string name="recent_history_is_not_sent_to_new_members_channel">Der Nachrichtenverlauf wird nicht an neue Abonnenten gesendet.</string>
 </resources>

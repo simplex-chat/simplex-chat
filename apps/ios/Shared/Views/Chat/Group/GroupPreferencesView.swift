@@ -120,7 +120,7 @@ struct GroupPreferencesView: View {
                     set: { on, _ in enableFeature.wrappedValue = on ? .on : .off }
                 )
                 settingsRow(icon, color: color) {
-                    Toggle(feature.text, isOn: enable)
+                    Toggle(feature.text(isChannel: groupInfo.isChannel), isOn: enable)
                 }
                 .disabled(disabled)
                 if timedOn {
@@ -143,7 +143,7 @@ struct GroupPreferencesView: View {
                 }
             } else {
                 settingsRow(icon, color: color) {
-                    infoRow(Text(feature.text), enableFeature.wrappedValue.text)
+                    infoRow(Text(feature.text(isChannel: groupInfo.isChannel)), enableFeature.wrappedValue.text)
                 }
                 if timedOn {
                     infoRow("Delete after", timeText(preferences.timedMessages.ttl))
@@ -162,7 +162,7 @@ struct GroupPreferencesView: View {
             }
         } footer: {
             VStack(alignment: .leading) {
-                Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
+                Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner, isChannel: groupInfo.isChannel))
                 if let notice { Text(notice) }
             }
             .foregroundColor(theme.colors.secondary)

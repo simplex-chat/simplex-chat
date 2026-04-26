@@ -2714,4 +2714,22 @@
     <string name="v6_5_security">Biztonság: a csatornák kulcsait a tulajdonosok őrzik.</string>
     <string name="v6_5_non_profit_governance_descr">A SimpleX hálózat hosszú távú működésének biztosítása érdekében.</string>
     <string name="v6_5_invite_friends_descr">Az új felhasználók számára egyszerűbbé tettük a kapcsolatok létrehozását.</string>
+
+    <!-- channel preferences (subscribers) -->
+    <string name="group_reports_subscriber_reports">Feliratkozók jelentései</string>
+    <string name="allow_direct_messages_channel">A közvetlen üzenetek küldése a feliratkozók között engedélyezve van.</string>
+    <string name="prohibit_direct_messages_channel">A közvetlen üzenetek küldése a feliratkozók között le van tiltva.</string>
+    <string name="enable_sending_recent_history_channel">Legfeljebb az utolsó 100 üzenet elküldése az új feliratkozók számára.</string>
+    <string name="disable_sending_recent_history_channel">Az előzmények ne legyenek elküldve az új feliratkozók számára.</string>
+    <string name="group_members_can_send_disappearing_channel">A feliratkozók küldhetnek eltűnő üzeneteket.</string>
+    <string name="group_members_can_send_dms_channel">A feliratkozók küldhetnek egymásnak közvetlen üzeneteket.</string>
+    <string name="direct_messages_are_prohibited_channel">A feliratkozók közötti közvetlen üzenetek le vannak tiltva.</string>
+    <string name="group_members_can_delete_channel">A feliratkozók véglegesen törölhetik az elküldött üzeneteiket. (24 óra)</string>
+    <string name="group_members_can_add_message_reactions_channel">A feliratkozók reakciókat adhatnak hozzá az üzenetekhez.</string>
+    <string name="group_members_can_send_voice_channel">A feliratkozók küldhetnek hangüzeneteket.</string>
+    <string name="group_members_can_send_files_channel">A feliratkozók küldhetnek fájlokat és médiatartalmakat.</string>
+    <string name="group_members_can_send_simplex_links_channel">A feliratkozók küldhetnek SimpleX-hivatkozásokat.</string>
+    <string name="group_members_can_send_reports_channel">A feliratkozók jelenthetik az üzeneteket a moderátorok felé.</string>
+    <string name="recent_history_is_sent_to_new_members_channel">Legfeljebb az utolsó 100 üzenet lesz elküldve az új feliratkozók számára.</string>
+    <string name="recent_history_is_not_sent_to_new_members_channel">Az előzmények nem lesznek elküldve az új feliratkozók számára.</string>
 </resources>
