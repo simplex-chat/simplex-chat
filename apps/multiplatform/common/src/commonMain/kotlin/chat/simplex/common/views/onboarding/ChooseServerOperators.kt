@@ -118,17 +118,19 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
             ) {
               Text(
                 stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
-                style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+                style = MaterialTheme.typography.body2,
+                lineHeight = 21.sp
               )
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
                 stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
-                style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+                style = MaterialTheme.typography.body2,
+                lineHeight = 21.sp
               )
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
                 stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-                style = TextStyle(fontSize = 17.sp),
+                style = MaterialTheme.typography.body2,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier

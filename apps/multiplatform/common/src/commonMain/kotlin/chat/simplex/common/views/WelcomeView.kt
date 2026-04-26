@@ -246,10 +246,10 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 
         Text(
           stringResource(MR.strings.onboarding_no_account),
-          style = MaterialTheme.typography.body1,
+          style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,
           textAlign = TextAlign.Center,
-          lineHeight = 24.sp,
+          lineHeight = 21.sp,
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
 
