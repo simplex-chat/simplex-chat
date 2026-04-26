@@ -24,7 +24,7 @@ import dev.icerock.moko.resources.StringResource
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
   Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    Spacer(Modifier.height(AppBarHeight))
+    Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
     Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
       Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
       ReadableText(MR.strings.why_built_p1)
