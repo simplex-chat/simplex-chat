@@ -2342,6 +2342,11 @@ Dit is uw eigen eenmalige link!</target>
         <target>Doorgaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contribute" xml:space="preserve">
+        <source>Contribute</source>
+        <target>Bijdragen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
         <source>Conversation deleted!</source>
         <target>Gesprek verwijderd!</target>
@@ -4790,6 +4795,7 @@ Binnenkort meer verbeteringen!</target>
       </trans-unit>
       <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
         <source>Install SimpleX Chat for terminal</source>
+        <target>Installeer SimpleX Chat voor terminal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -6840,6 +6846,16 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Lees meer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more in User Guide." xml:space="preserve">
+        <source>Read more in User Guide.</source>
+        <target>Lees meer in de Gebruikershandleiding.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>Lees meer in onze GitHub-repository.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
         <target>Bevestigingen zijn uitgeschakeld</target>
@@ -8318,6 +8334,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Star on GitHub" xml:space="preserve">
         <source>Star on GitHub</source>
+        <target>Star on GitHub</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">

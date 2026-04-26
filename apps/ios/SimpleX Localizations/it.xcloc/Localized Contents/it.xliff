@@ -2387,6 +2387,11 @@ Questo è il tuo link una tantum!</target>
         <target>Continua</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contribute" xml:space="preserve">
+        <source>Contribute</source>
+        <target>Contribuisci</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
         <source>Conversation deleted!</source>
         <target>Conversazione eliminata!</target>
@@ -4874,6 +4879,7 @@ Altri miglioramenti sono in arrivo!</target>
       </trans-unit>
       <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
         <source>Install SimpleX Chat for terminal</source>
+        <target>Installa Simplex Chat per terminale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -6966,6 +6972,16 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Leggi tutto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more in User Guide." xml:space="preserve">
+        <source>Read more in User Guide.</source>
+        <target>Leggi di più nella Guida utente.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>Maggiori informazioni nel nostro repository GitHub.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
         <target>Le ricevute sono disattivate</target>
@@ -8479,6 +8495,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Star on GitHub" xml:space="preserve">
         <source>Star on GitHub</source>
+        <target>Dai una stella su GitHub</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">

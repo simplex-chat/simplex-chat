@@ -26,13 +26,7 @@
 "(this device v%@)" = "(este dispositivo v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Contribuye](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Contacta vía email](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Estrella en GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Añadir contacto**: crea un enlace de invitación nuevo.";
@@ -603,6 +597,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow sending direct messages to members." = "Se permiten mensajes directos entre miembros.";
+
+/* No comment provided by engineer. */
+"Allow sending direct messages to subscribers." = "Se permiten mensajes directos entre suscriptores.";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Permites el envío de mensajes temporales.";
@@ -1549,6 +1546,9 @@ server test step */
 "Continue" = "Continuar";
 
 /* No comment provided by engineer. */
+"Contribute" = "Contribuye";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "¡Conversación eliminada!";
 
 /* No comment provided by engineer. */
@@ -2005,6 +2005,9 @@ alert button */
 "Direct messages between members are prohibited." = "Los mensajes directos entre miembros del grupo no están permitidos.";
 
 /* No comment provided by engineer. */
+"Direct messages between subscribers are prohibited." = "Los mensajes directos entre suscriptores del canal no están permitidos.";
+
+/* No comment provided by engineer. */
 "Disable (keep overrides)" = "Desactivar (conservando anulaciones)";
 
 /* alert title */
@@ -2060,6 +2063,9 @@ alert button */
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "No se envía el historial a los miembros nuevos.";
+
+/* No comment provided by engineer. */
+"Do not send history to new subscribers." = "No se envía el historial a los suscriptores nuevos.";
 
 /* No comment provided by engineer. */
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "NO enviar mensajes directamente incluso si tu servidor o el de destino no soportan enrutamiento privado.";
@@ -2982,6 +2988,9 @@ servers warning */
 /* No comment provided by engineer. */
 "History is not sent to new members." = "El historial no se envía a miembros nuevos.";
 
+/* No comment provided by engineer. */
+"History is not sent to new subscribers." = "El historial no se envía a suscriptores nuevos.";
+
 /* time unit */
 "hours" = "horas";
 
@@ -3145,7 +3154,7 @@ servers warning */
 "Initial role" = "Rol inicial";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Instalar terminal para [SimpleX Chat](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Instalar terminal para SimpleX Chat";
 
 /* No comment provided by engineer. */
 "Instant" = "Al instante";
@@ -4082,7 +4091,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Sólo tu contacto puede enviar mensajes de voz.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Abrir";
 
 /* No comment provided by engineer. */
@@ -4422,6 +4432,9 @@ new chat action */
 "Prohibit sending direct messages to members." = "No se permiten mensajes directos entre miembros.";
 
 /* No comment provided by engineer. */
+"Prohibit sending direct messages to subscribers." = "No se permiten mensajes directos entre suscriptores.";
+
+/* No comment provided by engineer. */
 "Prohibit sending disappearing messages." = "No se permiten mensajes temporales.";
 
 /* No comment provided by engineer. */
@@ -4491,16 +4504,10 @@ new chat action */
 "Read more" = "Saber más";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Conoce más en la [Guía del Usuario](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Conoce más en nuestro repositorio GitHub.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Conoce más en el [Manual del Usuario](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Conoce más en el [Manual del Usuario](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Conoce más en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Conoce más en la Guía del Usuario.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Las confirmaciones están desactivadas";
@@ -5094,6 +5101,9 @@ chat item action */
 "Send up to 100 last messages to new members." = "Se envían hasta 100 mensajes más recientes a los miembros nuevos.";
 
 /* No comment provided by engineer. */
+"Send up to 100 last messages to new subscribers." = "Se envían hasta 100 mensajes más recientes a los suscriptores nuevos.";
+
+/* No comment provided by engineer. */
 "Send your private feedback to groups." = "Envía tu comentario privado a los grupos.";
 
 /* alert message */
@@ -5471,6 +5481,9 @@ report reason */
 "standard end-to-end encryption" = "cifrado estándar de extremo a extremo";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Estrella en GitHub";
+
+/* No comment provided by engineer. */
 "Start chat" = "Iniciar chat";
 
 /* No comment provided by engineer. */
@@ -5539,11 +5552,38 @@ report reason */
 /* No comment provided by engineer. */
 "Subscriber" = "Suscriptor";
 
+/* chat feature */
+"Subscriber reports" = "Informes de suscriptores";
+
 /* alert message */
 "Subscriber will be removed from channel - this cannot be undone!" = "El suscriptor será eliminado del canal. ¡No puede deshacerse!";
 
 /* No comment provided by engineer. */
 "Subscribers" = "Suscriptores";
+
+/* No comment provided by engineer. */
+"Subscribers can add message reactions." = "Los suscriptores pueden añadir reacciones a los mensajes.";
+
+/* No comment provided by engineer. */
+"Subscribers can irreversibly delete sent messages. (24 hours)" = "Los suscriptores del canal pueden eliminar mensajes de forma irreversible. (24 horas)";
+
+/* No comment provided by engineer. */
+"Subscribers can report messsages to moderators." = "Los suscriptores pueden informar de mensajes a los moderadores.";
+
+/* No comment provided by engineer. */
+"Subscribers can send direct messages." = "Los suscriptores del canal pueden enviar mensajes directos.";
+
+/* No comment provided by engineer. */
+"Subscribers can send disappearing messages." = "Los suscriptores del canal pueden enviar mensajes temporales.";
+
+/* No comment provided by engineer. */
+"Subscribers can send files and media." = "Los suscriptores del canal pueden enviar archivos y multimedia.";
+
+/* No comment provided by engineer. */
+"Subscribers can send SimpleX links." = "Los suscriptores del canal pueden enviar enlaces SimpleX.";
+
+/* No comment provided by engineer. */
+"Subscribers can send voice messages." = "Los suscriptores del canal pueden enviar mensajes de voz.";
 
 /* No comment provided by engineer. */
 "Subscribers use relay link to connect to the channel.\nRelay address was used to set up this relay for the channel." = "Los suscriptores usan el enlace del servidor para conectarse a los canales.\nLa dirección del servidor se usó para establecer el servidor para el canal.";
@@ -6013,6 +6053,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Hasta 100 últimos mensajes son enviados a los miembros nuevos.";
+
+/* No comment provided by engineer. */
+"Up to 100 last messages are sent to new subscribers." = "Hasta 100 últimos mensajes son enviados a los suscriptores nuevos.";
 
 /* No comment provided by engineer. */
 "Update" = "Actualizar";
@@ -6730,37 +6773,4 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
-
-/* channel preferences */
-"Subscriber reports" = "Informes de suscriptores";
-"Allow sending direct messages to subscribers." = "Se permiten mensajes directos entre suscriptores.";
-"Prohibit sending direct messages to subscribers." = "No se permiten mensajes directos entre suscriptores.";
-"Send up to 100 last messages to new subscribers." = "Se envían hasta 100 mensajes más recientes a los suscriptores nuevos.";
-"Do not send history to new subscribers." = "No se envía el historial a los suscriptores nuevos.";
-"Subscribers can send disappearing messages." = "Los suscriptores del canal pueden enviar mensajes temporales.";
-"Subscribers can send direct messages." = "Los suscriptores del canal pueden enviar mensajes directos.";
-"Direct messages between subscribers are prohibited." = "Los mensajes directos entre suscriptores del canal no están permitidos.";
-"Subscribers can irreversibly delete sent messages. (24 hours)" = "Los suscriptores del canal pueden eliminar mensajes de forma irreversible. (24 horas)";
-"Subscribers can add message reactions." = "Los suscriptores pueden añadir reacciones a los mensajes.";
-"Subscribers can send voice messages." = "Los suscriptores del canal pueden enviar mensajes de voz.";
-"Subscribers can send files and media." = "Los suscriptores del canal pueden enviar archivos y multimedia.";
-"Subscribers can send SimpleX links." = "Los suscriptores del canal pueden enviar enlaces SimpleX.";
-"Subscribers can report messsages to moderators." = "Los suscriptores pueden informar de mensajes a los moderadores.";
-"Up to 100 last messages are sent to new subscribers." = "Hasta 100 últimos mensajes son enviados a los suscriptores nuevos.";
-"History is not sent to new subscribers." = "El historial no se envía a suscriptores nuevos.";
-
-/* restored translations */
-"Install SimpleX Chat for terminal" = "Instalar terminal para SimpleX Chat";
-"Read more in User Guide." = "Conoce más en la Guía del Usuario.";
-"Read more in our GitHub repository." = "Conoce más en nuestro repositorio GitHub.";
-"Contribute" = "Contribuye";
-"Star on GitHub" = "Estrella en GitHub";
-
-
-/* restored translations */
-"Install SimpleX Chat for terminal" = "Instalar terminal para SimpleX Chat";
-"Read more in User Guide." = "Conoce más en la Guía del Usuario.";
-"Read more in our GitHub repository." = "Conoce más en nuestro repositorio GitHub.";
-"Contribute" = "Contribuye";
-"Star on GitHub" = "Estrella en GitHub";
 

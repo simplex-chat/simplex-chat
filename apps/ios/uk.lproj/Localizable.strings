@@ -26,13 +26,7 @@
 "(this device v%@)" = "(цей пристрій v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Внесок](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Напишіть нам електронною поштою](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Зірка на GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Додати контакт**: створити нове посилання-запрошення.";
@@ -1425,6 +1419,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Continue" = "Продовжуйте";
+
+/* No comment provided by engineer. */
+"Contribute" = "Внесок";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Розмова видалена!";
@@ -2929,7 +2926,7 @@ servers warning */
 "Initial role" = "Початкова роль";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Встановіть [SimpleX Chat для терміналу](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Встановіть SimpleX Chat для терміналу";
 
 /* No comment provided by engineer. */
 "Instant" = "Миттєво";
@@ -3806,7 +3803,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Тільки ваш контакт може надсилати голосові повідомлення.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Відкрито";
 
 /* No comment provided by engineer. */
@@ -4185,16 +4183,10 @@ new chat action */
 "Read more" = "Читати далі";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Читайте більше в [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Читайте більше в нашому GitHub репозиторії.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Читайте більше в [Посібнику користувача](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Читайте більше в нашому [GitHub репозиторії](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Читайте більше в User Guide.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Підтвердження виключені";
@@ -5091,6 +5083,9 @@ report reason */
 
 /* chat item text */
 "standard end-to-end encryption" = "стандартне наскрізне шифрування";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Зірка на GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "Почати чат";
@@ -6256,12 +6251,4 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
-
-
-/* restored translations */
-"Install SimpleX Chat for terminal" = "Встановіть SimpleX Chat для терміналу";
-"Read more in User Guide." = "Читайте більше в User Guide.";
-"Read more in our GitHub repository." = "Читайте більше в нашому GitHub репозиторії.";
-"Contribute" = "Внесок";
-"Star on GitHub" = "Зірка на GitHub";
 

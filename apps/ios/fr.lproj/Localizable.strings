@@ -26,13 +26,7 @@
 "(this device v%@)" = "(cet appareil v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Contribuer](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Contact par mail](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Star sur GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Ajouter un contact** : pour créer un nouveau lien d'invitation.";
@@ -1374,6 +1368,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Continue" = "Continuer";
+
+/* No comment provided by engineer. */
+"Contribute" = "Contribuer";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Conversation supprimée !";
@@ -2815,7 +2812,7 @@ servers warning */
 "Initial role" = "Rôle initial";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Installer [SimpleX Chat pour terminal](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Installer SimpleX Chat pour terminal";
 
 /* No comment provided by engineer. */
 "Instant" = "Instantané";
@@ -3572,7 +3569,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Seul votre contact peut envoyer des messages vocaux.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Ouvrir";
 
 /* No comment provided by engineer. */
@@ -3891,16 +3889,10 @@ new chat action */
 "Read more" = "En savoir plus";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Pour en savoir plus, consultez le [Guide de l'utilisateur](https ://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Pour en savoir plus, consultez notre dépôt GitHub.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Pour en savoir plus, consultez le [Guide de l'utilisateur](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Pour en savoir plus, consultez le [Guide de l'utilisateur](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Pour en savoir plus, consultez notre [dépôt GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Pour en savoir plus, consultez le Guide de l'utilisateur.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Les accusés de réception sont désactivés";
@@ -4658,6 +4650,9 @@ chat item action */
 
 /* chat item text */
 "standard end-to-end encryption" = "chiffrement de bout en bout standard";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Star sur GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "Démarrer le chat";
@@ -5715,12 +5710,4 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
-
-
-/* restored translations */
-"Install SimpleX Chat for terminal" = "Installer SimpleX Chat pour terminal";
-"Read more in User Guide." = "Pour en savoir plus, consultez le Guide de l'utilisateur.";
-"Read more in our GitHub repository." = "Pour en savoir plus, consultez notre dépôt GitHub.";
-"Contribute" = "Contribuer";
-"Star on GitHub" = "Star sur GitHub";
 

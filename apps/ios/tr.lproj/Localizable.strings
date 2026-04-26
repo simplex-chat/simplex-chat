@@ -26,13 +26,7 @@
 "(this device v%@)" = "(bu cihaz v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Katkıda bulun](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Bize e-posta gönder](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Bize GitHub'da yıldız verin](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Kişi ekle**: yeni bir davet bağlantısı oluşturmak için, ya da aldığın bağlantıyla bağlan.";
@@ -1440,6 +1434,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Continue" = "Devam et";
+
+/* No comment provided by engineer. */
+"Contribute" = "Katkıda bulun";
 
 /* No comment provided by engineer. */
 "Conversation deleted!" = "Sohbet silindi!";
@@ -2953,7 +2950,7 @@ servers warning */
 "Initial role" = "Başlangıç rolü";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[Terminal için SimpleX Chat]i indir(https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Terminal için SimpleX Chat'i indir";
 
 /* No comment provided by engineer. */
 "Instant" = "Anında";
@@ -3842,7 +3839,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Sadece karşıdaki kişi sesli mesajlar gönderebilir.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Aç";
 
 /* No comment provided by engineer. */
@@ -4230,16 +4228,10 @@ new chat action */
 "Read more" = "Dahasını oku";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "GitHub deposunda daha fazlasını okuyun.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "[GitHub deposu]nda daha fazlasını okuyun(https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Kullanıcı Rehberinde daha fazlasını okuyun.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Alındı onayları devre dışı bırakıldı";
@@ -5145,6 +5137,9 @@ report reason */
 
 /* chat item text */
 "standard end-to-end encryption" = "standart uçtan uca şifreleme";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Bize GitHub'da yıldız verin";
 
 /* No comment provided by engineer. */
 "Start chat" = "Sohbeti başlat";
@@ -6319,12 +6314,4 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
-
-
-/* restored translations */
-"Install SimpleX Chat for terminal" = "Terminal için SimpleX Chat'i indir";
-"Read more in User Guide." = "Kullanıcı Rehberinde daha fazlasını okuyun.";
-"Read more in our GitHub repository." = "GitHub deposunda daha fazlasını okuyun.";
-"Contribute" = "Katkıda bulun";
-"Star on GitHub" = "Bize GitHub'da yıldız verin";
 

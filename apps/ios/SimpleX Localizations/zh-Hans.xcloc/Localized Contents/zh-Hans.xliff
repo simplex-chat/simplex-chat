@@ -2356,6 +2356,11 @@ This is your own one-time link!</source>
         <target>继续</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contribute" xml:space="preserve">
+        <source>Contribute</source>
+        <target>贡献</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
         <source>Conversation deleted!</source>
         <target>对话已删除！</target>
@@ -4822,6 +4827,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
         <source>Install SimpleX Chat for terminal</source>
+        <target>安装用于终端的 SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -6895,6 +6901,16 @@ Enable in *Network &amp; servers* settings.</source>
         <target>阅读更多</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more in User Guide." xml:space="preserve">
+        <source>Read more in User Guide.</source>
+        <target>阅读更多User Guide。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>在我们的 GitHub 仓库 中阅读更多信息。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
         <target>回执已禁用</target>
@@ -8392,6 +8408,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Star on GitHub" xml:space="preserve">
         <source>Star on GitHub</source>
+        <target>在 GitHub 上加星</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">

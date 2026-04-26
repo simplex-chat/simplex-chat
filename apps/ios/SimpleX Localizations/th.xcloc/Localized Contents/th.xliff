@@ -2125,6 +2125,11 @@ This is your own one-time link!</source>
         <target>ดำเนินการต่อ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contribute" xml:space="preserve">
+        <source>Contribute</source>
+        <target>มีส่วนร่วม</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve">
         <source>Conversation deleted!</source>
         <note>No comment provided by engineer.</note>
@@ -4381,6 +4386,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Install SimpleX Chat for terminal" xml:space="preserve">
         <source>Install SimpleX Chat for terminal</source>
+        <target>ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant" xml:space="preserve">
@@ -6250,6 +6256,16 @@ Enable in *Network &amp; servers* settings.</source>
         <target>อ่านเพิ่มเติม</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more in User Guide." xml:space="preserve">
+        <source>Read more in User Guide.</source>
+        <target>อ่านเพิ่มเติมในคู่มือผู้ใช้</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>อ่านเพิ่มเติมในพื้นที่เก็บข้อมูล GitHub</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Receipts are disabled" xml:space="preserve">
         <source>Receipts are disabled</source>
         <note>No comment provided by engineer.</note>
@@ -7596,6 +7612,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Star on GitHub" xml:space="preserve">
         <source>Star on GitHub</source>
+        <target>ติดดาวบน GitHub</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
