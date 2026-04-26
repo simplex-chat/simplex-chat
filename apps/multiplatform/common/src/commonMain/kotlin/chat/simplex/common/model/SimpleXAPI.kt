@@ -5798,7 +5798,7 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.disable_sending_recent_history_channel else MR.strings.disable_sending_recent_history)
         }
         Support -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_chat_with_admins)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.allow_chat_with_admins_channel else MR.strings.allow_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_chat_with_admins)
         }
       }
@@ -5841,7 +5841,7 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.OFF -> generalGetString(if (isChannel) MR.strings.recent_history_is_not_sent_to_new_members_channel else MR.strings.recent_history_is_not_sent_to_new_members)
         }
         Support -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.members_can_chat_with_admins)
+          GroupFeatureEnabled.ON -> generalGetString(if (isChannel) MR.strings.members_can_chat_with_admins_channel else MR.strings.members_can_chat_with_admins)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.chat_with_admins_is_prohibited)
         }
       }

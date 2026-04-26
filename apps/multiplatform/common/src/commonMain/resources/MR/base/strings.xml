@@ -2363,6 +2363,8 @@
   <string name="group_members_can_send_reports_channel">Subscribers can report messsages to moderators.</string>
   <string name="recent_history_is_sent_to_new_members_channel">Up to 100 last messages are sent to new subscribers.</string>
   <string name="recent_history_is_not_sent_to_new_members_channel">History is not sent to new subscribers.</string>
+  <string name="allow_chat_with_admins_channel">Allow subscribers to chat with admins.</string>
+  <string name="members_can_chat_with_admins_channel">Subscribers can chat with admins.</string>
 
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
