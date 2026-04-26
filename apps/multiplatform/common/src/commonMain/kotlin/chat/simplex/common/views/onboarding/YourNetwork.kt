@@ -63,7 +63,7 @@ fun YourNetworkView(chatModel: ChatModel) {
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
         topPadding = DEFAULT_PADDING,
         image = {
-          Column(Modifier.padding(bottom = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
+          Column(Modifier.padding(vertical = DEFAULT_PADDING_HALF), horizontalAlignment = Alignment.CenterHorizontally) {
             if (BuildConfigCommon.SIMPLEX_ASSETS) {
               Image(
                 painterResource(if (isInDarkTheme()) MR.images.your_network_light else MR.images.your_network),
@@ -146,7 +146,7 @@ fun YourNetworkView(chatModel: ChatModel) {
         },
         button = {
           Column(
-            Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp),
+            Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING),
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             OnboardingActionButton(
