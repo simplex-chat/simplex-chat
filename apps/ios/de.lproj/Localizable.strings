@@ -6731,3 +6731,13 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ihre SimpleX-Adresse";
 
+
+"why_built_heading" = "Sie wurden ohne eine Benutzerkennung geboren.";
+"why_built_p1" = "Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.";
+"why_built_p2" = "Dann sind wir online gegangen, und jede Plattform wollte Etwas von Ihnen - Ihren Namen, Ihre Nummer, Ihre Freunde. Wir akzeptierten, dass es der Preis mit Anderen zu kommunizieren ist, Jemandem preiszugeben, mit wem und wie wir miteinander kommunizieren. Jede Generation, Menschen und Technologien, kannten es nur so - Telefon, E-Mail, Messenger, soziale Medien. Es schien der einzig mögliche Weg zu sein.";
+"why_built_p3" = "Es gibt einen anderen Weg. Ein Netzwerk ohne Telefonnummern, ohne Benutzernamen, ohne Benutzerkennungen und ohne jegliche Benutzeridentität. Ein Netzwerk, welches Menschen verbindet und verschlüsselte Nachrichten überträgt, ohne zu wissen, wer mit wem verbunden ist.";
+"why_built_p4" = "Nicht ein besseres Schloss an der Tür eines Anderen. Kein freundlicher Vermieter, der Ihre Privatsphäre respektiert, aber dennoch jeden Besucher registriert. Sie sind kein Gast. Sie sind zu Hause. Kein Vermieter, kein Fremder kann es betreten - Sie sind souverän.";
+"why_built_p5" = "Ihre Kommunikation gehört Ihnen, so wie es immer war, bevor es das Internet gab. Das Netzwerk ist kein Ort, den Sie besuchen. Es ist ein Ort, den Sie erschaffen und besitzen und Niemand kann es Ihnen nehmen, egal ob Sie es privat oder öffentlich machen.";
+"why_built_p6" = "Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.";
+"why_built_p7" = "Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.";
+"why_built_tagline" = "Genießen Sie die Freiheit in Ihrem Netzwerk.";
