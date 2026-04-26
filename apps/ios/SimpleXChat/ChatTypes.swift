@@ -867,6 +867,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
     case simplexLinks
     case reports
     case history
+    case support
 
     public var id: Self { self }
 
@@ -888,6 +889,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: true
         case .reports: false
         case .history: false
+        case .support: false
         }
     }
 
@@ -902,6 +904,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return NSLocalizedString("SimpleX links", comment: "chat feature")
         case .reports: return NSLocalizedString("Member reports", comment: "chat feature")
         case .history: return NSLocalizedString("Visible history", comment: "chat feature")
+        case .support: return NSLocalizedString("Chat with admins", comment: "chat feature")
         }
     }
 
@@ -916,6 +919,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return "link.circle"
         case .reports: return "flag"
         case .history: return "clock"
+        case .support: return "questionmark.circle"
         }
     }
 
@@ -930,6 +934,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .simplexLinks: return "link.circle.fill"
         case .reports: return "flag.fill"
         case .history: return "clock.fill"
+        case .support: return "questionmark.circle.fill"
         }
     }
 
@@ -988,6 +993,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 case .on: return "Send up to 100 last messages to new members."
                 case .off: return "Do not send history to new members."
                 }
+            case .support:
+                switch enabled {
+                case .on: return "Allow members to chat with admins."
+                case .off: return "Prohibit chats with admins."
+                }
             }
         } else {
             switch self {
@@ -1035,6 +1045,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 switch enabled {
                 case .on: return "Up to 100 last messages are sent to new members."
                 case .off: return "History is not sent to new members."
+                }
+            case .support:
+                switch enabled {
+                case .on: return "Members can chat with admins."
+                case .off: return "Chats with admins are prohibited."
                 }
             }
         }
@@ -1190,6 +1205,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var simplexLinks: RoleGroupPreference
     public var reports: GroupPreference
     public var history: GroupPreference
+    public var support: GroupPreference
     public var commands: [ChatBotCommand]
 
     public init(
@@ -1202,6 +1218,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         simplexLinks: RoleGroupPreference,
         reports: GroupPreference,
         history: GroupPreference,
+        support: GroupPreference,
         commands: [ChatBotCommand]
     ) {
         self.timedMessages = timedMessages
@@ -1213,6 +1230,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.simplexLinks = simplexLinks
         self.reports = reports
         self.history = history
+        self.support = support
         self.commands = commands
     }
 
@@ -1226,6 +1244,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
         reports: GroupPreference(enable: .on),
         history: GroupPreference(enable: .on),
+        support: GroupPreference(enable: .on),
         commands: []
     )
 }
@@ -1240,6 +1259,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var simplexLinks: RoleGroupPreference?
     public var reports: GroupPreference?
     public var history: GroupPreference?
+    public var support: GroupPreference?
     public var commands: [ChatBotCommand]?
 
     public init(
@@ -1252,6 +1272,7 @@ public struct GroupPreferences: Codable, Hashable {
         simplexLinks: RoleGroupPreference? = nil,
         reports: GroupPreference? = nil,
         history: GroupPreference? = nil,
+        support: GroupPreference? = nil,
         commands: [ChatBotCommand]? = nil
     ) {
         self.timedMessages = timedMessages
@@ -1263,6 +1284,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.simplexLinks = simplexLinks
         self.reports = reports
         self.history = history
+        self.support = support
         self.commands = commands
     }
 
@@ -1276,6 +1298,7 @@ public struct GroupPreferences: Codable, Hashable {
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
         reports: GroupPreference(enable: .on),
         history: GroupPreference(enable: .on),
+        support: GroupPreference(enable: .on),
         commands: nil
     )
 }
@@ -1757,6 +1780,18 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         switch self {
         case let .group(_, groupChatScope): groupChatScope?.toChatScope()
         default: nil
+        }
+    }
+
+    public var sendAsGroup: Bool {
+        if let g = groupInfo, g.useRelays && g.membership.memberRole >= .owner {
+            switch groupChatScope() {
+            case .none: true
+            case .memberSupport: false
+            case .reports: false
+            }
+        } else {
+            false
         }
     }
 

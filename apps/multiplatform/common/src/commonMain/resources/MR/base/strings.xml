@@ -2337,6 +2337,14 @@
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="group_members_can_send_reports">Members can report messsages to moderators.</string>
   <string name="member_reports_are_prohibited">Reporting messages is prohibited in this group.</string>
+  <string name="chat_with_admins">Chat with admins</string>
+  <string name="allow_chat_with_admins">Allow members to chat with admins.</string>
+  <string name="prohibit_chat_with_admins">Prohibit chats with admins.</string>
+  <string name="members_can_chat_with_admins">Members can chat with admins.</string>
+  <string name="chat_with_admins_is_prohibited">Chats with admins are prohibited.</string>
+  <string name="chat_with_admins_relay_note">Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.</string>
+  <string name="enable_chats_with_admins_question">Enable chats with admins?</string>
+  <string name="enable_chats_with_admins">Enable</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>
@@ -2373,6 +2381,7 @@
   <!-- MemberSupportView.kt -->
   <string name="member_support">Chats with members</string>
   <string name="no_support_chats">No chats with members</string>
+  <string name="support_chats_disabled">Chats with members are disabled</string>
   <string name="delete_member_support_chat_button">Delete chat</string>
   <string name="delete_member_support_chat_alert_title">Delete chat with member?</string>
 

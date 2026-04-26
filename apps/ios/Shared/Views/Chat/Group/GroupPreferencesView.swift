@@ -46,13 +46,30 @@ struct GroupPreferencesView: View {
                     featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
                     featureSection(.files, $preferences.files.enable, $preferences.files.role)
                     featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
-                    featureSection(.reports, $preferences.reports.enable)
+                    featureSection(.reports, $preferences.reports.enable, disabled: true) // enable reports in 7.0 once directory support added
                     featureSection(.history, $preferences.history.enable)
+                    featureSection(.support, $preferences.support.enable, disabled: true)
                 } else {
                     featureSection(.timedMessages, $preferences.timedMessages.enable)
                     featureSection(.fullDelete, $preferences.fullDelete.enable)
                     featureSection(.reactions, $preferences.reactions.enable)
                     featureSection(.history, $preferences.history.enable)
+                    let supportNotice = NSLocalizedString("Chats with admins in public channels have no E2E encryption - use only with trusted chat relays.", comment: "alert message")
+                    featureSection(.support, $preferences.support.enable, notice: supportNotice)
+                        .onChange(of: preferences.support.enable) { enable in
+                            if enable == .on {
+                                showAlert(
+                                    NSLocalizedString("Enable chats with admins?", comment: "alert title"),
+                                    message: supportNotice,
+                                    actions: {[
+                                        UIAlertAction(title: NSLocalizedString("Enable", comment: "alert button"), style: .destructive) { _ in },
+                                        UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel) { _ in
+                                            preferences.support.enable = .off
+                                        }
+                                    ]}
+                                )
+                            }
+                        }
                 }
 
                 if groupInfo.isOwner {
@@ -92,7 +109,7 @@ struct GroupPreferencesView: View {
         }
     }
 
-    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil) -> some View {
+    private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil, disabled: Bool = false, notice: String? = nil) -> some View {
         Section {
             let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
@@ -105,7 +122,7 @@ struct GroupPreferencesView: View {
                 settingsRow(icon, color: color) {
                     Toggle(feature.text, isOn: enable)
                 }
-                .disabled(feature == .reports) // remove in 6.4
+                .disabled(disabled)
                 if timedOn {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
@@ -144,8 +161,11 @@ struct GroupPreferencesView: View {
                 }
             }
         } footer: {
-            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
-                .foregroundColor(theme.colors.secondary)
+            VStack(alignment: .leading) {
+                Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
+                if let notice { Text(notice) }
+            }
+            .foregroundColor(theme.colors.secondary)
         }
         .onChange(of: enableFeature.wrappedValue) { enabled in
             if case .off = enabled {
