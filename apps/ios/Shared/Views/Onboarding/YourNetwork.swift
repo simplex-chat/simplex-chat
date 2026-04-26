@@ -103,7 +103,7 @@ struct YourNetworkView: View {
                 ChooseServerOperators(serverOperators: serverOperators, selectedOperatorIds: $selectedOperatorIds)
                     .modifier(ThemedBackground())
             case .configureNotifications:
-                NotificationModeSelector(notificationMode: $notificationMode)
+                SetNotificationsMode(notificationMode: $notificationMode)
                     .modifier(ThemedBackground())
             }
         }
@@ -188,57 +188,6 @@ struct YourNetworkView: View {
                     }
                 }
             }
-        }
-    }
-}
-
-private struct NotificationModeSelector: View {
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var theme: AppTheme
-    @Binding var notificationMode: NotificationsMode
-    @State private var showInfo = false
-
-    var body: some View {
-        GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .center, spacing: 20) {
-                    Text("Push notifications")
-                        .font(.largeTitle)
-                        .bold()
-                        .padding(.top, 25)
-
-                    Button {
-                        showInfo = true
-                    } label: {
-                        Label("How it affects privacy", systemImage: "info.circle")
-                            .font(.headline)
-                    }
-
-                    Spacer()
-
-                    ForEach(NotificationsMode.values) { mode in
-                        NtfModeSelector(mode: mode, selection: $notificationMode)
-                    }
-
-                    Spacer()
-
-                    VStack(spacing: 10) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Text("OK")
-                        }
-                        .buttonStyle(OnboardingButtonStyle())
-                        onboardingButtonPlaceholder()
-                    }
-                }
-                .padding(25)
-                .frame(minHeight: g.size.height)
-            }
-        }
-        .frame(maxHeight: .infinity)
-        .sheet(isPresented: $showInfo) {
-            NotificationsInfoView()
         }
     }
 }
