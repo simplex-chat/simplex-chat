@@ -135,7 +135,7 @@ fun SimpleXInfoLayout(
           style = MaterialTheme.typography.body2,
           color = MaterialTheme.colors.secondary,
           textAlign = TextAlign.Center,
-          lineHeight = 21.sp,
+          lineHeight = 19.sp,
           modifier = Modifier.padding(top = DEFAULT_PADDING_HALF)
         )
       }
