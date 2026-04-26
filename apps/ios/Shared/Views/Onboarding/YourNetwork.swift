@@ -153,7 +153,7 @@ struct YourNetworkView: View {
             .buttonStyle(OnboardingButtonStyle())
 
             NavigationLink(isActive: $nextStepNavLinkActive) {
-                NetworkCommitmentsView(selectedOperatorIds: selectedOperatorIds)
+                OnboardingConditionsView(selectedOperatorIds: selectedOperatorIds)
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
             } label: {
