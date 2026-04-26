@@ -213,7 +213,7 @@ class AppPreferences {
   val shouldImportAppSettings = mkBoolPreference(SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
-  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
+  val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.DARK.themeName)
   val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
     json.encodeToString(MapSerializer(String.serializer(), String.serializer()), it)
   }, decode = {
