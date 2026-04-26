@@ -257,7 +257,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 
         Spacer(Modifier.weight(1f))
 
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
             if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier.widthIn(min = 300.dp),
             labelId = MR.strings.create_profile,
@@ -265,7 +265,6 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
             enabled = canCreateProfile(displayName.value),
             onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
           )
-          TextButtonBelowOnboardingButton("", null)
         }
 
         LaunchedEffect(refocusTrigger.value) {
