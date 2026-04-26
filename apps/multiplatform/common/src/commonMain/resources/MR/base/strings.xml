@@ -74,6 +74,7 @@
   <string name="e2ee_info_e2ee"><![CDATA[Messages are protected by <b>end-to-end encryption</b>.]]></string>
   <string name="e2ee_info_no_pq"><![CDATA[Messages, files and calls are protected by <b>end-to-end encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
   <string name="e2ee_info_pq"><![CDATA[Messages, files and calls are protected by <b>quantum resistant e2e encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
+  <string name="e2ee_info_no_e2ee"><![CDATA[Messages in this channel are <b>not end-to-end encrypted</b>. Chat relays can see these messages.]]></string>
   <string name="e2ee_info_no_pq_short">This chat is protected by end-to-end encryption.</string>
   <string name="e2ee_info_pq_short">This chat is protected by quantum resistant end-to-end encryption.</string>
 
@@ -1376,6 +1377,7 @@
   <string name="open_simplex_chat_to_accept_call">Open SimpleX Chat to accept call</string>
   <string name="allow_accepting_calls_from_lock_screen">Enable calls from lock screen via Settings.</string>
   <string name="open_verb">Open</string>
+  <string name="open_external_link_title">Open external link?</string>
 
   <!-- Call overlay -->
   <string name="status_e2e_encrypted">e2e encrypted</string>

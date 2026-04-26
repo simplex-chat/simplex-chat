@@ -1115,7 +1115,7 @@
     <string name="learn_more">Dowiedz się więcej</string>
     <string name="stop_sharing_address">Przestać udostępniać adres\?</string>
     <string name="auto_accept_contact">Automatycznie akceptuj</string>
-    <string name="share_address_with_contacts_question">Udostępnić adres kontaktom\?</string>
+    <string name="share_address_with_contacts_question">Udostępnić adres kontaktom?</string>
     <string name="enter_welcome_message_optional">Wpisz wiadomość powitalną… (opcjonalne)</string>
     <string name="profile_update_will_be_sent_to_contacts">Aktualizacja profilu zostanie wysłana do Twoich kontaktów.</string>
     <string name="save_settings_question">Zapisać ustawienia\?</string>

@@ -527,8 +527,7 @@
     <string name="abort_switch_receiving_address">Nutraukti adreso keitimą</string>
     <string name="v4_2_auto_accept_contact_requests">Automatiškai priimti kontaktų užklausas</string>
     <string name="v5_1_self_destruct_passcode_descr">Jį įrašius visi duomenys bus pašalinti.</string>
-    <string name="network_session_mode_entity_description"><b>Kiekvienam kontaktui ir grupės nariui</b> bus naudojamas atskiras TCP prisijungimas (ir SOCKS prisijungimo duomenys). 
-\n<b>Turėkite omenyje</b>: jei turite daug prisijungimų, akumuliatoriaus ir interneto duomenų sąnaudos gali būti žymiai didesnės ir, kartais, prisijungimai gali patirti nesėkmę.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>Kiekvienam kontaktui ir grupės nariui</b> bus naudojamas atskiras TCP prisijungimas (ir SOCKS prisijungimo duomenys). \n<b>Turėkite omenyje</b>: jei turite daug prisijungimų, akumuliatoriaus ir interneto duomenų sąnaudos gali būti žymiai didesnės ir, kartais, prisijungimai gali patirti nesėkmę.]]></string>
     <string name="contact_wants_to_connect_via_call">%1$s nori su jumis susisiekti per</string>
     <string name="turning_off_service_and_periodic">Yra įjungtas akumuliatoriaus naudojimo optimizavimas, išjungiantis foninę tarnybą ir periodines užklausas apie naujas žinutes. Nustatymuose galite įjungti ją iš naujo.</string>
     <string name="notifications_mode_service">Visada įjungta</string>

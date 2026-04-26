@@ -3813,8 +3813,8 @@ sealed class CIContent: ItemContent {
       is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
       is SndDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
       is RcvDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
-      is SndGroupE2EEInfo -> e2eeInfoNoPQStr
-      is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
+      is SndGroupE2EEInfo -> groupE2EEInfoStr(e2eeInfo)
+      is RcvGroupE2EEInfo -> groupE2EEInfoStr(e2eeInfo)
       is ChatBanner -> ""
       is InvalidJSON -> "invalid data"
     }
@@ -3850,6 +3850,9 @@ sealed class CIContent: ItemContent {
       }
 
     private val e2eeInfoNoPQStr: String = generalGetString(MR.strings.e2ee_info_no_pq_short)
+
+    fun groupE2EEInfoStr(e2EEInfo: E2EEInfo): String =
+      if (e2EEInfo.public == true) generalGetString(MR.strings.e2ee_info_no_e2ee) else e2eeInfoNoPQStr
 
     fun featureText(feature: Feature, enabled: String, param: Int?, role: GroupMemberRole? = null): String =
       (if (feature.hasParam) {
@@ -4377,7 +4380,7 @@ enum class CIGroupInvitationStatus {
 }
 
 @Serializable
-class E2EEInfo (val pqEnabled: Boolean?) {}
+class E2EEInfo (val pqEnabled: Boolean?, val public: Boolean? = null) {}
 
 object MsgContentSerializer : KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {

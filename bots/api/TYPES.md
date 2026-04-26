@@ -1848,6 +1848,7 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 ## E2EInfo
 
 **Record type**:
+- public: bool?
 - pqEnabled: bool?
 
 

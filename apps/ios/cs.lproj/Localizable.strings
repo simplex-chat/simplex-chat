@@ -375,9 +375,6 @@ swipe action */
 "Active connections" = "Aktivní spojení";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Přidejte adresu do svého profilu, aby ji vaše kontakty mohly sdílet s dalšími lidmi. Aktualizace profilu bude zaslána vašim kontaktům.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Přidat přátele";
 
 /* No comment provided by engineer. */
@@ -746,7 +743,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulharský, finský, thajský a ukrajinský - díky uživatelům a [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Obchodní adresa";
 
 /* No comment provided by engineer. */
@@ -1017,7 +1014,7 @@ server test step */
 /* alert title */
 "Connection error" = "Chyba připojení";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Chyba spojení (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1070,9 +1067,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Verze jádra: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Vytvořit";
 
 /* server test step */
 "Create file" = "Vytvořit soubor";
@@ -1416,7 +1410,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "Upravit profil skupiny";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Zapnout";
 
 /* No comment provided by engineer. */
@@ -1548,7 +1542,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "chyba";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Chyba";
 
 /* No comment provided by engineer. */
@@ -1824,7 +1818,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Skupinová pozvánka již není platná, byla odstraněna odesílatelem.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Odkaz na skupinu";
 
 /* No comment provided by engineer. */
@@ -2010,7 +2004,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "neplatná chat data";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Neplatný odkaz na spojení";
 
 /* invalid chat item */
@@ -2606,9 +2600,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "Heslo profilu";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Aktualizace profilu bude zaslána vašim kontaktům.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Zákaz audio/video hovorů.";
 
@@ -3036,14 +3027,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Sdílet adresu";
 
-/* alert title */
-"Share address with contacts?" = "Sdílet adresu s kontakty?";
-
 /* No comment provided by engineer. */
 "Share link" = "Sdílet odkaz";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Sdílet s kontakty";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Ukaž hovory v historii telefonu";
@@ -3578,7 +3563,7 @@ server test failure */
 "You can set lock screen notification preview via settings." = "Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.";
 
 /* No comment provided by engineer. */
-"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud ji později odstraníte.";
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud odkaz později smažete.";
 
 /* No comment provided by engineer. */
 "You can share this address with your contacts to let them connect with **%@**." = "Tuto adresu můžete sdílet s vašimi kontakty, abyse se mohli spojit s **%@**.";
