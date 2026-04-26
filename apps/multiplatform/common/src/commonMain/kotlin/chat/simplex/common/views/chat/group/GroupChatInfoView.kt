@@ -546,6 +546,10 @@ fun ModalData.GroupChatInfoLayout(
 
       var anyTopSectionRowShow = false
       val channelLink = groupInfo.groupProfile.publicGroup?.groupLink
+      val showUserSupportChat = groupInfo.membership.memberActive &&
+        ((groupInfo.fullGroupPreferences.support.on && groupInfo.membership.memberRole < GroupMemberRole.Moderator)
+          || groupInfo.membership.supportChat != null)
+
       if (groupInfo.useRelays) {
         SectionView {
           if (groupInfo.isOwner && groupLink != null) {
@@ -563,6 +567,14 @@ fun ModalData.GroupChatInfoLayout(
           if (groupInfo.isOwner || activeSortedMembers.any { it.memberRole >= GroupMemberRole.Owner }) {
             anyTopSectionRowShow = true
             ChannelMembersButton(chat.remoteHostId, groupInfo, showMemberInfo)
+          }
+          if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+            anyTopSectionRowShow = true
+            MemberSupportButton(chat, openMemberSupport)
+          }
+          if (showUserSupportChat) {
+            anyTopSectionRowShow = true
+            UserSupportChatButton(chat, groupInfo, scrollToItemId)
           }
         }
         if (!groupInfo.isOwner && channelLink != null) {
@@ -590,10 +602,7 @@ fun ModalData.GroupChatInfoLayout(
               }
             }
           }
-          if (
-            groupInfo.membership.memberActive &&
-            (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
-          ) {
+          if (showUserSupportChat) {
             anyTopSectionRowShow = true
             UserSupportChatButton(chat, groupInfo, scrollToItemId)
           }

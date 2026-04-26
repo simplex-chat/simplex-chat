@@ -14,13 +14,7 @@
 "!1 colored!" = "!1 มีสี!";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[มีส่วนร่วม](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[ส่งอีเมลถึงเรา](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[ติดดาวบน GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "การโทรเสียงแบบ **encrypted จากต้นจนจบ**";
@@ -232,9 +226,6 @@ swipe action */
 
 /* call status */
 "accepted call" = "รับสายแล้ว";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ";
 
 /* No comment provided by engineer. */
 "Add profile" = "เพิ่มโปรไฟล์";
@@ -672,7 +663,7 @@ server test step */
 /* alert title */
 "Connection error" = "การเชื่อมต่อผิดพลาด";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "การเชื่อมต่อผิดพลาด (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -721,13 +712,13 @@ server test step */
 "Continue" = "ดำเนินการต่อ";
 
 /* No comment provided by engineer. */
+"Contribute" = "มีส่วนร่วม";
+
+/* No comment provided by engineer. */
 "Copy" = "คัดลอก";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "รุ่นหลัก: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "สร้าง";
 
 /* server test step */
 "Create file" = "สร้างไฟล์";
@@ -1056,7 +1047,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "แก้ไขโปรไฟล์กลุ่ม";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "เปิดใช้งาน";
 
 /* No comment provided by engineer. */
@@ -1182,7 +1173,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "ผิดพลาด";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "ผิดพลาด";
 
 /* No comment provided by engineer. */
@@ -1449,7 +1440,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "คำเชิญเข้าร่วมกลุ่มใช้ไม่ถูกต้องอีกต่อไป คำเชิญถูกลบโดยผู้ส่ง";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "ลิงค์กลุ่ม";
 
 /* No comment provided by engineer. */
@@ -1615,7 +1606,7 @@ server test error */
 "Initial role" = "บทบาทเริ่มต้น";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "ติดตั้ง [SimpleX Chat สำหรับเทอร์มินัล](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "ติดตั้ง SimpleX Chat สำหรับเทอร์มินัล";
 
 /* No comment provided by engineer. */
 "Instant" = "ทันที";
@@ -1632,7 +1623,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "ข้อมูลแชทไม่ถูกต้อง";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "ลิงค์เชื่อมต่อไม่ถูกต้อง";
 
 /* invalid chat item */
@@ -2213,9 +2204,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "รหัสผ่านโปรไฟล์";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "ห้ามการโทรด้วยเสียง/วิดีโอ";
 
@@ -2268,13 +2256,10 @@ new chat action */
 "Read more" = "อ่านเพิ่มเติม";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "อ่านเพิ่มเติมใน[คู่มือผู้ใช้](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)";
+"Read more in our GitHub repository." = "อ่านเพิ่มเติมในพื้นที่เก็บข้อมูล GitHub";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "อ่านเพิ่มเติมใน[คู่มือผู้ใช้](https://simplex.chat/docs/guide/readme.html#connect-to-friends)";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "อ่านเพิ่มเติมใน[พื้นที่เก็บข้อมูล GitHub](https://github.com/simplex-chat/simplex-chat#readme)";
+"Read more in User Guide." = "อ่านเพิ่มเติมในคู่มือผู้ใช้";
 
 /* No comment provided by engineer. */
 "received answer…" = "ได้รับคำตอบ…";
@@ -2625,14 +2610,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "แชร์ที่อยู่";
 
-/* alert title */
-"Share address with contacts?" = "แชร์ที่อยู่กับผู้ติดต่อ?";
-
 /* No comment provided by engineer. */
 "Share link" = "แชร์ลิงก์";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "แชร์กับผู้ติดต่อ";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "แสดงการโทรในประวัติการโทร";
@@ -2693,6 +2672,9 @@ chat item action */
 
 /* notification title */
 "Somebody" = "ใครบางคน";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "ติดดาวบน GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "เริ่มแชท";

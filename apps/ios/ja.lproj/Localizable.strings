@@ -26,13 +26,7 @@
 "(this device v%@)" = "(このデバイス v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[貢献する](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[メールを送信](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[GitHub でスターを付ける](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**コンタクトの追加**: 新しい招待リンクを作成するか、受け取ったリンクから接続します。";
@@ -376,9 +370,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "アクティブな接続";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。";
 
 /* No comment provided by engineer. */
 "Add friends" = "友達を追加";
@@ -969,7 +960,7 @@ server test step */
 /* alert title */
 "Connection error" = "接続エラー";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "接続エラー (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1021,13 +1012,13 @@ server test step */
 "Continue" = "続ける";
 
 /* No comment provided by engineer. */
+"Contribute" = "貢献する";
+
+/* No comment provided by engineer. */
 "Copy" = "コピー";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "コアのバージョン: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "作成";
 
 /* server test step */
 "Create file" = "ファイルを作成";
@@ -1386,7 +1377,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "グループのプロフィールを編集";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "有効";
 
 /* No comment provided by engineer. */
@@ -1518,7 +1509,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "エラー";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "エラー";
 
 /* No comment provided by engineer. */
@@ -1788,7 +1779,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "グループ招待が無効となり、送信元によって取り消されました。";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "グループのリンク";
 
 /* No comment provided by engineer. */
@@ -1957,7 +1948,7 @@ server test error */
 "Initial role" = "初期の役割";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "インストール [ターミナル用SimpleX Chat](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "インストール ターミナル用SimpleX Chat";
 
 /* No comment provided by engineer. */
 "Instant" = "即時";
@@ -1974,7 +1965,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "無効なチャットデータ";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "無効な接続リンク";
 
 /* invalid chat item */
@@ -2459,7 +2450,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "音声メッセージを送れるのはあなたの連絡相手だけです。";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "開く";
 
 /* new chat action */
@@ -2579,9 +2571,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "プロフィールのパスワード";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "連絡先にプロフィール更新のお知らせが届きます。";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "音声/ビデオ通話を禁止する 。";
 
@@ -2634,13 +2623,10 @@ new chat action */
 "Read more" = "続きを読む";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "詳しくは[ユーザーガイド](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)をご覧ください。";
+"Read more in our GitHub repository." = "詳しくはGitHubリポジトリをご覧ください。";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "詳しくは[ユーザーガイド](https://simplex.chat/docs/guide/readme.html#connect-to-friends)をご覧ください。";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "詳しくは[GitHubリポジトリ](https://github.com/simplex-chat/simplex-chat#readme)をご覧ください。";
+"Read more in User Guide." = "詳しくはユーザーガイドをご覧ください。";
 
 /* No comment provided by engineer. */
 "received answer…" = "回答を受け取りました…";
@@ -2979,14 +2965,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "アドレスを共有する";
 
-/* alert title */
-"Share address with contacts?" = "アドレスを連絡先と共有しますか?";
-
 /* No comment provided by engineer. */
 "Share link" = "リンクを送る";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "連絡先と共有する";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "通話履歴を表示";
@@ -3056,6 +3036,9 @@ chat item action */
 
 /* notification title */
 "Somebody" = "誰か";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "GitHub でスターを付ける";
 
 /* No comment provided by engineer. */
 "Start chat" = "チャットを開始する";

@@ -26,13 +26,7 @@
 "(this device v%@)" = "(това устройство v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Допринеси](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Изпратете ни имейл](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Звезда в GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Добави контакт**: за създаване на нов линк.";
@@ -388,9 +382,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "Активни връзки";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.";
 
 /* No comment provided by engineer. */
 "Add friends" = "Добави приятели";
@@ -873,7 +864,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Български, финландски, тайландски и украински - благодарение на потребителите и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Бизнес адрес";
 
 /* No comment provided by engineer. */
@@ -1318,7 +1309,7 @@ server test step */
 /* alert title */
 "Connection error" = "Грешка при свързване";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Грешка при свързване (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1385,6 +1376,9 @@ server test step */
 "Continue" = "Продължи";
 
 /* No comment provided by engineer. */
+"Contribute" = "Допринеси";
+
+/* No comment provided by engineer. */
 "Copy" = "Копирай";
 
 /* No comment provided by engineer. */
@@ -1392,9 +1386,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Поправи име на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Създаване";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Създаване на еднократна препратка";
@@ -1802,7 +1793,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Edit group profile" = "Редактирай групов профил";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Активирай";
 
 /* No comment provided by engineer. */
@@ -1964,7 +1955,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "грешка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Грешка при свързване със сървъра";
 
 /* No comment provided by engineer. */
@@ -2306,7 +2297,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Груповата покана вече е невалидна, премахната е от подателя.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Групов линк";
 
 /* No comment provided by engineer. */
@@ -2502,7 +2493,7 @@ server test error */
 "Initial role" = "Първоначална роля";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Инсталирайте [SimpleX Chat за терминал](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Инсталирайте SimpleX Chat за терминал";
 
 /* No comment provided by engineer. */
 "Instant" = "Мигновено";
@@ -2519,7 +2510,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "невалидни данни за чат";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Невалиден линк за връзка";
 
 /* invalid chat item */
@@ -3040,7 +3031,7 @@ alert button
 new chat action */
 "Ok" = "Ок";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "ОК";
 
 /* No comment provided by engineer. */
@@ -3103,7 +3094,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Само вашият контакт може да изпраща гласови съобщения.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Отвори";
 
 /* new chat action */
@@ -3271,9 +3263,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "Профилна парола";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Актуализацията на профила ще бъде изпратена до вашите контакти.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Забрани аудио/видео разговорите.";
 
@@ -3338,16 +3327,10 @@ new chat action */
 "Read more" = "Прочетете още";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Прочетете повече в нашето GitHub хранилище.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Прочетете повече в [Ръководство за потребителя](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Прочетете повече в [Ръководство на потребителя](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Прочетете повече в нашето [GitHub хранилище](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Прочетете повече в Ръководство за потребителя.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Потвърждениeто за доставка е деактивирано";
@@ -3782,17 +3765,11 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Сподели адрес";
 
-/* alert title */
-"Share address with contacts?" = "Сподели адреса с контактите?";
-
 /* No comment provided by engineer. */
 "Share link" = "Сподели линк";
 
 /* No comment provided by engineer. */
 "Share this 1-time invite link" = "Сподели този еднократен линк за връзка";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Сподели с контактите";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Показване на обажданията в хронологията на телефона";
@@ -3880,6 +3857,9 @@ chat item action */
 
 /* chat item text */
 "standard end-to-end encryption" = "стандартно криптиране от край до край";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Звезда в GitHub";
 
 /* No comment provided by engineer. */
 "Start chat" = "Започни чат";

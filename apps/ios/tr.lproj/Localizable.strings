@@ -26,13 +26,7 @@
 "(this device v%@)" = "(bu cihaz v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Katkıda bulun](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Bize e-posta gönder](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Bize GitHub'da yıldız verin](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Kişi ekle**: yeni bir davet bağlantısı oluşturmak için, ya da aldığın bağlantıyla bağlan.";
@@ -397,9 +391,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "Aktif bağlantılar";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Kişilerinizin başkalarıyla paylaşabilmesi için profilinize adres ekleyin. Profil güncellemesi kişilerinize gönderilecek.";
 
 /* No comment provided by engineer. */
 "Add friends" = "Arkadaş ekle";
@@ -891,7 +882,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgarca, Fince, Tayca ve Ukraynaca - kullanıcılara ve [Weblate] e teşekkürler! (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "İş adresi";
 
 /* No comment provided by engineer. */
@@ -1342,7 +1333,7 @@ server test step */
 /* alert title */
 "Connection error" = "Bağlantı hatası";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Bağlantı hatası (DOĞRULAMA)";
 
 /* chat list item title (it should not be shown */
@@ -1445,6 +1436,9 @@ server test step */
 "Continue" = "Devam et";
 
 /* No comment provided by engineer. */
+"Contribute" = "Katkıda bulun";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "Sohbet silindi!";
 
 /* No comment provided by engineer. */
@@ -1461,9 +1455,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "İsim %@ olarak düzeltilsin mi?";
-
-/* No comment provided by engineer. */
-"Create" = "Oluştur";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Tek kullanımlık bağlantı oluştur";
@@ -2018,7 +2009,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Boş mesaj!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Etkinleştir";
 
 /* No comment provided by engineer. */
@@ -2192,7 +2183,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "hata";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Hata";
 
 /* No comment provided by engineer. */
@@ -2730,7 +2721,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "grup silindi";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Grup bağlantısı";
 
 /* No comment provided by engineer. */
@@ -2959,7 +2950,7 @@ servers warning */
 "Initial role" = "Başlangıç rolü";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[Terminal için SimpleX Chat]i indir(https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Terminal için SimpleX Chat'i indir";
 
 /* No comment provided by engineer. */
 "Instant" = "Anında";
@@ -2994,7 +2985,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "geçersi̇z sohbet verisi";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Geçersiz bağlanma bağlantısı";
 
 /* invalid chat item */
@@ -3767,7 +3758,7 @@ alert button
 new chat action */
 "Ok" = "Tamam";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "TAMAM";
 
 /* No comment provided by engineer. */
@@ -3848,7 +3839,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Sadece karşıdaki kişi sesli mesajlar gönderebilir.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Aç";
 
 /* No comment provided by engineer. */
@@ -4148,9 +4140,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile theme" = "Profil teması";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Profil güncellemesi kişilerinize gönderilecektir.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Sesli/görüntülü aramaları yasakla.";
 
@@ -4239,16 +4228,10 @@ new chat action */
 "Read more" = "Dahasını oku";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "GitHub deposunda daha fazlasını okuyun.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "[Kullanıcı Rehberi]nde daha fazlasını okuyun(https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "[GitHub deposu]nda daha fazlasını okuyun(https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Kullanıcı Rehberinde daha fazlasını okuyun.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Alındı onayları devre dışı bırakıldı";
@@ -4977,9 +4960,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Adresinizi herkese açık olarak paylaşın";
 
-/* alert title */
-"Share address with contacts?" = "Kişilerle adres paylaşılsın mı?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Diğer uygulamalardan paylaşın.";
 
@@ -5003,9 +4983,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "SimpleX ile paylaş";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Kişilerle paylaş";
 
 /* No comment provided by engineer. */
 "Share your address" = "Adresini paylaş";
@@ -5162,6 +5139,9 @@ report reason */
 "standard end-to-end encryption" = "standart uçtan uca şifreleme";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Bize GitHub'da yıldız verin";
+
+/* No comment provided by engineer. */
 "Start chat" = "Sohbeti başlat";
 
 /* No comment provided by engineer. */
@@ -5265,9 +5245,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to use bot" = "Botu kullanmak için Bağlan tuşuna bas";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Daha sonra oluşturmak için menüden BasitX adresi oluştur'a dokunun.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Gruba katıl'a dokunun";
@@ -5669,7 +5646,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Okunmamış";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Desteklenmeyen bağlantı bağlantısı";
 
 /* No comment provided by engineer. */

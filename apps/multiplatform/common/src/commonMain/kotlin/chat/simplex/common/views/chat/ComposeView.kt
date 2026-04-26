@@ -534,7 +534,7 @@ fun ComposeView(
         type = cInfo.chatType,
         id = cInfo.apiId,
         scope = cInfo.groupChatScope(),
-        sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
+        sendAsGroup = cInfo.sendAsGroup,
         live = live,
         ttl = ttl,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
@@ -665,7 +665,7 @@ fun ComposeView(
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         toScope = chat.chatInfo.groupChatScope(),
-        sendAsGroup = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false,
+        sendAsGroup = chat.chatInfo.sendAsGroup,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
         fromScope = fromChatInfo.groupChatScope(),
@@ -1496,7 +1496,7 @@ fun ComposeView(
       )
       is SharedContent.ChatLink -> {
         val cInfo = chat.chatInfo
-        val sendAsGroup = (cInfo as? ChatInfo.Group)?.groupInfo?.let { it.useRelays && it.membership.memberRole >= GroupMemberRole.Owner } ?: false
+        val sendAsGroup = cInfo.sendAsGroup
         withBGApi {
           val mc = chatModel.controller.apiShareChatMsgContent(
             chat.remoteHostId, ChatType.Group, shared.groupInfo.groupId,
@@ -1693,7 +1693,7 @@ fun ComposeView(
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           AttachmentAndCommandsButtons()
           val broadcastPlaceholder = (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.let { gi ->
-            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner) generalGetString(MR.strings.compose_view_broadcast)
+            if (gi.useRelays && gi.membership.memberRole >= GroupMemberRole.Owner && chat.chatInfo.groupChatScope() == null) generalGetString(MR.strings.compose_view_broadcast)
             else null
           }
           SendMsgView_(disableSendButton = disableSendButton, placeholder = broadcastPlaceholder)

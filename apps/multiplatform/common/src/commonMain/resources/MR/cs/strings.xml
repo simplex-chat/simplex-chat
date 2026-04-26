@@ -877,7 +877,7 @@
     <string name="group_preferences">Předvolby skupiny</string>
     <string name="direct_messages">Přímé zprávy</string>
     <string name="full_deletion">Mazání všem</string>
-    <string name="feature_enabled">zapnuty</string>
+    <string name="feature_enabled">zapnuto</string>
     <string name="feature_enabled_for_you">povoleno vám</string>
     <string name="feature_off">vypnuty</string>
     <string name="prohibit_sending_disappearing_messages">Mizící zprávy zakázány.</string>
@@ -930,7 +930,7 @@
     <string name="moderated_description">moderované</string>
     <string name="moderated_item_description">moderovaný %s</string>
     <string name="delete_member_message__question">Smazat zprávu člena\?</string>
-    <string name="moderate_verb">moderovaný</string>
+    <string name="moderate_verb">Moderovat</string>
     <string name="observer_cant_send_message_desc">Kontaktujte prosím správce skupiny.</string>
     <string name="you_are_observer">jste pozorovatel</string>
     <string name="group_member_role_observer">pozorovatel</string>
@@ -1168,7 +1168,7 @@
     <string name="theme_colors_section_title">BARVY MOTIVU</string>
     <string name="customize_theme_title">Přizpůsobit motiv</string>
     <string name="profile_update_will_be_sent_to_contacts">Aktualizace profilu bude zaslána vašim kontaktům.</string>
-    <string name="share_address_with_contacts_question">Sdílet adresu s kontakty\?</string>
+    <string name="share_address_with_contacts_question">Sdílet adresu s kontakty?</string>
     <string name="stop_sharing_address">Přestat sdílet adresu\?</string>
     <string name="create_address_and_let_people_connect">Vytvořit adresu, aby se s vámi lidé mohli spojit.</string>
     <string name="save_auto_accept_settings">Uložit nastavení SimpleX adresy</string>
@@ -1543,7 +1543,7 @@
     <string name="rcv_group_event_member_blocked">blokováno %s</string>
     <string name="profile_update_event_contact_name_changed">kontakt %1$s změnen na %2$s</string>
     <string name="info_row_created_at">Vytvořeno v</string>
-    <string name="block_for_all">Blok všem</string>
+    <string name="block_for_all">Blokovat všem</string>
     <string name="block_for_all_question">Blokovat člena všem?</string>
     <string name="error_blocking_member_for_all">Chyba blokování člena všem</string>
     <string name="v5_5_message_delivery">Vylepšené doručovaní zpráv</string>
@@ -2054,7 +2054,7 @@
     <string name="no_message_servers_configured_for_private_routing">Žádné servery pro soukromé směrování chatů.</string>
     <string name="no_media_servers_configured_for_private_routing">Žádné servery pro příjem souborů.</string>
     <string name="no_message_servers_configured_for_receiving">Žádné servery pro příjem zpráv.</string>
-    <string name="delete_chat_list_warning">Všechny chaty budou ze seznamu odebrány %s, a seznam bude smazán</string>
+    <string name="delete_chat_list_warning">Všechny chaty budou ze seznamu %s odebrány, a seznam bude smazán</string>
     <string name="for_social_media">Pro sociální sítě</string>
     <string name="remote_hosts_section">Vzdálené telefony</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Podmínky budou přijaty pro operátora(y): <b>%s</b>.]]></string>

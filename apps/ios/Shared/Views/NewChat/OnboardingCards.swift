@@ -23,17 +23,19 @@ struct OnboardingCardView: View {
     let action: () -> Void
 
     static let lightStops: [Gradient.Stop] = [
-        .init(color: Color(red: 0.824, green: 0.910, blue: 1.0), location: 0.0),
-        .init(color: Color(red: 0.800, green: 0.914, blue: 1.0), location: 0.5),
-        .init(color: Color(red: 0.875, green: 1.0, blue: 1.0), location: 0.9),
-        .init(color: Color(red: 1.0, green: 0.988, blue: 0.918), location: 1.0)
+        .init(color: oklch(0.9219, 0.0431, 249.4), location: 0.0),
+        .init(color: oklch(0.9198, 0.0471, 240.7), location: 0.5),
+        .init(color: oklch(0.9772, 0.0358, 196.6), location: 0.9),
+        .init(color: oklch(0.9829, 0.0104, 70.0), location: 0.95),
+        .init(color: oklch(0.9886, 0.0272, 99.1), location: 1.0)
     ]
 
     static let darkStops: [Gradient.Stop] = [
-        .init(color: Color(red: 0.016, green: 0.039, blue: 0.141), location: 0.4),
-        .init(color: Color(red: 0.220, green: 0.329, blue: 0.671), location: 0.72),
-        .init(color: Color(red: 0.659, green: 0.929, blue: 0.953), location: 0.9),
-        .init(color: Color(red: 1.0, green: 0.965, blue: 0.878), location: 1.0)
+        .init(color: oklch(0.1578, 0.0609, 267.3), location: 0.4),
+        .init(color: oklch(0.4729, 0.1574, 267.3), location: 0.72),
+        .init(color: oklch(0.9024, 0.0760, 202.8), location: 0.9),
+        .init(color: oklch(0.9384, 0.0354, 65.0), location: 0.95),
+        .init(color: oklch(0.9744, 0.0370, 88.4), location: 1.0)
     ]
 
     static let gradientAngle: Double = 80.0 * .pi / 180.0

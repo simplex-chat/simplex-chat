@@ -14,13 +14,7 @@
 "!1 colored!" = "!1 värillinen!";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Osallistu](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Lähetä meille sähköpostia](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Tähti GitHubissa](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e-salattu** äänipuhelu";
@@ -256,9 +250,6 @@ swipe action */
 
 /* call status */
 "accepted call" = "hyväksytty puhelu";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.";
 
 /* No comment provided by engineer. */
 "Add profile" = "Lisää profiili";
@@ -699,7 +690,7 @@ server test step */
 /* alert title */
 "Connection error" = "Yhteysvirhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Yhteysvirhe (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -748,13 +739,13 @@ server test step */
 "Continue" = "Jatka";
 
 /* No comment provided by engineer. */
+"Contribute" = "Osallistu";
+
+/* No comment provided by engineer. */
 "Copy" = "Kopioi";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Ydinversio: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Luo";
 
 /* server test step */
 "Create file" = "Luo tiedosto";
@@ -1098,7 +1089,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "Muokkaa ryhmäprofiilia";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Salli";
 
 /* No comment provided by engineer. */
@@ -1227,7 +1218,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1497,7 +1488,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Ryhmäkutsu ei ole enää voimassa, lähettäjä poisti sen.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Ryhmälinkki";
 
 /* No comment provided by engineer. */
@@ -1666,7 +1657,7 @@ server test error */
 "Initial role" = "Alkuperäinen rooli";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Asenna [SimpleX Chat terminaalille](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Asenna SimpleX Chat terminaalille";
 
 /* No comment provided by engineer. */
 "Instant" = "Heti";
@@ -1683,7 +1674,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "virheelliset keskustelu-tiedot";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Virheellinen yhteyslinkki";
 
 /* invalid chat item */
@@ -2273,9 +2264,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "Profiilin salasana";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Profiilipäivitys lähetetään kontakteillesi.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Estä ääni- ja videopuhelut.";
 
@@ -2328,13 +2316,10 @@ new chat action */
 "Read more" = "Lue lisää";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
+"Read more in our GitHub repository." = "Lue lisää GitHub-arkistosta.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Lue lisää [GitHub-arkistosta](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Lue lisää Käyttöoppaasta.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Kuittaukset pois käytöstä";
@@ -2697,14 +2682,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Jaa osoite";
 
-/* alert title */
-"Share address with contacts?" = "Jaa osoite kontakteille?";
-
 /* No comment provided by engineer. */
 "Share link" = "Jaa linkki";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Jaa kontaktien kanssa";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Näytä puhelut puhelinhistoriassa";
@@ -2771,6 +2750,9 @@ chat item action */
 
 /* notification title */
 "Somebody" = "Joku";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Tähti GitHubissa";
 
 /* No comment provided by engineer. */
 "Start chat" = "Aloita keskustelu";

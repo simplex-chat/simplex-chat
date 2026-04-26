@@ -24,6 +24,7 @@ You need to use it in bot event handlers, and for any other use cases.
 
 ## Type Aliases
 
+- [DbConfig](api.TypeAlias.DbConfig.md)
 - [EventSubscriberFunc](api.TypeAlias.EventSubscriberFunc.md)
 - [EventSubscribers](api.TypeAlias.EventSubscribers.md)
 

@@ -26,13 +26,7 @@
 "(this device v%@)" = "(此设备 v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[贡献](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[给我们发电邮](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[在 GitHub 上加星](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**添加联系人**: 创建新的邀请链接，或通过您收到的链接进行连接.";
@@ -394,9 +388,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "活动连接";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "将地址添加到您的个人资料，以便您的联系人可以与其他人共享。个人资料更新将发送给您的联系人。";
 
 /* No comment provided by engineer. */
 "Add friends" = "添加好友";
@@ -894,7 +885,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "保加利亚语、芬兰语、泰语和乌克兰语——感谢用户和[Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "企业地址";
 
 /* No comment provided by engineer. */
@@ -1345,7 +1336,7 @@ server test step */
 /* alert title */
 "Connection error" = "连接错误";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "连接错误（AUTH）";
 
 /* chat list item title (it should not be shown */
@@ -1448,6 +1439,9 @@ server test step */
 "Continue" = "继续";
 
 /* No comment provided by engineer. */
+"Contribute" = "贡献";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "对话已删除！";
 
 /* No comment provided by engineer. */
@@ -1464,9 +1458,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "将名称更正为 %@？";
-
-/* No comment provided by engineer. */
-"Create" = "创建";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "创建一次性链接";
@@ -2024,7 +2015,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "空消息！";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "启用";
 
 /* No comment provided by engineer. */
@@ -2198,7 +2189,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "错误";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "错误";
 
 /* No comment provided by engineer. */
@@ -2752,7 +2743,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "群被删除了";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "群组链接";
 
 /* No comment provided by engineer. */
@@ -2984,7 +2975,7 @@ servers warning */
 "Initial role" = "初始角色";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "安装[用于终端的 SimpleX Chat](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "安装用于终端的 SimpleX Chat";
 
 /* No comment provided by engineer. */
 "Instant" = "即时";
@@ -3019,7 +3010,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "无效聊天数据";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "无效的连接链接";
 
 /* invalid chat item */
@@ -3801,7 +3792,7 @@ alert button
 new chat action */
 "Ok" = "好的";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "好的";
 
 /* No comment provided by engineer. */
@@ -3882,7 +3873,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "只有您的联系人可以发送语音消息。";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "打开";
 
 /* No comment provided by engineer. */
@@ -4179,9 +4171,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile theme" = "个人资料主题";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "个人资料更新将被发送给您的联系人。";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "禁止音频/视频通话。";
 
@@ -4270,16 +4259,10 @@ new chat action */
 "Read more" = "阅读更多";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "阅读更多[User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)。";
+"Read more in our GitHub repository." = "在我们的 GitHub 仓库 中阅读更多信息。";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "在 [用户指南](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses) 中阅读更多内容。";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "在 [用户指南](https://simplex.chat/docs/guide/readme.html#connect-to-friends) 中阅读更多内容。";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "在我们的 [GitHub 仓库](https://github.com/simplex-chat/simplex-chat#readme) 中阅读更多信息。";
+"Read more in User Guide." = "阅读更多User Guide。";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "回执已禁用";
@@ -5020,9 +5003,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "公开分享地址";
 
-/* alert title */
-"Share address with contacts?" = "与联系人分享地址？";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "从其他应用程序共享。";
 
@@ -5046,9 +5026,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "分享到 SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "与联系人分享";
 
 /* No comment provided by engineer. */
 "Share your address" = "分享地址";
@@ -5205,6 +5182,9 @@ report reason */
 "standard end-to-end encryption" = "标准端到端加密";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "在 GitHub 上加星";
+
+/* No comment provided by engineer. */
 "Start chat" = "开始聊天";
 
 /* No comment provided by engineer. */
@@ -5305,9 +5285,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to use bot" = "轻按“连接”使用机器人";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "要稍后创建 SimpleX 地址，请在菜单中轻按“创建 SimpleX 地址”";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "轻按加入群";
@@ -5703,7 +5680,7 @@ server test failure */
 /* swipe action */
 "Unread" = "未读";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "不支持的连接链接";
 
 /* No comment provided by engineer. */

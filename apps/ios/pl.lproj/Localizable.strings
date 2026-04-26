@@ -26,13 +26,7 @@
 "(this device v%@)" = "(to urządzenie v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Przyczyń się](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Wyślij do nas email](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Daj gwiazdkę na GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Dodaj kontakt**: aby utworzyć nowy link z zaproszeniem lub połączyć się za pomocą otrzymanego linku.";
@@ -397,9 +391,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "Aktywne połączenia";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Dodaj adres do swojego profilu, aby Twoje kontakty mogły go udostępnić innym osobom. Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
 
 /* No comment provided by engineer. */
 "Add friends" = "Dodaj znajomych";
@@ -897,7 +888,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bułgarski, fiński, tajski i ukraiński – dzięki użytkownikom i [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Adres firmowy";
 
 /* No comment provided by engineer. */
@@ -1348,7 +1339,7 @@ server test step */
 /* alert title */
 "Connection error" = "Błąd połączenia";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Błąd połączenia (UWIERZYTELNIANIE)";
 
 /* chat list item title (it should not be shown */
@@ -1454,6 +1445,9 @@ server test step */
 "Continue" = "Kontynuuj";
 
 /* No comment provided by engineer. */
+"Contribute" = "Przyczyń się";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "Rozmowa usunięta!";
 
 /* No comment provided by engineer. */
@@ -1470,9 +1464,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Poprawić imię na %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Utwórz";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Utwórz jednorazowy link";
@@ -2033,7 +2024,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Pusta wiadomość!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Włącz";
 
 /* No comment provided by engineer. */
@@ -2207,7 +2198,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "błąd";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
@@ -2767,7 +2758,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "grupa została usunięta";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Link do grupy";
 
 /* No comment provided by engineer. */
@@ -3002,7 +2993,7 @@ servers warning */
 "Initial role" = "Rola początkowa";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Zainstaluj [SimpleX Chat na terminal](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Zainstaluj SimpleX Chat na terminal";
 
 /* No comment provided by engineer. */
 "Instant" = "Natychmiastowo";
@@ -3037,7 +3028,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "nieprawidłowe dane czatu";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Nieprawidłowy link połączenia";
 
 /* invalid chat item */
@@ -3822,7 +3813,7 @@ alert button
 new chat action */
 "Ok" = "Ok";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "OK";
 
 /* No comment provided by engineer. */
@@ -3903,7 +3894,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Tylko Twój kontakt może wysyłać wiadomości głosowe.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Otwórz";
 
 /* No comment provided by engineer. */
@@ -4203,9 +4195,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile theme" = "Motyw profilu";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Zabroń połączeń audio/wideo.";
 
@@ -4294,16 +4283,10 @@ new chat action */
 "Read more" = "Przeczytaj więcej";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Przeczytaj więcej w [Poradniku Użytkownika](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Przeczytaj więcej na naszym repozytorium GitHub.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Przeczytaj więcej na naszym [repozytorium GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Przeczytaj więcej w Poradniku Użytkownika.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Potwierdzenia są wyłączone";
@@ -5050,9 +5033,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Udostępnij adres publicznie";
 
-/* alert title */
-"Share address with contacts?" = "Udostępnić adres kontaktom?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Udostępnij z innych aplikacji.";
 
@@ -5076,9 +5056,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Udostępnij do SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Udostępnij kontaktom";
 
 /* No comment provided by engineer. */
 "Share your address" = "Udostępnij swój adres";
@@ -5235,6 +5212,9 @@ report reason */
 "standard end-to-end encryption" = "standardowe szyfrowanie end-to-end";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Daj gwiazdkę na GitHub";
+
+/* No comment provided by engineer. */
 "Start chat" = "Rozpocznij czat";
 
 /* No comment provided by engineer. */
@@ -5338,9 +5318,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Tap Connect to use bot" = "Dotknij Połącz aby użyć bota";
-
-/* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Dotknij Stwórz adres SimpleX w menu aby utworzyć go później.";
 
 /* No comment provided by engineer. */
 "Tap Join group" = "Dotknij Dołącz do grupy";
@@ -5745,7 +5722,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Nieprzeczytane";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Nieobsługiwane łącze połączenia";
 
 /* No comment provided by engineer. */

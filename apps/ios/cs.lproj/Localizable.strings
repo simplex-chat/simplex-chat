@@ -26,13 +26,7 @@
 "(this device v%@)" = "(toto zařízení v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Přispějte](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Pošlete nám e-mail](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Hvězda na GitHubu](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Vytvořit jednorázový odkaz**: pro vytvoření a sdílení nové pozvánky.";
@@ -373,9 +367,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Active connections" = "Aktivní spojení";
-
-/* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Přidejte adresu do svého profilu, aby ji vaše kontakty mohly sdílet s dalšími lidmi. Aktualizace profilu bude zaslána vašim kontaktům.";
 
 /* No comment provided by engineer. */
 "Add friends" = "Přidat přátele";
@@ -746,7 +737,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulharský, finský, thajský a ukrajinský - díky uživatelům a [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Obchodní adresa";
 
 /* No comment provided by engineer. */
@@ -1017,7 +1008,7 @@ server test step */
 /* alert title */
 "Connection error" = "Chyba připojení";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Chyba spojení (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1066,13 +1057,13 @@ server test step */
 "Continue" = "Pokračovat";
 
 /* No comment provided by engineer. */
+"Contribute" = "Přispějte";
+
+/* No comment provided by engineer. */
 "Copy" = "Kopírovat";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Verze jádra: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Vytvořit";
 
 /* server test step */
 "Create file" = "Vytvořit soubor";
@@ -1416,7 +1407,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "Upravit profil skupiny";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Zapnout";
 
 /* No comment provided by engineer. */
@@ -1548,7 +1539,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "chyba";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Chyba";
 
 /* No comment provided by engineer. */
@@ -1824,7 +1815,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Skupinová pozvánka již není platná, byla odstraněna odesílatelem.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Odkaz na skupinu";
 
 /* No comment provided by engineer. */
@@ -1993,7 +1984,7 @@ server test error */
 "Initial role" = "Počáteční role";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Nainstalujte SimpleX Chat pro terminál";
 
 /* No comment provided by engineer. */
 "Instant" = "Okamžitě";
@@ -2010,7 +2001,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "neplatná chat data";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Neplatný odkaz na spojení";
 
 /* invalid chat item */
@@ -2489,7 +2480,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Hlasové zprávy může odesílat pouze váš kontakt.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Otevřít";
 
 /* new chat action */
@@ -2606,9 +2598,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Profile password" = "Heslo profilu";
 
-/* alert message */
-"Profile update will be sent to your contacts." = "Aktualizace profilu bude zaslána vašim kontaktům.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Zákaz audio/video hovorů.";
 
@@ -2661,16 +2650,10 @@ new chat action */
 "Read more" = "Přečíst více";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Více informací v [průvodci uživatele](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Přečtěte si více v našem GitHub repozitáři.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Další informace naleznete v [Uživatelské příručce](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Přečtěte si více v [Uživatelské příručce](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Přečtěte si více v našem [GitHub repozitáři](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Více informací v průvodci uživatele.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Informace o dodání jsou zakázány";
@@ -3036,14 +3019,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Sdílet adresu";
 
-/* alert title */
-"Share address with contacts?" = "Sdílet adresu s kontakty?";
-
 /* No comment provided by engineer. */
 "Share link" = "Sdílet odkaz";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Sdílet s kontakty";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Ukaž hovory v historii telefonu";
@@ -3113,6 +3090,9 @@ chat item action */
 
 /* notification title */
 "Somebody" = "Někdo";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Hvězda na GitHubu";
 
 /* No comment provided by engineer. */
 "Start chat" = "Začít chat";
@@ -3578,7 +3558,7 @@ server test failure */
 "You can set lock screen notification preview via settings." = "Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.";
 
 /* No comment provided by engineer. */
-"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud ji později odstraníte.";
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Můžete sdílet odkaz nebo QR kód - ke skupině se bude moci připojit kdokoli. O členy skupiny nepřijdete, pokud odkaz později smažete.";
 
 /* No comment provided by engineer. */
 "You can share this address with your contacts to let them connect with **%@**." = "Tuto adresu můžete sdílet s vašimi kontakty, abyse se mohli spojit s **%@**.";
