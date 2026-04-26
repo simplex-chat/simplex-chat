@@ -1331,11 +1331,10 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to server operators.</string>
-  <string name="onboarding_conditions_by_using_you_agree">By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam.</string>
+  <string name="onboarding_conditions_private_chats_not_accessible">Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code</string>
+  <string name="onboarding_conditions_by_using_you_agree">You commit to:\n- Only legal content in public groups\n- Respect other users — no spam</string>
   <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacy policy and conditions of use.</string>
   <string name="onboarding_conditions_accept">Accept</string>
-  <string name="onboarding_conditions_configure_server_operators">Configure server operators</string>
   <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
@@ -1360,8 +1359,6 @@
 
   <!-- Onboarding Step 4: Network Commitments -->
   <string name="onboarding_network_commitments">Network\ncommitments</string>
-  <string name="onboarding_network_commitments_operators">Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code</string>
-  <string name="onboarding_network_commitments_you">You commit to:\n- Only legal content in public groups\n- Respect other users — no spam</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>

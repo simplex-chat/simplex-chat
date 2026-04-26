@@ -200,32 +200,16 @@ fun MainScreen() {
           }
           OnboardingStage.LinkAMobile -> LinkAMobile()
           OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-          OnboardingStage.Step3_ChooseServerOperators -> { // deprecated - map to new step 3
-            YourNetworkView(chatModel)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
-            }
-          }
-          OnboardingStage.Step3_CreateSimpleXAddress -> { // deprecated - map to new step 3
-            YourNetworkView(chatModel)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
-            }
-          }
-          OnboardingStage.Step4_SetNotificationsMode -> { // deprecated - map to new step 3
-            YourNetworkView(chatModel)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
-            }
-          }
-          OnboardingStage.Step3_YourNetwork -> {
+          OnboardingStage.Step3_ChooseServerOperators,
+          OnboardingStage.Step3_CreateSimpleXAddress, // deprecated
+          OnboardingStage.Step4_SetNotificationsMode -> { // deprecated
             YourNetworkView(chatModel)
             if (appPlatform.isDesktop) {
               ModalManager.fullscreen.showInView()
             }
           }
           OnboardingStage.Step4_NetworkCommitments -> {
-            NetworkCommitmentsView(chatModel)
+            OnboardingConditionsView(chatModel)
             if (appPlatform.isDesktop) {
               ModalManager.fullscreen.showInView()
             }

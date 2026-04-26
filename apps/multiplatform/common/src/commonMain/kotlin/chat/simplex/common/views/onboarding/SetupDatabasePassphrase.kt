@@ -33,7 +33,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
     if (appPlatform.isAndroid || chatModel.currentUser.value != null) {
-      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_YourNetwork)
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
     } else {
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.LinkAMobile)
     }

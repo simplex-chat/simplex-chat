@@ -342,7 +342,7 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
-    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_YourNetwork)
+    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
     close()
@@ -381,7 +381,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
-        OnboardingStage.Step3_YourNetwork
+        OnboardingStage.Step3_ChooseServerOperators
       })
     } else {
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
