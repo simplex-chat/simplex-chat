@@ -6731,3 +6731,20 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
 
+/* channel preferences */
+"Subscriber reports" = "Informes de suscriptores";
+"Allow sending direct messages to subscribers." = "Se permiten mensajes directos entre suscriptores.";
+"Prohibit sending direct messages to subscribers." = "No se permiten mensajes directos entre suscriptores.";
+"Send up to 100 last messages to new subscribers." = "Se envían hasta 100 mensajes más recientes a los suscriptores nuevos.";
+"Do not send history to new subscribers." = "No se envía el historial a los suscriptores nuevos.";
+"Subscribers can send disappearing messages." = "Los suscriptores del canal pueden enviar mensajes temporales.";
+"Subscribers can send direct messages." = "Los suscriptores del canal pueden enviar mensajes directos.";
+"Direct messages between subscribers are prohibited." = "Los mensajes directos entre suscriptores del canal no están permitidos.";
+"Subscribers can irreversibly delete sent messages. (24 hours)" = "Los suscriptores del canal pueden eliminar mensajes de forma irreversible. (24 horas)";
+"Subscribers can add message reactions." = "Los suscriptores pueden añadir reacciones a los mensajes.";
+"Subscribers can send voice messages." = "Los suscriptores del canal pueden enviar mensajes de voz.";
+"Subscribers can send files and media." = "Los suscriptores del canal pueden enviar archivos y multimedia.";
+"Subscribers can send SimpleX links." = "Los suscriptores del canal pueden enviar enlaces SimpleX.";
+"Subscribers can report messsages to moderators." = "Los suscriptores pueden informar de mensajes a los moderadores.";
+"Up to 100 last messages are sent to new subscribers." = "Hasta 100 últimos mensajes son enviados a los suscriptores nuevos.";
+"History is not sent to new subscribers." = "El historial no se envía a suscriptores nuevos.";

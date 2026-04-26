@@ -6731,3 +6731,20 @@ server test failure */
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
 
+/* channel preferences */
+"Subscriber reports" = "Feliratkozók jelentései";
+"Allow sending direct messages to subscribers." = "A közvetlen üzenetek küldése a feliratkozók között engedélyezve van.";
+"Prohibit sending direct messages to subscribers." = "A közvetlen üzenetek küldése a feliratkozók között le van tiltva.";
+"Send up to 100 last messages to new subscribers." = "Legfeljebb az utolsó 100 üzenet elküldése az új feliratkozók számára.";
+"Do not send history to new subscribers." = "Az előzmények ne legyenek elküldve az új feliratkozók számára.";
+"Subscribers can send disappearing messages." = "A feliratkozók küldhetnek eltűnő üzeneteket.";
+"Subscribers can send direct messages." = "A feliratkozók küldhetnek egymásnak közvetlen üzeneteket.";
+"Direct messages between subscribers are prohibited." = "A feliratkozók közötti közvetlen üzenetek le vannak tiltva.";
+"Subscribers can irreversibly delete sent messages. (24 hours)" = "A feliratkozók véglegesen törölhetik az elküldött üzeneteiket. (24 óra)";
+"Subscribers can add message reactions." = "A feliratkozók reakciókat adhatnak hozzá az üzenetekhez.";
+"Subscribers can send voice messages." = "A feliratkozók küldhetnek hangüzeneteket.";
+"Subscribers can send files and media." = "A feliratkozók küldhetnek fájlokat és médiatartalmakat.";
+"Subscribers can send SimpleX links." = "A feliratkozók küldhetnek SimpleX-hivatkozásokat.";
+"Subscribers can report messsages to moderators." = "A feliratkozók jelenthetik az üzeneteket a moderátorok felé.";
+"Up to 100 last messages are sent to new subscribers." = "Legfeljebb az utolsó 100 üzenet lesz elküldve az új feliratkozók számára.";
+"History is not sent to new subscribers." = "Az előzmények nem lesznek elküldve az új feliratkozók számára.";
