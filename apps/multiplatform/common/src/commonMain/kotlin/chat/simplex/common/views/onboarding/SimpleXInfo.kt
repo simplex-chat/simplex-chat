@@ -86,9 +86,9 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(user, onboardingStage)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info)) {
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
             ModalManager.fullscreen.showModal(forceAnimated = true) { HowItWorks(user, onboardingStage) }
-          }
+          })
         }
       }
     }
@@ -152,9 +152,9 @@ fun SimpleXInfoLayout(
       if (onboardingStage != null) {
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(user, onboardingStage)
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info)) {
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built), icon = painterResource(MR.images.ic_info), onClick = {
             ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
-          }
+          })
         }
       }
     }
