@@ -180,17 +180,21 @@ fun MainScreen() {
       }
       else -> {
         if (appPlatform.isDesktop) {
-          DesktopOnboardingShell(onboarding) {
-            when (onboarding) {
-              OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
-              OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-              OnboardingStage.LinkAMobile -> LinkAMobile()
-              OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-              OnboardingStage.Step3_ChooseServerOperators,
-              OnboardingStage.Step3_CreateSimpleXAddress,
-              OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
-              OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
-              OnboardingStage.OnboardingComplete -> {}
+          if (onboarding == OnboardingStage.LinkAMobile) {
+            LinkAMobile()
+            ModalManager.fullscreen.showInView()
+          } else {
+            DesktopOnboardingShell(onboarding) {
+              when (onboarding) {
+                OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+                OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+                OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+                OnboardingStage.Step3_ChooseServerOperators,
+                OnboardingStage.Step3_CreateSimpleXAddress,
+                OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+                OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
+                OnboardingStage.OnboardingComplete -> {}
+              }
             }
           }
         } else {
