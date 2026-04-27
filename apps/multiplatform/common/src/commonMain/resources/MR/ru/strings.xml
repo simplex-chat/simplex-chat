@@ -2874,5 +2874,4 @@
     <string name="wait_verb">Подождать</string>
     <string name="connect_plan_this_is_your_link_for_channel">Ваш канал</string>
     <string name="unblock_subscriber_for_all_question">Разблокировать подписчика для всех?</string>
-    <string name="link_previews_alert_dont_ask_again">Больше не спрашивать</string>
 </resources>
