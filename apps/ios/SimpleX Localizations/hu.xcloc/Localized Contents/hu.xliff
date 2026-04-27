@@ -5681,9 +5681,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Elküldött üzenetek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve" approved="no">
         <source>Messages were deleted after you selected them.</source>
-        <target>Az üzeneteket törölték miután kiváasztotta őket.</target>
+        <target state="translated">Az üzeneteket törölték miután kiválasztotta őket.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -9089,9 +9089,11 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The first network where you own&#10;your contacts and groups." xml:space="preserve">
+      <trans-unit id="The first network where you own&#10;your contacts and groups." xml:space="preserve" approved="no">
         <source>The first network where you own
 your contacts and groups.</source>
+        <target state="translated">Az első hálózat, ahol Ön birtokolja
+a saját kapcsolatait és csoportjait.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -11864,9 +11866,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>SimpleX</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
+      <trans-unit id="NSCameraUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
-        <target>A SimpleXnek kamera-hozzáférésre van szüksége a QR-kódok beolvasásához, hogy kapcsolódhasson más felhasználókhoz és videohívásokhoz.</target>
+        <target state="translated">A SimpleXnek hozzáférésre van szüksége a kamerához a QR-kódok beolvasásához, hogy kapcsolódhasson más felhasználókhoz és videohívásokhoz.</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
       <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
@@ -11879,9 +11881,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>A SimpleX helyi hálózati hozzáférést használ, hogy lehetővé tegye a felhasználói csevegési profil használatát számítógépen keresztül ugyanazon a hálózaton.</target>
         <note>Privacy - Local Network Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
+      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
-        <target>A SimpleXnek mikrofon-hozzáférésre van szüksége hang- és videohívásokhoz, valamint hangüzenetek rögzítéséhez.</target>
+        <target state="translated">A SimpleXnek hozzáférésre van szüksége a mikrofonhoz a hang- és videohívásokhoz, valamint hangüzenetek rögzítéséhez.</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
