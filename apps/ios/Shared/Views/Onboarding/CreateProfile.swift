@@ -97,10 +97,8 @@ struct CreateProfile: View {
                     TextField("Bio", text: $profileBio)
                         .padding(.leading, 36)
                 }
-                Button {
-                    createProfile()
-                } label: {
-                    Label("Create profile", systemImage: "checkmark")
+                Button(action: createProfile) {
+                    settingsRow("checkmark", color: theme.colors.primary) { Text("Create profile") }
                 }
                 .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
             } footer: {
