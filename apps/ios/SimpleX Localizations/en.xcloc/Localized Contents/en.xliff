@@ -2228,11 +2228,6 @@ This is your own one-time link!</target>
         <target>Connect with %@</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve">
-        <source>Connect with someone</source>
-        <target>Connect with someone</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
         <target>Connected</target>
@@ -2538,6 +2533,11 @@ This is your own one-time link!</target>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
         <target>Create your address</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
+        <target>Create your link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">

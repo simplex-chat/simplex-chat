@@ -2199,10 +2199,6 @@ This is your own one-time link!</source>
         <target>Conectar con %@</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve">
-        <source>Connect with someone</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
         <target>Conectadas</target>
@@ -2507,6 +2503,10 @@ This is your own one-time link!</source>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
         <target>Crea tu dirección</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">

@@ -2215,7 +2215,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connect via link or QR code" xml:space="preserve">
         <source>Connect via link or QR code</source>
-        <target>Соединиться по ссылке или QR коду</target>
+        <target>Соединитесь по ссылке или QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
@@ -2227,11 +2227,6 @@ This is your own one-time link!</source>
         <source>Connect with %@</source>
         <target>Соединиться с %@</target>
         <note>new chat action</note>
-      </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve">
-        <source>Connect with someone</source>
-        <target>Соединитесь с кем-нибудь</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
@@ -2538,6 +2533,11 @@ This is your own one-time link!</source>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
         <target>Создайте Ваш адрес</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
+        <target>Создайте Вашу ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -4351,7 +4351,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="For anyone to reach you" xml:space="preserve">
         <source>For anyone to reach you</source>
-        <target>Чтобы любой мог связаться с Вами</target>
+        <target>Кто угодно может связаться с Вами</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">
@@ -5059,7 +5059,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Invite someone privately" xml:space="preserve">
         <source>Invite someone privately</source>
-        <target>Пригласить конфиденциально</target>
+        <target>Пригласите конфиденциально</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to chat" xml:space="preserve">
@@ -5267,7 +5267,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
         <source>Let someone connect to you</source>
-        <target>Чтобы кто-нибудь мог соединиться с Вами</target>
+        <target>Дайте собеседнику Вашу ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -8890,7 +8890,7 @@ Relay address was used to set up this relay for the channel.</source>
       </trans-unit>
       <trans-unit id="Talk to someone" xml:space="preserve">
         <source>Talk to someone</source>
-        <target>Поговорите с кем-нибудь</target>
+        <target>Начните разговор</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">

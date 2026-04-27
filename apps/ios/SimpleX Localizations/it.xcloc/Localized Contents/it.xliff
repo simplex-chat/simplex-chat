@@ -2199,10 +2199,6 @@ Questo è il tuo link una tantum!</target>
         <target>Connettersi con %@</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve">
-        <source>Connect with someone</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
         <target>Connesso</target>
@@ -2507,6 +2503,10 @@ Questo è il tuo link una tantum!</target>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
         <target>Crea il tuo indirizzo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">

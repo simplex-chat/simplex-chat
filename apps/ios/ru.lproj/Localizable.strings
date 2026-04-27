@@ -1455,16 +1455,13 @@ server test step */
 "Connect via link" = "Соединиться через ссылку";
 
 /* No comment provided by engineer. */
-"Connect via link or QR code" = "Соединиться по ссылке или QR коду";
+"Connect via link or QR code" = "Соединитесь по ссылке или QR";
 
 /* new chat sheet title */
 "Connect via one-time link" = "Соединиться через одноразовую ссылку";
 
 /* new chat action */
 "Connect with %@" = "Соединиться с %@";
-
-/* No comment provided by engineer. */
-"Connect with someone" = "Соединитесь с кем-нибудь";
 
 /* No comment provided by engineer. */
 "connected" = "соединение установлено";
@@ -1699,6 +1696,9 @@ server test step */
 
 /* No comment provided by engineer. */
 "Create your address" = "Создайте Ваш адрес";
+
+/* No comment provided by engineer. */
+"Create your link" = "Создайте Вашу ссылку";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Создать профиль";
@@ -2888,7 +2888,7 @@ server test error */
 "For all moderators" = "Для всех модераторов";
 
 /* No comment provided by engineer. */
-"For anyone to reach you" = "Чтобы любой мог связаться с Вами";
+"For anyone to reach you" = "Кто угодно может связаться с Вами";
 
 /* servers error
 servers warning */
@@ -3354,7 +3354,7 @@ servers warning */
 "Invite members" = "Пригласить членов группы";
 
 /* No comment provided by engineer. */
-"Invite someone privately" = "Пригласить конфиденциально";
+"Invite someone privately" = "Пригласите конфиденциально";
 
 /* No comment provided by engineer. */
 "Invite to chat" = "Пригласить в разговор";
@@ -3498,7 +3498,7 @@ servers warning */
 "Less traffic on mobile networks." = "Меньше трафик в мобильных сетях.";
 
 /* No comment provided by engineer. */
-"Let someone connect to you" = "Чтобы кто-нибудь мог соединиться с Вами";
+"Let someone connect to you" = "Дайте собеседнику Вашу ссылку";
 
 /* email subject */
 "Let's talk in SimpleX Chat" = "Давайте поговорим в SimpleX Chat";
@@ -5849,7 +5849,7 @@ report reason */
 "Take picture" = "Сделать фото";
 
 /* No comment provided by engineer. */
-"Talk to someone" = "Поговорите с кем-нибудь";
+"Talk to someone" = "Начните разговор";
 
 /* No comment provided by engineer. */
 "Tap button " = "Нажмите кнопку ";

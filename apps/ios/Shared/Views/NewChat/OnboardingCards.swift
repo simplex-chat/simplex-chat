@@ -279,7 +279,7 @@ struct ConnectOnboardingView: View {
     private var connectWithSomeonePage: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                pageHeader("Connect with someone", showBack: true)
+                pageHeader("Create your link", showBack: true)
 
                 Spacer(minLength: 16)
 

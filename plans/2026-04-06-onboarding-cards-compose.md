@@ -476,7 +476,7 @@ Screen 2:
 <string name="talk_to_someone">Talk to someone</string>
 <string name="let_someone_connect_to_you">Let someone connect to you</string>
 <string name="connect_via_link_or_qr">Connect via link or QR code</string>
-<string name="connect_with_someone">Connect with someone</string>
+<string name="connect_with_someone">Create your link</string>
 <string name="invite_someone_privately">Invite someone privately</string>
 <string name="a_link_for_one_person">A link for one person to connect</string>
 <string name="create_your_public_address">Create your public address</string>
