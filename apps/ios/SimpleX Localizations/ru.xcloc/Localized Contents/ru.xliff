@@ -7308,7 +7308,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove and delete messages" xml:space="preserve">
         <source>Remove and delete messages</source>
-        <target>Удалить и удалить сообщения</target>
+        <target>Удалить вместе с сообщениями</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Remove archive?" xml:space="preserve">
@@ -8014,7 +8014,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." xml:space="preserve">
         <source>Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</source>
-        <target>Отправка предпросмотра ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках конфиденциальности позже.</target>
+        <target>Отправка картинки ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках безопасности позже.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
@@ -8743,7 +8743,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Subscriber reports" xml:space="preserve">
         <source>Subscriber reports</source>
-        <target>Жалобы подписчиков</target>
+        <target>Сообщения о нарушениях</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Subscriber will be removed from channel - this cannot be undone!" xml:space="preserve">
