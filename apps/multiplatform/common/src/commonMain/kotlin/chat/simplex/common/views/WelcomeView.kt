@@ -93,10 +93,12 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           Modifier
             .fillMaxWidth()
             .padding(vertical = DEFAULT_PADDING_HALF),
-          horizontalArrangement = Arrangement.Center,
+          horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
           verticalAlignment = Alignment.CenterVertically
         ) {
+          // Padding offsets transparent space built into 3D asset
           Box(
+            modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
             contentAlignment = Alignment.Center
           ) {
             Box(contentAlignment = Alignment.TopEnd) {
@@ -109,15 +111,14 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
               }
             }
           }
-          // TODO: add 3D asset image next to profile image (fix asset first - trim transparent space)
-//          if (BuildConfigCommon.SIMPLEX_ASSETS) {
-//            Image(
-//              painterResource(if (isInDarkTheme()) MR.images.your_profile_light else MR.images.your_profile),
-//              contentDescription = null,
-//              contentScale = ContentScale.Fit,
-//              modifier = Modifier.height(140.dp)
-//            )
-//          }
+          if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Image(
+              painterResource(if (isInDarkTheme()) MR.images.create_profile_light else MR.images.create_profile),
+              contentDescription = null,
+              contentScale = ContentScale.Fit,
+              modifier = Modifier.height(140.dp)
+            )
+          }
         }
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
