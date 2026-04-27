@@ -188,6 +188,7 @@ fun MainScreen() {
               when (onboarding) {
                 OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
                 OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+                OnboardingStage.LinkAMobile -> {} // handled above, full screen
                 OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
                 OnboardingStage.Step3_ChooseServerOperators,
                 OnboardingStage.Step3_CreateSimpleXAddress,
