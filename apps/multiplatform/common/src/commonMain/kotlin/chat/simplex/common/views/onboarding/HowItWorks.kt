@@ -25,16 +25,17 @@ import dev.icerock.moko.resources.StringResource
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
   Column(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
     Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+    val paraPadding = PaddingValues(bottom = if (appPlatform.isDesktop) 10.dp else 12.dp)
     Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
       Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
-      ReadableText(MR.strings.why_built_p1)
-      ReadableText(MR.strings.why_built_p2)
-      ReadableText(MR.strings.why_built_p3)
-      ReadableText(MR.strings.why_built_p4)
-      ReadableText(MR.strings.why_built_p5)
-      ReadableText(MR.strings.why_built_p6)
-      ReadableText(MR.strings.why_built_p7)
-      ReadableText(MR.strings.why_built_tagline)
+      ReadableText(MR.strings.why_built_p1, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p2, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p3, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p4, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p5, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p6, padding = paraPadding)
+      ReadableText(MR.strings.why_built_p7, padding = paraPadding)
+      ReadableText(MR.strings.why_built_tagline, padding = paraPadding)
     }
     if (onboardingStage != null) {
       Column(
@@ -49,7 +50,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
 }
 
 @Composable
-fun ReadableText(stringResId: StringResource, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 11.dp), style: TextStyle = LocalTextStyle.current, args: Any? = null) {
+fun ReadableText(stringResId: StringResource, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp), style: TextStyle = LocalTextStyle.current, args: Any? = null) {
   Text(annotatedStringResource(stringResId, args), modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp, style = style)
 }
 

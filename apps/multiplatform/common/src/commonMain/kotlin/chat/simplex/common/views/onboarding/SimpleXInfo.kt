@@ -69,12 +69,13 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
   val onboardingStage = chatModel.controller.appPrefs.onboardingStage
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
-      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
-        Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Box(Modifier.fillMaxWidth(0.55f)) {
-            SimpleXLogo()
-          }
+      ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(Modifier.height(DEFAULT_PADDING))
+        Box(Modifier.widthIn(max = 600.dp).fillMaxWidth(0.45f).align(Alignment.CenterHorizontally)) {
+          SimpleXLogo()
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = 600.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_be_free), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }

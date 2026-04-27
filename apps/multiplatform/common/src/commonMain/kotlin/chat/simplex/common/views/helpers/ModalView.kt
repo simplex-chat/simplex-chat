@@ -101,6 +101,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private val _modalCount = mutableStateOf(0)
   val modalCount: State<Int> = _modalCount
   private val toRemove = mutableSetOf<Int>()
+  var alwaysAnimate = false
   private var oldViewChanging = AtomicBoolean(false)
   // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
   // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
@@ -133,7 +134,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     }
     // Make animated appearance only on Android (everytime) and on Desktop (when it's on the start part of the screen or modals > 0)
     // to prevent unneeded animation on different situations
-    val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
+    val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START || alwaysAnimate)
     modalViews.add(ModalViewHolder(id, anim, data, modal))
     _modalCount.value = modalViews.size - toRemove.size
 
