@@ -633,9 +633,6 @@ swipe action */
 "Answer call" = "Відповісти на дзвінок";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Кожен може хостити сервери.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Збірка програми: %@";
 
 /* No comment provided by engineer. */
@@ -886,9 +883,6 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Через профіль чату (за замовчуванням) або [за з'єднанням](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Використовуючи SimpleX Chat, ви погоджуєтеся:\n- надсилати лише легальний контент у публічних групах.\n- поважати інших користувачів - без спаму.";
-
-/* No comment provided by engineer. */
 "call" = "дзвонити";
 
 /* No comment provided by engineer. */
@@ -1071,7 +1065,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Чат буде видалено для вас - цю дію неможливо скасувати!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Чат з адміністраторами";
 
 /* No comment provided by engineer. */
@@ -1184,9 +1179,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Налаштування серверів ICE";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Налаштувати операторів сервера";
 
 /* No comment provided by engineer. */
 "Confirm" = "Підтвердити";
@@ -1593,9 +1585,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Доставка налагодження";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Децентралізований";
 
 /* message decrypt error item */
 "Decryption error" = "Помилка розшифровки";
@@ -2824,9 +2813,6 @@ servers warning */
 "Immediately" = "Негайно";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Імунітет до спаму та зловживань";
-
-/* No comment provided by engineer. */
 "Import" = "Імпорт";
 
 /* No comment provided by engineer. */
@@ -3391,9 +3377,6 @@ servers warning */
 "Migrate device" = "Перенести пристрій";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Перехід з іншого пристрою";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Мігруйте сюди";
 
 /* No comment provided by engineer. */
@@ -3668,9 +3651,6 @@ servers warning */
 
 /* No comment provided by engineer. */
 "No unread chats" = "Немає непрочитаних чатів";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Ніяких ідентифікаторів користувачів.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Не сумісні!";
@@ -4049,12 +4029,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Політика конфіденційності та умови використання.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Конфіденційність переглянута";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Приватні чати, групи та ваші контакти недоступні для операторів сервера.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Приватні імена файлів";
@@ -5293,9 +5267,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Шифрування працює і нова угода про шифрування не потрібна. Це може призвести до помилок з'єднання!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Наступне покоління приватних повідомлень";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хеш попереднього повідомлення відрізняється.";
 
 /* No comment provided by engineer. */
@@ -6068,9 +6039,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Вас не вдалося верифікувати, спробуйте ще раз.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Ви вирішуєте, хто може під'єднатися.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Ви вже надіслали запит на підключення!\nПовторити запит на підключення?";

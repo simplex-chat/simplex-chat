@@ -619,7 +619,6 @@
     <string name="error_initializing_web_view_wrong_arch">Kesalahan saat menginisialisasi WebView. Pastikan Anda telah menginstal WebView dan arsitektur yang didukung adalah arm64.\nKesalahan: %s</string>
     <string name="use_chat">Gunakan obrolan</string>
     <string name="how_it_works">Bagaimana caranya</string>
-    <string name="how_simplex_works">Cara kerja SimpleX</string>
     <string name="onboarding_notifications_mode_periodic">Berkala</string>
     <string name="incoming_audio_call">Panggilan suara masuk</string>
     <string name="encrypted_audio_call">panggilan suara terenkripsi e2e</string>
@@ -2345,7 +2344,6 @@
     <string name="restore_passphrase_can_not_be_read_desc">Frasa sandi di Keystore tidak dapat dibaca. Hal ini mungkin terjadi setelah pembaruan sistem yang tidak kompatibel dengan aplikasi. Jika tidak demikian, silakan hubungi pengembang.</string>
     <string name="onboarding_conditions_accept">Terima</string>
     <string name="onboarding_conditions_by_using_you_agree">Dengan menggunakan SimpleX Chat, Anda setuju untuk:\n- hanya mengirim konten legal di grup publik.\n- hormati pengguna lain – tidak ada spam.</string>
-    <string name="onboarding_conditions_configure_server_operators">Konfigurasikan operator server</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Kebijakan privasi dan ketentuan penggunaan.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Obrolan pribadi, grup, dan kontak Anda tidak dapat diakses oleh operator server.</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Frasa sandi di Keystore tidak dapat dibaca, silakan masukkan secara manual. Hal ini mungkin terjadi setelah pembaruan sistem yang tidak kompatibel dengan aplikasi. Jika tidak demikian, silakan hubungi pengembang.</string>

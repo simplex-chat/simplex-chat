@@ -482,7 +482,6 @@
     <string name="hide_profile">הסתר פרופיל</string>
     <string name="how_to_use_markdown">איך להשתמש במרקדאון</string>
     <string name="how_it_works">איך זה עובד</string>
-    <string name="how_simplex_works">איך SimpleX עובדת</string>
     <string name="icon_descr_hang_up">נתק</string>
     <string name="settings_section_title_help">עזרה</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">הקבוצה תימחק עבור כל חברי הקבוצה – לא ניתן לבטל זאת!</string>
@@ -2095,7 +2094,6 @@
     <string name="operator_use_for_sending">לשליחה</string>
     <string name="group_new_support_chat_one">צ\'אט אחד עם חבר</string>
     <string name="new_message">הודעה חדשה</string>
-    <string name="onboarding_conditions_configure_server_operators">הגדרת מפעילי שרת</string>
     <string name="onboarding_network_operators_configure_via_settings">ניתן להגדיר שרתים דרך הגדרות.</string>
     <string name="rcv_group_event_user_accepted">אישר אותך</string>
     <string name="group_member_status_pending_review">ממתין לסקירה</string>

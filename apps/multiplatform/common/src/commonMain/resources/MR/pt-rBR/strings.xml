@@ -417,7 +417,6 @@
     <string name="file_will_be_received_when_contact_is_online">O arquivo será recebido quando seu contato estiver online, aguarde ou verifique mais tarde!</string>
     <string name="group_profile_is_stored_on_members_devices">O perfil do grupo é armazenado nos dispositivos dos membros, não nos servidores.</string>
     <string name="icon_descr_help">ajuda</string>
-    <string name="how_simplex_works">Como o SimpleX funciona</string>
     <string name="enter_one_ICE_server_per_line">Servidores ICE (um por linha)</string>
     <string name="ignore">Ignorar</string>
     <string name="image_will_be_received_when_contact_is_online">A imagem será recebida quando seu contato estiver online, aguarde ou verifique mais tarde!</string>
@@ -2376,7 +2375,6 @@
     <string name="xftp_servers_per_user">Os servidores para novos arquivos do seu perfil de chat atual</string>
     <string name="connection_error_quota_desc">A conexão atingiu o limite de mensagens não entregues, seu contato pode estar offline.</string>
     <string name="connection_error_quota">Mensagens não entregues</string>
-    <string name="onboarding_conditions_configure_server_operators">Configurar operadores de servidor</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Chats privados, grupos e seus contatos não são acessíveis aos operadores de servidor.</string>
     <string name="onboarding_conditions_accept">Aceitar</string>
     <string name="onboarding_conditions_by_using_you_agree">Ao usar o SimpleX Chat, você concorda em:\n- enviar apenas conteúdo legal em grupos públicos.\n- respeitar outros usuários – sem spam.</string>

@@ -675,7 +675,7 @@ jobs:
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
-          ./gradlew packageMsi
+          ./gradlew -Psimplex.assets.dir=../../assets packageMsi
           rm -rf dist-newstyle/src/direct-sq*
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT

@@ -351,21 +351,6 @@ private func regularConditionsHeader() -> some View {
     }
 }
 
-struct SimpleConditionsView: View {
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            regularConditionsHeader()
-                .padding(.top)
-                .padding(.top)
-            ConditionsTextView()
-                .padding(.bottom)
-                .padding(.bottom)
-        }
-        .padding(.horizontal, 25)
-        .frame(maxHeight: .infinity)
-    }
-}
 
 func validateServers_(
     _ userServers: Binding<[UserOperatorServers]>,

@@ -1504,7 +1504,6 @@
     <string name="exit_without_saving">Ieșire fără salvare</string>
     <string name="hidden_profile_password">Parolă profil ascuns</string>
     <string name="italic_text">italic</string>
-    <string name="how_simplex_works">Cum funcționează SimpleX</string>
     <string name="first_platform_without_user_ids">Fără identificatori de utilizator.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Acest lucru se poate întâmpla atunci când:\n1. Mesajele au expirat în aplicația de trimitere după 2 zile sau pe server după 30 de zile.\n2. Decriptarea mesajului a eșuat, deoarece tu sau contactul tău ați folosit un backup vechi al bazei de date.\n3. Conexiunea a fost compromisă.</string>
     <string name="error_exporting_chat_database">Eroare la exportarea bazei de date a conversației</string>
@@ -2283,7 +2282,6 @@
     <string name="non_content_uri_alert_text">Ai partajat o cale de fișier nevalidă. Raportează problema dezvoltatorilor aplicației.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: atinge <b>Deschide în aplicația mobilă</b>, apoi atinge <b>Conectare</b> în aplicație.]]></string>
     <string name="add_short_link">Actualizează adresa</string>
-    <string name="onboarding_conditions_configure_server_operators">Configurați operatorii serverului</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Condițiile vor fi acceptate pentru operatorii activați după 30 de zile.</string>
     <string name="call_desktop_permission_denied_chrome">Apasă pe butonul de informații de lângă bara de adrese pentru a permite accesul la microfon.</string>
     <string name="settings_message_shape_corner">Colţ</string>

@@ -1566,7 +1566,6 @@
     <string name="make_private_connection">Izveidot privātu savienojumu</string>
     <string name="migrate_from_another_device">Migrēt no citas ierīces</string>
     <string name="how_it_works">Kā tas darbojas</string>
-    <string name="how_simplex_works">Kā darbojas SimpleX</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Lai aizsargātu privātumu, SimpleX izmanto ID rindām</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Tikai klientu ierīces glabā kontaktu grupas un e2e šifrētas ziņas</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Visas ziņas un faili ir e2e šifrēti]]></string>
@@ -1591,7 +1590,6 @@
     <string name="onboarding_conditions_by_using_you_agree">Ievada nosacījumi, izmantojot jūs piekrītat</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Ievada nosacījumi privātuma politika un lietošanas noteikumi</string>
     <string name="onboarding_conditions_accept">Ievada nosacījumi pieņemt</string>
-    <string name="onboarding_conditions_configure_server_operators">Ievada nosacījumi konfigurēt servera operatorus</string>
     <string name="onboarding_choose_server_operators">Ievada izvēlēties servera operatorus</string>
     <string name="onboarding_network_operators">Ievada tīkla operatori</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">Ievada tīkla operatori simplex flux vienošanās</string>

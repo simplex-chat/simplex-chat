@@ -627,9 +627,6 @@ swipe action */
 "Answer call" = "Beantwoord oproep";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Iedereen kan servers hosten.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "App build: %@";
 
 /* No comment provided by engineer. */
@@ -871,9 +868,6 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Via chatprofiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Door SimpleX Chat te gebruiken, gaat u ermee akkoord:\n- alleen legale content te versturen in openbare groepen.\n- andere gebruikers te respecteren – geen spam.";
-
-/* No comment provided by engineer. */
 "call" = "bellen";
 
 /* No comment provided by engineer. */
@@ -1053,7 +1047,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "De chat wordt voor je verwijderd - dit kan niet ongedaan worden gemaakt!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Chat met beheerders";
 
 /* No comment provided by engineer. */
@@ -1163,9 +1158,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE servers configureren";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Serveroperators configureren";
 
 /* No comment provided by engineer. */
 "Confirm" = "Bevestigen";
@@ -1563,9 +1555,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Foutopsporing bezorging";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Gedecentraliseerd";
 
 /* message decrypt error item */
 "Decryption error" = "Decodering fout";
@@ -2770,9 +2759,6 @@ servers warning */
 "Immediately" = "Onmiddellijk";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Immuun voor spam en misbruik";
-
-/* No comment provided by engineer. */
 "Import" = "Importeren";
 
 /* No comment provided by engineer. */
@@ -3322,9 +3308,6 @@ servers warning */
 "Migrate device" = "Apparaat migreren";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Migreer vanaf een ander apparaat";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Migreer hierheen";
 
 /* No comment provided by engineer. */
@@ -3593,9 +3576,6 @@ servers warning */
 
 /* No comment provided by engineer. */
 "No unread chats" = "Geen ongelezen chats";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Geen gebruikers-ID's.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Niet compatibel!";
@@ -3959,12 +3939,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Privacybeleid en gebruiksvoorwaarden.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Privacy opnieuw gedefinieerd";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privé bestandsnamen";
@@ -5137,9 +5111,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "De volgende generatie privéberichten";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "De hash van het vorige bericht is anders.";
 
 /* No comment provided by engineer. */
@@ -5879,9 +5850,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "U kon niet worden geverifieerd; probeer het opnieuw.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Jij bepaalt wie er verbinding mag maken.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Je hebt al verbinding aangevraagd!\nVerbindingsverzoek herhalen?";
