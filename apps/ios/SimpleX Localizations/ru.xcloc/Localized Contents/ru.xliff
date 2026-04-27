@@ -2911,12 +2911,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete member messages" xml:space="preserve">
         <source>Delete member messages</source>
-        <target>Удалить сообщения участника</target>
+        <target>Удалить сообщения члена группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete member messages?" xml:space="preserve">
         <source>Delete member messages?</source>
-        <target>Удалить сообщения участника?</target>
+        <target>Удалить сообщения члена группы?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -5442,7 +5442,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>Member messages will be deleted - this cannot be undone!</source>
-        <target>Сообщения участника будут удалены - это нельзя отменить!</target>
+        <target>Сообщения члена группы будут удалены - это нельзя отменить!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
