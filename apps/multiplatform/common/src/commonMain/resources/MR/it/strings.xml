@@ -2748,7 +2748,6 @@
     <string name="v6_5_safe_web_links">Link web sicuri</string>
     <string name="v6_5_security">Sicurezza: solo i proprietari hanno le chiavi del canale.</string>
     <string name="v6_5_invite_friends_descr">Abbiamo semplificato la connessione per i nuovi utenti.</string>
-
     <string name="why_built_heading">Sei nato senza un account.</string>
     <string name="why_built_p1">Nessuno monitorava le tue conversazioni. Nessuno disegnava una mappa delle tue posizioni. La privacy non era mai stata una caratteristica, era uno stile di vita.</string>
     <string name="why_built_p2">Poi ci siamo trasferiti online e ogni piattaforma ha chiesto un pezzo di noi: il nome, il numero, gli amici. Abbiamo accettato che il prezzo da pagare per comunicare con gli altri fosse quello di far sapere a qualcuno con chi parliamo. Ogni generazione, sia di persone che di tecnologia, ha funzionato così: telefono, email, messenger, social media. Sembrava l\'unico modo possibile.</string>
@@ -2758,7 +2757,6 @@
     <string name="why_built_p6">La più antica libertà umana, parlare con un\'altra persona senza essere osservati, si basa su un\'infrastruttura che non può tradirla.</string>
     <string name="why_built_p7">Perché abbiamo distrutto il potere di sapere chi sei. In modo che il tuo potere non possa mai esserti sottratto.</string>
     <string name="why_built_tagline">Vivi libero nella tua rete.</string>
-
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Segnalazioni degli iscritti</string>
     <string name="allow_direct_messages_channel">Permetti l\'invio di messaggi diretti agli iscritti.</string>
