@@ -5900,8 +5900,8 @@ new chat action</note>
         <target>Стара база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="On your phone, not on any server." xml:space="preserve">
-        <source>On your phone, not on any server.</source>
+      <trans-unit id="On your phone, not on servers." xml:space="preserve">
+        <source>On your phone, not on servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">

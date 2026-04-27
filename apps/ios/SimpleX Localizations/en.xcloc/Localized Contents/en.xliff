@@ -6258,9 +6258,9 @@ new chat action</note>
         <target>Old database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="On your phone, not on any server." xml:space="preserve">
-        <source>On your phone, not on any server.</source>
-        <target>On your phone, not on any server.</target>
+      <trans-unit id="On your phone, not on servers." xml:space="preserve">
+        <source>On your phone, not on servers.</source>
+        <target>On your phone, not on servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
