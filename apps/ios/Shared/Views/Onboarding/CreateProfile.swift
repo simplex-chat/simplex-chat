@@ -232,7 +232,7 @@ struct CreateFirstProfile: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    Text("On your phone, not on any server.")
+                    Text("On your phone, not on servers.")
                         .font(.title3)
                         .fontWeight(.medium)
                         .foregroundColor(theme.colors.secondary)
