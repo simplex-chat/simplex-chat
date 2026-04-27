@@ -57,7 +57,7 @@ private fun LinkAMobileLayout(
   ModalView({ appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }) {
     Column(Modifier.fillMaxSize().padding(top = AppBarHeight * fontSizeSqrtMultiplier)) {
       Box(Modifier.align(Alignment.CenterHorizontally)) {
-        AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
+        AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), overrideTitleColor = MaterialTheme.colors.onBackground)
       }
       Row(Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING * 2), verticalAlignment = Alignment.CenterVertically) {
         Column(

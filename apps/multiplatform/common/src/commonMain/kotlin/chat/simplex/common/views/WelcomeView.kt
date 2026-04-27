@@ -157,7 +157,7 @@ private fun RowScope.MigrateButton(refocusTrigger: MutableState<Int>) {
       if (chatModel.migrationState.value == null) {
         chatModel.migrationState.value = MigrationToState.PasteOrScanLink
       }
-      ModalManager.fullscreen.showCustomModal(animated = false) { close ->
+      ModalManager.fullscreen.showCustomModal(animated = false, forceAnimated = appPlatform.isDesktop) { close ->
         MigrateToDeviceView {
           close()
           refocusTrigger.value++
