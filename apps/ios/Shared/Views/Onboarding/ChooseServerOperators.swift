@@ -110,6 +110,7 @@ struct OnboardingConditionsView: View {
                     ConditionsTextView()
                         .padding()
                     acceptButton()
+                        .padding(.horizontal, 25)
                         .padding(.bottom, 20)
                 }
                 .navigationTitle("Conditions of use")

@@ -351,28 +351,6 @@ private func regularConditionsHeader() -> some View {
     }
 }
 
-struct SimpleConditionsView: View {
-    var onAccept: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            regularConditionsHeader()
-                .padding(.top)
-                .padding(.top)
-            ConditionsTextView()
-            Spacer()
-            Button {
-                onAccept()
-            } label: {
-                Text("Accept")
-            }
-            .buttonStyle(OnboardingButtonStyle())
-            .padding(.bottom, 20)
-        }
-        .padding(.horizontal, 25)
-        .frame(maxHeight: .infinity)
-    }
-}
 
 func validateServers_(
     _ userServers: Binding<[UserOperatorServers]>,
