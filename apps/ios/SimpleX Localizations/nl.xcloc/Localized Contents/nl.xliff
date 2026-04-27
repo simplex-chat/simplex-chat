@@ -1113,11 +1113,6 @@ swipe action</note>
         <target>Beantwoord oproep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Anybody can host servers." xml:space="preserve">
-        <source>Anybody can host servers.</source>
-        <target>Iedereen kan servers hosten.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>App build: %@</target>
@@ -1322,6 +1317,19 @@ swipe action</note>
         <target>Onjuiste bericht hash</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Be free&#10;in your network" xml:space="preserve">
+        <source>Be free
+in your network</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Be free in your network." xml:space="preserve">
+        <source>Be free in your network.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Because we destroyed the power to know who you are. So that your power can never be taken." xml:space="preserve">
+        <source>Because we destroyed the power to know who you are. So that your power can never be taken.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better calls" xml:space="preserve">
         <source>Better calls</source>
         <target>Betere gesprekken</target>
@@ -1498,15 +1506,6 @@ swipe action</note>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>Via chatprofiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">
-        <source>By using SimpleX Chat you agree to:
-- send only legal content in public groups.
-- respect other users – no spam.</source>
-        <target>Door SimpleX Chat te gebruiken, gaat u ermee akkoord:
-- alleen legale content te versturen in openbare groepen.
-- andere gebruikers te respecteren – geen spam.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -2037,11 +2036,6 @@ chat toolbar</note>
         <source>Configure relays</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure server operators" xml:space="preserve">
-        <source>Configure server operators</source>
-        <target>Serveroperators configureren</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>Bevestigen</target>
@@ -2159,10 +2153,6 @@ Dit is uw eigen eenmalige link!</target>
         <source>Connect with %@</source>
         <target>Verbonden met %@</target>
         <note>new chat action</note>
-      </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve">
-        <source>Connect with someone</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
@@ -2465,6 +2455,10 @@ Dit is uw eigen eenmalige link!</target>
         <source>Create your address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
         <target>Maak je profiel aan</target>
@@ -2654,11 +2648,6 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Debug delivery" xml:space="preserve">
         <source>Debug delivery</source>
         <target>Foutopsporing bezorging</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Decentralized" xml:space="preserve">
-        <source>Decentralized</source>
-        <target>Gedecentraliseerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decode link" xml:space="preserve">
@@ -3366,11 +3355,6 @@ chat item action</note>
         <target>Vergrendeling inschakelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable notifications" xml:space="preserve">
-        <source>Enable notifications</source>
-        <target>Meldingen aanzetten</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Enable periodic notifications?" xml:space="preserve">
         <source>Enable periodic notifications?</source>
         <target>Periodieke meldingen inschakelen?</target>
@@ -3503,6 +3487,10 @@ chat item action</note>
       <trans-unit id="Enter password above to show!" xml:space="preserve">
         <source>Enter password above to show!</source>
         <target>Voer hier boven het wachtwoord in om weer te geven!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter profile name..." xml:space="preserve">
+        <source>Enter profile name...</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter relay name…" xml:space="preserve">
@@ -4400,6 +4388,10 @@ Fout: %2$@</target>
         <target>Ontvang een melding als u vermeld wordt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Get started" xml:space="preserve">
+        <source>Get started</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
         <source>Good afternoon!</source>
         <target>Goedemiddag!</target>
@@ -4669,11 +4661,6 @@ Fout: %2$@</target>
       <trans-unit id="Immediately" xml:space="preserve">
         <source>Immediately</source>
         <target>Onmiddellijk</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Immune to spam" xml:space="preserve">
-        <source>Immune to spam</source>
-        <target>Immuun voor spam en misbruik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Import" xml:space="preserve">
@@ -5556,14 +5543,13 @@ Dit is jouw link voor groep %@!</target>
         <target>Berichten, bestanden en oproepen worden beschermd door **kwantumbestendige e2e encryptie** met perfecte voorwaartse geheimhouding, afwijzing en inbraakherstel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Migrate" xml:space="preserve">
+        <source>Migrate</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
         <source>Migrate device</source>
         <target>Apparaat migreren</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Migrate from another device" xml:space="preserve">
-        <source>Migrate from another device</source>
-        <target>Migreer vanaf een ander apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate here" xml:space="preserve">
@@ -5686,6 +5672,10 @@ Dit is jouw link voor groep %@!</target>
         <target>Netwerk &amp; servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Network commitments" xml:space="preserve">
+        <source>Network commitments</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
         <source>Network connection</source>
         <target>Netwerkverbinding</target>
@@ -5713,6 +5703,11 @@ Dit is jouw link voor groep %@!</target>
       <trans-unit id="Network operator" xml:space="preserve">
         <source>Network operator</source>
         <target>Netwerkbeheerder</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network routers cannot know&#10;who talks to whom" xml:space="preserve">
+        <source>Network routers cannot know
+who talks to whom</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -5830,6 +5825,11 @@ Dit is jouw link voor groep %@!</target>
       <trans-unit id="No" xml:space="preserve">
         <source>No</source>
         <target>Nee</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
+        <source>No account. No phone. No email. No ID.
+The most secure encryption.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No active relays" xml:space="preserve">
@@ -5993,13 +5993,16 @@ Dit is jouw link voor groep %@!</target>
         <target>Geen ongelezen chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No user identifiers." xml:space="preserve">
-        <source>No user identifiers.</source>
-        <target>Geen gebruikers-ID's.</target>
+      <trans-unit id="Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." xml:space="preserve">
+        <source>Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Non-profit governance" xml:space="preserve">
         <source>Non-profit governance</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
+        <source>Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not all relays connected" xml:space="preserve">
@@ -6080,6 +6083,10 @@ new chat action</note>
       <trans-unit id="Old database" xml:space="preserve">
         <source>Old database</source>
         <target>Oude database</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="On your phone, not on servers." xml:space="preserve">
+        <source>On your phone, not on servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -6316,6 +6323,13 @@ alert button</note>
         <source>Operator server</source>
         <target>Operatorserver</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Operators commit to:&#10;- Be independent&#10;- Minimize metadata usage&#10;- Run verified open-source code" xml:space="preserve">
+        <source>Operators commit to:
+- Be independent
+- Minimize metadata usage
+- Run verified open-source code</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or import archive file" xml:space="preserve">
         <source>Or import archive file</source>
@@ -6640,18 +6654,12 @@ Fout: %@</target>
         <target>Privacybeleid en gebruiksvoorwaarden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy redefined" xml:space="preserve">
-        <source>Privacy redefined</source>
-        <target>Privacy opnieuw gedefinieerd</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve">
         <source>Privacy: for owners and subscribers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
-        <source>Private chats, groups and your contacts are not accessible to server operators.</source>
-        <target>Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</target>
+      <trans-unit id="Private and secure messaging." xml:space="preserve">
+        <source>Private and secure messaging.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
@@ -8032,6 +8040,14 @@ chat item action</note>
         <target>Instellingen zijn gewijzigd.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Setup notifications" xml:space="preserve">
+        <source>Setup notifications</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Setup routers" xml:space="preserve">
+        <source>Setup routers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
         <target>Vorm profiel afbeeldingen</target>
@@ -8788,9 +8804,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The future of messaging" xml:space="preserve">
-        <source>The future of messaging</source>
-        <target>De volgende generatie privéberichten</target>
+      <trans-unit id="The first network where you own&#10;your contacts and groups." xml:space="preserve">
+        <source>The first network where you own
+your contacts and groups.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -8825,6 +8841,10 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
         <source>The old database was not removed during the migration, it can be deleted.</source>
         <target>De oude database is niet verwijderd tijdens de migratie, deze kan worden verwijderd.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." xml:space="preserve">
+        <source>The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
@@ -8870,6 +8890,14 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       <trans-unit id="Themes" xml:space="preserve">
         <source>Themes</source>
         <target>Thema's</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." xml:space="preserve">
+        <source>Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." xml:space="preserve">
+        <source>There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="These conditions will also apply for: **%@**." xml:space="preserve">
@@ -9400,11 +9428,6 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik TCP-poort 443 alleen voor vooraf ingestelde servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use chat" xml:space="preserve">
-        <source>Use chat</source>
-        <target>Gebruik chat</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Use current profile" xml:space="preserve">
         <source>Use current profile</source>
         <target>Gebruik het huidige profiel</target>
@@ -9739,6 +9762,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Why SimpleX is built." xml:space="preserve">
+        <source>Why SimpleX is built.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
         <source>WiFi</source>
         <target>Wifi</target>
@@ -9998,6 +10025,12 @@ Deelnameverzoek herhalen?</target>
         <target>Je kunt geen berichten versturen!</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="You commit to:&#10;- Only legal content in public groups&#10;- Respect other users - no spam" xml:space="preserve">
+        <source>You commit to:
+- Only legal content in public groups
+- Respect other users - no spam</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You connected to the channel via this relay link." xml:space="preserve">
         <source>You connected to the channel via this relay link.</source>
         <note>No comment provided by engineer.</note>
@@ -10005,11 +10038,6 @@ Deelnameverzoek herhalen?</target>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
         <source>You could not be verified; please try again.</source>
         <target>U kon niet worden geverifieerd; probeer het opnieuw.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You decide who can connect." xml:space="preserve">
-        <source>You decide who can connect.</source>
-        <target>Jij bepaalt wie er verbinding mag maken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection!&#10;Repeat connection request?" xml:space="preserve">
@@ -10078,6 +10106,10 @@ Verbindingsverzoek herhalen?</target>
         <source>You should receive notifications.</source>
         <target>U zou meldingen moeten ontvangen.</target>
         <note>token info</note>
+      </trans-unit>
+      <trans-unit id="You were born without an account" xml:space="preserve">
+        <source>You were born without an account</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be able to send messages **only after your request is accepted**." xml:space="preserve">
         <source>You will be able to send messages **only after your request is accepted**.</source>
@@ -10213,6 +10245,10 @@ Verbindingsverzoek herhalen?</target>
         <target>Uw contacten blijven verbonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." xml:space="preserve">
+        <source>Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve">
         <source>Your credentials may be sent unencrypted.</source>
         <target>Uw inloggegevens worden mogelijk niet-versleuteld verzonden.</target>
@@ -10230,6 +10266,10 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="Your group" xml:space="preserve">
         <source>Your group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your network" xml:space="preserve">
+        <source>Your network</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">

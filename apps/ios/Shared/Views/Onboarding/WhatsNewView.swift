@@ -634,7 +634,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v6.5",
-        post: URL(string: "https://simplex.chat/blog/20260428-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"),
+        post: URL(string: "https://simplex.chat/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"),
         features: [
             .feature(Description(
                 icon: nil,

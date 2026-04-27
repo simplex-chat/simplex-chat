@@ -630,9 +630,6 @@ swipe action */
 "Answer call" = "Répondre à l'appel";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "N'importe qui peut heberger un serveur.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Build de l'app : %@";
 
 /* No comment provided by engineer. */
@@ -866,9 +863,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Par profil de chat (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "En utilisant SimpleX Chat, vous acceptez de :\n- n'envoyer que du contenu légal dans les groupes publics.\n- respecter les autres utilisateurs - pas de spam.";
 
 /* No comment provided by engineer. */
 "call" = "appeler";
@@ -1148,9 +1142,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Configurer les serveurs ICE";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Configurer les opérateurs de serveur";
 
 /* No comment provided by engineer. */
 "Confirm" = "Confirmer";
@@ -1539,9 +1530,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Livraison de débogage";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Décentralisé";
 
 /* message decrypt error item */
 "Decryption error" = "Erreur de déchiffrement";
@@ -2716,9 +2704,6 @@ servers warning */
 "Immediately" = "Immédiatement";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Protégé du spam et des abus";
-
-/* No comment provided by engineer. */
 "Import" = "Importer";
 
 /* No comment provided by engineer. */
@@ -3217,9 +3202,6 @@ servers warning */
 "Migrate device" = "Transférer l'appareil";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Transférer depuis un autre appareil";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Transférer ici";
 
 /* No comment provided by engineer. */
@@ -3452,9 +3434,6 @@ servers warning */
 
 /* copied message info in history */
 "no text" = "aucun texte";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Aucun identifiant d'utilisateur.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Non compatible !";
@@ -3770,9 +3749,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy for your customers." = "Respect de la vie privée de vos clients.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "La vie privée redéfinie";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Noms de fichiers privés";
@@ -4836,9 +4812,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Le chiffrement fonctionne et le nouvel accord de chiffrement n'est pas nécessaire. Cela peut provoquer des erreurs de connexion !";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "La nouvelle génération de messagerie privée";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Le hash du message précédent est différent.";
 
 /* No comment provided by engineer. */
@@ -5545,9 +5518,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Vous n'avez pas pu être vérifié·e ; veuillez réessayer.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Vous choisissez qui peut se connecter.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Vous avez déjà demandé une connexion !\nRépéter la demande de connexion ?";

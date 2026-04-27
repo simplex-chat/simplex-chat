@@ -68,6 +68,7 @@ struct AddGroupView: View {
         List {
             Group {
                 HStack(spacing: 0) {
+                    Spacer(minLength: 0)
                     ZStack(alignment: .center) {
                         ZStack(alignment: .topTrailing) {
                             ProfileImage(imageStr: profile.image, iconName: "person.2.circle.fill", size: 128)
@@ -86,16 +87,16 @@ struct AddGroupView: View {
                         editImageButton { showChooseSource = true }
                             .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
                     }
-                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
                     #if SIMPLEX_ASSETS
+                    Spacer(minLength: 0)
                     Image(colorScheme == .light ? "create-group" : "create-group-light")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 140)
-                        .frame(maxWidth: .infinity)
                     #endif
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity)
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)

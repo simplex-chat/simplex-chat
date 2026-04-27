@@ -208,7 +208,7 @@ struct ConnectOnboardingView: View {
             .font(.largeTitle)
             .bold()
             .lineLimit(1)
-            .minimumScaleFactor(0.75)
+            .minimumScaleFactor(0.67)
             .frame(maxWidth: .infinity, alignment: .center)
         if isLandscape {
             ZStack(alignment: .leading) {
@@ -279,7 +279,7 @@ struct ConnectOnboardingView: View {
     private var connectWithSomeonePage: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                pageHeader("Connect with someone", showBack: true)
+                pageHeader("Create your link", showBack: true)
 
                 Spacer(minLength: 16)
 

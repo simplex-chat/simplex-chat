@@ -378,9 +378,6 @@ swipe action */
 "Answer call" = "Vastaa puheluun";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Sovellusversio: %@";
 
 /* No comment provided by engineer. */
@@ -851,9 +848,6 @@ server test step */
 
 /* time unit */
 "days" = "päivää";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Hajautettu";
 
 /* message decrypt error item */
 "Decryption error" = "Salauksen purkuvirhe";
@@ -1591,9 +1585,6 @@ server test error */
 "Immediately" = "Heti";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Immuuni roskapostille ja väärinkäytöksille";
-
-/* No comment provided by engineer. */
 "Import" = "Tuo";
 
 /* No comment provided by engineer. */
@@ -2056,9 +2047,6 @@ server test error */
 "no text" = "ei tekstiä";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.";
-
-/* No comment provided by engineer. */
 "Notifications" = "Ilmoitukset";
 
 /* No comment provided by engineer. */
@@ -2248,9 +2236,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Yksityisyys ja turvallisuus";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Yksityisyys uudelleen määritettynä";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Yksityiset tiedostonimet";
@@ -2873,9 +2858,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Seuraavan sukupolven yksityisviestit";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Edellisen viestin tarkiste on erilainen.";
 
 /* No comment provided by engineer. */
@@ -3246,9 +3228,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";

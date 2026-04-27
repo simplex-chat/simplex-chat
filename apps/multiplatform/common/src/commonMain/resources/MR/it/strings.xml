@@ -358,7 +358,6 @@
     <string name="encrypted_video_call">Videochiamata crittografata e2e</string>
     <string name="callstate_ended">terminata</string>
     <string name="how_it_works">Come funziona</string>
-    <string name="how_simplex_works">Come funziona SimpleX</string>
     <string name="answer_call">Rispondi alla chiamata</string>
     <string name="icon_descr_audio_off">Audio spento</string>
     <string name="icon_descr_audio_on">Audio acceso</string>
@@ -2379,7 +2378,6 @@
     <string name="onboarding_conditions_by_using_you_agree">Usando SimpleX Chat accetti di:\n- inviare solo contenuto legale nei gruppi pubblici.\n- rispettare gli altri utenti - niente spam.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Le chat private, i gruppi e i tuoi contatti non sono accessibili agli operatori dei server.</string>
     <string name="onboarding_conditions_accept">Accetta</string>
-    <string name="onboarding_conditions_configure_server_operators">Configura gli operatori dei server</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Informativa sulla privacy e condizioni d\'uso.</string>
     <string name="link_requires_newer_app_version_please_upgrade">Questo link richiede una versione più recente dell\'app. Aggiornala o chiedi al tuo contatto di inviare un link compatibile.</string>
     <string name="full_link_button_text">Link completo</string>
@@ -2750,6 +2748,16 @@
     <string name="v6_5_safe_web_links">Link web sicuri</string>
     <string name="v6_5_security">Sicurezza: solo i proprietari hanno le chiavi del canale.</string>
     <string name="v6_5_invite_friends_descr">Abbiamo semplificato la connessione per i nuovi utenti.</string>
+
+    <string name="why_built_heading">Sei nato senza un account.</string>
+    <string name="why_built_p1">Nessuno monitorava le tue conversazioni. Nessuno disegnava una mappa delle tue posizioni. La privacy non era mai stata una caratteristica, era uno stile di vita.</string>
+    <string name="why_built_p2">Poi ci siamo trasferiti online e ogni piattaforma ha chiesto un pezzo di noi: il nome, il numero, gli amici. Abbiamo accettato che il prezzo da pagare per comunicare con gli altri fosse quello di far sapere a qualcuno con chi parliamo. Ogni generazione, sia di persone che di tecnologia, ha funzionato così: telefono, email, messenger, social media. Sembrava l\'unico modo possibile.</string>
+    <string name="why_built_p3">C\'è un\'altra via. Una rete senza numeri di telefono. Senza nomi utente. Senza account. Senza identificatori utente di alcun tipo. Una rete che connette le persone e trasferisce messaggi crittografati senza sapere chi è connesso.</string>
+    <string name="why_built_p4">Non una serratura migliore sulla porta di qualcun altro. Non un padrone di casa più gentile che rispetta la tua privacy, ma che continua a tenere traccia di tutti i visitatori. Non sei un ospite. Sei a casa tua. Nessun re può entrarvi: sei tu il sovrano.</string>
+    <string name="why_built_p5">Le tue conversazioni appartengono a te, come è sempre stato prima dell\'avvento di internet. La rete non è un luogo che visiti. È un luogo che crei e possiedi. E nessuno può portartelo via, che tu lo renda privato o pubblico.</string>
+    <string name="why_built_p6">La più antica libertà umana, parlare con un\'altra persona senza essere osservati, si basa su un\'infrastruttura che non può tradirla.</string>
+    <string name="why_built_p7">Perché abbiamo distrutto il potere di sapere chi sei. In modo che il tuo potere non possa mai esserti sottratto.</string>
+    <string name="why_built_tagline">Vivi libero nella tua rete.</string>
 
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Segnalazioni degli iscritti</string>

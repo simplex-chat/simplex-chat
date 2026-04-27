@@ -473,7 +473,6 @@
     <string name="make_private_connection">Добавьте контакт</string>
     <string name="how_it_works">Как это работает</string>
     <!-- How SimpleX Works -->
-    <string name="how_simplex_works">Как SimpleX работает</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, SimpleX использует разные ID для всех ваших контактов.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.]]></string>
@@ -2459,7 +2458,6 @@
     <string name="onboarding_conditions_accept">Принять</string>
     <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей — не отправлять спам.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
-    <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
     <string name="member_criteria_all">всех</string>
     <string name="accept_pending_member_button">Принять</string>
@@ -2754,4 +2752,13 @@
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR-кодом — любой желающий сможет присоединиться к каналу.</string>
     <string name="only_channel_owners_can_change_prefs">Изменить настройки канала могут только владельцы канала.</string>
     <string name="chat_link_one_time">Одноразовая ссылка</string>
+  <string name="why_built_heading">Вы родились без аккаунта.</string>
+  <string name="why_built_p1">Никто не отслеживал ваши разговоры. Никто не составлял карту ваших перемещений. Конфиденциальность не была функцией - это был образ жизни.</string>
+  <string name="why_built_p2">Потом мы вышли в интернет, и каждая платформа попросила частичку вас - ваше имя, ваш номер, ваших друзей. Мы смирились с тем, что за возможность общаться приходится отдавать информацию о том, с кем мы общаемся. Каждое поколение людей и технологий жило так - телефон, электронная почта, мессенджеры, социальные сети. Казалось, что другого пути нет.</string>
+  <string name="why_built_p3">Другой путь есть. Сеть без номеров телефонов. Без имён пользователей. Без аккаунтов. Без каких-либо идентификаторов пользователей. Сеть, которая соединяет людей и передаёт зашифрованные сообщения, не зная, кто с кем связан.</string>
+  <string name="why_built_p4">Не более надёжный замок на чужой двери. Не более вежливый хозяин, который уважает вашу частную жизнь, но всё равно ведёт учёт всех посетителей. Вы не гость. Вы у себя дома. Ни один король не войдёт в ваш дом - вы суверенны.</string>
+  <string name="why_built_p5">Ваши разговоры принадлежат вам, как это всегда было до интернета. Сеть - это не место, куда вы приходите. Это место, которое вы создаёте и которым владеете. И никто не может это у вас отнять, делаете ли вы его конфиденциальным или публичным.</string>
+  <string name="why_built_p6">Древнейшая человеческая свобода - говорить с другим человеком без слежки - построенная на инфраструктуре, которая не может её предать.</string>
+  <string name="why_built_p7">Потому что мы разрушили саму возможность узнать, кто вы. Чтобы вашу свободу невозможно было отнять.</string>
+  <string name="why_built_tagline">Будь свободен в своей сети.</string>
 </resources>
