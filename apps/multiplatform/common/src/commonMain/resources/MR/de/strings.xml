@@ -2828,7 +2828,6 @@
     <string name="why_built_p6">Die älteste Freiheit des Menschen - mit einem anderen Menschen sprechen zu können, ohne beobachtet zu werden - gestützt auf einer Infrastruktur, die Sie nicht verraten kann.</string>
     <string name="why_built_p7">Weil wir die Macht zerstört haben, zu wissen, wer Sie sind. Damit Ihnen Ihre Macht niemals genommen werden kann.</string>
     <string name="why_built_tagline">Genießen Sie die Freiheit in Ihrem Netzwerk.</string>
-
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Abonnenten-Meldungen</string>
     <string name="allow_direct_messages_channel">Das Senden von Direktnachrichten an Abonnenten erlauben.</string>
