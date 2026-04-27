@@ -2339,9 +2339,9 @@
     <string name="unblock_members_desc">A tagok összes üzenete meg fog jelenni!</string>
     <string name="feature_roles_moderators">moderátorok</string>
     <string name="onboarding_conditions_accept">Elfogadás</string>
-    <string name="onboarding_conditions_by_using_you_agree">A SimpleX Chat használatával Ön elfogadja, hogy:\n- csak elfogadott tartalmakat tesz közzé a nyilvános csoportokban.\n- tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Ön kijelenti, hogy:\n- nyilvános csoportokban kizárólag megengedett tartalmakat oszt meg\n- tiszteletben tartja a többi felhasználót – nem küld senkinek kéretlen tartalmat</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Adatvédelmi szabályzat és felhasználási feltételek.</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">A privát csevegések, a csoportok és a partnerek nem érhetők el a kiszolgálók üzemeltetői számára.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Az üzemeltetők kijelentik, hogy:\n- függetlenek maradnak\n- minimálisra csökkentik a metaadatok használatát\n- ellenőrzött, nyílt forráskódú szoftvereket futtatnak</string>
     <string name="unsupported_connection_link">Nem támogatott kapcsolattartási hivatkozás</string>
     <string name="short_link_button_text">Rövid hivatkozás</string>
     <string name="full_link_button_text">Teljes hivatkozás</string>
@@ -2753,4 +2753,17 @@
     <string name="e2ee_info_no_e2ee"><![CDATA[Ebben a csatornában az üzenetek <b>nem rendelkeznek végpontok közötti titkosítással</b>. A csevegési átjátszók láthatják ezeket az üzeneteket.]]></string>
     <string name="migrate">Átköltöztetés</string>
     <string name="onboarding_network_commitments">Hálózati kötelezettségvállalások</string>
+    <string name="onboarding_network_routers_cannot_know">A hálózati útválasztók nem tudhatják,,\nhogy ki kivel beszélget</string>
+    <string name="onboarding_no_account">Nincs fiók. Nincs telefonszám. Nincs e-mail-cím. Nincs személyazonosító.\nA legbiztonságosabb titkosítás.</string>
+    <string name="onboarding_on_your_phone">Az Ön eszközén, nem pedig a kiszolgálókon.</string>
+    <string name="open_external_link_title">Megnyitja a külső hivatkozást?</string>
+    <string name="onboarding_private_and_secure">Privát és biztonságos üzenetváltás.</string>
+    <string name="prohibit_chat_with_admins">A csevegés az adminisztrátorokkal le van tiltva.</string>
+    <string name="onboarding_configure_notifications">Értesítések beállítása</string>
+    <string name="onboarding_configure_routers">Útválasztók beállítása</string>
+    <string name="members_can_chat_with_admins_channel">A feliratkozók cseveghetnek az adminisztrátorokkal</string>
+    <string name="why_simplex_is_built">Miért jött létre a SimpleX?</string>
+    <string name="onboarding_your_network">Saját hálózat</string>
+    <string name="onboarding_your_profile">Saját profil</string>
+    <string name="onboarding_first_network">Az első hálózat, ahol Ön birtokolja\na saját kapcsolatait és csoportjait.</string>
 </resources>
