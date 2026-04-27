@@ -185,18 +185,21 @@
         <target>%d mes(es)</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d relays failed" xml:space="preserve">
+      <trans-unit id="%d relays failed" xml:space="preserve" approved="no">
         <source>%d relays failed</source>
+        <target state="translated">%d servidores han fallado</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d relays not active" xml:space="preserve">
+      <trans-unit id="%d relays not active" xml:space="preserve" approved="no">
         <source>%d relays not active</source>
+        <target state="translated">%d servidores inactivos</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
-      <trans-unit id="%d relays removed" xml:space="preserve">
+      <trans-unit id="%d relays removed" xml:space="preserve" approved="no">
         <source>%d relays removed</source>
+        <target state="translated">%d servidores eliminados</target>
         <note>channel relay bar
 channel subscriber relay bar</note>
       </trans-unit>
@@ -495,10 +498,13 @@ channel relay bar</note>
 - ¡y más!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- opt-in to send link previews.&#10;- prevent hyperlink phishing.&#10;- remove link tracking." xml:space="preserve">
+      <trans-unit id="- opt-in to send link previews.&#10;- prevent hyperlink phishing.&#10;- remove link tracking." xml:space="preserve" approved="no">
         <source>- opt-in to send link previews.
 - prevent hyperlink phishing.
 - remove link tracking.</source>
+        <target state="translated">- aceptar el envío de vistas previas de los enlaces.
+- prevenir el phishing mediante hipervínculos.
+- eliminar el seguimiento de los enlaces.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
@@ -5650,12 +5656,14 @@ This is your link for group %@!</source>
         <target>¡Los mensajes nuevos de %@ serán mostrados!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve">
+      <trans-unit id="Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages." xml:space="preserve" approved="no">
         <source>Messages in this channel are **not end-to-end encrypted**. Chat relays can see these messages.</source>
+        <target state="translated">Los mensajes en este canal **no están cifrados de extremo a extremo**. Los servidores pueden ver estos mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve">
+      <trans-unit id="Messages in this channel are not end-to-end encrypted. Chat relays can see these messages." xml:space="preserve" approved="no">
         <source>Messages in this channel are not end-to-end encrypted. Chat relays can see these messages.</source>
+        <target state="translated">Los mensajes en este canal no están cifrados de extremo a extremo. Los servidores pueden ver estos mensajes.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
@@ -5813,9 +5821,11 @@ This is your link for group %@!</source>
         <target>Nombre</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Network&#10;commitments" xml:space="preserve">
+      <trans-unit id="Network&#10;commitments" xml:space="preserve" approved="no">
         <source>Network
 commitments</source>
+        <target state="translated">Compromisos
+en la red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -5833,8 +5843,9 @@ commitments</source>
         <target>Descentralización de la red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network error" xml:space="preserve">
+      <trans-unit id="Network error" xml:space="preserve" approved="no">
         <source>Network error</source>
+        <target state="translated">Error de red</target>
         <note>conn error description</note>
       </trans-unit>
       <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve">
@@ -5852,9 +5863,11 @@ commitments</source>
         <target>Operador de red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network routers cannot know&#10;who talks to whom" xml:space="preserve">
+      <trans-unit id="Network routers cannot know&#10;who talks to whom" xml:space="preserve" approved="no">
         <source>Network routers cannot know
 who talks to whom</source>
+        <target state="translated">Los routers de la red no pueden saber
+quién se comunica con quién</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -5872,8 +5885,9 @@ who talks to whom</source>
         <target>Nuevo</target>
         <note>token status text</note>
       </trans-unit>
-      <trans-unit id="New 1-time link" xml:space="preserve">
+      <trans-unit id="New 1-time link" xml:space="preserve" approved="no">
         <source>New 1-time link</source>
+        <target state="translated">Nuevo enlace de 1 solo uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
@@ -5976,13 +5990,16 @@ who talks to whom</source>
         <target>No</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
+      <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve" approved="no">
         <source>No account. No phone. No email. No ID.
 The most secure encryption.</source>
+        <target state="translated">Sin cuenta. Sin teléfono, Sin email, Sin ID.
+El cifrado más seguro.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No active relays" xml:space="preserve">
+      <trans-unit id="No active relays" xml:space="preserve" approved="no">
         <source>No active relays</source>
+        <target state="translated">Sin servidores activos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No app password" xml:space="preserve">
@@ -6150,8 +6167,9 @@ The most secure encryption.</source>
         <target>Nadie monitorizaba tus conversaciones. Nadie registraba tus ubicaciones. La privacidad nunca fue un lujo, era la manera de vivir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Non-profit governance" xml:space="preserve">
+      <trans-unit id="Non-profit governance" xml:space="preserve" approved="no">
         <source>Non-profit governance</source>
+        <target state="translated">Gobernanza no lucrativa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." xml:space="preserve">
@@ -6240,8 +6258,9 @@ new chat action</note>
         <target>Base de datos antigua</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="On your phone, not on any server." xml:space="preserve">
+      <trans-unit id="On your phone, not on any server." xml:space="preserve" approved="no">
         <source>On your phone, not on any server.</source>
+        <target state="translated">En tu teléfono, no en algún servidor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -6249,8 +6268,9 @@ new chat action</note>
         <target>Enlace de invitación de un solo uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-time link" xml:space="preserve">
+      <trans-unit id="One-time link" xml:space="preserve" approved="no">
         <source>One-time link</source>
+        <target state="translated">Enlace de un solo uso</target>
         <note>chat link info line</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
