@@ -2645,7 +2645,7 @@
     <string name="info_row_relay_link">Enlace servidor</string>
     <string name="button_remove_subscriber">Eliminar suscriptor</string>
     <string name="button_remove_subscriber_question">¿Eliminar suscriptor?</string>
-    <string name="save_and_notify_channel_subscribers">Guardar y notificar suscriptores</string>
+    <string name="save_and_notify_channel_subscribers">Guardar y notificar suscriptores del canal</string>
     <string name="save_channel_profile">Guardar perfil del canal</string>
     <string name="error_relay_test_server_auth">El servidor requiere autorización para conectar con el servidor, comprueba la contraseña.</string>
     <string name="server_warning">Alerta del servidor</string>
@@ -2719,7 +2719,7 @@
     <string name="relay_bar_all_relays_removed">Todos los servidores eliminados</string>
     <string name="onboarding_be_free">Se libre\nen tu red</string>
     <string name="chat_link_business_address">Dirección empresarial</string>
-    <string name="cant_broadcast_message">no se puede retransmitir</string>
+    <string name="cant_broadcast_message">no puedes retransmitir</string>
     <string name="channel_no_active_relays_try_later">El canal no tiene servidores activos. Por favor, intenta unirte más tarde.</string>
     <string name="chat_link_channel">Enlace del canal</string>
     <string name="channel_preferences">Preferencias del canal</string>
@@ -2774,11 +2774,11 @@
     <string name="v6_5_safe_web_links">Enlaces web seguros</string>
     <string name="v6_5_security">Seguridad: los propietarios tienen la llave del canal.</string>
     <string name="link_previews_alert_desc">Enviar una previsualización del enlace puede revelar tu dirección IP al sitio web. Puedes cambiarlo más tarde en los ajustes de privacidad.</string>
-    <string name="onboarding_send_1_time_link">Envía el enlace mediante cualquier mensajero, es seguro. Pide que lo peguen en SimpleX.</string>
+    <string name="onboarding_send_1_time_link">Envía el enlace mediante cualquier mensajero, es seguro. Pide que lo copien en SimpleX.</string>
     <string name="onboarding_configure_notifications">Configurar notificaciones</string>
     <string name="onboarding_configure_routers">Configurar routers</string>
     <string name="share_channel">Compartir canal…</string>
-    <string name="share_via_chat">Compartir por chat</string>
+    <string name="share_via_chat">Compartir mediante chat</string>
     <string name="owner_verification_failed">⚠️ Verificación de firma fallida: %s.</string>
     <string name="chat_link_signed">(firmado)</string>
     <string name="members_can_chat_with_admins_channel">Los suscriptores pueden chatear con los administradores.</string>
@@ -2787,7 +2787,7 @@
     <string name="connection_reached_limit_of_undelivered_messages">La conexión ha alcanzado al límite de mensajes no entregados</string>
     <string name="onboarding_first_network">La primera red donde los grupos\ny los contactos son tuyos.</string>
     <string name="v6_5_non_profit_governance_descr">Para que la Red SimpleX perdure.</string>
-    <string name="onboarding_post_address">Usa esta dirección en el perfil de tu red social, página web o firma para email.</string>
+    <string name="onboarding_post_address">Usa esta dirección en el perfil de tu redes sociales, página web o firma para email.</string>
     <string name="relay_bar_subscriber_waiting">Esperando a que el propietario del canal añada servidores.</string>
     <string name="v6_5_invite_friends_descr">Hemos simplificado la conexión para los usuarios nuevos.</string>
     <string name="why_simplex_is_built">Por qué fue creado SimpleX.</string>
