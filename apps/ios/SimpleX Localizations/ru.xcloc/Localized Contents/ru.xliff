@@ -1354,7 +1354,7 @@ swipe action</note>
       <trans-unit id="Be free&#10;in your network" xml:space="preserve">
         <source>Be free
 in your network</source>
-        <target>Будьте свободны
+        <target>Будь свободен
 в своей сети</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1520,7 +1520,7 @@ in your network</source>
       </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
-        <target>Рассылка</target>
+        <target>Опубликовать</target>
         <note>compose placeholder for channel owner</note>
       </trans-unit>
       <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve">
