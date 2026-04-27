@@ -77,7 +77,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         .padding(top = 20.dp)
     ) {
       ColumnWithScrollBar {
-        AppBarTitle(stringResource(MR.strings.create_profile), withPadding = false, bottomPadding = DEFAULT_PADDING_HALF)
+        AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING_HALF)
         Row(
           Modifier
             .fillMaxWidth()
