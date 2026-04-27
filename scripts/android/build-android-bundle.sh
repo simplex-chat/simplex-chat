@@ -23,5 +23,5 @@ unzip -o "$tmp/libsimplex.zip" -d "$tmp/simplex-chat/apps/multiplatform/common/s
 curl -sSf "$libsup" -o "$tmp/libsupport.zip"
 unzip -o "$tmp/libsupport.zip" -d "$tmp/simplex-chat/apps/multiplatform/common/src/commonMain/cpp/android/libs/arm64-v8a"
 
-gradle -p "$tmp/simplex-chat/apps/multiplatform/" clean build
+gradle -p "$tmp/simplex-chat/apps/multiplatform/" -Psimplex.assets.dir=../../assets clean build
 cp "$tmp/simplex-chat/apps/multiplatform/android/build/outputs/apk/release/android-release-unsigned.apk" "$PWD/simplex-chat.apk"

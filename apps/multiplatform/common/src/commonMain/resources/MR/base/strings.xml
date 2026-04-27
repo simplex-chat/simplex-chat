@@ -1292,9 +1292,27 @@
   <string name="make_private_connection">Make a private connection</string>
   <string name="migrate_from_another_device">Migrate from another device</string>
   <string name="how_it_works">How it works</string>
+  <string name="onboarding_be_free">Be free\nin your network</string>
+  <string name="onboarding_private_and_secure">Private and secure messaging.</string>
+  <string name="onboarding_first_network">The first network where you own\nyour contacts and groups.</string>
+  <string name="get_started">Get started</string>
+  <string name="why_simplex_is_built">Why SimpleX is built.</string>
+  <string name="onboarding_your_profile">Your profile</string>
+  <string name="onboarding_on_your_phone">On your phone, not on any server.</string>
+  <string name="onboarding_no_account">No account. No phone. No email. No ID.\nThe most secure encryption.</string>
+  <string name="enter_profile_name">Enter profile name…</string>
+  <string name="migrate">Migrate</string>
 
-  <!-- How SimpleX Works -->
-  <string name="how_simplex_works">How SimpleX works</string>
+  <!-- Why SimpleX is built -->
+  <string name="why_built_heading">You were born without an account.</string>
+  <string name="why_built_p1">Nobody tracked your conversations. No one drew a map of where you\'d been. Privacy was never a feature — it was the way of life.</string>
+  <string name="why_built_p2">Then we moved online, and every platform asked for a piece of you — your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way — telephone, email, messengers, social media. It seemed the only way possible.</string>
+  <string name="why_built_p3">There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected.</string>
+  <string name="why_built_p4">Not a better lock on someone else\'s door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it — you are sovereign.</string>
+  <string name="why_built_p5">Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public.</string>
+  <string name="why_built_p6">The oldest human freedom — to speak to another person without being watched — built on infrastructure that cannot betray it.</string>
+  <string name="why_built_p7">Because we destroyed the power to know who you are. So that your power can never be taken.</string>
+  <string name="why_built_tagline">Be free in your network.</string>
   <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
   <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
@@ -1321,11 +1339,10 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to server operators.</string>
-  <string name="onboarding_conditions_by_using_you_agree">By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam.</string>
+  <string name="onboarding_conditions_private_chats_not_accessible">Operators commit to:\n- Be independent\n- Minimize metadata usage\n- Run verified open-source code</string>
+  <string name="onboarding_conditions_by_using_you_agree">You commit to:\n- Only legal content in public groups\n- Respect other users — no spam</string>
   <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacy policy and conditions of use.</string>
   <string name="onboarding_conditions_accept">Accept</string>
-  <string name="onboarding_conditions_configure_server_operators">Configure server operators</string>
   <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
@@ -1341,6 +1358,15 @@
   <string name="onboarding_network_operators_review_later">Review later</string>
   <string name="onboarding_network_operators_update">Update</string>
   <string name="onboarding_network_operators_continue">Continue</string>
+
+  <!-- Onboarding Step 3: Your Network -->
+  <string name="onboarding_your_network">Your network</string>
+  <string name="onboarding_network_routers_cannot_know">Network routers cannot know\nwho talks to whom</string>
+  <string name="onboarding_configure_routers">Setup routers</string>
+  <string name="onboarding_configure_notifications">Setup notifications</string>
+
+  <!-- Onboarding Step 4: Network Commitments -->
+  <string name="onboarding_network_commitments">Network commitments</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>

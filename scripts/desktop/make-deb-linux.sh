@@ -4,7 +4,7 @@ ARCH="$(uname -m)"
 
 scripts/desktop/build-lib-linux.sh
 cd apps/multiplatform
-./gradlew packageDeb
+./gradlew -Psimplex.assets.dir=../../assets packageDeb
 
 # Workaround for skiko library
 #

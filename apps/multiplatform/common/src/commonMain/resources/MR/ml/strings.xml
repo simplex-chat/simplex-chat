@@ -353,7 +353,6 @@
     <string name="enter_welcome_message_optional">സ്വാഗത സന്ദേശം നൽകുക... (ഇച്ഛാനുസൃതമായ)</string>
     <string name="exit_without_saving">സംരക്ഷിക്കാതെ പുറത്ത് പോവുക</string>
     <string name="how_it_works">ഇത് എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
-    <string name="how_simplex_works">SimpleX എങ്ങനെ പ്രവർത്തിക്കുന്നു</string>
     <string name="onboarding_notifications_mode_service">കൃത്യസമയം</string>
     <string name="no_call_on_lock_screen">പ്രവർത്തനരഹിതമാക്കുക</string>
     <string name="info_row_deleted_at">എന്നതിൽ ഇല്ലാതാക്കി</string>

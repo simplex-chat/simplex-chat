@@ -677,9 +677,6 @@ swipe action */
 "Answer call" = "Responder llamada";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Cualquiera puede alojar servidores.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Compilación app: %@";
 
 /* No comment provided by engineer. */
@@ -821,6 +818,12 @@ swipe action */
 "Bad message ID" = "ID de mensaje incorrecto";
 
 /* No comment provided by engineer. */
+"Be free in your network." = "Se libre en tu red.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Porque hemos destruido el poder de saber quien eres. De manera que tu poder nunca se pueda arrebatar.";
+
+/* No comment provided by engineer. */
 "Better calls" = "Llamadas mejoradas";
 
 /* No comment provided by engineer. */
@@ -943,9 +946,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Mediante perfil (predeterminado) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Al usar SimpleX Chat, aceptas:\n- enviar únicamente contenido legal en los grupos públicos.\n- respetar a los demás usuarios – spam prohibido.";
 
 /* No comment provided by engineer. */
 "call" = "llamada";
@@ -1181,7 +1181,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "El chat será eliminado para tí. ¡No puede deshacerse!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Chatea con administradores";
 
 /* No comment provided by engineer. */
@@ -1303,9 +1304,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure relays" = "Configurar servidores";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Configurar operadores de servidores";
 
 /* No comment provided by engineer. */
 "Confirm" = "Confirmar";
@@ -1727,9 +1725,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Informe debug";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Descentralizada";
 
 /* relay test step */
 "Decode link" = "Decodificar enlace";
@@ -3052,9 +3047,6 @@ servers warning */
 "Immediately" = "Inmediatamente";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Inmune a spam y abuso";
-
-/* No comment provided by engineer. */
 "Import" = "Importar";
 
 /* No comment provided by engineer. */
@@ -3655,9 +3647,6 @@ servers warning */
 "Migrate device" = "Migrar dispositivo";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Migrar desde otro dispositivo";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Migrar aquí";
 
 /* No comment provided by engineer. */
@@ -3949,7 +3938,10 @@ servers warning */
 "No unread chats" = "Ningún chat sin leer";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Sin identificadores de usuario.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Nadie monitorizaba tus conversaciones. Nadie registraba tus ubicaciones. La privacidad nunca fue un lujo, era la manera de vivir.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "No un candado mejorado en la puerta de otro. No un terrateniente que respeta tu privacidad pero sigue guardando un registro de tus visitantes. Tu no eres el invitado. Estás en tu casa y ningún rey podrá entrar. Tu eres el soberano.";
 
 /* alert title */
 "Not all relays connected" = "Hay servidores no conectados";
@@ -4364,12 +4356,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Política de privacidad y condiciones de uso.";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Privacidad redefinida";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Nombres de archivos privados";
@@ -5740,9 +5726,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "El cifrado funciona y un cifrado nuevo no es necesario. ¡Podría dar lugar a errores de conexión!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "La nueva generación de mensajería privada";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "El hash del mensaje anterior es diferente.";
 
 /* No comment provided by engineer. */
@@ -5765,6 +5748,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "La base de datos antigua no se eliminó durante la migración, puede eliminarse.";
+
+/* No comment provided by engineer. */
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "La libertad más antigua del ser humano, la de hablar con otra persona sin ser observado, materializada sobre una infraestructura que no puede traicionarla.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
@@ -5792,6 +5778,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Themes" = "Temas";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Después pasamos a internet y cada plataforma pedía una parte de tí: tu nombre, tu número, tus amistades. Aceptamos que el precio de hablar con los demás es informar a alguien de quién es interlocutor. Cada generación, personas y tecnología, ha funcionado así: teléfono, email, mensajería, redes sociales. Parecía el único camino.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Existe otro camino. Una red sin números de teléfono. Sin nombres de usuario. Sin cuentas. Sin identificadores de ningún tipo. Una red que conecta las personas y entrega mensajes cifrados sin saber quien está conectado.";
 
 /* No comment provided by engineer. */
 "These conditions will also apply for: **%@**." = "Estas condiciones también se aplican para: **%@**.";
@@ -6576,9 +6568,6 @@ server test failure */
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "No has podido ser autenticado. Inténtalo de nuevo.";
 
-/* No comment provided by engineer. */
-"You decide who can connect." = "Tu decides quién se conecta.";
-
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Ya has solicitado la conexión\n¿Repetir solicitud?";
 
@@ -6632,6 +6621,9 @@ server test failure */
 
 /* snd group event chat item */
 "you unblocked %@" = "has desbloqueado a %@";
+
+/* No comment provided by engineer. */
+"You were born without an account" = "Naciste sin una cuenta.";
 
 /* No comment provided by engineer. */
 "You will be able to send messages **only after your request is accepted**." = "Podrás enviar mensajes **después de que tu solicitud sea aceptada**.";
@@ -6713,6 +6705,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Tus contactos permanecerán conectados.";
+
+/* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Tus conversaciones te pertenecen, tal como ha sido siempre antes de la llegada de internet. Tu red no es un lugar que visitas. Es un lugar que has creado, te pertenece y nadie te la podrá quitar, ya sea pública o privada.";
 
 /* No comment provided by engineer. */
 "Your credentials may be sent unencrypted." = "Tus credenciales podrían ser enviadas sin cifrar.";

@@ -627,9 +627,6 @@ swipe action */
 "Answer call" = "Отговор на повикване";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Протокол и код с отворен код – всеки може да оперира собствени сървъри.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Компилация на приложението: %@";
 
 /* No comment provided by engineer. */
@@ -880,9 +877,6 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Чрез чат профил (по подразбиране) или [чрез връзка](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).";
 
 /* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "С използването на SimpleX Chat вие се съгласявате със:\n- изпращане само на легално съдържание в публични групи.\n- уважение към другите потребители – без спам.";
-
-/* No comment provided by engineer. */
 "Call already ended!" = "Разговорът вече приключи!";
 
 /* call status */
@@ -1059,7 +1053,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Чатът ще бъде изтрит за вас - това не може да бъде отменено!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Чат с администраторите";
 
 /* No comment provided by engineer. */
@@ -1172,9 +1167,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Конфигурирай ICE сървъри";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Конфигуриране на сървърни оператори";
 
 /* No comment provided by engineer. */
 "Confirm" = "Потвърди";
@@ -1512,9 +1504,6 @@ server test step */
 
 /* time unit */
 "days" = "дни";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Децентрализиран";
 
 /* message decrypt error item */
 "Decryption error" = "Грешка при декриптиране";
@@ -2406,9 +2395,6 @@ server test error */
 "Immediately" = "Веднага";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Защитен от спам и злоупотреби";
-
-/* No comment provided by engineer. */
 "Import" = "Импортиране";
 
 /* No comment provided by engineer. */
@@ -2817,9 +2803,6 @@ server test error */
 "Migrate device" = "Мигрирай устройството";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Мигриране от друго устройство";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Мигрирай тук";
 
 /* No comment provided by engineer. */
@@ -2992,9 +2975,6 @@ server test error */
 
 /* copied message info in history */
 "no text" = "няма текст";
-
-/* No comment provided by engineer. */
-"No user identifiers." = "Първата платформа без никакви потребителски идентификатори – поверителна по дизайн.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Несъвместим!";
@@ -3241,9 +3221,6 @@ alert button */
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Поверителност и сигурност";
-
-/* No comment provided by engineer. */
-"Privacy redefined" = "Поверителността преосмислена";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Поверителни имена на файлове";
@@ -4001,9 +3978,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Криптирането работи и новото споразумение за криптиране не е необходимо. Това може да доведе до грешки при свързване!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Ново поколение поверителни съобщения";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хешът на предишното съобщение е различен.";
 
 /* No comment provided by engineer. */
@@ -4536,9 +4510,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Не можахте да бъдете потвърдени; Моля, опитайте отново.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Хората могат да се свържат с вас само чрез ликовете, които споделяте.";
 
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Вече сте направили заявката за връзка!\nИзпрати отново заявката за свързване?";

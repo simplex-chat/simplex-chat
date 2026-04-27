@@ -624,7 +624,6 @@
     <string name="import_theme_error">Hiba történt a téma importálásakor</string>
     <string name="notification_display_mode_hidden_desc">Partner nevének és az üzenet tartalmának elrejtése</string>
     <string name="incompatible_database_version">Nem kompatibilis adatbázis-verzió</string>
-    <string name="how_simplex_works">Hogyan működik a SimpleX</string>
     <string name="desktop_incompatible_version">Nem kompatibilis verzió</string>
     <string name="user_hide">Elrejtés</string>
     <string name="incoming_video_call">Bejövő videóhívás</string>
@@ -2343,7 +2342,6 @@
     <string name="onboarding_conditions_by_using_you_agree">A SimpleX Chat használatával Ön elfogadja, hogy:\n- csak elfogadott tartalmakat tesz közzé a nyilvános csoportokban.\n- tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Adatvédelmi szabályzat és felhasználási feltételek.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">A privát csevegések, a csoportok és a partnerek nem érhetők el a kiszolgálók üzemeltetői számára.</string>
-    <string name="onboarding_conditions_configure_server_operators">Kiszolgálóüzemeltetők beállítása</string>
     <string name="unsupported_connection_link">Nem támogatott kapcsolattartási hivatkozás</string>
     <string name="short_link_button_text">Rövid hivatkozás</string>
     <string name="full_link_button_text">Teljes hivatkozás</string>
@@ -2714,6 +2712,16 @@
     <string name="v6_5_security">Biztonság: a csatornák kulcsait a tulajdonosok őrzik.</string>
     <string name="v6_5_non_profit_governance_descr">A SimpleX hálózat hosszú távú működésének biztosítása érdekében.</string>
     <string name="v6_5_invite_friends_descr">Az új felhasználók számára egyszerűbbé tettük a kapcsolatok létrehozását.</string>
+
+    <string name="why_built_heading">Fiók nélkül születtünk.</string>
+    <string name="why_built_p1">Senki sem követte nyomon a beszélgetéseinket. Senki sem készített térképet arról, hogy merre jártunk. A magánéletünk nem csak egy funkció volt, hanem az életmódunk.</string>
+    <string name="why_built_p2">Aztán felléptünk az internetre, és minden platform kért belőlünk egy darabot - nevet, telefonszámot, baráti kapcsolatokat. Elfogadtuk, hogy a kommunikáció ára az, hogy mások megtudják, hogy kivel beszélünk. Minden generáció, az emberek és a technológia is eddig így működött - telefon, e-mail, üzenetküldő programok, közösségi média. Úgy tűnt, ez az egyetlen lehetséges mód.</string>
+    <string name="why_built_p3">De van egy másik lehetőség is. Egy hálózat, amelyben nincsenek telefonszámok. Nincsenek felhasználónevek. Nincsenek fiókok. Nincsenek semmiféle felhasználói azonosítók. Egy hálózat, amely összeköti az embereket és titkosított üzeneteket továbbít, anélkül, hogy tudná, ki csatlakozik hozzá.</string>
+    <string name="why_built_p4">Nem egy jobb zár mások ajtaján. Nem egy kedvesebb házmester, aki tiszteletben tartja az Ön magánéletét, de mégis nyilvántartást vezet minden látogatójáról. Ön itt nem csak egy vendég. Ön itt otthon van. Nincs az a hatalom, amely beléphetne ide - Ön itt szuverén.</string>
+    <string name="why_built_p5">A beszélgetései Önhöz tartoznak, ahogy az internet megjelenése előtt is mindig így volt. A hálózat nem egy hely, amelyet meglátogat. Ez egy olyan hely, amelyet Ön hoz létre saját magának. És senki sem veheti el Öntől, függetlenül attól, hogy privát vagy nyilvános.</string>
+    <string name="why_built_p6">A legrégebbi emberi szabadság - beszélgetni az emberekkel, anélkül, hogy mások megfigyelnének - olyan infrastruktúrán alapul, amely nem tudja elárulni.</string>
+    <string name="why_built_p7">Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így az önrendelkezése soha nem kerülhet idegen kezekbe.</string>
+    <string name="why_built_tagline">Legyen szabad a saját hálózatában.</string>
 
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Feliratkozók jelentései</string>
