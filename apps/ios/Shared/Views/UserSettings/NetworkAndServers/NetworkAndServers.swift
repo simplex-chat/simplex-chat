@@ -352,6 +352,7 @@ private func regularConditionsHeader() -> some View {
 }
 
 struct SimpleConditionsView: View {
+    var onAccept: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -359,8 +360,14 @@ struct SimpleConditionsView: View {
                 .padding(.top)
                 .padding(.top)
             ConditionsTextView()
-                .padding(.bottom)
-                .padding(.bottom)
+            Spacer()
+            Button {
+                onAccept()
+            } label: {
+                Text("Accept")
+            }
+            .buttonStyle(OnboardingButtonStyle())
+            .padding(.bottom, 20)
         }
         .padding(.horizontal, 25)
         .frame(maxHeight: .infinity)

@@ -109,7 +109,7 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
                       indication = null
                     ) {
                       ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-                        SimpleConditionsView(rhId = null)
+                        SimpleConditionsView(rhId = null) { acceptConditions(selectedOperatorIds.value) }
                       }
                     }
                 )
@@ -152,7 +152,7 @@ private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Lo
                   indication = null
                 ) {
                   ModalManager.fullscreen.showModal(forceAnimated = true, endButtons = { ConditionsLinkButton() }) {
-                    SimpleConditionsView(rhId = null)
+                    SimpleConditionsView(rhId = null) { acceptConditions(selectedOperatorIds.value) }
                   }
                 }
             )
@@ -284,6 +284,26 @@ private fun SetOperatorsButton(enabled: Boolean, close: () -> Unit) {
   )
 }
 
+private fun acceptConditions(selectedOperatorIds: Set<Long>) {
+  withBGApi {
+    val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+    val r = chatController.acceptConditions(chatModel.remoteHostId(), conditionsId = conditionsId, operatorIds = selectedOperatorIds.toList())
+    if (r != null) {
+      chatModel.conditions.value = r
+      val enabledOps = enabledOperators(r.serverOperators, selectedOperatorIds)
+      if (enabledOps != null) {
+        val r2 = chatController.setServerOperators(rh = chatModel.remoteHostId(), operators = enabledOps)
+        if (r2 != null) {
+          chatModel.conditions.value = r2
+          completeOnboarding()
+        }
+      } else {
+        completeOnboarding()
+      }
+    }
+  }
+}
+
 @Composable
 private fun AcceptConditionsButton(
   enabled: Boolean,
@@ -294,25 +314,7 @@ private fun AcceptConditionsButton(
     labelId = MR.strings.onboarding_conditions_accept,
     onboarding = null,
     enabled = enabled,
-    onclick = {
-      withBGApi {
-        val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
-        val r = chatController.acceptConditions(chatModel.remoteHostId(), conditionsId = conditionsId, operatorIds = selectedOperatorIds.value.toList())
-        if (r != null) {
-          chatModel.conditions.value = r
-          val enabledOps = enabledOperators(r.serverOperators, selectedOperatorIds.value)
-          if (enabledOps != null) {
-            val r2 = chatController.setServerOperators(rh = chatModel.remoteHostId(), operators = enabledOps)
-            if (r2 != null) {
-              chatModel.conditions.value = r2
-              completeOnboarding()
-            }
-          } else {
-            completeOnboarding()
-          }
-        }
-      }
-    }
+    onclick = { acceptConditions(selectedOperatorIds.value) }
   )
 }
 

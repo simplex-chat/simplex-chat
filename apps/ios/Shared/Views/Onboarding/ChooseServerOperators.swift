@@ -106,12 +106,16 @@ struct OnboardingConditionsView: View {
         .navigationBarHidden(true)
         .sheet(isPresented: $showConditionsSheet) {
             NavigationView {
-                ConditionsTextView()
-                    .padding()
-                    .navigationTitle("Conditions of use")
-                    .navigationBarTitleDisplayMode(.large)
-                    .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
-                    .modifier(ThemedBackground(grouped: true))
+                VStack {
+                    ConditionsTextView()
+                        .padding()
+                    acceptButton()
+                        .padding(.bottom, 20)
+                }
+                .navigationTitle("Conditions of use")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
+                .modifier(ThemedBackground(grouped: true))
             }
         }
     }
