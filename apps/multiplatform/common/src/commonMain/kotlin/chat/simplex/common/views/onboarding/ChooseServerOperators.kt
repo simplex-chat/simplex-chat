@@ -136,7 +136,7 @@ private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Lo
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+          Column(Modifier.width(450.dp), horizontalAlignment = Alignment.Start) {
             ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
             Spacer(Modifier.height(DEFAULT_PADDING))
             ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)

@@ -221,6 +221,10 @@ fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
   val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else 7.5.dp)
   if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
     TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
+      if (enabled) {
+        Icon(painterResource(MR.images.ic_info), null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.width(4.dp))
+      }
       Text(
         text,
         Modifier.padding(horizontal = DEFAULT_PADDING_HALF, vertical = 5.dp),
