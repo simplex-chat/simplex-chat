@@ -8,7 +8,6 @@ import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -130,10 +129,6 @@ fun OnboardingImage(
 
 @Composable
 fun DesktopOnboardingShell(stage: OnboardingStage, content: @Composable () -> Unit) {
-    DisposableEffect(Unit) {
-        ModalManager.fullscreen.alwaysAnimate = true
-        onDispose { ModalManager.fullscreen.alwaysAnimate = false }
-    }
     Row(Modifier.fillMaxSize()) {
         Box(
             Modifier.weight(0.382f).fillMaxHeight()
