@@ -65,15 +65,15 @@ struct CreateProfile: View {
                         editImageButton { showChooseSource = true }
                             .buttonStyle(BorderlessButtonStyle())
                     }
-                    .padding(.horizontal, 10)
-                    #if SIMPLEX_ASSETS
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
                     Spacer(minLength: 0)
+                    #if SIMPLEX_ASSETS
                     Image(colorScheme == .light ? "create-profile" : "create-profile-light")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 140)
+                    // No trailing spacer — asset image has empty space on the right
                     #endif
-                    Spacer(minLength: 0)
                 }
             }
             .listRowBackground(Color.clear)
