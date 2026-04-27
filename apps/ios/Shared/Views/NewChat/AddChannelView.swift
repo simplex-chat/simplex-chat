@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct AddChannelView: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @StateObject private var channelRelaysModel = ChannelRelaysModel.shared
@@ -45,28 +46,38 @@ struct AddChannelView: View {
     private func profileStepView() -> some View {
         List {
             Group {
-                ZStack(alignment: .center) {
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
-                        if profile.image != nil {
-                            Button {
-                                profile.image = nil
-                            } label: {
-                                Image(systemName: "multiply")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 12)
+                HStack(spacing: 0) {
+                    ZStack(alignment: .center) {
+                        ZStack(alignment: .topTrailing) {
+                            ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
+                            if profile.image != nil {
+                                Button {
+                                    profile.image = nil
+                                } label: {
+                                    Image(systemName: "multiply")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 12)
+                                }
                             }
                         }
+                        editImageButton { showChooseSource = true }
+                            .buttonStyle(BorderlessButtonStyle())
                     }
-                    editImageButton { showChooseSource = true }
-                        .buttonStyle(BorderlessButtonStyle())
+                    .frame(maxWidth: .infinity)
+                    #if SIMPLEX_ASSETS
+                    Image(colorScheme == .light ? "create-channel" : "create-channel-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 140)
+                        .frame(maxWidth: .infinity)
+                    #endif
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity)
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
 
             Section {
                 channelNameTextField()
