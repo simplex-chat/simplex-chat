@@ -274,7 +274,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
       ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
-            AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
+            AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
           ReadableText(MR.strings.onboarding_on_your_phone, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING))

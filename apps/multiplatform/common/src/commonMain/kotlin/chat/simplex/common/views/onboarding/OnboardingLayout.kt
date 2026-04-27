@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -152,7 +153,7 @@ fun DesktopOnboardingShell(stage: OnboardingStage, content: @Composable () -> Un
             }
         }
         Divider(Modifier.fillMaxHeight().width(1.dp))
-        Box(Modifier.weight(0.618f).fillMaxHeight()) {
+        Box(Modifier.weight(0.618f).fillMaxHeight().clipToBounds()) {
             content()
             ModalManager.fullscreen.showInView()
         }

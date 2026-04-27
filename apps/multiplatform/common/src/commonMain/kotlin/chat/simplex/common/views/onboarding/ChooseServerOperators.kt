@@ -134,27 +134,29 @@ private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Lo
       ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
-            AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false)
+            AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Text(
-            stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-            style = MaterialTheme.typography.body2,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colors.primary,
-            modifier = Modifier
-              .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-              ) {
-                ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-                  SimpleConditionsView(rhId = null)
+          Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+            ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            Text(
+              stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+              style = MaterialTheme.typography.body1,
+              fontWeight = FontWeight.Medium,
+              color = MaterialTheme.colors.primary,
+              modifier = Modifier
+                .clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = null
+                ) {
+                  ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                    SimpleConditionsView(rhId = null)
+                  }
                 }
-              }
-          )
+            )
+          }
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {

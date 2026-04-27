@@ -72,11 +72,12 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
       ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
         Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Spacer(Modifier.height(DEFAULT_PADDING))
-          Box(Modifier.widthIn(max = 200.dp)) {
+          Box(Modifier.fillMaxWidth(0.55f)) {
             SimpleXLogo()
           }
-          ReadableText(MR.strings.onboarding_be_free, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.h1)
-          Spacer(Modifier.height(DEFAULT_PADDING))
+          Box(Modifier.align(Alignment.CenterHorizontally)) {
+            AppBarTitle(stringResource(MR.strings.onboarding_be_free), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
+          }
           ReadableText(MR.strings.onboarding_private_and_secure, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           ReadableText(MR.strings.onboarding_first_network, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))

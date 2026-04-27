@@ -57,7 +57,7 @@ struct OnboardingConditionsView: View {
 
                 heroImage().frame(maxWidth: .infinity, minHeight: 80)
 
-                Text("Network\ncommitments")
+                Text("Network commitments")
                     .font(.largeTitle)
                     .bold()
                     .multilineTextAlignment(.center)
