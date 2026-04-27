@@ -221,8 +221,7 @@ private fun CreateFirstProfileMobile(chatModel: ChatModel, close: () -> Unit) {
           style = MaterialTheme.typography.h3,
           fontWeight = FontWeight.Medium,
           color = MaterialTheme.colors.secondary,
-          fontSize = 20.sp,
-          lineHeight = 27.sp,
+          lineHeight = 25.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 14.dp)
         )
@@ -276,7 +275,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          ReadableText(MR.strings.onboarding_on_your_phone, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Text(stringResource(MR.strings.onboarding_on_your_phone), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING))
           ReadableText(MR.strings.onboarding_no_account, TextAlign.Center, style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
           Spacer(Modifier.height(DEFAULT_PADDING))

@@ -88,8 +88,7 @@ fun YourNetworkView(chatModel: ChatModel) {
                 style = MaterialTheme.typography.h3,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colors.secondary,
-                fontSize = 20.sp,
-                lineHeight = 27.sp,
+                lineHeight = 25.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 14.dp)
               )
@@ -145,7 +144,7 @@ private fun YourNetworkDesktop(
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_your_network), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          ReadableText(MR.strings.onboarding_network_routers_cannot_know, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Text(stringResource(MR.strings.onboarding_network_routers_cannot_know), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING))
           ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
             ModalManager.fullscreen.showCustomModal { close ->

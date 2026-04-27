@@ -79,7 +79,7 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.onboarding_be_free), bottomPadding = DEFAULT_PADDING, withPadding = false, overrideTitleColor = MaterialTheme.colors.onBackground, textAlign = TextAlign.Center, lineHeight = 42.sp)
           }
-          ReadableText(MR.strings.onboarding_private_and_secure, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Text(stringResource(MR.strings.onboarding_private_and_secure), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           ReadableText(MR.strings.onboarding_first_network, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
         }
@@ -134,8 +134,7 @@ fun SimpleXInfoLayout(
           style = MaterialTheme.typography.h3,
           color = MaterialTheme.colors.secondary,
           fontWeight = FontWeight.Medium,
-          fontSize = 20.sp,
-          lineHeight = 27.sp,
+          lineHeight = 25.sp,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 14.dp)
         )
@@ -224,7 +223,7 @@ fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
     TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
       Text(
         text,
-        Modifier.padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING_HALF, bottom = 5.dp),
+        Modifier.padding(horizontal = DEFAULT_PADDING_HALF, vertical = 5.dp),
         color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         fontWeight = FontWeight.Medium,
         textAlign = TextAlign.Center
