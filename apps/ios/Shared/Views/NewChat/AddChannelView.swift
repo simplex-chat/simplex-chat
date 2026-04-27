@@ -65,7 +65,7 @@ struct AddChannelView: View {
                         editImageButton { showChooseSource = true }
                             .buttonStyle(BorderlessButtonStyle())
                     }
-                    .padding(.horizontal, 10) // Matches transparent space built into 3D asset
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
                     #if SIMPLEX_ASSETS
                     Spacer(minLength: 0)
                     Image(colorScheme == .light ? "create-channel" : "create-channel-light")
