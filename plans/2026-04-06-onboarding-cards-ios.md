@@ -16,7 +16,7 @@ Each page has a header area containing:
 - **Back button area:** fixed height 44pt. Screen 1: empty space. Screen 2: "< Back" button left-aligned.
 - **Title:** centered, largeTitle font, bold, single line, shrinks to 75% minimum scale factor.
 - Screen 1 title: "Talk to someone"
-- Screen 2 title: "Connect with someone"
+- Screen 2 title: "Create your link"
 
 **Portrait:** back button area and title are two separate rows (VStack).
 **Landscape:** back button and title share one row (ZStack — back button leading, title centered). No separate back button row — saves vertical space.
@@ -164,7 +164,7 @@ Auto-dismiss: when first real conversation appears, set `addressCreationCardShow
 - "Talk to someone"
 - "Let someone connect to you"
 - "Connect via link or QR code"
-- "Connect with someone"
+- "Create your link"
 - "Invite someone privately"
 - "A link for one person to connect"
 - "Create your public address"
@@ -303,7 +303,7 @@ struct ConnectWithSomeoneView: View {
 ```
 
 Same VStack layout as Screen 1, with these differences:
-- Title: "Connect with someone"
+- Title: "Create your link"
 - Card 1: imageName `"card-invite-someone-privately-alpha"`, icon `"link"`, title "Invite someone privately", subtitle "A link for one person to connect" → sets `showInviteSomeone = true`
 - Card 2: imageName `"card-create-your-public-address-alpha"`, icon `"qrcode"`, title "Create your public address", subtitle "For anyone to reach you" → sets `showCreateAddress = true`
 
@@ -415,7 +415,7 @@ No new user default needed.
 - "Talk to someone"
 - "Let someone connect to you"
 - "Connect via link or QR code"
-- "Connect with someone"
+- "Create your link"
 - "Invite someone privately"
 - "A link for one person to connect"
 - "Create your public address"

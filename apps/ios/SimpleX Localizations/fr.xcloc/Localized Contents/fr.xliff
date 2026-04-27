@@ -2154,10 +2154,6 @@ Il s'agit de votre propre lien unique !</target>
         <target>Se connecter avec %@</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve">
-        <source>Connect with someone</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
         <target>Connecté</target>
@@ -2457,6 +2453,10 @@ Il s'agit de votre propre lien unique !</target>
       </trans-unit>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -3352,11 +3352,6 @@ chat item action</note>
       <trans-unit id="Enable lock" xml:space="preserve">
         <source>Enable lock</source>
         <target>Activer le verrouillage</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Enable notifications" xml:space="preserve">
-        <source>Enable notifications</source>
-        <target>Activer les notifications</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable periodic notifications?" xml:space="preserve">
@@ -5645,14 +5640,13 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Nom</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Network&#10;commitments" xml:space="preserve">
-        <source>Network
-commitments</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Réseau et serveurs</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network commitments" xml:space="preserve">
+        <source>Network commitments</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
@@ -9345,11 +9339,6 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       </trans-unit>
       <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Use chat" xml:space="preserve">
-        <source>Use chat</source>
-        <target>Utiliser le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use current profile" xml:space="preserve">
