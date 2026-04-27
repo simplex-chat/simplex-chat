@@ -2712,7 +2712,6 @@
     <string name="v6_5_security">Biztonság: a csatornák kulcsait a tulajdonosok őrzik.</string>
     <string name="v6_5_non_profit_governance_descr">A SimpleX hálózat hosszú távú működésének biztosítása érdekében.</string>
     <string name="v6_5_invite_friends_descr">Az új felhasználók számára egyszerűbbé tettük a kapcsolatok létrehozását.</string>
-
     <string name="why_built_heading">Fiók nélkül születtünk.</string>
     <string name="why_built_p1">Senki sem követte nyomon a beszélgetéseinket. Senki sem készített térképet arról, hogy merre jártunk. A magánéletünk nem csak egy funkció volt, hanem az életmódunk.</string>
     <string name="why_built_p2">Aztán felléptünk az internetre, és minden platform kért belőlünk egy darabot - nevet, telefonszámot, baráti kapcsolatokat. Elfogadtuk, hogy a kommunikáció ára az, hogy mások megtudják, hogy kivel beszélünk. Minden generáció, az emberek és a technológia is eddig így működött - telefon, e-mail, üzenetküldő programok, közösségi média. Úgy tűnt, ez az egyetlen lehetséges mód.</string>
@@ -2722,7 +2721,6 @@
     <string name="why_built_p6">A legrégebbi emberi szabadság - beszélgetni az emberekkel, anélkül, hogy mások megfigyelnének - olyan infrastruktúrán alapul, amely nem tudja elárulni.</string>
     <string name="why_built_p7">Mert felszámoltuk a lehetőségét is annak, hogy megtudjuk, Ön kicsoda. Így az önrendelkezése soha nem kerülhet idegen kezekbe.</string>
     <string name="why_built_tagline">Legyen szabad a saját hálózatában.</string>
-
     <!-- channel preferences (subscribers) -->
     <string name="group_reports_subscriber_reports">Feliratkozók jelentései</string>
     <string name="allow_direct_messages_channel">A közvetlen üzenetek küldése a feliratkozók között engedélyezve van.</string>
@@ -2740,4 +2738,19 @@
     <string name="group_members_can_send_reports_channel">A feliratkozók jelenthetik az üzeneteket a moderátorok felé.</string>
     <string name="recent_history_is_sent_to_new_members_channel">Legfeljebb az utolsó 100 üzenet lesz elküldve az új feliratkozók számára.</string>
     <string name="recent_history_is_not_sent_to_new_members_channel">Az előzmények nem lesznek elküldve az új feliratkozók számára.</string>
+    <string name="allow_chat_with_admins">A csevegés az adminisztrátorokkal engedélyezve van a tagok számára.</string>
+    <string name="allow_chat_with_admins_channel">A csevegés az adminisztrátorokkal engedélyezve van a feliratkozók számára.</string>
+    <string name="onboarding_be_free">Váljon szabaddá\na saját hálózatában.</string>
+    <string name="chat_with_admins_is_prohibited">A csevegés az adminisztrátorokkal le van tiltva.</string>
+    <string name="chat_with_admins_relay_note">A nyilvános csatornákban az adminisztrátorokkal való csevegések nem rendelkeznek végpontok közötti titkosítással – csak megbízható csevegési átjátszókkal használja őket.</string>
+    <string name="support_chats_disabled">A csevegés a tagokkal le van tiltva</string>
+    <string name="chat_with_admins">Csevegés az adminisztrátorokkal</string>
+    <string name="enable_chats_with_admins">Engedélyezés</string>
+    <string name="enable_chats_with_admins_question">Engedélyezi a csevegést az adminisztrátorokkal?</string>
+    <string name="enter_profile_name">Profil nevének megadása…</string>
+    <string name="get_started">Vágjunk bele</string>
+    <string name="members_can_chat_with_admins">A tagok cseveghetnek az adminisztrátorokkal</string>
+    <string name="e2ee_info_no_e2ee"><![CDATA[Ebben a csatornában az üzenetek <b>nem rendelkeznek végpontok közötti titkosítással</b>. A csevegési átjátszók láthatják ezeket az üzeneteket.]]></string>
+    <string name="migrate">Átköltöztetés</string>
+    <string name="onboarding_network_commitments">Hálózati kötelezettségvállalások</string>
 </resources>
