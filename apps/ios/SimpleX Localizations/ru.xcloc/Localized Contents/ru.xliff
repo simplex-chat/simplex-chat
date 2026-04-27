@@ -8897,7 +8897,7 @@ Relay address was used to set up this relay for the channel.</source>
       </trans-unit>
       <trans-unit id="Talk to someone" xml:space="preserve">
         <source>Talk to someone</source>
-        <target>Поговорить с кем-нибудь</target>
+        <target>Поговорите с кем-нибудь</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
@@ -9317,7 +9317,7 @@ your contacts and groups.</source>
       </trans-unit>
       <trans-unit id="To make SimpleX Network last." xml:space="preserve">
         <source>To make SimpleX Network last.</source>
-        <target>Чтобы SimpleX Network существовала долго.</target>
+        <target>Чтобы сохранить сеть SimpleX для всех.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -9986,7 +9986,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Waiting for channel owner to add relays." xml:space="preserve">
         <source>Waiting for channel owner to add relays.</source>
-        <target>Ожидание, пока владелец канала добавит релеи.</target>
+        <target>Ожидает, когда владелец канала добавит релеи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for desktop..." xml:space="preserve">
@@ -10357,7 +10357,7 @@ Repeat join request?</source>
 - Respect other users - no spam</source>
         <target>Вы обязуетесь:
 - Только законный контент в публичных группах
-- Уважение к другим пользователям — без спама</target>
+- Уважать других пользователей - без спама</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You connected to the channel via this relay link." xml:space="preserve">
@@ -10711,7 +10711,7 @@ Relays can access channel messages.</source>
       </trans-unit>
       <trans-unit id="accepted" xml:space="preserve">
         <source>accepted</source>
-        <target>принято</target>
+        <target>принят(а)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted %@" xml:space="preserve">
@@ -10852,7 +10852,7 @@ marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="can't broadcast" xml:space="preserve">
         <source>can't broadcast</source>
-        <target>не удаётся отправить</target>
+        <target>нельзя публиковать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="can't send messages" xml:space="preserve">
@@ -11048,7 +11048,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="deleted channel" xml:space="preserve">
         <source>deleted channel</source>
-        <target>удалён канал</target>
+        <target>удалил(а) канал</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="deleted contact" xml:space="preserve">
