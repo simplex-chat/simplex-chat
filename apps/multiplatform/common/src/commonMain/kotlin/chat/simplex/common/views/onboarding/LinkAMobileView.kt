@@ -3,6 +3,7 @@ package chat.simplex.common.views.onboarding
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
