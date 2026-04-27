@@ -6,7 +6,7 @@ date: 2026-04-30
 # image: images/20260421-channel.png
 # imageBottom: true
 draft: true
-permalink: "/blog/20260428-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"
+permalink: "/blog/20260430-simplex-channels-v6-5-consortium-crowdfunding-freedom-of-speech.html"
 ---
 
 # SimpleX Channels, SimpleX Network Consortium and Community Crowdfunding - to Preserve Freedom of Speech
