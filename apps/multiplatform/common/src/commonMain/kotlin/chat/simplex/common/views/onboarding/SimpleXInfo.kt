@@ -87,7 +87,7 @@ private fun SimpleXInfoDesktop(chatModel: ChatModel) {
         Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(user, onboardingStage)
           TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built)) {
-            ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
+            ModalManager.fullscreen.showModal(forceAnimated = true) { HowItWorks(user, onboardingStage) }
           }
         }
       }

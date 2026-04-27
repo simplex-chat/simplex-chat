@@ -151,7 +151,7 @@ private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Lo
                   interactionSource = remember { MutableInteractionSource() },
                   indication = null
                 ) {
-                  ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                  ModalManager.fullscreen.showModal(forceAnimated = true, endButtons = { ConditionsLinkButton() }) {
                     SimpleConditionsView(rhId = null)
                   }
                 }

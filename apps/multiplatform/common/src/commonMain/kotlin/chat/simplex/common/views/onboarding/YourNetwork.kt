@@ -147,7 +147,7 @@ private fun YourNetworkDesktop(
           Text(stringResource(MR.strings.onboarding_network_routers_cannot_know), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary, lineHeight = 25.sp, textAlign = TextAlign.Center)
           Spacer(Modifier.height(DEFAULT_PADDING))
           ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
-            ModalManager.fullscreen.showCustomModal { close ->
+            ModalManager.fullscreen.showCustomModal(forceAnimated = true) { close ->
               ChooseServerOperators(serverOperators, selectedOperatorIds, close)
             }
           }
