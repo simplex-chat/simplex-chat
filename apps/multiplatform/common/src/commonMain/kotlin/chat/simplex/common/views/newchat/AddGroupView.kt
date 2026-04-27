@@ -109,7 +109,11 @@ fun AddGroupLayout(
             horizontalArrangement = if (BuildConfigCommon.SIMPLEX_ASSETS) Arrangement.SpaceEvenly else Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Box(contentAlignment = Alignment.Center) {
+            // Padding offsets transparent space built into 3D asset
+            Box(
+              modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
+              contentAlignment = Alignment.Center
+            ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
                   ProfileImage(128.dp, image = profileImage.value, icon = MR.images.ic_supervised_user_circle_filled)

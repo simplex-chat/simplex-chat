@@ -29,45 +29,78 @@ enum UserProfileAlert: Identifiable {
 let MAX_BIO_LENGTH_BYTES = 160
 
 struct CreateProfile: View {
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var displayName: String = ""
     @State private var profileBio: String = ""
     @FocusState private var focusDisplayName
     @State private var alert: UserProfileAlert?
+    @State private var showChooseSource = false
+    @State private var showImagePicker = false
+    @State private var showTakePhoto = false
+    @State private var chosenImage: UIImage? = nil
+    @State private var profileImage: String? = nil
 
     var body: some View {
         List {
-            Section {
-                TextField("Enter your name…", text: $displayName)
-                    .focused($focusDisplayName)
-                TextField("Bio", text: $profileBio)
-                Button {
-                    createProfile()
-                } label: {
-                    Label("Create profile", systemImage: "checkmark")
-                }
-                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
-            } header: {
-                HStack {
-                    Text("Your profile")
-                        .foregroundColor(theme.colors.secondary)
-
-                    let name = displayName.trimmingCharacters(in: .whitespaces)
-                    let validName = mkValidName(name)
-                    if name != validName {
-                        Spacer()
-                        validationErrorIndicator {
-                            alert = .invalidNameError(validName: validName)
-                        }
-                    } else if !bioFitsLimit() {
-                        Spacer()
-                        validationErrorIndicator {
-                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
+            Group {
+                ZStack(alignment: .center) {
+                    ZStack(alignment: .topTrailing) {
+                        ProfileImage(imageStr: profileImage, size: 128)
+                        if profileImage != nil {
+                            Button {
+                                profileImage = nil
+                            } label: {
+                                Image(systemName: "multiply")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 12)
+                            }
                         }
                     }
+
+                    editImageButton { showChooseSource = true }
+                        .buttonStyle(BorderlessButtonStyle())
                 }
-                .frame(height: 20)
+                // TODO: add 3D asset image next to profile image (fix asset first - trim transparent space)
+//                    #if SIMPLEX_ASSETS
+//                    Image(colorScheme == .light ? "your-profile" : "your-profile-light")
+//                        .resizable()
+//                        .scaledToFit()
+//                        .frame(height: 140)
+//                    #endif
+            }
+            .frame(maxWidth: .infinity)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
+
+            Section {
+                ZStack(alignment: .leading) {
+                    let name = displayName.trimmingCharacters(in: .whitespaces)
+                    if name != mkValidName(name) {
+                        Button {
+                            alert = .invalidNameError(validName: mkValidName(name))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    } else {
+                        Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+                    }
+                    TextField("Enter your name…", text: $displayName)
+                        .padding(.leading, 36)
+                        .focused($focusDisplayName)
+                }
+                ZStack(alignment: .leading) {
+                    Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+                    TextField("Bio", text: $profileBio)
+                        .padding(.leading, 36)
+                }
+                Button(action: createProfile) {
+                    settingsRow("checkmark", color: theme.colors.primary) { Text("Create profile") }
+                }
+                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Your profile is stored on your device and only shared with your contacts.")
@@ -75,23 +108,47 @@ struct CreateProfile: View {
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .compactSectionSpacing()
         }
         .navigationTitle("Create your profile")
         .modifier(ThemedBackground(grouped: true))
         .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
+        .confirmationDialog("Profile image", isPresented: $showChooseSource, titleVisibility: .visible) {
+            Button("Take picture") {
+                showTakePhoto = true
+            }
+            Button("Choose from library") {
+                showImagePicker = true
+            }
+        }
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
+            }
+        }
+        .onChange(of: chosenImage) { image in
+            Task {
+                let resized: String? = if let image {
+                    await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                } else {
+                    nil
+                }
+                await MainActor.run { profileImage = resized }
+            }
+        }
         .onAppear() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 focusDisplayName = true
             }
         }
-    }
-
-    private func validationErrorIndicator(_ onTap: @escaping () -> Void) -> some View {
-        Image(systemName: "exclamationmark.circle")
-            .foregroundColor(.red)
-            .onTapGesture {
-                onTap()
-            }
     }
 
     private func bioFitsLimit() -> Bool {
@@ -104,7 +161,8 @@ struct CreateProfile: View {
         let profile = Profile(
             displayName: displayName.trimmingCharacters(in: .whitespaces),
             fullName: "",
-            shortDescr: shortDescr
+            shortDescr: shortDescr,
+            image: profileImage
         )
         let m = ChatModel.shared
         do {
