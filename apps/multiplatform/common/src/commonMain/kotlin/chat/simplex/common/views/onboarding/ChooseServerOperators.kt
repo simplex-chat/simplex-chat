@@ -129,54 +129,37 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
 
 @Composable
 private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Long>>) {
-  Row(Modifier.fillMaxSize()) {
-    Box(
-      Modifier.weight(0.438f).fillMaxHeight()
-        .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f))
-        .padding(horizontal = DEFAULT_PADDING),
-      contentAlignment = Alignment.Center
-    ) {
-      OnboardingImage(
-        MR.images.network_commitments, MR.images.network_commitments_light, MR.images.ic_shield,
-        modifier = Modifier.fillMaxWidth(),
-        aspectRatio = 1.5f
-      )
-    }
-    Divider(Modifier.fillMaxHeight().width(1.dp))
-    Box(Modifier.weight(0.562f).fillMaxHeight()) {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-        ModalView({}, showClose = false) {
-          ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-              Box(Modifier.align(Alignment.CenterHorizontally)) {
-                AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false)
-              }
-              ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
-              Spacer(Modifier.height(DEFAULT_PADDING))
-              ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
-              Spacer(Modifier.height(DEFAULT_PADDING))
-              Text(
-                stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
-                style = MaterialTheme.typography.body2,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier
-                  .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                  ) {
-                    ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-                      SimpleConditionsView(rhId = null)
-                    }
-                  }
-              )
-            }
-            Spacer(Modifier.fillMaxHeight().weight(1f))
-            Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-              AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
-              TextButtonBelowOnboardingButton("", null)
-            }
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    ModalView({}, showClose = false) {
+      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(Modifier.align(Alignment.CenterHorizontally)) {
+            AppBarTitle(stringResource(MR.strings.onboarding_network_commitments), bottomPadding = DEFAULT_PADDING, withPadding = false)
           }
+          ReadableText(MR.strings.onboarding_conditions_private_chats_not_accessible, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ReadableText(MR.strings.onboarding_conditions_by_using_you_agree, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1)
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          Text(
+            stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+            style = MaterialTheme.typography.body2,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colors.primary,
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                  SimpleConditionsView(rhId = null)
+                }
+              }
+          )
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
+          TextButtonBelowOnboardingButton("", null)
         }
       }
     }

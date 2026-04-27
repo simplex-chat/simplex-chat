@@ -1,8 +1,10 @@
 package chat.simplex.common.views.onboarding
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -16,10 +18,14 @@ import androidx.compose.ui.layout.*
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.BuildConfigCommon
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.isInDarkTheme
+import chat.simplex.common.views.helpers.ModalManager
+import chat.simplex.common.views.helpers.mixWith
 import chat.simplex.common.views.newchat.darkStops
 import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
+import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 
@@ -116,6 +122,39 @@ fun OnboardingImage(
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colors.primary
             )
+        }
+    }
+}
+
+@Composable
+fun DesktopOnboardingShell(stage: OnboardingStage, content: @Composable () -> Unit) {
+    Row(Modifier.fillMaxSize()) {
+        Box(
+            Modifier.weight(0.382f).fillMaxHeight()
+                .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f))
+                .padding(horizontal = DEFAULT_PADDING),
+            contentAlignment = Alignment.Center
+        ) {
+            when (stage) {
+                OnboardingStage.Step1_SimpleXInfo ->
+                    OnboardingImage(MR.images.intro, MR.images.intro_light, MR.images.ic_forum, Modifier.fillMaxWidth())
+                OnboardingStage.Step2_CreateProfile,
+                OnboardingStage.Step2_5_SetupDatabasePassphrase,
+                OnboardingStage.LinkAMobile ->
+                    OnboardingImage(MR.images.your_profile, MR.images.your_profile_light, MR.images.ic_person, Modifier.fillMaxWidth())
+                OnboardingStage.Step3_ChooseServerOperators,
+                OnboardingStage.Step3_CreateSimpleXAddress,
+                OnboardingStage.Step4_SetNotificationsMode ->
+                    OnboardingImage(MR.images.your_network, MR.images.your_network_light, MR.images.ic_dns, Modifier.fillMaxWidth())
+                OnboardingStage.Step4_NetworkCommitments ->
+                    OnboardingImage(MR.images.network_commitments, MR.images.network_commitments_light, MR.images.ic_shield, Modifier.fillMaxWidth(), aspectRatio = 1.5f)
+                else -> {}
+            }
+        }
+        Divider(Modifier.fillMaxHeight().width(1.dp))
+        Box(Modifier.weight(0.618f).fillMaxHeight()) {
+            content()
+            ModalManager.fullscreen.showInView()
         }
     }
 }

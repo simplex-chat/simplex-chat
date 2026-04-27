@@ -43,12 +43,16 @@ import kotlin.math.floor
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   if (onboarding) {
-    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-      ModalView({}, showClose = false, showAppBar = false) {
-        SimpleXInfoLayout(
-          user = chatModel.currentUser.value,
-          onboardingStage = chatModel.controller.appPrefs.onboardingStage
-        )
+    if (appPlatform.isDesktop) {
+      SimpleXInfoDesktop(chatModel)
+    } else {
+      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+        ModalView({}, showClose = false, showAppBar = false) {
+          SimpleXInfoLayout(
+            user = chatModel.currentUser.value,
+            onboardingStage = chatModel.controller.appPrefs.onboardingStage
+          )
+        }
       }
     }
   } else {
@@ -56,6 +60,41 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
       user = chatModel.currentUser.value,
       onboardingStage = null
     )
+  }
+}
+
+@Composable
+private fun SimpleXInfoDesktop(chatModel: ChatModel) {
+  val user = chatModel.currentUser.value
+  val onboardingStage = chatModel.controller.appPrefs.onboardingStage
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    ModalView({}, showClose = false) {
+      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          Box(Modifier.widthIn(max = 200.dp)) {
+            SimpleXLogo()
+          }
+          ReadableText(MR.strings.onboarding_be_free, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.h1)
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ReadableText(MR.strings.onboarding_private_and_secure, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          ReadableText(MR.strings.onboarding_first_network, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(user, onboardingStage)
+          TextButtonBelowOnboardingButton(stringResource(MR.strings.why_simplex_is_built)) {
+            ModalManager.fullscreen.showModal { HowItWorks(user, onboardingStage) }
+          }
+        }
+      }
+    }
+  }
+  LaunchedEffect(Unit) {
+    if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
+      ModalManager.fullscreen.showCustomModal(animated = false) { close -> MigrateToDeviceView(close) }
+    }
   }
 }
 

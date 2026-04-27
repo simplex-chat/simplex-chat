@@ -142,9 +142,12 @@ fun MainScreen() {
     when {
       onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
         // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
-        SimpleXInfo(chatModel, onboarding = true)
         if (appPlatform.isDesktop) {
-          ModalManager.fullscreen.showInView()
+          DesktopOnboardingShell(onboarding) {
+            SimpleXInfo(chatModel, onboarding = true)
+          }
+        } else {
+          SimpleXInfo(chatModel, onboarding = true)
         }
       }
       chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
@@ -175,43 +178,41 @@ fun MainScreen() {
           }
         }
       }
-      else -> AnimatedContent(targetState = onboarding,
-        transitionSpec = {
-          if (targetState > initialState) {
-            fromEndToStartTransition()
-          } else {
-            fromStartToEndTransition()
-          }.using(SizeTransform(clip = false))
-        }
-      ) { state ->
-        when (state) {
-          OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
-          OnboardingStage.Step1_SimpleXInfo -> {
-            SimpleXInfo(chatModel, onboarding = true)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
+      else -> {
+        if (appPlatform.isDesktop) {
+          DesktopOnboardingShell(onboarding) {
+            when (onboarding) {
+              OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+              OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+              OnboardingStage.LinkAMobile -> LinkAMobile()
+              OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+              OnboardingStage.Step3_ChooseServerOperators,
+              OnboardingStage.Step3_CreateSimpleXAddress,
+              OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+              OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
+              OnboardingStage.OnboardingComplete -> {}
             }
           }
-          OnboardingStage.Step2_CreateProfile -> {
-            CreateFirstProfile(chatModel) {}
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
+        } else {
+          AnimatedContent(targetState = onboarding,
+            transitionSpec = {
+              if (targetState > initialState) {
+                fromEndToStartTransition()
+              } else {
+                fromStartToEndTransition()
+              }.using(SizeTransform(clip = false))
             }
-          }
-          OnboardingStage.LinkAMobile -> LinkAMobile()
-          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-          OnboardingStage.Step3_ChooseServerOperators,
-          OnboardingStage.Step3_CreateSimpleXAddress, // deprecated
-          OnboardingStage.Step4_SetNotificationsMode -> { // deprecated
-            YourNetworkView(chatModel)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
-            }
-          }
-          OnboardingStage.Step4_NetworkCommitments -> {
-            OnboardingConditionsView(chatModel)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
+          ) { state ->
+            when (state) {
+              OnboardingStage.OnboardingComplete -> {}
+              OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+              OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+              OnboardingStage.LinkAMobile -> LinkAMobile()
+              OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+              OnboardingStage.Step3_ChooseServerOperators,
+              OnboardingStage.Step3_CreateSimpleXAddress,
+              OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+              OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
             }
           }
         }

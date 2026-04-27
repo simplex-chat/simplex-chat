@@ -266,49 +266,36 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   val focusRequester = remember { FocusRequester() }
   val refocusTrigger = remember { mutableStateOf(0) }
   val displayName = rememberSaveable { mutableStateOf("") }
-  Row(Modifier.fillMaxSize()) {
-    // Left: image
-    Box(Modifier.weight(0.438f).fillMaxHeight().background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f)).padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-      OnboardingImage(
-        MR.images.your_profile, MR.images.your_profile_light, MR.images.ic_person,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }
-    Divider(Modifier.fillMaxHeight().width(1.dp))
-    // Right: old layout with bar
-    Box(Modifier.weight(0.562f).fillMaxHeight()) {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-        ModalView(
-          close = { onboardingBackAction(chatModel, close) },
-          endButtons = { MigrateButton(refocusTrigger) }
-        ) {
-          ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-              Box(Modifier.align(Alignment.CenterHorizontally)) {
-                AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
-              }
-              ReadableText(MR.strings.onboarding_on_your_phone, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-              Spacer(Modifier.height(DEFAULT_PADDING))
-              ReadableText(MR.strings.onboarding_no_account, TextAlign.Center, style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
-              Spacer(Modifier.height(DEFAULT_PADDING))
-              ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
-            }
-            Spacer(Modifier.fillMaxHeight().weight(1f))
-            Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-              OnboardingActionButton(
-                Modifier.widthIn(min = 300.dp),
-                labelId = MR.strings.create_profile,
-                onboarding = null,
-                enabled = canCreateProfile(displayName.value),
-                onclick = { createProfileOnboarding(chatModel, displayName.value, close) }
-              )
-              TextButtonBelowOnboardingButton("", null)
-            }
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    ModalView(
+      close = { onboardingBackAction(chatModel, close) },
+      endButtons = { MigrateButton(refocusTrigger) }
+    ) {
+      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(Modifier.align(Alignment.CenterHorizontally)) {
+            AppBarTitle(stringResource(MR.strings.onboarding_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
           }
-          LaunchedEffect(Unit) {
-            setLastVersionDefault(chatModel)
-          }
+          ReadableText(MR.strings.onboarding_on_your_phone, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ReadableText(MR.strings.onboarding_no_account, TextAlign.Center, style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ProfileNameField(displayName, stringResource(MR.strings.enter_profile_name), { it.trim() == mkValidName(it) }, focusRequester)
         }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.create_profile,
+            onboarding = null,
+            enabled = canCreateProfile(displayName.value),
+            onclick = { createProfileOnboarding(chatModel, displayName.value, close) }
+          )
+          TextButtonBelowOnboardingButton("", null)
+        }
+      }
+      LaunchedEffect(Unit) {
+        setLastVersionDefault(chatModel)
       }
     }
   }

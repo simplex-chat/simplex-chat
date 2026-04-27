@@ -138,48 +138,32 @@ private fun YourNetworkDesktop(
   serverOperators: State<List<ServerOperator>>,
   selectedOperatorIds: MutableState<Set<Long>>
 ) {
-  Row(Modifier.fillMaxSize()) {
-    Box(
-      Modifier.weight(0.438f).fillMaxHeight()
-        .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.985f))
-        .padding(horizontal = DEFAULT_PADDING),
-      contentAlignment = Alignment.Center
-    ) {
-      OnboardingImage(
-        MR.images.your_network, MR.images.your_network_light, MR.images.ic_dns,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }
-    Divider(Modifier.fillMaxHeight().width(1.dp))
-    Box(Modifier.weight(0.562f).fillMaxHeight()) {
-      CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
-        ModalView({}, showClose = false) {
-          ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-              Box(Modifier.align(Alignment.CenterHorizontally)) {
-                AppBarTitle(stringResource(MR.strings.onboarding_your_network), bottomPadding = DEFAULT_PADDING, withPadding = false)
-              }
-              ReadableText(MR.strings.onboarding_network_routers_cannot_know, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-              Spacer(Modifier.height(DEFAULT_PADDING))
-              ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
-                ModalManager.fullscreen.showCustomModal { close ->
-                  ChooseServerOperators(serverOperators, selectedOperatorIds, close)
-                }
-              }
-            }
-            Spacer(Modifier.fillMaxHeight().weight(1f))
-            Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-              OnboardingActionButton(
-                Modifier.widthIn(min = 300.dp),
-                labelId = MR.strings.onboarding_network_operators_continue,
-                onboarding = null,
-                onclick = {
-                  appPrefs.onboardingStage.set(OnboardingStage.Step4_NetworkCommitments)
-                }
-              )
-              TextButtonBelowOnboardingButton("", null)
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    ModalView({}, showClose = false) {
+      ColumnWithScrollBar(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(Modifier.align(Alignment.CenterHorizontally)) {
+            AppBarTitle(stringResource(MR.strings.onboarding_your_network), bottomPadding = DEFAULT_PADDING, withPadding = false)
+          }
+          ReadableText(MR.strings.onboarding_network_routers_cannot_know, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ConfigureRoutersButton(serverOperators, selectedOperatorIds) {
+            ModalManager.fullscreen.showCustomModal { close ->
+              ChooseServerOperators(serverOperators, selectedOperatorIds, close)
             }
           }
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.onboarding_network_operators_continue,
+            onboarding = null,
+            onclick = {
+              appPrefs.onboardingStage.set(OnboardingStage.Step4_NetworkCommitments)
+            }
+          )
+          TextButtonBelowOnboardingButton("", null)
         }
       }
     }
