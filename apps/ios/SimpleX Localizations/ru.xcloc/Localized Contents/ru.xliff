@@ -2230,7 +2230,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connect with someone" xml:space="preserve">
         <source>Connect with someone</source>
-        <target>Соединиться с кем-нибудь</target>
+        <target>Соединитесь с кем-нибудь</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
@@ -5272,7 +5272,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve">
         <source>Let someone connect to you</source>
-        <target>Дайте кому-нибудь соединиться с Вами</target>
+        <target>Чтобы кто-нибудь мог соединиться с Вами</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -5865,7 +5865,7 @@ commitments</source>
       <trans-unit id="Network routers cannot know&#10;who talks to whom" xml:space="preserve">
         <source>Network routers cannot know
 who talks to whom</source>
-        <target>Сетевые маршрутизаторы не могут знать,
+        <target>Серверы сети не могут знать,
 кто с кем общается</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6520,7 +6520,7 @@ alert button</note>
         <target>Операторы обязуются:
 - Быть независимыми
 - Минимизировать использование метаданных
-- Использовать проверенный код с открытым исходным кодом</target>
+- Использовать проверенный и открытый исходный код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or import archive file" xml:space="preserve">
@@ -6560,7 +6560,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Or use this QR - print or show online." xml:space="preserve">
         <source>Or use this QR - print or show online.</source>
-        <target>Или используйте этот QR — распечатайте или покажите онлайн.</target>
+        <target>Или используйте этот QR - распечатайте или покажите онлайн.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Organize chats into lists" xml:space="preserve">
