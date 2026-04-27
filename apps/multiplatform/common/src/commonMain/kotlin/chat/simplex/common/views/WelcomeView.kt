@@ -72,9 +72,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
   ) {
     Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(top = 20.dp)
+      modifier = Modifier.fillMaxSize()
     ) {
       ColumnWithScrollBar {
         AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING_HALF)

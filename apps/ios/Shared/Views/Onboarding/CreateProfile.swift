@@ -77,35 +77,32 @@ struct CreateProfile: View {
             .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))
 
             Section {
-                TextField("Enter your name…", text: $displayName)
-                    .focused($focusDisplayName)
-                TextField("Bio", text: $profileBio)
+                ZStack(alignment: .leading) {
+                    let name = displayName.trimmingCharacters(in: .whitespaces)
+                    if name != mkValidName(name) {
+                        Button {
+                            alert = .invalidNameError(validName: mkValidName(name))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    } else {
+                        Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+                    }
+                    TextField("Enter your name…", text: $displayName)
+                        .padding(.leading, 36)
+                        .focused($focusDisplayName)
+                }
+                ZStack(alignment: .leading) {
+                    Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
+                    TextField("Bio", text: $profileBio)
+                        .padding(.leading, 36)
+                }
                 Button {
                     createProfile()
                 } label: {
                     Label("Create profile", systemImage: "checkmark")
                 }
                 .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
-            } header: {
-                HStack {
-                    Text("Your profile")
-                        .foregroundColor(theme.colors.secondary)
-
-                    let name = displayName.trimmingCharacters(in: .whitespaces)
-                    let validName = mkValidName(name)
-                    if name != validName {
-                        Spacer()
-                        validationErrorIndicator {
-                            alert = .invalidNameError(validName: validName)
-                        }
-                    } else if !bioFitsLimit() {
-                        Spacer()
-                        validationErrorIndicator {
-                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
-                        }
-                    }
-                }
-                .frame(height: 20)
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Your profile is stored on your device and only shared with your contacts.")
@@ -113,6 +110,7 @@ struct CreateProfile: View {
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .compactSectionSpacing()
         }
         .navigationTitle("Create your profile")
         .modifier(ThemedBackground(grouped: true))
@@ -153,14 +151,6 @@ struct CreateProfile: View {
                 focusDisplayName = true
             }
         }
-    }
-
-    private func validationErrorIndicator(_ onTap: @escaping () -> Void) -> some View {
-        Image(systemName: "exclamationmark.circle")
-            .foregroundColor(.red)
-            .onTapGesture {
-                onTap()
-            }
     }
 
     private func bioFitsLimit() -> Bool {
