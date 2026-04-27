@@ -259,7 +259,7 @@ private fun ProfileStepView(
   ) {
     ModalView(close = close) {
       ColumnWithScrollBar {
-        AppBarTitle(generalGetString(MR.strings.create_channel_title))
+        AppBarTitle(generalGetString(MR.strings.create_channel_title), bottomPadding = DEFAULT_PADDING_HALF)
         Row(
           Modifier
             .fillMaxWidth()
