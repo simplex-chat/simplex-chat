@@ -607,7 +607,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A link for one person to connect" xml:space="preserve">
         <source>A link for one person to connect</source>
-        <target>Ссылка для соединения с одним человеком</target>
+        <target>Ссылка для одного человека</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -3456,11 +3456,6 @@ chat item action</note>
         <target>Включить блокировку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable notifications" xml:space="preserve">
-        <source>Enable notifications</source>
-        <target>Включить уведомления</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Enable periodic notifications?" xml:space="preserve">
         <source>Enable periodic notifications?</source>
         <target>Включить периодические уведомления?</target>
@@ -5064,7 +5059,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Invite someone privately" xml:space="preserve">
         <source>Invite someone privately</source>
-        <target>Пригласить кого-нибудь конфиденциально</target>
+        <target>Пригласить конфиденциально</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to chat" xml:space="preserve">
@@ -5820,16 +5815,14 @@ This is your link for group %@!</source>
         <target>Имя</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Network&#10;commitments" xml:space="preserve">
-        <source>Network
-commitments</source>
-        <target>Обязательства
-сети</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Сеть и серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network commitments" xml:space="preserve">
+        <source>Network commitments</source>
+        <target>Обязательства сети</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
@@ -5992,7 +5985,7 @@ who talks to whom</source>
       <trans-unit id="No account. No phone. No email. No ID.&#10;The most secure encryption." xml:space="preserve">
         <source>No account. No phone. No email. No ID.
 The most secure encryption.</source>
-        <target>Без аккаунта. Без телефона. Без email. Без ID.
+        <target>Без аккаунта. Без номера. Без email. Без ID.
 Самое безопасное шифрование.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6856,12 +6849,12 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Privacy: for owners and subscribers." xml:space="preserve">
         <source>Privacy: for owners and subscribers.</source>
-        <target>Приватность: для владельцев и подписчиков.</target>
+        <target>Конфиденциальность: для владельцев и подписчиков.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private and secure messaging." xml:space="preserve">
         <source>Private and secure messaging.</source>
-        <target>Приватный и безопасный обмен сообщениями.</target>
+        <target>Конфиденциальный и безопасный обмен сообщениями.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
@@ -8291,7 +8284,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Setup routers" xml:space="preserve">
         <source>Setup routers</source>
-        <target>Настроить маршрутизаторы</target>
+        <target>Настроить серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
@@ -9732,11 +9725,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
         <target>Использовать TCP-порт 443 только для серверов по умолчанию.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Use chat" xml:space="preserve">
-        <source>Use chat</source>
-        <target>Использовать чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use current profile" xml:space="preserve">

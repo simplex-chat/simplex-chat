@@ -208,7 +208,7 @@ struct ConnectOnboardingView: View {
             .font(.largeTitle)
             .bold()
             .lineLimit(1)
-            .minimumScaleFactor(0.75)
+            .minimumScaleFactor(0.67)
             .frame(maxWidth: .infinity, alignment: .center)
         if isLandscape {
             ZStack(alignment: .leading) {
