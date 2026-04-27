@@ -440,7 +440,7 @@ This configuration provides quick and easy way to setup your SMP server: Caddy w
 
 3. In the same directory, create `.env` file with the following content:
 
-  You can also grab it from here - [docker-compose-smp-complete.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.env). Don't forget to rename it to `.env`.
+  You can also grab it from here - [docker-compose-smp.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp.env). Don't forget to rename it to `.env`.
 
   Change variables according to your preferences.
 
