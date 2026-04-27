@@ -196,11 +196,8 @@ struct CreateFirstProfile: View {
     @FocusState private var focusDisplayName
     @State private var nextStepNavLinkActive = false
     @State private var showMigrateSheet = false
-    @State private var fixedContentHeight: CGFloat = 300
-
     var body: some View {
         let spacing: CGFloat = 10
-        let minImageHeight: CGFloat = 80
         let topPadding: CGFloat = 8
         let padding: CGFloat = 25
         GeometryReader { g in
@@ -210,8 +207,7 @@ struct CreateFirstProfile: View {
                     Image(colorScheme == .light ? "your-profile" : "your-profile-light")
                         .resizable()
                         .scaledToFit()
-                        .frame(maxWidth: .infinity, minHeight: minImageHeight)
-                        .layoutPriority(1)
+                        .frame(maxWidth: .infinity)
                     #else
                     ZStack {
                         let gp = OnboardingCardView.gradientPoints(aspectRatio: 1.0, scale: colorScheme == .light ? 1.2 : 1.5)
@@ -227,49 +223,41 @@ struct CreateFirstProfile: View {
                     .aspectRatio(1.0, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 24))
                     .padding(.horizontal, 25)
-                    .frame(maxWidth: .infinity, minHeight: minImageHeight)
-                    .layoutPriority(1)
+                    .frame(maxWidth: .infinity)
                     #endif
 
-                    VStack(alignment: .center, spacing: spacing) {
-                        Text("Your profile")
-                            .font(.largeTitle)
-                            .bold()
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                    Text("Your profile")
+                        .font(.largeTitle)
+                        .bold()
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        Text("On your phone, not on any server.")
-                            .font(.title3)
-                            .fontWeight(.medium)
-                            .foregroundColor(theme.colors.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                    Text("On your phone, not on any server.")
+                        .font(.title3)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        Text("No account. No phone. No email. No ID.\nThe most secure encryption.")
-                            .font(.footnote)
-                            .foregroundColor(theme.colors.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                    Text("No account. No phone. No email. No ID.\nThe most secure encryption.")
+                        .font(.footnote)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        profileNameField()
-                            .padding(.top)
-                            .padding(.bottom, 5)
+                    profileNameField()
+                        .padding(.top)
+                        .padding(.bottom, 5)
 
-                        Spacer(minLength: 0)
+                    Spacer(minLength: 0)
 
-                        createProfileButton()
-                            .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
-                    }
-                    .overlay(DetermineHeight())
-                    .onPreferenceChange(DetermineHeight.Key.self) { fixedContentHeight = $0 }
+                    createProfileButton()
+                        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
                 .padding(.horizontal, padding)
                 .padding(.top, topPadding)
                 .padding(.bottom, padding)
-                .frame(
-                    minHeight: g.size.height,
-                    idealHeight: max(g.size.height, fixedContentHeight + minImageHeight + spacing + topPadding + padding)
-                )
+                .frame(minHeight: g.size.height)
             }
             .onTapGesture { focusDisplayName = false }
             .sheet(isPresented: $showMigrateSheet, onDismiss: { m.migrationState = nil }) {
@@ -281,7 +269,7 @@ struct CreateFirstProfile: View {
             }
             if #available(iOS 17, *) {
                 v.scrollBounceBehavior(.basedOnSize).defaultScrollAnchor(.bottom)
-            } else if #available(iOS 16.4.0, *) {
+            } else if #available(iOS 16.4, *) {
                 v.scrollBounceBehavior(.basedOnSize)
             } else {
                 v
