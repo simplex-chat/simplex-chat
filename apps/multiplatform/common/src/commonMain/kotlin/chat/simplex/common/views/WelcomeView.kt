@@ -111,8 +111,8 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
               }
             }
           }
-          Spacer(Modifier.weight(1f))
           if (BuildConfigCommon.SIMPLEX_ASSETS) {
+            Spacer(Modifier.weight(0.5f))
             Image(
               painterResource(if (isInDarkTheme()) MR.images.create_profile_light else MR.images.create_profile),
               contentDescription = null,
@@ -120,6 +120,8 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
               modifier = Modifier.height(140.dp)
             )
             Spacer(Modifier.weight(0.5f))
+          } else {
+            Spacer(Modifier.weight(1f))
           }
         }
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
