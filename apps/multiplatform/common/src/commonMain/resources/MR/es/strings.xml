@@ -2708,7 +2708,7 @@
     <string name="relay_bar_active_with_removed">%1$d/%2$d servidores activos, %3$d servidores eliminados</string>
     <string name="relay_bar_connected_with_failures">%1$d/%2$d servidores conectados, %3$d con fallo</string>
     <string name="relay_bar_connected_with_removed">%1$d/%2$d servidores conectados, %3$d eliminados</string>
-    <string name="relay_bar_relays_failed">%1$d servidores con fallo</string>
+    <string name="relay_bar_relays_failed">%1$d servidores han fallado</string>
     <string name="relay_bar_relays_not_active">%1$d servidores inactivos</string>
     <string name="relay_bar_relays_removed">%1$d servidores eliminados</string>
     <string name="relay_bar_owner_no_delivery">Añadir servidores estará disponible en una versión posterior.</string>
@@ -2797,4 +2797,5 @@
     <string name="e2ee_info_no_e2ee"><![CDATA[Los mensajes en este canal <b> no están cifrados de extremo a extremo</b>. Los servidores pueden ver estos mensajes.]]></string>
     <string name="onboarding_network_commitments">Compromisos en la red</string>
     <string name="v6_5_non_profit_governance">Gobernanza no lucrativa</string>
+    <string name="v6_5_safe_web_links_descr">- aceptar el envío de vistas previas de los enlaces.  \n- prevenir el phishing mediante hipervínculos.  \n- eliminar el seguimiento de los enlaces.</string>
 </resources>
