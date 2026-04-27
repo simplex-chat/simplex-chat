@@ -47,6 +47,7 @@ struct AddChannelView: View {
         List {
             Group {
                 HStack(spacing: 0) {
+                    Spacer(minLength: 0)
                     ZStack(alignment: .center) {
                         ZStack(alignment: .topTrailing) {
                             ProfileImage(imageStr: profile.image, iconName: "antenna.radiowaves.left.and.right.circle.fill", size: 128)
@@ -64,16 +65,16 @@ struct AddChannelView: View {
                         editImageButton { showChooseSource = true }
                             .buttonStyle(BorderlessButtonStyle())
                     }
-                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 10) // Matches transparent space built into 3D asset
                     #if SIMPLEX_ASSETS
+                    Spacer(minLength: 0)
                     Image(colorScheme == .light ? "create-channel" : "create-channel-light")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 140)
-                        .frame(maxWidth: .infinity)
                     #endif
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity)
             }
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
