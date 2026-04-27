@@ -215,11 +215,9 @@ fun ModalData.ChooseServerOperators(
         }
         Spacer(Modifier.weight(1f))
 
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).padding(bottom = DEFAULT_PADDING * 2).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           val enabled = selectedOperatorIds.value.isNotEmpty()
           SetOperatorsButton(enabled, close)
-          // Reserve space
-          TextButtonBelowOnboardingButton("", null)
         }
       }
     }
