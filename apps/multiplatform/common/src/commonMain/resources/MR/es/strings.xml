@@ -1144,8 +1144,8 @@
     <string name="stop_sharing_address">¿Dejar de compartir la dirección\?</string>
     <string name="theme_colors_section_title">COLORES DE LA INTERFAZ</string>
     <string name="you_can_create_it_later">Puedes crearla más tarde</string>
-    <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos?</string>
-    <string name="share_with_contacts">Compartir con contactos</string>
+    <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos SimpleX?</string>
+    <string name="share_with_contacts">Compartir con contactos SimpleX</string>
     <string name="color_title">Título</string>
     <string name="you_can_share_this_address_with_your_contacts">Puedes compartir esta dirección con tus contactos para que puedan conectar con %s.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
@@ -2373,8 +2373,8 @@
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La frase de contraseña no se ha podido leer en Keystore. Por favor, introdúcela manualmente. Puede deberse a alguna actualización del sistema incompatible con la aplicación. Si no es así, por favor, ponte en contacto con los desarrolladores.</string>
     <string name="onboarding_conditions_accept">Aceptar</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privacidad y condiciones de uso.</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.</string>
-    <string name="onboarding_conditions_by_using_you_agree">Al usar SimpleX Chat, aceptas:\n- enviar únicamente contenido legal en los grupos públicos.\n- respetar a los demás usuarios - spam prohibido.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Los operadores se comprometen a:\n- Ser independientes\n- Minimizar el tratamiento de metadatos\n- Ejecutar código open-source verificado</string>
+    <string name="onboarding_conditions_by_using_you_agree">Te comprometes a:\n- Sólo contenido legal en grupos públicos  \n- Respetar a los demás usuarios — no hacer spam</string>
     <string name="simplex_link_channel">Enlace de canal SimpleX</string>
     <string name="full_link_button_text">Enlace completo</string>
     <string name="short_link_button_text">Enlace corto</string>
@@ -2777,4 +2777,24 @@
     <string name="onboarding_send_1_time_link">Envía el enlace mediante cualquier mensajero, es seguro. Pide que lo peguen en SimpleX.</string>
     <string name="onboarding_configure_notifications">Configurar notificaciones</string>
     <string name="onboarding_configure_routers">Configurar routers</string>
+    <string name="share_channel">Compartir canal…</string>
+    <string name="share_via_chat">Compartir por chat</string>
+    <string name="owner_verification_failed">⚠️ Verificación de firma fallida: %s.</string>
+    <string name="chat_link_signed">(firmado)</string>
+    <string name="members_can_chat_with_admins_channel">Los suscriptores pueden chatear con los administradores.</string>
+    <string name="talk_to_someone">Habla con alguien</string>
+    <string name="tap_to_open">Pulsa para abrir</string>
+    <string name="connection_reached_limit_of_undelivered_messages">La conexión ha alcanzado al límite de mensajes no entregados</string>
+    <string name="onboarding_first_network">La primera red donde los grupos\ny los contactos son tuyos.</string>
+    <string name="v6_5_non_profit_governance_descr">Para que la Red SimpleX perdure.</string>
+    <string name="onboarding_post_address">Usa esta dirección en el perfil de tu red social, página web o firma para email.</string>
+    <string name="relay_bar_subscriber_waiting">Esperando a que el propietario del canal añada servidores.</string>
+    <string name="v6_5_invite_friends_descr">Hemos simplificado la conexión para los usuarios nuevos.</string>
+    <string name="why_simplex_is_built">Por qué fue creado SimpleX.</string>
+    <string name="onboarding_your_network">Tu red</string>
+    <string name="onboarding_your_profile">Tu perfil</string>
+    <string name="your_public_address">Tu dirección pública</string>
+    <string name="e2ee_info_no_e2ee"><![CDATA[Los mensajes en este canal <b> no están cifrados de extremo a extremo</b>. Los servidores pueden ver estos mensajes.]]></string>
+    <string name="onboarding_network_commitments">Compromisos en la red</string>
+    <string name="v6_5_non_profit_governance">Gobernanza no lucrativa</string>
 </resources>
