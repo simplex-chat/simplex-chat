@@ -302,6 +302,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
+          export ASSETS_DIR='../../assets'
           scripts/desktop/make-deb-linux.sh
 
       - name: Prepare Desktop
@@ -327,6 +328,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
+          export ASSETS_DIR='../../assets'
           scripts/desktop/make-appimage-linux.sh
 
       - name: Prepare AppImage
@@ -549,6 +551,7 @@ jobs:
           APPLE_SIMPLEX_NOTARIZATION_APPLE_ID: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_APPLE_ID }}
           APPLE_SIMPLEX_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_SIMPLEX_NOTARIZATION_PASSWORD }}
         run: |
+          export ASSETS_DIR='../../assets'
           scripts/ci/build-desktop-mac.sh
           path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
           echo "package_path=$path" >> $GITHUB_OUTPUT

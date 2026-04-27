@@ -16,5 +16,5 @@ security unlock-keychain -p "" /tmp/simplex.keychain
 security list-keychains -s `security list-keychains | xargs` /tmp/simplex.keychain
 scripts/desktop/build-lib-mac.sh
 cd apps/multiplatform
-./gradlew -Psimplex.assets.dir=../../assets packageDmg
-./gradlew -Psimplex.assets.dir=../../assets notarizeDmg
+./gradlew -Psimplex.assets.dir="$ASSETS_DIR" packageDmg
+./gradlew -Psimplex.assets.dir="$ASSETS_DIR" notarizeDmg
