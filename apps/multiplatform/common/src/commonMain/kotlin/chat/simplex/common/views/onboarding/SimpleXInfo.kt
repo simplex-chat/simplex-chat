@@ -222,12 +222,12 @@ fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
   if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
     TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = enabled) {
       if (enabled) {
-        Icon(painterResource(MR.images.ic_info), null, Modifier.size(20.dp), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
         Spacer(Modifier.width(4.dp))
       }
       Text(
         text,
-        Modifier.padding(horizontal = DEFAULT_PADDING_HALF, vertical = 5.dp),
+        Modifier.padding(vertical = 5.dp),
         color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
         fontWeight = FontWeight.Medium,
         textAlign = TextAlign.Center
