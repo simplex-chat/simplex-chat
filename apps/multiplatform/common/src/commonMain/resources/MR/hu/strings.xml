@@ -1440,7 +1440,7 @@
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállításakor nem tud üzeneteket fogadni és küldeni.</string>
     <string name="save_passphrase_in_keychain">Jelmondat mentése a Keystore-ba</string>
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak a Weblate-en való közreműködésért!</string>
-    <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
+    <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokba</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem lesznek elküldve.</string>
     <string name="v5_2_message_delivery_receipts_descr">A második pipa, ami már nagyon hiányzott! ✅</string>
     <string name="relay_server_protects_ip">Az átjátszó kiszolgáló megvédi az IP-címét, de megfigyelheti a hívás időtartamát.</string>
