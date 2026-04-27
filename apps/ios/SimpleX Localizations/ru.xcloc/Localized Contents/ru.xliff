@@ -4351,7 +4351,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="For anyone to reach you" xml:space="preserve">
         <source>For anyone to reach you</source>
-        <target>Кто угодно может связаться с Вами</target>
+        <target>Любой может связаться с Вами</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">

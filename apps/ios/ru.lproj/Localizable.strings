@@ -2888,7 +2888,7 @@ server test error */
 "For all moderators" = "Для всех модераторов";
 
 /* No comment provided by engineer. */
-"For anyone to reach you" = "Кто угодно может связаться с Вами";
+"For anyone to reach you" = "Любой может связаться с Вами";
 
 /* servers error
 servers warning */
@@ -4838,7 +4838,7 @@ swipe action */
 "Remove" = "Удалить";
 
 /* alert action */
-"Remove and delete messages" = "Удалить и удалить сообщения";
+"Remove and delete messages" = "Удалить вместе с сообщениями";
 
 /* No comment provided by engineer. */
 "Remove archive?" = "Удалить архив?";
@@ -5322,7 +5322,7 @@ chat item action */
 "Sender may have deleted the connection request." = "Отправитель мог удалить запрос на соединение.";
 
 /* alert message */
-"Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "Отправка предпросмотра ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках конфиденциальности позже.";
+"Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later." = "Отправка картинки ссылки может раскрыть Ваш IP-адрес веб-сайту. Вы можете изменить это в настройках безопасности позже.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "Отправка отчётов о доставке будет включена для всех контактов во всех видимых профилях чата.";
@@ -5783,7 +5783,7 @@ report reason */
 "Subscriber" = "Подписчик";
 
 /* chat feature */
-"Subscriber reports" = "Жалобы подписчиков";
+"Subscriber reports" = "Сообщения о нарушениях";
 
 /* alert message */
 "Subscriber will be removed from channel - this cannot be undone!" = "Подписчик будет удален из канала - это нельзя отменить!";
