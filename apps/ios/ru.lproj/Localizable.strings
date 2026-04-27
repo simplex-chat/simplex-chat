@@ -26,13 +26,7 @@
 "(this device v%@)" = "(это устройство v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Внести свой вклад](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Отправить email](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Поставить звездочку в GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Добавить контакт**: создать и поделиться новой ссылкой-приглашением.";
@@ -399,9 +393,6 @@ swipe action */
 "Active connections" = "Активные соединения";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Добавить друзей";
 
 /* No comment provided by engineer. */
@@ -648,9 +639,6 @@ swipe action */
 "Answer call" = "Принять звонок";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Кто угодно может запустить сервер.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Сборка приложения: %@";
 
 /* No comment provided by engineer. */
@@ -789,6 +777,12 @@ swipe action */
 "Bad message ID" = "Ошибка ID сообщения";
 
 /* No comment provided by engineer. */
+"Be free in your network." = "Будь свободен в своей сети.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Потому что мы разрушили саму возможность узнать, кто вы. Чтобы вашу свободу невозможно было отнять.";
+
+/* No comment provided by engineer. */
 "Better calls" = "Улучшенные звонки";
 
 /* No comment provided by engineer. */
@@ -891,7 +885,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарский, финский, тайский и украинский - благодаря пользователям и [Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Бизнес адрес";
 
 /* No comment provided by engineer. */
@@ -905,9 +899,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "По профилю чата или [по соединению](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей – не отправлять спам.";
 
 /* No comment provided by engineer. */
 "call" = "звонок";
@@ -1092,7 +1083,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Разговор будет удален для Вас - это действие нельзя отменить!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Чат с админами";
 
 /* No comment provided by engineer. */
@@ -1205,9 +1197,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Настройка ICE серверов";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Настроить операторов серверов";
 
 /* No comment provided by engineer. */
 "Confirm" = "Подтвердить";
@@ -1342,7 +1331,7 @@ server test step */
 /* alert title */
 "Connection error" = "Ошибка соединения";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Ошибка соединения (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -1445,6 +1434,9 @@ server test step */
 "Continue" = "Продолжить";
 
 /* No comment provided by engineer. */
+"Contribute" = "Внести свой вклад";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "Разговор удален!";
 
 /* No comment provided by engineer. */
@@ -1461,9 +1453,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Исправить имя на %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Создать";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Создать одноразовую ссылку";
@@ -1617,9 +1606,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Отладка доставки";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Децентрализованный";
 
 /* message decrypt error item */
 "Decryption error" = "Ошибка расшифровки";
@@ -2018,7 +2004,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Пустое сообщение!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Включить";
 
 /* No comment provided by engineer. */
@@ -2192,7 +2178,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "ошибка";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Ошибка";
 
 /* No comment provided by engineer. */
@@ -2746,7 +2732,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "группа удалена";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Ссылка группы";
 
 /* No comment provided by engineer. */
@@ -2873,9 +2859,6 @@ servers warning */
 "Immediately" = "Сразу";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Защищен от спама";
-
-/* No comment provided by engineer. */
 "Import" = "Импортировать";
 
 /* No comment provided by engineer. */
@@ -2975,7 +2958,7 @@ servers warning */
 "Initial role" = "Роль при вступлении";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "SimpleX Chat для терминала";
 
 /* No comment provided by engineer. */
 "Instant" = "Мгновенно";
@@ -3010,7 +2993,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "ошибка данных чата";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Ошибка в ссылке контакта";
 
 /* invalid chat item */
@@ -3446,9 +3429,6 @@ servers warning */
 "Migrate device" = "Мигрировать устройство";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Миграция с другого устройства";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Мигрировать сюда";
 
 /* No comment provided by engineer. */
@@ -3728,7 +3708,10 @@ servers warning */
 "No unread chats" = "Нет непрочитанных чатов";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Без идентификаторов пользователей.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Никто не отслеживал ваши разговоры. Никто не составлял карту ваших перемещений. Конфиденциальность не была функцией - это был образ жизни.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Не более надёжный замок на чужой двери. Не более вежливый хозяин, который уважает вашу частную жизнь, но всё равно ведёт учёт всех посетителей. Вы не гость. Вы у себя дома. Ни один король не войдёт в ваш дом - вы суверенны.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Несовместимая версия!";
@@ -3786,7 +3769,7 @@ alert button
 new chat action */
 "Ok" = "Ок";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "OK";
 
 /* No comment provided by engineer. */
@@ -3867,7 +3850,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Только Ваш контакт может отправлять голосовые сообщения.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Открыть";
 
 /* No comment provided by engineer. */
@@ -4123,12 +4107,6 @@ new chat action */
 "Privacy policy and conditions of use." = "Политика конфиденциальности и условия использования.";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "Более конфиденциальный";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.";
-
-/* No comment provided by engineer. */
 "Private filenames" = "Защищенные имена файлов";
 
 /* No comment provided by engineer. */
@@ -4166,9 +4144,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Тема профиля";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Обновлённый профиль будет отправлен Вашим контактам.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Запретить аудио/видео звонки.";
@@ -4258,16 +4233,10 @@ new chat action */
 "Read more" = "Узнать больше";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Дополнительная информация в [Руководстве пользователя](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Узнайте больше из нашего GitHub репозитория.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Узнать больше в [Руководстве пользователя](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Узнать больше в [Руководстве пользователя](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Узнайте больше из нашего [GitHub репозитория](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Дополнительная информация в Руководстве пользователя.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Отчёты о доставке выключены";
@@ -4996,9 +4965,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Поделитесь адресом";
 
-/* alert title */
-"Share address with contacts?" = "Поделиться адресом с контактами?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Поделитесь из других приложений.";
 
@@ -5022,9 +4988,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Поделиться в SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Поделиться с контактами";
 
 /* No comment provided by engineer. */
 "Share your address" = "Поделитесь Вашим адресом";
@@ -5181,6 +5144,9 @@ report reason */
 "standard end-to-end encryption" = "стандартное end-to-end шифрование";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Поставить звездочку в GitHub";
+
+/* No comment provided by engineer. */
 "Start chat" = "Запустить чат";
 
 /* No comment provided by engineer. */
@@ -5286,9 +5252,6 @@ report reason */
 "Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот";
 
 /* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.";
-
-/* No comment provided by engineer. */
 "Tap Join group" = "Нажмите Вступить в группу";
 
 /* No comment provided by engineer. */
@@ -5392,9 +5355,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Будущее коммуникаций";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хэш предыдущего сообщения отличается.";
 
 /* No comment provided by engineer. */
@@ -5417,6 +5377,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Предыдущая версия данных чата не удалена при перемещении, её можно удалить.";
+
+/* No comment provided by engineer. */
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Древнейшая человеческая свобода - говорить с другим человеком без слежки - построенная на инфраструктуре, которая не может её предать.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";
@@ -5444,6 +5407,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Themes" = "Темы";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Потом мы вышли в интернет, и каждая платформа попросила частичку вас - ваше имя, ваш номер, ваших друзей. Мы смирились с тем, что за возможность общаться приходится отдавать информацию о том, с кем мы общаемся. Каждое поколение людей и технологий жило так - телефон, электронная почта, мессенджеры, социальные сети. Казалось, что другого пути нет.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Другой путь есть. Сеть без номеров телефонов. Без имён пользователей. Без аккаунтов. Без каких-либо идентификаторов пользователей. Сеть, которая соединяет людей и передаёт зашифрованные сообщения, не зная, кто с кем связан.";
 
 /* No comment provided by engineer. */
 "These conditions will also apply for: **%@**." = "Эти условия также будут применены к: **%@**.";
@@ -5691,7 +5660,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Не прочитано";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Ссылка не поддерживается";
 
 /* No comment provided by engineer. */
@@ -6183,9 +6152,6 @@ server test failure */
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Верификация не удалась; пожалуйста, попробуйте ещё раз.";
 
-/* No comment provided by engineer. */
-"You decide who can connect." = "Вы определяете, кто может соединиться.";
-
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Вы уже запросили соединение!\nПовторить запрос?";
 
@@ -6239,6 +6205,9 @@ server test failure */
 
 /* snd group event chat item */
 "you unblocked %@" = "Вы разблокировали %@";
+
+/* No comment provided by engineer. */
+"You were born without an account" = "Вы родились без аккаунта.";
 
 /* No comment provided by engineer. */
 "You will be able to send messages **only after your request is accepted**." = "Вы сможете отправлять сообщения **только после того как Ваш запрос будет принят**.";
@@ -6314,6 +6283,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Ваши контакты сохранятся.";
+
+/* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Ваши разговоры принадлежат вам, как это всегда было до интернета. Сеть - это не место, куда вы приходите. Это место, которое вы создаёте и которым владеете. И никто не может это у вас отнять, делаете ли вы его конфиденциальным или публичным.";
 
 /* No comment provided by engineer. */
 "Your credentials may be sent unencrypted." = "Ваши учетные данные могут быть отправлены в незашифрованном виде.";

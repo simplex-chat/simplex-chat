@@ -424,7 +424,6 @@
     <string name="italic_text">cursief</string>
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
-    <string name="how_simplex_works">Hoe SimpleX werkt</string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -1111,7 +1110,7 @@
     <string name="share_with_contacts">Delen met contacten</string>
     <string name="your_contacts_will_remain_connected">Uw contacten blijven verbonden.</string>
     <string name="profile_update_will_be_sent_to_contacts">Profiel update wordt naar uw contacten verzonden.</string>
-    <string name="share_address_with_contacts_question">Adres delen met contacten\?</string>
+    <string name="share_address_with_contacts_question">Adres delen met contacten?</string>
     <string name="stop_sharing">Stop met delen</string>
     <string name="stop_sharing_address">Stop met het delen van adres\?</string>
     <string name="invite_friends">Nodig vrienden uit</string>
@@ -2380,7 +2379,6 @@
     <string name="full_link_button_text">Volledige link</string>
     <string name="unsupported_connection_link">Niet-ondersteunde verbindingslink</string>
     <string name="short_link_button_text">Korte link</string>
-    <string name="onboarding_conditions_configure_server_operators">Serveroperators configureren</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacybeleid en gebruiksvoorwaarden.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</string>
     <string name="cant_send_message_contact_deleted">contact verwijderd</string>

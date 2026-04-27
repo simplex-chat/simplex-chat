@@ -153,7 +153,6 @@
     <string name="icon_descr_instant_notifications">通知の常時受信</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMPサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICEサーバのアドレスを正しく1行ずつに分けて、重複しないように、形式もご確認ください。</string>
-    <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信してすぐに通知が出ます）。]]></string>
     <string name="callstatus_calling">発信中</string>
@@ -1097,7 +1096,7 @@
     <string name="v5_0_app_passcode_descr">システム認証の代わりに設定します。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
     <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。</string>
-    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>
+    <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか?</string>
     <string name="icon_descr_call_pending_sent">保留中の通話</string>
     <string name="invalid_migration_confirmation">データ移行の確認が正しくない</string>
     <string name="feature_offered_item">%s を提供しました</string>
@@ -2014,7 +2013,6 @@
     <string name="v6_3_better_privacy_and_security">プライバシーとセキュリティの向上</string>
     <string name="accept_pending_member_button">承諾</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">プライバシーポリシーと利用条件</string>
-    <string name="onboarding_conditions_configure_server_operators">サーバオペレータの設定</string>
     <string name="onboarding_conditions_accept">承諾</string>
     <string name="onboarding_conditions_private_chats_not_accessible">サーバオペレータは、プライベートチャット・グループ・連絡先にはアクセスできません。</string>
     <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat を利用することで、以下の事項に同意したものと見なされます：\n- パブリックグループでは合法なコンテンツのみを送信すること。\n- 他のユーザを尊重すること、またスパムメッセージを送信しないこと。</string>

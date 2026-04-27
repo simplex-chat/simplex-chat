@@ -4,9 +4,7 @@ import * as core from "./core"
 import * as util from "./util"
 import equal = require("fast-deep-equal")
 
-export interface BotDbOpts {
-  dbFilePrefix: string // two schema files will be named <prefix>_chat.db and <prefix>_agent.db
-  dbKey?: string
+export type BotDbOpts = api.DbConfig & {
   confirmMigrations?: core.MigrationConfirmation
 }
 
@@ -47,7 +45,7 @@ export interface BotConfig {
 }
 
 export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
-  const bot = await api.ChatApi.init(dbOpts.dbFilePrefix, dbOpts.dbKey || "", dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp)
+  const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp)
   const opts = fullOptions(options)
   if (onMessage) subscribeMessages(bot, onMessage)
   if (Object.keys(onCommands).length > 0) subscribeCommands(bot, onCommands)

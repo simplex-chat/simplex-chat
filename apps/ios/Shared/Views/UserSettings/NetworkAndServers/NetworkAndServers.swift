@@ -332,7 +332,7 @@ struct UsageConditionsView: View {
     @ViewBuilder private func conditionsDiffButton(_ font: Font? = nil) -> some View {
         let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
         if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
-            Link(destination: commitUrl) {
+            ExternalLink(destination: commitUrl) {
                 HStack {
                     Text("Open changes")
                     Image(systemName: "arrow.up.right.circle")
@@ -351,21 +351,6 @@ private func regularConditionsHeader() -> some View {
     }
 }
 
-struct SimpleConditionsView: View {
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            regularConditionsHeader()
-                .padding(.top)
-                .padding(.top)
-            ConditionsTextView()
-                .padding(.bottom)
-                .padding(.bottom)
-        }
-        .padding(.horizontal, 25)
-        .frame(maxHeight: .infinity)
-    }
-}
 
 func validateServers_(
     _ userServers: Binding<[UserOperatorServers]>,

@@ -265,7 +265,9 @@ actual class VideoPlayer actual constructor(
         mediaPlayer().events().addMediaPlayerEventListener(object: MediaPlayerEventAdapter() {
           override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) {
             playerThread.execute {
-              mediaPlayer?.audio()?.setVolume(100)
+              // Do not call setVolume here: on Windows VLCJ routes it through WASAPI ISimpleAudioVolume,
+              // which resets SimpleX Chat's per-app volume in the Windows Volume Mixer on every playback
+              // (VLCJ issue #985). A fresh VLCJ MediaPlayer already defaults to volume 100, so this was redundant.
               mediaPlayer?.audio()?.isMute = false
             }
           }

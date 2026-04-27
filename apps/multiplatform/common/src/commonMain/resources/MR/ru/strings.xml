@@ -67,7 +67,7 @@
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите Ваш контакт отправить Вам новую.</string>
     <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
-    <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</string>
+    <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой — пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
     <string name="error_deleting_contact">Ошибка при удалении контакта</string>
@@ -88,7 +88,7 @@
     <string name="service_notifications">Мгновенные уведомления!</string>
     <string name="service_notifications_disabled">Мгновенные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Чтобы улучшить конфиденциальность, <b>SimpleX выполняется в фоне</b> вместо уведомлений через сервер.]]></string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Он может быть выключен через Настройки</b> – Вы продолжите получать уведомления о сообщениях пока приложение запущено.]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Он может быть выключен через Настройки</b> — Вы продолжите получать уведомления о сообщениях пока приложение запущено.]]></string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Разрешите это</b> в следующем окне, чтобы получать уведомления мгновенно.]]></string>
     <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
@@ -157,7 +157,7 @@
     <string name="hide_verb">Спрятать</string>
     <string name="allow_verb">Разрешить</string>
     <string name="delete_message__question">Удалить сообщение?</string>
-    <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено – это действие нельзя отменить!</string>
+    <string name="delete_message_cannot_be_undone_warning">Сообщение будет удалено — это действие нельзя отменить!</string>
     <string name="delete_message_mark_deleted_warning">Сообщение будет помечено на удаление. Получатель(и) сможет(смогут) посмотреть это сообщение.</string>
     <string name="for_me_only">Удалить для меня</string>
     <string name="for_everybody">Для всех</string>
@@ -218,7 +218,7 @@
     <string name="notifications">Уведомления</string>
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact_question">Удалить контакт?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены — это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
     <string name="text_field_set_contact_placeholder">Имя контакта…</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
@@ -278,7 +278,7 @@
     <string name="reject_contact_button">Отклонить</string>
     <!-- Clear Chat - ChatListNavLinkView.kt -->
     <string name="clear_chat_question">Очистить чат?</string>
-    <string name="clear_chat_warning">Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для Вас.</string>
+    <string name="clear_chat_warning">Все сообщения будут удалены — это действие нельзя отменить! Сообщения будут удалены только для Вас.</string>
     <string name="clear_verb">Очистить</string>
     <string name="clear_chat_button">Очистить чат</string>
     <string name="clear_chat_menu_action">Очистить</string>
@@ -392,7 +392,7 @@
     <string name="network_enable_socks">Использовать SOCKS-прокси?</string>
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS-прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
-    <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP-адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
+    <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP-адрес, а провайдер — с какими серверами Вы соединяетесь.</string>
     <string name="network_use_onion_hosts">Использовать .onion хосты</string>
     <string name="network_use_onion_hosts_prefer">Когда возможно</string>
     <string name="network_use_onion_hosts_no">Нет</string>
@@ -473,7 +473,6 @@
     <string name="make_private_connection">Добавьте контакт</string>
     <string name="how_it_works">Как это работает</string>
     <!-- How SimpleX Works -->
-    <string name="how_simplex_works">Как SimpleX работает</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, SimpleX использует разные ID для всех ваших контактов.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.]]></string>
@@ -540,16 +539,13 @@
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
     <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Это может произойти, когда:
-\n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер – через 30 дней.
-\n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных.
-\n3. Соединение компроментировано.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Это может произойти, когда: \n1. Клиент отправителя удалил неотправленные сообщения через 2 дня, или сервер — через 30 дней. \n2. Расшифровка сообщения была невозможна, когда Вы или Ваш контакт использовали старую копию базы данных. \n3. Соединение компроментировано.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
     <string name="protect_app_screen">Защитить экран приложения</string>
     <string name="auto_accept_images">Автоприём изображений</string>
-    <string name="send_link_previews">Отправлять картинки ссылок</string>
+    <string name="send_link_previews">Отправлять превью ссылок</string>
     <string name="full_backup">Резервная копия данных</string>
     <!-- Settings sections -->
     <string name="settings_section_title_you">ВЫ</string>
@@ -630,10 +626,10 @@
     <string name="update_database_passphrase">Сменить пароль</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
     <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить Ваши данные.</string>
-    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
+    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля — это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, Вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Внимание</b>: Вы не сможете восстановить или поменять пароль, если потеряете его.]]></string>
-    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранён в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранён в Android Keystore после запуска чата или изменения пароля — это позволит стабильно получать уведомления.</string>
     <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранён на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
     <string name="change_database_passphrase_question">Сменить пароль базы данных?</string>
@@ -757,8 +753,8 @@
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
-    <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для Вас - это действие нельзя отменить!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов — это действие нельзя отменить!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для Вас — это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
     <string name="group_link">Ссылка группы</string>
@@ -777,7 +773,7 @@
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Удалить члена группы</string>
     <string name="button_send_direct_message">Отправить сообщение</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удалён - это действие нельзя отменить.</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удалён — это действие нельзя отменить.</string>
     <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
     <string name="role_in_group">Роль</string>
@@ -801,7 +797,7 @@
     <string name="switch_receiving_address">Переключить адрес получения</string>
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Создать скрытую группу</string>
-    <string name="group_is_decentralized">Группа полностью децентрализована – она видна только членам.</string>
+    <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
     <string name="group_display_name_field">Введите имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
     <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
@@ -887,7 +883,7 @@
     <string name="onboarding_notifications_mode_off">Когда приложение запущено</string>
     <string name="onboarding_notifications_mode_periodic">Периодически</string>
     <string name="onboarding_notifications_mode_service">Мгновенно</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Больше расход батареи</b>! Приложение постоянно запущено в фоне - уведомления будут показаны сразу же.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Больше расход батареи</b>! Приложение постоянно запущено в фоне — уведомления будут показаны сразу же.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Меньше расход батареи</b>. Приложение проверяет сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.]]></string>
     <string name="onboarding_notifications_mode_subtitle">Как это влияет на потребление энергии</string>
     <string name="live">LIVE</string>
@@ -930,7 +926,7 @@
     <string name="ttl_d">%dд</string>
     <string name="ttl_weeks">%d нед.</string>
     <string name="ttl_days">%d дней</string>
-    <string name="to_verify_compare">Чтобы подтвердить безопасность end-to-end шифрования с Вашим контактом сравните (или сканируйте) код на ваших устройствах.</string>
+    <string name="to_verify_compare">Чтобы подтвердить безопасность сквозного шифрования с Вашим контактом сравните (или сканируйте) код на ваших устройствах.</string>
     <string name="is_verified">%s подтверждён</string>
     <string name="is_not_verified">%s не подтверждён</string>
     <string name="security_code">Код безопасности</string>
@@ -982,7 +978,7 @@
     <string name="messages_section_title">Сообщения</string>
     <string name="smp_servers_per_user">Серверы для новых соединений Вашего текущего профиля чата</string>
     <string name="your_chat_profiles">Профили</string>
-    <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
+    <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены — это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
     <string name="network_session_mode_entity_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>. \n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.]]></string>
@@ -998,14 +994,14 @@
     <string name="failed_to_create_user_duplicate_desc">У Вас уже есть профиль с таким именем. Пожалуйста, выберите другое имя.</string>
     <string name="failed_to_active_user_title">Ошибка выбора профиля!</string>
     <string name="v4_5_transport_isolation_descr">По профилю чата или по соединению (БЕТА)</string>
-    <string name="v4_4_french_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v4_4_french_interface_descr">Благодаря пользователям — добавьте переводы через Weblate!</string>
     <string name="v4_5_multiple_chat_profiles_descr">Разные имена, аватары и транспортные сессии.</string>
     <string name="v4_5_italian_interface">Итальянский интерфейс</string>
     <string name="v4_5_message_draft">Черновик сообщения</string>
     <string name="v4_5_multiple_chat_profiles">Много профилей чата</string>
     <string name="v4_5_message_draft_descr">Сохранить последний черновик, вместе с вложениями.</string>
     <string name="v4_5_private_filenames">Защищённые имена файлов</string>
-    <string name="v4_5_italian_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v4_5_italian_interface_descr">Благодаря пользователям — добавьте переводы через Weblate!</string>
     <string name="v4_5_private_filenames_descr">Чтобы защитить Ваш часовой пояс, файлы картинок и голосовых сообщений используют UTC.</string>
     <string name="v4_4_french_interface">Французский интерфейс</string>
     <string name="v4_5_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
@@ -1058,9 +1054,9 @@
     <string name="save_welcome_message_question">Сохранить приветственное сообщение\?</string>
     <string name="v4_6_group_welcome_message_descr">Установите приветственное сообщение для новых членов группы.</string>
     <string name="tap_to_activate_profile">Нажмите на профиль, чтобы переключиться на него.</string>
-    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям - добавьте переводы через Weblate!</string>
+    <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям — добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы всё равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
-    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть или отключить уведомления профиля - нажмите и удерживайте профиль, чтобы открыть меню.</string>
+    <string name="you_can_hide_or_mute_user_profile">Вы можете скрыть или отключить уведомления профиля — нажмите и удерживайте профиль, чтобы открыть меню.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Изображение будет принято когда Ваш контакт его загрузит.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Файл будет принят когда Ваш контакт загрузит его.</string>
     <string name="database_upgrade">Обновление базы данных</string>
@@ -1167,13 +1163,13 @@
     <string name="v5_0_large_files_support_descr">Быстрые и не нужно ждать, когда отправитель онлайн!</string>
     <string name="v5_0_polish_interface">Польский интерфейс</string>
     <string name="v5_0_app_passcode_descr">Установите код вместо системной аутентификации.</string>
-    <string name="v5_0_polish_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="v5_0_polish_interface_descr">Благодаря пользователям — добавьте переводы через Weblate!</string>
     <string name="v5_0_large_files_support">Видео и файлы до 1гб</string>
     <string name="v5_0_app_passcode">Код доступа в приложение</string>
     <string name="revoke_file__message">Файл будет удалён с серверов.</string>
     <string name="smp_server_test_create_file">Создание файла</string>
     <string name="la_minutes">%d минут(ы)</string>
-    <string name="la_please_remember_to_store_password">Пожалуйста, запомните или сохраните его - восстановить потерянный код доступа невозможно!</string>
+    <string name="la_please_remember_to_store_password">Пожалуйста, запомните или сохраните его — восстановить потерянный код доступа невозможно!</string>
     <string name="revoke_file__action">Отозвать файл</string>
     <string name="stop_rcv_file__title">Остановить приём файла\?</string>
     <string name="you_can_turn_on_lock">Вы можете включить Блокировку SimpleX через Настройки.</string>
@@ -1231,14 +1227,14 @@
     <string name="prohibit_message_reactions_group">Запретить реакции на сообщения.</string>
     <string name="custom_time_unit_seconds">секунд</string>
     <string name="theme_colors_section_title">ЦВЕТА ИНТЕРФЕЙСА</string>
-    <string name="share_address_with_contacts_question">Поделиться адресом с контактами\?</string>
+    <string name="share_address_with_contacts_question">Поделиться адресом с контактами?</string>
     <string name="profile_update_will_be_sent_to_contacts">Обновлённый профиль будет отправлен Вашим контактам.</string>
     <string name="learn_more_about_address">Об адресе SimpleX</string>
     <string name="learn_more">Узнать больше</string>
     <string name="if_you_cant_meet_in_person">Если Вы не можете встретиться лично, покажите QR-код во время видеозвонка или поделитесь ссылкой.</string>
     <string name="scan_qr_to_connect_to_contact">Чтобы соединиться с Вами, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Вы не потеряете контакты, если позже удалите Ваш адрес.</string>
-    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода - любой может соединиться с Вами.</string>
+    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода — любой может соединиться с Вами.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Узнать больше в <font color="#0088ff">Руководстве пользователя</font>.]]></string>
     <string name="your_contacts_will_remain_connected">Ваши контакты сохранятся.</string>
     <string name="customize_theme_title">Настроить тему</string>
@@ -1249,7 +1245,7 @@
     <string name="share_with_contacts">Поделиться с контактами</string>
     <string name="stop_sharing_address">Прекратить делиться адресом\?</string>
     <string name="auto_accept_contact">Автоприём</string>
-    <string name="enter_welcome_message_optional">Введите приветственное сообщение... (по желанию)</string>
+    <string name="enter_welcome_message_optional">Введите приветственное сообщение… (по желанию)</string>
     <string name="save_settings_question">Сохранить настройки\?</string>
     <string name="stop_sharing">Прекратить делиться</string>
     <string name="continue_to_next_step">Продолжить</string>
@@ -1293,7 +1289,7 @@
     <string name="custom_time_unit_minutes">минут</string>
     <string name="custom_time_unit_months">месяцев</string>
     <string name="custom_time_picker_select">Выбрать</string>
-    <string name="whats_new_thanks_to_users_contribute_weblate">Благодаря пользователям – добавьте переводы через Weblate!</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">Благодаря пользователям — добавьте переводы через Weblate!</string>
     <string name="custom_time_unit_weeks">недель</string>
     <string name="send_disappearing_message_1_minute">1 минута</string>
     <string name="send_disappearing_message_30_seconds">30 секунд</string>
@@ -1435,7 +1431,7 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранён в настройках.</string>
     <string name="v5_3_encrypt_local_files">Шифруйте сохранённые файлы и медиа</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и превью ссылок используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
     <string name="v5_3_new_interface_languages">6 новых языков интерфейса</string>
@@ -1451,7 +1447,7 @@
     <string name="setup_database_passphrase">Установить пароль базы данных</string>
     <string name="set_database_passphrase">Установить пароль базы данных</string>
     <string name="open_database_folder">Открыть директорию базы данных</string>
-    <string name="v5_3_new_interface_languages_descr">Арабский, болгарский, финский, иврит, тайский и украинский - благодаря пользователям и Weblate.</string>
+    <string name="v5_3_new_interface_languages_descr">Арабский, болгарский, финский, иврит, тайский и украинский — благодаря пользователям и Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
     <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Установите режим Инкогнито при соединении.</string>
@@ -1604,7 +1600,7 @@
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Создать группу</b>: создать новую группу.]]></string>
     <string name="disable_sending_recent_history">Не отправлять историю новым членам группы.</string>
     <string name="enable_sending_recent_history">Отправить до 100 последних сообщений новым членам группы.</string>
-    <string name="clear_note_folder_warning">Все сообщения будут удалены - это нельзя отменить!</string>
+    <string name="clear_note_folder_warning">Все сообщения будут удалены — это нельзя отменить!</string>
     <string name="camera_not_available">Камера недоступна</string>
     <string name="la_app_passcode">Код доступа в приложение</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Добавить контакт</b>: создать новую ссылку-приглашение или подключиться через полученную ссылку.]]></string>
@@ -1695,13 +1691,13 @@
     <string name="error_blocking_member_for_all">Ошибка при блокировании члена группы для всех</string>
     <string name="unblock_for_all_question">Разблокировать члена группы для всех?</string>
     <string name="snd_group_event_member_blocked">Вы заблокировали %s</string>
-    <string name="e2ee_info_no_pq"><![CDATA[Сообщения, файлы и звонки защищены <b>end-to-end шифрованием</b> с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.]]></string>
-    <string name="e2ee_info_no_pq_short">Чат защищён end-to-end шифрованием.</string>
-    <string name="e2ee_info_pq_short">Чат защищён квантово-устойчивым end-to-end шифрованием.</string>
+    <string name="e2ee_info_no_pq"><![CDATA[Сообщения, файлы и звонки защищены <b>сквозным шифрованием</b> с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.]]></string>
+    <string name="e2ee_info_no_pq_short">Чат защищён сквозным шифрованием.</string>
+    <string name="e2ee_info_pq_short">Чат защищён квантово-устойчивым сквозным шифрованием.</string>
     <string name="auth_open_migration_to_another_device">Открыть экран миграции</string>
     <string name="migrate_from_another_device">Миграция с другого устройства</string>
     <string name="set_passphrase">Установить пароль</string>
-    <string name="conn_event_disabled_pq">стандартное end-to-end шифрование</string>
+    <string name="conn_event_disabled_pq">стандартное сквозное шифрование</string>
     <string name="welcome_message_is_too_long">Приветственное сообщение слишком длинное</string>
     <string name="message_too_large">Сообщение слишком большое</string>
     <string name="migrate_to_device_repeat_download">Повторить загрузку</string>
@@ -1764,7 +1760,7 @@
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Обратите внимание</b>: использование одной и той же базы данных на двух устройствах нарушит расшифровку сообщений от ваших контактов, как свойство защиты соединений.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Внимание</b>: архив будет удален.]]></string>
     <string name="migrate_to_device_confirm_network_settings">Подтвердите настройки сети</string>
-    <string name="e2ee_info_pq"><![CDATA[Сообщения, файлы и звонки защищены <b>квантово-устойчивым end-to-end шифрованием</b> с идеальной прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Сообщения, файлы и звонки защищены <b>квантово-устойчивым сквозным шифрованием</b> с идеальной прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.]]></string>
     <string name="migrate_to_device_title">Мигрировать сюда</string>
     <string name="migrate_from_device_to_another_device">Мигрировать на другое устройство</string>
     <string name="v5_6_app_data_migration_descr">Мигрируйте на другое устройство через QR-код.</string>
@@ -1844,8 +1840,8 @@
     <string name="v5_8_message_delivery">Улучшенная доставка сообщений</string>
     <string name="v5_8_message_delivery_descr">Уменьшенный расход батареи.</string>
     <string name="srv_error_version">Версия сервера несовместима с настройками сети.</string>
-    <string name="snd_error_auth">Неверный ключ или неизвестное соединение - скорее всего, это соединение удалено.</string>
-    <string name="snd_error_quota">Превышено количество сообщений - предыдущие сообщения не доставлены.</string>
+    <string name="snd_error_auth">Неверный ключ или неизвестное соединение — скорее всего, это соединение удалено.</string>
+    <string name="snd_error_quota">Превышено количество сообщений — предыдущие сообщения не доставлены.</string>
     <string name="snd_error_relay">Ошибка сервера получателя: %1$s</string>
     <string name="ci_status_other_error">Ошибка: %1$s</string>
     <string name="snd_error_proxy_relay">Пересылающий сервер: %1$s
@@ -1853,7 +1849,7 @@
     <string name="snd_error_proxy">Пересылающий сервер: %1$s
 \nОшибка: %2$s</string>
     <string name="message_delivery_warning_title">Предупреждение доставки сообщения</string>
-    <string name="snd_error_expired">Ошибка сети - сообщение не было отправлено после многократных попыток.</string>
+    <string name="snd_error_expired">Ошибка сети — сообщение не было отправлено после многократных попыток.</string>
     <string name="srv_error_host">Адрес сервера несовместим с настройками сети.</string>
     <string name="message_queue_info_server_info">информация сервера об очереди: %1$s
 \n
@@ -1945,7 +1941,7 @@
     <string name="proxy_destination_error_failed_to_connect">Пересылающий сервер %1$s не смог подключиться к серверу назначения %2$s. Попробуйте позже.</string>
     <string name="smp_proxy_error_broker_version">Версия пересылающего сервера несовместима с настройками сети: %1$s.</string>
     <string name="proxy_destination_error_broker_version">Версия сервера назначения %1$s несовместима с пересылающим сервером %2$s.</string>
-    <string name="file_error_auth">Неверный ключ или неизвестный адрес блока файла - скорее всего, файл удален.</string>
+    <string name="file_error_auth">Неверный ключ или неизвестный адрес блока файла — скорее всего, файл удален.</string>
     <string name="cannot_share_message_alert_text">Выбранные настройки чата запрещают это сообщение.</string>
     <string name="file_error">Ошибка файла</string>
     <string name="scan_paste_link">Сканировать QR-код/ Вставить ссылку</string>
@@ -1966,7 +1962,7 @@
     <string name="servers_info_subscriptions_section_header">Приём сообщений</string>
     <string name="servers_info_subscriptions_connections_pending">В ожидании</string>
     <string name="servers_info_uploaded">Загружено</string>
-    <string name="servers_info_reset_stats_alert_message">Статистика серверов будет сброшена - это нельзя отменить!</string>
+    <string name="servers_info_reset_stats_alert_message">Статистика серверов будет сброшена — это нельзя отменить!</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Всего отправлено</string>
     <string name="reconnect">Переподключить</string>
     <string name="smp_server">SMP-сервер</string>
@@ -2109,7 +2105,7 @@
     <string name="v6_0_connection_servers_status_descr">Состояние соединения и серверов.</string>
     <string name="v6_0_delete_many_messages_descr">Удаляйте до 20 сообщений за раз.</string>
     <string name="app_check_for_updates_download_started">Загрузка обновления, не закрывайте приложение.</string>
-    <string name="file_error_no_file">Файл не найден - скорее всего, файл был удален или отменен.</string>
+    <string name="file_error_no_file">Файл не найден — скорее всего, файл был удален или отменен.</string>
     <string name="smp_proxy_error_broker_host">Адрес пересылающего сервера несовместим с настройками сети: %1$s.</string>
     <string name="info_view_message_button">написать</string>
     <string name="compose_message_placeholder">Сообщение</string>
@@ -2157,7 +2153,7 @@
     <string name="error_parsing_uri_desc">Проверьте правильность ссылки SimpleX.</string>
     <string name="error_parsing_uri_title">Неверная ссылка</string>
     <string name="settings_section_title_chat_database">БАЗА ДАННЫХ</string>
-    <string name="error_initializing_web_view_wrong_arch">Ошибка инициализации WebView. Убедитесь, что у вас установлен WebView и его поддерживаемая архитектура – arm64.\nОшибка: %s</string>
+    <string name="error_initializing_web_view_wrong_arch">Ошибка инициализации WebView. Убедитесь, что у вас установлен WebView и его поддерживаемая архитектура — arm64.\nОшибка: %s</string>
     <string name="icon_descr_sound_muted">Звук отключен</string>
     <string name="delete_messages_cannot_be_undone_warning">Сообщения будут удалены — это нельзя отменить!</string>
     <string name="switching_profile_error_title">Ошибка переключения профиля</string>
@@ -2252,7 +2248,7 @@
     <string name="address_settings">Настройки адреса</string>
     <string name="add_your_team_members_to_conversations">Добавьте сотрудников в разговор.</string>
     <string name="business_address">Бизнес адрес</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Все сообщения и файлы отправляются с <b>end-to-end шифрованием</b>, с пост-квантовой безопасностью в прямых разговорах.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Все сообщения и файлы отправляются с <b>сквозным шифрованием</b>, с пост-квантовой безопасностью в прямых разговорах.]]></string>
     <string name="onboarding_notifications_mode_service_desc_short">Приложение всегда выполняется в фоне</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Проверять сообщения каждые 10 минут</string>
     <string name="onboarding_notifications_mode_off_desc_short">Без фонового сервиса</string>
@@ -2272,7 +2268,7 @@
     <string name="button_delete_chat">Удалить разговор</string>
     <string name="delete_chat_question">Удалить разговор?</string>
     <string name="invite_to_chat_button">Пригласить в разговор</string>
-    <string name="delete_chat_for_all_members_cannot_undo_warning">Разговор будет удален для всех участников - это действие нельзя отменить!</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">Разговор будет удален для всех участников — это действие нельзя отменить!</string>
     <string name="operator">Оператор</string>
     <string name="operator_servers_title">%s серверы</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Условия будут приняты для оператора(ов): <b>%s</b>.]]></string>
@@ -2284,12 +2280,12 @@
     <string name="operators_conditions_will_also_apply"><![CDATA[Эти условия также будут применены к: <b>%s</b>.]]></string>
     <string name="chat_archive">Или импортировать файл архива</string>
     <string name="chat_bottom_bar">Доступная панель чата</string>
-    <string name="delete_chat_for_self_cannot_undo_warning">Разговор будет удален для Вас - это действие нельзя отменить!</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">Разговор будет удален для Вас — это действие нельзя отменить!</string>
     <string name="button_leave_chat">Покинуть разговор</string>
     <string name="only_chat_owners_can_change_prefs">Только владельцы разговора могут поменять предпочтения.</string>
     <string name="operator_conditions_failed_to_load">Текст условий использования не может быть показан, вы можете посмотреть их через ссылку:</string>
     <string name="info_row_chat">Разговор</string>
-    <string name="member_will_be_removed_from_chat_cannot_be_undone">Участник будет удалён из разговора - это действие нельзя отменить.</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Участник будет удалён из разговора — это действие нельзя отменить.</string>
     <string name="network_preset_servers_title">Серверы по умолчанию</string>
     <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на %s. Все участники разговора получат уведомление.</string>
     <string name="chat_main_profile_sent">Ваш профиль будет отправлен участникам разговора.</string>
@@ -2312,7 +2308,7 @@
     <string name="v6_2_business_chats_descr">Конфиденциальность для ваших покупателей.</string>
     <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Вы уже соединены с <b>%1$s</b>.]]></string>
     <string name="connect_plan_chat_already_exists">Разговор уже существует!</string>
-    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Одноразовая ссылка может быть использована <i>только с одним контактом</i> - поделитесь при встрече или через любой мессенджер.]]></string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Одноразовая ссылка может быть использована <i>только с одним контактом</i> — поделитесь при встрече или через любой мессенджер.]]></string>
     <string name="no_message_servers_configured_for_private_routing">Нет серверов для доставки сообщений.</string>
     <string name="onboarding_network_operators_configure_via_settings">Вы можете настроить серверы позже.</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat и Flux заключили соглашение добавить серверы под управлением Flux в приложение.</string>
@@ -2353,7 +2349,7 @@
     <string name="add_to_list">Добавить в список</string>
     <string name="change_list">Изменить список</string>
     <string name="save_list">Сохранить список</string>
-    <string name="list_name_field_placeholder">Имя списка...</string>
+    <string name="list_name_field_placeholder">Имя списка…</string>
     <string name="sync_connection_question">Исправить соединение?</string>
     <string name="sync_connection_desc">Соединение требует повторного согласования шифрования.</string>
     <string name="sync_connection_confirm">Исправление</string>
@@ -2365,7 +2361,7 @@
     <string name="report_verb">Пожаловаться</string>
     <string name="report_reason_spam">Спам</string>
     <string name="report_compose_reason_header_spam">Пожаловаться на спам: увидят только модераторы группы.</string>
-    <string name="change_automatic_chat_deletion_message">Это действие не может быть отмененено - сообщения, отправленные и полученные в этом чате ранее чем выбранное, будут удалены</string>
+    <string name="change_automatic_chat_deletion_message">Это действие не может быть отмененено — сообщения, отправленные и полученные в этом чате ранее чем выбранное, будут удалены</string>
     <string name="v6_3_mentions_descr">Получайте уведомления от упоминаний.</string>
     <string name="member_reports_are_prohibited">Сообщения о нарушениях запрещены в этой группе.</string>
     <string name="report_compose_reason_header_community">Пожаловаться на нарушение: увидят только модераторы группы.</string>
@@ -2455,14 +2451,13 @@
     <string name="unblock_members_desc">Сообщения от этих членов группы будут показаны!</string>
     <string name="block_members_desc">Все новые сообщения от этих членов группы будут скрыты!</string>
     <string name="block_members_for_all_question">Заблокировать членов группы для всех?</string>
-    <string name="members_will_be_removed_from_group_cannot_be_undone">Члены группы будут удалены - это действие нельзя отменить!</string>
-    <string name="members_will_be_removed_from_chat_cannot_be_undone">Участники будут удалены из разговора - это действие нельзя отменить!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Члены группы будут удалены — это действие нельзя отменить!</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Участники будут удалены из разговора — это действие нельзя отменить!</string>
     <string name="feature_roles_moderators">модераторы</string>
     <string name="button_remove_members_question">Удалить членов группы?</string>
     <string name="onboarding_conditions_accept">Принять</string>
-    <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей – не отправлять спам.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей — не отправлять спам.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
-    <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
     <string name="member_criteria_all">всех</string>
     <string name="accept_pending_member_button">Принять</string>
@@ -2522,7 +2517,7 @@
     <string name="compose_view_add_message">Добавить сообщение</string>
     <string name="short_descr__field">О себе:</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Нельзя поменять профиль</string>
-    <string name="e2ee_info_e2ee"><![CDATA[Сообщения защищены <b>end-to-end шифрованием</b>.]]></string>
+    <string name="e2ee_info_e2ee"><![CDATA[Сообщения защищены <b>сквозным шифрованием</b>.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Вы сможете отправлять сообщения <b>только после того как Ваш запрос будет принят</b>.]]></string>
     <string name="v6_4_support_chat">Чат с админами</string>
     <string name="v6_4_review_members_descr">Общайтесь с членами группы до того как принять их.</string>
@@ -2560,10 +2555,10 @@
     <string name="share_group_profile_via_link">Обновить ссылку группы?</string>
     <string name="share_profile_via_link_alert_confirm">Обновить</string>
     <string name="share_profile_via_link">Обновить адрес?</string>
-    <string name="group_short_descr_field">Цель:</string>
+    <string name="group_short_descr_field">Описание:</string>
     <string name="network_option_tcp_connection_timeout_background">Фоновый таймаут TCP-соединения</string>
     <string name="the_sender_will_not_be_notified">Отправитель не будет уведомлён.</string>
-    <string name="member_is_deleted_cant_accept_request">Член группы удалён - невозможно принять запрос</string>
+    <string name="member_is_deleted_cant_accept_request">Член группы удалён — невозможно принять запрос</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Чтобы использовать другой профиль после попытки соединения, удалите чат и используйте ссылку снова.</string>
     <string name="address_welcome_message">Приветственное сообщение</string>
     <string name="short_descr">О себе:</string>
@@ -2572,8 +2567,8 @@
     <string name="connect_use_incognito_profile">Использовать профиль инкогнито</string>
     <string name="v6_4_1_new_interface_languages">4 новых языков интерфейса</string>
     <string name="chat_banner_accept_contact_request">Принять запрос на соединение</string>
-    <string name="chat_banner_business_connection">Бизнес контакт</string>
-    <string name="v6_4_1_new_interface_languages_descr">Каталонский, Индонезийский, Румынский и Вьетнамский - благодаря нашим пользователям!</string>
+    <string name="chat_banner_business_connection">Бизнес-контакт</string>
+    <string name="v6_4_1_new_interface_languages_descr">Каталонский, Индонезийский, Румынский и Вьетнамский — благодаря нашим пользователям!</string>
     <string name="v6_4_1_short_address_create">Создайте Ваш адрес</string>
     <string name="group_descr_too_large">Описание слишком длинное</string>
     <string name="v6_4_1_keep_chats_clean_descr">Включите исчезающие сообщения по умолчанию.</string>
@@ -2592,7 +2587,7 @@
     <string name="v6_4_1_short_address_update">Обновите Ваш адрес</string>
     <string name="upgrade_group_link">Обновить ссылку группы</string>
     <string name="v6_4_1_welcome_contacts">Приветствуйте Ваши контакты 👋</string>
-    <string name="chat_banner_your_business_contact">Ваш бизнес контакт</string>
+    <string name="chat_banner_your_business_contact">Ваш бизнес-контакт</string>
     <string name="chat_banner_your_contact">Ваш контакт</string>
     <string name="chat_banner_your_group">Ваша группа</string>
     <string name="allow_files_and_media_only_if">Разрешить файлы и медиа, только если их разрешает Ваш контакт.</string>
@@ -2618,7 +2613,7 @@
     <string name="button_delete_member_messages">Удалить сообщения участника</string>
     <string name="button_delete_member_messages_question">Удалить сообщения участника?</string>
     <string name="delete_member_messages_confirmation">Удалить сообщения</string>
-    <string name="member_messages_will_be_deleted_cannot_be_undone">Сообщения участника будут удалены - это действие не обратимо!</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Сообщения участника будут удалены — это действие не обратимо!</string>
     <string name="server_no_sub">нет подписки</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Вы не подключенны к серверу через который Вы получали сообщения от этого контакта (без подписки).</string>
     <string name="remove_member_delete_messages_confirmation">Удалить члена группы и удалить сообщения</string>
@@ -2634,4 +2629,136 @@
     <string name="placeholder_search_voice_messages">Поиск голосовых сообщений</string>
     <string name="content_filter_videos">Видео</string>
     <string name="content_filter_voice_messages">Голосовые сообщения</string>
+    <string name="channel_subscriber_count_singular">%1$d подписчик</string>
+    <string name="channel_subscriber_count_plural">%1$d подписчиков</string>
+    <string name="cancel_creating_channel_question">Отменить создание канала?</string>
+    <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Это ваша ссылка для канала<b>%1$s</b>!]]></string>
+    <string name="channel_role_label">канал</string>
+    <string name="chat_banner_channel">Канал</string>
+    <string name="info_row_channel">Канал</string>
+    <string name="channel_full_name_field">Полное имя канала:</string>
+    <string name="channel_link">Ссылка канала</string>
+    <string name="button_channel_members">Участники канала</string>
+    <string name="channel_display_name_field">Имя канала</string>
+    <string name="snd_channel_event_channel_profile_updated">профиль канала обновлён</string>
+    <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Канал будет удалён для всех подписчиков — это действие нельзя отменить!</string>
+    <string name="delete_channel_for_self_cannot_undo_warning">Канал будет удалён для вас — это действие нельзя отменить!</string>
+    <string name="configure_relays">Настроить ретрансляторы</string>
+    <string name="relay_test_step_connect">Соединиться</string>
+    <string name="relay_conn_status_connected">соединено</string>
+    <string name="relay_conn_status_connecting">соединяется</string>
+    <string name="create_channel_title">Создать публичный канал</string>
+    <string name="create_channel_button">Создать публичный канал</string>
+    <string name="create_channel_beta_button">Создать публичный канал (БЕТА)</string>
+    <string name="creating_channel">Создание канала</string>
+    <string name="rcv_channel_events_count">%d событий канала</string>
+    <string name="button_delete_channel">Удалить канал</string>
+    <string name="delete_channel_question">Удалить канал?</string>
+    <string name="delete_relay">Удалить ретранслятор</string>
+    <string name="button_edit_channel_profile">Редактировать профиль канала</string>
+    <string name="enter_relay_name">Введите имя ретранслятора…</string>
+    <string name="error_adding_relay">Ошибка при добавлении ретранслятора</string>
+    <string name="error_creating_channel">Ошибка при создании канала</string>
+    <string name="error_opening_channel">Ошибка при открытии канала</string>
+    <string name="rcv_msg_error_parse">ошибка: %s</string>
+    <string name="error_saving_channel_profile">Ошибка при сохранении профиля канала</string>
+    <string name="invalid_relay_address">Неверный адрес ретранслятора!</string>
+    <string name="invalid_relay_name">Неверное имя ретранслятора!</string>
+    <string name="relay_status_invited">приглашён</string>
+    <string name="compose_view_join_channel">Присоединиться к каналу</string>
+    <string name="button_leave_channel">Покинуть канал</string>
+    <string name="leave_channel_question">Покинуть канал?</string>
+    <string name="action_button_channel_link">Ссылка</string>
+    <string name="relay_bar_active">%1$d/%2$d ретрансляторов активно</string>
+    <string name="relay_bar_connected">%1$d/%2$d ретрансляторов соединено</string>
+    <string name="relay_bar_connected_with_errors">%1$d/%2$d ретрансляторов соединено, %3$d ошибок</string>
+    <string name="relay_status_accepted">принят</string>
+    <string name="relay_status_active">активен</string>
+    <string name="block_subscriber_for_all_question">Заблокировать подписчика для всех?</string>
+    <string name="compose_view_broadcast">Вещание</string>
+    <string name="cancel_creating_channel_confirm">Отмена</string>
+    <string name="channel_will_start_with_relays">Канал начнёт работу с %1$d из %2$d ретрансляторов. Продолжить?</string>
+    <string name="chat_relay">Ретранслятор чатов</string>
+    <string name="button_channel_relays">Ретрансляторы чатов</string>
+    <string name="chat_relays">Ретрансляторы чатов</string>
+    <string name="channel_relays_title">Ретрансляторы чатов</string>
+    <string name="chat_relays_forward_messages_in_channels">Ретрансляторы чатов пересылают сообщения в созданных Вами каналах.</string>
+    <string name="chat_relays_forward_messages">Ретрансляторы чатов пересылают сообщения подписчикам канала.</string>
+    <string name="check_relay_address">Проверьте адрес ретранслятора и попробуйте ещё раз.</string>
+    <string name="check_relay_name">Проверьте имя ретранслятора и попробуйте ещё раз.</string>
+    <string name="relay_conn_status_deleted">удалён</string>
+    <string name="channel_preferences">Настройки канала</string>
+    <string name="chat_link_channel">Ссылка канала</string>
+    <string name="channel_profile_is_stored_on_subscribers_devices">Профиль канала хранится на устройствах подписчиков и ретрансляторах чатов.</string>
+    <string name="channel_temporarily_unavailable">Канал временно недоступен</string>
+    <string name="link_previews_alert_disable">Отключить</string>
+    <string name="link_previews_alert_enable">Включить</string>
+    <string name="error_prefix">Ошибка</string>
+    <string name="chat_link_business_address">Бизнес-адрес</string>
+    <string name="cant_broadcast_message">не может вещать</string>
+    <string name="enable_at_least_one_chat_relay">Включите хотя бы один ретранслятор чатов для создания канала.</string>
+    <string name="new_chat_relay">Новый ретранслятор чатов</string>
+    <string name="no_chat_relays">Нет ретрансляторов чатов</string>
+    <string name="no_chat_relays_enabled">Ретрансляторы чатов не включены.</string>
+    <string name="relay_address_alert_message">Это адрес ретранслятора чатов, к нему нельзя подключиться.</string>
+    <string name="relay_bar_active_with_errors">%1$d/%2$d ретрансляторов активно, %3$d ошибок</string>
+    <string name="relay_bar_active_with_failures">%1$d/%2$d ретрансляторов активно, %3$d не работает</string>
+    <string name="relay_bar_active_with_removed">%1$d/%2$d ретрансляторов активно, %3$d удалено</string>
+    <string name="relay_bar_connected_with_failures">%1$d/%2$d ретрансляторов соединено, %3$d не работают</string>
+    <string name="relay_bar_connected_with_removed">%1$d/%2$d ретрансляторов соединено, %3$d удалено</string>
+    <string name="relay_bar_relays_failed">%1$d ретрансляторов не работает</string>
+    <string name="relay_bar_relays_not_active">%1$d ретрансляторов неактивно</string>
+    <string name="relay_bar_relays_removed">%1$d ретрансляторов удалено</string>
+    <string name="relay_bar_no_active_relays">Нет доступных ретрансляторов</string>
+    <string name="channel_no_active_relays_try_later">В канале нет активных ретрансляторов. Пожалуйста, попробуйте позже.</string>
+    <string name="link_previews_alert_title">Включить превью ссылок?</string>
+    <string name="chat_list_channels">Каналы</string>
+    <string name="rcv_channel_event_channel_deleted">удалил(а) канал</string>
+    <string name="chat_link_contact_address">Контакт-адрес</string>
+    <string name="relay_bar_all_relays_removed">Все ретрансляторы удалены</string>
+    <string name="relay_status_inactive">неактивен</string>
+    <string name="owner_verification_passed">Подлинность ссылки подтверждена.</string>
+    <string name="connect_plan_open_channel">Открыть канал</string>
+    <string name="connect_plan_open_new_channel">Открыть новый канал</string>
+    <string name="channel_members_section_owners">Владельцы</string>
+    <string name="member_info_section_title_owner">ВЛАДЕЛЕЦ</string>
+    <string name="proceed_verb">Продолжить</string>
+    <string name="group_member_role_relay">ретранслятор</string>
+    <string name="member_info_section_title_relay">РЕТРАНСЛЯТОР</string>
+    <string name="info_row_relay_address">Адрес ретранслятора</string>
+    <string name="relay_address_alert_title">Адрес ретранслятора</string>
+    <string name="relay_connection_failed">Ошибка подключения ретранслятора</string>
+    <string name="info_row_relay_link">Ссылка ретранслятора</string>
+    <string name="relay_results">Результаты ретранслятора:</string>
+    <string name="relay_conn_status_removed_by_operator">удалён оператором</string>
+    <string name="button_remove_subscriber">Удалить подписчика</string>
+    <string name="button_remove_subscriber_question">Удалить подписчика?</string>
+    <string name="save_and_notify_channel_subscribers">Сохранить и уведомить подписчиков канала</string>
+    <string name="save_channel_profile">Сохранить профиль канала</string>
+    <string name="link_previews_alert_desc">Отправка превью ссылки может привести к раскрытию вашего IP-адреса веб-сайту. Вы можете изменить это позже в настройках конфиденциальности.</string>
+    <string name="onboarding_send_1_time_link">Отправьте ссылку через любой мессенджер — это безопасно. Попросите вставить её в SimpleX.</string>
+    <string name="error_relay_test_server_auth">Сервер требует авторизации для подключения к ретранслятору, проверьте пароль.</string>
+    <string name="server_warning">Предупреждение сервера</string>
+    <string name="share_channel">Поделиться каналом…</string>
+    <string name="share_relay_address">Поделиться адресом ретранслятора</string>
+    <string name="share_via_chat">Поделиться в чате</string>
+    <string name="owner_verification_failed">⚠️ Проверка подписи не удалась: %s.</string>
+    <string name="member_info_section_title_subscriber">ПОДПИСЧИК</string>
+    <string name="channel_members_title_subscribers">Подписчики</string>
+    <string name="subscriber_will_be_removed_from_channel_cannot_be_undone">Подписчик будет удален из канала — это действие нельзя отменить!</string>
+    <string name="talk_to_someone">Пообщайтесь с кем-нибудь</string>
+    <string name="chat_banner_join_channel">Нажмите «Присоединиться к каналу»</string>
+    <string name="tap_to_open">Нажмите, чтобы открыть</string>
+    <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR-кодом — любой желающий сможет присоединиться к каналу.</string>
+    <string name="only_channel_owners_can_change_prefs">Изменить настройки канала могут только владельцы канала.</string>
+    <string name="chat_link_one_time">Одноразовая ссылка</string>
+  <string name="why_built_heading">Вы родились без аккаунта.</string>
+  <string name="why_built_p1">Никто не отслеживал ваши разговоры. Никто не составлял карту ваших перемещений. Конфиденциальность не была функцией - это был образ жизни.</string>
+  <string name="why_built_p2">Потом мы вышли в интернет, и каждая платформа попросила частичку вас - ваше имя, ваш номер, ваших друзей. Мы смирились с тем, что за возможность общаться приходится отдавать информацию о том, с кем мы общаемся. Каждое поколение людей и технологий жило так - телефон, электронная почта, мессенджеры, социальные сети. Казалось, что другого пути нет.</string>
+  <string name="why_built_p3">Другой путь есть. Сеть без номеров телефонов. Без имён пользователей. Без аккаунтов. Без каких-либо идентификаторов пользователей. Сеть, которая соединяет людей и передаёт зашифрованные сообщения, не зная, кто с кем связан.</string>
+  <string name="why_built_p4">Не более надёжный замок на чужой двери. Не более вежливый хозяин, который уважает вашу частную жизнь, но всё равно ведёт учёт всех посетителей. Вы не гость. Вы у себя дома. Ни один король не войдёт в ваш дом - вы суверенны.</string>
+  <string name="why_built_p5">Ваши разговоры принадлежат вам, как это всегда было до интернета. Сеть - это не место, куда вы приходите. Это место, которое вы создаёте и которым владеете. И никто не может это у вас отнять, делаете ли вы его конфиденциальным или публичным.</string>
+  <string name="why_built_p6">Древнейшая человеческая свобода - говорить с другим человеком без слежки - построенная на инфраструктуре, которая не может её предать.</string>
+  <string name="why_built_p7">Потому что мы разрушили саму возможность узнать, кто вы. Чтобы вашу свободу невозможно было отнять.</string>
+  <string name="why_built_tagline">Будь свободен в своей сети.</string>
 </resources>

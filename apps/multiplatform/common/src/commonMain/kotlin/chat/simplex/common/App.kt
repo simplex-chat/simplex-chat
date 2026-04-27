@@ -34,6 +34,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
 import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
+import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -141,10 +142,8 @@ fun MainScreen() {
     when {
       onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
         // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
-        SimpleXInfo(chatModel, onboarding = true)
-        if (appPlatform.isDesktop) {
-          ModalManager.fullscreen.showInView()
-        }
+        if (appPlatform.isDesktop) DesktopOnboarding(onboarding, chatModel)
+        else SimpleXInfo(chatModel, onboarding = true)
       }
       chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
       chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
@@ -174,36 +173,31 @@ fun MainScreen() {
           }
         }
       }
-      else -> AnimatedContent(targetState = onboarding,
-        transitionSpec = {
-          if (targetState > initialState) {
-            fromEndToStartTransition()
-          } else {
-            fromStartToEndTransition()
-          }.using(SizeTransform(clip = false))
-        }
-      ) { state ->
-        when (state) {
-          OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
-          OnboardingStage.Step1_SimpleXInfo -> {
-            SimpleXInfo(chatModel, onboarding = true)
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
+      else -> {
+        if (appPlatform.isDesktop) {
+          DesktopOnboarding(onboarding, chatModel)
+        } else {
+          AnimatedContent(targetState = onboarding,
+            transitionSpec = {
+              if (targetState > initialState) {
+                fromEndToStartTransition()
+              } else {
+                fromStartToEndTransition()
+              }.using(SizeTransform(clip = false))
+            }
+          ) { state ->
+            when (state) {
+              OnboardingStage.OnboardingComplete -> {}
+              OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+              OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+              OnboardingStage.LinkAMobile -> LinkAMobile()
+              OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+              OnboardingStage.Step3_ChooseServerOperators,
+              OnboardingStage.Step3_CreateSimpleXAddress,
+              OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+              OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
             }
           }
-          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-          OnboardingStage.LinkAMobile -> LinkAMobile()
-          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-          OnboardingStage.Step3_ChooseServerOperators -> {
-            val modalData = remember { ModalData() }
-            modalData.OnboardingConditionsView()
-            if (appPlatform.isDesktop) {
-              ModalManager.fullscreen.showInView()
-            }
-          }
-          // Ensure backwards compatibility with old onboarding stage for address creation, otherwise notification setup would be skipped
-          OnboardingStage.Step3_CreateSimpleXAddress -> SetNotificationsMode(chatModel)
-          OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
         }
       }
     }
@@ -271,6 +265,27 @@ fun MainScreen() {
     // Let's prolong the unlocked period to 3 sec for screen rotation to take place
     if (chatModel.controller.appPrefs.laLockDelay.get() == 0) {
       AppLock.enteredBackground.value = AppLock.elapsedRealtime() + 3000
+    }
+  }
+}
+
+@Composable
+private fun DesktopOnboarding(onboarding: OnboardingStage, chatModel: ChatModel) {
+  if (onboarding == OnboardingStage.LinkAMobile) {
+    LinkAMobile()
+    ModalManager.fullscreen.showInView()
+  } else {
+    DesktopOnboardingShell(onboarding) {
+      when (onboarding) {
+        OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+        OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+        OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+        OnboardingStage.Step3_ChooseServerOperators,
+        OnboardingStage.Step3_CreateSimpleXAddress,
+        OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+        OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
+        else -> {}
+      }
     }
   }
 }
@@ -383,7 +398,9 @@ fun CenterPartOfScreen() {
   }
   when (currentChatId.value) {
     null -> {
-      if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+      if (shouldShowOnboarding()) {
+        ConnectOnboardingView()
+      } else if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
         Box(
           Modifier
             .fillMaxSize()

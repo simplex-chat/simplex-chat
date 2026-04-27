@@ -26,13 +26,7 @@
 "(this device v%@)" = "(to urządzenie v%@)";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Przyczyń się](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Wyślij do nas email](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Daj gwiazdkę na GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Dodaj kontakt**: aby utworzyć nowy link z zaproszeniem lub połączyć się za pomocą otrzymanego linku.";
@@ -399,9 +393,6 @@ swipe action */
 "Active connections" = "Aktywne połączenia";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Dodaj adres do swojego profilu, aby Twoje kontakty mogły go udostępnić innym osobom. Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
-
-/* No comment provided by engineer. */
 "Add friends" = "Dodaj znajomych";
 
 /* No comment provided by engineer. */
@@ -651,9 +642,6 @@ swipe action */
 "Answer call" = "Odbierz połączenie";
 
 /* No comment provided by engineer. */
-"Anybody can host servers." = "Każdy może hostować serwery.";
-
-/* No comment provided by engineer. */
 "App build: %@" = "Kompilacja aplikacji: %@";
 
 /* No comment provided by engineer. */
@@ -795,6 +783,12 @@ swipe action */
 "Bad message ID" = "Zły identyfikator wiadomości";
 
 /* No comment provided by engineer. */
+"Be free in your network." = "Ciesz się swobodą w swojej sieci.";
+
+/* No comment provided by engineer. */
+"Because we destroyed the power to know who you are. So that your power can never be taken." = "Ponieważ zniszczyliśmy moc pozwalającą poznać, kim jesteś. Więc twoja moc nigdy nie będzie Ci odebrana.";
+
+/* No comment provided by engineer. */
 "Better calls" = "Lepsze połączenia";
 
 /* No comment provided by engineer. */
@@ -897,7 +891,7 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bułgarski, fiński, tajski i ukraiński – dzięki użytkownikom i [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Business address" = "Adres firmowy";
 
 /* No comment provided by engineer. */
@@ -911,9 +905,6 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Według profilu czatu (domyślnie) lub [według połączenia](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
-
-/* No comment provided by engineer. */
-"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Korzystając z SimpleX Chat, zgadzasz się:\n- wysyłać tylko legalne treści w grupach publicznych.\n- szanować innych użytkowników – nie spamować.";
 
 /* No comment provided by engineer. */
 "call" = "zadzwoń";
@@ -1098,7 +1089,8 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "Czat zostanie usunięty dla Ciebie – tej operacji nie można cofnąć!";
 
-/* chat toolbar */
+/* chat feature
+chat toolbar */
 "Chat with admins" = "Czatuj z administratorami";
 
 /* No comment provided by engineer. */
@@ -1211,9 +1203,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Skonfiguruj serwery ICE";
-
-/* No comment provided by engineer. */
-"Configure server operators" = "Skonfiguruj operatorów serwerów";
 
 /* No comment provided by engineer. */
 "Confirm" = "Potwierdź";
@@ -1348,7 +1337,7 @@ server test step */
 /* alert title */
 "Connection error" = "Błąd połączenia";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Błąd połączenia (UWIERZYTELNIANIE)";
 
 /* chat list item title (it should not be shown */
@@ -1454,6 +1443,9 @@ server test step */
 "Continue" = "Kontynuuj";
 
 /* No comment provided by engineer. */
+"Contribute" = "Przyczyń się";
+
+/* No comment provided by engineer. */
 "Conversation deleted!" = "Rozmowa usunięta!";
 
 /* No comment provided by engineer. */
@@ -1470,9 +1462,6 @@ server test step */
 
 /* alert message */
 "Correct name to %@?" = "Poprawić imię na %@?";
-
-/* No comment provided by engineer. */
-"Create" = "Utwórz";
 
 /* No comment provided by engineer. */
 "Create 1-time link" = "Utwórz jednorazowy link";
@@ -1626,9 +1615,6 @@ server test step */
 
 /* No comment provided by engineer. */
 "Debug delivery" = "Dostarczenie debugowania";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Zdecentralizowane";
 
 /* message decrypt error item */
 "Decryption error" = "Błąd odszyfrowania";
@@ -2033,7 +2019,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Empty message!" = "Pusta wiadomość!";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Włącz";
 
 /* No comment provided by engineer. */
@@ -2207,7 +2193,7 @@ chat item action */
 /* No comment provided by engineer. */
 "error" = "błąd";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Błąd";
 
 /* No comment provided by engineer. */
@@ -2767,7 +2753,7 @@ servers warning */
 /* No comment provided by engineer. */
 "group is deleted" = "grupa została usunięta";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Link do grupy";
 
 /* No comment provided by engineer. */
@@ -2900,9 +2886,6 @@ servers warning */
 "Immediately" = "Natychmiast";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Odporność na spam i nadużycia";
-
-/* No comment provided by engineer. */
 "Import" = "Importuj";
 
 /* No comment provided by engineer. */
@@ -3002,7 +2985,7 @@ servers warning */
 "Initial role" = "Rola początkowa";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Zainstaluj [SimpleX Chat na terminal](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Zainstaluj SimpleX Chat na terminal";
 
 /* No comment provided by engineer. */
 "Instant" = "Natychmiastowo";
@@ -3037,7 +3020,7 @@ servers warning */
 /* No comment provided by engineer. */
 "invalid chat data" = "nieprawidłowe dane czatu";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Nieprawidłowy link połączenia";
 
 /* invalid chat item */
@@ -3482,9 +3465,6 @@ servers warning */
 "Migrate device" = "Zmigruj urządzenie";
 
 /* No comment provided by engineer. */
-"Migrate from another device" = "Zmigruj z innego urządzenia";
-
-/* No comment provided by engineer. */
 "Migrate here" = "Zmigruj tutaj";
 
 /* No comment provided by engineer. */
@@ -3764,7 +3744,10 @@ servers warning */
 "No unread chats" = "Brak nieprzeczytanych czatów";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Brak identyfikatorów użytkownika.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Nikt nie śledził twoich rozmów. Nikt nie rysował mapy miejsc, w których byłeś. Prywatność nigdy nie była funkcją - była sposobem na życie.";
+
+/* No comment provided by engineer. */
+"Not a better lock on someone else's door. Not a nicer landlord that respects your privacy, but still keeps the record of all visitors. You are not a guest. You are home. No king can enter it - you are sovereign." = "Nie chodzi o lepszy zamek w drzwiach kogoś innego. Nie chodzi o milszego właściciela, który szanuje twoją prywatność, ale nadal prowadzi rejestr wszystkich odwiedzających. Nie jesteś gościem. Jesteś w domu. Żaden król nie może do niego wejść - jesteś suwerenem.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Nie kompatybilny!";
@@ -3822,7 +3805,7 @@ alert button
 new chat action */
 "Ok" = "Ok";
 
-/* No comment provided by engineer. */
+/* alert button */
 "OK" = "OK";
 
 /* No comment provided by engineer. */
@@ -3903,7 +3886,8 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Tylko Twój kontakt może wysyłać wiadomości głosowe.";
 
-/* alert action */
+/* alert action
+alert button */
 "Open" = "Otwórz";
 
 /* No comment provided by engineer. */
@@ -4159,12 +4143,6 @@ new chat action */
 "Privacy policy and conditions of use." = "Polityka prywatności i warunki korzystania.";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "Redefinicja prywatności";
-
-/* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "Prywatne czaty, grupy i Twoje kontakty nie są dostępne dla operatorów serwerów.";
-
-/* No comment provided by engineer. */
 "Private filenames" = "Prywatne nazwy plików";
 
 /* No comment provided by engineer. */
@@ -4202,9 +4180,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile theme" = "Motyw profilu";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Aktualizacja profilu zostanie wysłana do Twoich kontaktów.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Zabroń połączeń audio/wideo.";
@@ -4294,16 +4269,10 @@ new chat action */
 "Read more" = "Przeczytaj więcej";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Przeczytaj więcej w [Poradniku Użytkownika](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in our GitHub repository." = "Przeczytaj więcej na naszym repozytorium GitHub.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
-
-/* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Przeczytaj więcej w [Podręczniku Użytkownika](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Przeczytaj więcej na naszym [repozytorium GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Przeczytaj więcej w Poradniku Użytkownika.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Potwierdzenia są wyłączone";
@@ -5050,9 +5019,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address publicly" = "Udostępnij adres publicznie";
 
-/* alert title */
-"Share address with contacts?" = "Udostępnić adres kontaktom?";
-
 /* No comment provided by engineer. */
 "Share from other apps." = "Udostępnij z innych aplikacji.";
 
@@ -5076,9 +5042,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Udostępnij do SimpleX";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Udostępnij kontaktom";
 
 /* No comment provided by engineer. */
 "Share your address" = "Udostępnij swój adres";
@@ -5235,6 +5198,9 @@ report reason */
 "standard end-to-end encryption" = "standardowe szyfrowanie end-to-end";
 
 /* No comment provided by engineer. */
+"Star on GitHub" = "Daj gwiazdkę na GitHub";
+
+/* No comment provided by engineer. */
 "Start chat" = "Rozpocznij czat";
 
 /* No comment provided by engineer. */
@@ -5340,9 +5306,6 @@ report reason */
 "Tap Connect to use bot" = "Dotknij Połącz aby użyć bota";
 
 /* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Dotknij Stwórz adres SimpleX w menu aby utworzyć go później.";
-
-/* No comment provided by engineer. */
 "Tap Join group" = "Dotknij Dołącz do grupy";
 
 /* No comment provided by engineer. */
@@ -5446,9 +5409,6 @@ server test failure */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Szyfrowanie działa, a nowe uzgodnienie szyfrowania nie jest wymagane. Może to spowodować błędy w połączeniu!";
 
 /* No comment provided by engineer. */
-"The future of messaging" = "Następna generacja prywatnych wiadomości";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Hash poprzedniej wiadomości jest inny.";
 
 /* No comment provided by engineer. */
@@ -5471,6 +5431,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Stara baza danych nie została usunięta podczas migracji, można ją usunąć.";
+
+/* No comment provided by engineer. */
+"The oldest human freedom - to speak to another person without being watched - built on infrastructure that cannot betray it." = "Najstarsza ludzka wolność - możliwość rozmowy z inną osobą bez bycia obserwowanym - opiera się na infrastrukturze, która nie może jej zdradzić.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Te same warunki będą miały zastosowanie do operatora **%@**.";
@@ -5498,6 +5461,12 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Themes" = "Motywy";
+
+/* No comment provided by engineer. */
+"Then we moved online, and every platform asked for a piece of you - your name, your number, your friends. We accepted that the price of talking to others is letting someone know who we talk to. Every generation, people and tech, had it this way - telephone, email, messengers, social media. It seemed the only way possible." = "Następnie przenieśliśmy się do sieci, a każda platforma prosiła o podanie danych osobowych - imienia i nazwiska, numeru telefonu, znajomych. Zaakceptowaliśmy fakt, że ceną za możliwość komunikowania się z innymi jest ujawnienie komuś, z kim rozmawiamy. Tak było w przypadku każdego pokolenia, ludzi i technologii - telefonu, poczty elektronicznej, komunikatorów, mediów społecznościowych. Wydawało się to jedyną możliwą opcją.";
+
+/* No comment provided by engineer. */
+"There is another way. A network with no phone numbers. No usernames. No accounts. No user identities of any kind. A network that connects people and carries encrypted messages without knowing who is connected." = "Jest jeszcze inny sposób. Sieć bez numerów telefonów. Bez nazw użytkowników. Bez kont. Bez jakichkolwiek tożsamości użytkowników. Sieć, która łączy ludzi i przesyła zaszyfrowane wiadomości, nie wiedząc, kto jest podłączony.";
 
 /* No comment provided by engineer. */
 "These conditions will also apply for: **%@**." = "Warunki te będą miały również zastosowanie w przypadku: **%@**.";
@@ -5745,7 +5714,7 @@ server test failure */
 /* swipe action */
 "Unread" = "Nieprzeczytane";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Unsupported connection link" = "Nieobsługiwane łącze połączenia";
 
 /* No comment provided by engineer. */
@@ -6240,9 +6209,6 @@ server test failure */
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Nie można zweryfikować użytkownika; proszę spróbować ponownie.";
 
-/* No comment provided by engineer. */
-"You decide who can connect." = "Ty decydujesz, kto może się połączyć.";
-
 /* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Już prosiłeś o połączenie!\nPowtórzyć prośbę połączenia?";
 
@@ -6296,6 +6262,9 @@ server test failure */
 
 /* snd group event chat item */
 "you unblocked %@" = "odblokowałeś %@";
+
+/* No comment provided by engineer. */
+"You were born without an account" = "Urodziłeś się bez konta.";
 
 /* No comment provided by engineer. */
 "You will be able to send messages **only after your request is accepted**." = "Będziesz mógł wysyłać wiadomości **dopiero po zaakceptowaniu Twojej prośby**.";
@@ -6371,6 +6340,9 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Twoje kontakty pozostaną połączone.";
+
+/* No comment provided by engineer. */
+"Your conversations belong to you, as it had always been before the Internet. The network is not a place you visit. It is a place you create and own. And nobody can take it from you, whether you make it private or public." = "Twoje rozmowy należą do Ciebie, tak jak zawsze było przed pojawieniem się Internetu. Sieć nie jest miejscem, które odwiedzasz. Jest miejscem, które tworzysz i które należy do Ciebie. Nikt nie może Ci tego odebrać, niezależnie od tego, czy jest to miejsce prywatne, czy publiczne.";
 
 /* No comment provided by engineer. */
 "Your credentials may be sent unencrypted." = "Twoje poświadczenia mogą zostać wysłane niezaszyfrowane.";

@@ -1179,10 +1179,10 @@ object ChatModel {
           showingInvitation.value = null
           chatsContext.chatItems.clearAndNotify()
           chatModel.chatId.value = withId
+          ModalManager.start.closeModals()
+          ModalManager.end.closeModals()
         }
       }
-      ModalManager.start.closeModals()
-      ModalManager.end.closeModals()
     }
   }
 
@@ -1709,6 +1709,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
     else -> null
   }
 
+  val sendAsGroup: Boolean get() {
+    val g = (this as? Group)?.groupInfo
+    return if (g != null && g.useRelays && g.membership.memberRole >= GroupMemberRole.Owner) {
+      when (groupChatScope()) {
+        null -> true
+        is GroupChatScope.MemberSupport -> false
+      }
+    } else {
+      false
+    }
+  }
+
   fun ntfsEnabled(ci: ChatItem): Boolean =
     ntfsEnabled(ci.meta.userMention)
 
@@ -2116,6 +2128,7 @@ data class GroupInfo (
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
+  val isChannel: Boolean get() = groupProfile.isChannel
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val shortDescr get() = groupProfile.shortDescr
@@ -2154,6 +2167,7 @@ data class GroupInfo (
       GroupFeature.SimplexLinks -> p.simplexLinks.on(membership)
       GroupFeature.Reports -> p.reports.on
       GroupFeature.History -> p.history.on
+      GroupFeature.Support -> p.support.on
     }
   }
 
@@ -2235,6 +2249,8 @@ data class GroupProfile (
   val groupPreferences: GroupPreferences? = null,
   val memberAdmission: GroupMemberAdmission? = null
 ): NamedChat {
+  val isChannel: Boolean get() = publicGroup?.groupType == GroupType.Channel
+
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
@@ -3819,8 +3835,8 @@ sealed class CIContent: ItemContent {
       is RcvBlocked -> generalGetString(MR.strings.blocked_by_admin_item_description)
       is SndDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
       is RcvDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
-      is SndGroupE2EEInfo -> e2eeInfoNoPQStr
-      is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
+      is SndGroupE2EEInfo -> groupE2EEInfoStr(e2eeInfo)
+      is RcvGroupE2EEInfo -> groupE2EEInfoStr(e2eeInfo)
       is ChatBanner -> ""
       is InvalidJSON -> "invalid data"
     }
@@ -3856,6 +3872,9 @@ sealed class CIContent: ItemContent {
       }
 
     private val e2eeInfoNoPQStr: String = generalGetString(MR.strings.e2ee_info_no_pq_short)
+
+    fun groupE2EEInfoStr(e2EEInfo: E2EEInfo): String =
+      if (e2EEInfo.public == true) generalGetString(MR.strings.e2ee_info_no_e2ee) else e2eeInfoNoPQStr
 
     fun featureText(feature: Feature, enabled: String, param: Int?, role: GroupMemberRole? = null): String =
       (if (feature.hasParam) {
@@ -4383,7 +4402,7 @@ enum class CIGroupInvitationStatus {
 }
 
 @Serializable
-class E2EEInfo (val pqEnabled: Boolean?) {}
+class E2EEInfo (val pqEnabled: Boolean?, val public: Boolean? = null) {}
 
 object MsgContentSerializer : KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
@@ -4616,30 +4635,21 @@ sealed class MsgChatLink {
 
   val iconRes: ImageResource
     get() = when (this) {
-      is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> MR.images.ic_bigtop_updates_circle_filled
-        else -> MR.images.ic_supervised_user_circle_filled
-      }
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates_circle_filled else MR.images.ic_supervised_user_circle_filled
       is Contact -> if (business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
       is Invitation -> MR.images.ic_account_circle_filled
     }
 
   val smallIconRes: ImageResource
     get() = when (this) {
-      is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> MR.images.ic_bigtop_updates
-        else -> MR.images.ic_group
-      }
+      is Group -> if (groupProfile.isChannel) MR.images.ic_bigtop_updates else MR.images.ic_group
       is Contact -> if (business) MR.images.ic_work else MR.images.ic_person
       is Invitation -> MR.images.ic_person
     }
 
   fun infoLine(signed: Boolean): String {
     var s = when (this) {
-      is Group -> when (groupProfile.publicGroup?.groupType) {
-        GroupType.Channel -> generalGetString(MR.strings.chat_link_channel)
-        else -> generalGetString(MR.strings.chat_link_group)
-      }
+      is Group -> if (groupProfile.isChannel) generalGetString(MR.strings.chat_link_channel) else generalGetString(MR.strings.chat_link_group)
       is Contact -> if (business) generalGetString(MR.strings.chat_link_business_address) else generalGetString(MR.strings.chat_link_contact_address)
       is Invitation -> generalGetString(MR.strings.chat_link_one_time)
     }

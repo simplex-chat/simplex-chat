@@ -764,7 +764,6 @@
     <string name="how_to">Информация</string>
     <string name="install_simplex_chat_for_terminal">Инсталирай SimpleX Chat за терминал</string>
     <string name="how_it_works">Как работи</string>
-    <string name="how_simplex_works">Как работи SimpleX</string>
     <string name="immune_to_spam_and_abuse">Защитен от спам</string>
     <string name="ignore">Игнорирай</string>
     <string name="button_add_members">Покани членове</string>
@@ -1038,7 +1037,7 @@
     <string name="image_descr_simplex_logo">SimpleX Лого</string>
     <string name="icon_descr_simplex_team">SimpleX Екип</string>
     <string name="smp_servers">SMP сървъри</string>
-    <string name="share_address_with_contacts_question">Сподели адреса с контактите\?</string>
+    <string name="share_address_with_contacts_question">Сподели адреса с контактите?</string>
     <string name="share_link">Сподели линк</string>
     <string name="share_with_contacts">Сподели с контактите</string>
     <string name="stop_sharing">Спри споделянето</string>
@@ -2328,7 +2327,6 @@
     <string name="button_support_chat_member">Чат с член</string>
     <string name="v6_4_review_members_descr">Разговаряйте с членовете, преди да се присъединят.</string>
     <string name="report_reason_community">Нарушение на правилата на общността</string>
-    <string name="onboarding_conditions_configure_server_operators">Конфигуриране на сървърни оператори</string>
     <string name="compose_view_connect">Свързване</string>
     <string name="v6_4_connect_faster">Свържете се по-бързо! 🚀</string>
     <string name="connection_error_blocked">Връзката е блокирана</string>

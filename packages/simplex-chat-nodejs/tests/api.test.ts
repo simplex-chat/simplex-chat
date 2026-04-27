@@ -15,8 +15,8 @@ describe("API tests (use preset servers)", () => {
 
   it("should send/receive message", async () => {
     // create users and start chat controllers
-    const alice = await api.ChatApi.init(alicePath)
-    const bob = await api.ChatApi.init(bobPath)
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    const bob = await api.ChatApi.init({type: "sqlite", filePrefix: bobPath})
     const servers: string[] = []
     let eventCount = 0
     alice.on("hostConnected" as CEvt.Tag, async ({transportHost}: any) => { servers.push(transportHost) })
@@ -67,10 +67,10 @@ describe("API tests (use preset servers)", () => {
 
   it("should create member contact and send invitation", async () => {
     // create 3 users and start chat controllers
-    const alice = await api.ChatApi.init(alicePath)
-    const bob = await api.ChatApi.init(bobPath)
+    const alice = await api.ChatApi.init({type: "sqlite", filePrefix: alicePath})
+    const bob = await api.ChatApi.init({type: "sqlite", filePrefix: bobPath})
     const carolPath = path.join(tmpDir, "carol")
-    const carol = await api.ChatApi.init(carolPath)
+    const carol = await api.ChatApi.init({type: "sqlite", filePrefix: carolPath})
     const aliceUser = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
     await bob.apiCreateActiveUser({displayName: "bob", fullName: ""})
     await carol.apiCreateActiveUser({displayName: "carol", fullName: ""})

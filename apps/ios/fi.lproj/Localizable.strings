@@ -14,13 +14,7 @@
 "!1 colored!" = "!1 värillinen!";
 
 /* No comment provided by engineer. */
-"[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Osallistu](https://github.com/simplex-chat/simplex-chat#contribute)";
-
-/* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Lähetä meille sähköpostia](mailto:chat@simplex.chat)";
-
-/* No comment provided by engineer. */
-"[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Tähti GitHubissa](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e-salattu** äänipuhelu";
@@ -258,9 +252,6 @@ swipe action */
 "accepted call" = "hyväksytty puhelu";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.";
-
-/* No comment provided by engineer. */
 "Add profile" = "Lisää profiili";
 
 /* No comment provided by engineer. */
@@ -385,9 +376,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Answer call" = "Vastaa puheluun";
-
-/* No comment provided by engineer. */
-"Anybody can host servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
 
 /* No comment provided by engineer. */
 "App build: %@" = "Sovellusversio: %@";
@@ -699,7 +687,7 @@ server test step */
 /* alert title */
 "Connection error" = "Yhteysvirhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Connection error (AUTH)" = "Yhteysvirhe (AUTH)";
 
 /* chat list item title (it should not be shown */
@@ -748,13 +736,13 @@ server test step */
 "Continue" = "Jatka";
 
 /* No comment provided by engineer. */
+"Contribute" = "Osallistu";
+
+/* No comment provided by engineer. */
 "Copy" = "Kopioi";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Ydinversio: v%@";
-
-/* No comment provided by engineer. */
-"Create" = "Luo";
 
 /* server test step */
 "Create file" = "Luo tiedosto";
@@ -860,9 +848,6 @@ server test step */
 
 /* time unit */
 "days" = "päivää";
-
-/* No comment provided by engineer. */
-"Decentralized" = "Hajautettu";
 
 /* message decrypt error item */
 "Decryption error" = "Salauksen purkuvirhe";
@@ -1098,7 +1083,7 @@ alert button */
 /* No comment provided by engineer. */
 "Edit group profile" = "Muokkaa ryhmäprofiilia";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Enable" = "Salli";
 
 /* No comment provided by engineer. */
@@ -1227,7 +1212,7 @@ alert button */
 /* No comment provided by engineer. */
 "error" = "virhe";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Error" = "Virhe";
 
 /* No comment provided by engineer. */
@@ -1497,7 +1482,7 @@ server test error */
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Ryhmäkutsu ei ole enää voimassa, lähettäjä poisti sen.";
 
-/* No comment provided by engineer. */
+/* chat link info line */
 "Group link" = "Ryhmälinkki";
 
 /* No comment provided by engineer. */
@@ -1600,9 +1585,6 @@ server test error */
 "Immediately" = "Heti";
 
 /* No comment provided by engineer. */
-"Immune to spam" = "Immuuni roskapostille ja väärinkäytöksille";
-
-/* No comment provided by engineer. */
 "Import" = "Tuo";
 
 /* No comment provided by engineer. */
@@ -1666,7 +1648,7 @@ server test error */
 "Initial role" = "Alkuperäinen rooli";
 
 /* No comment provided by engineer. */
-"Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "Asenna [SimpleX Chat terminaalille](https://github.com/simplex-chat/simplex-chat)";
+"Install SimpleX Chat for terminal" = "Asenna SimpleX Chat terminaalille";
 
 /* No comment provided by engineer. */
 "Instant" = "Heti";
@@ -1683,7 +1665,7 @@ server test error */
 /* No comment provided by engineer. */
 "invalid chat data" = "virheelliset keskustelu-tiedot";
 
-/* No comment provided by engineer. */
+/* conn error description */
 "Invalid connection link" = "Virheellinen yhteyslinkki";
 
 /* invalid chat item */
@@ -2065,9 +2047,6 @@ server test error */
 "no text" = "ei tekstiä";
 
 /* No comment provided by engineer. */
-"No user identifiers." = "Ensimmäinen alusta ilman käyttäjätunnisteita – suunniteltu yksityiseksi.";
-
-/* No comment provided by engineer. */
 "Notifications" = "Ilmoitukset";
 
 /* No comment provided by engineer. */
@@ -2259,9 +2238,6 @@ new chat action */
 "Privacy & security" = "Yksityisyys ja turvallisuus";
 
 /* No comment provided by engineer. */
-"Privacy redefined" = "Yksityisyys uudelleen määritettynä";
-
-/* No comment provided by engineer. */
 "Private filenames" = "Yksityiset tiedostonimet";
 
 /* No comment provided by engineer. */
@@ -2272,9 +2248,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Profile password" = "Profiilin salasana";
-
-/* alert message */
-"Profile update will be sent to your contacts." = "Profiilipäivitys lähetetään kontakteillesi.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Estä ääni- ja videopuhelut.";
@@ -2328,13 +2301,10 @@ new chat action */
 "Read more" = "Lue lisää";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).";
+"Read more in our GitHub repository." = "Lue lisää GitHub-arkistosta.";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Lue lisää [Käyttöoppaasta](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
-
-/* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Lue lisää [GitHub-arkistosta](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in User Guide." = "Lue lisää Käyttöoppaasta.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Kuittaukset pois käytöstä";
@@ -2697,14 +2667,8 @@ chat item action */
 /* No comment provided by engineer. */
 "Share address" = "Jaa osoite";
 
-/* alert title */
-"Share address with contacts?" = "Jaa osoite kontakteille?";
-
 /* No comment provided by engineer. */
 "Share link" = "Jaa linkki";
-
-/* No comment provided by engineer. */
-"Share with contacts" = "Jaa kontaktien kanssa";
 
 /* No comment provided by engineer. */
 "Show calls in phone history" = "Näytä puhelut puhelinhistoriassa";
@@ -2771,6 +2735,9 @@ chat item action */
 
 /* notification title */
 "Somebody" = "Joku";
+
+/* No comment provided by engineer. */
+"Star on GitHub" = "Tähti GitHubissa";
 
 /* No comment provided by engineer. */
 "Start chat" = "Aloita keskustelu";
@@ -2889,9 +2856,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!";
-
-/* No comment provided by engineer. */
-"The future of messaging" = "Seuraavan sukupolven yksityisviestit";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "Edellisen viestin tarkiste on erilainen.";
@@ -3264,9 +3228,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
-
-/* No comment provided by engineer. */
-"You decide who can connect." = "Kimin bağlanabileceğine siz karar verirsiniz.";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";
