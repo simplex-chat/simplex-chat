@@ -93,10 +93,9 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           Modifier
             .fillMaxWidth()
             .padding(vertical = DEFAULT_PADDING_HALF),
+          horizontalArrangement = Arrangement.Center,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Spacer(Modifier.weight(1f))
-          // Padding offsets transparent space built into 3D asset
           Box(
             modifier = if (BuildConfigCommon.SIMPLEX_ASSETS) Modifier.padding(horizontal = 3.dp) else Modifier,
             contentAlignment = Alignment.Center
@@ -112,16 +111,12 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             }
           }
           if (BuildConfigCommon.SIMPLEX_ASSETS) {
-            Spacer(Modifier.weight(0.5f))
             Image(
               painterResource(if (isInDarkTheme()) MR.images.create_profile_light else MR.images.create_profile),
               contentDescription = null,
               contentScale = ContentScale.Fit,
               modifier = Modifier.height(140.dp)
             )
-            Spacer(Modifier.weight(0.5f))
-          } else {
-            Spacer(Modifier.weight(1f))
           }
         }
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
