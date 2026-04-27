@@ -142,13 +142,8 @@ fun MainScreen() {
     when {
       onboarding == OnboardingStage.Step1_SimpleXInfo && chatModel.migrationState.value != null -> {
         // In migration process. Nothing should interrupt it, that's why it's the first branch in when()
-        if (appPlatform.isDesktop) {
-          DesktopOnboardingShell(onboarding) {
-            SimpleXInfo(chatModel, onboarding = true)
-          }
-        } else {
-          SimpleXInfo(chatModel, onboarding = true)
-        }
+        if (appPlatform.isDesktop) DesktopOnboarding(onboarding, chatModel)
+        else SimpleXInfo(chatModel, onboarding = true)
       }
       chatModel.dbMigrationInProgress.value -> DefaultProgressView(stringResource(MR.strings.database_migration_in_progress))
       chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
@@ -180,24 +175,7 @@ fun MainScreen() {
       }
       else -> {
         if (appPlatform.isDesktop) {
-          if (onboarding == OnboardingStage.LinkAMobile) {
-            LinkAMobile()
-            ModalManager.fullscreen.showInView()
-          } else {
-            DesktopOnboardingShell(onboarding) {
-              when (onboarding) {
-                OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
-                OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-                OnboardingStage.LinkAMobile -> {} // handled above, full screen
-                OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-                OnboardingStage.Step3_ChooseServerOperators,
-                OnboardingStage.Step3_CreateSimpleXAddress,
-                OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
-                OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
-                OnboardingStage.OnboardingComplete -> {}
-              }
-            }
-          }
+          DesktopOnboarding(onboarding, chatModel)
         } else {
           AnimatedContent(targetState = onboarding,
             transitionSpec = {
@@ -287,6 +265,27 @@ fun MainScreen() {
     // Let's prolong the unlocked period to 3 sec for screen rotation to take place
     if (chatModel.controller.appPrefs.laLockDelay.get() == 0) {
       AppLock.enteredBackground.value = AppLock.elapsedRealtime() + 3000
+    }
+  }
+}
+
+@Composable
+private fun DesktopOnboarding(onboarding: OnboardingStage, chatModel: ChatModel) {
+  if (onboarding == OnboardingStage.LinkAMobile) {
+    LinkAMobile()
+    ModalManager.fullscreen.showInView()
+  } else {
+    DesktopOnboardingShell(onboarding) {
+      when (onboarding) {
+        OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
+        OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+        OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+        OnboardingStage.Step3_ChooseServerOperators,
+        OnboardingStage.Step3_CreateSimpleXAddress,
+        OnboardingStage.Step4_SetNotificationsMode -> YourNetworkView(chatModel)
+        OnboardingStage.Step4_NetworkCommitments -> OnboardingConditionsView(chatModel)
+        else -> {}
+      }
     }
   }
 }
