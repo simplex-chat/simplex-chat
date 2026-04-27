@@ -7053,7 +7053,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Public channels - speak freely 🚀" xml:space="preserve">
         <source>Public channels - speak freely 🚀</source>
-        <target>Публичные каналы — говорите свободно 🚀</target>
+        <target>Публичные каналы - говорите свободно 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -7986,7 +7986,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send the link via any messenger - it's secure. Ask to paste into SimpleX." xml:space="preserve">
         <source>Send the link via any messenger - it's secure. Ask to paste into SimpleX.</source>
-        <target>Отправьте ссылку через любой мессенджер — это безопасно. Попросите вставить её в SimpleX.</target>
+        <target>Отправьте ссылку через любой мессенджер - это безопасно. Попросите вставить её в SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -10303,7 +10303,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the channel." xml:space="preserve">
         <source>You can share a link or a QR code - anybody will be able to join the channel.</source>
-        <target>Вы можете поделиться ссылкой или QR кодом — любой сможет вступить в канал.</target>
+        <target>Вы можете поделиться ссылкой или QR кодом - любой сможет вступить в канал.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
