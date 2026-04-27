@@ -109,7 +109,10 @@ fun OnboardingConditionsView(chatModel: ChatModel) {
                       indication = null
                     ) {
                       ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-                        SimpleConditionsView(rhId = null) { acceptConditions(selectedOperatorIds.value) }
+                        SimpleConditionsView(rhId = null) {
+                          ModalManager.fullscreen.closeModal()
+                          acceptConditions(selectedOperatorIds.value)
+                        }
                       }
                     }
                 )
@@ -152,7 +155,10 @@ private fun OnboardingConditionsDesktop(selectedOperatorIds: MutableState<Set<Lo
                   indication = null
                 ) {
                   ModalManager.fullscreen.showModal(forceAnimated = true, endButtons = { ConditionsLinkButton() }) {
-                    SimpleConditionsView(rhId = null) { acceptConditions(selectedOperatorIds.value) }
+                    SimpleConditionsView(rhId = null) {
+                      ModalManager.fullscreen.closeModal()
+                      acceptConditions(selectedOperatorIds.value)
+                    }
                   }
                 }
             )
