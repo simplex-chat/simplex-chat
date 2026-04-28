@@ -83,13 +83,15 @@ No single point in the system sees both content and network identity. SMP router
 
 This transport layering produces a specific combination of properties for public communication that is not present in any other publishing system.
 
-Because channel content is not end-to-end encrypted between owner and subscriber (it is encrypted at the SMP transport layer, but relays decrypt and re-encrypt as they forward), relay operators can read the messages they handle. This is a deliberate choice. Relay operators must be able to see what they distribute in order to moderate it, comply with law where required, and maintain the quality of their service.
+Channel content is not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. This follows from a fundamental property of public communication: any channel joinable via a public link must be considered completely public. The cost of joining through automated means has collapsed with large language models and is approaching zero. Content distributed to strangers without a pre-existing trust relationship cannot be private, regardless of whether it is encrypted in transit.
 
-Because the SMP transport below carries no user identifiers, and relays are ordinary SMP clients, subscribers connect to channels without revealing who they are. The relay sees subscriber profiles, but those profiles link to no real identity - no phone number, no username, no public key that persists across channels - and no network address or session information.
+End-to-end encrypting public-link content provides no meaningful content privacy. It harms users by creating a false expectation of privacy, and it harms operators by making them unable to see what they deliver, increasing their risk and liability.
 
-This is the inverse of what every other public communication system provides. Conventional systems encrypt content so the operator cannot see it, and identify participants so the operator can route to them. SimpleX Channels make content visible and participants invisible. The inversion is not a design choice that could have been made differently - it follows from the fact that the SimpleX network has no user identifiers. Content visibility is a consequence of relays being forwarding nodes (they must see what they forward). Participant invisibility is a consequence of the SMP transport below (it has no identifiers to reveal).
+The achievable privacy property for public communication is participation privacy - protecting who reads and writes, not what. SimpleX Channels provide this. The SMP transport carries no user identifiers; relays are ordinary SMP clients. Subscribers connect without revealing their identity, network address, or any information that persists across channels.
 
-The practical result: an adversary can join a channel as a subscriber and see everything that was said. They cannot determine who said it. They cannot link any participant to anything outside the channel. Meanwhile, the relay operator can see what they host, declare a content policy, respond to complaints by inspecting content, and cooperate with law enforcement where legally required, without breaking any promise, because the promise was about participants, not about content.
+Other systems make the opposite choice. Encrypted group protocols - MLS, pairwise ratchets, and similar - offer content encryption in exchange for participant identification. For public-link groups this is exactly backwards: the content encryption is meaningless (anyone can join and read), while the participant identification is the real harm. Nostr has the same problem: publisher identity is a persistent public key linked across all relays.
+
+An adversary can join a SimpleX channel and see everything that was said. They cannot determine who said it or link any participant to anything outside the channel.
 
 #### In comparison
 
@@ -117,7 +119,7 @@ SimpleX Channels make a different set of trade-offs:
 | Cross-relay consistency verification | N/A | No | N/A | N/A | N/A | **Yes** |
 | Content deniability (no proof of authorship) | No | No | Yes | Yes | No | **Yes (default)** |
 | Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
-| Relay operator can moderate | Yes | Yes | No | Partial | Yes | **Yes** |
+| Operator can see hosted content | Yes | Yes | No | Partial | Yes | **Yes** |
 
 
 ## Architecture
