@@ -127,19 +127,17 @@ fun FrameWindowScope.FileDialogChooserMultiple(
   }
 }
 
-// Wrap the Save button's ApproveSelectionAction to bypass the BasicFileChooserUI glob branch
-// that rejects '[', '*', '?' in filenames on Unix; non-glob names delegate to the original action.
+// Replace the Save button's action with a literal-filename handler. This bypasses JFileChooser's
+// glob-on-save behaviour, which mis-handles '[' as a glob char on Unix (breaking filenames like
+// '[1].pdf') and is not a feature of any native OS save dialog — macOS NSSavePanel and native
+// Windows / Linux GTK / KDE save dialogs all treat the typed filename as a literal name.
 private fun installUnixSaveGlobBypass(fc: JFileChooser) {
   val ui = fc.ui as? BasicFileChooserUI ?: return
   val original: ActionListener = ui.approveSelectionAction
   val btn = findButtonWithListener(fc, original) ?: return
   btn.removeActionListener(original)
-  btn.addActionListener { e ->
-    val name = ui.fileName.orEmpty()
-    if (name.none { it == '[' || it == '*' || it == '?' }) {
-      original.actionPerformed(e)
-      return@addActionListener
-    }
+  btn.addActionListener {
+    val name = ui.fileName?.takeIf { it.isNotEmpty() } ?: return@addActionListener
     val typed = File(name)
     val target = if (typed.isAbsolute) typed else File(fc.currentDirectory, name)
     if (target.isDirectory && fc.isTraversable(target)) {
