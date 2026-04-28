@@ -43,7 +43,7 @@ SimpleX Channels are a stateful information delivery and management layer built 
 
 [SimpleX Chat](https://simplex.chat) is the first application, presenting channels as a broadcast publication model where owners publish and subscribers read, react, and comment. But channels are not limited to this use case - they are a general-purpose layer for distributing and managing stateful information (feeds, telemetry, automated pipelines, coordination services, social media). This document describes channels as a transport mechanism - the same mechanism will also be used for large groups, communities, wikis, forums, and other social media primitives.
 
-The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - SimpleX network clients that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; its identity is permanent. The authoritative record of content is hosted on channel owners devices; relays perform transmission and caching similar to CDN infrastructure.
+The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - SimpleX network clients that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; its identity is permanent. The authoritative record of content is hosted on channel owners' devices; relays perform transmission and caching similar to CDN infrastructure.
 
 Channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can control or alter a channel without the owner's keys. Blockchain systems achieve a related property for financial assets - no third party can control holdings - through network-wide consensus. Channels achieve it through local authority and cryptographic signatures, without global consensus or a public ledger. Unlike blockchain state, channel state is mutable by the owner and not publicly verifiable by third parties.
 
@@ -59,7 +59,7 @@ The SimpleX network has three transport layers, each built on the one below:
 
 No network-wide user profile identifiers exist at any of these layers. Just as SMP enables private messaging by providing transport without user identifiers, channels enable public communication while preserving participation privacy at the distribution layer.
 
-Channel relays are themselves SimpleX clients in the SMP network, connecting to SMP routers using the same protocol, the same 2-node onion routing, and the same fixed-size transport blocks as any other endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. In case of SimpleX Chat, any CLI client can act as a chat relay without modifications.
+Channel relays are themselves SimpleX clients in the SMP network, connecting to SMP routers using the same protocol, the same 2-node onion routing, and the same fixed-size transport blocks as any other endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. In the case of SimpleX Chat, any CLI client can act as a chat relay without modifications.
 
 Channels therefore inherit all of SMP's transport privacy properties:
 
@@ -110,7 +110,7 @@ Channels do not attempt to:
 - **Encrypt public content from relay operators.** See [Content visibility and participant privacy](#content-visibility-and-participant-privacy).
 - **Assign persistent identities to participants.** There are no usernames, public keys, or any identifiers that persist across channels or link activity across contexts.
 - **Require network-wide consensus.** Channel state is authoritative on owner devices. The network does not validate channel transactions.
-- **Guarantee immutability of content.** Channel state is fully controlled and mutable by owners, unlike blockchain state which is immutable by design.
+- **Guarantee immutability of content.** Channel state is fully controlled and mutable by owners, unlike blockchain state, which is immutable by design.
 
 ## Architecture
 
@@ -152,7 +152,7 @@ Subscribers hold their own received copies. Signed messages are independently ve
 
 A channel's identity is the SHA-256 hash of the genesis root public key, computed at creation time and never changed - even if relays are added, removed, or the channel link is rotated. It is self-authenticating: derived from a key pair that only the channel creator held. It is embedded in the channel's link, distributed in the profile to all members, and used as a binding prefix in all signed messages.
 
-Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity equals the hash of the root key is deferred: current clients that enforced this check would reject future rotated links as invalid. The identity is correctly managed today; validation will be enforced with the key rotation protocol. See the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
+Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity equals the hash of the root key is deferred: if current clients enforced this check, they would reject future rotated links as invalid. The identity is correctly managed today; validation will be enforced with the key rotation protocol. See the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
 
 The root key does not sign messages directly. Instead, it authorizes owner keys through a signed chain. At creation, the owner generates a root key pair and a separate member key pair for signing. The member key is published as an authorization entry signed by the root key. New owners can be added by any previously authorized owner signing a new entry. Anyone retrieving the channel link can verify this chain without network access.
 
@@ -220,7 +220,7 @@ By default, only roster-modifying and administrative messages are signed. Conten
 
 1. **Cryptographic deniability.** Signing creates non-repudiable proof of authorship verifiable by any third party. Without signatures, no such proof exists - a relay could have fabricated any unsigned message.
 
-2. **Proportional defense.** Roster and channel profile and permissions changes can be disruptive and irreversible - they must be authenticated at processing time. Content manipulation is detectable post-hoc through cross-relay consistency, and the authoritative record on the owner's device is unaffected.
+2. **Proportional defense.** Changes to roster, channel profile, and permissions can be disruptive and irreversible - they must be authenticated at processing time. Content manipulation is detectable post-hoc through cross-relay consistency, and the authoritative record on the owner's device is unaffected.
 
 Owners will be able to opt into signing content on a per-channel or per-message basis - some publishers want non-repudiable authorship, others prefer deniability.
 
@@ -265,7 +265,7 @@ An attacker who obtains the root private key or an owner's member private key (t
 
 **Loss of all owner devices**
 
-The channel can have no new content, no administrative updates, no new owners. Relay caches continue delivering existing content but cannot be refreshed, and will eventually expire in the absense of the owner connection. Multiple owners and key backups mitigate this risk.
+The channel can have no new content, no administrative updates, no new owners. Relay caches continue delivering existing content but cannot be refreshed, and will eventually expire in the absence of the owner connection. Multiple owners and key backups mitigate this risk.
 
 **A subscriber**
 
@@ -286,7 +286,7 @@ The channel can have no new content, no administrative updates, no new owners. R
 
 *cannot:*
 
-- Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user, other than by traffic volume. All inherited from SMP transport properties.
+- Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user, other than by traffic volume. Inherited from SMP transport.
 
 ### Current gaps
 
