@@ -39,7 +39,7 @@ struct OneHandUICard: View {
                     .foregroundColor(theme.colors.secondary)
                     .frame(width: 12, height: 12)
                     .padding(.vertical, 4)
-                    .padding(.trailing, 12)
+                    .padding(.trailing, 16)
                     .padding(.leading, 4)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -64,7 +64,7 @@ struct OneHandUICard: View {
         }
     }
 
-    private func segment(icon: String, text: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func segment(icon: String, text: LocalizedStringKey, isSelected: Bool, action: @escaping () -> Void) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.body)
