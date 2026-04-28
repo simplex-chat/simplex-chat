@@ -502,7 +502,7 @@ channel relay bar</note>
         <source>- opt-in to send link previews.
 - prevent hyperlink phishing.
 - remove link tracking.</source>
-        <target>- включение предпросмотра ссылок.
+        <target>- включение картинок ссылок.
 - защита от фишинга.
 - удаление трекинга ссылок.</target>
         <note>No comment provided by engineer.</note>
@@ -3448,7 +3448,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable link previews?" xml:space="preserve">
         <source>Enable link previews?</source>
-        <target>Включить предпросмотр ссылок?</target>
+        <target>Включить картинки ссылок?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
@@ -5502,7 +5502,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Members can send direct messages." xml:space="preserve">
         <source>Members can send direct messages.</source>
-        <target>Члены могут посылать прямые сообщения.</target>
+        <target>Члены могут посылать личные сообщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can send disappearing messages." xml:space="preserve">
@@ -6969,7 +6969,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
         <source>Prohibit sending direct messages to members.</source>
-        <target>Запретить посылать прямые сообщения членам группы.</target>
+        <target>Запретить посылать личные сообщения членам группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to subscribers." xml:space="preserve">
@@ -7909,7 +7909,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send direct message to connect" xml:space="preserve">
         <source>Send direct message to connect</source>
-        <target>Отправить прямое сообщение контакту</target>
+        <target>Отправить личное сообщение контакту</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send disappearing message" xml:space="preserve">

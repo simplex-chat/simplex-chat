@@ -11,7 +11,7 @@
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- более стабильная доставка сообщений.\n- немного улучшенные группы.\n- и прочее!";
 
 /* No comment provided by engineer. */
-"- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking." = "- включение предпросмотра ссылок.\n- защита от фишинга.\n- удаление трекинга ссылок.";
+"- opt-in to send link previews.\n- prevent hyperlink phishing.\n- remove link tracking." = "- включение картинок ссылок.\n- защита от фишинга.\n- удаление трекинга ссылок.";
 
 /* No comment provided by engineer. */
 "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- опционально уведомляйте удалённые контакты.\n- имена профилей с пробелами.\n- и прочее!";
@@ -2290,7 +2290,7 @@ chat item action */
 "Enable instant notifications?" = "Включить мгновенные уведомления?";
 
 /* alert title */
-"Enable link previews?" = "Включить предпросмотр ссылок?";
+"Enable link previews?" = "Включить картинки ссылок?";
 
 /* No comment provided by engineer. */
 "Enable lock" = "Включить блокировку";
@@ -3657,7 +3657,7 @@ servers warning */
 "Members can report messsages to moderators." = "Члены группы могут пожаловаться модераторам.";
 
 /* No comment provided by engineer. */
-"Members can send direct messages." = "Члены могут посылать прямые сообщения.";
+"Members can send direct messages." = "Члены могут посылать личные сообщения.";
 
 /* No comment provided by engineer. */
 "Members can send disappearing messages." = "Члены могут посылать исчезающие сообщения.";
@@ -4614,7 +4614,7 @@ alert button */
 "Prohibit reporting messages to moderators." = "Запретить жаловаться модераторам группы.";
 
 /* No comment provided by engineer. */
-"Prohibit sending direct messages to members." = "Запретить посылать прямые сообщения членам группы.";
+"Prohibit sending direct messages to members." = "Запретить посылать личные сообщения членам группы.";
 
 /* No comment provided by engineer. */
 "Prohibit sending direct messages to subscribers." = "Запретить отправку личных сообщений подписчикам.";
@@ -5259,7 +5259,7 @@ chat item action */
 "Send delivery receipts to" = "Отправка отчётов о доставке";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Отправить прямое сообщение контакту";
+"Send direct message to connect" = "Отправить личное сообщение контакту";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Отправить исчезающее сообщение";
