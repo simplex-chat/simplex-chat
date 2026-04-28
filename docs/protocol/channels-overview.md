@@ -9,6 +9,7 @@ Revision 1, 2026-04-28
   - [Channels as transport layer](#channels-as-transport-layer)
   - [Content visibility and participant privacy](#content-visibility-and-participant-privacy)
   - [In comparison](#in-comparison)
+  - [Non-goals](#non-goals)
 - [Architecture](#architecture)
   - [State and distribution](#state-and-distribution)
   - [Identity and ownership](#identity-and-ownership)
@@ -29,9 +30,12 @@ Revision 1, 2026-04-28
   - [Pre-moderation](#pre-moderation)
   - [Scheduled delivery](#scheduled-delivery)
   - [Link preview proxying](#link-preview-proxying)
+- [Conclusion](#conclusion)
 
 
 ## Introduction
+
+The SimpleX network provides private point-to-point communication without user identifiers. But most speech that matters is public - in communities, channels, publications. No existing system for public communication protects participation privacy: every platform that distributes content at scale identifies its participants to the operator. SimpleX Channels close this gap.
 
 ### What are SimpleX Channels
 
@@ -109,7 +113,18 @@ SimpleX Channels make a different set of trade-offs:
 | Cryptographic content deniability | No | No | Yes | Yes | No | **Yes (default)** |
 | Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
 
+### Non-goals
+
+To avoid confusion with related designs, channels explicitly do not attempt to:
+
+- **Encrypt public content from relay operators.** This is not a limitation but a design principle - see [Content visibility and participant privacy](#content-visibility-and-participant-privacy).
+- **Assign persistent identities to participants.** There are no usernames, public keys, or any identifiers that persist across channels or link activity across contexts.
+- **Require network-wide consensus.** Channel state is authoritative on owner devices. The network does not validate channel transactions.
+- **Guarantee immutability of content.** Channel state is sovereign and mutable by owners, unlike blockchain state which is immutable by design.
+
 ## Architecture
+
+The introduction established what channels provide and why: sovereign information management with participation privacy, built on a network without user identifiers. This section describes how - where state lives, how identity and ownership work, how governance evolves, and what each participant does.
 
 ### State and distribution
 
@@ -210,6 +225,8 @@ Content messages are not signed by default to preserve deniability - see [Signin
 
 
 ## Security
+
+The architecture provides sovereign ownership and participation privacy. This section examines what those properties protect against, where they hold, and where gaps remain.
 
 ### Design objectives
 
@@ -343,3 +360,8 @@ Messages scheduled for future delivery, cached by relay until the scheduled time
 ### Link preview proxying
 
 The relay loads link previews on behalf of the sender. The relay already sees message content, so it learns nothing new. Unlike the sender, its IP is not linked to any identity. Unlike external proxies (Signal, WhatsApp), it is not undermining an encryption promise - content is already visible to it by design.
+
+
+## Conclusion
+
+With SimpleX Channels, a publisher can reach an unlimited audience without any infrastructure operator knowing who that audience is. The channel cannot be seized because its identity and state are held by its owners, not by the network. Relays can be replaced without disruption. Content integrity is verifiable through owner signatures, and the trust chain extends to all administrative roles. These properties hold because channels are built on a network that has no participant identifiers - they are not features added to an existing system but consequences of a foundation designed for this purpose.
