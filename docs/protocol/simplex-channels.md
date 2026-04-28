@@ -12,10 +12,10 @@ Evgeny Poberezkin
   - [Content visibility and participant privacy](#content-visibility-and-participant-privacy)
   - [In comparison](#in-comparison)
 - [Architecture](#architecture)
-  - [State: where truth lives and how it flows](#state-where-truth-lives-and-how-it-flows)
-  - [Identity: what a channel is and who controls it](#identity-what-a-channel-is-and-who-controls-it)
-  - [Governance: how decisions are made](#governance-how-decisions-are-made)
-  - [Roles: who does what](#roles-who-does-what)
+  - [State and distribution](#state-where-truth-lives-and-how-it-flows)
+  - [Identity and ownership](#identity-what-a-channel-is-and-who-controls-it)
+  - [Governance](#governance-how-decisions-are-made)
+  - [Roles](#roles-who-does-what)
 - [Protocol](#protocol)
   - [Channel creation](#channel-creation)
   - [Relay addition](#relay-addition)
@@ -122,7 +122,7 @@ SimpleX Channels make a different set of trade-offs:
 
 ## Architecture
 
-#### State: where truth lives and how it flows
+#### State and distribution
 
 The most important architectural property of SimpleX Channels is where authoritative state lives: on the owner's devices, not on relays, not on any server, and not on any shared ledger.
 
@@ -164,7 +164,7 @@ Subscribers do not connect to owners or to each other - all communication passes
 
 Subscribers hold their own received copies. For signed messages, these copies are independently verifiable - a subscriber can confirm that a roster change was signed by a legitimate owner without consulting the relay or the owner. For unsigned content messages, verification depends on cross-relay consistency or future transcript integrity mechanisms.
 
-#### Identity: what a channel is and who controls it
+#### Identity and ownership
 
 A channel's identity is a cryptographic value derived from the key pair generated at creation time:
 
@@ -196,7 +196,7 @@ Current clients validate that the entity ID from the link matches the entity ID 
 
 This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which conceals the creator's identity.
 
-#### Governance: how decisions are made
+#### Governance
 
 "Management" in "information delivery and management" refers not only to managing content but to managing the channel itself - who can make decisions, and how.
 
@@ -214,7 +214,7 @@ This is analogous to what smart contracts achieve for on-chain governance, but w
 
 This progression matters because as channels grow beyond a single publisher's personal project into shared institutions - media organizations, communities, cooperatives - the governance model becomes the channel's constitution. The protocol must support this without prescribing it.
 
-#### Roles: who does what
+#### Roles
 
 A channel has three classes of participant, distinguished by their role in the member hierarchy:
 
