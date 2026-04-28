@@ -130,12 +130,10 @@ fun ToggleChatListCard() {
         painterResource(MR.images.ic_close), null,
         Modifier
           .align(Alignment.CenterEnd)
-          .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = onClose
-          )
-          .padding(start = 6.dp, end = 12.dp, top = 6.dp, bottom = 6.dp)
+          .padding(end = 4.dp)
+          .clip(CircleShape)
+          .clickable(onClick = onClose)
+          .padding(8.dp)
           .size(16.dp),
         tint = MaterialTheme.colors.secondary
       )
