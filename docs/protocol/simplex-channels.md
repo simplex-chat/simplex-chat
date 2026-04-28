@@ -81,7 +81,7 @@ No single point in the system sees both content and network identity. SMP router
 
 #### Content visibility and participant privacy
 
-This transport layering produces a specific and unusual combination of properties for public communication.
+This transport layering produces a specific combination of properties for public communication that is not present in any other publishing system.
 
 Because channel content is not end-to-end encrypted between owner and subscriber (it is encrypted at the SMP transport layer, but relays decrypt and re-encrypt as they forward), relay operators can read the messages they handle. This is a deliberate choice. Relay operators must be able to see what they distribute in order to moderate it, comply with law where required, and maintain the quality of their service.
 
