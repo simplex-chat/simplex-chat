@@ -43,7 +43,7 @@ This document describes channels as a transport mechanism. SimpleX Chat uses the
 
 The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - SimpleX messaging network clients that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; a channel's identity is permanent. This is unlike a website, whose identity (domain name) is controlled by a hosting provider and registrar. It is more like a set of owners' cryptographic keys that happen to have content distribution attached to it, where the authoritative record of this content is hosted on channel owners devices, and relays perform transmission and optional caching function similar to CDN infrastructure.
 
-The channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can freeze, seize, revoke, or alter a channel without the owner's keys. This is the same property that blockchain systems achieve for financial assets through network-wide consensus, but channels achieve it for information management through local authority and cryptographic signatures - without the cost of global consensus of a public ledger, and without sacrificing the privacy of participants.
+The channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can freeze, seize, revoke, or alter a channel without the owner's keys. Blockchain systems achieve a related property for financial assets - no third party can seize or freeze holdings - through network-wide consensus. Channels achieve the same resistance to seizure for information management through local authority and cryptographic signatures, without requiring global consensus or a public ledger. Unlike blockchain state, channel state is mutable by the owner and not publicly verifiable by third parties - it is sovereign rather than immutable.
 
 ### Channels as transport layer
 
@@ -67,7 +67,7 @@ Channels therefore inherit all of SMP's transport privacy properties:
 
 - **SMP routers cannot see channel content.** Messages between relay and subscriber are end-to-end encrypted. The SMP router forwards fixed-size encrypted blocks without knowing whether they carry channel messages, direct messages, or anything else.
 
-- **Participation in multiple channels is unlinkable.** Each channel connection uses independent SMP queues with separate cryptographic credentials. A relay serving multiple channels cannot link them; an SMP router carrying traffic to multiple relays cannot link them either.
+- **Participation in multiple channels is unlinkable.** Each channel connection uses independent SMP queues with separate cryptographic credentials. Because of packet-level anonymity in 2-node routing, even if a subscriber uses the same SMP routers for all channels, the sending relays cannot determine this without collusion with those routers. Clients choose independently operated routers by default.
 
 No single point in the system sees both content and network identity. SMP routers see network addresses but not content, and no SMP router can see which endpoints are communicating, because of clients choosing indepently operated nodes for message delivery. Relays see content but not network addresses.
 
@@ -75,9 +75,9 @@ No single point in the system sees both content and network identity. SMP router
 
 This transport layering produces a combination of properties for public communication that is not present in any other publishing system.
 
-Any channel joinable via a public link must be considered completely public - the cost of joining through automated means has collapsed with large language models and is approaching zero. End-to-end encrypting such content provides no privacy; it only harms users by creating a false expectation and harms operators by making them unable to see what they deliver.
+For channels with public links (the primary use case described in this document), any channel joinable via a public link must be considered completely public - the cost of joining through automated means has collapsed with large language models and is approaching zero. End-to-end encrypting such content provides no privacy; it only harms users by creating a false expectation and harms operators by making them unable to see what they deliver. Private channels with encrypted content are a separate use case discussed in [Future work](#end-to-end-encrypted-side-conversations).
 
-Channel content is therefore not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. Relay operators cannot alter or moderate channel content - the authoritative state of the content is held by owners - but they can decide whether to deliver a given channel, and stop delivering channels they do not want to serve.
+Channel content is therefore not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. Relay operators cannot undetectably alter channel content when multiple relays serve the channel, and cannot alter signed content at all - the authoritative state is held by owners. They can decide whether to deliver a given channel, and stop delivering channels they do not want to serve.
 
 The achievable privacy property for public communication is participation privacy - protecting who reads and writes, not what. SimpleX Channels provide this because of the SMP transport: it carries no user identifiers, and relays are ordinary SMP clients. Subscribers connect without revealing their identity, network address, or any information that persists across channels. If an adversary joins a SimpleX channel, they see everything that was said, but cannot determine who said it or link any participant to anything outside the channel.
 
@@ -106,7 +106,7 @@ SimpleX Channels make a different set of trade-offs:
 | Channel identity independent of infrastructure | No | Yes | No | No | No | **Yes** |
 | Sovereign ownership (no 3rd party can seize) | No | Yes | No | No | No | **Yes** |
 | Programmable governance | No | No | No | No | No | **Planned** |
-| Content deniability | No | No | Yes | Yes | No | **Yes (default)** |
+| Cryptographic content deniability | No | No | Yes | Yes | No | **Yes (default)** |
 | Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
 
 ## Architecture
@@ -117,7 +117,7 @@ The most important architectural property of SimpleX Channels is where authorita
 
 The authoritative record of a channel - its content history, member roster, profile, cryptographic keys, and governance rules - is held by channel owners on their own devices. No intermediary holds it, and no intermediary can alter it. Relays hold transient copies of this state for the purpose of distribution and optional caching. The relationship is analogous to origin servers and CDN edge nodes: the origin holds the truth, and the CDN distributes copies. CDN nodes come and go; the origin persists.
 
-Where blockchain systems achieve sovereignty over shared state through network-wide consensus (every node validates every transaction), channels achieve it through cryptographic authority - the owner's signature is the only proof needed. Consensus is only required between channel owners, not across the entire network. This makes channels cheaper to operate, faster to respond, and private by default - the network does not need to know about the channel's existence, or validate its changes.
+Blockchain systems achieve censorship resistance of shared state through network-wide consensus, at the cost of immutability and public verifiability. Channels achieve censorship resistance through cryptographic authority - the owner's signature is the only proof needed - while retaining mutability and privacy. Consensus is only required between channel owners, not across the entire network. The network does not need to know about the channel's existence, or validate its changes.
 
 **How content flows:**
 
@@ -157,13 +157,15 @@ Subscribers hold their own received copies. For signed messages, these copies ar
 
 A channel's identity is the SHA-256 hash of the genesis root public key, computed at creation time and never changed - even if relays are added, removed, or the channel link is rotated. This identity is self-authenticating: it is derived from a key pair that only the channel creator held. It is embedded in the channel's link, distributed in the channel profile to all members, and used as a binding prefix in all signed messages.
 
-Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity matches the root key is deferred to a future protocol version that includes key rotation - see the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
+Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity equals the hash of the root key is deferred: current clients that enforced this check would reject future rotated links as invalid. The identity is correctly managed today; validation will be enforced when the key rotation protocol is implemented. See the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
 
 Channel ownership is not tied to the root key directly. Instead, the root key authorizes owner keys through a signed chain. At creation, the owner generates a root key pair and a separate member key pair for signing. The member key is published as an owner authorization entry signed by the root key. Anyone retrieving the channel link can verify that the owner's signing key was authorized by the root key. New owners can be added by having any existing authorized key sign a new entry, forming a verifiable chain.
 
 This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which - provided multiple owners were signed by the root key - conceals the creator's identity.
 
-The channel link serves as an out-of-band trust anchor that cannot be tampered with by relays or SMP routers (they cannot modify link content). All members announce their signing keys on joining. Owner keys are verifiable against the link. The trust chain extends further: role changes (promoting members to admin, moderator) will be signed by owners and recorded as a linearly ordered roster log, with consistent sequencing across all owners, relays, and subscribers. This linearization prevents ambiguous roster states that would arise from concurrent unordered role changes. The result is a chain of trust from the channel link through owners to all elevated roles, preventing relay MITM on member introductions and role assignments. Out-of-band key verification for non-owner members will further extend this protection to E2E encrypted conversations within the channel.
+The channel link serves as an out-of-band trust anchor that cannot be tampered with by relays or SMP routers (they cannot modify link content). All members announce their signing keys on joining. Owner keys are verifiable against the link. Role changes (promoting members to admin, moderator) are signed by owners at the protocol level.
+
+A planned extension will record role changes as a linearly ordered roster log with consistent sequencing across all owners, relays, and subscribers. This linearization prevents ambiguous roster states that would arise from concurrent unordered role changes, and creates a verifiable chain of trust from the channel link through owners to all elevated roles. Out-of-band key verification for non-owner members will further extend this protection to E2E encrypted conversations within the channel.
 
 ### Governance
 
@@ -225,7 +227,7 @@ The channel protocol is designed to achieve the following security objectives:
 
 By default, only roster-modifying and administrative messages are signed. Content messages (`XMsgNew`, `XMsgUpdate`, `XMsgDel`, etc.) are not signed. This is a deliberate design choice for two reasons:
 
-1. **Deniability.** Signing content creates non-repudiable proof of authorship. Anyone with the message bytes could prove who wrote a specific message. This is antithetical to SimpleX's privacy model, where communications should be deniable.
+1. **Cryptographic deniability.** Signing content creates non-repudiable cryptographic proof of authorship - a signature that can be verified by any third party with access to the message and the public key. Without signatures, no such proof exists: a relay could have fabricated any unsigned message.
 
 2. **Proportional defense.** Roster and profile changes are disruptive and irreversible. This includes member removal, role changes, and channel deletions. These must be authenticated at processing time. Content manipulation by a relay is detectable post-hoc through cross-relay consistency (when multiple independent relays forward the same content). Content delivery is not irreversible - a forged message can be flagged and corrected, and the authoritative record on the owner's device is unaffected.
 
@@ -265,6 +267,10 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 
 - Forge signed administrative messages or substitute the channel profile.
 - Alter the authoritative state on the owner's device.
+
+**Compromise of owner keys**
+
+An attacker who obtains the root private key or an owner's member private key (through device compromise, backup theft, or coercion) can impersonate the owner and sign arbitrary administrative messages. This is a different threat from key loss - the channel continues operating, but under adversarial control. Mitigation depends on owner-side operational security and future multisig governance. For the threat model of the channel link itself (the trust anchor), see the [short links for groups RFC](https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2025-04-04-short-links-for-groups.md).
 
 **Loss of all owner devices**
 
