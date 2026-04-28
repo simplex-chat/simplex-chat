@@ -1390,9 +1390,6 @@ alert button */
 "Enable lock" = "ロックモード";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "通知を有効化";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "定期的な通知を有効にしますか？";
 
 /* No comment provided by engineer. */
@@ -3301,9 +3298,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = ".onionホストを使う";
-
-/* No comment provided by engineer. */
-"Use chat" = "チャット";
 
 /* new chat action */
 "Use current profile" = "現在のプロファイルを使用する";

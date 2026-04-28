@@ -1060,9 +1060,6 @@ alert button */
 "Enable lock" = "เปิดใช้งานการล็อค";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "เปิดใช้งานการแจ้งเตือน";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "เปิดใช้การแจ้งเตือนเป็นระยะๆ ไหม?";
 
 /* No comment provided by engineer. */
@@ -2937,9 +2934,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "ใช้โฮสต์ .onion";
-
-/* No comment provided by engineer. */
-"Use chat" = "ใช้แชท";
 
 /* No comment provided by engineer. */
 "Use for new connections" = "ใช้สำหรับการเชื่อมต่อใหม่";

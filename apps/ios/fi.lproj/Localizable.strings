@@ -1102,9 +1102,6 @@ alert button */
 "Enable lock" = "Ota lukitus käyttöön";
 
 /* No comment provided by engineer. */
-"Enable notifications" = "Salli ilmoitukset";
-
-/* No comment provided by engineer. */
 "Enable periodic notifications?" = "Salli säännölliset ilmoitukset?";
 
 /* No comment provided by engineer. */
@@ -3021,9 +3018,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Käytä .onion-isäntiä";
-
-/* No comment provided by engineer. */
-"Use chat" = "Käytä chattia";
 
 /* new chat action */
 "Use current profile" = "Käytä nykyistä profiilia";
