@@ -41,7 +41,7 @@ enum class PresetWallpaper(
       DefaultTheme.LIGHT to oklch(0.8625f, 0.08f, 77f),
       DefaultTheme.DARK to oklch(0.261f, 0.0628f, 77f),
       DefaultTheme.SIMPLEX to oklch(0.3797781f, 0.06842897f, 88.88896f), // #ff51400f
-      DefaultTheme.BLACK to oklch(0.3603656f, 0.0643012f, 88.54155f) // #ff4b3b0e
+      DefaultTheme.BLACK to oklch(0.324f, 0.0805f, 70f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
@@ -63,10 +63,10 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.332832f, 0.005361989f, 91.54412f), // #ff373633
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3402031f, 0.04537511f, 90.2498f), // #ff41371b
-        sentQuote = oklch(0.4398707f, 0.0737883f, 85.23908f), // #ff654f1c
-        receivedMessage = oklch(0.2349937f, 0.005828091f, 91.60813f), // #ff1f1e1b
-        receivedQuote = oklch(0.2971596f, 0.01092985f, 91.6846f), // #ff2f2d27
+        sentMessage = oklch(0.24f, 0.0596f, 70f),
+        sentQuote = oklch(0.33f, 0.0815f, 70f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
     )
   ),
@@ -79,7 +79,7 @@ enum class PresetWallpaper(
       DefaultTheme.LIGHT to oklch(0.8047f, 0.1328f, 130f),
       DefaultTheme.DARK to oklch(0.3237f, 0.1019f, 130f),
       DefaultTheme.SIMPLEX to oklch(0.4415422f, 0.1170956f, 133.8571f), // #ff36600f
-      DefaultTheme.BLACK to oklch(0.409874f, 0.1074549f, 133.4271f) // #ff31560D
+      DefaultTheme.BLACK to oklch(0.432f, 0.1360f, 130f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
@@ -101,10 +101,10 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3334174f, 0.007411477f, 128.7105f), // #ff353733
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3611755f, 0.05678164f, 170.3752f), // #ff184739
-        sentQuote = oklch(0.484029f, 0.09629127f, 159.5568f), // #ff1F6F4B
-        receivedMessage = oklch(0.2342548f, 0.01039849f, 132.6996f), // #ff1c1f1a
-        receivedQuote = oklch(0.2838948f, 0.01154375f, 128.9221f), // #ff282b25
+        sentMessage = oklch(0.24f, 0.0756f, 130f),
+        sentQuote = oklch(0.33f, 0.1029f, 130f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
     )
   ),
@@ -117,7 +117,7 @@ enum class PresetWallpaper(
       DefaultTheme.LIGHT to oklch(0.9187f, 0.0440f, 15f),
       DefaultTheme.DARK to oklch(0.2182f, 0.0673f, 5f),
       DefaultTheme.SIMPLEX to oklch(0.2574974f, 0.07614605f, 24.19117f), // #ff411010
-      DefaultTheme.BLACK to oklch(0.2458526f, 0.07098409f, 23.94782f) // #ff3C0F0F
+      DefaultTheme.BLACK to oklch(0.252f, 0.1141f, 5f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
@@ -139,10 +139,10 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3352158f, 0.008515606f, 17.58481f), // #ff3b3535
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.2941874f, 0.07322977f, 4.102547f), // #ff491A28
-        sentQuote = oklch(0.3831088f, 0.1201278f, 18.61089f), // #ff761F29
-        receivedMessage = oklch(0.2267386f, 0.00626924f, 17.6236f), // #ff1f1b1b
-        receivedQuote = oklch(0.2776199f, 0.012034f, 17.89987f), // #ff2e2626
+        sentMessage = oklch(0.24f, 0.1087f, 5f),
+        sentQuote = oklch(0.33f, 0.1480f, 5f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
     )
   ),
@@ -155,7 +155,7 @@ enum class PresetWallpaper(
       DefaultTheme.LIGHT to oklch(0.8380f, 0.1024f, 192f),
       DefaultTheme.DARK to oklch(0.2876f, 0.0665f, 192f),
       DefaultTheme.SIMPLEX to oklch(0.3716418f, 0.05389406f, 217.7104f), // #ff184753
-      DefaultTheme.BLACK to oklch(0.3473769f, 0.04958945f, 218.0525f) // #ff16404B
+      DefaultTheme.BLACK to oklch(0.3708f, 0.0857f, 192f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
@@ -177,10 +177,10 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3451987f, 0.004436687f, 174.2088f), // #ff373a39
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3662882f, 0.04909204f, 191.2229f), // #ff1a4745
-        sentQuote = oklch(0.4817563f, 0.07299667f, 192.4874f), // #ff1d6b69
-        receivedMessage = oklch(0.2382215f, 0.001508911f, 197.0555f), // #ff1e1f1f
-        receivedQuote = oklch(0.2833724f, 0.007955636f, 169.798f), // #ff262b29
+        sentMessage = oklch(0.24f, 0.0555f, 192f),
+        sentQuote = oklch(0.33f, 0.0756f, 192f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
     )
   ),
@@ -193,7 +193,7 @@ enum class PresetWallpaper(
       DefaultTheme.LIGHT to oklch(0.8940f, 0.0512f, 239f),
       DefaultTheme.DARK to oklch(0.2268f, 0.0576f, 249f),
       DefaultTheme.SIMPLEX to oklch(0.2929108f, 0.05102392f, 240.8139f), // #ff112f43
-      DefaultTheme.BLACK to oklch(0.2700986f, 0.04630937f, 241.5568f) // #ff0F293B
+      DefaultTheme.BLACK to oklch(0.2664f, 0.0950f, 249f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
@@ -215,10 +215,10 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.3548081f, 0.008034593f, 255.5451f), // #ff393c40
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3481476f, 0.07023845f, 249.9259f), // #ff1A3C5D
-        sentQuote = oklch(0.4520089f, 0.08394516f, 241.1934f), // #ff235b80
-        receivedMessage = oklch(0.2356588f, 0.007789041f, 274.6063f), // #ff1d1e22
-        receivedQuote = oklch(0.2886546f, 0.007823012f, 264.445f), // #ff292b2f
+        sentMessage = oklch(0.24f, 0.0856f, 249f),
+        sentQuote = oklch(0.33f, 0.1166f, 249f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
     )
   ),
@@ -231,7 +231,7 @@ enum class PresetWallpaper(
       DefaultTheme.LIGHT to oklch(0.8896f, 0.0552f, 315f),
       DefaultTheme.DARK to oklch(0.2411f, 0.0791f, 315f),
       DefaultTheme.SIMPLEX to oklch(0.2948376f, 0.08277514f, 302.7197f), // #ff35204e
-      DefaultTheme.BLACK to oklch(0.2817417f, 0.07665313f, 302.6645f) // #ff311E48
+      DefaultTheme.BLACK to oklch(0.2916f, 0.1534f, 315f)
     ),
     _colors = mapOf(
       DefaultTheme.LIGHT to ResolvedColors(
@@ -253,10 +253,10 @@ enum class PresetWallpaper(
         receivedQuote = oklch(0.355058f, 0.03791292f, 286.3773f), // #ff3A394F
       ),
       DefaultTheme.BLACK to ResolvedColors(
-        sentMessage = oklch(0.3234681f, 0.09690244f, 299.9634f), // #ff3C255D
-        sentQuote = oklch(0.4226042f, 0.1341495f, 307.8573f), // #ff623485
-        receivedMessage = oklch(0.2454222f, 0.009540156f, 325.8636f), // #ff231f23
-        receivedQuote = oklch(0.2874049f, 0.0149843f, 302.5009f), // #ff2c2931
+        sentMessage = oklch(0.24f, 0.1263f, 315f),
+        sentQuote = oklch(0.33f, 0.1721f, 315f),
+        receivedMessage = oklch(0.12f, 0f, 0f),
+        receivedQuote = oklch(0.22f, 0f, 0f),
       ),
     )
   );
@@ -285,7 +285,7 @@ fun wallpaperBackgrounds(
     DefaultTheme.LIGHT to light,
     DefaultTheme.DARK to dark,
     DefaultTheme.SIMPLEX to oklch(0.2024453f, 0.03849037f, 273.4875f), // #ff111528
-    DefaultTheme.BLACK to oklch(0.1285578f, 0f, 0f) // #ff070707
+    DefaultTheme.BLACK to oklch(0f, 0f, 0f) // #ff000000 — pure black for hyper-contrast theme
   )
 
 // ===== Theme color formula =====
