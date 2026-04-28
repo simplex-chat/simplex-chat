@@ -35,7 +35,7 @@ Revision 1, 2026-04-28
 
 ## Introduction
 
-The SimpleX network provides private point-to-point communication without user identifiers. But most speech that matters is public - in communities, channels, publications. No existing system for public communication protects participation privacy: every platform that distributes content at scale identifies its participants to the operator. SimpleX Channels close this gap.
+The SimpleX network provides private point-to-point communication without user and endpoint identifiers. But most speech that matters is public - in communities, channels, publications. No existing system for public communication protects participation privacy, which is essential for freedom of speech. Every existing platform that distributes content at scale identifies both publishers and their audiences to the operator. SimpleX Chat supported private and public peer-to-peer group, but they cannot scale. SimpleX Channels close this gap.
 
 ### What are SimpleX Channels
 
@@ -124,7 +124,7 @@ To avoid confusion with related designs, channels explicitly do not attempt to:
 
 ## Architecture
 
-The introduction established what channels provide and why: sovereign information management with participation privacy, built on a network without user identifiers. This section describes how - where state lives, how identity and ownership work, how governance evolves, and what each participant does.
+*The introduction established what channels provide and why: sovereign information management with participation privacy, built on a network without user identifiers. This section describes how - where state lives, how identity and ownership work, how governance evolves, and what each participant does.*
 
 ### State and distribution
 
@@ -226,7 +226,7 @@ Content messages are not signed by default to preserve deniability - see [Signin
 
 ## Security
 
-The architecture provides sovereign ownership and participation privacy. This section examines what those properties protect against, where they hold, and where gaps remain.
+*The architecture provides sovereign ownership and participation privacy. This section examines what those properties protect against, where they hold, and where gaps remain.*
 
 ### Design objectives
 
@@ -364,4 +364,4 @@ The relay loads link previews on behalf of the sender. The relay already sees me
 
 ## Conclusion
 
-With SimpleX Channels, a publisher can reach an unlimited audience without any infrastructure operator knowing who that audience is. The channel cannot be seized because its identity and state are held by its owners, not by the network. Relays can be replaced without disruption. Content integrity is verifiable through owner signatures, and the trust chain extends to all administrative roles. These properties hold because channels are built on a network that has no participant identifiers - they are not features added to an existing system but consequences of a foundation designed for this purpose.
+With SimpleX Channels, a publisher will be able to reach an unlimited audience without any infrastructure operator knowing who that audience is. The channel cannot be seized because its identity and state are held by its owners, not by the network. Relays can be replaced without disruption. Content integrity is verifiable through owner signatures, and the trust chain extends to all administrative roles. These properties hold because channels are built on a network that has no participant identifiers - they are not features added to an existing system but consequences of a foundation designed for this purpose.
