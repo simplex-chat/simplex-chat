@@ -2041,7 +2041,6 @@
     <string name="selected_chat_items_selected_n">%d sélectionné(s)</string>
     <string name="v6_0_chat_list_media">Aperçu depuis la liste de conversation.</string>
     <string name="moderate_messages_will_be_marked_warning">Les messages seront marqués comme modérés pour tous les membres.</string>
-    <string name="one_hand_ui_card_title">Afficher la liste des conversations :</string>
     <string name="one_hand_ui_change_instruction">Vous pouvez choisir de le modifier dans les paramètres d\'apparence.</string>
     <string name="reset_all_hints">Rétablir tous les conseils</string>
     <string name="v6_0_upgrade_app">Mise à jour automatique de l\'app</string>

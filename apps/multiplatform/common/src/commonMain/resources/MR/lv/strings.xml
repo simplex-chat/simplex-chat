@@ -1796,7 +1796,6 @@
     <string name="confirm_database_upgrades">Apstiprināt datu bāzes jauninājumus</string>
     <string name="one_hand_ui">Vienas rokas saskarne</string>
     <string name="chat_bottom_bar">Sarunu apakšējā josla</string>
-    <string name="one_hand_ui_card_title">Vienas rokas saskarnes karte</string>
     <string name="one_hand_ui_change_instruction">Vienas rokas saskarnes maiņas instrukcija</string>
     <string name="terminal_always_visible">Terminālis vienmēr redzams</string>
     <string name="chat_list_always_visible">Sarunu saraksts vienmēr redzams</string>
