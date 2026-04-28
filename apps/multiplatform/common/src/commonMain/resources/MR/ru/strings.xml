@@ -1008,7 +1008,7 @@
     <string name="v4_5_reduced_battery_usage">Уменьшенное потребление батареи</string>
     <string name="v4_5_transport_isolation">Отдельные транспортные сессии</string>
     <string name="moderated_description">модерировано</string>
-    <string name="moderated_item_description">удалено %1$s</string>
+    <string name="moderated_item_description">удалено %s</string>
     <string name="delete_member_message__question">Удалить сообщение члена группы\?</string>
     <string name="moderate_verb">Модерировать</string>
     <string name="moderate_message_will_be_deleted_warning">Сообщение будет удалено для всех членов группы.</string>
@@ -2194,7 +2194,7 @@
     <string name="no_message_servers_configured">Нет серверов сообщений.</string>
     <string name="no_message_servers_configured_for_receiving">Нет серверов для приёма сообщений.</string>
     <string name="errors_in_servers_configuration">Ошибки в настройках серверов.</string>
-    <string name="for_chat_profile">Для профиля чата %1$s:</string>
+    <string name="for_chat_profile">Для профиля чата %s:</string>
     <string name="no_media_servers_configured">Нет серверов файлов и медиа.</string>
     <string name="no_media_servers_configured_for_private_routing">Нет серверов для приёма файлов.</string>
     <string name="no_media_servers_configured_for_sending">Нет серверов для отправки файлов.</string>
