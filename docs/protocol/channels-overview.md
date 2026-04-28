@@ -35,13 +35,13 @@ Revision 1, 2026-04-28
 
 ### What are SimpleX Channels
 
-SimpleX Channels are a stateful information delivery and management layer built on the [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md). Where SMP queues provide stateless, unidirectional packet delivery between two endpoints, channels add persistence, state, and scalable distribution, enabling one-to-many publishing with cryptographic identity that is independent of the infrastructure operators.
+SimpleX Channels are a stateful information delivery and management layer built on the [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md). Where SMP queues provide stateless, unidirectional packet delivery between two endpoints, channels add persistence, state, and scalable distribution, enabling one-to-many publishing with cryptographic identity that is independent of the infrastructure operators.
 
 [SimpleX Chat](https://simplex.chat) is the first application using channels. It presents them as a broadcast publication model similar to Telegram channels, where owners publish and subscribers read, add reactions and comment. But channels are not limited to this use case. They are a general-purpose layer for any application that needs to distribute and manage stateful information across a set of participants (feeds, telemetry collection, automated pipelines, coordination services, social media and other consumer-facing applications), using the same delivery and management mechanisms.
 
 This document describes channels as a transport mechanism. SimpleX Chat uses the same term for its broadcast feature, which is the first application of this transport - but the same mechanism will also be used for large groups, and can support communities, wikis, forums, and other social media primitives.
 
-The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - the network nodes that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; a channel's identity is permanent. This is unlike a website, whose identity (domain name) is controlled by a hosting provider and registrar. It is more like a set of owners' cryptographic keys that happen to have content distribution attached to it, where the authoritative record of this content is hosted on channel owners devices, and relays perform transmission and optional caching function similar to CDN infrastructure.
+The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - SimpleX messaging network clients that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; a channel's identity is permanent. This is unlike a website, whose identity (domain name) is controlled by a hosting provider and registrar. It is more like a set of owners' cryptographic keys that happen to have content distribution attached to it, where the authoritative record of this content is hosted on channel owners devices, and relays perform transmission and optional caching function similar to CDN infrastructure.
 
 The channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can freeze, seize, revoke, or alter a channel without the owner's keys. This is the same property that blockchain systems achieve for financial assets through network-wide consensus, but channels achieve it for information management through local authority and cryptographic signatures - without the cost of global consensus of a public ledger, and without sacrificing the privacy of participants.
 
@@ -49,37 +49,39 @@ The channel owners hold full control of the channel - its identity, content, gov
 
 The SimpleX network has three transport layers, each built on the one below:
 
-1. **SMP** ([SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md)) - stateless, unidirectional packet delivery between two endpoints through SMP routers. Provides fixed-size blocks, 2-hop onion routing, and transport metadata protection. No user identifiers exist at this layer.
+1. **SMP** ([SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md)) - stateless, unidirectional packet delivery between two endpoints through SMP routers. Provides fixed-size blocks, 2-node onion routing, and transport metadata protection.
 
-2. **SimpleX agents** ([agent protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - bidirectional, redundant connections between endpoints, with end-to-end post-quantum double ratchet encryption. The [SimpleX Chat Protocol](./simplex-chat.md) runs on top of this layer, providing direct messaging, group communication, and file transfer.
+2. **SimpleX agents** ([agent protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - bidirectional, redundant connections between endpoints, with end-to-end post-quantum double ratchet encryption. The [SimpleX Chat Protocol](./simplex-chat.md) runs on top of this layer, providing direct messaging, group communication, and metadata delivery for file transfers via [XFTP protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/xftp.md).
 
 3. **Channels** - stateful, one-to-many information delivery and management with cryptographic ownership and programmable governance. This layer runs on top of chat and agent layer 2, and it is described in this document.
 
+No network-wide user profile identifiers exist at any of these layers.
+
 SMP provides point-to-point delivery. Chat protocol provides conversations. Channels provide publication, distribution, and management of stateful information. Just as SMP enables private messaging by providing transport without user identifiers, channels enable public communication while preserving the same privacy properties at the distribution layer.
 
-The crucial architectural consequence of this layering is that channel relays are themselves SimpleX clients in the SMP network. A relay connects to SMP routers using the same protocol, the same 2-hop onion routing, and the same fixed-size transport blocks as any other SimpleX endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. Relays don't even have a separate codebase - any CLI client can act as a chat relay without any modifications.
+The crucial architectural consequence of this layering is that channel relays are themselves SimpleX clients in the SMP network. A relay connects to SMP routers using the same protocol, the same 2-node onion routing, and the same fixed-size transport blocks as any other SimpleX endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. Relays don't even have a separate codebase - any CLI client can act as a chat relay without any modifications.
 
 Channels therefore inherit all of SMP's transport privacy properties:
 
-- **Relays cannot observe subscriber network addresses.** The relay sees SMP queue addresses, not IP addresses or network sessions. The subscriber's IP is known only to their SMP router, which cannot see the message content (encrypted at the agent layer).
+- **Relays cannot observe subscriber network addresses.** The relay sees SMP queue addresses, not IP addresses or network sessions. The subscriber's IP is known only to their SMP router, which cannot see the message content (encrypted at the agent layer), and cannot see the IP addresses of whoever sends messages.
 
 - **SMP routers cannot see channel content.** Messages between relay and subscriber are end-to-end encrypted. The SMP router forwards fixed-size encrypted blocks without knowing whether they carry channel messages, direct messages, or anything else.
 
 - **Participation in multiple channels is unlinkable.** Each channel connection uses independent SMP queues with separate cryptographic credentials. A relay serving multiple channels cannot link them; an SMP router carrying traffic to multiple relays cannot link them either.
 
-No single point in the system sees both content and network identity. SMP routers see network addresses but not content. Relays see content but not network addresses.
+No single point in the system sees both content and network identity. SMP routers see network addresses but not content, and no SMP router can see which endpoints are communicating, because of clients choosing indepently operated nodes for message delivery. Relays see content but not network addresses.
 
 ### Content visibility and participant privacy
 
-This transport layering produces a specific combination of properties for public communication that is not present in any other publishing system.
+This transport layering produces a combination of properties for public communication that is not present in any other publishing system.
 
 Any channel joinable via a public link must be considered completely public - the cost of joining through automated means has collapsed with large language models and is approaching zero. End-to-end encrypting such content provides no privacy; it only harms users by creating a false expectation and harms operators by making them unable to see what they deliver.
 
-Channel content is therefore not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. Relay operators cannot alter or moderate channel content - the authoritative record is held by owners - but they can decide whether to deliver a given channel, and stop delivering channels they do not want to serve.
+Channel content is therefore not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. Relay operators cannot alter or moderate channel content - the authoritative state of the content is held by owners - but they can decide whether to deliver a given channel, and stop delivering channels they do not want to serve.
 
 The achievable privacy property for public communication is participation privacy - protecting who reads and writes, not what. SimpleX Channels provide this because of the SMP transport: it carries no user identifiers, and relays are ordinary SMP clients. Subscribers connect without revealing their identity, network address, or any information that persists across channels. If an adversary joins a SimpleX channel, they see everything that was said, but cannot determine who said it or link any participant to anything outside the channel.
 
-Other systems make the opposite choice: content encryption in exchange for participant identification. For public-link groups this is exactly backwards - the content encryption is meaningless (anyone can join and read), while the participant identification is the real harm.
+Other systems make the opposite choice: content encryption in exchange for participant identification. For public-link groups this is exactly backwards - the content encryption is meaningless (anyone can join and read), while the participant identification is the real security threat.
 
 ### In comparison
 
