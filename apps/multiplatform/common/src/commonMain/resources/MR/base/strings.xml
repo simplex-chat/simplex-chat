@@ -1702,6 +1702,8 @@
   <string name="one_hand_ui">Reachable app toolbars</string>
   <string name="chat_bottom_bar">Reachable chat toolbar</string>
   <string name="one_hand_ui_card_title">Toggle chat list:</string>
+  <string name="one_hand_ui_bottom_bar">Bottom bar</string>
+  <string name="one_hand_ui_top_bar">Top bar</string>
   <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
