@@ -1,6 +1,4 @@
-Revision 2, 2026-04-28
-
-Evgeny Poberezkin
+Revision 1, 2026-04-28
 
 # SimpleX Channels: stateful information delivery and management
 

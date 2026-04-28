@@ -1,7 +1,5 @@
 Revision 1, 2026-04-28
 
-Evgeny Poberezkin
-
 # SimpleX Channels Protocol
 
 For architecture, design rationale, security properties, and threat model, see [SimpleX Channels Overview](./channels-overview.md).
