@@ -11,6 +11,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.getBitmapFromByteArray
+import chat.simplex.common.views.helpers.mirrorIfRtl
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -33,7 +34,7 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
     Box(Modifier.fillMaxSize().padding(bottom = 50.dp)) {
       SurfaceFromPlayer(player, modifier)
       IconButton(onClick = close, Modifier.padding(top = 5.dp)) {
-        Icon(painterResource(MR.images.ic_arrow_back_ios_new), null, Modifier.size(30.dp), tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_arrow_back_ios_new), null, Modifier.size(30.dp).mirrorIfRtl(), tint = MaterialTheme.colors.primary)
       }
     }
     Controls(player)

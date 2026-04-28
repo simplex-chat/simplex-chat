@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.isInDarkTheme
+import chat.simplex.common.views.helpers.mirrorIfRtl
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
@@ -87,7 +88,7 @@ private fun CIMetaText(
   }
   if (showViaProxy && meta.sentViaProxy == true) {
     Spacer(Modifier.width(4.dp))
-    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_arrow_forward), null, Modifier.height(17.dp).mirrorIfRtl(), tint = MaterialTheme.colors.secondary)
   }
   if (showStatus) {
     Spacer(Modifier.width(4.dp))

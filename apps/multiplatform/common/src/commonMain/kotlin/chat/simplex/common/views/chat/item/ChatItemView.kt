@@ -1231,7 +1231,7 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
   return this.clip(shape)
 }
 
-private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
+private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, layoutDirection ->
   val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
   val width = size.width
   val height = size.height
@@ -1283,7 +1283,10 @@ private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boole
     quadraticBezierTo(bubbleInitialX, 0f, bubbleInitialX + rx, 0f) // Top-left corner
   }
 
-  if (sent) {
+  // The default path draws the tail at the bottom-left corner. We mirror the path so the tail
+  // ends up on the side closer to the message author's profile in chat: right for sent in LTR,
+  // left for received in LTR — and the opposite under RTL where chat sides are mirrored.
+  if (sent != (layoutDirection == LayoutDirection.Rtl)) {
     val matrix = Matrix()
     matrix.scale(-1f, 1f)
     this.transform(matrix)
