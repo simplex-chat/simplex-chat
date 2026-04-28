@@ -16,6 +16,7 @@ Evgeny Poberezkin
   - [Identity and ownership](#identity-and-ownership)
   - [Governance](#governance)
   - [Roles](#roles)
+- [Cryptographic primitives](#cryptographic-primitives)
 - [Security](#security)
   - [Design objectives](#design-objectives)
   - [Signing scope: roster only, content optional](#signing-scope-roster-only-content-optional)
@@ -39,6 +40,8 @@ Evgeny Poberezkin
 SimpleX Channels are a stateful information delivery and management layer built on the [SimpleX network](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md). Where SMP queues provide stateless, unidirectional packet delivery between two endpoints, channels add persistence, state, and scalable distribution, enabling one-to-many publishing with cryptographic identity that is independent of the infrastructure operators.
 
 [SimpleX Chat](https://simplex.chat) is the first application using channels. It presents them as a broadcast publication model similar to Telegram channels, where owners publish and subscribers read, add reactions and comment. But channels are not limited to this use case. They are a general-purpose layer for any application that needs to distribute and manage stateful information across a set of participants (feeds, telemetry collection, automated pipelines, coordination services, social media and other consumer-facing applications), using the same delivery and management mechanisms.
+
+This document describes channels as a transport mechanism. SimpleX Chat uses the same term for its broadcast feature, which is the first application of this transport - but the same mechanism will also be used for large groups, and can support communities, wikis, forums, and other social media primitives.
 
 The critical difference from conventional publish-subscribe systems is that channel identity and governance are controlled cryptographically by the channel owners, not by the infrastructure operators. Relays - the network nodes that forward and optionally cache channel content - can be added, removed, and replaced without changing the channel's identity, address, content, or cryptographic trust chain. A channel's relationship with its relays is transient; a channel's identity is permanent. This is unlike a website, whose identity (domain name) is controlled by a hosting provider and registrar. It is more like a set of owners' cryptographic keys that happen to have content distribution attached to it, where the authoritative record of this content is hosted on channel owners devices, and relays perform transmission and optional caching function similar to CDN infrastructure.
 
@@ -227,6 +230,21 @@ Each relay holds:
 - Optionally, a **content cache** - recent messages retained to serve history to new subscribers. The depth and retention policy of this cache is a relay operational decision, not a protocol requirement.
 
 The relay's relationship with the channel is transient. The owner can add new relays and remove existing ones without changing the channel's identity or its address. When a relay is removed, it forwards the deletion event to its subscribers and shuts down. Subscribers who were connected to the removed relay can restore their connection by retrieving the channel's link data, which lists the current set of relay links, and connecting to a remaining relay.
+
+For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
+
+
+## Cryptographic primitives
+
+Channel identity, ownership, and administrative integrity rely on the following cryptographic primitives:
+
+- **Ed25519** - used for channel identity (root key pair), owner authorization chain (`OwnerAuth` signatures binding owner keys to the root key), and signing of administrative messages (roster changes, profile updates, channel deletion). The signature binding prefix includes the channel's entity ID and the sender's member ID, preventing cross-channel replay.
+
+- **SHA-256** - used to derive the channel's entity ID from the genesis root public key (`entityId = sha256(rootPubKey)`). This value is immutable and serves as the channel's permanent identity.
+
+- **Double ratchet with post-quantum KEM** (inherited from [SimpleX agent layer](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - provides end-to-end encryption for all SMP transport between relay and subscriber, relay and owner, and between any two SimpleX endpoints. This is not channel-specific cryptography - it is the standard SimpleX transport encryption that channels inherit by being built on the agent layer. Future E2E encrypted side conversations (support scope, member DMs, private channels) will use the same double ratchet mechanism.
+
+Content messages are not signed by default to preserve deniability - see [Signing scope](#signing-scope-roster-only-content-optional). Owners may opt into signing all content in a future protocol extension.
 
 
 ## Security
