@@ -1,4 +1,4 @@
-Revision 1, 2026-04-28
+Revision 2, 2026-04-28
 
 Evgeny Poberezkin
 
@@ -8,16 +8,14 @@ Evgeny Poberezkin
 
 - [Introduction](#introduction)
   - [What are SimpleX Channels](#what-are-simplex-channels)
-  - [Design philosophy](#design-philosophy)
+  - [Channels as transport layer](#channels-as-transport-layer)
+  - [Content visibility and participant privacy](#content-visibility-and-participant-privacy)
   - [In comparison](#in-comparison)
 - [Architecture](#architecture)
-  - [Authoritative state and distribution](#authoritative-state-and-distribution)
-  - [Participants and roles](#participants-and-roles)
-  - [Relay model](#relay-model)
-  - [Connection topology](#connection-topology)
-  - [Channel identity](#channel-identity)
-  - [Owner authorization chain](#owner-authorization-chain)
-  - [Channel governance](#channel-governance)
+  - [State: where truth lives and how it flows](#state-where-truth-lives-and-how-it-flows)
+  - [Identity: what a channel is and who controls it](#identity-what-a-channel-is-and-who-controls-it)
+  - [Governance: how decisions are made](#governance-how-decisions-are-made)
+  - [Roles: who does what](#roles-who-does-what)
 - [Protocol](#protocol)
   - [Channel creation](#channel-creation)
   - [Relay addition](#relay-addition)
@@ -57,17 +55,39 @@ The critical difference from conventional publish-subscribe systems is that chan
 
 The channel owners hold full control of the channel - its identity, content, governance rules, and membership - through self-custody of cryptographic keys. No infrastructure operator, relay provider, or third party can freeze, seize, revoke, or alter a channel without the owner's keys. This is the same property that blockchain systems achieve for financial assets through network-wide consensus, but channels achieve it for information management through local authority and cryptographic signatures - without the cost of global consensus, without a public ledger, and without sacrificing the privacy of participants.
 
-#### Design philosophy
+#### Channels as transport layer
 
-Most systems that attempt end-to-end encrypted group communication follow the same pattern: content is encrypted so the operator cannot see it; participants are identified so the operator can route to them. This means that while content is protected from the operator, participant identity (who is speaking, who is listening, who is in the room) is fully visible to the operator and to anyone who compromises the operator.
+The SimpleX network has three transport layers, each built on the one below:
 
-SimpleX Channels invert this trade-off:
+1. **SMP** ([SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md)) - stateless, unidirectional packet delivery between two endpoints through SMP routers. Provides fixed-size blocks, 2-hop onion routing, and transport metadata protection. No user identifiers exist at this layer.
 
-- **Content is visible to relay operators.** Relays can read the messages they forward. This is necessary - relay operators must be able to see what they host in order to moderate it, comply with law where required, and maintain the quality of their service.
+2. **SimpleX agents** ([agent protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - bidirectional, redundant connections between endpoints, with end-to-end double ratchet encryption. The [SimpleX Chat Protocol](./simplex-chat.md) runs at this layer, providing direct messaging, group communication, and file transfer.
 
-- **Participants are invisible to relay operators.** Subscribers connect to relays over SimpleX network connections that carry no user identity - no phone number, no username, no public key that persists across channels. The relay sees profiles, but those profiles link to no real identity and no other context where the same person may have spoken.
+3. **Channels** - stateful, one-to-many information delivery and management with cryptographic ownership and programmable governance. This is the layer described in this document.
 
-This design is only possible because the SimpleX network was built from the ground up without user identifiers. It is not a feature that can be added to a system that has identifiers - it is a consequence of not having them.
+SMP provides point-to-point delivery. Chat protocol provides conversations. Channels provide publication, distribution, and management of stateful information. Just as SMP enables private messaging by providing transport without user identifiers, channels enable public communication while preserving the same privacy properties at the distribution layer.
+
+The crucial architectural consequence of this layering is that channel relays are themselves SimpleX clients in the SMP network. A relay connects to SMP routers using the same protocol, the same 2-hop onion routing, and the same fixed-size transport blocks as any other SimpleX endpoint. The SMP network cannot distinguish a relay from a person's phone.
+
+This means that channels inherit all of SMP's transport privacy properties:
+
+- **Relays cannot observe subscriber network addresses.** A subscriber connects to a relay through SMP queues on SMP routers. The relay sees the SMP queue address, not the subscriber's IP address or network session. The subscriber's IP is known only to the SMP router they connect to, which in turn cannot see the message content (it is encrypted at the agent layer).
+
+- **SMP routers cannot see channel content.** Messages between relay and subscriber are end-to-end encrypted at the agent layer. The SMP router forwards fixed-size encrypted blocks without knowing whether they contain channel messages, direct messages, or anything else.
+
+- **Participation in multiple channels is unlinkable.** If a subscriber participates in multiple channels served by the same relay, the relay cannot determine this - each channel connection uses independent SMP queues with separate cryptographic credentials. The same is true at the SMP layer: if a subscriber's connections to different relays happen to pass through the same SMP router, the router cannot link them.
+
+No single point in the system sees both content and network identity. SMP routers see network addresses but not content. Relays see content but not network addresses. This separation is not a feature added to the channel layer - it is a structural consequence of channels being built on top of SMP transport, where relays are ordinary clients rather than privileged infrastructure.
+
+#### Content visibility and participant privacy
+
+This transport layering produces a specific and unusual combination of properties for public communication.
+
+Because channel content is not end-to-end encrypted between owner and subscriber (it is encrypted at the SMP transport layer, but relays decrypt and re-encrypt as they forward), relay operators can read the messages they handle. This is a deliberate choice. Relay operators must be able to see what they distribute in order to moderate it, comply with law where required, and maintain the quality of their service.
+
+Because the SMP transport below carries no user identifiers, and relays are ordinary SMP clients, subscribers connect to channels without revealing who they are. The relay sees subscriber profiles, but those profiles link to no real identity - no phone number, no username, no public key that persists across channels - and no network address or session information.
+
+This is the inverse of what every other public communication system provides. Conventional systems encrypt content so the operator cannot see it, and identify participants so the operator can route to them. SimpleX Channels make content visible and participants invisible. The inversion is not a design choice that could have been made differently - it follows from the fact that the SimpleX network has no user identifiers. Content visibility is a consequence of relays being forwarding nodes (they must see what they forward). Participant invisibility is a consequence of the SMP transport below (it has no identifiers to reveal).
 
 The practical result: an adversary can join a channel as a subscriber and see everything that was said. They cannot determine who said it. They cannot link any participant to anything outside the channel. Meanwhile, the relay operator can see what they host, declare a content policy, respond to complaints by inspecting content, and cooperate with law enforcement where legally required, without breaking any promise, because the promise was about participants, not about content.
 
@@ -102,7 +122,7 @@ SimpleX Channels make a different set of trade-offs:
 
 ## Architecture
 
-#### Authoritative state and distribution
+#### State: where truth lives and how it flows
 
 The most important architectural property of SimpleX Channels is where authoritative state lives: on the owner's devices, not on relays, not on any server, and not on any shared ledger.
 
@@ -110,51 +130,7 @@ The authoritative record of a channel - its content history, member roster, prof
 
 Where blockchain systems achieve sovereignty over shared state through network-wide consensus (every node validates every transaction), channels achieve it through cryptographic authority - the owner's signature is the only proof needed. Consensus is only required between channel owners, not across the entire network. This makes channels dramatically cheaper to operate, faster to respond, and private by default - the network does not need to know about the channel's existence, let alone validate its transactions.
 
-This means:
-
-- **Loss of a relay is loss of a cache node, not loss of data.** If a relay disappears or is removed, the owner can send the same content through a replacement relay. No content is permanently lost. Subscribers experience temporary disruption, not data loss.
-
-- **Loss of all owner devices is the genuinely catastrophic event.** It is the equivalent of losing the origin server with no backup. All relay caches become orphaned - they hold copies but can no longer receive new content or signed administrative updates. The channel's private keys are gone, so no new owners can be authorized and no signed messages can be produced. This is the real single point of failure in the architecture.
-
-- **Relays do not hold authoritative state.** A relay's local database is a delivery queue and optional content cache, not the channel's database. When a relay persists delivery tasks and jobs, that persistence serves delivery reliability - the ability to resume forwarding after a crash - not authoritative storage.
-
-- **Disagreements between relays can be resolved by the origin.** If two relays deliver different content for the same message, the owner can serve as the authoritative tiebreaker (through any reachable relay). This is stronger than probabilistic majority-of-honest-relays reasoning: the origin settles cache inconsistency.
-
-Subscribers hold their own received copies. For signed messages, these copies are independently verifiable - a subscriber can confirm that a roster change was signed by a legitimate owner without consulting the relay or the owner. For unsigned content messages, verification depends on cross-relay consistency or future transcript integrity mechanisms.
-
-#### Participants and roles
-
-A channel has three classes of participant, distinguished by their role in the member hierarchy:
-
-- **Owners** (`GROwner`) create the channel, control its identity and profile, manage the member roster, publish content, and hold the authoritative state on their devices. A channel must have at least one owner. Owners hold the private keys needed to sign administrative messages.
-
-- **Relays** (`GRRelay`) are distribution agents. They receive content from owners, cache it, and forward it to subscribers. They accept connection requests from new subscribers and introduce them to the channel. Relays cannot author messages of their own - their role is below `GRObserver` in the permission hierarchy. They hold no authoritative state - only cached copies and delivery queues. A channel must have at least one active relay.
-
-- **Subscribers** (`GRObserver` by default) connect to relays and receive content. They cannot send messages to the channel by default. Subscribers do not connect to each other or to owners directly - all communication passes through relays.
-
-Additional roles (`GRModerator`, `GRAdmin`, `GRMember`, `GRAuthor`) exist in the role hierarchy and are inherited from the group protocol. In the current channel implementation, subscribers are assigned `GRObserver` role by default, which permits receiving all messages but not sending.
-
-#### Relay model
-
-Relays are SimpleX Chat clients, not special-purpose servers. They run the same client code as any other participant, with a configuration flag that enables relay behavior (auto-accepting group join requests, forwarding messages, creating relay links). A relay can be operated by anyone - a channel operator, a third-party service provider, or a self-hosted instance.
-
-Each relay holds:
-
-- A **relay link** - a SimpleX contact address that subscribers use to connect to the channel through this relay. The relay link's immutable data includes the channel's entity ID, binding it to a specific channel.
-
-- **Connections to the owner(s)** via SMP queues, over which it receives content to forward.
-
-- **Connections to all subscribers** it serves, over which it delivers cached and forwarded content.
-
-- A **delivery queue** - persistent task and job records that ensure forwarding can resume after a crash. This is operational state for delivery reliability, not authoritative content storage.
-
-- Optionally, a **content cache** - recent messages retained to serve history to new subscribers. The depth and retention policy of this cache is a relay operational decision, not a protocol requirement.
-
-The relay's relationship with the channel is transient. The owner can add new relays and remove existing ones without changing the channel's identity or its address. When a relay is removed, it forwards the deletion event to its subscribers and shuts down. Subscribers who were connected to the removed relay can restore their connection by retrieving the channel's link data, which lists the current set of relay links, and connecting to a remaining relay.
-
-#### Connection topology
-
-In a channel, subscribers connect only to relay members. They do not establish direct connections with owners, other subscribers, or other relays. This is fundamentally different from the fully-connected topology of regular SimpleX groups, where every member connects to every other member.
+**How content flows:**
 
 ```
                      ┌──────────┐
@@ -172,15 +148,23 @@ In a channel, subscribers connect only to relay members. They do not establish d
        S1    S2    S3          S7    S8    S9   <- received copies
 ```
 
-Content originates on the owner's device and flows through relays to subscribers. Each relay independently forwards to all of its subscribers. When multiple relays exist, each subscriber receives the same message from each relay it is connected to, and deduplicates at the client level.
+Content originates on the owner's device and flows through relays to subscribers. Each relay independently forwards to all of its subscribers. When multiple relays serve the same channel, each subscriber receives the same message from each relay it is connected to, and deduplicates at the client level.
 
-This topology provides:
+Subscribers do not connect to owners or to each other - all communication passes through relays. This star topology provides scalability (adding subscribers requires only a new relay connection, not N connections to N existing members), subscriber privacy (a subscriber's connection metadata is known only to the relay it connects to), and moderate load on owners (each message is sent once per relay, not once per subscriber).
 
-1. **Scalability** - adding subscribers requires only a new connection to a relay, not N new connections to N existing members.
-2. **Subscriber privacy** - subscribers' connection metadata (IP addresses, sessions) is known only to the relay they connect to, not to the owner or other subscribers.
-3. **Moderate load on owners** - owners send each message once per relay, not once per subscriber.
+**Consequences of this data architecture:**
 
-#### Channel identity
+- **Loss of a relay is loss of a cache node, not loss of data.** If a relay disappears or is removed, the owner can send the same content through a replacement relay. No content is permanently lost. Subscribers experience temporary disruption, not data loss.
+
+- **Loss of all owner devices is the genuinely catastrophic event.** It is the equivalent of losing the origin server with no backup. All relay caches become orphaned - they hold copies but can no longer receive new content or signed administrative updates. The channel's private keys are gone, so no new owners can be authorized and no signed messages can be produced. This is the real single point of failure in the architecture.
+
+- **Relays do not hold authoritative state.** A relay's local database is a delivery queue and optional content cache, not the channel's database. When a relay persists delivery tasks and jobs, that persistence serves delivery reliability - the ability to resume forwarding after a crash - not authoritative storage.
+
+- **Disagreements between relays can be resolved by the origin.** If two relays deliver different content for the same message, the owner can serve as the authoritative tiebreaker (through any reachable relay). This is stronger than probabilistic majority-of-honest-relays reasoning: the origin settles cache inconsistency.
+
+Subscribers hold their own received copies. For signed messages, these copies are independently verifiable - a subscriber can confirm that a roster change was signed by a legitimate owner without consulting the relay or the owner. For unsigned content messages, verification depends on cross-relay consistency or future transcript integrity mechanisms.
+
+#### Identity: what a channel is and who controls it
 
 A channel's identity is a cryptographic value derived from the key pair generated at creation time:
 
@@ -188,19 +172,11 @@ A channel's identity is a cryptographic value derived from the key pair generate
 entityId = sha256(genesisRootPubKey)
 ```
 
-This entity ID is:
-
-- Set at creation, never changes, even if relays are added, removed, or the channel link is rotated.
-- Self-authenticating - derived from a key pair that only the channel creator held at creation time.
-- Stored in the immutable part of the channel's short link data (`linkEntityId` in `FixedLinkData`).
-- Included in the channel's group profile (`publicGroupId` in `PublicGroupProfile`), distributed to all members.
-- Used in the signature binding prefix for all signed messages.
+This entity ID is set at creation and never changes, even if relays are added, removed, or the channel link is rotated. It is self-authenticating - derived from a key pair that only the channel creator held at creation time. It is stored in the immutable part of the channel's short link data (`linkEntityId` in `FixedLinkData`), included in the channel's group profile (`publicGroupId` in `PublicGroupProfile`) distributed to all members, and used in the signature binding prefix for all signed messages.
 
 Current clients validate that the entity ID from the link matches the entity ID in the group profile (preventing link substitution), and reject profile updates that attempt to change it. Full validation that `entityId == sha256(rootKey)` is deferred to a future protocol version that includes key rotation. See the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md) for the rationale.
 
-#### Owner authorization chain
-
-Channel ownership is established through a chain of authorization rooted in the genesis key:
+**Owner authorization chain.** Channel ownership is not tied to the root key directly. Instead, the root key authorizes owner keys through a chain:
 
 1. At creation, the owner generates a **root key pair** (Ed25519). The public key is embedded in the channel link's immutable fixed data. The private key is retained only by the creator.
 
@@ -220,7 +196,7 @@ Channel ownership is established through a chain of authorization rooted in the 
 
 This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which conceals the creator's identity.
 
-#### Channel governance
+#### Governance: how decisions are made
 
 "Management" in "information delivery and management" refers not only to managing content but to managing the channel itself - who can make decisions, and how.
 
@@ -237,6 +213,34 @@ The low-level protocol supports multiple owners from the initial release. The ap
 This is analogous to what smart contracts achieve for on-chain governance, but without requiring a blockchain. A smart contract encodes governance rules that are enforced by network-wide consensus - every node on the network validates every governance action, which is expensive, public, and slow. Channel articles encode the same kinds of rules, but they are enforced by the channel's owners and verified by its subscribers - the only parties who need to care. The governance scope is the channel, not the network. This makes programmable governance practical for real-time communication, where blockchain-based governance would introduce unacceptable latency and cost.
 
 This progression matters because as channels grow beyond a single publisher's personal project into shared institutions - media organizations, communities, cooperatives - the governance model becomes the channel's constitution. The protocol must support this without prescribing it.
+
+#### Roles: who does what
+
+A channel has three classes of participant, distinguished by their role in the member hierarchy:
+
+- **Owners** (`GROwner`) create the channel, control its identity and profile, manage the member roster, publish content, and hold the authoritative state on their devices. A channel must have at least one owner. Owners hold the private keys needed to sign administrative messages.
+
+- **Relays** (`GRRelay`) are distribution agents. They receive content from owners, cache it, and forward it to subscribers. They accept connection requests from new subscribers and introduce them to the channel. Relays cannot author messages of their own - their role is below `GRObserver` in the permission hierarchy. They hold no authoritative state - only cached copies and delivery queues. A channel must have at least one active relay.
+
+- **Subscribers** (`GRObserver` by default) connect to relays and receive content. They cannot send messages to the channel by default.
+
+Additional roles (`GRModerator`, `GRAdmin`, `GRMember`, `GRAuthor`) exist in the role hierarchy and are inherited from the group protocol. In the current channel implementation, subscribers are assigned `GRObserver` role by default, which permits receiving all messages but not sending.
+
+**Relay model.** Relays are SimpleX Chat clients, not special-purpose servers. They run the same client code as any other participant, with a configuration flag that enables relay behavior (auto-accepting group join requests, forwarding messages, creating relay links). A relay can be operated by anyone - a channel operator, a third-party service provider, or a self-hosted instance.
+
+Each relay holds:
+
+- A **relay link** - a SimpleX contact address that subscribers use to connect to the channel through this relay. The relay link's immutable data includes the channel's entity ID, binding it to a specific channel.
+
+- **Connections to the owner(s)** via SMP queues, over which it receives content to forward.
+
+- **Connections to all subscribers** it serves, over which it forwards cached content.
+
+- A **delivery queue** - persistent task and job records that ensure forwarding can resume after a crash. This is operational state for delivery reliability, not authoritative content storage.
+
+- Optionally, a **content cache** - recent messages retained to serve history to new subscribers. The depth and retention policy of this cache is a relay operational decision, not a protocol requirement.
+
+The relay's relationship with the channel is transient. The owner can add new relays and remove existing ones without changing the channel's identity or its address. When a relay is removed, it forwards the deletion event to its subscribers and shuts down. Subscribers who were connected to the removed relay can restore their connection by retrieving the channel's link data, which lists the current set of relay links, and connecting to a remaining relay.
 
 
 ## Protocol
@@ -481,7 +485,7 @@ The channel protocol is designed to achieve the following security objectives:
 4. **Prevention of relay-initiated roster manipulation** - member removal, role changes, and other roster modifications require valid owner signatures.
 5. **Relay transience** - the owner can add and remove relays, including the last relay, without permanently losing the channel. Subscribers can restore connectivity by retrieving updated link data.
 6. **Sender anonymity within multi-owner channels** - owners can publish as the channel, hiding which specific owner authored a message.
-7. **Participant privacy** - relay operators cannot determine subscriber identity, and subscribers cannot determine each other's identity.
+7. **Participant privacy** - relay operators cannot determine subscriber identity or network address, and subscribers cannot determine each other's identity. This is inherited from the SMP transport layer.
 
 #### Signing scope: roster only, content optional
 
@@ -521,7 +525,9 @@ This threat model assumes the SimpleX network threat model (see [SimpleX Network
 
 - Redirect a joining subscriber to a different channel - the entity ID in the relay link's immutable data is validated against the channel link's entity ID.
 
-- Determine the real-world identity of subscribers - subscriber connections carry no persistent identity.
+- Determine the real-world identity or network address of subscribers - subscriber connections pass through the SMP transport layer, which provides 2-hop onion routing and carries no user identifiers.
+
+- Correlate a subscriber's participation across multiple channels, even channels served by the same relay - each channel connection uses independent SMP queues with separate cryptographic credentials.
 
 **A compromised relay when other relays are not compromised**
 
@@ -559,7 +565,7 @@ This is the genuinely catastrophic failure mode - equivalent to losing the origi
 
 *cannot:*
 
-- Determine the identity of other subscribers - subscribers do not connect to each other.
+- Determine the identity of other subscribers - subscribers do not connect to each other, and the relay does not reveal subscriber identities.
 
 - Send messages to the channel (unless their role is elevated above `GRObserver`).
 
@@ -569,13 +575,15 @@ This is the genuinely catastrophic failure mode - equivalent to losing the origi
 
 *can:*
 
-- Observe that a device is communicating with a relay (an SMP router), but this is true for all SimpleX communication, not specific to channels.
+- Observe that a device is communicating with an SMP router, but cannot determine whether the traffic is channel-related, direct messaging, or any other SimpleX protocol use.
 
 *cannot:*
 
 - Determine which channel a subscriber is connected to, due to SMP's 2-hop onion routing and fixed-size transport blocks.
 
 - Correlate a subscriber's channel activity with their other SimpleX activity, because different connections use independent SMP queues with no shared identifiers.
+
+- Determine that an SMP endpoint is a channel relay rather than an ordinary user, because relays use the same SMP client protocol as all other endpoints.
 
 #### Current gaps
 
@@ -642,7 +650,7 @@ The current protocol supports adding relays at channel creation. Planned extensi
 
 #### Governance evolution
 
-The governance progression described in [Channel governance](#channel-governance) requires protocol extensions at each stage:
+The governance progression described in [Channel governance](#governance-how-decisions-are-made) requires protocol extensions at each stage:
 
 - **Multiple owners (v7):** Protocol support for multiple `OwnerAuth` entries with concurrent administrative authority. Any owner can act independently. Conflict resolution follows last-writer-wins semantics.
 
