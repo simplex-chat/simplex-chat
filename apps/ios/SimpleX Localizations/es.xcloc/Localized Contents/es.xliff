@@ -607,7 +607,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="A link for one person to connect" xml:space="preserve" approved="no">
         <source>A link for one person to connect</source>
-        <target state="translated">Enlace para conectar una persona</target>
+        <target state="translated">Enlace para una persona</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
@@ -2215,7 +2215,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connect via link or QR code" xml:space="preserve" approved="no">
         <source>Connect via link or QR code</source>
-        <target state="translated">Conecta mediante enlace o código QR</target>
+        <target state="translated">Conecta con enlace o QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
@@ -4356,7 +4356,7 @@ server test error</note>
       </trans-unit>
       <trans-unit id="For anyone to reach you" xml:space="preserve" approved="no">
         <source>For anyone to reach you</source>
-        <target state="translated">Para que cualquiera acceda a tí</target>
+        <target state="translated">Cualquiera puede contactarte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">
@@ -5065,7 +5065,7 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Invite someone privately" xml:space="preserve" approved="no">
         <source>Invite someone privately</source>
-        <target state="translated">Invita a alguien en privado</target>
+        <target state="translated">Invitación privada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to chat" xml:space="preserve">
@@ -5273,7 +5273,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Let someone connect to you" xml:space="preserve" approved="no">
         <source>Let someone connect to you</source>
-        <target state="translated">Permite que alguien contacte contigo</target>
+        <target state="translated">Conéctate con alguien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -6561,7 +6561,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Or use this QR - print or show online." xml:space="preserve" approved="no">
         <source>Or use this QR - print or show online.</source>
-        <target state="translated">O usa el QR - imprímelo o muestralo en línea.</target>
+        <target state="translated">O usa este QR - imprímelo o muestralo en línea.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Organize chats into lists" xml:space="preserve">
@@ -7987,7 +7987,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send the link via any messenger - it's secure. Ask to paste into SimpleX." xml:space="preserve" approved="no">
         <source>Send the link via any messenger - it's secure. Ask to paste into SimpleX.</source>
-        <target state="translated">Envía el enlace mediante cualquier mensajero, es seguro. Pide que lo copien en SimpleX.</target>
+        <target state="translated">Envía el enlace con cualquier mensajero, es seguro. El contacto debe pegarlo en SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -8898,7 +8898,7 @@ La dirección del servidor se usó para establecer el servidor para el canal.</t
       </trans-unit>
       <trans-unit id="Talk to someone" xml:space="preserve" approved="no">
         <source>Talk to someone</source>
-        <target state="translated">Habla con alguien</target>
+        <target state="translated">Para comunicarte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
