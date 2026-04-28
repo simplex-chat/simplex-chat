@@ -107,18 +107,15 @@ SimpleX Channels occupy a distinct position in the design space of public and se
 
 SimpleX Channels make a different set of trade-offs:
 
-| Property | Telegram | Nostr | Signal | Matrix | Mastodon | SimpleX |
+| Property | Telegram | Nostr | Signal | Matrix | Mastodon | **SimpleX** |
 |---|---|---|---|---|---|---|
-| Content visible to operator | Yes | Yes | No | Configurable | Yes | Yes |
+| Content visible to operator | Yes | Yes | No | Configurable | Yes | **Yes** |
 | Participant identity visible to operator | Yes | Yes | Yes | Yes | Yes | **No** |
-| Channel identity independent of infrastructure | No | Yes | N/A | No | No | **Yes** |
-| Sovereign ownership (no third party can seize) | No | Yes | No | No | No | **Yes** |
+| Channel identity independent of infrastructure | No | Yes | No | No | No | **Yes** |
+| Sovereign ownership (no 3rd party can seize) | No | Yes | No | No | No | **Yes** |
 | Programmable governance | No | No | No | No | No | **Planned** |
-| Cross-relay consistency verification | N/A | No | N/A | N/A | N/A | **Yes** |
-| Content deniability (no proof of authorship) | No | No | Yes | Yes | No | **Yes (default)** |
+| Content deniability | No | No | Yes | Yes | No | **Yes (default)** |
 | Scalable one-to-many delivery | Yes | Yes | No | Limited | Yes | **Yes** |
-| Operator can see hosted content | Yes | Yes | No | Partial | Yes | **Yes** |
-
 
 ## Architecture
 
@@ -128,7 +125,7 @@ The most important architectural property of SimpleX Channels is where authorita
 
 The authoritative record of a channel - its content history, member roster, profile, cryptographic keys, and governance rules - is held by channel owners on their own devices. No intermediary holds it, and no intermediary can alter it. Relays hold transient copies of this state for the purpose of distribution and optional caching. The relationship is analogous to origin servers and CDN edge nodes: the origin holds the truth, and the CDN distributes copies. CDN nodes come and go; the origin persists.
 
-Where blockchain systems achieve sovereignty over shared state through network-wide consensus (every node validates every transaction), channels achieve it through cryptographic authority - the owner's signature is the only proof needed. Consensus is only required between channel owners, not across the entire network. This makes channels dramatically cheaper to operate, faster to respond, and private by default - the network does not need to know about the channel's existence, let alone validate its transactions.
+Where blockchain systems achieve sovereignty over shared state through network-wide consensus (every node validates every transaction), channels achieve it through cryptographic authority - the owner's signature is the only proof needed. Consensus is only required between channel owners, not across the entire network. This makes channels cheaper to operate, faster to respond, and private by default - the network does not need to know about the channel's existence, or validate its changes.
 
 **How content flows:**
 
@@ -150,13 +147,13 @@ Where blockchain systems achieve sovereignty over shared state through network-w
 
 Content originates on the owner's device and flows through relays to subscribers. Each relay independently forwards to all of its subscribers. When multiple relays serve the same channel, each subscriber receives the same message from each relay it is connected to, and deduplicates at the client level.
 
-Subscribers do not connect to owners or to each other - all communication passes through relays. This star topology provides scalability (adding subscribers requires only a new relay connection, not N connections to N existing members), subscriber privacy (a subscriber's connection metadata is known only to the relay it connects to), and moderate load on owners (each message is sent once per relay, not once per subscriber).
+Subscribers do not connect to owners or to each other - all communication passes through relays. This star topology provides better scalability that peer-to-peer SimpleX groups (adding subscribers requires only a new relay connection, not N connections to N existing members), subscriber privacy (a subscriber's connection metadata is known only to the relay it connects to), and moderate load on owners (each message is sent once per relay, not once per subscriber).
 
 **Consequences of this data architecture:**
 
 - **Loss of a relay is loss of a cache node, not loss of data.** If a relay disappears or is removed, the owner can send the same content through a replacement relay. No content is permanently lost. Subscribers experience temporary disruption, not data loss.
 
-- **Loss of all owner devices is the genuinely catastrophic event.** It is the equivalent of losing the origin server with no backup. All relay caches become orphaned - they hold copies but can no longer receive new content or signed administrative updates. The channel's private keys are gone, so no new owners can be authorized and no signed messages can be produced. This is the real single point of failure in the architecture.
+- **Loss of all owner devices is the catastrophic event.** It is the equivalent of losing the origin server with no backup. All relay caches become orphaned - they hold copies but can no longer receive new content or signed administrative updates. The channel's private keys are gone, so no new owners can be authorized and no signed messages can be produced. Having multiple owners (or single owner's devices) together with backups mitigates this risk.
 
 - **Relays do not hold authoritative state.** A relay's local database is a delivery queue and optional content cache, not the channel's database. When a relay persists delivery tasks and jobs, that persistence serves delivery reliability - the ability to resume forwarding after a crash - not authoritative storage.
 
@@ -180,7 +177,7 @@ Current clients validate that the entity ID from the link matches the entity ID 
 
 1. At creation, the owner generates a **root key pair** (Ed25519). The public key is embedded in the channel link's immutable fixed data. The private key is retained only by the creator.
 
-2. The owner generates a separate **member key pair** for signing messages. The public key is published as an `OwnerAuth` entry, signed by the root key:
+2. The owner generates a separate **member key pair** for signing messages. The public key is stored in link data on SMP router as an `OwnerAuth` entry, signed by the root key:
 
    ```
    OwnerAuth {
@@ -194,7 +191,7 @@ Current clients validate that the entity ID from the link matches the entity ID 
 
 4. Future owners can be added by having an existing authorized key sign a new `OwnerAuth` entry. This creates a chain: root -> owner1 -> owner2 -> ... Each link in the chain is verifiable without network access.
 
-This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which conceals the creator's identity.
+This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which, provided multiple owners were signed by the root key conceals the creator's identity.
 
 #### Governance
 
