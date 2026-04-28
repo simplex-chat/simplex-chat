@@ -2631,10 +2631,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           BCCustomer -> customerId == memberId
         createProfileUpdatedItem m' (msg, brokerTs) = do
           (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
-          let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
-              cd = CDGroupRcv gInfo' scopeInfo m''
-          (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
-          groupMsgToView cInfo ci
+          let createItem scopeInfo_ m_ = do
+                let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
+                    cd = CDGroupRcv gInfo' scopeInfo_ m_
+                (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs ciContent
+                groupMsgToView cInfo ci
+          case scopeInfo of
+            Just _ -> createItem scopeInfo m''
+            Nothing
+              | useRelays' gInfo' && not (isRelay m'') && memberRole' m'' < GRModerator ->
+                  forM_ (supportChat m'') $ \_ ->
+                    createItem (Just GCSIMemberSupport {groupMember_ = Just m''}) m''
+              | otherwise -> createItem Nothing m''
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do
