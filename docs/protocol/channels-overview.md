@@ -163,6 +163,8 @@ Channel ownership is not tied to the root key directly. Instead, the root key au
 
 This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which - provided multiple owners were signed by the root key - conceals the creator's identity.
 
+The channel link serves as an out-of-band trust anchor that cannot be tampered with by relays or SMP routers (they cannot modify link content). All members announce their signing keys on joining. Owner keys are verifiable against the link. The trust chain extends further: role changes (promoting members to admin, moderator) will be signed by owners and recorded as a linearly ordered roster log, with consistent sequencing across all owners, relays, and subscribers. This linearization prevents ambiguous roster states that would arise from concurrent unordered role changes. The result is a chain of trust from the channel link through owners to all elevated roles, preventing relay MITM on member introductions and role assignments. Out-of-band key verification for non-owner members will further extend this protection to E2E encrypted conversations within the channel.
+
 #### Governance
 
 "Management" in "information delivery and management" refers not only to managing content but to managing the channel itself - who can make decisions, and how.
@@ -240,7 +242,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Substitute unsigned content or selectively drop messages for its subscribers. Detectable by subscribers connected to other relays - the owner's version is authoritative. TODO: difference detection not yet implemented.
 - Selectively target specific subscribers while delivering correctly to others.
 - Ignore the "message from channel" directive, revealing which owner sent a message. Detectable out-of-band.
-- Fabricate subscriber connections, inflating counts.
+- Fabricate or hide subscriber connections, inflating or deflating counts. Detectable if subscribers are connected to other relays.
 
 *cannot:*
 
@@ -249,7 +251,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 - Substitute the channel profile or impersonate an owner - these require valid signatures.
 - Redirect subscribers to a different channel - the entity ID is validated across link and profile.
 - Determine subscriber identity or network address - inherited from SMP transport.
-- Correlate subscriber participation across channels - each connection uses independent SMP queues.
+- Correlate subscriber participation across channels - each connection uses independent SMP queues with the subscriber's independently chosen SMP router, so even collusion between a relay and the relay's own SMP router does not compromise the subscriber's connection through a different router.
 
 **All relays compromised and colluding**
 
@@ -257,6 +259,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 
 - Undetectably substitute unsigned content for all subscribers, unless owners sign content messages.
 - Prevent delivery of any messages, including signed ones (signing prevents substitution, not dropping).
+- Fabricate or hide subscriber connections undetectably.
 
 *cannot:*
 
