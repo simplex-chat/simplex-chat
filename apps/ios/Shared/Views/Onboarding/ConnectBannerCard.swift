@@ -76,6 +76,7 @@ struct ConnectBannerCard: View {
                     Image(systemName: icon)
                         .font(.system(size: 18))
                         .foregroundColor(theme.colors.primary)
+                        .frame(height: 20)
                     #endif
                     Text(title)
                         .font(.footnote)
