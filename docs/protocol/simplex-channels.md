@@ -97,7 +97,7 @@ SimpleX Channels occupy a distinct position in the design space of public and se
 
 **Telegram channels** provide scalable one-to-many delivery with rich content management. The operator controls channel identity (usernames are revocable), has full access to both content and participant identity, and the infrastructure is centralized. Censorship operates through username seizure, channel banning, or operator cooperation. Channels cannot exist without Telegram's permission.
 
-**Nostr relays** share the property of cryptographic author identity - a Nostr publisher's identity is a key pair, independent of any relay. But a single persistent key is used for everything: publishing, subscribing, and follow lists. Relays see content, the publisher's key, and their IP address. All posts are signed and non-repudiable, follow lists are signed and public, and everything is linked to the same key - making both publishing and reading activity traceable and undeniable.
+**Nostr relays** use cryptographic user's identity - a Nostr publisher's identity is a key pair, independent of any relay. But a single persistent key is used for everything: publishing, subscribing, and follow lists. Relays see content, the publisher's key, and their IP address. All posts are signed and non-repudiable, follow lists are signed and public, and everything is linked to the same key - making both publishing and reading activity traceable and undeniable.
 
 **Signal groups** use end-to-end encryption with Sender Key distribution. Content is encrypted; the operator cannot see it. But the operator manages group state and can observe the membership graph. Groups are capped at 1,000 members, and there is no concept of a channel.
 
