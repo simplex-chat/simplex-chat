@@ -265,7 +265,7 @@ This threat model assumes the [SimpleX network threat model](https://github.com/
 
 **Loss of all owner devices**
 
-The channel is frozen: no new content, no administrative updates, no new owners. Relay caches continue serving existing content but cannot be refreshed. Multiple owners and key backups mitigate this risk.
+The channel can have no new content, no administrative updates, no new owners. Relay caches continue delivering existing content but cannot be refreshed, and will eventually expire in the absense of the owner connection. Multiple owners and key backups mitigate this risk.
 
 **A subscriber**
 
@@ -273,11 +273,10 @@ The channel is frozen: no new content, no administrative updates, no new owners.
 
 - See all public content, by design.
 - Join multiple times with different profiles, inflating counts.
-- Infer which owner sent a "channel" message if only one owner exists.
 
 *cannot:*
 
-- Identify other subscribers, send messages to the channel (unless given posting rights), or forge owner messages.
+- Identify other subscribers, send messages to the channel (unless given posting rights), or forge messages of the owner or other subscribers.
 
 **A passive network observer**
 
@@ -287,15 +286,13 @@ The channel is frozen: no new content, no administrative updates, no new owners.
 
 *cannot:*
 
-- Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user. All inherited from SMP transport properties.
+- Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user, other than by traffic volume. All inherited from SMP transport properties.
 
 #### Current gaps
 
 1. **Cross-relay consistency detection.** Duplicate messages are silently deduplicated without hash comparison. Designed but not implemented.
 2. **Link entity ID validation.** Deferred to a future version with key rotation. See [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
-3. **Relay profile validation.** Currently a stub.
-4. **Multi-relay UX.** Protocol supports multiple relays per subscriber; no UX for monitoring relay-level delivery health.
-5. **Member profile delivery vectors.** Relays could selectively withhold member profiles from specific subscribers.
+3. **Multi-relay UX.** Protocol supports multiple relays per subscriber; no UX for monitoring relay-level delivery health. It will be added in v6.5.x.
 
 
 ## Future work
@@ -306,7 +303,7 @@ Currently, relays send recent cached history on join but do not support navigati
 
 #### Transcript integrity
 
-- **Opt-in content signing.** Per-channel or per-message choice to sign content, making it non-repudiable.
+- **Opt-in content signing.** Per-channel or per-message choice to sign content, making it non-repudiable. This will be released in SimpleX Chat v7.
 - **Subscriber transcript acknowledgment.** Subscribers periodically sign a digest of received history ("I've seen it" rather than "I've authored it"), enabling detection of relay manipulation through diverging digests.
 - **Merkle tree signing.** Owner periodically publishes a signed Merkle root. Subscribers verify their copies against the owner's authoritative record.
 
@@ -314,11 +311,11 @@ Currently, relays send recent cached history on join but do not support navigati
 
 - **E2E encrypted support scope** between subscriber and moderator/owner.
 - **E2E encrypted DMs between members** where channel settings permit, using standard SimpleX connection establishment.
-- **Private channels** where the entire content stream is encrypted to authorized subscribers. The relay becomes a pure distribution conduit that sees neither content nor identity.
+- **Private channels** where the entire content stream is encrypted to authorized subscribers. The relay becomes a mere conduit that sees neither content nor identity.
 
 #### Relay addition and removal
 
-Dynamic relay addition with cache population from existing relays or owner. Relay removal with subscriber migration. Relay rotation with continuity - new relay connects before old relay is removed.
+Dynamic relay addition with cache population from existing relays or owner. Relay removal with subscriber migration. Relay rotation with continuity - new relay connects before old relay is removed. It will be added in v6.5.x.
 
 #### Governance evolution
 
