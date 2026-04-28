@@ -85,7 +85,7 @@ This transport layering produces a specific combination of properties for public
 
 Channel content is not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. This follows from a fundamental property of public communication: any channel joinable via a public link must be considered completely public. The cost of joining through automated means has collapsed with large language models and is approaching zero.
 
-Content distributed to strangers without a pre-existing trust relationship cannot be private, regardless of whether it is end-to-end encrypted in transit. Content with a public-link to join cannot have a meaningful privacy. It harms users by creating a false expectation of privacy, and it harms operators by making them unable to see what they deliver, increasing their risk and liability.
+Content distributed to strangers via a public link, without a pre-existing trust relationship, cannot be private, regardless of whether it is end-to-end encrypted in transit. It harms users by creating a false expectation of privacy, and it harms operators by making them unable to see what they deliver, increasing their risk and liability.
 
 The achievable privacy property for public communication is participation privacy - protecting who reads and writes, not what. SimpleX Channels provide this because of the SMP transport - it carries no user identifiers, and relays are ordinary SMP clients. Subscribers connect without revealing their identity, network address, or any information that persists across channels. That means that if adversaries joins a SimpleX channel, they see everything that was said, but they cannot determine who said it or link any participant to anything outside the channel.
 
