@@ -110,7 +110,7 @@ fun ToggleChatListCard() {
     horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
     ToolbarSegment(
-      icon = MR.images.ic_arrow_downward,
+      icon = MR.images.ic_mobile_3,
       text = stringResource(MR.strings.one_hand_ui_bottom_bar),
       isSelected = oneHandUI.value,
       selectedBg = selectedBg,
@@ -119,7 +119,7 @@ fun ToggleChatListCard() {
     ) { appPrefs.oneHandUI.set(true) }
     Box(Modifier.weight(1f).fillMaxHeight()) {
       ToolbarSegment(
-        icon = MR.images.ic_arrow_upward,
+        icon = MR.images.ic_mobile_4,
         text = stringResource(MR.strings.one_hand_ui_top_bar),
         isSelected = !oneHandUI.value,
         selectedBg = selectedBg,
