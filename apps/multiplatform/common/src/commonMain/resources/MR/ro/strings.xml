@@ -1890,7 +1890,6 @@
     <string name="video_descr">Video</string>
     <string name="voice_message_with_duration">Mesaj vocal (%1$s)</string>
     <string name="submit_passcode">Trimite</string>
-    <string name="one_hand_ui_card_title">Comută lista de conversații:</string>
     <string name="enter_passphrase_notification_desc">Pentru a primi notificări, te rugăm să introduci parola bazei de date</string>
     <string name="waiting_for_video">Se așteaptă videoclipul</string>
     <string name="connection_error_quota">Mesaje nelivrate</string>
