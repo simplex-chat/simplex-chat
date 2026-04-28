@@ -231,183 +231,109 @@ A client change will allow owners to opt into signing all messages, including co
 
 #### Threat model
 
-This threat model assumes the SimpleX network threat model (see [SimpleX Network Security](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md)) and addresses threats specific to the channel layer.
+This threat model assumes the [SimpleX network threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md) and addresses threats specific to the channel layer.
 
-**A single compromised relay (or all relays colluding)**
-
-*can:*
-
-- Serve fabricated content to subscribers by injecting arbitrary unsigned messages (regular content, reactions, edits) that do not require signature verification. The channel identity and signed profile remain intact, but the content stream as seen by subscribers can be fabricated. The authoritative content on the owner's device is unaffected.
-
-- Selectively drop messages, both content and administrative events, for some or all subscribers. This includes dropping signed roster changes, effectively blocking administrative actions from reaching subscribers. The owner's authoritative state still reflects the change, but subscribers don't see it until they receive it through another relay or out-of-band.
-
-- Selectively drop messages for specific subscribers while delivering correctly to others.
-
-- Ignore the "message from channel" directive from the owner, revealing which specific owner sent a message to subscribers. This is detectable out-of-band.
-
-- Fabricate new subscriber connections, inflating subscriber counts and potentially increasing costs for the owner.
-
-*cannot:*
-
-- Alter the channel's authoritative state - the owner's device holds the truth, and the relay has no access to it.
-
-- Substitute the channel profile - profile changes require a valid owner signature that the relay cannot produce.
-
-- Impersonate an owner for any message that requires a signature (roster changes, profile updates, channel deletion).
-
-- Redirect a joining subscriber to a different channel - the entity ID in the relay link's immutable data is validated against the channel link's entity ID.
-
-- Determine the real-world identity or network address of subscribers - subscriber connections pass through the SMP transport layer, which provides 2-hop onion routing and carries no user identifiers.
-
-- Correlate a subscriber's participation across multiple channels, even channels served by the same relay - each channel connection uses independent SMP queues with separate cryptographic credentials.
-
-**A compromised relay when other relays are not compromised**
+**A single compromised relay**
 
 *can:*
 
-- Serve different content to its own subscribers than what other relays deliver, but this discrepancy is detectable by subscribers connected to multiple relays. If the owner is reachable through an honest relay, the owner's version is authoritative. TODO: Difference detection and highlighting are designed but not yet implemented.
-
-- If the number of compromised relays equals the number of honest relays, create ambiguity about which relays are compromised - subscribers cannot determine which version of a message is genuine without checking against the owner (through a trusted relay) or using future transcript integrity mechanisms.
+- Substitute unsigned content or selectively drop messages for its subscribers. Detectable by subscribers connected to other relays - the owner's version is authoritative. TODO: difference detection not yet implemented.
+- Selectively target specific subscribers while delivering correctly to others.
+- Ignore the "message from channel" directive, revealing which owner sent a message. Detectable out-of-band.
+- Fabricate subscriber connections, inflating counts.
 
 *cannot:*
 
-- Forge signed administrative messages - subscribers verify these against the owner's public key regardless of which relay delivered them.
+- Undetectably substitute content - subscribers on honest relays receive the original.
+- Alter the channel's authoritative state on the owner's device.
+- Substitute the channel profile or impersonate an owner - these require valid signatures.
+- Redirect subscribers to a different channel - the entity ID is validated across link and profile.
+- Determine subscriber identity or network address - inherited from SMP transport.
+- Correlate subscriber participation across channels - each connection uses independent SMP queues.
+
+**All relays compromised and colluding**
+
+*can:*
+
+- Undetectably substitute unsigned content for all subscribers, unless owners sign content messages.
+- Prevent delivery of any messages, including signed ones (signing prevents substitution, not dropping).
+
+*cannot:*
+
+- Forge signed administrative messages or substitute the channel profile.
+- Alter the authoritative state on the owner's device.
 
 **Loss of all owner devices**
 
-*causes:*
-
-- Permanent loss of the channel's private keys. No new `OwnerAuth` entries can be created, no administrative messages can be signed, no new content can be published.
-
-- Relay caches become orphaned - they can continue serving cached content to existing subscribers, but cannot receive new content or authoritative administrative updates.
-
-- The channel is effectively frozen: existing content remains accessible through relays as long as the relays continue operating, but the channel cannot be updated, and its governance is permanently lost.
-
-This is the genuinely catastrophic failure mode - equivalent to losing the origin server with no backup. Mitigation requires owner-side backup of key material, which is an application-level concern outside the channel protocol.
+The channel is frozen: no new content, no administrative updates, no new owners. Relay caches continue serving existing content but cannot be refreshed. Multiple owners and key backups mitigate this risk.
 
 **A subscriber**
 
 *can:*
 
-- Infer which specific owner sent a "message from channel" if the channel has only a single owner. Client-side mitigation: the UI should prevent the channel-as-sender option when there is a single owner.
-
-- Join the channel multiple times with different profiles, inflating subscriber counts.
-
-- See all public content in the channel, by design.
+- See all public content, by design.
+- Join multiple times with different profiles, inflating counts.
+- Infer which owner sent a "channel" message if only one owner exists.
 
 *cannot:*
 
-- Determine the identity of other subscribers - subscribers do not connect to each other, and the relay does not reveal subscriber identities.
-
-- Send messages to the channel (unless their role is elevated above `GRObserver`).
-
-- Forge messages that appear to come from the channel or from an owner.
+- Identify other subscribers, send messages to the channel (unless given posting rights), or forge owner messages.
 
 **A passive network observer**
 
 *can:*
 
-- Observe that a device is communicating with an SMP router, but cannot determine whether the traffic is channel-related, direct messaging, or any other SimpleX protocol use.
+- Observe communication with an SMP router, but not whether it is channel-related.
 
 *cannot:*
 
-- Determine which channel a subscriber is connected to, due to SMP's 2-hop onion routing and fixed-size transport blocks.
-
-- Correlate a subscriber's channel activity with their other SimpleX activity, because different connections use independent SMP queues with no shared identifiers.
-
-- Determine that an SMP endpoint is a channel relay rather than an ordinary user, because relays use the same SMP client protocol as all other endpoints.
+- Determine which channel a subscriber uses, correlate channel activity with other SimpleX activity, or identify a relay as distinct from an ordinary user. All inherited from SMP transport properties.
 
 #### Current gaps
 
-The following security properties are designed but not yet fully implemented:
-
-1. **Cross-relay consistency detection.** Subscribers connected to multiple relays should compare message hashes and highlight discrepancies. Currently, duplicate messages from multiple relays are silently deduplicated without comparison.
-
-2. **Link entity ID validation.** Joiners do not yet validate that `linkEntityId == sha256(rootKey)` from the channel link's fixed data. This is deferred to allow forward compatibility with future key rotation. See [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
-
-3. **Relay profile validation.** When a relay processes a relay request, it should validate the channel profile and verify the owner's signature over the profile. Currently, profile validation is a stub (`validateGroupProfile` is a no-op).
-
-4. **Multi-relay subscriber connection.** Subscribers should connect to multiple relays for redundancy and consistency checking. The protocol supports this, but the current implementation connects to relays listed in the channel link without specific UX for monitoring relay-level delivery health.
-
-5. **Owner-signed member profile vectors.** Relays track which subscriber has received which member profiles, but do not yet prevent targeted withholding of profiles - a relay could selectively not forward certain member profiles to certain subscribers.
+1. **Cross-relay consistency detection.** Duplicate messages are silently deduplicated without hash comparison. Designed but not implemented.
+2. **Link entity ID validation.** Deferred to a future version with key rotation. See [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
+3. **Relay profile validation.** Currently a stub.
+4. **Multi-relay UX.** Protocol supports multiple relays per subscriber; no UX for monitoring relay-level delivery health.
+5. **Member profile delivery vectors.** Relays could selectively withhold member profiles from specific subscribers.
 
 
 ## Future work
 
-This section describes planned extensions to the channel protocol. These are at various stages of design, from well-specified to directional.
-
 #### Stateful access and history navigation
 
-SMP queues are stateless - once a message is delivered and expired, it is gone. Channels add state: content persists on the owner's device, and relay caches retain recent history. The current implementation sends recent cached history to new subscribers on join, but does not support navigating or searching older content.
-
-Planned extensions:
-
-- **History pagination.** Subscribers can request older messages from relays via an RPC-style protocol extension, paginated by timestamp or message ID. This is a cache query - the relay returns what it has cached, which may be incomplete depending on its retention policy.
-- **Remote search.** Subscribers can query relays for messages matching criteria. The relay executes the search against its cached messages and returns results. This requires trust in the relay to return complete results - cross-relay search comparison can mitigate this, and cache misses could in principle trigger requests through the relay back to the owner.
-- **Selective history retrieval.** Subscribers can request specific messages or ranges, rather than receiving the full cache. This reduces bandwidth for subscribers who join an established channel.
-
-These extensions transform channels from a delivery mechanism into an information management system. Relay operators can differentiate on cache depth and search capabilities - offering longer history retention or richer search as a service.
+Currently, relays send recent cached history on join but do not support navigation or search. Planned: history pagination by timestamp or message ID, remote search against relay caches, and selective retrieval of specific message ranges. Relay operators can differentiate on cache depth and search capabilities.
 
 #### Transcript integrity
 
-The current protocol signs administrative messages but not content. Cross-relay consistency provides detection of content manipulation, but only for subscribers connected to multiple relays.
-
-Planned mitigations:
-
-- **Opt-in owner content signing.** Owners can enable signing of all messages, including content. This makes all content non-repudiable (like Nostr), which is appropriate for some use cases (official announcements, legal publications) and inappropriate for others (informal discussion). The protocol already supports this - `requiresSignature` can be made configurable per channel.
-
-- **Subscriber transcript acknowledgment.** Subscribers periodically sign a digest of their received message history - an "I've seen it" signature rather than an "I've authored it" signature. This allows detection of relay manipulation even without opt-in content signing: if relays deliver different content to different subscribers, their transcript digests will diverge.
-
-- **Merkle tree signing.** The owner periodically publishes a signed Merkle root of the message history. Subscribers can verify that their received copies are consistent with the owner's authoritative record. Relays cannot fabricate this root without the owner's key.
+- **Opt-in content signing.** Per-channel or per-message choice to sign content, making it non-repudiable.
+- **Subscriber transcript acknowledgment.** Subscribers periodically sign a digest of received history ("I've seen it" rather than "I've authored it"), enabling detection of relay manipulation through diverging digests.
+- **Merkle tree signing.** Owner periodically publishes a signed Merkle root. Subscribers verify their copies against the owner's authoritative record.
 
 #### End-to-end encrypted side conversations
 
-The current support scope provides private messaging between a subscriber and moderators, but the relay can see these messages (as it can see all channel content). Planned extensions:
-
-- **E2E encrypted support scope.** Support conversations are encrypted end-to-end between the subscriber and the moderator/owner. The relay forwards the encrypted messages without being able to read them.
-
-- **E2E encrypted DMs between members.** Where the channel's settings permit it, members can establish direct encrypted connections with each other through the relay, without the relay being able to read the content. This uses the standard SimpleX connection establishment protocol, initiated through the channel context.
-
-- **Private channels.** For channels where content itself should be encrypted, the entire content stream is encrypted to a key shared among authorized subscribers. The relay forwards encrypted content it cannot read. This converts the relay's role from "sees content, doesn't see identity" to "sees neither content nor identity" - a pure distribution conduit.
+- **E2E encrypted support scope** between subscriber and moderator/owner.
+- **E2E encrypted DMs between members** where channel settings permit, using standard SimpleX connection establishment.
+- **Private channels** where the entire content stream is encrypted to authorized subscribers. The relay becomes a pure distribution conduit that sees neither content nor identity.
 
 #### Relay addition and removal
 
-The current protocol supports adding relays at channel creation. Planned extensions:
-
-- **Dynamic relay addition.** Adding new relays to an existing channel, with automatic subscriber redistribution. New relays populate their cache from existing relays or from the owner.
-
-- **Relay removal.** Removing a relay with subscriber migration. The removed relay forwards the deletion event and new relay information to its subscribers. Subscribers reconnect to remaining relays. If the last relay is removed, the owner must add a new one to restore channel functionality.
-
-- **Relay rotation.** Replacing a relay while maintaining service continuity. The new relay connects and populates its cache before the old relay is removed, minimizing disruption.
+Dynamic relay addition with cache population from existing relays or owner. Relay removal with subscriber migration. Relay rotation with continuity - new relay connects before old relay is removed.
 
 #### Governance evolution
 
-The governance progression described in [Channel governance](#governance-how-decisions-are-made) requires protocol extensions at each stage:
-
-- **Multiple owners (v7):** Protocol support for multiple `OwnerAuth` entries with concurrent administrative authority. Any owner can act independently. Conflict resolution follows last-writer-wins semantics.
-
-- **Multisig:** Administrative messages carry multiple signatures and are processed only when the required quorum is met. Different action types may require different quorums, and different owners may hold different voting weight.
-
-- **Code-based channel articles:** The channel definition includes executable governance rules - code that determines which actions require which approvals. This generalizes multisig into arbitrary governance: shareholding structures, hierarchical approval chains, role-specific executive powers, or any other management model that can be expressed as rules over the authorization chain.
+- **Multiple owners (v7):** concurrent administrative authority, any owner acts independently.
+- **Multisig:** M-of-N approval for administrative actions, with per-action quorums.
+- **Programmable governance:** rules defined as code in the channel definition.
 
 #### Pre-moderation
 
-For channels with strict content policies, pre-moderation allows all subscriber messages (in channels where subscribers can send, such as comment threads) to be reviewed by moderators before becoming visible to all subscribers.
+Subscriber messages reviewed by moderators before becoming visible to all subscribers.
 
 #### Scheduled delivery
 
-Owners can schedule messages for future delivery. The relay caches the message and delivers it at the scheduled time. This is a common requirement for publication channels - scheduling a week's worth of daily updates in a single session.
+Messages scheduled for future delivery, cached by relay until the scheduled time.
 
 #### Link preview proxying
 
-When a message contains a URL, a link preview (title, image, description) is typically generated by fetching the URL. This creates a privacy trade-off:
-
-- If the **sender** loads the preview, they leak their IP address to the URL's server.
-- If the **subscriber** loads the preview, they are exposed to tracking by the URL's server.
-- If an **external proxy** loads the preview (as Signal and WhatsApp do), the proxy, which is typically the messaging service operator, learns what URLs are being shared, undermining end-to-end encryption promises.
-
-The current implementation has the sender load previews on an opt-in basis, as the least harmful default.
-
-In channels, a better alternative is available: the **relay** loads the preview. The relay already sees the message content (including URLs), so it learns nothing new by fetching the preview. But unlike the sender, the relay's IP address is not linked to any real identity. Unlike an external proxy operated by a messaging service, the relay is not undermining an encryption promise - the content is already visible to it by design. This is the entity that has access to content but not to participant identity, making it the natural choice for preview generation.
-
-This approach gives senders previews before their messages are published, without exposing their IP address or creating a centralized proxy that correlates URL access with user identity.
+The relay loads link previews on behalf of the sender. The relay already sees message content, so it learns nothing new. Unlike the sender, its IP is not linked to any identity. Unlike external proxies (Signal, WhatsApp), it is not undermining an encryption promise - content is already visible to it by design.
