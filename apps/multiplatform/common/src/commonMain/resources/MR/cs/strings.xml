@@ -2246,7 +2246,6 @@
     <string name="chat_theme_set_default_theme">Nastavit výchozí téma</string>
     <string name="servers_info_uploaded">Nahráno</string>
     <string name="privacy_chat_list_open_links_yes">Ano</string>
-    <string name="one_hand_ui_card_title">Přepnout chat seznam:</string>
     <string name="change_automatic_chat_deletion_message">Tuto akci nelze zrušit - zprávy odeslané a přijaté v tomto chatu dříve než vybraná, budou smazány.</string>
     <string name="servers_info_reset_stats_alert_message">Statistiky serverů budou obnoveny - nemůže být vráceno!</string>
     <string name="v6_3_reports">Odešlete soukromý report</string>

@@ -2054,7 +2054,6 @@
     <string name="servers_info_reset_stats_alert_message">Sunucu istatistikleri sıfırlanacaktır - bu geri alınamaz!</string>
     <string name="one_hand_ui">Erişilebilir uygulama araç çubukları</string>
     <string name="one_hand_ui_change_instruction">Görünüm ayarlarından değiştirebilirsiniz.</string>
-    <string name="one_hand_ui_card_title">Sohbet listesini değiştir:</string>
     <string name="system_mode_toast">Sistem modu</string>
     <string name="v6_0_reachable_chat_toolbar">Erişilebilir sohbet araç çubuğu</string>
     <string name="servers_info_target">İçin bilgi gösteriliyor</string>

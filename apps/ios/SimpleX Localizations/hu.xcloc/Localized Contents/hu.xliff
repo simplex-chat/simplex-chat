@@ -1518,6 +1518,10 @@ a saját hálózatában</target>
         <target>Mindkét fél küldhet hangüzeneteket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bottom bar" xml:space="preserve">
+        <source>Bottom bar</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
         <target>Közvetítés…</target>
@@ -2228,11 +2232,6 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Kapcsolódás a következővel: %@</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Connect with someone" xml:space="preserve" approved="no">
-        <source>Connect with someone</source>
-        <target state="translated">Kapcsolatba lépés valakivel</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
         <target>Kapcsolódott</target>
@@ -2538,6 +2537,11 @@ Ez a saját egyszer használható meghívója!</target>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
         <target>Saját cím létrehozása</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create your link" xml:space="preserve">
+        <source>Create your link</source>
+        <target>Kapcsolatba lépés valakivel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -3454,11 +3458,6 @@ chat item action</note>
       <trans-unit id="Enable lock" xml:space="preserve">
         <source>Enable lock</source>
         <target>Zárolás engedélyezése</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Enable notifications" xml:space="preserve">
-        <source>Enable notifications</source>
-        <target>Értesítések engedélyezése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable periodic notifications?" xml:space="preserve">
@@ -5821,16 +5820,14 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Név</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Network&#10;commitments" xml:space="preserve" approved="no">
-        <source>Network
-commitments</source>
-        <target state="translated">Hálózati
-kötelezettségvállalások</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Hálózat és kiszolgálók</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network commitments" xml:space="preserve">
+        <source>Network commitments</source>
+        <target>Hálózati kötelezettségvállalások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
@@ -6258,9 +6255,9 @@ new chat action</note>
         <target>Régi adatbázis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="On your phone, not on any server." xml:space="preserve" approved="no">
-        <source>On your phone, not on any server.</source>
-        <target state="translated">Az Ön eszközén, nem pedig a kiszolgálókon.</target>
+      <trans-unit id="On your phone, not on servers." xml:space="preserve">
+        <source>On your phone, not on servers.</source>
+        <target>Az Ön eszközén, nem pedig a kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -9408,11 +9405,6 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) a partnere eszközén lévő kóddal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
-        <source>Toggle chat list:</source>
-        <target>Csevegési lista ki/be:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Inkognitó profil használata kapcsolódáskor ki/be.</target>
@@ -9426,6 +9418,10 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Eszköztár átlátszatlansága</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Top bar" xml:space="preserve">
+        <source>Top bar</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -9733,11 +9729,6 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
         <target>A 443-as TCP-port használata kizárólag az előre beállított kiszolgálókhoz.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Use chat" xml:space="preserve">
-        <source>Use chat</source>
-        <target>SimpleX Chat használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use current profile" xml:space="preserve">

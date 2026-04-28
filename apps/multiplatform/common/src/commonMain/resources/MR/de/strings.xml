@@ -2107,7 +2107,6 @@
     <string name="create_address_button">Erstellen</string>
     <string name="v6_0_upgrade_app_descr">Laden Sie neue Versionen von GitHub herunter.</string>
     <string name="v6_0_chat_list_media">Direkt aus der Chat-Liste abspielen.</string>
-    <string name="one_hand_ui_card_title">Chat-Liste umschalten:</string>
     <string name="one_hand_ui_change_instruction">Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.</string>
     <string name="v6_0_your_contacts_descr">Kontakte für spätere Chats archivieren.</string>
     <string name="v6_0_private_routing_descr">Ihre IP-Adresse und Verbindungen werden geschützt.</string>

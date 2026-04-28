@@ -45,33 +45,37 @@ struct CreateProfile: View {
     var body: some View {
         List {
             Group {
-                ZStack(alignment: .center) {
-                    ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profileImage, size: 128)
-                        if profileImage != nil {
-                            Button {
-                                profileImage = nil
-                            } label: {
-                                Image(systemName: "multiply")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 12)
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ZStack(alignment: .center) {
+                        ZStack(alignment: .topTrailing) {
+                            ProfileImage(imageStr: profileImage, size: 128)
+                            if profileImage != nil {
+                                Button {
+                                    profileImage = nil
+                                } label: {
+                                    Image(systemName: "multiply")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 12)
+                                }
                             }
                         }
-                    }
 
-                    editImageButton { showChooseSource = true }
-                        .buttonStyle(BorderlessButtonStyle())
+                        editImageButton { showChooseSource = true }
+                            .buttonStyle(BorderlessButtonStyle())
+                    }
+                    .padding(.horizontal, 10) // Offsets transparent space built into 3D asset
+                    Spacer(minLength: 0)
+                    #if SIMPLEX_ASSETS
+                    Image(colorScheme == .light ? "create-profile" : "create-profile-light")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 140)
+                    // No trailing spacer — asset image has empty space on the right
+                    #endif
                 }
-                // TODO: add 3D asset image next to profile image (fix asset first - trim transparent space)
-//                    #if SIMPLEX_ASSETS
-//                    Image(colorScheme == .light ? "your-profile" : "your-profile-light")
-//                        .resizable()
-//                        .scaledToFit()
-//                        .frame(height: 140)
-//                    #endif
             }
-            .frame(maxWidth: .infinity)
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 0, trailing: 0))

@@ -2007,7 +2007,6 @@
     <string name="network_option_tcp_connection">Połączenie TCP</string>
     <string name="selected_chat_items_nothing_selected">Nic nie jest zaznaczone</string>
     <string name="error_parsing_uri_desc">Sprawdź czy link SimpleX jest poprawny.</string>
-    <string name="one_hand_ui_card_title">Przełącz listę czatów:</string>
     <string name="v6_0_your_contacts_descr">Archiwizuj kontakty aby porozmawiać później.</string>
     <string name="v6_0_private_routing_descr">Chroni Twój adres IP i połączenia.</string>
     <string name="v6_0_reachable_chat_toolbar">Osiągalny pasek narzędzi czatu</string>

@@ -469,7 +469,7 @@
   <string name="talk_to_someone">Talk to someone</string>
   <string name="let_someone_connect_to_you">Let someone connect to you</string>
   <string name="connect_via_link_or_qr_code">Connect via link or QR code</string>
-  <string name="connect_with_someone">Connect with someone</string>
+  <string name="connect_with_someone">Create your link</string>
   <string name="invite_someone_privately">Invite someone privately</string>
   <string name="a_link_for_one_person">A link for one person to connect</string>
   <string name="create_your_public_address">Create your public address</string>
@@ -1701,7 +1701,8 @@
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="one_hand_ui">Reachable app toolbars</string>
   <string name="chat_bottom_bar">Reachable chat toolbar</string>
-  <string name="one_hand_ui_card_title">Toggle chat list:</string>
+  <string name="one_hand_ui_bottom_bar">Bottom bar</string>
+  <string name="one_hand_ui_top_bar">Top bar</string>
   <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
@@ -3062,5 +3063,4 @@
   <string name="link_previews_alert_desc">Sending a link preview may reveal your IP address to the website. You can change this in Privacy settings later.</string>
   <string name="link_previews_alert_enable">Enable</string>
   <string name="link_previews_alert_disable">Disable</string>
-  <!-- <string name="link_previews_alert_dont_ask_again">Don't ask again</string> -->
 </resources>

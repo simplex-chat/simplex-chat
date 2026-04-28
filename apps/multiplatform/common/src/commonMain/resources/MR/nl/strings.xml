@@ -2038,7 +2038,6 @@
     <string name="v6_0_delete_many_messages_descr">Verwijder maximaal 20 berichten tegelijk.</string>
     <string name="chat_database_exported_not_all_files">Sommige bestanden zijn niet geëxporteerd</string>
     <string name="reset_all_hints">Alle hints resetten</string>
-    <string name="one_hand_ui_card_title">Chat-lijst wisselen:</string>
     <string name="one_hand_ui_change_instruction">U kunt dit wijzigen in de instellingen onder uiterlijk</string>
     <string name="create_address_button">Creëren</string>
     <string name="v6_0_privacy_blur">Vervagen voor betere privacy.</string>

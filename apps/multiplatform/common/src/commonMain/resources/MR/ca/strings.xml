@@ -1974,7 +1974,6 @@
     <string name="one_hand_ui">Barres d\'eines d\'aplicacions accessible</string>
     <string name="chat_bottom_bar">Barres d\'eines de xat accessible</string>
     <string name="chat_list_always_visible">Mostra la llista de xat en una finestra nova</string>
-    <string name="one_hand_ui_card_title">Commuta la llista de xat:</string>
     <string name="terminal_always_visible">Mostrar consola en finestra nova</string>
     <string name="one_hand_ui_change_instruction">Podeu canviar-la a la configuració de l\'aparença.</string>
     <string name="upgrade_and_open_chat">Actualitzar i obrir el xat</string>
