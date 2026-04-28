@@ -3448,7 +3448,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable link previews?" xml:space="preserve" approved="no">
         <source>Enable link previews?</source>
-        <target state="translated">Engedélyezi a hivatkozáselőnézetet?</target>
+        <target state="translated">Engedélyezi a hivatkozások előnézetét?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
