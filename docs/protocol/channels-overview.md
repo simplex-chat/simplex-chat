@@ -179,11 +179,11 @@ The low-level protocol supports multiple owners from the initial release. The ap
 
 A channel has three classes of participant:
 
-- **Owners** create the channel, control its identity and profile, manage the member roster, publish content, and hold the authoritative state on their devices. A channel must have at least one owner. Owners hold the private keys needed to sign administrative messages.
+- **Owners** create the channel, control its identity and profile, manage the member roster, publish content, and hold the authoritative state on their devices. A channel must have at least one owner. Owners hold the private keys required to sign administrative messages and optionally used to sign content messages.
 
-- **Relays** are distribution agents. They receive content from owners, optionally cache it, and forward it to subscribers. They accept connection requests from new subscribers and introduce them to the channel. Relays cannot author messages of their own. They hold no authoritative state - only delivery queues and optional content caches. A channel must have at least one active relay.
+- **Relays** are distribution agents. They receive content from owners and other members who have posting rights, optionally cache it, and forward it to subscribers. They accept connection requests from new subscribers and introduce them to the channel. Relays cannot author messages of their own. They hold no authoritative state - only delivery queues and optional content caches. A channel must have at least one active relay.
 
-- **Subscribers** connect to relays and receive content. They cannot send messages to the channel by default.
+- **Subscribers** connect to relays and receive content. They cannot send messages to the channel by default, but can be given privileges for groups and channels based on chat relays.
 
 Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol.
 
@@ -194,15 +194,15 @@ For protocol-level detail - wire formats, message types, signing and verificatio
 
 ## Cryptographic primitives
 
-Channel identity, ownership, and administrative integrity rely on the following cryptographic primitives:
+Channel identity, ownership, and integrity rely on the following cryptographic primitives:
 
-- **Ed25519** - used for channel identity (root key pair), owner authorization chain (`OwnerAuth` signatures binding owner keys to the root key), and signing of administrative messages (roster changes, profile updates, channel deletion). The signature binding prefix includes the channel's entity ID and the sender's member ID, preventing cross-channel replay.
+- **Ed25519** - used for channel identity (root key pair), owner authorization chain (`OwnerAuth` signatures binding owner keys to the root key), and signing of administrative messages (roster changes, profile updates, channel deletion) and optional signing of content messages. The signature binding prefix includes the channel's entity ID and the sender's member ID, preventing cross-channel replay.
 
 - **SHA-256** - used to derive the channel's entity ID from the genesis root public key (`entityId = sha256(rootPubKey)`). This value is immutable and serves as the channel's permanent identity.
 
 - **Double ratchet with post-quantum KEM** (inherited from [SimpleX agent layer](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md)) - provides end-to-end encryption for all SMP transport between relay and subscriber, relay and owner, and between any two SimpleX endpoints. This is not channel-specific cryptography - it is the standard SimpleX transport encryption that channels inherit by being built on the agent layer. Future E2E encrypted side conversations (support scope, member DMs, private channels) will use the same double ratchet mechanism.
 
-Content messages are not signed by default to preserve deniability - see [Signing scope](#signing-scope-roster-only-content-optional). Owners may opt into signing all content in a future protocol extension.
+Content messages are not signed by default to preserve deniability - see [Signing scope](#signing-scope-roster-only-content-optional). Owners may opt into signing all content - it will be added in the future app release.
 
 
 ## Security
@@ -212,11 +212,11 @@ Content messages are not signed by default to preserve deniability - see [Signin
 The channel protocol is designed to achieve the following security objectives:
 
 1. **Stable message delivery** between channel participants, resilient to individual relay failures.
-2. **No possibility for a relay to substitute the channel** - the channel's identity is cryptographically bound to the link and profile.
+2. **No possibility for a relay to substitute the channel** - the channel's identity is cryptographically bound to the link and profile controlled by channel owners.
 3. **No possibility for a relay to impersonate an owner** - administrative messages require valid signatures.
 4. **Prevention of relay-initiated roster manipulation** - member removal, role changes, and other roster modifications require valid owner signatures.
 5. **Relay transience** - the owner can add and remove relays, including the last relay, without permanently losing the channel. Subscribers can restore connectivity by retrieving updated link data.
-6. **Sender anonymity within multi-owner channels** - owners can publish as the channel, hiding which specific owner authored a message.
+6. **Sender anonymity within multi-owner channels** - owners can publish as the channel, hiding which specific owner authored a message from subscribers.
 7. **Participant privacy** - relay operators cannot determine subscriber identity or network address, and subscribers cannot determine each other's identity. This is inherited from the SMP transport layer.
 
 #### Signing scope: roster only, content optional
@@ -225,9 +225,9 @@ By default, only roster-modifying and administrative messages are signed. Conten
 
 1. **Deniability.** Signing content creates non-repudiable proof of authorship. Anyone with the message bytes could prove who wrote a specific message. This is antithetical to SimpleX's privacy model, where communications should be deniable.
 
-2. **Proportional defense.** Roster and profile changes are disruptive and irreversible - a member removed, a role changed, a channel deleted. By the time a relay forgery is detected, the damage is done. These must be authenticated at processing time. Content manipulation by a relay is detectable post-hoc through cross-relay consistency (when multiple independent relays forward the same content). Content delivery is not irreversible - a forged message can be flagged and corrected, and the authoritative record on the owner's device is unaffected.
+2. **Proportional defense.** Roster and profile changes are disruptive and irreversible. This includes member removal, role changes, and channel deletions. These must be authenticated at processing time. Content manipulation by a relay is detectable post-hoc through cross-relay consistency (when multiple independent relays forward the same content). Content delivery is not irreversible - a forged message can be flagged and corrected, and the authoritative record on the owner's device is unaffected.
 
-A future protocol extension will allow owners to opt into signing all messages, including content. This will be a per-channel choice - some publishers want non-repudiable authorship (similar to Nostr), others prefer deniability. The protocol supports this by making `requiresSignature` a function of the event tag and the channel's configuration.
+A client change will allow owners to opt into signing all messages, including content. This can be a per-channel or per-message choice - some publishers want non-repudiable authorship (similar to Nostr), others prefer deniability.
 
 #### Threat model
 
