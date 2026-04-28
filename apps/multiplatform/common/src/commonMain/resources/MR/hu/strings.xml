@@ -2678,7 +2678,7 @@
     <string name="tap_to_open">Koppintson ide a megnyitáshoz</string>
     <string name="link_previews_alert_disable">Letiltás</string>
     <string name="link_previews_alert_enable">Engedélyezés</string>
-    <string name="link_previews_alert_title">Engedélyezi a hivatkozáselőnézetet?</string>
+    <string name="link_previews_alert_title">Engedélyezi a hivatkozások előnézetét?</string>
     <string name="error_prefix">Hiba</string>
     <string name="network_error">Hálózati hiba</string>
     <string name="link_previews_alert_desc">A hivatkozáselőnézet küldése felfedheti az Ön IP-címét a weboldal számára. Ezt később módosíthatja az adatvédelmi beállításokban.</string>
