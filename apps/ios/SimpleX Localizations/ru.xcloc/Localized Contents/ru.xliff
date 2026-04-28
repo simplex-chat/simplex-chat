@@ -1518,6 +1518,10 @@ in your network</source>
         <target>Вы и Ваш контакт можете отправлять голосовые сообщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bottom bar" xml:space="preserve">
+        <source>Bottom bar</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Broadcast" xml:space="preserve">
         <source>Broadcast</source>
         <target>Опубликовать</target>
@@ -9400,11 +9404,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Чтобы подтвердить безопасность сквозного шифрования с Вашим контактом сравните (или сканируйте) код на ваших устройствах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
-        <source>Toggle chat list:</source>
-        <target>Переключите список чатов:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Установите режим Инкогнито при соединении.</target>
@@ -9418,6 +9417,10 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Прозрачность тулбара</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Top bar" xml:space="preserve">
+        <source>Top bar</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">

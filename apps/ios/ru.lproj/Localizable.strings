@@ -262,7 +262,7 @@ channel relay bar */
 "%lld messages blocked" = "%lld сообщений заблокировано";
 
 /* No comment provided by engineer. */
-"%lld messages blocked by admin" = "%lld сообщений заблокировано администратором";
+"%lld messages blocked by admin" = "%lld сообщений заблокировано админом";
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld сообщений помечено удалёнными";
@@ -271,7 +271,7 @@ channel relay bar */
 "%lld messages moderated by %@" = "%lld сообщений модерировано членом %@";
 
 /* No comment provided by engineer. */
-"%lld minutes" = "%lld минуты";
+"%lld minutes" = "%lld минут(ы)";
 
 /* No comment provided by engineer. */
 "%lld new interface languages" = "%lld новых языков интерфейса";
@@ -1464,7 +1464,7 @@ server test step */
 "Connect with %@" = "Соединиться с %@";
 
 /* No comment provided by engineer. */
-"connected" = "соединение установлено";
+"connected" = "соединен(а)";
 
 /* No comment provided by engineer. */
 "Connected" = "Соединено";
@@ -1800,7 +1800,7 @@ server test step */
 "Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от сохранённого в Keychain.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "Введите пароль базы данных чтобы открыть чат.";
+"Database passphrase is required to open chat." = "Введите пароль базы данных, чтобы открыть чат.";
 
 /* No comment provided by engineer. */
 "Database upgrade" = "Обновление базы данных";
@@ -6175,9 +6175,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Чтобы подтвердить безопасность сквозного шифрования с Вашим контактом сравните (или сканируйте) код на ваших устройствах.";
-
-/* No comment provided by engineer. */
-"Toggle chat list:" = "Переключите список чатов:";
 
 /* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Установите режим Инкогнито при соединении.";
