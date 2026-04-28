@@ -204,7 +204,7 @@
     <string name="icon_descr_file">Файл</string>
     <string name="large_file">Большой файл!</string>
     <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает максимальный размер (%1$s).</string>
-    <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет %1$s.</string>
+    <string name="maximum_supported_file_size">Максимальный размер файла - %1$s.</string>
     <string name="waiting_for_file">Ожидается приём файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
     <string name="file_saved">Файл сохранён</string>
@@ -388,7 +388,7 @@
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
-    <string name="network_settings_title">Настройки сети</string>
+    <string name="network_settings_title">Дополнительные настройки</string>
     <string name="network_enable_socks">Использовать SOCKS-прокси?</string>
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS-прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
@@ -857,7 +857,7 @@
     <string name="contacts_can_mark_messages_for_deletion">Контакты могут помечать сообщения для удаления; Вы сможете просмотреть их.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Разрешить Вашим контактам отправлять голосовые сообщения.</string>
     <string name="allow_voice_messages_only_if">Разрешить голосовые сообщения, только если их разрешает Ваш контакт.</string>
-    <string name="prohibit_sending_voice_messages">Запретить отправлять голосовые сообщений.</string>
+    <string name="prohibit_sending_voice_messages">Запретить отправлять голосовые сообщения.</string>
     <string name="both_you_and_your_contacts_can_delete">Вы и Ваш контакт можете необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="only_you_can_delete_messages">Только Вы можете необратимо удалять сообщения (Ваш контакт может помечать их на удаление). (24 часа)</string>
     <string name="only_your_contact_can_delete">Только Ваш контакт может необратимо удалять сообщения (Вы можете помечать их на удаление). (24 часа)</string>
@@ -933,7 +933,7 @@
     <string name="mark_code_verified">Подтвердить</string>
     <string name="clear_verification">Сбросить подтверждение</string>
     <string name="allow_disappearing_messages_only_if">Разрешить исчезающие сообщения, только если Ваш контакт разрешает их Вам.</string>
-    <string name="prohibit_sending_disappearing">Запретить посылать исчезающие сообщения.</string>
+    <string name="prohibit_sending_disappearing">Запретить отправлять исчезающие сообщения.</string>
     <string name="group_members_can_send_disappearing">Члены могут посылать исчезающие сообщения.</string>
     <string name="whats_new">Что нового</string>
     <string name="new_in_version">Новое в %s</string>
@@ -987,7 +987,7 @@
     <string name="users_delete_question">Удалить профиль?</string>
     <string name="users_delete_profile_for">Удалить профиль чата для</string>
     <string name="messages_section_description">Эта настройка применяется к сообщениям в Вашем текущем профиле чата</string>
-    <string name="network_session_mode_transport_isolation">Отдельные сессии для</string>
+    <string name="network_session_mode_transport_isolation">Отдельные транспортные сессии</string>
     <string name="update_network_session_mode_question">Обновить режим отдельных сессий\?</string>
     <string name="failed_to_create_user_duplicate_title">Имя профиля уже используется!</string>
     <string name="failed_to_create_user_title">Ошибка создания профиля!</string>
@@ -1490,7 +1490,7 @@
     <string name="connect_plan_connect_via_link">Соединиться через ссылку?</string>
     <string name="v5_4_incognito_groups">Инкогнито группы</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
-    <string name="moderated_items_description">%1$d сообщений отмодерировано членом %2$s</string>
+    <string name="moderated_items_description">%1$d сообщений модерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
     <string name="v5_4_better_groups_descr">Быстрое вступление и надёжная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
@@ -2761,7 +2761,7 @@
   <string name="why_built_p7">Потому что мы разрушили саму возможность узнать, кто вы. Чтобы вашу свободу невозможно было отнять.</string>
   <string name="why_built_tagline">Будь свободен в своей сети.</string>
     <string name="voice_recording_not_supported">Запись голосовых сообщений не поддерживается на вашей платформе</string>
-    <string name="e2ee_info_no_e2ee"><![CDATA[Сообщения в этом канале <b>не защищены end-to-end шифрованием</b>. Чат-релеи могут видеть эти сообщения.]]></string>
+    <string name="e2ee_info_no_e2ee"><![CDATA[Сообщения в этом канале <b>не защищены сквозным шифрованием</b>. Чат-релеи могут видеть эти сообщения.]]></string>
     <string name="let_someone_connect_to_you">Дайте собеседнику Вашу ссылку</string>
     <string name="connect_via_link_or_qr_code">Соединитесь по ссылке или QR</string>
     <string name="connect_with_someone">Создайте Вашу ссылку</string>

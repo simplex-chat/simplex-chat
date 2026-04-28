@@ -317,7 +317,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
         <source>%lld messages blocked by admin</source>
-        <target>%lld сообщений заблокировано администратором</target>
+        <target>%lld сообщений заблокировано админом</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
@@ -332,7 +332,7 @@ channel relay bar</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
         <source>%lld minutes</source>
-        <target>%lld минуты</target>
+        <target>%lld минут(ы)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld new interface languages" xml:space="preserve">
@@ -2701,7 +2701,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
         <source>Database passphrase is required to open chat.</source>
-        <target>Введите пароль базы данных чтобы открыть чат.</target>
+        <target>Введите пароль базы данных, чтобы открыть чат.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade" xml:space="preserve">
@@ -10905,7 +10905,7 @@ marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="connected" xml:space="preserve">
         <source>connected</source>
-        <target>соединение установлено</target>
+        <target>соединен(а)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
