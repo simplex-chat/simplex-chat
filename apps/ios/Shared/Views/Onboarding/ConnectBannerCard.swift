@@ -76,7 +76,6 @@ struct ConnectBannerCard: View {
                     Image(systemName: icon)
                         .font(.system(size: 18))
                         .foregroundColor(theme.colors.primary)
-                        .frame(height: 20)
                     #endif
                     Text(title)
                         .font(.footnote)
@@ -84,6 +83,7 @@ struct ConnectBannerCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
+                .frame(height: 20)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
                 .background(ToolbarMaterial.material(toolbarMaterial))
