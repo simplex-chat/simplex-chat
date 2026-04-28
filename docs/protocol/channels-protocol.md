@@ -8,7 +8,7 @@ For architecture, design rationale, security properties, and threat model, see [
 
 - [Protocol](#protocol)
   - [Channel creation](#channel-creation)
-  - [Relay addition](#relay-addition)
+  - [Relay acceptance](#relay-acceptance)
   - [Subscriber connection](#subscriber-connection)
   - [Message signing](#message-signing)
   - [Message forwarding](#message-forwarding)
@@ -33,29 +33,29 @@ Creating a channel involves generating cryptographic material, creating the chan
 
 3. **Link data upload.** The owner calls `createConnectionForLink`, which makes a single network call to create the SMP queue and upload the encrypted link data. The link's fixed data contains the root public key and connection request. The mutable user data contains the `OwnerAuth` array, the channel profile (including the entity ID and the link itself), and the initial subscriber count.
 
-4. **Relay invitation.** For each selected relay, the owner sends a contact request containing an `XGrpRelayInv` message with the channel's short link. The relay retrieves the link data, validates the channel profile, creates its own relay link (with the channel's entity ID in its immutable data), and responds with `XGrpRelayAccept` containing its relay link.
+4. **Relay invitation.** For each selected relay, the owner sends a contact request containing an `x.grp.relay.inv` message with the channel's short link. The relay retrieves the link data, validates the channel profile, creates its own relay link (with the channel's entity ID in its immutable data), and responds with `x.grp.relay.acpt` containing its relay link.
 
 5. **Link update.** As each relay accepts and provides its relay link, the owner validates that the relay link contains the correct entity ID, then adds the relay link to the channel link's mutable data.
 
-6. **Local record.** The channel is stored on the owner's device as a group with `useRelays = True`, `groupKeys` containing the root private key and member private key, and a `PublicGroupProfile` in its profile. This local record is the authoritative state of the channel.
+6. **Local record.** The channel is stored on the owner's device with the root private key, member private key, and channel profile. This local record is the authoritative state of the channel.
 
-### Relay addition
+### Relay acceptance
 
-The relay addition protocol ensures that relays are cryptographically bound to the correct channel:
+When a relay receives an invitation to serve a channel, it validates the channel and creates its own relay link. This flow is currently part of channel creation; adding relays to an existing channel is planned but not yet implemented.
 
-1. Owner sends `XGrpRelayInv` to the relay's contact address. This message includes the relay's member ID and role, the owner's profile, and the channel's short link.
+1. Owner sends `x.grp.relay.inv` to the relay's contact address. This message includes the relay's member ID and role, the owner's profile, and the channel's short link.
 
 2. Relay receives the invitation and creates a relay request record. A relay request worker processes it asynchronously.
 
 3. The worker retrieves the channel's link data from the SMP server, extracts and validates the channel profile and owner authorization.
 
-4. The relay creates its own contact address link (the relay link) with the channel's entity ID as `linkEntityId` in the immutable fixed data.
+4. The relay creates its own contact address link (the relay link) with the channel's entity ID in the immutable fixed data.
 
 5. The relay accepts the owner's connection request, sending its relay link in the acceptance.
 
-6. The owner retrieves the relay link data, validates that `linkEntityId` matches the channel's entity ID, and adds the relay link to the channel link's user data.
+6. The owner retrieves the relay link data, validates that the entity ID in the relay link matches the channel's entity ID, and adds the relay link to the channel link's user data.
 
-Once active, the relay periodically retrieves the channel link data to verify that its relay link is still listed, as a monitoring mechanism to detect removal.
+TODO: Periodic monitoring where the relay retrieves channel link data to verify its relay link is still listed is planned but not yet implemented.
 
 ### Subscriber connection
 
@@ -65,11 +65,11 @@ A subscriber joins a channel through the following flow:
 
 2. **Relay link resolution.** For each relay link listed, the client resolves the `ConnectionRequestUri` from the relay's short link.
 
-3. **Async connection.** The client initiates asynchronous connections to all relays. Each connection sends an `XInfo` message with the subscriber's profile (or an incognito profile, created once and shared with all relays).
+3. **Connection.** The client connects to relays - the first synchronously, the rest asynchronously. Each connection sends an `x.member` message with the subscriber's profile (or an incognito profile, created once and shared with all relays), member ID, and member signing key.
 
-4. **Relay acceptance.** Each relay accepts the connection, creates a member record for the subscriber with the configured subscriber role (default `GRObserver`), and sends an `XGrpLinkInv` message with the channel profile and group link invitation data.
+4. **Relay acceptance.** Each relay accepts the connection, creates a member record for the subscriber with the configured subscriber role (default `observer`), and sends an `x.grp.link.inv` message with the channel profile and group link invitation data.
 
-5. **Introduction.** The relay introduces the new subscriber to the channel's moderators and owners by sending an `XGrpMemNew` message. It also sends moderator/owner profiles to the subscriber.
+5. **Introduction.** The relay introduces the new subscriber to the channel's moderators and owners by sending an `x.grp.mem.new` message. It also sends moderator/owner profiles to the subscriber.
 
 6. **History.** If the channel has history sharing enabled, the relay sends recent cached history to the new subscriber.
 
@@ -89,8 +89,8 @@ Messages that alter the channel's roster, profile, or administrative state are c
 | `x.grp.mem.del` | Remove member | Required |
 | `x.grp.mem.role` | Change member role | Required |
 | `x.grp.mem.restrict` | Restrict member | Required |
-| `x.grp.leave` | Leave channel | Required |
-| `x.info` | Update member profile | Required |
+| `x.grp.leave` | Leave channel | Required (unverified allowed between subscribers) |
+| `x.info` | Update member profile | Required (unverified allowed between subscribers) |
 | `x.msg.new` | Content message | Not signed |
 | `x.msg.update` | Edit message | Not signed |
 | `x.msg.del` | Delete message | Not signed |
@@ -111,13 +111,13 @@ The binding prefix includes the chat binding tag (`"G"` for group), the channel'
 
 When a subscriber receives a signed message:
 
-1. The signature is present: reconstruct the binding prefix from the channel's stored entity ID and the sender's member ID. Verify all signatures against the sender's stored public key. If all verify, the message status is `MSSVerified`.
+1. The signature is present: reconstruct the binding prefix from the channel's stored entity ID and the sender's member ID. Verify all signatures against the sender's stored public key. If all verify, the message is accepted as verified.
 
-2. The signature is present but the sender's key is unknown: the message is accepted with status `MSSSignedNoKey` only if the event does not require a signature. For `XGrpLeave` and `XInfo` between subscribers whose keys haven't been exchanged yet, `unverifiedAllowed` permits acceptance as a temporary measure.
+2. The signature is present but the sender's key is unknown: the message is accepted as signed-but-unverified only if the event does not require a signature. For `x.grp.leave` and `x.info` between subscribers whose keys haven't been exchanged yet, unverified signatures are permitted as a temporary measure.
 
 3. No signature is present: the message is accepted only if the event does not require a signature (i.e., the channel does not use relays, or the event is a content message).
 
-If verification fails for a message that requires a signature, the message is rejected and a `RGEMsgBadSignature` event is shown to the user.
+If verification fails for a message that requires a signature, the message is rejected and a bad signature event is shown to the user.
 
 ### Message forwarding
 
@@ -128,7 +128,7 @@ Content originates on the owner's device and flows through relays to subscribers
 **Relay processing:** When a relay receives a message from an owner, it:
 
 1. Parses and processes the message locally (updating its cached state, e.g. for roster changes).
-2. If the relay is a forwarding relay (`isUserGrpFwdRelay`), creates a **delivery task** for each message that should be forwarded to subscribers. The task records the message ID, the sender's member ID, the broker timestamp, and whether the message was sent as the channel (not attributed to a specific owner).
+2. If the relay is configured to forward for this channel, creates a **delivery task** for each message that should be forwarded to subscribers. The task records the message ID, the sender's member ID, the broker timestamp, and whether the message was sent as the channel (not attributed to a specific owner).
 3. The delivery task is persisted to the database for delivery reliability - ensuring forwarding can resume after a relay crash.
 
 **Relay to Subscribers:** A delivery task worker reads pending tasks, batches them into delivery jobs, and a delivery job worker sends each job to subscribers in paginated batches (using a cursor over group member IDs).
@@ -210,23 +210,23 @@ delivery_job:
 
 A **job worker** reads the body and delivers it to subscribers in paginated batches. For each page, it loads a bucket of subscribers by cursor position, sends the body to all of them, advances the cursor, and continues until all subscribers have been served. This avoids loading all subscribers into memory at once.
 
-For subsequent subscribers in a batch, the agent uses `VRRef` (value reference) to reference the first subscriber's message body, avoiding redundant data transmission to the SMP server.
+For subsequent subscribers in a batch, the agent uses a value reference to the first subscriber's message body, avoiding redundant data transmission to the SMP server.
 
 ### Message deduplication
 
-When multiple relays serve the same channel, each subscriber receives the same message from each relay independently. Deduplication is performed at the subscriber's client level using the message's `SharedMsgId`:
+When multiple relays serve the same channel, each subscriber receives the same message from each relay independently. Deduplication is performed at the subscriber's client level using the message's shared message ID:
 
-- When saving a received message, the client checks whether a message with the same `SharedMsgId` already exists for this group.
-- If a duplicate is found, the message is silently dropped (in channels with relays). The `SEDuplicateGroupMessage` error is caught and suppressed.
-- In non-relay groups, duplicate detection triggers a `XGrpMemCon` notification to the forwarding member.
+- When saving a received message, the client checks whether a message with the same shared ID already exists for this group.
+- If a duplicate is found, the message is silently dropped (in channels with relays).
+- In non-relay groups, duplicate detection triggers a `x.grp.mem.con` notification to the forwarding member.
 
 This is essentially cache coherence verification - comparing what was received from one cache node against another. TODO: Currently, deduplication only detects the presence of duplicates. The protocol design includes provisions for detecting differences between relay-delivered copies of the same message (hash comparison, UI indicators for discrepancies). This is described in the [channels forwarding RFC](../rfcs/2025-08-11-channels-forwarding.md) and is not yet implemented.
 
 ### Channel-as-sender messages
 
-Owners can send messages attributed to the channel rather than to themselves. When `asGroup = True` is set in the message container, the relay forwards the message with `FwdChannel` instead of `FwdMember memberId memberName`. On the subscriber side, such messages are displayed as coming from the channel (using the channel's profile image and name) rather than from a specific owner.
+Owners can send messages attributed to the channel rather than to themselves. When `asGroup = True` is set in the message container, the relay forwards the message with a channel-as-sender tag instead of attributing it to a specific member. On the subscriber side, such messages are displayed as coming from the channel (using the channel's profile image and name) rather than from a specific owner.
 
-This is useful for channels with multiple owners where the identity of the specific sender should not be visible to subscribers. The relay must respect this directive; ignoring it and revealing the sending owner's identity is a threat vector (detectable out-of-band by members communicating with the owner).
+This will be useful for channels with multiple owners (not yet implemented at application level) where the identity of the specific sender should not be visible to subscribers. The relay must respect this directive; ignoring it and revealing the sending owner's identity is a threat vector (detectable out-of-band by members communicating with the owner).
 
 The forwarding binding prefix for channel-as-sender messages uses `CBChannel` instead of `CBGroup`, and includes only the channel's entity ID (not the sender's member ID):
 
@@ -238,12 +238,6 @@ channelBinding = smpEncode(CBChannel) <> smpEncode(publicGroupId)
 
 Channels support a **member support scope** - a private side-channel between a subscriber and the channel's moderators/owners. Messages sent in the support scope are delivered only to moderators and the scoped subscriber, not to all subscribers.
 
-This is implemented through the `MsgScope` type:
-
-```
-MSMember { memberId :: MemberId }
-```
-
-When a message has a support scope, the delivery pipeline uses a `DJSMemberSupport` job scope instead of `DJSGroup`. The job worker loads only the scoped member and moderators (members with role >= `GRModerator`), rather than all subscribers.
+A support-scoped message includes the target member's ID. The delivery pipeline uses a separate job scope for support messages, loading only the scoped member and moderators rather than all subscribers.
 
 Support scope messages are visible only to the subscriber who initiated the support conversation and to the channel's moderators. Other subscribers cannot see them. This allows subscribers to report issues, appeal moderation decisions, or communicate with administrators without revealing their identity to other subscribers.
