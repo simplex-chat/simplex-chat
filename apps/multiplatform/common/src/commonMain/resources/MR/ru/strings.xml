@@ -2456,7 +2456,7 @@
     <string name="feature_roles_moderators">модераторы</string>
     <string name="button_remove_members_question">Удалить членов группы?</string>
     <string name="onboarding_conditions_accept">Принять</string>
-    <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей - не отправлять спам</string>
+    <string name="onboarding_conditions_by_using_you_agree">Вы обязуетесь:\n- Только законный контент в публичных группах\n- Уважать других пользователей - без спама</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Операторы обязуются:\n- Быть независимыми\n- Минимизировать использование метаданных\n- Использовать проверенный и открытый исходный код</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
     <string name="member_criteria_all">все</string>
