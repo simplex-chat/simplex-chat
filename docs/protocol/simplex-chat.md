@@ -268,45 +268,9 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 ### Channels: relay-mediated groups
 
-Channels are groups where message delivery is mediated by dedicated relay members rather than by direct connections between all members. For the full architecture, threat model, and design rationale, see [SimpleX Channels](./simplex-channels.md).
+Channels are groups where message delivery is mediated by dedicated relay members rather than by direct connections between all members. Channels extend the group sub-protocol with additional roles (`relay`, `observer`), message signing for administrative actions, a binary batch format for signed and forwarded messages, and an asynchronous delivery pipeline.
 
-Channels reuse the group sub-protocol with the following extensions:
-
-#### Additional member roles
-
-- `relay` - a dedicated forwarding agent. Below `observer` in the permission hierarchy. Cannot author messages; forwards messages between owners and subscribers.
-- `observer` - the default role for channel subscribers. Can receive all messages; cannot send messages to the main channel scope.
-
-#### Channel-specific protocol messages
-
-`x.grp.relay.inv` message is sent by a channel owner to a relay's contact address to invite it to serve the channel. It contains the owner's member identity, profile, and the channel's short link. The relay retrieves the link data, validates the channel profile, creates its own relay link, and responds by accepting the connection.
-
-`x.grp.relay.test` message is used during relay connection establishment to verify that the relay controls the private key corresponding to its short link address. The owner sends a challenge; the relay signs it with its link key.
-
-#### Binary batch format for signed and forwarded messages
-
-Channels use a binary batch format (`=` prefix) instead of the JSON array format (`[` prefix) used by regular groups. This format preserves exact message bytes through forwarding, enabling signature verification after relay forwarding.
-
-Each batch element is length-prefixed and tagged:
-
-- `'/'` prefix: signed message, contains chat binding tag, signatures, and the JSON message body. The signature covers the message body with a channel-specific binding prefix.
-- `'>'` prefix: forwarded message, contains relay forwarding metadata (sender identity, broker timestamp) followed by the original message element (signed or plain). The original bytes are preserved verbatim.
-- `'{'` prefix: plain JSON message.
-- `'F'` prefix: binary file chunk.
-
-The forwarding envelope distinguishes between `FwdMember` (message attributed to a specific member) and `FwdChannel` (message attributed to the channel as a whole, hiding the specific owner).
-
-See the [binary batch format](./simplex-channels.md#binary-batch-format) section in the channels document for the full ABNF specification.
-
-#### Message signing
-
-In channels, administrative messages (roster changes, profile updates, channel deletion) MUST be signed by the sending owner's member key. Content messages are not signed by default. The signature binding prefix includes the channel's entity ID and the sender's member ID, preventing cross-channel replay.
-
-See [message signing](./simplex-channels.md#message-signing) for the full specification and verification logic.
-
-#### Asynchronous delivery pipeline
-
-Relay forwarding uses a persistent two-stage pipeline (delivery tasks -> delivery jobs) rather than synchronous forwarding. This makes forwarding resumable across relay restarts and supports paginated delivery to large subscriber sets without loading all members into memory.
+For architecture and design rationale, see [SimpleX Channels Overview](./channels-overview.md). For protocol-level detail - wire formats, message types, signing mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
 
 ## Sub-protocol for WebRTC audio/video calls
 
@@ -330,7 +294,7 @@ This threat model complements SMP, XFTP, push notifications and XRCP protocols t
 - [SimpleX File Transfer Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model);
 - [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model);
 - [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model);
-- [SimpleX Channels threat model](./simplex-channels.md#threat-model).
+- [SimpleX Channels threat model](./channels-overview.md#threat-model).
 
 #### A user's contact
 
@@ -388,7 +352,7 @@ This threat model complements SMP, XFTP, push notifications and XRCP protocols t
 
 #### A channel relay
 
-For the full channel threat model, see [SimpleX Channels: threat model](./simplex-channels.md#threat-model).
+For the full channel threat model, see [SimpleX Channels: threat model](./channels-overview.md#threat-model).
 
 *can:*
 

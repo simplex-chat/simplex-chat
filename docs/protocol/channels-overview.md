@@ -155,35 +155,13 @@ Subscribers hold their own received copies. For signed messages, these copies ar
 
 #### Identity and ownership
 
-A channel's identity is a cryptographic value derived from the key pair generated at creation time:
+A channel's identity is the SHA-256 hash of the genesis root public key, computed at creation time and never changed - even if relays are added, removed, or the channel link is rotated. This identity is self-authenticating: it is derived from a key pair that only the channel creator held. It is embedded in the channel's link, distributed in the channel profile to all members, and used as a binding prefix in all signed messages.
 
-```
-entityId = sha256(genesisRootPubKey)
-```
+Subscribers validate that the identity in the link matches the identity in the profile, preventing link substitution. Profile updates that attempt to change the identity are rejected. Full validation that the identity matches the root key is deferred to a future protocol version that includes key rotation - see the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md).
 
-This entity ID is set at creation and never changes, even if relays are added, removed, or the channel link is rotated. It is self-authenticating - derived from a key pair that only the channel creator held at creation time. It is stored in the immutable part of the channel's short link data (`linkEntityId` in `FixedLinkData`), included in the channel's group profile (`publicGroupId` in `PublicGroupProfile`) distributed to all members, and used in the signature binding prefix for all signed messages.
+Channel ownership is not tied to the root key directly. Instead, the root key authorizes owner keys through a signed chain. At creation, the owner generates a root key pair and a separate member key pair for signing. The member key is published as an owner authorization entry signed by the root key. Anyone retrieving the channel link can verify that the owner's signing key was authorized by the root key. New owners can be added by having any existing authorized key sign a new entry, forming a chain that is verifiable without network access.
 
-Current clients validate that the entity ID from the link matches the entity ID in the group profile (preventing link substitution), and reject profile updates that attempt to change it. Full validation that `entityId == sha256(rootKey)` is deferred to a future protocol version that includes key rotation. See the [group identity binding RFC](../rfcs/2026-03-28-group-identity-binding.md) for the rationale.
-
-**Owner authorization chain.** Channel ownership is not tied to the root key directly. Instead, the root key authorizes owner keys through a chain:
-
-1. At creation, the owner generates a **root key pair** (Ed25519). The public key is embedded in the channel link's immutable fixed data. The private key is retained only by the creator.
-
-2. The owner generates a separate **member key pair** for signing messages. The public key is stored in link data on SMP router as an `OwnerAuth` entry, signed by the root key:
-
-   ```
-   OwnerAuth {
-     ownerId    = memberId,          -- application-specific identifier
-     ownerKey   = memberPubKey,      -- Ed25519 public key for message signing
-     authOwnerSig = sign(rootPrivKey, ownerId || encodePubKey(ownerKey))
-   }
-   ```
-
-3. The `OwnerAuth` entry is stored in the channel link's mutable user data. Anyone retrieving the link can verify that the owner's signing key was authorized by the root key.
-
-4. Future owners can be added by having an existing authorized key sign a new `OwnerAuth` entry. This creates a chain: root -> owner1 -> owner2 -> ... Each link in the chain is verifiable without network access.
-
-This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which, provided multiple owners were signed by the root key conceals the creator's identity.
+This model separates the channel's permanent identity (the root key hash) from the signing keys used for day-to-day operations. The root key is a bootstrap key - it certifies owners, then need not be used again. All owners are cryptographically indistinguishable to subscribers (they all have equally valid authorization chains), which - provided multiple owners were signed by the root key - conceals the creator's identity.
 
 #### Governance
 
@@ -205,31 +183,17 @@ This progression matters because as channels grow beyond a single publisher's pe
 
 #### Roles
 
-A channel has three classes of participant, distinguished by their role in the member hierarchy:
+A channel has three classes of participant:
 
-- **Owners** (`GROwner`) create the channel, control its identity and profile, manage the member roster, publish content, and hold the authoritative state on their devices. A channel must have at least one owner. Owners hold the private keys needed to sign administrative messages.
+- **Owners** create the channel, control its identity and profile, manage the member roster, publish content, and hold the authoritative state on their devices. A channel must have at least one owner. Owners hold the private keys needed to sign administrative messages.
 
-- **Relays** (`GRRelay`) are distribution agents. They receive content from owners, cache it, and forward it to subscribers. They accept connection requests from new subscribers and introduce them to the channel. Relays cannot author messages of their own - their role is below `GRObserver` in the permission hierarchy. They hold no authoritative state - only cached copies and delivery queues. A channel must have at least one active relay.
+- **Relays** are distribution agents. They receive content from owners, optionally cache it, and forward it to subscribers. They accept connection requests from new subscribers and introduce them to the channel. Relays cannot author messages of their own. They hold no authoritative state - only delivery queues and optional content caches. A channel must have at least one active relay.
 
-- **Subscribers** (`GRObserver` by default) connect to relays and receive content. They cannot send messages to the channel by default.
+- **Subscribers** connect to relays and receive content. They cannot send messages to the channel by default.
 
-Additional roles (`GRModerator`, `GRAdmin`, `GRMember`, `GRAuthor`) exist in the role hierarchy and are inherited from the group protocol. In the current channel implementation, subscribers are assigned `GRObserver` role by default, which permits receiving all messages but not sending.
+Additional roles (moderator, admin, member, author) exist in the hierarchy and are inherited from the group protocol.
 
-**Relay model.** Relays are SimpleX Chat clients, not special-purpose servers. They run the same client code as any other participant, with a configuration flag that enables relay behavior (auto-accepting group join requests, forwarding messages, creating relay links). A relay can be operated by anyone - a channel operator, a third-party service provider, or a self-hosted instance.
-
-Each relay holds:
-
-- A **relay link** - a SimpleX contact address that subscribers use to connect to the channel through this relay. The relay link's immutable data includes the channel's entity ID, binding it to a specific channel.
-
-- **Connections to the owner(s)** via SMP queues, over which it receives content to forward.
-
-- **Connections to all subscribers** it serves, over which it forwards cached content.
-
-- A **delivery queue** - persistent task and job records that ensure forwarding can resume after a crash. This is operational state for delivery reliability, not authoritative content storage.
-
-- Optionally, a **content cache** - recent messages retained to serve history to new subscribers. The depth and retention policy of this cache is a relay operational decision, not a protocol requirement.
-
-The relay's relationship with the channel is transient. The owner can add new relays and remove existing ones without changing the channel's identity or its address. When a relay is removed, it forwards the deletion event to its subscribers and shuts down. Subscribers who were connected to the removed relay can restore their connection by retrieving the channel's link data, which lists the current set of relay links, and connecting to a remaining relay.
+Relays are SimpleX Chat clients, not special-purpose servers. They run the same client code as any other participant. A relay can be operated by anyone - a channel operator, a third-party service provider, or a self-hosted instance. Each relay creates its own contact address link, bound to the channel's identity, through which subscribers connect. The relay's relationship with the channel is transient - the owner can add and remove relays without changing the channel's identity or address.
 
 For protocol-level detail - wire formats, message types, signing and verification mechanics, delivery pipeline - see [SimpleX Channels Protocol](./channels-protocol.md).
 

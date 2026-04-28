@@ -1,8 +1,10 @@
-Revision 2, 2026-04-28
+Revision 1, 2026-04-28
 
 Evgeny Poberezkin
 
-# SimpleX Channels: stateful information delivery and management
+# SimpleX Channels Protocol
+
+For architecture, design rationale, security properties, and threat model, see [SimpleX Channels Overview](./channels-overview.md).
 
 ## Table of contents
 
@@ -21,7 +23,7 @@ Evgeny Poberezkin
 
 ## Protocol
 
-This section describes the protocol as currently implemented. It builds on the [SimpleX Chat Protocol](./simplex-chat.md), using the same message format and connection model, with extensions for relay-mediated distribution and cryptographic message signing.
+This document describes the channel protocol as currently implemented. It builds on the [SimpleX Chat Protocol](./simplex-chat.md), using the same message format and connection model, with extensions for relay-mediated distribution and cryptographic message signing.
 
 #### Channel creation
 
