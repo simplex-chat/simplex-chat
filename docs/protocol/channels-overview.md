@@ -173,13 +173,7 @@ The low-level protocol supports multiple owners from the initial release. The ap
 
 **Near-term (v7): Multiple owners, any-owner-decides.** Multiple owners share control of the channel. Any owner can independently make any administrative decision - add or remove members, change the profile, manage relays. This is the most common decision-making model in practice (equivalent to "all admins are equal" in most online platforms). No coordination between owners is required for any action.
 
-**Future: Multisig.** Administrative actions require approval from M of N owners. This prevents unilateral action by a single compromised or rogue owner - for example, requiring 2-of-3 owners to approve channel deletion or ownership transfers. The design space here is broader than simple thresholds: different action types may require different quorums, and different owners may hold different voting weight.
-
-**Future: Code-based channel governance.** The governance model itself becomes programmable - defined as code that is part of the channel's definition. Channel articles can encode arbitrary management structures: shareholding with weighted votes, executive powers for specific roles, hierarchical approval chains, term limits, or any other governance model that can be expressed as rules over the owner authorization chain. This is the most general form - where multisig is a special case.
-
-This is analogous to what smart contracts achieve for on-chain governance, but without requiring a blockchain. A smart contract encodes governance rules that are enforced by network-wide consensus - every node on the network validates every governance action, which is expensive, public, and slow. Channel code encodes the same kinds of rules, but they are enforced by the channel's owners and verified by its subscribers - the only parties who need to care. The governance scope is the channel, not the network. This makes programmable governance practical for real-time communication, where blockchain-based governance may introduce higher latency and cost.
-
-This progression matters because as channels grow beyond a single publisher's personal project into shared institutions - media organizations, communities, cooperatives - the governance model becomes the channel's constitution. The protocol must support this without prescribing it.
+**Future: Multisig and programmable governance.** Further stages include M-of-N multisig for administrative actions and, eventually, programmable governance rules defined as code in the channel's definition. The protocol must support these without prescribing a specific governance model.
 
 #### Roles
 
