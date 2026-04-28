@@ -2023,7 +2023,6 @@
     <string name="invite_friends_short">ادعُ</string>
     <string name="v6_0_new_media_options">خيارات الوسائط الجديدة</string>
     <string name="v6_0_chat_list_media">شغّل من قائمة الدردشة.</string>
-    <string name="one_hand_ui_card_title">تبديل قائمة الدردشة:</string>
     <string name="one_hand_ui_change_instruction">يمكنك تغييره في إعدادات المظهر.</string>
     <string name="v6_0_upgrade_app_descr">نزّل الإصدارات الجديدة من GitHub.</string>
     <string name="v6_0_upgrade_app">ترقية التطبيق تلقائيًا</string>

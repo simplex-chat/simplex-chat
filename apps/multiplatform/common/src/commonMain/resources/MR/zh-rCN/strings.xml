@@ -2011,7 +2011,6 @@
     <string name="v6_0_connection_servers_status_descr">连接和服务器状态。</string>
     <string name="v6_0_delete_many_messages_descr">最多同时删除 20 条消息</string>
     <string name="v6_0_private_routing_descr">它保护你的 IP 地址和连接。</string>
-    <string name="one_hand_ui_card_title">切换聊天列表：</string>
     <string name="one_hand_ui_change_instruction">你可以在“外观”设置中更改它。</string>
     <string name="network_options_save_and_reconnect">保存并重新连接</string>
     <string name="network_option_tcp_connection">TCP 连接</string>

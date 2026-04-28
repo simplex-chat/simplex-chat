@@ -2025,7 +2025,6 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Platform perpesanan dan aplikasi yang melindungi privasi dan keamanan Anda.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Untuk melindungi privasi Anda, SimpleX gunakan ID terpisah untuk setiap kontak.</string>
     <string name="settings_section_title_socks">PROXY SOCKS</string>
-    <string name="one_hand_ui_card_title">Alihkan daftar obrolan:</string>
     <string name="upgrade_and_open_chat">Tingkatkan dan buka obrolan</string>
     <string name="group_invitation_tap_to_join_incognito">Ketuk untuk gabung ke samaran</string>
     <string name="snd_group_event_member_blocked">Anda memblokir %s</string>

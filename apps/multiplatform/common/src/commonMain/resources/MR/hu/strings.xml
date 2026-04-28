@@ -2001,7 +2001,6 @@
     <string name="network_option_tcp_connection">TCP-kapcsolat</string>
     <string name="chat_database_exported_save">Mentheti az exportált archívumot.</string>
     <string name="reset_all_hints">Tippek visszaállítása</string>
-    <string name="one_hand_ui_card_title">Csevegési lista ki/be:</string>
     <string name="one_hand_ui_change_instruction">Ezt a „Megjelenés” menüben módosíthatja.</string>
     <string name="v6_0_new_media_options">Új médiabeállítások</string>
     <string name="v6_0_chat_list_media">Lejátszás a csevegési listából.</string>
