@@ -2712,7 +2712,7 @@
     <string name="relay_bar_relays_not_active">%1$d servidores inactivos</string>
     <string name="relay_bar_relays_removed">%1$d servidores eliminados</string>
     <string name="relay_bar_owner_no_delivery">Añadir servidores estará disponible en una versión posterior.</string>
-    <string name="a_link_for_one_person">Enlace para conectar una persona</string>
+    <string name="a_link_for_one_person">Enlace para una persona</string>
     <string name="allow_chat_with_admins">Permitir que los miembros chateen con administradores.</string>
     <string name="allow_chat_with_admins_channel">Permitir que los suscriptores chateen con administradores.</string>
     <string name="relay_bar_all_relays_failed">Todos los servidores han fallado</string>
@@ -2729,7 +2729,7 @@
     <string name="chat_with_admins_relay_note">El chat con administradores en el canal público no dispone de cifrado E2E. Úsalo sólo con servidores de confianza.</string>
     <string name="support_chats_disabled">Chats con miembros desactivado</string>
     <string name="chat_with_admins">Chat con administradores</string>
-    <string name="connect_via_link_or_qr_code">Conecta mediante enlace o código QR</string>
+    <string name="connect_via_link_or_qr_code">Conecta con enlace o QR</string>
     <string name="connect_with_someone">Conecta con alguien</string>
     <string name="chat_link_contact_address">Dirección de contacto</string>
     <string name="create_your_public_address">Crea tu dirección pública</string>
@@ -2747,8 +2747,8 @@
     <string name="get_started">Empezar</string>
     <string name="chat_link_group">Enlace de grupo</string>
     <string name="relay_status_inactive">inactivo</string>
-    <string name="invite_someone_privately">Invita a alguien en privado</string>
-    <string name="let_someone_connect_to_you">Permite que alguien contacte contigo</string>
+    <string name="invite_someone_privately">Invitación privada</string>
+    <string name="let_someone_connect_to_you">Conéctate con alguien</string>
     <string name="owner_verification_passed">Firma del enlace verificada</string>
     <string name="members_can_chat_with_admins">Los miembros pueden chatear con los administradores</string>
     <string name="migrate">Migrar</string>
@@ -2762,7 +2762,7 @@
     <string name="onboarding_on_your_phone">En tu teléfono, no en el servidor.</string>
     <string name="open_external_link_title">¿Abrir enlace externo?</string>
     <string name="onboarding_or_show_qr_code">O muestra el código QR en persona o por videollamada.</string>
-    <string name="onboarding_or_use_qr_code">O usa el QR - imprímelo o muestralo en línea.</string>
+    <string name="onboarding_or_use_qr_code">O usa este QR - imprímelo o muestralo en línea.</string>
     <string name="v6_5_ownership">En propiedad: puedes poner en marcha tus propios servidores.</string>
     <string name="v6_5_privacy">Privacidad: para propietarioes y suscriptores.</string>
     <string name="onboarding_private_and_secure">Mensajería segura y privada.</string>
@@ -2774,7 +2774,7 @@
     <string name="v6_5_safe_web_links">Enlaces web seguros</string>
     <string name="v6_5_security">Seguridad: los propietarios tienen la llave del canal.</string>
     <string name="link_previews_alert_desc">Enviar una previsualización del enlace puede revelar tu dirección IP al sitio web. Puedes cambiarlo más tarde en los ajustes de privacidad.</string>
-    <string name="onboarding_send_1_time_link">Envía el enlace mediante cualquier mensajero, es seguro. Pide que lo copien en SimpleX.</string>
+    <string name="onboarding_send_1_time_link">Envía el enlace con cualquier mensajero, es seguro. El contacto debe pegarlo en SimpleX.</string>
     <string name="onboarding_configure_notifications">Configurar notificaciones</string>
     <string name="onboarding_configure_routers">Configurar routers</string>
     <string name="share_channel">Compartir canal…</string>
@@ -2782,7 +2782,7 @@
     <string name="owner_verification_failed">⚠️ Verificación de firma fallida: %s.</string>
     <string name="chat_link_signed">(firmado)</string>
     <string name="members_can_chat_with_admins_channel">Los suscriptores pueden chatear con los administradores.</string>
-    <string name="talk_to_someone">Habla con alguien</string>
+    <string name="talk_to_someone">Para comunicarte</string>
     <string name="tap_to_open">Pulsa para abrir</string>
     <string name="connection_reached_limit_of_undelivered_messages">La conexión ha alcanzado al límite de mensajes no entregados</string>
     <string name="onboarding_first_network">La primera red donde los grupos\ny los contactos son tuyos.</string>
