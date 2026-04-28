@@ -83,15 +83,13 @@ No single point in the system sees both content and network identity. SMP router
 
 This transport layering produces a specific combination of properties for public communication that is not present in any other publishing system.
 
-Channel content is not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. This follows from a fundamental property of public communication: any channel joinable via a public link must be considered completely public. The cost of joining through automated means has collapsed with large language models and is approaching zero. Content distributed to strangers without a pre-existing trust relationship cannot be private, regardless of whether it is encrypted in transit.
+Channel content is not end-to-end encrypted between owner and subscriber. Relays can read the messages they forward. This follows from a fundamental property of public communication: any channel joinable via a public link must be considered completely public. The cost of joining through automated means has collapsed with large language models and is approaching zero.
 
-End-to-end encrypting public-link content provides no meaningful content privacy. It harms users by creating a false expectation of privacy, and it harms operators by making them unable to see what they deliver, increasing their risk and liability.
+Content distributed to strangers without a pre-existing trust relationship cannot be private, regardless of whether it is end-to-end encrypted in transit. Content with a public-link to join cannot have a meaningful privacy. It harms users by creating a false expectation of privacy, and it harms operators by making them unable to see what they deliver, increasing their risk and liability.
 
-The achievable privacy property for public communication is participation privacy - protecting who reads and writes, not what. SimpleX Channels provide this. The SMP transport carries no user identifiers; relays are ordinary SMP clients. Subscribers connect without revealing their identity, network address, or any information that persists across channels.
+The achievable privacy property for public communication is participation privacy - protecting who reads and writes, not what. SimpleX Channels provide this because of the SMP transport - it carries no user identifiers, and relays are ordinary SMP clients. Subscribers connect without revealing their identity, network address, or any information that persists across channels. That means that if adversaries joins a SimpleX channel, they see everything that was said, but they cannot determine who said it or link any participant to anything outside the channel.
 
 Other systems make the opposite choice. Encrypted group protocols - MLS, pairwise ratchets, and similar - offer content encryption in exchange for participant identification. For public-link groups this is exactly backwards: the content encryption is meaningless (anyone can join and read), while the participant identification is the real harm. Nostr has the same problem: publisher identity is a persistent public key linked across all relays.
-
-An adversary can join a SimpleX channel and see everything that was said. They cannot determine who said it or link any participant to anything outside the channel.
 
 #### In comparison
 
