@@ -67,17 +67,17 @@ The SimpleX network has three transport layers, each built on the one below:
 
 SMP provides point-to-point delivery. Chat protocol provides conversations. Channels provide publication, distribution, and management of stateful information. Just as SMP enables private messaging by providing transport without user identifiers, channels enable public communication while preserving the same privacy properties at the distribution layer.
 
-The crucial architectural consequence of this layering is that channel relays are themselves SimpleX clients in the SMP network. A relay connects to SMP routers using the same protocol, the same 2-hop onion routing, and the same fixed-size transport blocks as any other SimpleX endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints.
+The crucial architectural consequence of this layering is that channel relays are themselves SimpleX clients in the SMP network. A relay connects to SMP routers using the same protocol, the same 2-hop onion routing, and the same fixed-size transport blocks as any other SimpleX endpoint. Even though the SMP network can distinguish a relay from a person's phone by its transport patterns, it prevents relays from learning anything about other network endpoints. Relays don't even have a separate codebase - any CLI client can act as a chat relay without any modifications.
 
-This means that channels inherit all of SMP's transport privacy properties:
+Channels therefore inherit all of SMP's transport privacy properties:
 
-- **Relays cannot observe subscriber network addresses.** A subscriber connects to a relay through SMP queues on SMP routers. The relay sees the SMP queue address, not the subscriber's IP address or network session. The subscriber's IP is known only to the SMP router they connect to, which in turn cannot see the message content (it is encrypted at the agent layer).
+- **Relays cannot observe subscriber network addresses.** The relay sees SMP queue addresses, not IP addresses or network sessions. The subscriber's IP is known only to their SMP router, which cannot see the message content (encrypted at the agent layer).
 
-- **SMP routers cannot see channel content.** Messages between relay and subscriber are end-to-end encrypted at the agent layer. The SMP router forwards fixed-size encrypted blocks without knowing whether they contain channel messages, direct messages, or anything else.
+- **SMP routers cannot see channel content.** Messages between relay and subscriber are end-to-end encrypted. The SMP router forwards fixed-size encrypted blocks without knowing whether they carry channel messages, direct messages, or anything else.
 
-- **Participation in multiple channels is unlinkable.** If a subscriber participates in multiple channels served by the same relay, the relay cannot determine this - each channel connection uses independent SMP queues with separate cryptographic credentials. The same is true at the SMP layer: if a subscriber's connections to different relays happen to pass through the same SMP router, the router cannot link them.
+- **Participation in multiple channels is unlinkable.** Each channel connection uses independent SMP queues with separate cryptographic credentials. A relay serving multiple channels cannot link them; an SMP router carrying traffic to multiple relays cannot link them either.
 
-No single point in the system sees both content and network identity. SMP routers see network addresses but not content. Relays see content but not network addresses. This separation is not a feature added to the channel layer - it is a structural consequence of channels being built on top of SMP transport, where relays are ordinary clients rather than privileged infrastructure. In fact, relays don't even have a separate codebase - any CLI client can act like chat relay without any modifications.
+No single point in the system sees both content and network identity. SMP routers see network addresses but not content. Relays see content but not network addresses.
 
 #### Content visibility and participant privacy
 
@@ -99,11 +99,11 @@ SimpleX Channels occupy a distinct position in the design space of public and se
 
 **Nostr relays** share the property of cryptographic author identity - a Nostr publisher's identity is a key pair, independent of any relay. But Nostr's architecture requires publishers to sign every message, making all content non-repudiable. Relays see both content and the publisher's persistent public key, which links all their activity across every relay. Subscribers must trust relay operators not to fabricate or withhold messages, because Nostr has no built-in mechanism for cross-relay consistency verification. Nostr also does not protect subscriber identity - relay operators see which public keys subscribe to which content.
 
-**Signal groups** use the MLS (Messaging Layer Security) protocol for end-to-end encrypted group communication. Content is encrypted; the operator cannot see it. But the operator runs the Authentication Service that MLS requires, meaning participants must trust the operator for the encryption to mean anything. Group membership is visible to the operator. The operator can add members to groups (because the Authentication Service controls identity). Groups do not scale beyond several thousand members, and there is no concept of a channel - only symmetric groups where every member can speak.
+**Signal groups** use end-to-end encryption with pairwise ratchets. Content is encrypted; the operator cannot see it. But the operator runs the Authentication Service, meaning participants must trust the operator for the encryption to mean anything. Group membership is visible to the operator. Groups do not scale beyond several thousand members, and there is no concept of a channel.
 
-**Matrix rooms** provide federated, encrypted group communication. Server operators see room membership and metadata. In encrypted rooms, content is end-to-end encrypted, but the key distribution depends on server cooperation. Federation means multiple operators see membership. Room identity is bound to the creating server's domain. If the server disappears, the room identity is lost.
+**Matrix rooms** provide federated, encrypted group communication. Server operators see room membership and metadata. Key distribution depends on server cooperation. Room identity is bound to the creating server's domain - if the server disappears, the room identity is lost.
 
-**Mastodon / ActivityPub** provides federated public posting. Content is public by design. Publisher identity is bound to a server domain - if the server disappears, the identity is lost. Server operators see all content and all follower relationships. There is no encryption of any kind. Federation provides some censorship resistance (you can move servers), but identity portability is limited - followers must re-follow you on the new server.
+**Mastodon / ActivityPub** provides federated public posting. Publisher identity is bound to a server domain - if the server disappears, the identity is lost. Server operators see all content and all follower relationships. No encryption of any kind.
 
 SimpleX Channels make a different set of trade-offs:
 
