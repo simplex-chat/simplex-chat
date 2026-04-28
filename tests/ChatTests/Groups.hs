@@ -9591,6 +9591,25 @@ testChannelSubscriberProfileUpdate ps =
           withNewTestChat ps "eve" eveProfile $ \eve -> do
             createChannel1Relay "team" alice bob cath dan eve
 
+            -- enable support and create support chat for cath (but not dan)
+            threadDelay 1000000
+            alice ##> "/set support #team on"
+            alice <## "updated group preferences:"
+            alice <## "Chat with admins: on"
+            toggledSupport bob "alice" "team" "on"
+            concurrentlyN_
+              [ toggledSupport cath "alice" "team" "on",
+                toggledSupport dan "alice" "team" "on",
+                toggledSupport eve "alice" "team" "on"
+              ]
+
+            threadDelay 1000000
+            alice #> "#team (support: cath) welcome"
+            bob <# "#team (support: cath) alice> welcome"
+            cath <# "#team (support) alice> welcome [>>]"
+            (dan </)
+            (eve </)
+
             -- other members discover cath
             threadDelay 1000000
             cath #> "#team hello from cath"
@@ -9606,6 +9625,7 @@ testChannelSubscriberProfileUpdate ps =
               ]
 
             -- known subscriber updates profile (XInfo signed)
+            -- cath has support chat -> profile update created in support scope
             threadDelay 1000000
             cath ##> "/_profile 1 {\"displayName\": \"kate\", \"fullName\": \"\"}"
             cath <## "user profile is changed to kate (your 0 contacts are notified)"
@@ -9616,9 +9636,12 @@ testChannelSubscriberProfileUpdate ps =
                 dan <# "#team kate> hello from kate [>>]",
                 eve <# "#team kate> hello from kate [>>]"
               ]
-            -- profile update items on alice and bob (owner/relay, signed)
-            alice #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from kate")])
-            bob #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from kate")])
+            -- no profile update items in main scope on alice and bob
+            alice #$> ("/_get chat #1 count=2", chat, [(0, "hello from cath"), (0, "hello from kate")])
+            bob #$> ("/_get chat #1 count=2", chat, [(0, "hello from cath"), (0, "hello from kate")])
+            -- profile update items in cath's support scope on alice and bob
+            alice #$> ("/_get chat #1(_support:3) count=1", chat, [(0, "updated profile (signed)")])
+            bob #$> ("/_get chat #1(_support:3) count=1", chat, [(0, "updated profile (signed)")])
             -- no profile update items on dan and eve (subscriber-to-subscriber muted)
             dan #$> ("/_get chat #1 count=2", chat, [(0, "hello from cath"), (0, "hello from kate")])
             eve #$> ("/_get chat #1 count=2", chat, [(0, "hello from cath"), (0, "hello from kate")])
@@ -9631,6 +9654,7 @@ testChannelSubscriberProfileUpdate ps =
             eve `hasContactProfiles` ["alice", "bob", "kate", "eve"]
 
             -- previously silent subscriber updates profile
+            -- dan has no support chat -> no profile update item created
             threadDelay 1000000
             dan ##> "/_profile 1 {\"displayName\": \"dave\", \"fullName\": \"\"}"
             dan <## "user profile is changed to dave (your 0 contacts are notified)"
@@ -9645,14 +9669,18 @@ testChannelSubscriberProfileUpdate ps =
                   cath <## "#team: bob forwarded a message from an unknown member, creating unknown member record dave"
                   cath <# "#team dave> hello from dave [>>]"
               ]
-            -- profile update items on alice and bob (moderator+/relay, 2nd profile update signed)
-            alice #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from dave")])
-            bob #$> ("/_get chat #1 count=2", chat, [(0, "updated profile (signed)"), (0, "hello from dave")])
+            -- no profile update items in main scope (dan has no support chat, item not created)
+            alice #$> ("/_get chat #1 count=2", chat, [(0, "hello from kate"), (0, "hello from dave")])
+            bob #$> ("/_get chat #1 count=2", chat, [(0, "hello from kate"), (0, "hello from dave")])
             -- no profile update items on cath and eve (subscriber-to-subscriber muted)
             cath #$> ("/_get chat #1 count=2", chat, [(1, "hello from kate"), (0, "hello from dave")])
             eve #$> ("/_get chat #1 count=2", chat, [(0, "hello from kate"), (0, "hello from dave")])
             -- dan doesn't see his own profile update
             dan #$> ("/_get chat #1 count=2", chat, [(0, "hello from kate"), (1, "hello from dave")])
+            -- verify dan has no support chat (only kate has one)
+            alice ##> "/member support chats #team"
+            alice <## "members require attention: 0"
+            alice <## "kate (id 3): unread: 0, require attention: 0, mentions: 0"
             -- verify profiles are updated correctly
             forM_ [alice, bob] $ \cc -> cc `hasContactProfiles` ["alice", "bob", "kate", "dave", "eve"]
             cath `hasContactProfiles` ["alice", "bob", "kate", "dave"]
